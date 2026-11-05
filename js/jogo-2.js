@@ -403,7 +403,7 @@ function soundStart(){
    durante animações assíncronas no Safari; HTMLAudio como alternativa. */
 function preloadBonusJingle(){
  if(jm64BonusAudioBuffer||jm64BonusAudioLoading||!audioCtx||!window.fetch)return;
- jm64BonusAudioLoading=fetch('assets/sons/bonus-floraphonic-v64.mp3')
+ jm64BonusAudioLoading=fetch('assets/sons/bonus-floraphonic-v64.mp3?v=64.1')
   .then(response=>{if(!response.ok)throw new Error('Áudio indisponível: '+response.status);return response.arrayBuffer();})
   .then(data=>audioCtx.decodeAudioData(data))
   .then(buffer=>{jm64BonusAudioBuffer=buffer;return buffer;})
