@@ -24,11 +24,17 @@ jobs:
       - name: Obter jogo
         uses: actions/checkout@v4
 
-      - name: Preparar jogo HTML
+      - name: Preparar pagina com fontes editaveis
+        shell: bash
         run: |
           mkdir -p public
-          unzip -oq JardimMagicoAndroid.zip -d android-project
-          cp -a android-project/app/src/main/assets/. public/
+          if test -s index.html; then
+            cp index.html public/index.html
+            cp -a css js assets public/
+          else
+            unzip -oq JardimMagicoAndroid.zip -d android-project
+            cp -a android-project/app/src/main/assets/. public/
+          fi
           test -s public/index.html
 
       - name: Configurar GitHub Pages
