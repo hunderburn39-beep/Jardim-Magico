@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V1.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V3.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -35,7 +35,7 @@
   const state = {
     balance:INITIAL_CREDITS,betIndex:4,busy:false,bonus:false,
     freeLeft:0,bonusWon:0,bonusMult:0,autoRemaining:0,cancelAuto:false,
-    turbo:false,sound:false,grid:[],currentWin:0,cascade:0
+    turbo:false,sound:true,grid:[],currentWin:0,cascade:0
   };
   let ctx = null, holdTimer = null, longFired = false, modalOpen = false;
   const money = n => new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.max(0,n));
@@ -89,15 +89,31 @@
     }
     return next;
   }
+  function sfx(kind,options={}){
+    if(state.sound && window.TrovaoAudio) window.TrovaoAudio.play(kind,options);
+  }
   function render(grid,options={}){
     el.board.textContent="";
     const fragment=document.createDocumentFragment();
-    for(const symbol of grid){
+    grid.forEach((symbol,index)=>{
       const tile=document.createElement("div");
       tile.className="cell "+(symbol.kind==="scatter"?"scatter":symbol.kind==="mult"?"multiplier":"");
-      if(options.dropIds?.has(symbol.id))tile.classList.add("drop-in");
+      const col=index%COLS, row=Math.floor(index/COLS);
+      // Todos os símbolos novos caem de cima; os sobreviventes deslocam-se
+      // a partir da posição real anterior, em vez de saltarem instantaneamente.
+      const was=options.fallFrom?.get(symbol.id);
+      if(options.dropIds?.has(symbol.id)||options.fallFrom){
+        const oldRow=was===undefined?-2-(index%4):Math.floor(was/COLS);
+        const travel=Math.max(0,row-oldRow);
+        if(travel>0){
+          tile.classList.add("drop-in");
+          tile.style.setProperty("--fall-rows",String(-travel));
+          tile.style.setProperty("--fall-delay",(col*(state.turbo?.012:.038)+row*(state.turbo?.008:.014))+"s");
+          tile.style.setProperty("--fall-duration",state.turbo?".20s":".46s");
+        }
+      }
       if(options.matchKinds?.has(symbol.kind))tile.classList.add("winner");
-      if(options.scatterGlow && symbol.kind==="scatter")tile.classList.add("scat-hit");
+      if(options.scatterGlow&&symbol.kind==="scatter")tile.classList.add("scat-hit");
       tile.dataset.kind=symbol.kind;
       const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
       svg.setAttribute("viewBox","0 0 100 100");
@@ -110,8 +126,40 @@
       }
       tile.setAttribute("aria-label",symbol.kind==="mult"?"Multiplicador "+symbol.value+" vezes":symbol.kind==="scatter"?"Scatter":LABELS[symbol.kind]);
       fragment.appendChild(tile);
-    }
+    });
     el.board.appendChild(fragment);
+    if(options.fallFrom||options.dropIds){
+      const landing=state.turbo?95:290;
+      for(let col=0;col<COLS;col++){
+        // Timbres distintos conforme as colunas encaixam nos rolos.
+        window.setTimeout(()=>sfx("drop",{column:col,at:options.fallFrom?1:0}),
+          landing+col*(state.turbo?13:36));
+      }
+    }
+  }
+  function explodeWinningSymbols(){
+    const tiles=Array.from(el.board.querySelectorAll(".cell.winner"));
+    if(!tiles.length)return;
+    el.board.classList.remove("board-impact");
+    void el.board.offsetWidth;
+    el.board.classList.add("board-impact");
+    const total=tiles.length;
+    tiles.forEach((tile,i)=>{
+      tile.classList.add("burst-out");
+      tile.style.setProperty("--burst-delay",((i%COLS)*(state.turbo?.003:.014))+"s");
+      for(let n=0;n<7;n++){
+        const shard=document.createElement("span");
+        shard.className="crystal-shard";
+        const angle=(n*360/7+i*21)*Math.PI/180;
+        const reach=48+(n%3)*24;
+        shard.style.setProperty("--sx",(Math.cos(angle)*reach)+"%");
+        shard.style.setProperty("--sy",(Math.sin(angle)*reach)+"%");
+        shard.style.setProperty("--sd",(n%3)*.025+"s");
+        shard.style.setProperty("--shard-hue",tile.dataset.kind==="ruby"?"348":tile.dataset.kind==="sapphire"?"192":tile.dataset.kind==="emerald"?"146":tile.dataset.kind==="amethyst"?"278":"44");
+        tile.appendChild(shard);
+      }
+    });
+    sfx("burst",{level:Math.min(1.35,.72+total*.035)});
   }
   function showPrizeFloat(amount){
     if(amount<=0)return;
@@ -147,17 +195,6 @@
     el.turbo.setAttribute("aria-pressed",String(state.turbo));
     const lock=state.busy||state.bonus||state.autoRemaining>0;
     $("btnBuy").disabled=lock;$("betDown").disabled=lock;$("betUp").disabled=lock;
-  }
-  function beep(freq=560,dur=.07,vol=.035){
-    if(!state.sound)return;
-    try{
-      ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();
-      if(ctx.state==="suspended")ctx.resume();
-      const osc=ctx.createOscillator(),gain=ctx.createGain();
-      osc.type="triangle";osc.frequency.setValueAtTime(freq,ctx.currentTime);
-      gain.gain.setValueAtTime(vol,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+dur);
-      osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+dur);
-    }catch(_){}
   }
   function openModal(title,html,buttons=[]){
     modalOpen=true;const m=el.modal.querySelector(".modal");if(m)m.classList.remove("pay-modal");el.modalTitle.textContent=title;el.modalBody.innerHTML=html;el.modalActions.replaceChildren();
@@ -200,7 +237,7 @@
     if(amount<currentBet()*24)return;
     el.bigTitle.textContent=label||"GRANDE PRÉMIO!";
     el.bigAmount.textContent=money(amount);el.big.classList.remove("hidden");
-    beep(820,.3,.07);await pause(state.turbo?420:1250);el.big.classList.add("hidden");
+    sfx("bigwin");await pause(state.turbo?420:1250);el.big.classList.add("hidden");
   }
   async function playSpin(){
     if(state.busy)return false;
@@ -219,8 +256,8 @@
     state.grid.forEach(s=>previousIds.add(s.id));
     render(state.grid,{dropIds:previousIds});
     setMsg(bonusSpin?"RODADA GRÁTIS • PODER ACUMULADO":"OS DEUSES ESTÃO A GIRAR...");
-    refresh();beep(370,.06);
-    await pause(state.turbo?95:410);
+    refresh();sfx("spin");
+    await pause(state.turbo?235:560);
     let totalBase=0,spinMult=0,steps=0,scatterTriggered=false,retrigger=false,scatterAward=0,maxScatterPaid=0;
     const countedMultipliers=new Set();
     for(;;){
@@ -245,14 +282,16 @@
       const text=wins.result.map(w=>LABELS[w.symbol]+" ×"+w.count).join(" + ");
       setMsg("PRÉMIO! "+text+" • QUEDA "+steps+" • "+money(wins.pay));
       showPrizeFloat(wins.pay);
-      beep(520+steps*42,.11,.06);
+      if(spinMult>0&&steps===1)sfx("mult");
       refresh();
-      await pause(state.turbo?85:520);
-      const oldIds=new Set(state.grid.map(s=>s.id));
+      await pause(state.turbo?105:280);
+      explodeWinningSymbols();
+      await pause(state.turbo?165:400);
+      const oldPositions=new Map(state.grid.map((s,index)=>[s.id,index]));
       state.grid=tumble(state.grid,wins.matched);
-      const bornIds=new Set(state.grid.filter(s=>!oldIds.has(s.id)).map(s=>s.id));
-      render(state.grid,{dropIds:bornIds});
-      await pause(state.turbo?80:390);
+      render(state.grid,{fallFrom:oldPositions});
+      sfx("tumble");
+      await pause(state.turbo?240:550);
     }
     let total=totalBase;
     if(totalBase>0||scatterAward>0){
@@ -271,19 +310,19 @@
         state.balance=Math.round((state.balance+state.currentWin)*100)/100;
       }
       setMsg(steps+" QUEDA"+(steps!==1?"S":"")+" • "+money(total)+" GANHOS");
-      beep(750,.15);
+      sfx("reward");
     }else{
       state.visibleMult=1;
       setMsg(bonusSpin?"A TROVOADA CONTINUA...":"SEM PRÉMIO • TENTA DE NOVO");
     }
     if(bonusSpin&&retrigger){
       state.freeLeft+=5;setOverlay("+5 RODADAS GRÁTIS");
-      beep(930,.22,.08);await pause(state.turbo?250:900);setOverlay("");
+      sfx("scatter");await pause(state.turbo?250:900);setOverlay("");
     }
     if(!bonusSpin&&scatterTriggered){
       render(state.grid,{scatterGlow:true});
       setOverlay("⚡ 15 RODADAS GRÁTIS ⚡");
-      beep(900,.24,.085);await pause(state.turbo?350:1150);setOverlay("");
+      sfx("scatter");await pause(state.turbo?350:1150);setOverlay("");
     }
     refresh();state.busy=false;refresh();
     if(bonusSpin&&state.bonusWon>=MAX_WIN_X*bet-0.001){state.freeLeft=0}
@@ -317,7 +356,7 @@
     state.bonusWon=0;state.visibleMult=1;
     el.free.parentElement.classList.remove("bonus-active");
     setMsg("BÓNUS TERMINADO • GANHASTE "+money(win));refresh();
-    setOverlay("BÓNUS: "+money(win));beep(860,.27,.08);
+    setOverlay("BÓNUS: "+money(win));sfx("reward");
     await showBig(win,"PRÉMIO DO BÓNUS");
     await pause(state.turbo?220:750);setOverlay("");
   }
@@ -374,6 +413,7 @@
     if(e.button!==undefined&&e.button!==0)return;
     longFired=false;clearTimeout(holdTimer);
     if(state.busy||state.bonus||state.autoRemaining>0)return;
+    if(state.sound)window.TrovaoAudio?.unlock();
     holdTimer=setTimeout(()=>{longFired=true;showAutoOptions()},3000);
   });
   for(const name of ["pointerup","pointercancel","pointerleave"]){
@@ -396,7 +436,9 @@
   $("btnSound").onclick=()=>{
     state.sound=!state.sound;
     $("btnSound").textContent=state.sound?"♫":"♪";
-    $("btnSound").title=state.sound?"Desligar som":"Ativar som";beep(670);
+    $("btnSound").title=state.sound?"Desligar som":"Ativar som";
+    window.TrovaoAudio?.setEnabled(state.sound);
+    if(state.sound)sfx("reward");
   };
   $("btnFull").onclick=async()=>{
     try{
@@ -409,5 +451,7 @@
     if(modalOpen||e.repeat||e.target instanceof HTMLButtonElement)return;
     if(e.code==="Space"||e.code==="Enter"){e.preventDefault();if(state.autoRemaining>0)stopAuto();else void startNormal()}
   });
+  window.TrovaoAudio?.setEnabled(state.sound);
+  $("btnSound").textContent=state.sound?"♫":"♪";
   state.grid=makeGrid();render(state.grid);refresh();
 })();
