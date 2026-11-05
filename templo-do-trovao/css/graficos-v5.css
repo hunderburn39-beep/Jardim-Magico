@@ -15,7 +15,6 @@
 .scene-cloud-back{opacity:.38;filter:blur(5px)}
 .scene-cloud-front{opacity:.39}
 .game-logo{
-  content:url("../assets/logotipo-3d-v5.webp");
   filter:drop-shadow(0 3px 9px #1c0641) drop-shadow(0 0 9px #f2c75a91)!important;
   animation:logoAwe 4.8s ease-in-out infinite alternate;
 }
