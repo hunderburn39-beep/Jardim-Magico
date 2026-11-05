@@ -107,6 +107,7 @@ const R=x=>Math.floor(Math.random()*x);
 const pick=(arr)=>arr[R(arr.length)];
 let betIdx=2,balance=0,lastPrize=0,mode='normal',running=false,freeSpins=0,freeBet=20,bonus=null,session=null,history=[],mute=false;
 let freeBonusTotal=0,freeSummaryPending=false,freeSummaryCount=0;
+let freeBaseTotal=0,freeMultiplierBalls=[],freeSettlePending=false,freeSettlementRunning=false; // V54 — acumulação até ao fim
 let vaultFictiveSum=0; // Valores exibidos nas moedas do porquinho; não entram nos prémios // V52 — fecho manual das free spins
 let grid=Array.from({length:5},()=>Array.from({length:3},()=>({id:pick(regular)})));
 let transitions=Array(5).fill(null),cascades=Array(5).fill(null),dropItems=[],burstParticles=[],lineGlow=[],floaters=[];
@@ -138,8 +139,8 @@ function soundReelLanding(){
 }
 
 
-function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,freeBonusTotal,freeSummaryPending,freeSummaryCount,vaultCoins,vaultFictiveSum,musicEnabled,musicVolume,rtpConfig,profitPercent,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,progressivePools,progressiveCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
-function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;freeBonusTotal=Math.max(0,Math.round(Number(data.freeBonusTotal)||0));freeSummaryPending=!!data.freeSummaryPending;freeSummaryCount=Math.max(0,Math.round(Number(data.freeSummaryCount)||0));vaultCoins=Math.max(0,Number(data.vaultCoins)||0);vaultFictiveSum=Math.max(0,Math.round(Number(data.vaultFictiveSum)||0));bonus=([16,25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(0,Math.min(70,Number(data.profitPercent))):4;prizePool=Math.max(0,Math.floor(Number(data.prizePool)||0));operatorReserve=Math.max(0,Math.floor(Number(data.operatorReserve)||0));protectedReserve=Math.min(operatorReserve,Math.max(0,Math.floor(Number(data.protectedReserve??(operatorReserve*PROTECTED_SHARE)))));protectedCarry=Math.max(0,Number(data.protectedCarry)||0);ownerWithdrawn=Math.max(0,Math.floor(Number(data.ownerWithdrawn)||0));riskReserve=Math.max(0,Math.floor(Number(data.riskReserve)||0));ownerCarry=Math.max(0,Number(data.ownerCarry)||0);poolCarry=Math.max(0,Number(data.poolCarry)||0);
+function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,freeBonusTotal,freeSummaryPending,freeSummaryCount,freeBaseTotal,freeMultiplierBalls,freeSettlePending,vaultCoins,vaultFictiveSum,musicEnabled,musicVolume,rtpConfig,profitPercent,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,progressivePools,progressiveCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
+function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;freeBonusTotal=Math.max(0,Math.round(Number(data.freeBonusTotal)||0));freeSummaryPending=!!data.freeSummaryPending;freeSummaryCount=Math.max(0,Math.round(Number(data.freeSummaryCount)||0));freeBaseTotal=Math.max(0,Math.round(Number(data.freeBaseTotal)||0));freeMultiplierBalls=Array.isArray(data.freeMultiplierBalls)?data.freeMultiplierBalls.filter(v=>Number.isInteger(v)&&v>=2&&v<=1000):[];freeSettlePending=!!data.freeSettlePending;vaultCoins=Math.max(0,Number(data.vaultCoins)||0);vaultFictiveSum=Math.max(0,Math.round(Number(data.vaultFictiveSum)||0));bonus=([16,25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(0,Math.min(70,Number(data.profitPercent))):4;prizePool=Math.max(0,Math.floor(Number(data.prizePool)||0));operatorReserve=Math.max(0,Math.floor(Number(data.operatorReserve)||0));protectedReserve=Math.min(operatorReserve,Math.max(0,Math.floor(Number(data.protectedReserve??(operatorReserve*PROTECTED_SHARE)))));protectedCarry=Math.max(0,Number(data.protectedCarry)||0);ownerWithdrawn=Math.max(0,Math.floor(Number(data.ownerWithdrawn)||0));riskReserve=Math.max(0,Math.floor(Number(data.riskReserve)||0));ownerCarry=Math.max(0,Number(data.ownerCarry)||0);poolCarry=Math.max(0,Number(data.poolCarry)||0);
 for(const type of Object.keys(JACKPOTS)){
  progressivePools[type]=Math.max(0,Math.floor(Number(data.progressivePools?.[type])||0));
  progressiveCarry[type]=Math.max(0,Number(data.progressiveCarry?.[type])||0);
@@ -156,10 +157,10 @@ if(bonus){
 function log(kind,amount,detail=''){if(!session)return;session.events.push({time:new Date().toISOString(),kind,amount,detail,balance});save()}
 function update(){
  $('balance').textContent=money(balance);$('lastPrize').textContent=money(lastPrize);$('betValue').textContent=money(BETS[betIdx]);renderJackpotCounters();
- const betLocked=running||!!bonus||freeSpins>0||freeSummaryPending;
+ const betLocked=running||!!bonus||freeSpins>0||freeSummaryPending||freeSettlePending||freeSettlementRunning;
  $('betMinus').disabled=betLocked||betIdx===0;$('betPlus').disabled=betLocked||betIdx===6;
  document.querySelector('.betPanel').classList.toggle('locked',!!bonus||freeSpins>0);
- $('spin').disabled=!freeSummaryPending&&(!!bonus||freeStartPending||freeAutoRunning||!session||(autoSpinsRemaining===0&&(running||(freeSpins<=0&&balance<BETS[betIdx]))));
+ $('spin').disabled=freeSettlementRunning||(!freeSummaryPending&&(freeSettlePending||!!bonus||freeStartPending||freeAutoRunning||!session||(autoSpinsRemaining===0&&(running||(freeSpins<=0&&balance<BETS[betIdx])))));
  $('buyBonus').disabled=running||!!bonus||!session||freeSpins>0;
  $('buyBonus').textContent='✨ COMPRAR BÓNUS';
  const vaultText=vaultCoins+' MOEDAS',vaultWidth=Math.min(100,vaultCoins/40*100)+'%';
@@ -1096,9 +1097,9 @@ async function showSixCoinCascade(){
 }
 
 async function doRound(){
- if(running||bonus||!session)return;
+ if(running||bonus||!session||freeSettlePending||freeSummaryPending||freeSettlementRunning)return;
  const free=freeSpins>0,stake=free?0:BETS[betIdx],betAmount=free?freeBet:BETS[betIdx];if(balance<stake)return;
- running=true;scatterNoteStep=0;awardContext=free?'free':'base';roundVaultNew=0;if(free){freeSpins--;freeSummaryCount++;}else{balance-=stake;session.stake+=stake;fundWager(stake);log('aposta',-stake,'Rodada base · cofre '+money(prizePool));}session.spins++;update();soundStart();notice(free?'✦ Rodada grátis!':'Tambores a rodar...');shelf=[];updateShelf();clearLines();winRound=0;
+ running=true;scatterNoteStep=0;awardContext=free?'free':'base';roundVaultNew=0;if(free){freeSpins--;freeSummaryCount++;}else{balance-=stake;session.stake+=stake;fundWager(stake);log('aposta',-stake,'Rodada base · cofre '+money(prizePool));}session.spins++;update();soundStart();notice(free?'✦ Rodada grátis!':'Tambores a rodar...');shelf=free?freeMultiplierBalls:[];updateShelf();clearLines();winRound=0;
  let sixCoinTrigger=false;
  const detectSixCoins=async()=>{if(!sixCoinTrigger&&countReelCoins()>=6){sixCoinTrigger=true;await showSixCoinCascade();}};
  await spinColumns(wholeGrid());await detectSixCoins();await collectVaultCoins();let scatterTrigger=0,cascadeCount=0;const maxCascades=8;
@@ -1106,18 +1107,31 @@ async function doRound(){
   scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));const ev=evaluate(grid,betAmount),m=mulIndices(grid);if(!ev.won.length&&!m.length)break;
   if(ev.won.length){winRound+=ev.amount;markLines(ev.won);notice(`Linha premiada: ${money(ev.amount)} • cascata ${cascadeCount}`);await sleep(mode==='turbo'?380:940);}
   const remove=new Set();for(const l of ev.won)for(const [x,y] of l.points)remove.add(`${x}:${y}`);
-  for(const mm of m){shelf.push(mm.v);updateShelf();await mulOrbTop(mm.v,mm.x,mm.y);remove.add(`${mm.x}:${mm.y}`);audioFX('multiplier',mm.v)}
+  for(const mm of m){shelf.push(mm.v);updateShelf();if(free)save();await mulOrbTop(mm.v,mm.x,mm.y);remove.add(`${mm.x}:${mm.y}`);audioFX('multiplier',mm.v)}
   if(!remove.size)break;await animateCascade(remove);scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));await detectSixCoins();await collectVaultCoins();
  }
  scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));
- clearLines();const factor=shelf.length?shelf.reduce((a,b)=>a+b,0):1,requestedWin=Math.min(winRound*factor,betAmount*MAX_WIN_MULT),winnings=payFromVault(requestedWin);lastPrize=winnings;if(free)freeBonusTotal+=winnings;
- if(winnings)log('prémio',winnings,`Cascatas; linhas ${money(winRound)} ×${factor}; pedido ${money(requestedWin)}; cofre ${money(prizePool)}`);if(winnings<requestedWin)log('limite_cofre',0,`Prémio limitado pelo fundo: ${money(requestedWin)} → ${money(winnings)}`);
+ clearLines();
+ const factor=shelf.length?shelf.reduce((a,b)=>a+b,0):1;
+ let requestedWin=0,winnings=0;
+ if(free){
+  // A base é acumulada em cêntimos: não se multiplica nem se paga em cada giro.
+  freeBaseTotal=Math.min(Number.MAX_SAFE_INTEGER,freeBaseTotal+winRound);
+  lastPrize=0;
+  notice('FREE SPINS · Base '+money(freeBaseTotal)+' · MULTIPLICADORES ×'+factor+' · Pagamento no final');
+ }else{
+  requestedWin=Math.min(winRound*factor,betAmount*MAX_WIN_MULT);
+  winnings=payFromVault(requestedWin);lastPrize=winnings;
+  if(winnings)log('prémio',winnings,`Cascatas; linhas ${money(winRound)} ×${factor}; pedido ${money(requestedWin)}; cofre ${money(prizePool)}`);
+  if(winnings<requestedWin)log('limite_cofre',0,`Prémio limitado pelo fundo: ${money(requestedWin)} → ${money(winnings)}`);
+ }
  if(scatterTrigger>=3){
-  if(!free){freeBonusTotal=0;freeSummaryCount=0;freeSummaryPending=false;}
+  if(!free){freeBonusTotal=0;freeSummaryCount=0;freeSummaryPending=false;freeBaseTotal=0;freeMultiplierBalls=[];freeSettlePending=false;}
   freeSpins+=15;freeBet=betAmount;notice('✦ 3 SCATTER: +15 FREE SPINS!');log('scatter',0,'Três SCATTER, +15 jogadas grátis');
   await showFeatureIntro('free');
  }
- else if(winnings)notice(`Prémio pago: ${money(winnings)} • ${factor}×${winnings<requestedWin?' • limite do cofre':''}`);else notice(free?'Rodada grátis concluída.':'Sem prémio desta vez.');
+ else if(free)notice('FREE SPINS: '+money(freeBaseTotal)+' base, ×'+factor+' acumulado até ao final.');else if(winnings)notice(`Prémio pago: ${money(winnings)} • ${factor}×${winnings<requestedWin?' • limite do cofre':''}`);else notice('Sem prémio desta vez.');
+ if(free&&freeSpins===0){freeSettlePending=true;save();}
  if(sixCoinTrigger){
   running=false;await launchBonus(false,'6_moedas');
  }else if(!free&&scatterTrigger>=3){
@@ -1375,7 +1389,7 @@ function bonusFinish(){
 }
 function refreshBuyOptions(){const costHold=BETS[betIdx]*100,costFree=BETS[betIdx]*20;$('buyHoldPrice').textContent=money(costHold);$('buyFreePrice').textContent=money(costFree);$('buyHoldChoice').disabled=balance<costHold||!session||running||!!bonus||freeSpins>0;$('buyFreeChoice').disabled=balance<costFree||!session||running||!!bonus||freeSpins>0;$('buyInfo').textContent='Saldo '+money(balance)+' • Hold & Win 100× a aposta • 15 free spins 20× a aposta';}
 function openBonusPurchase(){if(!session||running||bonus)return;refreshBuyOptions();modal('buyModal',true);soundStart()}
-async function buyFreeSpins(){if(!session||running||bonus||freeSpins||freeSummaryPending)return false;const bet=BETS[betIdx],cost=bet*20;if(balance<cost)return false;balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;freeBonusTotal=0;freeSummaryCount=0;freeSummaryPending=false;freeBet=bet;freeSpins+=15;log('compra_freespins',-cost,'15 free spins a 20× aposta '+money(bet));modal('buyModal',false);notice('🌟 Compraste 15 FREE SPINS por '+money(cost));running=true;update();soundStart();await showFeatureIntro('free');running=false;openFreeStart();return true;}
+async function buyFreeSpins(){if(!session||running||bonus||freeSpins||freeSummaryPending)return false;const bet=BETS[betIdx],cost=bet*20;if(balance<cost)return false;balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;freeBonusTotal=0;freeSummaryCount=0;freeSummaryPending=false;freeBaseTotal=0;freeMultiplierBalls=[];freeSettlePending=false;freeBet=bet;freeSpins+=15;log('compra_freespins',-cost,'15 free spins a 20× aposta '+money(bet));modal('buyModal',false);notice('🌟 Compraste 15 FREE SPINS por '+money(cost));running=true;update();soundStart();await showFeatureIntro('free');running=false;openFreeStart();return true;}
 
 function showBig(final,base,factor,jp,jackpotWin,capped=null,fromWheel=false){
  $('bigFactor').textContent=fromWheel?'ROULETA 32 CASAS • '+jp:jp?'4 CRISTAIS • '+jp:'HOLD & WIN • 3 TENTATIVAS';
