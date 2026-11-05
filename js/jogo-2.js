@@ -18,6 +18,8 @@ const LINES=[
  [2,1,2,1,2],[1,1,0,1,1],[1,1,2,1,1]
 ];
 const MAX_WIN_MULT=5000;
+const MAX_FREE_RETRIGGERS=2; // Regra pública V65: duas extensões por sessão (até 45 jogadas se 3 SCATTER duas vezes).
+const FREE_SCATTER_PROBABILITY=.018; // Probabilidade FIXA por posição nas free spins; independente do saldo/cofre.
 const CASH_PIN='12345';
 const PROTECTED_SHARE=0.25; // Parte intocável da parcela reservada em cada aposta.
 
@@ -118,7 +120,7 @@ const R=x=>Math.floor(Math.random()*x);
 const pick=(arr)=>arr[R(arr.length)];
 let betIdx=2,balance=0,lastPrize=0,mode='normal',running=false,freeSpins=0,freeBet=20,bonus=null,session=null,history=[],mute=false;
 let freeBonusTotal=0,freeSummaryPending=false,freeSummaryCount=0;
-let freeBaseTotal=0,freeMultiplierBalls=[],freeSettlePending=false,freeSettlementRunning=false; // V54 — acumulação até ao fim
+let freeBaseTotal=0,freeMultiplierBalls=[],freeSettlePending=false,freeSettlementRunning=false,freeRetriggersUsed=0; // V54 — acumulação até ao fim
 let vaultFictiveSum=0; // Valores exibidos nas moedas do porquinho; não entram nos prémios // V52 — fecho manual das free spins
 let grid=Array.from({length:5},()=>Array.from({length:3},()=>({id:pick(regular)})));
 let transitions=Array(5).fill(null),cascades=Array(5).fill(null),dropItems=[],burstParticles=[],lineGlow=[],floaters=[];
@@ -153,8 +155,16 @@ function soundReelLanding(){
 }
 
 
-function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,freeBonusTotal,freeSummaryPending,freeSummaryCount,freeBaseTotal,freeMultiplierBalls,freeSettlePending,vaultCoins,vaultFictiveSum,musicEnabled,musicVolume,rtpConfig,profitPercent,ownerPercent,ownerShareReserve,merchantShareReserve,shareCarry,volatilityMode,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,progressivePools,progressiveCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
-function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;freeBonusTotal=Math.max(0,Math.round(Number(data.freeBonusTotal)||0));freeSummaryPending=!!data.freeSummaryPending;freeSummaryCount=Math.max(0,Math.round(Number(data.freeSummaryCount)||0));freeBaseTotal=Math.max(0,Math.round(Number(data.freeBaseTotal)||0));freeMultiplierBalls=Array.isArray(data.freeMultiplierBalls)?data.freeMultiplierBalls.filter(v=>Number.isInteger(v)&&v>=2&&v<=1000):[];freeSettlePending=!!data.freeSettlePending;vaultCoins=Math.max(0,Number(data.vaultCoins)||0);vaultFictiveSum=Math.max(0,Math.round(Number(data.vaultFictiveSum)||0));bonus=([16,25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(1,Math.min(70,Number(data.profitPercent))):4;
+function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,freeBonusTotal,freeSummaryPending,freeSummaryCount,freeBaseTotal,freeMultiplierBalls,freeSettlePending,freeRetriggersUsed,vaultCoins,vaultFictiveSum,musicEnabled,musicVolume,rtpConfig,profitPercent,ownerPercent,ownerShareReserve,merchantShareReserve,shareCarry,volatilityMode,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,progressivePools,progressiveCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
+function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;freeBonusTotal=Math.max(0,Math.round(Number(data.freeBonusTotal)||0));freeSummaryPending=!!data.freeSummaryPending;freeSummaryCount=Math.max(0,Math.round(Number(data.freeSummaryCount)||0));freeBaseTotal=Math.max(0,Math.round(Number(data.freeBaseTotal)||0));freeMultiplierBalls=Array.isArray(data.freeMultiplierBalls)?data.freeMultiplierBalls.filter(v=>Number.isInteger(v)&&v>=2&&v<=1000):[];freeSettlePending=!!data.freeSettlePending;
+ // Sem retirar spins já atribuídas em versões anteriores.
+ // Quando não há contador V65, considera-se consumido o limite se o bónus antigo
+ // já tiver mais de 30 ou 45 rodadas atribuídas.
+ const legacyGranted=Math.max(0,freeSummaryCount+freeSpins-15);
+ freeRetriggersUsed=Number.isFinite(Number(data.freeRetriggersUsed))
+  ?Math.max(0,Math.min(MAX_FREE_RETRIGGERS,Math.floor(Number(data.freeRetriggersUsed))))
+  :Math.min(MAX_FREE_RETRIGGERS,Math.ceil(legacyGranted/15));
+ vaultCoins=Math.max(0,Number(data.vaultCoins)||0);vaultFictiveSum=Math.max(0,Math.round(Number(data.vaultFictiveSum)||0));bonus=([16,25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(1,Math.min(70,Number(data.profitPercent))):4;
 ownerPercent=Number.isFinite(Number(data.ownerPercent))?Math.max(0,Math.min(100,Math.round(Number(data.ownerPercent)))):60;
 volatilityMode=data.volatilityMode==='frequentes'?'frequentes':'equilibrado';
 prizePool=Math.max(0,Math.floor(Number(data.prizePool)||0));operatorReserve=Math.max(0,Math.floor(Number(data.operatorReserve)||0));protectedReserve=Math.min(operatorReserve,Math.max(0,Math.floor(Number(data.protectedReserve??(operatorReserve*PROTECTED_SHARE)))));protectedCarry=Math.max(0,Number(data.protectedCarry)||0);ownerWithdrawn=Math.max(0,Math.floor(Number(data.ownerWithdrawn)||0));riskReserve=Math.max(0,Math.floor(Number(data.riskReserve)||0));
@@ -587,7 +597,7 @@ function chooseRegularSymbol(){
 const volatilityPayScale=()=>volatilityMode==='frequentes'?FREQUENT_LINE_PAYOUT:1;
 function sym(){const p=Math.random();if(freeSpins>0 || awardContext==='free'){
  if(p<.012)return {id:'mul',value:chooseSpinMul()};
- if(p<.047)return {id:'scatter'};
+ if(p<.012+FREE_SCATTER_PROBABILITY)return {id:'scatter'};
  if(p<.090)return {id:'wild',factor:2};
  if(p<.120)return {id:'coin',uid:++symbolSeq,value:pick([10,20,50,100,200,500,1000,2000,5000])};
 }else{
@@ -758,7 +768,7 @@ function showFreeSummary(resume=false){
 function closeFreeSummary(){
  if(!freeSummaryPending||freeSettlementRunning)return;
  freeSummaryPending=false;freeSettlePending=false;
- freeBaseTotal=0;freeMultiplierBalls=[];shelf=[];
+ freeBaseTotal=0;freeMultiplierBalls=[];freeRetriggersUsed=0;shelf=[];
  updateDropScore(0);
  $('jm52FreeSummary')?.classList.remove('show');
  updateShelf();
@@ -1466,15 +1476,20 @@ async function doRound(){
  // SCATTER: na base, 3 dão 15 free spins. Durante as free spins,
  // 2 dão mais 8 e 3 ou mais dão 15. Máximo uma extensão por spin,
  // mesmo que os SCATTER surjam entre várias cascatas na mesma jogada.
- const extraFreeSpins=free?(scatterTrigger>=3?15:scatterTrigger===2?8:0):(scatterTrigger>=3?15:0);
+ const scatterAward=free?(scatterTrigger>=3?15:scatterTrigger===2?8:0):(scatterTrigger>=3?15:0);
+ // Bónus muito longos (por ex. 50+ spins) deixam de poder crescer indefinidamente.
+ // Os SCATTER continuam a sair de forma aleatória, mas a regra de 2 extensões é pública.
+ const extraFreeSpins=free&&freeRetriggersUsed>=MAX_FREE_RETRIGGERS?0:scatterAward;
  if(extraFreeSpins){
-  if(!free){freeBonusTotal=0;freeSummaryCount=0;freeSummaryPending=false;freeBaseTotal=0;freeMultiplierBalls=[];freeSettlePending=false;}
+  if(!free){freeBonusTotal=0;freeSummaryCount=0;freeSummaryPending=false;freeBaseTotal=0;freeMultiplierBalls=[];freeSettlePending=false;freeRetriggersUsed=0;}
   freeSpins+=extraFreeSpins;
+  if(free)freeRetriggersUsed++;
   freeBet=betAmount;
   notice('✦ '+scatterTrigger+' SCATTER: +'+extraFreeSpins+' FREE SPINS! · Restam '+freeSpins);
   log('scatter',0,scatterTrigger+' SCATTER: +'+extraFreeSpins+' free spins; total restante '+freeSpins);
   await showFeatureIntro('free',extraFreeSpins,free);
  }
+ else if(free&&scatterAward>0)notice(scatterTrigger+' SCATTER · Limite de '+MAX_FREE_RETRIGGERS+' extensões atingido · Restam '+freeSpins+' jogadas.');
  else if(free)notice('FREE SPINS: '+money(freeBaseTotal)+' base, ×'+factor+' acumulado até ao final.');
  else if(winnings)notice(`Prémio pago: ${money(winnings)} • ${factor}×${winnings<requestedWin?' • limite do cofre':''}`);
  else notice('Sem prémio desta vez.');
@@ -1751,7 +1766,7 @@ function bonusFinish(){
 }
 function refreshBuyOptions(){const costHold=BETS[betIdx]*100,costFree=BETS[betIdx]*20;$('buyHoldPrice').textContent=money(costHold);$('buyFreePrice').textContent=money(costFree);$('buyHoldChoice').disabled=balance<costHold||!session||running||!!bonus||freeSpins>0;$('buyFreeChoice').disabled=balance<costFree||!session||running||!!bonus||freeSpins>0;$('buyInfo').textContent='Saldo '+money(balance)+' • Hold & Win 100× a aposta • 15 free spins 20× a aposta';}
 function openBonusPurchase(){if(!session||running||bonus)return;refreshBuyOptions();modal('buyModal',true);soundStart()}
-async function buyFreeSpins(){if(!session||running||bonus||freeSpins||freeSummaryPending)return false;const bet=BETS[betIdx],cost=bet*20;if(balance<cost)return false;balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;freeBonusTotal=0;freeSummaryCount=0;freeSummaryPending=false;freeBaseTotal=0;freeMultiplierBalls=[];freeSettlePending=false;freeBet=bet;freeSpins+=15;updateDropScore(0);log('compra_freespins',-cost,'15 free spins a 20× aposta '+money(bet));modal('buyModal',false);notice('🌟 Compraste 15 FREE SPINS por '+money(cost));running=true;update();soundStart();await showFeatureIntro('free');running=false;openFreeStart();return true;}
+async function buyFreeSpins(){if(!session||running||bonus||freeSpins||freeSummaryPending)return false;const bet=BETS[betIdx],cost=bet*20;if(balance<cost)return false;balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;freeBonusTotal=0;freeSummaryCount=0;freeSummaryPending=false;freeBaseTotal=0;freeMultiplierBalls=[];freeSettlePending=false;freeRetriggersUsed=0;freeBet=bet;freeSpins+=15;updateDropScore(0);log('compra_freespins',-cost,'15 free spins a 20× aposta '+money(bet));modal('buyModal',false);notice('🌟 Compraste 15 FREE SPINS por '+money(cost));running=true;update();soundStart();await showFeatureIntro('free');running=false;openFreeStart();return true;}
 
 function showBig(final,base,factor,jp,jackpotWin,capped=null,fromWheel=false,stake=BETS[betIdx]){
  $('bigFactor').textContent=fromWheel?'ROULETA 32 CASAS • '+jp:jp?'4 CRISTAIS • '+jp:'HOLD & WIN • 3 TENTATIVAS';
@@ -1790,7 +1805,7 @@ function makePaytable(){
   const t=document.createElement('span');
   t.innerHTML=`<strong>${NAME[id]}</strong><br>${id==='wild'?`2 WILD juntos ≈ ${money(Math.max(1,Math.round(BETS[betIdx]*PAY.wild[2]/LINES.length*rtpScaleFor('base'))))}<br>`:''}${PAY[id]?
    `3× ≈ ${money(Math.round(BETS[betIdx]*PAY[id][3]/LINES.length*rtpScaleFor('base')))}<br>4× ≈ ${money(Math.round(BETS[betIdx]*PAY[id][4]/LINES.length*rtpScaleFor('base')))}<br>5× ≈ ${money(Math.round(BETS[betIdx]*PAY[id][5]/LINES.length*rtpScaleFor('base')))}`
-   :'3 SCATTER = 15 free spins'}`;
+   :'Na base: 3 SCATTER = 15 free spins. Durante o bónus: 2 SCATTER = +8, 3 SCATTER = +15; máximo 2 extensões por bónus.'}`;
   div.append(t);el.append(div);
  }
  drawWinLineMaps();
