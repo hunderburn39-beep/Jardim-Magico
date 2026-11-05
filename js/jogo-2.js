@@ -1102,32 +1102,40 @@ async function spinColumns(next){
 }
 // V43: iluminar somente os símbolos vencedores; sem linhas nem sublinhados.
 // Mostra um único total por cascata, com desaparecimento progressivo.
+/* V56: cada linha apresenta apenas o montante, sem caixa.
+   O valor desvanece independentemente da cascata seguinte. */
 function markLines(won){
- const svg=$('paylines'),layer=$('floaters');
- svg.replaceChildren();layer.replaceChildren();
- const seen=new Set();
- const fadeDuration=mode==='turbo'?380:940;
+ const lines=$('paylines'),layer=$('floaters'),stage=$('stageWrap');
+ lines.replaceChildren();layer.replaceChildren();
+ const seen=new Set(),glowDuration=mode==='turbo'?1200:2050;
  for(const win of won){
   for(const [x,y] of win.points){
-   const key=x+':'+y;
-   if(seen.has(key))continue;
-   seen.add(key);
+   const key=x+':'+y;if(seen.has(key))continue;seen.add(key);
    const glow=document.createElement('span');
    glow.className='winningSymbolGlow';
    glow.style.left=((x+.5)/5*100)+'%';
    glow.style.top=((y+.5)/3*100)+'%';
-   glow.style.animationDuration=fadeDuration+'ms';
+   glow.style.animationDuration=glowDuration+'ms';
    layer.appendChild(glow);
    particlesAt((x+.5)*CW,(y+.5)*CH);
   }
  }
- const prize=document.createElement('span');
- prize.className='winText';
- prize.textContent=money(won.reduce((sum,win)=>sum+win.value,0));
- prize.style.left='50%';
- prize.style.top='50%';
- prize.style.animationDuration=fadeDuration+'ms';
- layer.appendChild(prize);
+ let wins=$('jm56WinValues');
+ if(!wins){wins=document.createElement('div');wins.id='jm56WinValues';stage.appendChild(wins);}
+ const duration=mode==='turbo'?2500:3850;
+ for(let i=0;i<won.length;i++){
+  const display=document.createElement('span');
+  display.className='jm56WinAmount';display.textContent=money(won[i].value);
+  display.style.left=(20+(i%3)*30)+'%';
+  display.style.top=(17+Math.floor(i/3)*15)+'%';
+  display.style.setProperty('--win-delay',(mode==='turbo'?75:135)*i+'ms');
+  display.style.setProperty('--win-duration',duration+'ms');
+  display.setAttribute('aria-label','Prémio de linha: '+money(won[i].value));
+  wins.appendChild(display);
+  setTimeout(()=>display.remove(),duration+i*(mode==='turbo'?75:135)+90);
+ }
+ // Uma cascata não corta a animação da anterior; evitar acumular DOM.
+ while(wins.childElementCount>30)wins.firstElementChild.remove();
  audioFX('win');
 }
 function clearLines(){ $('paylines').innerHTML='';$('floaters').replaceChildren();}
@@ -1214,23 +1222,24 @@ async function collectReelMultipliers(list,free){
  await Promise.all(list.filter(m=>toRemove.has(m.x+':'+m.y)).map(m=>mulOrbTop(m.v,m.x,m.y)));
  return toRemove;
 }
+/* V56: só UMA bola vermelha visível. O seu número é a soma atual;
+   a lista de fatores continua guardada no estado para o prémio final. */
 function updateShelf(){
- const box=$('orbs'),freeActive=freeSpins>0||freeAutoRunning||freeSettlePending||freeSummaryPending;
- const tag=document.querySelector('.shelfTag');
- if(tag)tag.innerHTML=freeActive?'MULTIS<br>FREE SPINS':'MULTIS<br>ACUMULADOS';
- if(tag)tag.title='Multiplicadores acumulados';
- box.replaceChildren();
- // Em free spins, NENHUMA bola é apagada: ficam todas guardadas, podem
- // deslocar-se horizontalmente e a soma à direita mantém-se atualizada.
- for(const value of (freeActive?shelf:shelf.slice(-10))){
-  const chip=document.createElement('span');chip.className='orbPill';
-  chip.textContent=value+'×';chip.title='Multiplicador '+value+' vezes';
-  box.append(chip);
- }
+ const box=$('orbs');
  const factor=shelf.length?shelf.reduce((sum,v)=>sum+v,0):1;
+ const freeActive=freeSpins>0||freeAutoRunning||freeSettlePending||freeSummaryPending;
+ const tag=document.querySelector('.shelfTag');
+ if(tag)tag.textContent='MULTI';
+ box.replaceChildren();
+ const orb=document.createElement('span');
+ orb.className='orbPill jm56RedBall';
+ orb.textContent='×'+factor;
+ orb.style.fontSize=factor>=1000?'10px':factor>=100?'12px':'15px';
+ orb.title=freeActive?'Multiplicador acumulado das free spins: ×'+factor:'Multiplicador da jogada: ×'+factor;
+ orb.setAttribute('aria-label',orb.title);
+ box.append(orb);
  $('shelfTotal').textContent='×'+factor;
- $('shelfTotal').title=freeActive?'Soma dos multiplicadores até ao final das free spins':'Multiplicador desta rodada';
- if(freeActive)requestAnimationFrame(()=>{box.scrollLeft=box.scrollWidth;});
+ $('shelfTotal').title=orb.title;
 }
 /* V52 — são seis moedas visíveis simultaneamente nos 5 tambores (5×3).
    A chuva é apenas visual e o valor impresso em cada moeda é fictício. */
