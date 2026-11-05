@@ -1,0 +1,82 @@
+/* Jardim Mágico V63 — contador FIXO à esquerda da bola MULTI,
+   enquanto o centro do tabuleiro mostra só o prémio da queda atual. */
+.game .shelf .jm63DropCounter{
+ position:absolute!important;
+ right:calc(100% + clamp(10px,2.5vw,18px))!important;
+ top:50%!important;transform:translateY(-50%)!important;
+ z-index:12!important;
+ width:clamp(102px,26vw,170px)!important;
+ display:flex!important;flex-direction:column!important;
+ align-items:flex-end!important;justify-content:center!important;
+ gap:1px!important;
+ margin:0!important;padding:0!important;
+ text-align:right!important;
+ border:0!important;background:transparent!important;
+ box-shadow:none!important;pointer-events:none!important;
+ overflow:visible!important;
+}
+.game .shelf .jm63DropLabel{
+ font:900 clamp(9px,2.15vw,13px)/1.1 Georgia,serif!important;
+ letter-spacing:.03em!important;
+ color:#fff1c9!important;
+ text-shadow:0 1px 4px #301020,0 0 9px #ffce6c!important;
+ white-space:nowrap!important;
+}
+.game .shelf #jm63DropValue{
+ display:block!important;
+ font:900 clamp(18px,4.45vw,29px)/1.04 Georgia,serif!important;
+ color:#fff4a7!important;
+ text-shadow:0 1px 3px #41182d,0 0 11px #ffdb80a8!important;
+ white-space:nowrap!important;
+ font-variant-numeric:tabular-nums!important;
+}
+.game .shelf #jm63DropValue.jm63ScorePulse{
+ animation:jm63ScoreBump .42s cubic-bezier(.18,.8,.3,1) both!important;
+}
+@keyframes jm63ScoreBump{
+ 0%{transform:scale(.88);filter:brightness(1)}
+ 45%{transform:scale(1.13);filter:brightness(1.65)}
+ 100%{transform:scale(1);filter:brightness(1)}
+}
+/* Mantém a indicação MULTI mas deixa espaço à contagem à esquerda. */
+.game .shelf::before{
+ content:'MULTI'!important;
+ right:auto!important;left:50%!important;top:0!important;
+ transform:translate(-50%,-75%)!important;
+ font-size:clamp(8px,1.8vw,11px)!important;
+ letter-spacing:.05em!important;
+}
+/* O valor da linha mantém o estilo dourado grande, sem texto extra. */
+#stageWrap #jm56WinValues .jm56WinAmount.jm57CenterWin.jm63LineAmount{
+ display:block!important;
+ width:max-content!important;max-width:92%!important;
+ padding:0!important;margin:0!important;
+ border:0!important;border-radius:0!important;
+ background:transparent!important;box-shadow:none!important;
+ text-align:center!important;
+ font:900 clamp(37px,8.5vw,76px)/1.08 Georgia,serif!important;
+ color:#fff3b4!important;
+ text-shadow:0 2px 4px #41152e,0 0 14px #ffc76b,0 0 29px #ffeda895!important;
+ animation:jm57CenterPayFade var(--win-duration,3650ms) ease-in-out both!important;
+}
+@media(orientation:landscape) and (max-height:500px){
+ .game .shelf .jm63DropCounter{width:clamp(106px,15vw,175px)!important}
+ .game .shelf .jm63DropLabel{font-size:clamp(9px,2.6dvh,13px)!important}
+ .game .shelf #jm63DropValue{font-size:clamp(17px,5.4dvh,26px)!important}
+ #stageWrap #jm56WinValues .jm56WinAmount.jm57CenterWin.jm63LineAmount{
+  font-size:clamp(31px,9dvh,63px)!important;
+ }
+}
+@media(max-width:360px){
+ .game .shelf .jm63DropCounter{
+  width:98px!important;right:calc(100% + 6px)!important;
+ }
+ .game .shelf .jm63DropLabel{font-size:9px!important}
+ .game .shelf #jm63DropValue{font-size:18px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ .game .shelf #jm63DropValue.jm63ScorePulse{animation:none!important}
+ #stageWrap #jm56WinValues .jm56WinAmount.jm57CenterWin.jm63LineAmount{
+  animation:jm57ReducedPayFade var(--win-duration,3650ms) ease-in-out both!important;
+ }
+}
