@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V3.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V4.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -160,6 +160,8 @@
       }
     });
     sfx("burst",{level:Math.min(1.35,.72+total*.035)});
+    // Os raios do cenário reagem às combinações sem alterar os prémios.
+    window.TrovaoScene?.reactToWin();
   }
   function showPrizeFloat(amount){
     if(amount<=0)return;
@@ -322,6 +324,7 @@
     if(!bonusSpin&&scatterTriggered){
       render(state.grid,{scatterGlow:true});
       setOverlay("⚡ 15 RODADAS GRÁTIS ⚡");
+      window.TrovaoScene?.burst();
       sfx("scatter");await pause(state.turbo?350:1150);setOverlay("");
     }
     refresh();state.busy=false;refresh();
@@ -339,6 +342,7 @@
     state.bonus=true;state.freeLeft=15;state.bonusWon=0;state.bonusMult=0;
     el.free.parentElement.classList.add("bonus-active");
     setMsg("BÓNUS ATIVO • 15 RODADAS GRÁTIS");refresh();
+    window.TrovaoScene?.burst();
     await pause(state.turbo?180:400);
     // Executado automaticamente; o utilizador pode terminar a automatização.
     while(state.bonus&&state.freeLeft>0){
