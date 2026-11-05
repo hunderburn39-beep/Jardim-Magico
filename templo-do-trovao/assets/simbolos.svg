@@ -15,9 +15,45 @@
 <symbol id="amethyst" viewBox="0 0 100 100"><g filter="url(#shine)"><path d="M8 19 92 19 50 94Z" fill="url(#purple)" stroke="url(#gold)" stroke-width="6" stroke-linejoin="round"/><path d="M8 19 50 42 92 19M50 42 50 94" stroke="#ffdaff" stroke-width="2.5" fill="none" opacity=".7"/><path d="M19 24 80 24 50 41Z" fill="#ffe8fe" opacity=".26"/></g></symbol>
 <symbol id="amber" viewBox="0 0 100 100"><g filter="url(#shine)"><path d="M25 11 75 11 96 50 75 89 25 89 4 50Z" fill="url(#amber)" stroke="url(#gold)" stroke-width="6"/><path d="M25 11 33 29 67 29 75 11M4 50 33 29 67 29 96 50 67 71 33 71ZM25 89 33 71 67 71 75 89" fill="none" stroke="#fff2ba" stroke-width="2" opacity=".55"/><path d="M35 31 65 31 78 49 65 68 35 68 22 49Z" fill="#ffe16f" opacity=".18"/></g></symbol>
 <symbol id="crown" viewBox="0 0 100 100"><g filter="url(#shine)"><ellipse cx="50" cy="70" rx="38" ry="18" fill="url(#red)" stroke="url(#gold)" stroke-width="5"/><path d="M12 63 10 35 28 48 45 13 54 46 78 29 89 64Z" fill="url(#gold)" stroke="#ffecac" stroke-width="3"/><path d="M13 65 Q49 53 87 65 L84 80 Q51 97 16 80Z" fill="url(#red)" stroke="url(#gold)" stroke-width="4"/><path d="M45 59 50 42 55 59 50 70Z" fill="url(#green)" stroke="#ffe7aa" stroke-width="2"/><circle cx="30" cy="71" r="4" fill="#e7ddfa"/><circle cx="70" cy="71" r="4" fill="#e7ddfa"/></g></symbol>
-<symbol id="goblet" viewBox="0 0 100 100"><g filter="url(#shine)"><path d="M18 18 H82 L75 49 Q65 67 53 70 V81 H73 L78 91 H22 L27 81 H46 V70 Q30 65 24 49Z" fill="url(#gold)" stroke="#fff2a2" stroke-width="3"/><path d="M25 25 H76 L67 46 Q51 59 33 46Z" fill="url(#blue)" opacity=".85"/><path d="M18 29 Q5 25 13 48 Q18 58 31 55M82 29 Q95 25 87 48 Q82 58 69 55" fill="none" stroke="#eec65b" stroke-width="5"/><circle cx="51" cy="45" r="6" fill="#f4f9ff" opacity=".7"/></g></symbol>
+<symbol id="goblet" viewBox="0 0 100 100">
+ <g filter="url(#shine)">
+  <circle cx="50" cy="49" r="44" fill="url(#purple)" stroke="url(#gold)" stroke-width="5"/>
+  <circle cx="50" cy="49" r="36.5" fill="#281b71" stroke="#efd48d" stroke-width="1.5"/>
+  <path d="M20 20H80L74 43Q68 58 54 64V78H69L74 87H26L31 78H46V64Q32 58 26 43Z" fill="url(#gold)" stroke="#ffeeb0" stroke-width="3"/>
+  <path d="M30 26H70L64 41Q51 53 37 41Z" fill="url(#blue)"/>
+  <path d="M21 32Q9 27 15 45Q20 54 32 51M79 32Q91 27 85 45Q80 54 68 51" fill="none" stroke="#e8bb57" stroke-width="4.5"/>
+  <path d="M40 28L50 23 60 28" fill="none" stroke="#fff6c6" stroke-width="2"/>
+ </g></symbol>
 <symbol id="ring" viewBox="0 0 100 100"><g filter="url(#shine)"><ellipse cx="50" cy="61" rx="28" ry="31" fill="none" stroke="url(#gold)" stroke-width="14"/><ellipse cx="50" cy="60" rx="20" ry="23" fill="none" stroke="#fff0ac" stroke-width="2" opacity=".7"/><path d="M30 33 35 12 65 12 70 33 50 48Z" fill="url(#red)" stroke="url(#gold)" stroke-width="5"/><path d="M35 12 50 27 65 12 50 48Z" fill="none" stroke="#ffbeb7" opacity=".75" stroke-width="2"/></g></symbol>
-<symbol id="hourglass" viewBox="0 0 100 100"><g filter="url(#shine)"><path d="M21 9 H79 V19 Q77 38 59 50 Q78 61 79 82 V91 H21 V82 Q23 60 41 50 Q23 39 21 19Z" fill="url(#gold)" stroke="#fff4a4" stroke-width="4"/><path d="M30 18 H70 Q69 33 50 45 Q31 33 30 18ZM50 55 Q68 71 70 81 H30 Q32 69 50 55Z" fill="url(#blue)"/><path d="M50 46 V63" stroke="#fff6c1" stroke-width="3"/><path d="M15 9 H85 M15 91 H85" stroke="#f9d575" stroke-width="6" stroke-linecap="round"/></g></symbol>
-<symbol id="scatter" viewBox="0 0 100 100"><g filter="url(#shine)"><path d="M50 2 82 20 90 60 50 89 10 60 18 20Z" fill="url(#orb)" stroke="url(#gold)" stroke-width="5"/><path d="M61 13 38 51 H52 L39 79 73 40 H56Z" fill="#fff0a9" stroke="#ffce36" stroke-width="2"/><path d="M9 79 H91 V97 H9Z" fill="#4c1b69" stroke="url(#gold)" stroke-width="2"/><text x="50" y="92" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="900" fill="#ffe38d">SCATTER</text></g></symbol>
-<symbol id="mult" viewBox="0 0 100 100"><g filter="url(#shine)"><circle cx="50" cy="49" r="41" fill="url(#orb)" stroke="url(#gold)" stroke-width="6"/><path d="M10 42 Q0 22 4 10 Q14 29 29 28M90 42 Q100 22 96 10 Q86 29 71 28" fill="url(#gold)" stroke="#fff1af" stroke-width="2"/><circle cx="50" cy="49" r="30" fill="none" stroke="#ffedb9" stroke-width="2.5" opacity=".75"/></g></symbol>
+<symbol id="hourglass" viewBox="0 0 100 100">
+ <g filter="url(#shine)">
+  <circle cx="50" cy="49" r="44" fill="url(#green)" stroke="url(#gold)" stroke-width="5"/>
+  <circle cx="50" cy="49" r="37" fill="#12466a" stroke="#fbe59c" stroke-width="2" opacity=".75"/>
+  <path d="M26 12H74V24Q74 37 58 49 74 61 74 75V87H26V75Q26 61 42 49 26 37 26 24Z" fill="url(#gold)" stroke="#fff9bb" stroke-width="3.5"/>
+  <path d="M34 22H66Q64 35 50 43Q36 35 34 22Z" fill="url(#blue)"/>
+  <path d="M50 54Q63 65 65 78H35Q37 65 50 54Z" fill="url(#green)"/>
+  <path d="M50 44V66" stroke="#fcf4bf" stroke-width="2.5"/>
+  <path d="M22 14H78M22 85H78" stroke="url(#gold)" stroke-width="6" stroke-linecap="round"/>
+  <path d="M15 33Q20 42 14 56M85 33Q80 42 86 56" fill="none" stroke="#c7ffff" stroke-width="2" opacity=".65"/>
+ </g></symbol>
+<symbol id="scatter" viewBox="0 0 100 100">
+ <g filter="url(#shine)">
+  <path d="M9 4H91V96H9Z" fill="#3d295f" stroke="url(#gold)" stroke-width="5"/>
+  <path d="M15 10H85V77H15Z" fill="url(#blue)" opacity=".58"/>
+  <path d="M30 38Q22 19 40 12Q47 5 55 12Q74 12 72 36L82 54 72 77H27L20 60Z" fill="#e3e4fa" stroke="#a2acda" stroke-width="2.2"/>
+  <path d="M33 32Q35 18 47 19Q60 16 66 31L62 49 52 53 40 49Z" fill="#eac09f" stroke="#bf8d86" stroke-width="2"/>
+  <path d="M34 39Q43 32 51 39M54 39Q64 32 69 39" fill="none" stroke="#eafaff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M33 49Q24 63 36 75L47 80 51 62 57 79 72 72Q79 57 67 47Q57 55 51 51Q44 58 33 49Z" fill="#f5f3f2" stroke="#a4a5bb" stroke-width="2"/>
+  <path d="M27 25 33 9 41 22 51 5 59 22 71 9 75 27" fill="url(#gold)" stroke="#fff3af" stroke-width="2"/>
+  <path d="M21 61 10 36 24 45 20 28 35 51" fill="#d8fbff" opacity=".55"/>
+  <path d="M8 76H92V97H8Z" fill="#472054" stroke="#ffe69e" stroke-width="2"/>
+  <text x="50" y="91.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="900" fill="#fff0a9" stroke="#522754" stroke-width=".9" paint-order="stroke">SCATTER</text>
+ </g></symbol>
+<symbol id="mult" viewBox="0 0 100 100">
+ <g filter="url(#shine)">
+  <path d="M14 47Q1 34 6 10Q22 28 34 24M86 47Q99 34 94 10Q78 28 66 24" fill="url(#gold)" stroke="#fff3a9" stroke-width="2"/>
+  <circle cx="50" cy="49" r="40.5" fill="url(#orb)" stroke="url(#gold)" stroke-width="6.5"/>
+  <circle cx="50" cy="49" r="32" fill="none" stroke="#fff1b2" stroke-width="2" opacity=".85"/>
+  <path d="M24 31Q35 17 49 19" stroke="#fffbd6" stroke-width="4" stroke-linecap="round" fill="none" opacity=".8"/>
+ </g></symbol>
 </svg>
