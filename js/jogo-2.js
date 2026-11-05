@@ -646,6 +646,7 @@ function fillFreeSummary(node){
  node.querySelector('.jm52FreeCount').textContent=freeSummaryCount+' JOGADAS GRÁTIS';
  node.querySelector('.jm52FreeHint').textContent='CARREGA EM GIRO PARA CONTINUAR';
  node.classList.remove('jm54Calculating');node.classList.add('show');
+ window.JM_WINCELEBRATION_V60?.applySummary(node,freeBonusTotal,freeBet);
 }
 async function settleFreeSpins(){
  if(freeSettlementRunning||!freeSettlePending||freeSummaryPending||freeSpins>0||bonus||running)return;
@@ -1393,7 +1394,20 @@ async function doRound(){
   running=false;openFreeStart();
  }else if(!free&&maybeTriggerVault()){
   await vaultExplosion();running=false;await launchBonus(false,'cofre');
- }else{running=false;update();save();}
+ }else{
+  // V60: celebração só do valor REAL pago. Não mexe no sorteio nem nos jackpots.
+  if(!free&&winnings>0&&window.JM_WINCELEBRATION_V60){
+   await window.JM_WINCELEBRATION_V60.play({
+    value:winnings,bet:betAmount,turbo:mode==='turbo',
+    playSound:tier=>{
+     audioFX(tier.min>=50?'big':'win');
+     if(tier.min>=100)audioFX('schoolBell');
+     if(tier.min>=25)particlesAt(W/2,H/2,'big');
+    }
+   });
+  }
+  running=false;update();save();
+ }
  if(freeAutoRunning)scheduleFreeAuto();else maybeContinueAuto();
 }
 
@@ -1624,7 +1638,7 @@ async function bonusRespin(){
 }
 function bonusFinish(){
  if(!bonus||!bonus.finished||bonus.inMotion||bonus.wheelPending)return;
- const base=bonus.coinsTotal,factor=bonusFactorTotal();
+ const base=bonus.coinsTotal,factor=bonusFactorTotal(),bonusStake=bonus.stakeBet;
  const crystalJackpot=bonus.jackpot,wheelJackpot=bonus.wheelResult||null;
  const rawCash=base*factor,cap=bonus.stakeBet*MAX_WIN_MULT;
  const requestedCash=Math.min(rawCash,cap);
@@ -1637,7 +1651,7 @@ function bonusFinish(){
  log('prémio_hold_win',final,`Hold & Win: moedas ${money(base)} ×${factor}; pago cofre geral ${money(cashPaid)}; cristais ${crystalJackpot||'—'} ${money(crystalPaid)}; roleta ${wheelJackpot||'—'} ${money(wheelPaid)}; total ${money(final)} · ${bonus.endReason}`);
  modal('bonusModal',false);bonus=null;update();save();
  if(wheelJackpot){notice('🏆 JACKPOT '+wheelJackpot+': '+money(wheelPaid)+' · TOTAL '+money(final));}
- else showBig(final,base,factor,wheelJackpot||crystalJackpot,jackpotWin,capped,false);
+ else showBig(final,base,factor,wheelJackpot||crystalJackpot,jackpotWin,capped,false,bonusStake);
  if(freeSettlePending&&!$('bigWin').classList.contains('show'))showFreeSummary();
  else if(freeAutoRunning)scheduleFreeAuto();
  else if(freeSpins>0&&!freeStartPending&&!freeSummaryPending)openFreeStart();
@@ -1647,9 +1661,10 @@ function refreshBuyOptions(){const costHold=BETS[betIdx]*100,costFree=BETS[betId
 function openBonusPurchase(){if(!session||running||bonus)return;refreshBuyOptions();modal('buyModal',true);soundStart()}
 async function buyFreeSpins(){if(!session||running||bonus||freeSpins||freeSummaryPending)return false;const bet=BETS[betIdx],cost=bet*20;if(balance<cost)return false;balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;freeBonusTotal=0;freeSummaryCount=0;freeSummaryPending=false;freeBaseTotal=0;freeMultiplierBalls=[];freeSettlePending=false;freeBet=bet;freeSpins+=15;log('compra_freespins',-cost,'15 free spins a 20× aposta '+money(bet));modal('buyModal',false);notice('🌟 Compraste 15 FREE SPINS por '+money(cost));running=true;update();soundStart();await showFeatureIntro('free');running=false;openFreeStart();return true;}
 
-function showBig(final,base,factor,jp,jackpotWin,capped=null,fromWheel=false){
+function showBig(final,base,factor,jp,jackpotWin,capped=null,fromWheel=false,stake=BETS[betIdx]){
  $('bigFactor').textContent=fromWheel?'ROULETA 32 CASAS • '+jp:jp?'4 CRISTAIS • '+jp:'HOLD & WIN • 3 TENTATIVAS';
- $('bigTitle').textContent=jp?'JACKPOT '+jp+'!':final>=BETS[betIdx]*100?'BIG WIN!':'TOTAL HOLD & WIN';
+ const tier=window.JM_WINCELEBRATION_V60?.tierFor(final,stake);
+ $('bigTitle').textContent=jp?'JACKPOT '+jp+'!':tier?tier.label+'!':'TOTAL HOLD & WIN';
  $('bigAmount').textContent=money(final);
  $('bigMath').textContent=`${money(base)} × ${factor}${jp?' + '+jp+' '+money(jackpotWin):''} = ${money(base*factor+jackpotWin)}${capped?' • PAGO '+money(final)+(capped==='cofre'?' (limite do cofre)':' (limite 5000×)'):''}`;
  $('bigWin').classList.add('show');audioFX('big');if(final>0)audioFX('schoolBell');particlesAt(W/2,H/2,'big');
