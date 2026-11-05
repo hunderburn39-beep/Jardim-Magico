@@ -1,0 +1,34 @@
+/* V67 — indicação pequena e legível no porquinho, contador decorativo. */
+.game .vaultMystery .jm52PigValue{
+ display:flex!important;flex-direction:column!important;
+ align-items:center!important;justify-content:center!important;
+ gap:1px!important;
+ left:50%!important;bottom:-2px!important;
+ transform:translateX(-50%)!important;
+ padding:2px 7px!important;
+ background:rgba(39,13,57,.89)!important;
+ border:1px solid rgba(255,224,147,.38)!important;
+ border-radius:7px!important;
+ white-space:nowrap!important;text-align:center!important;
+ max-width:calc(100% + 34px)!important;min-width:66px!important;
+ box-shadow:0 2px 7px rgba(14,4,19,.28)!important;
+}
+.game .vaultMystery .jm67PigCaption{
+ display:block!important;
+ font:900 clamp(8px,1.65vw,10px)/1 Georgia,serif!important;
+ color:#ffe8b3!important;
+ letter-spacing:.045em!important;
+ white-space:nowrap!important;
+}
+.game .vaultMystery .jm67PigTotal{
+ display:block!important;
+ font:900 clamp(11px,2.25vw,15px)/1.05 Georgia,serif!important;
+ color:#fff7c9!important;
+ text-shadow:0 0 8px rgba(255,212,110,.65)!important;
+ white-space:nowrap!important;
+ font-variant-numeric:tabular-nums!important;
+}
+@media(max-width:390px){
+ .game .vaultMystery .jm52PigValue{padding:2px 4px!important}
+ .game .vaultMystery .jm67PigTotal{font-size:11px!important}
+}
