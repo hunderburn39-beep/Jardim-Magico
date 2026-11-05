@@ -1,4 +1,4 @@
-# Portões do Trovão — V5.0
+# Portões do Trovão — V6.0
 
 Jogo independente de demonstração com créditos virtuais, inspirado no formato de slots de queda do Olimpo. **Não afiliado, licenciado ou certificado pela Pragmatic Play.** Sem depósitos, levantamentos ou prémios em dinheiro real.
 
@@ -15,11 +15,13 @@ Funciona em desktop e telemóvel, na horizontal (16:9) ou vertical. O botão ⛶
 - `css/referencia-v2.css`: molduras douradas, botões e tabela ilustrada.
 - `css/efeitos-v3.css`: luz nas pedras, explosões, estilhaços, iluminação de símbolos vencedores e animações de queda.
 - `css/fundo-v4.css`: grelha com fundo transparente, nuvens dinâmicas, neblina, feixes de luz, moldura, animação do logótipo e relâmpagos.
+- `css/animacoes-v6.css`: animação distinta dos 11 símbolos, prémios de linha com desvanecimento lento e painel do histórico.
 - `css/graficos-v5.css`: atlas 3D WebP, cores/cristais, moldura 3D, transparência e destaque de prémios. É aqui que deves ajustar tamanho e iluminação dos símbolos.
 - `js/jogo.js`: geração dos símbolos, probabilidades, pagamentos, motor de sequências, efeitos e auto-spins.
 - `js/audio.js`: motor Web Audio, sons sintetizados de rolagem, queda de peças, explosões, multiplicadores, SCATTER e grandes prémios; não requer ficheiros externos.
 - `js/fundo-v4.js`: efeitos atmosféricos, partículas luminosas, intervalos de relâmpagos e reação visual aos prémios. Respeita preferências de menos movimento.
 - `js/audio-v5.js`: motor com **32 vozes simultâneas**, efeitos estéreo de alta qualidade, 11 cues, compressor e volume por evento. O `js/audio.js` anterior serve como alternativa automática.
+- `js/historico-v6.js`: histórico local das últimas 24 jogadas com contagem das pedras novas e prémios por queda; guardado apenas durante a sessão.
 - `assets/simbolos.svg`: sprite de todos os símbolos, SCATTER e multiplicador.
 - `assets/logotipo-v4.svg`: logótipo do jogo em SVG dourado.
 - `assets/atlas-3d-v5.webp`: **11 peças 3D num só atlas** (5×3); evita os símbolos vazios do antigo SVG.
@@ -79,3 +81,11 @@ As constantes `WEIGHTS`, `MULT_WEIGHTS`, `BETS`, `PAY_TABLE` e os limiares de `n
 - [Página oficial Gates of Olympus 1000](https://www.pragmaticplay.com/pt/jogos/gates-of-olympus-1000/)
 
 Todos os gráficos desta pasta são novos e não reutilizam imagens nem logótipos comerciais apresentados como referência.
+
+## Novidades da V6 — quedas, histórico e som
+
+- O valor de cada sequência premiada mantém-se visível aproximadamente 2,35 segundos no modo normal (1,25 segundo em turbo), com detalhe das pedras e dos pagamentos.
+- Os 11 símbolos (5 gemas, cálice, anel, ampulheta, coroa, SCATTER e multiplicador) têm movimentos e reflexos próprios com CSS, respeitando a preferência por movimento reduzido.
+- O botão de histórico no topo abre um painel que mostra por rodada a grelha inicial, cada queda posterior, as pedras novas por tipo e quantidade, e o pagamento de cada combinação (8+). Registos de 24 rodadas durante a sessão, com botão limpar.
+- A rotação conserva o som MP3 original a 320 kbps / 48 kHz. O efeito de aterragem, sintetizado pelo Web Audio em 32-bit float, junta impactos graves e metálicos por coluna sincronizados com o pousar das peças. São 32 vozes simultâneas no motor PCM/MP3. **128 kbps seria pior do que 320 kbps; 128-bit PCM não é um formato de reprodução de áudio usual nem necessário.**
+- Mantém-se um jogo de demonstração, com créditos virtuais e RTP não certificado.
