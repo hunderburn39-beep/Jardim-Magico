@@ -1,0 +1,105 @@
+/* V52 — animações de roleta manual, prémio suspenso, free spins e 6 moedas.
+   Tudo visual e responsivo; cálculos permanecem em jogo-2.js. */
+
+/* Botão GIRO dentro da roleta: o toque é obrigatório para PARAR e CONTINUAR. */
+#jm49WheelModal .jm52WheelSpin{
+ display:block;flex-shrink:0;
+ appearance:none;border:3px solid #ffe8a6;border-radius:999px;
+ min-width:min(79vw,262px);min-height:clamp(42px,7dvh,62px);
+ padding:7px 24px;margin:6px auto 2px;cursor:pointer;
+ color:#ffefbc;
+ font:900 clamp(17px,3.6vw,24px)/1.1 Georgia,serif;
+ text-shadow:0 2px 3px #143820;
+ background:radial-gradient(ellipse at 42% 20%,#95e65b,#319e48 48%,#14562a 100%);
+ box-shadow:inset 0 3px 6px #ffffffa0,inset 0 -6px 8px #093d2b,0 0 17px #adff729e,0 4px 0 #9a602e;
+ transition:filter .15s,transform .15s;
+}
+#jm49WheelModal .jm52WheelSpin:active{transform:scale(.965);filter:brightness(1.18)}
+#jm49WheelModal .jm52WheelSpin:disabled{opacity:.70;filter:grayscale(.3);cursor:default;}
+#jm49WheelModal .jm49WheelPrize{transition:font-size .3s;min-height:clamp(22px,3.9dvh,42px)}
+#jm49WheelModal .jm49WheelPrize.jm52WheelSuspense{
+ font:900 clamp(34px,9vw,62px)/1.07 Georgia,serif!important;
+ color:#fff5bd!important;
+ text-shadow:0 2px 6px #52233c,0 0 15px #ffc56c,0 0 24px #fff2a999;
+ animation:jm52Suspense 1.7s ease-in-out infinite!important;
+ margin:clamp(2px,1.1dvh,11px) auto!important;
+ white-space:nowrap;
+}
+@keyframes jm52Suspense{
+ 0%,100%{transform:scale(1);filter:brightness(1);opacity:.98}
+ 50%{transform:scale(1.10);filter:brightness(1.48);opacity:1}
+}
+/* Sem caixas: no final das free spins só ficam texto e valor sobre os tambores. */
+#jm52FreeSummary{
+ position:absolute;inset:0;z-index:30;
+ display:flex;align-items:center;justify-content:center;flex-direction:column;
+ background:radial-gradient(ellipse at center,#2b0a42e0 0%,#201238ae 64%,#150d26b8 100%);
+ opacity:0;visibility:hidden;pointer-events:none;
+ transform:scale(.92);
+ transition:opacity .36s ease,transform .36s ease,visibility .36s;
+ text-align:center;
+}
+#jm52FreeSummary.show{opacity:1;visibility:visible;transform:scale(1)}
+#jm52FreeSummary .jm52FreeHeading{
+ font:900 clamp(19px,5.5vw,46px)/1.2 Georgia,serif;
+ color:#ffdfa8;text-shadow:0 2px 2px #170c26,0 0 12px #f5ba73;letter-spacing:.08em;
+}
+#jm52FreeSummary .jm52FreeValue{
+ font:900 clamp(43px,12vw,90px)/1.05 Georgia,serif;
+ color:#fff5bc;text-shadow:0 2px 4px #420d43,0 0 19px #ffc868,0 0 36px #f4b568;
+ animation:jm52Suspense 1.6s ease-in-out infinite;
+ margin:clamp(11px,2.8dvh,23px) 0;
+}
+#jm52FreeSummary .jm52FreeCount{font:800 clamp(16px,4vw,26px)/1.2 Georgia,serif;color:#ffe5ad}
+#jm52FreeSummary .jm52FreeHint{
+ margin-top:clamp(13px,3.5dvh,24px);font:900 clamp(14px,3.6vw,22px)/1.2 Georgia,serif;
+ color:#baf6b1;text-shadow:0 0 12px #89ed79;
+ animation:jm52Hint 1.3s ease-in-out infinite alternate;
+}
+@keyframes jm52Hint{from{opacity:.62}to{opacity:1}}
+
+/* Chuva de moedas: 5 colunas, muitas moedas em diferentes alturas e velocidades. */
+#stageWrap>.jm52CoinRain{position:absolute;inset:0;z-index:35;overflow:hidden;pointer-events:none}
+#stageWrap>.jm52CoinRain .jm52RainCoin{
+ position:absolute;top:-24%;
+ display:grid;place-items:center;aspect-ratio:1;
+ width:clamp(22px,5.7vw,41px);border-radius:50%;border:3px solid #fff2ab;
+ background:radial-gradient(circle at 32% 26%,#fffddc,#ffe49c 27%,#e6a83c 58%,#9b5c25 82%,#6a3b1d 100%);
+ box-shadow:inset 0 2px 5px #fff6c9ad,inset 0 -3px 5px #64341a,0 0 10px #f8c45caa;
+ color:#96591c;font:900 clamp(13px,3.2vw,23px)/1 Georgia,serif;
+ text-shadow:0 1px #fff7c2;
+ animation:jm52CoinFall var(--fall-time,1.4s) cubic-bezier(.21,.42,.72,.89) var(--fall-delay,0s) both;
+ transform:translateY(0) scale(var(--fall-scale,1));
+ will-change:transform,opacity;
+}
+@keyframes jm52CoinFall{
+ 0%{transform:translate(0,-12%) rotate(0) scale(var(--fall-scale,1));opacity:0}
+ 12%{opacity:1}
+ 87%{opacity:1}
+ 100%{transform:translate(var(--fall-shift,0px),670px) rotate(var(--fall-rotate,560deg)) scale(var(--fall-scale,1));opacity:0}
+}
+
+/* O porco mostra apenas o valor decorativo recolhido no ecrã. */
+.game .vaultMystery{position:relative}
+.game .vaultMystery .jm52PigValue{
+ position:absolute;bottom:1px;left:50%;transform:translateX(-50%);
+ z-index:6;border-radius:7px;padding:0 3px;
+ color:#ffebad;background:#341446d9;
+ font:900 clamp(7px,1.65vw,10px)/1.1 Georgia,serif;
+ text-shadow:0 1px 2px #1d0b31;white-space:nowrap;
+ pointer-events:none;
+}
+.game .vaultMystery .vaultFace img{max-height:75px}
+.game .stageWrap #jmScatterOrbOverlay{z-index:5!important;filter:drop-shadow(0 0 5px #76f3ff80);}
+
+/* Respeitar motion reduced e manter área tátil sempre acessível */
+@media(prefers-reduced-motion:reduce){
+ #jm52FreeSummary .jm52FreeValue,#jm52FreeSummary .jm52FreeHint,
+ #jm49WheelModal .jm49WheelPrize.jm52WheelSuspense{animation:none!important}
+ #stageWrap>.jm52CoinRain .jm52RainCoin{animation-duration:.1s!important;animation-delay:0s!important}
+}
+@media(orientation:landscape) and (max-height:550px){
+ #jm49WheelModal .jm52WheelSpin{min-width:145px;min-height:34px;padding:4px 8px;font-size:14px}
+ #jm49WheelModal .jm49WheelPrize.jm52WheelSuspense{font-size:clamp(24px,6dvh,42px)!important}
+ #jm52FreeSummary .jm52FreeValue{font-size:clamp(30px,12dvh,63px)}
+}
