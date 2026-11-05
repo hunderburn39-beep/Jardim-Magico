@@ -1,4 +1,4 @@
-# Portões do Trovão — V7.0
+# Portões do Trovão — V8.0
 
 Jogo independente de demonstração com créditos virtuais, inspirado no formato de slots de queda do Olimpo. **Não afiliado, licenciado ou certificado pela Pragmatic Play.** Sem depósitos, levantamentos ou prémios em dinheiro real.
 
@@ -96,3 +96,11 @@ Todos os gráficos desta pasta são novos e não reutilizam imagens nem logótip
 - A ligação ao motor está isolada em `js/audio-v7.js`. Os sons de queda, aterragem, multiplicadores e bónus continuam a utilizar o motor anterior.
 - Premir continuamente GIRAR durante **1 segundo** abre a seleção de 10, 25, 50 ou 100 rodadas automáticas.
 - A janela usa `css/autospins-v7.css`: estilo roxo e dourado, fundo quase transparente e efeito de vidro sobre a máquina.
+
+## V8 — ordem do som e quedas acolchoadas
+
+- O som personalizado de GIRAR do utilizador permanece intacto no MP3 original; a reprodução salta cerca de 0,495 segundo de silêncio inicial para garantir que a gravação se ouve **antes** das novas peças entrarem na grelha.
+- Cada peça inicia a sua própria queda, com atraso sequencial, e toca o seu próprio som de impacto precisamente aos 83% da animação. A grelha normal tem até 30 impactos individuais por giro, além dos novos símbolos produzidos pelas cascatas.
+- `js/leather-v8.js` gera 7 pequenas variações de um som grave e abafado, parecido com contacto em almofada de couro, sem estalidos metálicos. Está isolado do áudio do botão e do motor de prémios.
+- `css/queda-couro-v8.css` controla a deformação macia e o ressalto reduzido no contacto, sem tocar na lógica de pagamento.
+- O tempo total do giro adapta-se às quedas individuais e à opção Turbo; não se apagam animações antes de as peças pousarem.
