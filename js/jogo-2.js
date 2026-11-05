@@ -718,9 +718,11 @@ function animationPosition(x,y,t){
  }
  return {cur:grid[x][y],y:y*CH};
 }
-/* V48: esfera autónoma do SCATTER. A moldura, imagem e texto ficam imóveis.
-   Este Canvas fica acima do Pixi e cobre só o disco superior; não altera símbolos nem prémios. */
+/* SCATTER: a palavra e a moldura nunca giram.
+   Só a esfera azul no topo roda em 3D, com brilho de contacto (touch).
+   A camada acompanha o símbolo no tambor e nas quedas, sem interferir nas jogadas. */
 let jmScatterCanvas=null,jmScatterCtx=null;
+const jmScatterTouches=new Map();
 function jmPrepareScatterCanvas(){
  if(jmScatterCtx)return jmScatterCtx;
  const stage=$('stageWrap');
@@ -731,53 +733,94 @@ function jmPrepareScatterCanvas(){
  jmScatterCanvas.setAttribute('aria-hidden','true');
  stage.append(jmScatterCanvas);
  jmScatterCtx=jmScatterCanvas.getContext('2d');
+ // Um toque na própria figura dá duas rotações rápidas à esfera.
+ // Não cancela gestos do utilizador nem altera os resultados do jogo.
+ stage.addEventListener('pointerdown',ev=>{
+  if(running||cascades.some(Boolean)||transitions.some(Boolean))return;
+  const box=stage.getBoundingClientRect();
+  if(!box.width||!box.height)return;
+  const x=Math.floor((ev.clientX-box.left)*W/box.width/CW);
+  const y=Math.floor((ev.clientY-box.top)*H/box.height/CH);
+  if(x<0||x>=5||y<0||y>=3||grid[x]?.[y]?.id!=='scatter')return;
+  jmScatterTouches.set(x+':'+y,performance.now());
+ },{passive:true});
  return jmScatterCtx;
 }
 function jmPaintScatterMoon(c,x,y,t){
  if(JM_REDUCED)t=0;
- const cx=(x+.5)*CW,cy=y+CH*.31,r=Math.min(CW,CH)*.155;
- const turn=t*.00081;
+ const row=Math.round(y/CH),key=x+':'+row;
+ const since=t-(jmScatterTouches.get(key)??-1e9);
+ const touch=since>=0&&since<1100;
+ const u=touch?Math.min(1,since/1100):0;
+ const burst=touch?(1-u)*(1-u):0;
+ const extra=touch?Math.PI*4*(1-Math.pow(1-u,3)):0;
+ const phase=t*.00185+x*.37+extra;
+ const r=Math.min(CW,CH)*.155;
+ const cx=(x+.5)*CW+(!JM_REDUCED?Math.sin(t*.0013+x)*1.6:0);
+ const cy=y+CH*.31+(!JM_REDUCED?Math.sin(t*.002+x*.72)*1.8:0)-burst*2.2;
  c.save();c.translate(cx,cy);
- c.shadowColor='#8ef8fa';c.shadowBlur=10;
- c.beginPath();c.arc(0,0,r,0,2*Math.PI);c.fillStyle='#0a3857';c.fill();c.shadowBlur=0;
- c.beginPath();c.arc(0,0,r,0,2*Math.PI);c.clip();
- const halo=c.createRadialGradient(-r*.25,-r*.31,1,0,0,r*1.25);
- halo.addColorStop(0,'#e6ffff');halo.addColorStop(.15,'#85f9f4');halo.addColorStop(.43,'#1cc4d1');halo.addColorStop(.70,'#1663a5');halo.addColorStop(1,'#0d244b');
- c.fillStyle=halo;c.fillRect(-r,-r,r*2,r*2);
- c.rotate(turn);
- c.strokeStyle='#effffa';c.lineWidth=r*.11;c.lineCap='round';c.shadowColor='#8dfcf3';c.shadowBlur=5;
- c.beginPath();c.ellipse(0,0,r*.71,r*.36,.32,-.6,Math.PI*1.5);c.stroke();
- c.strokeStyle='#2ae9fb';c.lineWidth=r*.19;c.beginPath();c.ellipse(0,0,r*.67,r*.43,-.45,.1,Math.PI*1.9);c.stroke();
- c.strokeStyle='#0a4771';c.lineWidth=r*.13;c.beginPath();c.ellipse(r*.05,r*.13,r*.36,r*.50,.6,-.9,Math.PI*1.3);c.stroke();
- c.shadowBlur=0;
- for(let j=0;j<6;j++){
-  const a=j*Math.PI/3,rr=r*(.25+(j%3)*.22);
-  c.fillStyle=j%2?'#ffffff':'#b6fbfa';
-  c.beginPath();c.arc(Math.cos(a)*rr,Math.sin(a)*rr,Math.max(1,r*.065),0,Math.PI*2);c.fill();
+ const glow=c.createRadialGradient(0,0,r*.38,0,0,r*(1.75+burst*.33));
+ glow.addColorStop(0,'rgba(170,255,249,.29)');
+ glow.addColorStop(.55,'rgba(42,215,252,.18)');
+ glow.addColorStop(1,'rgba(36,203,249,0)');
+ c.fillStyle=glow;c.beginPath();c.arc(0,0,r*(1.75+burst*.33),0,2*Math.PI);c.fill();
+ // A superfície e os reflexos obedecem a uma fonte de luz fixa.
+ c.shadowColor='#7cf8ff';c.shadowBlur=8+burst*15;
+ const shell=c.createRadialGradient(-r*.34,-r*.38,r*.05,r*.07,r*.10,r*1.15);
+ shell.addColorStop(0,'#f0ffff');shell.addColorStop(.18,'#9cfdf6');
+ shell.addColorStop(.43,'#32cddd');shell.addColorStop(.72,'#1775b5');shell.addColorStop(1,'#102a61');
+ c.fillStyle=shell;c.beginPath();c.arc(0,0,r,0,2*Math.PI);c.fill();c.shadowBlur=0;
+ c.save();c.beginPath();c.arc(0,0,r*.985,0,Math.PI*2);c.clip();
+ // Meridianos que se deslocam em perspectiva: rotação da bola, não da palavra.
+ for(let k=0;k<4;k++){
+  const a=phase+k*Math.PI/2,front=Math.cos(a);
+  const xx=Math.sin(a)*r*.74;
+  const rx=Math.max(r*.055,Math.abs(front)*r*.30);
+  c.strokeStyle=front>0?'rgba(212,255,252,.84)':'rgba(17,87,145,.46)';
+  c.lineWidth=front>0?r*.095:r*.12;
+  c.beginPath();c.ellipse(xx,0,rx,r*.91,Math.sin(a)*.08,0,2*Math.PI);c.stroke();
  }
+ const latitude=Math.sin(phase*.7)*r*.10;
+ c.strokeStyle='rgba(202,255,250,.45)';c.lineWidth=r*.075;
+ c.beginPath();c.ellipse(0,latitude,r*.94,r*.31,.08,0,2*Math.PI);c.stroke();
+ const glossy=c.createRadialGradient(-r*.39,-r*.49,1,-r*.20,-r*.22,r*.83);
+ glossy.addColorStop(0,'rgba(255,255,255,.71)');
+ glossy.addColorStop(.37,'rgba(226,255,255,.23)');
+ glossy.addColorStop(1,'rgba(255,255,255,0)');
+ c.fillStyle=glossy;c.fillRect(-r,-r,r*2,r*2);
  c.restore();
- c.save();c.translate(cx,cy);c.strokeStyle='#cefff2';c.lineWidth=r*.11;
- c.shadowColor='#d5ffff';c.shadowBlur=8;
+ c.lineWidth=r*.095;c.strokeStyle='rgba(226,255,251,.86)';
  c.beginPath();c.arc(0,0,r,0,Math.PI*2);c.stroke();
+ if(burst>0){
+  c.globalAlpha=burst*.85;c.strokeStyle='#faffc8';c.lineWidth=2.5;
+  c.beginPath();c.arc(0,0,r*(1.12+u*.74),0,Math.PI*2);c.stroke();
+  for(let i=0;i<6;i++){
+   const a=i*Math.PI/3+phase*.25,d=r*(1.35+u*.75);
+   c.fillStyle=i%2?'#fffad0':'#b5fff8';
+   c.beginPath();c.arc(Math.cos(a)*d,Math.sin(a)*d,Math.max(1,r*.075*(1-u)),0,Math.PI*2);c.fill();
+  }
+ }
  c.restore();
 }
 function jmRenderScatterMoons(t){
  const c=jmPrepareScatterCanvas();if(!c)return;
  c.clearRect(0,0,W,H);
  for(let x=0;x<5;x++){
+  c.save();c.beginPath();c.rect(x*CW,0,CW,H);c.clip();
   if(cascades[x]){
    for(const part of cascades[x].items){
     if(part.s?.id!=='scatter'||t<part.start)continue;
     const q=Math.max(0,Math.min(1,(t-part.start)/part.duration)),ease=1-(1-q)**3;
     jmPaintScatterMoon(c,x,part.fromY+(part.toY-part.fromY)*ease,t);
    }
-   continue;
+  }else{
+   for(let y=0;y<3;y++){
+    const p=animationPosition(x,y,t);
+    if(p.cur?.id==='scatter')jmPaintScatterMoon(c,x,p.y,t);
+    if(p.old?.id==='scatter')jmPaintScatterMoon(c,x,p.oldY,t);
+   }
   }
-  for(let y=0;y<3;y++){
-   const p=animationPosition(x,y,t);
-   if(p.cur?.id==='scatter')jmPaintScatterMoon(c,x,p.y,t);
-   if(p.old?.id==='scatter')jmPaintScatterMoon(c,x,p.oldY,t);
-  }
+  c.restore();
  }
 }
 
