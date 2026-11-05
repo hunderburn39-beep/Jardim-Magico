@@ -12,6 +12,14 @@
   const MULT_WEIGHTS = [28,21,15,11,8,6,4,3,2,1.5,1,.45,.18,.045,.012];
   const BETS = [.20,.40,.60,.80,1,1.50,2,3,5,10,20];
   const MAX_WIN_X = 5000;
+  // Tabela da versão clássica (expressa em múltiplos da aposta).
+  // Índices: 8–9, 10–11, 12–30 símbolos iguais.
+  const PAY_TABLE={
+    crown:[10,25,50],hourglass:[2.5,10,25],ring:[2,5,15],
+    goblet:[1.5,2,12],ruby:[1,1.5,10],amethyst:[.8,1.2,8],
+    amber:[.5,1,5],emerald:[.4,.9,4],sapphire:[.25,.75,2]
+  };
+  function scatterMultiplier(n){return n>=6?100:n===5?5:n===4?3:0}
   const INITIAL_CREDITS = 1000;
   let nextId = 1;
   const $ = id => document.getElementById(id);
@@ -49,7 +57,7 @@
   function newSymbol(){
     const p=rand();
     // Frequências específicas desta demonstração, não da versão comercial.
-    if(p<(state.bonus?.029:.032))return {id:nextId++,kind:"scatter"};
+    if(p<(state.bonus?.029:.021))return {id:nextId++,kind:"scatter"};
     if(p<(state.bonus?.063:.055))return {id:nextId++,kind:"mult",value:weighted(MULT_VALUES,MULT_WEIGHTS)};
     return {id:nextId++,kind:weighted(SYMBOLS,WEIGHTS)};
   }
@@ -62,9 +70,7 @@
     for(const symbol of SYMBOLS){
       const n=count[symbol];
       if(n<8)continue;
-      const classPay={crown:.82,ring:.76,goblet:.67,hourglass:.59,ruby:.52,sapphire:.43,emerald:.37,amethyst:.32,amber:.29}[symbol];
-      const tier=n>=15?15:n>=12?6:n>=10?2.5:1;
-      const amount=currentBet()*classPay*tier;
+      const amount=currentBet()*PAY_TABLE[symbol][n>=12?2:n>=10?1:0];
       pay+=amount;result.push({symbol,count:n,amount});
     }
     return {result,pay,matched:new Set(result.map(r=>r.symbol))};
@@ -157,14 +163,14 @@
   }
   function closeModal(){modalOpen=false;el.modal.classList.add("hidden")}
   function showRules(){
-    const rows=SYMBOLS.map(s=>{const factors={crown:.82,ring:.76,goblet:.67,hourglass:.59,ruby:.52,sapphire:.43,emerald:.37,amethyst:.32,amber:.29};let a=factors[s];return "<tr><td>"+LABELS[s]+"</td><td>"+a.toFixed(2).replace(".",",")+"×</td><td>"+(a*2.5).toFixed(2).replace(".",",")+"×</td><td>"+(a*6).toFixed(2).replace(".",",")+"×</td></tr>"}).join("");
+    const rows=SYMBOLS.map(s=>"<tr><td>"+LABELS[s]+"</td>"+PAY_TABLE[s].map(v=>"<td>"+String(v).replace(".",",")+"×</td>").join("")+"</tr>").join("");
     openModal("REGRAS E PAGAMENTOS",
       "<p><b>30 posições, 6 colunas × 5 linhas.</b> 8 ou mais símbolos iguais pagam em qualquer lugar do ecrã. Os símbolos premiados desaparecem e os restantes caem, criando novas combinações.</p>"+
-      "<p><b>SCATTER:</b> 4 ou mais na mesma grelha ativam 15 rodadas grátis; no bónus, 3 ou mais oferecem +5 rodadas.</p>"+
+      "<p><b>SCATTER:</b> 4, 5 ou 6+ pagam 3×, 5× ou 100× a aposta. 4 ou mais numa grelha ativam 15 rodadas grátis; no bónus, 3 ou mais oferecem +5 rodadas.</p>"+
       "<p><b>MULTIPLICADORES:</b> esferas de 2× a 500× são somadas numa sequência vencedora. No bónus, quando surgem em rodada premiada, somam-se ao multiplicador acumulado.</p>"+
       "<p><b>Compra de bónus:</b> 100× a aposta. Prémio máximo por ciclo: 5 000× a aposta.</p>"+
-      "<table><thead><tr><th>Símbolo</th><th>8–9</th><th>10–11</th><th>12–14</th></tr></thead><tbody>"+rows+"</tbody></table>"+
-      "<p class='note'>Valores são multiplicadores da aposta. Com 15 ou mais símbolos paga-se 15× o valor da coluna 8–9. Tabela e probabilidades originais desta demonstração; não são a tabela oficial da Pragmatic Play. RTP não calculado ou certificado. Sem dinheiro real.</p>",
+      "<table><thead><tr><th>Símbolo</th><th>8–9</th><th>10–11</th><th>12–30</th></tr></thead><tbody>"+rows+"</tbody></table>"+
+      "<p class='note'>Valores são multiplicadores da aposta. Tabela da versão clássica expressa por aposta; probabilidades e resultados desta demonstração são próprios. RTP não calculado ou certificado. Sem dinheiro real.</p>",
       [{text:"ENTENDI",secondary:true}]);
   }
   async function showBig(amount,label){
@@ -192,11 +198,16 @@
     setMsg(bonusSpin?"RODADA GRÁTIS • PODER ACUMULADO":"OS DEUSES ESTÃO A GIRAR...");
     refresh();beep(370,.06);
     await pause(state.turbo?95:410);
-    let totalBase=0,spinMult=0,steps=0,scatterTriggered=false,retrigger=false;
+    let totalBase=0,spinMult=0,steps=0,scatterTriggered=false,retrigger=false,scatterAward=0,maxScatterPaid=0;
     const countedMultipliers=new Set();
     for(;;){
-      if(countScatter(state.grid)>=(bonusSpin?3:4)){
+      const scatterCount=countScatter(state.grid);
+      if(scatterCount>=(bonusSpin?3:4)){
         if(bonusSpin)retrigger=true;else scatterTriggered=true;
+      }
+      if(scatterCount>=4 && scatterCount>maxScatterPaid){
+        scatterAward+=bet*(scatterMultiplier(scatterCount)-scatterMultiplier(maxScatterPaid));
+        maxScatterPaid=scatterCount;
       }
       for(const s of state.grid){
         if(s.kind==="mult"&&!countedMultipliers.has(s.id)){
@@ -220,17 +231,17 @@
       await pause(state.turbo?80:390);
     }
     let total=totalBase;
-    if(totalBase>0){
+    if(totalBase>0||scatterAward>0){
       if(bonusSpin){
-        if(spinMult>0)state.bonusMult+=spinMult;
+        if(totalBase>0&&spinMult>0)state.bonusMult+=spinMult;
         // O acumulado só potencia rodadas com novo multiplicador vencedor.
-        total=totalBase*(spinMult>0?Math.max(1,state.bonusMult):1);
+        total=totalBase*(totalBase>0&&spinMult>0?Math.max(1,state.bonusMult):1)+scatterAward;
         const remaining=Math.max(0,MAX_WIN_X*bet-state.bonusWon);
         total=Math.min(total,remaining);
         state.bonusWon=Math.round((state.bonusWon+total)*100)/100;
       }else{
-        state.visibleMult=spinMult>0?spinMult:1;
-        total=totalBase*state.visibleMult;
+        state.visibleMult=totalBase>0&&spinMult>0?spinMult:1;
+        total=totalBase*state.visibleMult+scatterAward;
         total=Math.min(MAX_WIN_X*bet,total);
         state.currentWin=Math.round(total*100)/100;
         state.balance=Math.round((state.balance+state.currentWin)*100)/100;
