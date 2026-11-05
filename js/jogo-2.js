@@ -1325,6 +1325,7 @@ function bonusFinish(){
  else showBig(final,base,factor,wheelJackpot||crystalJackpot,jackpotWin,capped,false);
  if(freeAutoRunning)scheduleFreeAuto();
  else if(freeSpins>0&&!freeStartPending&&!freeSummaryPending)openFreeStart();
+ else if(autoSpinsRemaining>0)maybeContinueAuto();
 }
 function refreshBuyOptions(){const costHold=BETS[betIdx]*100,costFree=BETS[betIdx]*20;$('buyHoldPrice').textContent=money(costHold);$('buyFreePrice').textContent=money(costFree);$('buyHoldChoice').disabled=balance<costHold||!session||running||!!bonus||freeSpins>0;$('buyFreeChoice').disabled=balance<costFree||!session||running||!!bonus||freeSpins>0;$('buyInfo').textContent='Saldo '+money(balance)+' • Hold & Win 100× a aposta • 15 free spins 20× a aposta';}
 function openBonusPurchase(){if(!session||running||bonus)return;refreshBuyOptions();modal('buyModal',true);soundStart()}
