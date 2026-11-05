@@ -15,7 +15,7 @@
     ui:{offset:9.87,duration:.18}
   };
   const PRIORITY={spin:1,drop:1,tumble:2,ui:1,burst:3,reward:2,mult:2,scatter:4,bigwin:5};
-  const VOLUME={spin:.57,drop:.55,tumble:.58,burst:.76,reward:.64,mult:.7,scatter:.76,bigwin:.81,ui:.38};
+  const VOLUME={spin:.42,drop:.76,tumble:.58,burst:.74,reward:.64,mult:.7,scatter:.76,bigwin:.81,ui:.38};
   const MAX_VOICES=32;
   let ctx=null,buffer=null,master=null,compressor=null,enabled=true,loading=null;
   let bytes=null,voices=[],lastDrop=0,dropIndex=0,ready=false;
@@ -70,6 +70,9 @@
   }
   function play(name,opts={}){
     if(!enabled)return;
+    // A aterragem tem uma segunda camada física sintetizada, mesmo quando
+    // o pacote MP3 está carregado, para se ouvir o impacto sobre a música.
+    if(name==="land"){fallback("land",opts);return;}
     const key=name==="drop"?["drop1","drop2","drop3"][(dropIndex++)%3]:name;
     const cue=CUES[key]||CUES.ui;
     const base=name==="drop"?"drop":name;
