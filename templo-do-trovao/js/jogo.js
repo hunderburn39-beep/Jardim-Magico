@@ -331,9 +331,9 @@
       "<p>Durante o bónus podes ganhar +5 rodadas sempre que aparecerem 3 ou mais símbolos SCATTER na grelha.</p>",
       [{text:"COMPRAR "+money(cost),action:async()=>{
         if(state.balance<cost){openModal("SALDO INSUFICIENTE","<p>Não tens créditos virtuais suficientes para comprar o bónus.</p>",[{text:"REPOR 1 000 €",action:refill},{text:"FECHAR",secondary:true}]);return}
-        state.balance=Math.round((state.balance-cost)*100)/100;refresh();
+        state.balance=Math.round((state.balance-cost)*100)/100;state.busy=true;refresh();
         setOverlay("⚡ 4 SCATTER ⚡");await pause(state.turbo?200:800);setOverlay("");
-        await startBonus();
+        state.busy=false;await startBonus();
       }},{text:"CANCELAR",secondary:true}]);
   }
   function refill(){
