@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" role="img" aria-labelledby="title desc">
+<title id="title">Jardim Mágico</title><desc id="desc">Logótipo dourado com flores, folhas e magia, sobre fundo totalmente transparente.</desc>
+<defs>
+ <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffbd2"/><stop offset=".20" stop-color="#ffe18e"/><stop offset=".39" stop-color="#efa93d"/><stop offset=".60" stop-color="#a4521a"/><stop offset=".74" stop-color="#ffcf5d"/><stop offset="1" stop-color="#fff0a0"/></linearGradient>
+ <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffe7a5"/><stop offset=".5" stop-color="#ffb13f"/><stop offset="1" stop-color="#8d3b1e"/></linearGradient>
+ <radialGradient id="bloom"><stop stop-color="#fff2f9"/><stop offset=".28" stop-color="#fcbbea"/><stop offset=".61" stop-color="#e348d7"/><stop offset="1" stop-color="#7622a6"/></radialGradient>
+ <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c5ec5f"/><stop offset=".43" stop-color="#4f983d"/><stop offset="1" stop-color="#1c5c34"/></linearGradient>
+ <filter id="shadow" x="-20%" y="-90%" width="140%" height="300%"><feGaussianBlur stdDeviation="8"/></filter>
+ <filter id="shine" x="-60%" y="-80%" width="220%" height="260%"><feGaussianBlur stdDeviation="2.5"/></filter>
+</defs>
+<g fill="none" stroke="#a3702c" stroke-width="11" stroke-linecap="round" opacity=".88">
+<path d="M18 194Q46 105 169 88Q242 83 302 117"/>
+<path d="M1262 194Q1234 105 1111 88Q1038 83 978 117"/>
+<path d="M35 237Q230 322 379 267" /><path d="M1245 237Q1050 322 901 267"/>
+</g>
+<g fill="url(#leaf)" stroke="#205034" stroke-width="3">
+<path d="M105 101Q44 39 20 65Q15 135 105 101Z"/><path d="M126 78Q142 3 197 28Q198 83 126 78Z"/>
+<path d="M179 96Q179 23 232 55Q235 99 179 96Z"/><path d="M48 229Q0 169 13 145Q83 159 48 229Z"/>
+<path d="M187 280Q105 256 94 295Q135 322 187 280Z"/>
+<path d="M1175 101Q1236 39 1260 65Q1265 135 1175 101Z"/><path d="M1154 78Q1138 3 1083 28Q1082 83 1154 78Z"/>
+<path d="M1101 96Q1101 23 1048 55Q1045 99 1101 96Z"/><path d="M1232 229Q1280 169 1267 145Q1197 159 1232 229Z"/>
+<path d="M1093 280Q1175 256 1186 295Q1145 322 1093 280Z"/>
+</g>
+<g fill="url(#bloom)" stroke="#ffe0ff" stroke-width="3" opacity=".98">
+<path d="M248 69Q213 -6 263 14Q309 40 273 83Z"/><path d="M253 81Q165 79 201 39Q248 29 267 82Z"/><path d="M268 82Q316 24 328 61Q314 104 268 92Z"/><path d="M261 80Q215 126 241 140Q291 128 272 88Z"/>
+<path d="M1032 69Q1067 -6 1017 14Q971 40 1007 83Z"/><path d="M1027 81Q1115 79 1079 39Q1032 29 1013 82Z"/><path d="M1012 82Q964 24 952 61Q966 104 1012 92Z"/><path d="M1019 80Q1065 126 1039 140Q989 128 1008 88Z"/>
+</g>
+<g fill="#ffe6a2"><circle cx="266" cy="83" r="10"/><circle cx="1014" cy="83" r="10"/></g>
+<path d="M636 69Q605 22 626 6Q644 11 654 46Q669 5 689 7Q705 34 672 69Z" fill="url(#bloom)" stroke="#ffe4f6" stroke-width="3"/>
+<g fill="#e9b5ff" opacity=".9"><circle cx="604" cy="34" r="3"/><circle cx="700" cy="80" r="4"/><circle cx="579" cy="73" r="2.5"/></g>
+<text x="640" y="232" fill="#1b071c" stroke="#180915" stroke-width="28" font-family="Georgia, 'Times New Roman',serif" font-size="140" font-weight="900" text-anchor="middle" textLength="1120" lengthAdjust="spacingAndGlyphs" opacity=".65" filter="url(#shadow)">Jardim Mágico</text>
+<text x="640" y="222" fill="#702173" stroke="#8c286d" stroke-width="25" paint-order="stroke" font-family="Georgia, 'Times New Roman',serif" font-size="140" font-weight="900" text-anchor="middle" textLength="1120" lengthAdjust="spacingAndGlyphs">Jardim Mágico</text>
+<text x="640" y="216" fill="url(#gold)" stroke="url(#rim)" stroke-width="8" paint-order="stroke" font-family="Georgia, 'Times New Roman',serif" font-size="140" font-weight="900" text-anchor="middle" textLength="1120" lengthAdjust="spacingAndGlyphs">Jardim Mágico</text>
+<path d="M408 259Q530 289 635 270Q752 292 864 258" stroke="#eac879" stroke-width="7" fill="none" stroke-linecap="round" opacity=".9"/>
+<path d="M639 260L663 281L640 308L616 281Z" fill="#dc4edf" stroke="#ffe0b1" stroke-width="5"/><path d="M639 262L640 308L651 280Z" fill="#fff8fc" opacity=".5"/>
+<g fill="#fff3be" filter="url(#shine)"><circle cx="174" cy="156" r="8"/><circle cx="1112" cy="151" r="8"/><circle cx="496" cy="58" r="5"/><circle cx="788" cy="58" r="5"/></g>
+</svg>
