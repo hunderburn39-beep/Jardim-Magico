@@ -1,0 +1,166 @@
+/* PORTÕES DO TROVÃO V11 — EXPLOSÃO + DISSIPAÇÃO DAS PEÇAS PREMIADAS
+ * Camada independente, acima das peças e abaixo dos controlos.
+ * Todos os efeitos são visuais; não alteram a matemática do jogo.
+ */
+.board-shell .winning-fx{
+  position:absolute;inset:0;
+  z-index:12;
+  pointer-events:none;
+  overflow:visible;
+  isolation:isolate;
+}
+.winning-fx .win-burst{
+  --burst-color:#ffe9a4;
+  --burst-lifetime:880ms;
+  position:absolute;
+  width:var(--burst-width,70px);height:var(--burst-height,70px);
+  left:var(--burst-left,0px);top:var(--burst-top,0px);
+  transform:translateZ(0);
+  pointer-events:none;
+  contain:layout;
+  overflow:visible;
+  filter:drop-shadow(0 0 7px var(--burst-color));
+}
+.winning-fx .win-copy{
+  position:absolute;inset:0;z-index:2;
+  width:100%;height:100%;
+  background-image:url("../assets/atlas-3d-v5.webp");
+  background-size:500% 300%;
+  background-position:var(--ax,0%) var(--ay,0%);
+  background-repeat:no-repeat;
+  filter:brightness(1.9) drop-shadow(0 0 7px #fff) drop-shadow(0 0 16px var(--burst-color));
+  animation:v11Collapse var(--burst-lifetime) ease-out both;
+}
+.winning-fx .win-ring{
+  position:absolute;z-index:3;
+  left:50%;top:50%;width:48%;height:48%;
+  border:2px solid var(--burst-color);
+  border-radius:50%;
+  box-shadow:0 0 9px #fff,0 0 18px var(--burst-color),inset 0 0 12px var(--burst-color);
+  animation:v11Ring var(--burst-lifetime) ease-out both;
+}
+.winning-fx .win-flare{
+  position:absolute;z-index:4;inset:-24%;
+  background:radial-gradient(circle,#fffffbe5 0%,#fff2abdc 8%,var(--burst-color) 22%,transparent 63%);
+  mix-blend-mode:screen;
+  animation:v11Flare var(--burst-lifetime) ease-out both;
+}
+.winning-fx .win-dust{
+  position:absolute;z-index:1;left:50%;top:50%;
+  width:var(--dust-size,9px);height:var(--dust-size,9px);
+  border-radius:60% 30% 60% 40%;
+  background:radial-gradient(circle at 35% 30%,#fffef3 0%,var(--burst-color) 38%,transparent 84%);
+  box-shadow:0 0 4px var(--burst-color),0 0 12px var(--burst-color);
+  opacity:0;
+  animation:v11Dust var(--burst-lifetime) cubic-bezier(.13,.57,.42,1) var(--d,0ms) both;
+}
+.winning-fx .win-crystal{
+  position:absolute;z-index:5;left:50%;top:50%;
+  width:var(--shard-width,8px);height:var(--shard-height,13px);
+  clip-path:polygon(49% 0%,98% 35%,64% 100%,0 65%);
+  border:0;
+  background:linear-gradient(135deg,#fff 3%,#fff1c3 18%,var(--burst-color) 50%,#7b4b89bb 100%);
+  filter:drop-shadow(0 0 4px #fff8d9) drop-shadow(0 0 7px var(--burst-color));
+  opacity:0;
+  animation:v11Crystal var(--burst-lifetime) cubic-bezier(.16,.5,.4,1) var(--d,0ms) both;
+}
+.winning-fx .win-smoke{
+  position:absolute;z-index:1;
+  left:50%;top:50%;width:68%;height:68%;
+  border-radius:50%;
+  opacity:0;
+  background:radial-gradient(ellipse,#fff7f0b9 0%,var(--burst-color) 24%,#8e7ca476 49%,transparent 78%);
+  filter:blur(8px) saturate(.8);
+  animation:v11Vapor var(--burst-lifetime) ease-out var(--d,0ms) both;
+}
+.winning-fx .win-streak{
+  position:absolute;z-index:7;left:50%;top:50%;
+  width:4px;height:var(--streak-length,35%);
+  background:linear-gradient(to bottom,#fff, var(--burst-color) 35%,transparent);
+  box-shadow:0 0 5px var(--burst-color);
+  transform-origin:50% 0;
+  animation:v11Streak var(--burst-lifetime) ease-out var(--d,0ms) both;
+}
+.board .cell.winner.burst-out{
+  background:transparent!important;
+  box-shadow:none!important;
+  outline:none!important;
+  overflow:visible;
+  animation:none!important;
+}
+.board .cell.winner.burst-out .symbol-bitmap{
+  transform-origin:center center;
+  animation:v11OriginalBreak var(--burst-lifetime,880ms) ease-out both!important;
+}
+.board .cell.winner.burst-out .orb-value{
+  animation:v11OriginalBreak var(--burst-lifetime,880ms) ease-out both!important;
+}
+.board .cell.winner.burst-out::before,
+.board .cell.winner.burst-out::after{
+  content:none!important;display:none!important;
+}
+.board .cell.winner.burst-out .crystal-shard{display:none!important}
+@keyframes v11OriginalBreak{
+  0%{opacity:1;transform:scale(1.17);filter:brightness(1.6) drop-shadow(0 0 14px #fff9bd)}
+  13%{opacity:1;transform:scale(1.35) rotate(2deg);filter:brightness(2.3) drop-shadow(0 0 23px #fff)}
+  35%{opacity:.55;transform:scale(1.18) rotate(-4deg);filter:brightness(2.7) blur(1.2px)}
+  65%{opacity:.07;transform:scale(.6) rotate(20deg);filter:brightness(2) blur(4px)}
+  100%{opacity:0;transform:scale(.12) rotate(35deg);filter:blur(11px)}
+}
+@keyframes v11Collapse{
+  0%{opacity:0;transform:scale(1.06)}
+  10%{opacity:.9;transform:scale(1.29)}
+  25%{opacity:.8;transform:scale(1.28) rotate(3deg)}
+  50%{opacity:.34;transform:scale(.98) rotate(-7deg);filter:brightness(1.7) blur(2px)}
+  83%{opacity:.025;transform:scale(.65) rotate(16deg);filter:blur(8px)}
+  100%{opacity:0;transform:scale(.28) rotate(29deg);filter:blur(15px)}
+}
+@keyframes v11Flare{
+  0%,7%{opacity:0;transform:scale(.1)}
+  15%{opacity:.92;transform:scale(.9)}
+  32%{opacity:.6;transform:scale(1.3)}
+  58%{opacity:.1;transform:scale(1.7)}
+  100%{opacity:0;transform:scale(2.5)}
+}
+@keyframes v11Ring{
+  0%,8%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
+  18%{opacity:1}
+  55%{opacity:.45;transform:translate(-50%,-50%) scale(2.2)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(3.7)}
+}
+@keyframes v11Dust{
+  0%,12%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
+  25%{opacity:.9;transform:translate(-50%,-50%) scale(1.1)}
+  65%{opacity:.55}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px))) scale(.08);filter:blur(7px)}
+}
+@keyframes v11Crystal{
+  0%,12%{opacity:0;transform:translate(-50%,-50%) rotate(0) scale(.5)}
+  23%{opacity:1}
+  64%{opacity:.88}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px))) rotate(var(--rot,270deg)) scale(.38);filter:blur(3px)}
+}
+@keyframes v11Vapor{
+  0%,19%{opacity:0;transform:translate(-50%,-50%) scale(.4)}
+  31%{opacity:.50}
+  65%{opacity:.31;transform:translate(calc(-50% + var(--dx,0px)*.65),calc(-50% + var(--dy,0px)*.65)) scale(1.55)}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px))) scale(2.25);filter:blur(16px)}
+}
+@keyframes v11Streak{
+  0%,14%{opacity:0;transform:translate(-50%,-50%) rotate(var(--angle,0deg)) scaleY(.1)}
+  21%{opacity:.85}
+  53%{opacity:.3;transform:translate(-50%,-50%) rotate(var(--angle,0deg)) scaleY(1.25)}
+  100%{opacity:0;transform:translate(-50%,-50%) rotate(var(--angle,0deg)) scaleY(2.7);filter:blur(5px)}
+}
+@media(orientation:portrait){
+ .winning-fx .win-smoke{filter:blur(5px)}
+ .winning-fx .win-flare{inset:-10%}
+ .winning-fx .win-crystal{filter:drop-shadow(0 0 3px var(--burst-color))}
+}
+@media(prefers-reduced-motion:reduce){
+ .board .cell.winner.burst-out .symbol-bitmap,
+ .board .cell.winner.burst-out .orb-value{animation:none!important;opacity:0!important}
+ .winning-fx .win-copy,.winning-fx .win-ring,.winning-fx .win-flare,
+ .winning-fx .win-dust,.winning-fx .win-crystal,
+ .winning-fx .win-smoke,.winning-fx .win-streak{display:none!important;animation:none!important}
+}
