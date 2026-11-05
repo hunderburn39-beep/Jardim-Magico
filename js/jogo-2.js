@@ -998,8 +998,8 @@ function renderBonus(newIndices=[]){
  $('bonusGrid').replaceChildren(frag);
  $('bonusFactors').innerHTML=bonus.factors.length?bonus.factors.map(v=>`<span>${v}×</span>`).join(''):'×1';
  $('bonusFormula').textContent=`${money(bonus.coinsTotal)} × ${bonusFactorTotal()}${bonus.jackpot?' + '+bonus.jackpot+' '+money(jackpotPayable(bonus.jackpot,bonus.stakeBet)):''}`;
- $('bonusSpin').textContent=bonus.finished?'RECOLHER PRÉMIO':'RODAR BÓNUS';
- $('bonusSpin').disabled=bonus.inMotion;
+ $('bonusSpin').textContent=bonus.wheelPending?'ROLETA A GIRAR…':bonus.finished?'RECOLHER PRÉMIO':'RODAR BÓNUS';
+ $('bonusSpin').disabled=bonus.inMotion||!!bonus.wheelPending;
 }
 function flyFactorToBox(index,value){
  const from=$('bonusGrid').querySelector(`[data-cell="${index}"]`), to=$('bonusFactors');
@@ -1080,9 +1080,60 @@ async function animateBonusRoulette(added){
  }
 }
 
+/* V49: 32 casas. 16 MIN, 8 MED, 5 MAX, 1 ULTRA e 2 RESPIN.
+   Setores alternados para serem legíveis na roda, sem alterar a sua probabilidade. */
+const JACKPOT_WHEEL_32=Array(32).fill('MIN');
+[[1,'MAX'],[3,'MED'],[5,'RESPIN'],[7,'MED'],[9,'MAX'],[11,'MED'],[13,'MAX'],[15,'MED'],[17,'ULTRA'],[19,'MED'],[21,'MAX'],[23,'MED'],[25,'RESPIN'],[27,'MED'],[29,'MAX'],[31,'MED']].forEach(([i,label])=>{JACKPOT_WHEEL_32[i]=label;});
+function makeFullBoardWheelStops(){
+ const steps=[];
+ for(let roll=0;roll<64;roll++){
+  const index=R(32);steps.push(index);
+  if(JACKPOT_WHEEL_32[index]!=='RESPIN')return steps;
+ }
+ steps.push(0); // Proteção contra uma sequência teoricamente ilimitada de RESPIN.
+ return steps;
+}
+function prepareFullBoardWheel(){
+ if(!bonus||bonus.endReason!=='completo'||!bonus.cells.every(Boolean))return false;
+ if(!Array.isArray(bonus.wheelStops)||!bonus.wheelStops.length){
+  bonus.wheelStops=makeFullBoardWheelStops();
+  bonus.wheelResult=JACKPOT_WHEEL_32[bonus.wheelStops[bonus.wheelStops.length-1]];
+  bonus.wheelPending=true;
+  save(); // Sorteio e RESPINs persistidos antes de iniciar qualquer efeito visual.
+ }
+ return true;
+}
+async function playFullBoardWheel(){
+ if(!bonus||!bonus.wheelPending)return;
+ const state=bonus;
+ state.inMotion=true;renderBonus();
+ modal('bonusModal',false);
+ notice('TABULEIRO COMPLETO! A roleta de 32 casas vai girar!');
+ try{
+  if(window.JM_WHEEL_V49&&typeof window.JM_WHEEL_V49.play==='function'){
+   await window.JM_WHEEL_V49.play({
+    slots:JACKPOT_WHEEL_32,stops:state.wheelStops,turbo:mode==='turbo',
+    amount:money(jackpotPayable(state.wheelResult,state.stakeBet)),
+    onSpin:()=>audioFX('bonus'),
+    onStop:(type)=>{audioFX(type==='RESPIN'?'lock':'big');if(type!=='RESPIN')audioFX('schoolBell');}
+   });
+  }else{
+   await sleep(550);
+  }
+ }catch(error){console.warn('Animação da roleta indisponível. Resultado guardado foi mantido.',error);}
+ if(bonus!==state)return;
+ state.wheelPending=false;
+ state.inMotion=false;
+ modal('bonusModal',true);
+ renderBonus();
+ $('bonusNote').textContent='🏆 Roleta completa: '+state.wheelResult+'! Jackpot elegível: '+money(jackpotPayable(state.wheelResult,state.stakeBet))+'. Recolhe o prémio.';
+ notice('Roleta 32 casas: '+state.wheelResult+'! Recolhe o teu prémio.');
+ save();
+}
+
 async function bonusRespin(){
  if(!bonus||bonus.inMotion)return;
- if(bonus.finished){bonusFinish();return;}
+ if(bonus.finished){if(bonus.wheelPending)await playFullBoardWheel();else bonusFinish();return;}
  bonus.inMotion=true;renderBonus();$('bonusNote').textContent='A procurar moedas, multiplicadores e cristais…';
  bonus.rolls++;
  const empties=randomEmptyCells(),added=[],newFactors=[],newGems=[];
@@ -1094,16 +1145,23 @@ async function bonusRespin(){
   added.push(idx);if(bonus.cells[idx].kind==='factor')newFactors.push([idx,bonus.cells[idx].value]);if(bonus.cells[idx].kind==='gem')newGems.push([idx,bonus.cells[idx].type]);
  }
  bonus.left=added.length?3:Math.max(0,bonus.left-1);
- if(!bonus.finished&&(!empties.length||bonus.left===0)){
-  bonus.finished=true;bonus.endReason=!empties.length?'completo':'tentativas';
+ if(bonus.cells.every(Boolean)){
+  bonus.finished=true;bonus.endReason='completo'; // A grelha 5×5 completa ativa a roleta mesmo no último respin.
+ }else if(!bonus.finished&&bonus.left===0){
+  bonus.finished=true;bonus.endReason='tentativas';
  }
  await animateBonusRoulette(added);
  renderBonus(added);
  if(newFactors.length||newGems.length){await Promise.all([...newFactors.map(([idx,v])=>flyFactorToBox(idx,v)),...newGems.map(([idx,type])=>flyGemToCounter(idx,type))]);}
  if(added.length){audioFX('coin');}
+ if(bonus.finished&&bonus.endReason==='completo'&&bonus.cells.every(Boolean)){
+  prepareFullBoardWheel();
+  await playFullBoardWheel();
+ }
  bonus.inMotion=false;renderBonus(added);
  if(bonus.finished){
-  if(bonus.jackpot){$('bonusNote').textContent='🏆 4 CRISTAIS '+bonus.jackpot+'! Valor reservado: '+money(jackpotPayable(bonus.jackpot,bonus.stakeBet));audioFX('big');audioFX('schoolBell');}
+  if(bonus.wheelResult){$('bonusNote').textContent='🏆 ROleta de jackpots: '+bonus.wheelResult+'! Carrega para recolher o prémio.';}
+  else if(bonus.jackpot){$('bonusNote').textContent='🏆 4 CRISTAIS '+bonus.jackpot+'! Valor reservado: '+money(jackpotPayable(bonus.jackpot,bonus.stakeBet));audioFX('big');audioFX('schoolBell');}
   else if(bonus.endReason==='tentativas')$('bonusNote').textContent='Esgotaste as 3 tentativas. Recolhe as moedas e multiplicadores!';
   else $('bonusNote').textContent='Grelha completa. Recolhe os prémios!';
  }else if(added.length){
@@ -1112,24 +1170,27 @@ async function bonusRespin(){
  save();
 }
 function bonusFinish(){
- if(!bonus||!bonus.finished||bonus.inMotion)return;
- const base=bonus.coinsTotal,factor=bonusFactorTotal(),jp=bonus.jackpot;
+ if(!bonus||!bonus.finished||bonus.inMotion||bonus.wheelPending)return;
+ const base=bonus.coinsTotal,factor=bonusFactorTotal();
+ const crystalJackpot=bonus.jackpot,wheelJackpot=bonus.wheelResult||null;
  const rawCash=base*factor,cap=bonus.stakeBet*MAX_WIN_MULT;
  const requestedCash=Math.min(rawCash,cap);
  const cashPaid=payFromVault(requestedCash);
- const jackpotWin=jp?payProgressive(jp,bonus.stakeBet,Math.max(0,cap-cashPaid)):0;
- const final=cashPaid+jackpotWin;
+ const crystalPaid=crystalJackpot?payProgressive(crystalJackpot,bonus.stakeBet,Math.max(0,cap-cashPaid)):0;
+ const wheelPaid=wheelJackpot?payProgressive(wheelJackpot,bonus.stakeBet,Math.max(0,cap-cashPaid-crystalPaid)):0;
+ const jackpotWin=crystalPaid+wheelPaid,final=cashPaid+jackpotWin;
  const capped=cashPaid<requestedCash?'cofre':rawCash>cap?'limite':null;
  lastPrize=final;
- log('prémio_hold_win',final,`Hold & Win: moedas ${money(base)} ×${factor}, pago cofre geral ${money(cashPaid)}${jp?' + '+jp+' progressivo '+money(jackpotWin):''} · ${bonus.endReason}`);
- modal('bonusModal',false);bonus=null;update();save();showBig(final,base,factor,jp,jackpotWin,capped);
+ log('prémio_hold_win',final,`Hold & Win: moedas ${money(base)} ×${factor}; pago cofre geral ${money(cashPaid)}; cristais ${crystalJackpot||'—'} ${money(crystalPaid)}; roleta ${wheelJackpot||'—'} ${money(wheelPaid)}; total ${money(final)} · ${bonus.endReason}`);
+ modal('bonusModal',false);bonus=null;update();save();
+ showBig(final,base,factor,wheelJackpot||crystalJackpot,jackpotWin,capped,!!wheelJackpot);
 }
 function refreshBuyOptions(){const costHold=BETS[betIdx]*100,costFree=BETS[betIdx]*20;$('buyHoldPrice').textContent=money(costHold);$('buyFreePrice').textContent=money(costFree);$('buyHoldChoice').disabled=balance<costHold||!session||running||!!bonus||freeSpins>0;$('buyFreeChoice').disabled=balance<costFree||!session||running||!!bonus||freeSpins>0;$('buyInfo').textContent='Saldo '+money(balance)+' • Hold & Win 100× a aposta • 15 free spins 20× a aposta';}
 function openBonusPurchase(){if(!session||running||bonus)return;refreshBuyOptions();modal('buyModal',true);soundStart()}
 async function buyFreeSpins(){if(!session||running||bonus||freeSpins)return false;const bet=BETS[betIdx],cost=bet*20;if(balance<cost)return false;balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;freeBet=bet;freeSpins+=15;log('compra_freespins',-cost,'15 free spins a 20× aposta '+money(bet));modal('buyModal',false);notice('🌟 Compraste 15 FREE SPINS por '+money(cost));running=true;update();soundStart();await showFeatureIntro('free');running=false;openFreeStart();return true;}
 
-function showBig(final,base,factor,jp,jackpotWin,capped=null){
- $('bigFactor').textContent=jp?'4 CRISTAIS • '+jp:'HOLD & WIN • 3 TENTATIVAS';
+function showBig(final,base,factor,jp,jackpotWin,capped=null,fromWheel=false){
+ $('bigFactor').textContent=fromWheel?'ROULETA 32 CASAS • '+jp:jp?'4 CRISTAIS • '+jp:'HOLD & WIN • 3 TENTATIVAS';
  $('bigTitle').textContent=jp?'JACKPOT '+jp+'!':final>=BETS[betIdx]*100?'BIG WIN!':'TOTAL HOLD & WIN';
  $('bigAmount').textContent=money(final);
  $('bigMath').textContent=`${money(base)} × ${factor}${jp?' + '+jp+' '+money(jackpotWin):''} = ${money(base*factor+jackpotWin)}${capped?' • PAGO '+money(final)+(capped==='cofre'?' (limite do cofre)':' (limite 5000×)'):''}`;
@@ -1255,6 +1316,6 @@ function setup(){
 (async()=>{setup();setupAdmin();load();setDisplayRatio(window.innerWidth>window.innerHeight*1.12?'16:9':'9:16');musicUI();document.addEventListener('pointerdown',()=>{if(session&&musicEnabled&&musicElement().paused)startMusic()},{passive:true});update();makePaytable();await imageLoad();requestAnimationFrame(frame);
  // CDN PixiJS é opcional em execução: Canvas2D serve de alternativa quando offline/WebGL indisponível.
  let ticks=0;const timer=setInterval(async()=>{if(window.PIXI?.Application){clearInterval(timer);await initPixi()}else if(++ticks>=30){clearInterval(timer);console.info('Canvas 2D de reserva ativo')}},100);
- if(session){notice('Sessão retomada. Continua a jogar!');modal('startModal',false);if(bonus){renderBonus();modal('bonusModal',true);$('bonusNote').textContent=bonus.finished?'Bónus concluído. Recolhe o teu prémio.':'Bónus retomado: tens '+bonus.left+' tentativas restantes.';}if(freeSpins>0&&!bonus)openFreeStart();else if(autoSpinsRemaining>0&&!running&&!bonus)maybeContinueAuto();}else openDepositLogin();
+ if(session){notice('Sessão retomada. Continua a jogar!');modal('startModal',false);if(bonus){if(bonus.finished&&bonus.endReason==='completo'&&bonus.cells.every(Boolean))prepareFullBoardWheel();renderBonus();modal('bonusModal',true);$('bonusNote').textContent=bonus.wheelPending?'Roleta de jackpots por concluir. O mesmo sorteio será retomado.':bonus.finished?'Bónus concluído. Recolhe o teu prémio.':'Bónus retomado: tens '+bonus.left+' tentativas restantes.';if(bonus.wheelPending)setTimeout(()=>playFullBoardWheel(),200);}if(freeSpins>0&&!bonus)openFreeStart();else if(autoSpinsRemaining>0&&!running&&!bonus)maybeContinueAuto();}else openDepositLogin();
 })();
 })();
