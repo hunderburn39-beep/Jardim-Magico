@@ -1,0 +1,89 @@
+/* PORTÕES DO TROVÃO V10
+ * Rodapé totalmente transparente: o templo continua visível debaixo
+ * dos valores. Controlo GIRAR, COMPRAR BÓNUS e TURBO mantido.
+ * Não modifica posições, IDs, lógica das apostas nem áreas clicáveis.
+ */
+.app .bottom-panel{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+.app .bottom-panel::before,.app .bottom-panel::after{
+  content:none!important;
+  display:none!important;
+}
+.app .bottom-panel .balance-block,
+.app .bottom-panel .bet-block,
+.app .bottom-panel .bet-selector{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+.app .bottom-panel .balance-block>span,
+.app .bottom-panel .bet-block>span{
+  color:#ffe7aa;
+  text-shadow:0 2px 4px #1d082e,0 0 9px #240938;
+  font-weight:900;
+}
+.app .bottom-panel .balance-block>strong,
+.app .bottom-panel .bet-selector>strong{
+  color:#fff9e8;
+  text-shadow:0 2px 3px #20082a,0 0 9px #2e1145,0 0 15px #1a072a;
+  -webkit-text-stroke:.16px #30162e;
+  font-variant-numeric:tabular-nums;
+}
+.app .bottom-panel .refill-link{
+  color:#baffeb;
+  text-shadow:0 2px 4px #170e24,0 0 10px #121228;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.app .bottom-panel .bet-selector button{
+  background:transparent!important;
+  border:0!important;
+  border-radius:8px;
+  box-shadow:none!important;
+  color:#fff1b7;
+  text-shadow:0 2px 5px #240b2f,0 0 10px #1c0d34;
+  font-weight:900;
+}
+.app .bottom-panel .bet-selector button:active{
+  transform:scale(.89);
+  color:#ffffff;
+}
+.app .bottom-panel .bet-selector button:focus-visible{
+  outline:2px solid #fff0a1;
+}
+/* Os três botões principais ficam íntegros, com um brilho menos invasivo. */
+.app .bottom-panel .buy-button{
+  box-shadow:inset 0 1px 6px #cbfff37e,0 4px 12px #18062899!important;
+}
+.app .bottom-panel .spin-button{
+  box-shadow:0 0 0 3px #7c4b2c,0 0 0 5px #f1c773,
+    0 0 15px #fbe09c91,inset 0 2px 8px #fff5bd!important;
+}
+.app .bottom-panel .spin-button.auto-mode{
+  box-shadow:0 0 0 3px #28627a,0 0 15px #7aebff!important;
+}
+.app .bottom-panel .turbo-button{
+  box-shadow:0 2px 9px #1b0a2aa0,inset 0 1px 4px #fff0b244!important;
+}
+@media(orientation:landscape) and (max-height:520px){
+ .app .bottom-panel{padding:3px 8px!important}
+ .app .bottom-panel .balance-block>span,
+ .app .bottom-panel .bet-block>span{font-size:10px}
+}
+@media(orientation:portrait){
+ .app .bottom-panel{padding:5px 7px!important}
+ .app .bottom-panel .balance-block>span,
+ .app .bottom-panel .bet-block>span{font-size:11px}
+ .app .bottom-panel .bet-selector button{min-width:30px;min-height:30px}
+ .app .bottom-panel .spin-button{
+   box-shadow:0 0 0 2px #7c4b2c,0 0 0 4px #f1c773,
+     0 0 11px #fbe09c85,inset 0 2px 6px #fff5bd!important
+ }
+}
