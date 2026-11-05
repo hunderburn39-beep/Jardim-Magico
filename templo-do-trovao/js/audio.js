@@ -85,6 +85,14 @@
         tone(t+.011,.105,890+column*35,460+column*20,"sine",.025*level,p);
         noise(t,.058,.026*level,550,3200,p);
         break;
+      case "land":
+        // Impacto percetível de pedra sobre pedra, em estéreo por coluna.
+        // Grave curto + estalo de superfície + pequena ressonância cristalina.
+        tone(t,.18,175+column*12,56+column*5,"triangle",.135*level,p);
+        tone(t+.008,.085,570+column*35,225+column*13,"sine",.059*level,p);
+        noise(t,.12,.078*level,200,4600,p);
+        tone(t+.06,.13,780+column*51,490+column*28,"sine",.026*level,p);
+        break;
       case "tumble":
         noise(t,.22,.053,210,3600);
         tone(t,.15,490,180,"triangle",.052);
