@@ -1,0 +1,141 @@
+/* V3: pedras luminosas e animações de queda/explosão.
+   Sobrepõe as animações genéricas anteriores sem mexer na matemática. */
+:root{--electric:#ffea9e}
+.board{overflow:hidden;isolation:isolate}
+.cell{isolation:isolate;transform:translateZ(0);backface-visibility:hidden;
+  --gem-glow:#fcd173;--shimmer-delay:0s}
+.cell[data-kind="ruby"]{--gem-glow:#ff5685}
+.cell[data-kind="sapphire"]{--gem-glow:#43caff}
+.cell[data-kind="emerald"]{--gem-glow:#37ffad}
+.cell[data-kind="amethyst"]{--gem-glow:#e47bff}
+.cell[data-kind="amber"]{--gem-glow:#ffc74a}
+.cell[data-kind="ring"]{--gem-glow:#ff9b77}
+.cell[data-kind="goblet"]{--gem-glow:#a7a3ff}
+.cell[data-kind="hourglass"]{--gem-glow:#6effbd}
+.cell[data-kind="crown"]{--gem-glow:#ffc64e}
+.cell[data-kind="scatter"]{--gem-glow:#bceeff}
+.cell[data-kind="mult"]{--gem-glow:#ffe9a0}
+.cell:not(.winner)::before{
+ content:"";position:absolute;inset:6%;z-index:-1;pointer-events:none;
+ border-radius:50%;background:radial-gradient(ellipse at 50% 48%,var(--gem-glow) 0%,transparent 70%);
+ opacity:.27;filter:blur(13px);
+ animation:gemAura 3.5s ease-in-out infinite alternate
+}
+.cell:not(.winner)::after{
+ content:"";position:absolute;width:14%;height:14%;top:12%;left:22%;z-index:3;
+ background:radial-gradient(circle,#fffef3 0% 8%,#fff9c0ba 10% 28%,transparent 71%);
+ box-shadow:0 0 6px #fff7d5;border-radius:50%;pointer-events:none;opacity:.2;
+ animation:starTwinkle 4.8s ease-in-out infinite;
+}
+.cell:nth-child(5n+2):not(.winner)::after{animation-delay:-1.8s;left:62%;top:18%}
+.cell:nth-child(7n+4):not(.winner)::after{animation-delay:-3.2s;left:73%;top:45%}
+.cell svg{
+ position:relative;z-index:1;
+ filter:drop-shadow(0 4px 4px #10041bba) drop-shadow(0 0 6px var(--gem-glow)) brightness(1.10) saturate(1.2);
+ transition:filter .22s,transform .2s;
+}
+.cell:not(.winner):not(.burst-out):not(.drop-in) svg{
+ animation:gemIdle 4.2s ease-in-out infinite alternate;
+}
+.cell:nth-child(4n+1):not(.winner):not(.burst-out):not(.drop-in) svg{animation-delay:-1.4s}
+.cell:nth-child(6n+3):not(.winner):not(.burst-out):not(.drop-in) svg{animation-delay:-2.9s}
+.cell.scatter svg{filter:drop-shadow(0 0 10px #96ebff) drop-shadow(0 0 6px #ffe1a3) brightness(1.12)}
+.cell.multiplier svg{filter:drop-shadow(0 0 15px #ffe49f) brightness(1.13)}
+.cell.winner{
+ position:relative;z-index:5;animation:winPulse .19s infinite alternate;
+ background:radial-gradient(ellipse,#fff3b14a 0%,#ffd06b23 57%,transparent 80%);
+ box-shadow:inset 0 0 27px #ffe39ddd,0 0 12px #ffcc8bad;
+}
+.cell.winner svg{
+ filter:drop-shadow(0 0 12px #fffce0) drop-shadow(0 0 20px var(--gem-glow)) brightness(1.5) saturate(1.55);
+ transform:scale(1.13);
+}
+.cell.winner::before{box-shadow:0 0 17px var(--gem-glow),inset 0 0 20px #fff2a4}
+.cell.drop-in{
+ animation-name:thunderFall!important;
+ animation-duration:var(--fall-duration,.46s)!important;
+ animation-delay:var(--fall-delay,0s)!important;
+ animation-timing-function:cubic-bezier(.19,.76,.35,1.1)!important;
+ animation-iteration-count:1!important;
+ animation-fill-mode:both!important;
+ z-index:2;
+}
+.cell.drop-in svg{animation:none!important}
+.cell.burst-out{z-index:8;overflow:visible;background:radial-gradient(circle,#fffbd8bb 0%,#ffcd5c7d 15%,transparent 75%)}
+.cell.burst-out svg{
+ transform-origin:50% 50%;
+ animation:crystalExplode .34s ease-in forwards!important;
+ animation-delay:var(--burst-delay,0s)!important;
+}
+.cell.burst-out .orb-value{animation:crystalExplode .34s ease-in forwards!important}
+.cell.burst-out::before{
+ content:"";position:absolute;inset:-12%;pointer-events:none;z-index:5;
+ background:radial-gradient(circle,#ffffffc9 0%,#fff1a1aa 10%,#ffb85083 27%,transparent 66%);
+ animation:shardFlash .42s ease-out forwards!important;border:0;box-shadow:none;
+}
+.cell.burst-out::after{
+ content:"✦";position:absolute;left:50%;top:50%;width:auto;height:auto;z-index:12;
+ font-size:clamp(14px,2vw,36px);color:#fff9ce;text-shadow:0 0 8px white,0 0 18px #ffc46b;
+ animation:shardFlash .4s ease-out forwards!important;
+}
+.crystal-shard{
+ position:absolute;left:50%;top:50%;z-index:14;
+ width:clamp(4px,.8vw,10px);height:clamp(7px,1.5vw,18px);
+ border:1px solid #fffbd7;
+ clip-path:polygon(48% 0,100% 35%,63% 100%,0 67%);
+ background:linear-gradient(145deg,#ffffff,hsla(var(--shard-hue),100%,65%,.95) 52%,hsla(var(--shard-hue),100%,35%,.2));
+ filter:drop-shadow(0 0 5px #fff6c8);
+ pointer-events:none;opacity:0;
+ animation:shardFly .42s cubic-bezier(.09,.53,.45,1) both;
+ animation-delay:calc(var(--burst-delay,0s) + var(--sd,0s));
+}
+.board.board-impact{animation:boardThump .28s cubic-bezier(.36,.07,.19,.97)}
+.board-shell:has(.burst-out){box-shadow:
+ 0 0 0 2px #76451f,0 0 0 5px #cf9647b8,
+ inset 0 0 13px #fff4a9,0 0 35px #ffffc0,0 0 30px #ffd371}
+.board:has(.burst-out){background:
+ radial-gradient(ellipse at 50% 44%,#a85888 0%,#462254 64%,#23113a)}
+.prize-float{z-index:21;animation:prizeFloat .8s ease-out forwards}
+.god-column:has(~ .nothing){filter:none}
+@keyframes thunderFall{
+  0%{transform:translateY(calc(var(--fall-rows,-5)*100%)) scale(.94);opacity:.12;filter:brightness(1.6)}
+  70%{opacity:1}
+  83%{transform:translateY(4%) scale(1.065, .91);filter:brightness(1.28)}
+  100%{transform:translateY(0) scale(1);opacity:1;filter:brightness(1)}
+}
+@keyframes crystalExplode{
+  0%{opacity:1;transform:scale(1.14) rotate(0);filter:brightness(1.65) drop-shadow(0 0 13px #fffaac)}
+  26%{opacity:1;transform:scale(1.37) rotate(-6deg);filter:brightness(2.5) drop-shadow(0 0 19px white)}
+  100%{opacity:0;transform:scale(.05) rotate(37deg);filter:brightness(4)}
+}
+@keyframes shardFly{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.25) rotate(0)}
+  15%{opacity:1}
+  80%{opacity:.95}
+  100%{opacity:0;transform:translate(calc(-50% + var(--sx,45px)),calc(-50% + var(--sy,40px))) scale(.55) rotate(230deg)}
+}
+@keyframes shardFlash{
+  0%{opacity:0;transform:scale(.5)}
+  19%{opacity:1;transform:scale(1.18)}
+  100%{opacity:0;transform:scale(1.8)}
+}
+@keyframes boardThump{
+  0%,100%{transform:translate(0,0)}
+  20%{transform:translate(2px,-1px)}
+  45%{transform:translate(-2px,1px)}
+  65%{transform:translate(1px,1px)}
+  85%{transform:translate(-1px,0)}
+}
+@keyframes gemAura{0%{opacity:.16;transform:scale(.91)}100%{opacity:.4;transform:scale(1.15)}}
+@keyframes starTwinkle{0%,28%,58%,100%{opacity:.09;transform:scale(.6)}31%,40%{opacity:.85;transform:scale(1.45)}}
+@keyframes gemIdle{0%{filter:drop-shadow(0 4px 4px #10041bba) drop-shadow(0 0 4px var(--gem-glow)) brightness(1.06) saturate(1.14)}100%{filter:drop-shadow(0 4px 4px #10041bba) drop-shadow(0 0 9px var(--gem-glow)) brightness(1.23) saturate(1.28)}}
+@media(orientation:portrait){
+ .cell.burst-out::after{font-size:16px}
+ .cell.winner svg{transform:scale(1.09)}
+ .crystal-shard{width:5px;height:10px}
+}
+@media (prefers-reduced-motion:reduce){
+ .cell.drop-in,.cell.burst-out svg,.crystal-shard,.cell.burst-out::before,.board.board-impact{
+   animation-duration:.05ms!important;animation-delay:0s!important;
+ }
+}
