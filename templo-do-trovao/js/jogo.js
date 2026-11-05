@@ -52,7 +52,7 @@
     const test=new Image();
     test.onload=()=>document.body.classList.add("assets-ready");
     test.onerror=()=>document.body.classList.add("asset-fallback");
-    test.src="assets/atlas-3d-v5.webp?v=5";
+    test.src="assets/atlas-3d-v5.webp";
   }
   const INITIAL_CREDITS = 1000;
   let nextId = 1;
