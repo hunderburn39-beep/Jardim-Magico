@@ -248,24 +248,52 @@ function freshSession(credits){
  log('entrada',balance,'Saldo inicial de créditos virtuais');modal('startModal',false);notice('Pronto para jogar. Boa sorte no jardim!');update();save();soundStart();
 }
 function doWithdraw(){if(!session||running||bonus||freeSpins>0)return;if($('withdrawPassword').value!==CASH_PIN){$('withdrawError').textContent='Palavra-passe incorreta. Usa a mesma do depósito.';$('withdrawPassword').value='';return;}const value=Number($('withdrawAmount').value);if(!Number.isFinite(value)||value<=0){alert('Indica um valor válido para levantar.');return;}const cents=Math.round(value*100);if(cents>balance){alert('O valor do levantamento não pode ser superior ao saldo disponível.');return;}balance-=cents;session.withdrawn=(session.withdrawn||0)+cents;log('levantamento',cents,'Levantamento virtual parcial');$('withdrawPassword').value='';$('withdrawError').textContent='';modal('withdrawModal',false);notice('Levantamento efetuado: -'+money(cents));if(balance<=0)notice('Saldo esgotado. Podes fazer depósito para continuar a jogar.');update();save()}
+/* V59 — o banqueiro levanta exclusivamente a sua parcela disponível. */
+function shareAvailable(party){
+ const free=Math.max(0,ownerShareReserve+merchantShareReserve);
+ const bank=bankerAvailable();
+ if(free===0||bank===0)return 0;
+ const first=Math.min(ownerShareReserve,Math.floor(bank*ownerShareReserve/free));
+ const second=Math.min(merchantShareReserve,bank-first);
+ return party==='comerciante'?second:first;
+}
 function doBankerWithdraw(){
- if(!adminUnlocked||!session||running||bonus||freeSpins>0){$('bankerWithdrawStatus').textContent='Termina a rodada ou bónus antes de levantar.';return;}
- if($('bankerWithdrawPassword').value!==CASH_PIN){$('bankerWithdrawStatus').textContent='Palavra-passe incorreta. Usa a mesma do depósito.';$('bankerWithdrawPassword').value='';return;}
+ if(!adminUnlocked||!session||running||bonus||freeSpins>0||freeSettlePending||freeSummaryPending){
+  $('bankerWithdrawStatus').textContent='Termina primeiro as jogadas ou os bónus.';return;
+ }
+ if($('bankerWithdrawPassword').value!==CASH_PIN){
+  $('bankerWithdrawStatus').textContent='Palavra-passe incorreta. Usa a mesma do depósito.';$('bankerWithdrawPassword').value='';return;
+ }
  const amount=Number($('bankerWithdrawAmount').value),cents=Math.round(amount*100);
- if(!Number.isFinite(amount)||!Number.isSafeInteger(cents)||cents<=0){$('bankerWithdrawStatus').textContent='Indica um valor válido.';return;}
- const maximum=bankerAvailable();
- if(cents>maximum){$('bankerWithdrawStatus').textContent='Máximo levantável sem tocar na reserva protegida ou no saldo dos jogadores: '+money(maximum);return;}
- operatorReserve-=cents;ownerWithdrawn+=cents;session.ownerWithdrawn=(session.ownerWithdrawn||0)+cents;
- const detail='Levantamento do banqueiro (créditos fictícios)';
- log('levantamento_banqueiro',cents,detail);adminAudit.push({time:new Date().toISOString(),kind:'levantamento_banqueiro',amount:cents});
+ if(!Number.isFinite(amount)||!Number.isSafeInteger(cents)||cents<=0){
+  $('bankerWithdrawStatus').textContent='Indica um valor válido.';return;
+ }
+ const party=$('adminWithdrawalRecipient').value==='comerciante'?'comerciante':'proprietario';
+ const maximum=shareAvailable(party);
+ if(cents>maximum){
+  $('bankerWithdrawStatus').textContent='Disponível para '+(party==='comerciante'?'o comerciante':'o proprietário')+': '+money(maximum)+'. Não inclui os jackpots nem a reserva protegida.';
+  return;
+ }
+ if(party==='comerciante'){
+  merchantShareReserve-=cents;
+  session.merchantWithdrawn=(session.merchantWithdrawn||0)+cents;
+ }else{
+  ownerShareReserve-=cents;
+  session.ownerShareWithdrawn=(session.ownerShareWithdrawn||0)+cents;
+ }
+ operatorReserve-=cents;ownerWithdrawn+=cents;
+ session.ownerWithdrawn=(session.ownerWithdrawn||0)+cents;
+ const partyName=party==='comerciante'?'comerciante':'proprietário';
+ log('levantamento_banqueiro',cents,'Levantamento do '+partyName+' (créditos fictícios)');
+ adminAudit.push({time:new Date().toISOString(),kind:'levantamento_partilhado',party,amount:cents});
  $('bankerWithdrawPassword').value='';$('bankerWithdrawAmount').value='';
- $('bankerWithdrawStatus').textContent='Levantamento virtual do banqueiro: '+money(cents)+' • Reserva protegida intacta.';
+ $('bankerWithdrawStatus').textContent='Atribuídos ao '+partyName+': '+money(cents)+' de créditos fictícios. Fundos dos jackpots protegidos.';
  updateAdmin();save();
 }
 function maybeContinueAuto(){if(freeStartPending||freeAutoRunning||freeSpins>0||freeSettlePending||freeSettlementRunning||freeSummaryPending)return;if(autoSpinsRemaining>0&&!running&&!bonus&&session&&(freeSpins>0||balance>=BETS[betIdx])){setTimeout(()=>{if(autoSpinsRemaining>0&&!running&&!bonus&&session){autoSpinsRemaining--;update();doRound();}},mode==='turbo'?120:320);}else if(autoSpinsRemaining>0&&(!session||(!freeSpins&&balance<BETS[betIdx]))){autoSpinsRemaining=0;update();save();notice('Auto-spins terminadas.')}}
 function stopAuto(){autoSpinsRemaining=0;autoSpinsTotal=0;update();save();modal('autoModal',false);}
 function reportRows(){return [...history,...(session?[session]:[])];}
-function totals(){const a=reportRows();return a.reduce((v,s)=>({initial:v.initial+(s.initial||0),deposits:v.deposits+(s.deposits||0),stakes:v.stakes+(s.stake||0),prizes:v.prizes+(s.prizes||0),withdrawn:v.withdrawn+(s.withdrawn||0),ownerWithdrawn:v.ownerWithdrawn+(s.ownerWithdrawn||0),balance:v.balance+(s.end?0:s.id===session?.id?balance:0),spins:v.spins+(s.spins||0)}),{initial:0,deposits:0,stakes:0,prizes:0,withdrawn:0,ownerWithdrawn:0,balance:0,spins:0})}
+function totals(){const a=reportRows();return a.reduce((v,s)=>({initial:v.initial+(s.initial||0),deposits:v.deposits+(s.deposits||0),stakes:v.stakes+(s.stake||0),prizes:v.prizes+(s.prizes||0),withdrawn:v.withdrawn+(s.withdrawn||0),ownerWithdrawn:v.ownerWithdrawn+(s.ownerWithdrawn||0),ownerShareWithdrawn:v.ownerShareWithdrawn+(s.ownerShareWithdrawn||0),merchantWithdrawn:v.merchantWithdrawn+(s.merchantWithdrawn||0),balance:v.balance+(s.end?0:s.id===session?.id?balance:0),spins:v.spins+(s.spins||0)}),{initial:0,deposits:0,stakes:0,prizes:0,withdrawn:0,ownerWithdrawn:0,ownerShareWithdrawn:0,merchantWithdrawn:0,balance:0,spins:0})}
 function cashMovements(){
  const rows=[];let order=0;
  const validMoney=n=>Number.isFinite(Number(n))?Math.max(0,Math.round(Number(n))):0;
@@ -279,7 +307,7 @@ function cashMovements(){
    if(kind==='levantamento'||kind==='levantamento_banqueiro')outAmount=validMoney(e.amount);
    if(!inAmount&&!outAmount)continue;
    summedIn+=inAmount;summedOut+=outAmount;
-   old.push({date:e.time||s.start||'',session:sid,type:inAmount?'Depósito':kind==='levantamento_banqueiro'?'Levantamento banca':'Levantamento jogador',inAmount,outAmount,desc:String(e.detail||''),order:order++});
+   old.push({date:e.time||s.start||'',session:sid,type:inAmount?'Depósito':kind==='levantamento_banqueiro'?(String(e.detail||'').includes('comerciante')?'Levantamento comerciante':'Levantamento proprietário'):'Levantamento jogador',inAmount,outAmount,desc:String(e.detail||''),order:order++});
   }
   const expectedIn=validMoney(s.initial)+validMoney(s.deposits),expectedOut=validMoney(s.withdrawn)+validMoney(s.ownerWithdrawn);
   // Compatibilidade com versões antigas que guardavam apenas os totais da sessão.
@@ -306,7 +334,7 @@ function buildReportHTML(){
  const movements=cashMovements();const generated=reportDate(new Date().toISOString());
  const rowHtml=movements.length?movements.map((r,i)=>`<tr><td class="index">${i+1}</td><td>${escapeReport(reportDate(r.date))}</td><td>${escapeReport(r.session)}</td><td class="in">${r.inAmount?money(r.inAmount):'—'}</td><td class="out">${r.outAmount?money(r.outAmount):'—'}</td><td class="cash">${formatSignedCents(r.cash)}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Sem depósitos ou levantamentos registados.</td></tr>';
  const explanatory='O valor disponível para o operador desconta os saldos de jogadores e respeita a parcela reservada e protegida. Os fundos progressivos e o cofre de prémios não são retirados pelo banqueiro. Este é um registo local de créditos fictícios, não lucro garantido.';
- return `<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Relatório de Caixa — Jardim Mágico — ${escapeReport(generated)}</title><link rel="stylesheet" href="css/estilo-3.css"></head><body><div class="tools"><button type="button" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button><button type="button" class="alt" onclick="window.close()">Fechar</button></div><main class="sheet"><div class="header"><div><h1>JARDIM MÁGICO</h1><div class="sub">Relatório de depósitos, levantamentos e cofre</div><div class="meta">Emitido em ${escapeReport(generated)}</div></div><div class="tag">CRÉDITOS FICTÍCIOS</div></div><div class="contents"><div class="cards"><div class="metric deposits"><span class="label">Total depositado</span><b>${money(deposited)}</b></div><div class="metric withdrawals"><span class="label">Total levantado</span><b>${money(withdrawn+t.ownerWithdrawn)}</b></div><div class="metric vault"><span class="label">Dinheiro em cofre</span><b>${formatSignedCents(inVault)}</b></div></div><h2 class="section-title">Registo de movimentos</h2><div class="table-scroll"><table><thead><tr><th>N.º</th><th>Data</th><th>Sessão</th><th>Depósito</th><th>Levantamento</th><th>Dinheiro em cofre</th></tr></thead><tbody>${rowHtml}</tbody></table></div><div class="totals"><h2>Resumo final do operador</h2><div class="total-row"><span>Total de depósitos</span><b>${money(deposited)}</b></div><div class="total-row"><span>Levantamentos dos jogadores</span><b>${money(withdrawn)}</b></div><div class="total-row"><span>Levantamentos do banqueiro</span><b>${money(t.ownerWithdrawn)}</b></div><div class="total-row highlight"><span>Dinheiro total em cofre</span><b>${formatSignedCents(inVault)}</b></div><div class="total-row"><span>Saldos ainda disponíveis aos jogadores</span><b>${money(playerObligations)}</b></div><div class="total-row owner"><span>Fundo líquido disponível para o dono</span><b>${formatSignedCents(ownerAvailable)}</b></div></div><p class="footer">Cálculos: cofre = depósitos − levantamentos dos jogadores − levantamentos da Banca; fundo líquido = cofre − saldos por levantar.<br>${escapeReport(explanatory)}<br>Este relatório reúne apenas os movimentos guardados neste navegador. Não constitui prova de dinheiro físico ou registo contabilístico certificado.</p><p class="meta right">Sessões: ${reportRows().length} · Jogadas: ${t.spins}</p></div></main></body></html>`;
+ return `<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Relatório de Caixa — Jardim Mágico — ${escapeReport(generated)}</title><link rel="stylesheet" href="css/estilo-3.css"></head><body><div class="tools"><button type="button" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button><button type="button" class="alt" onclick="window.close()">Fechar</button></div><main class="sheet"><div class="header"><div><h1>JARDIM MÁGICO</h1><div class="sub">Relatório de depósitos, levantamentos e cofre</div><div class="meta">Emitido em ${escapeReport(generated)}</div></div><div class="tag">CRÉDITOS FICTÍCIOS</div></div><div class="contents"><div class="cards"><div class="metric deposits"><span class="label">Total depositado</span><b>${money(deposited)}</b></div><div class="metric withdrawals"><span class="label">Total levantado</span><b>${money(withdrawn+t.ownerWithdrawn)}</b></div><div class="metric vault"><span class="label">Dinheiro em cofre</span><b>${formatSignedCents(inVault)}</b></div></div><h2 class="section-title">Registo de movimentos</h2><div class="table-scroll"><table><thead><tr><th>N.º</th><th>Data</th><th>Sessão</th><th>Depósito</th><th>Levantamento</th><th>Dinheiro em cofre</th></tr></thead><tbody>${rowHtml}</tbody></table></div><div class="totals"><h2>Resumo final do operador</h2><div class="total-row"><span>Total de depósitos</span><b>${money(deposited)}</b></div><div class="total-row"><span>Levantamentos dos jogadores</span><b>${money(withdrawn)}</b></div><div class="total-row"><span>Levantamentos da banca (total)</span><b>${money(t.ownerWithdrawn)}</b></div><div class="total-row"><span>Do proprietário</span><b>${money(t.ownerShareWithdrawn)}</b></div><div class="total-row"><span>Do comerciante</span><b>${money(t.merchantWithdrawn)}</b></div><div class="total-row highlight"><span>Dinheiro total em cofre</span><b>${formatSignedCents(inVault)}</b></div><div class="total-row"><span>Saldos ainda disponíveis aos jogadores</span><b>${money(playerObligations)}</b></div><div class="total-row owner"><span>Fundo líquido disponível para o dono</span><b>${formatSignedCents(ownerAvailable)}</b></div></div><p class="footer">Cálculos: cofre = depósitos − levantamentos dos jogadores − levantamentos da Banca; fundo líquido = cofre − saldos por levantar.<br>${escapeReport(explanatory)}<br>Este relatório reúne apenas os movimentos guardados neste navegador. Não constitui prova de dinheiro físico ou registo contabilístico certificado.</p><p class="meta right">Sessões: ${reportRows().length} · Jogadas: ${t.spins}</p></div></main></body></html>`;
 }
 // V26: o Safari não precisa de permitir pop-ups; o relatório completo abre num quadro interno.
 function openReportViewer(){
