@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#24112d">
   <meta name="description" content="Portões do Trovão: uma slot de demonstração com 6x5, quedas, multiplicadores e rodadas grátis. Só créditos virtuais.">
-  <title>Portões do Trovão — V1</title>
+  <title>Portões do Trovão — V2</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/estilo.css?v=1">
-  <script defer src="js/jogo.js?v=1"></script>
+  <link rel="stylesheet" href="css/referencia-v2.css?v=2">
+  <script defer src="js/jogo.js?v=2"></script>
 </head>
 <body>
   <div id="app" class="app">
@@ -21,7 +22,7 @@
       <div class="top-actions">
         <span class="demo-tag">MODO DEMONSTRAÇÃO</span>
         <button id="btnSound" class="round-icon" aria-label="Ativar ou desativar som" title="Som">♫</button>
-        <button id="btnHelp" class="round-icon" aria-label="Ver regras" title="Tabela de pagamentos">ⓘ</button>
+        <button id="btnHelp" class="round-icon pay-open" aria-label="Ver tabela de pagamentos" title="Tabela de pagamentos"><span aria-hidden="true">ⓘ</span><span class="pay-open-label">PAGAMENTOS</span></button>
         <button id="btnFull" class="round-icon" aria-label="Ecrã completo" title="Ecrã completo">⛶</button>
       </div>
     </header>
@@ -44,7 +45,7 @@
         </div>
       </section>
       <section class="machine" aria-label="Rolos do jogo">
-        <div class="machine-crown"><span>✦</span><strong id="bannerTitle">TEMPLO DO TROVÃO</strong><span>✦</span></div>
+        <div class="machine-crown"><span>✦</span><strong id="bannerTitle">PRÉMIOS EM QUALQUER POSIÇÃO</strong><span>✦</span></div>
         <div class="board-shell">
           <div class="board-glow" aria-hidden="true"></div>
           <div class="board" id="board" aria-label="Grelha com 6 colunas e 5 linhas">
@@ -89,7 +90,7 @@
       </div>
       <button id="btnTurbo" class="turbo-button" aria-pressed="false">⚡ TURBO <small>OFF</small></button>
     </footer>
-    <div class="version">V1.0 · DEMO · CRÉDITOS VIRTUAIS</div>
+    <div class="version">V2.0 · DEMO · CRÉDITOS VIRTUAIS</div>
   </div>
 
   <div id="modalBackdrop" class="modal-backdrop hidden" role="presentation">
