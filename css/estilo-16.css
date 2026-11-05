@@ -1,0 +1,94 @@
+/* Jardim Mágico V60 — celebrações sobre o tabuleiro.
+   Sem caixas nem botões: texto luminoso, moedas/luzes e fade suave. */
+#stageWrap>.jm60WinCelebration{
+ position:absolute;inset:0;z-index:28;pointer-events:none;
+ display:flex;align-items:center;justify-content:center;flex-direction:column;
+ isolation:isolate;text-align:center;
+ background:radial-gradient(ellipse at 50% 50%,rgba(29,12,47,.45) 0%,rgba(23,11,33,.18) 54%,transparent 79%);
+ animation:jm60Overlay var(--jm60-duration,2600ms) ease-out both;
+}
+#stageWrap>.jm60WinCelebration .jm60TierName{
+ position:relative;z-index:2;
+ padding:0;margin:0;
+ font:900 clamp(34px,9.1vw,83px)/1 Georgia,'Times New Roman',serif;
+ letter-spacing:.065em;white-space:nowrap;
+ color:#ffe89b;
+ -webkit-text-stroke:.5px #ffc769;
+ text-shadow:0 3px 1px #552139,0 0 12px #ffc66d,0 0 24px #ffe39c,0 0 42px #e087edab;
+ animation:jm60Title var(--jm60-duration,2600ms) cubic-bezier(.21,.84,.25,1) both;
+}
+#stageWrap>.jm60WinCelebration .jm60TierAmount{
+ position:relative;z-index:2;margin-top:clamp(3px,1.2dvh,11px);
+ font:900 clamp(23px,6.8vw,59px)/1.05 Georgia,serif;
+ color:#fff6c5;white-space:nowrap;
+ text-shadow:0 1px 3px #421324,0 0 12px #ffcf77,0 0 23px #fff0b75e;
+ animation:jm60Amount var(--jm60-duration,2600ms) ease-in-out both;
+}
+#stageWrap>.jm60WinCelebration .jm60TierCaption{
+ position:relative;z-index:2;margin-top:clamp(4px,1.4dvh,11px);
+ font:900 clamp(12px,3vw,21px)/1.2 Georgia,serif;
+ color:#fff1c3;letter-spacing:.1em;
+ text-shadow:0 1px 3px #390e26,0 0 9px #ffdb9c;
+ animation:jm60Amount var(--jm60-duration,2600ms) ease-in-out both;
+}
+#stageWrap>.jm60WinCelebration.jm60-nice .jm60TierName{color:#ffe19a;text-shadow:0 2px 2px #642332,0 0 17px #ffb94e}
+#stageWrap>.jm60WinCelebration.jm60-mega .jm60TierName{color:#d0fbff;text-shadow:0 3px 3px #2d234a,0 0 17px #74defd,0 0 33px #9bd9fc}
+#stageWrap>.jm60WinCelebration.jm60-super .jm60TierName{color:#e5c8ff;text-shadow:0 3px 3px #421a6c,0 0 17px #bd6aff,0 0 35px #c3a0ff}
+#stageWrap>.jm60WinCelebration.jm60-epico .jm60TierName{color:#ffcddd;text-shadow:0 3px 3px #60203a,0 0 18px #fa6188,0 0 39px #ffb0c5}
+#stageWrap>.jm60WinCelebration.jm60-sensacional .jm60TierName{
+ font-size:clamp(30px,8vw,72px);
+ color:#fff5b1;text-shadow:0 3px 3px #743d27,0 0 17px #ffe080,0 0 41px #f7d061,0 0 64px #ffef8a;
+}
+#stageWrap>.jm60WinCelebration .jm60WinSpark{
+ position:absolute;top:50%;left:50%;z-index:1;
+ width:clamp(4px,1vw,9px);height:clamp(4px,1vw,9px);
+ border-radius:50%;background:#fff4b9;
+ box-shadow:0 0 8px 3px #fff0a3,0 0 18px #ffbf62;
+ opacity:0;
+ animation:jm60Spark var(--jm60-duration,2600ms) ease-out var(--spark-delay,0s) both;
+}
+@keyframes jm60Overlay{
+ 0%{opacity:0}10%,69%{opacity:1}100%{opacity:0}
+}
+@keyframes jm60Title{
+ 0%{transform:scale(.42) rotate(-3deg);opacity:0;filter:brightness(2)}
+ 18%{transform:scale(1.26) rotate(1deg);opacity:1;filter:brightness(1.65)}
+ 32%,72%{transform:scale(1) rotate(0);opacity:1;filter:brightness(1)}
+ 100%{transform:scale(1.08);opacity:0}
+}
+@keyframes jm60Amount{
+ 0%,11%{transform:translateY(12px) scale(.87);opacity:0}
+ 28%,76%{transform:translateY(0) scale(1);opacity:1}
+ 100%{transform:translateY(-9px) scale(1.05);opacity:0}
+}
+@keyframes jm60Spark{
+ 0%,10%{transform:translate(-50%,-50%) scale(.4);opacity:0}
+ 23%{opacity:1}
+ 82%{opacity:.65}
+ 100%{transform:translate(calc(-50% + var(--spark-x,50px)),calc(-50% + var(--spark-y,-80px))) scale(.1);opacity:0}
+}
+#jm52FreeSummary .jm60SummaryTitle{
+ font:900 clamp(21px,5.5vw,46px)/1 Georgia,serif;
+ letter-spacing:.045em;color:#ffebb3;
+ text-shadow:0 2px 4px #4c1c38,0 0 19px #f6c66c;
+ animation:jm60SummaryGlow 1.6s ease-in-out infinite alternate;
+}
+#jm52FreeSummary .jm60SummaryTitle:empty{display:none}
+#jm52FreeSummary .jm60SummaryTitle.jm60-mega{color:#c9f4ff}
+#jm52FreeSummary .jm60SummaryTitle.jm60-super{color:#e7d4ff}
+#jm52FreeSummary .jm60SummaryTitle.jm60-epico{color:#ffccdd}
+#jm52FreeSummary .jm60SummaryTitle.jm60-sensacional{color:#fff1ab}
+@keyframes jm60SummaryGlow{from{transform:scale(.98);filter:brightness(1)}to{transform:scale(1.07);filter:brightness(1.5)}}
+@media(orientation:landscape) and (max-height:450px){
+ #stageWrap>.jm60WinCelebration .jm60TierName{font-size:clamp(27px,9dvh,53px)}
+ #stageWrap>.jm60WinCelebration.jm60-sensacional .jm60TierName{font-size:clamp(24px,8dvh,48px)}
+ #stageWrap>.jm60WinCelebration .jm60TierAmount{font-size:clamp(18px,7dvh,38px)}
+ #jm52FreeSummary .jm60SummaryTitle{font-size:clamp(18px,6dvh,31px)}
+}
+@media(prefers-reduced-motion:reduce){
+ #stageWrap>.jm60WinCelebration,#stageWrap>.jm60WinCelebration .jm60TierName,
+ #stageWrap>.jm60WinCelebration .jm60TierAmount,
+ #stageWrap>.jm60WinCelebration .jm60TierCaption,
+ #jm52FreeSummary .jm60SummaryTitle{animation:none!important;opacity:1!important;filter:none!important}
+ #stageWrap>.jm60WinCelebration .jm60WinSpark{display:none!important}
+}
