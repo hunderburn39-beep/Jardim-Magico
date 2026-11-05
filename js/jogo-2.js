@@ -23,6 +23,9 @@ const MAX_WIN_MULT=5000;
 const MAX_WILD_LINE_FACTOR=5;
 const MAX_FREE_RETRIGGERS=2; // Regra pública V65: duas extensões por sessão (até 45 jogadas se 3 SCATTER duas vezes).
 const FREE_SCATTER_PROBABILITY=.018; // Probabilidade FIXA por posição nas free spins; independente do saldo/cofre.
+const FREE_MUL_PROBABILITY=.009; // V66: bola MULTI com 0,9% por posição nas free spins.
+const FREE_WILD_PROBABILITY=.034;
+const FREE_COIN_PROBABILITY=.030;
 const CASH_PIN='12345';
 const PROTECTED_SHARE=0.25; // Parte intocável da parcela reservada em cada aposta.
 
@@ -629,10 +632,10 @@ function chooseWildFactor(){
  return 5;
 }
 function sym(){const p=Math.random();if(freeSpins>0 || awardContext==='free'){
- if(p<.012)return {id:'mul',value:chooseSpinMul()};
- if(p<.012+FREE_SCATTER_PROBABILITY)return {id:'scatter'};
- if(p<.064)return {id:'wild',factor:chooseWildFactor()};
- if(p<.094)return {id:'coin',uid:++symbolSeq,value:pick([10,20,50,100,200,500,1000,2000,5000])};
+ if(p<FREE_MUL_PROBABILITY)return {id:'mul',value:chooseSpinMul()};
+ if(p<FREE_MUL_PROBABILITY+FREE_SCATTER_PROBABILITY)return {id:'scatter'};
+ if(p<FREE_MUL_PROBABILITY+FREE_SCATTER_PROBABILITY+FREE_WILD_PROBABILITY)return {id:'wild',factor:chooseWildFactor()};
+ if(p<FREE_MUL_PROBABILITY+FREE_SCATTER_PROBABILITY+FREE_WILD_PROBABILITY+FREE_COIN_PROBABILITY)return {id:'coin',uid:++symbolSeq,value:pick([10,20,50,100,200,500,1000,2000,5000])};
 }else{
  if(p<.0045)return {id:'mul',value:chooseSpinMul()};
  if(p<.0335)return {id:'scatter'};
