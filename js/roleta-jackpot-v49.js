@@ -36,7 +36,7 @@ function createFace(slots){
 function build(slots){
  const modal=document.createElement('section');
  modal.id='jm49WheelModal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-labelledby','jm49WheelHeading');
- modal.innerHTML='<div class="jm49WheelDialog"><div class="jm49WheelStars" aria-hidden="true">✦ ✧ ✦</div><h2 id="jm49WheelHeading">ROULETA DE JACKPOTS</h2><p class="jm49WheelExplanation">25 QUADRADOS COMPLETOS · 32 CASAS</p><div class="jm49WheelBoard"><div class="jm49WheelPointer" aria-hidden="true">▼</div><div class="jm49WheelDisc"></div></div><p id="jm49WheelStatus" class="jm49WheelStatus" role="status" aria-live="polite">A roda vai começar…</p><p class="jm49WheelPrize" id="jm49WheelPrize"></p><div class="jm49WheelFooter">MIN · MED · MAX · ULTRA · <strong>↻ RESPIN</strong><small>O RESPIN faz a roleta rodar novamente, automaticamente.</small></div></div>';
+ modal.innerHTML='<div class="jm49WheelDialog"><div class="jm49WheelStars" aria-hidden="true">✦ ✧ ✦</div><h2 id="jm49WheelHeading">ROULETA DE JACKPOTS</h2><p class="jm49WheelExplanation">16 QUADRADOS COMPLETOS · 32 CASAS</p><div class="jm49WheelBoard"><div class="jm49WheelPointer" aria-hidden="true">▼</div><div class="jm49WheelDisc"></div></div><p id="jm49WheelStatus" class="jm49WheelStatus" role="status" aria-live="polite">A roda vai começar…</p><p class="jm49WheelPrize" id="jm49WheelPrize"></p><div class="jm49WheelFooter">MIN · MED · MAX · ULTRA · <strong>↻ RESPIN</strong><small>O RESPIN faz a roleta rodar novamente, automaticamente.</small></div></div>';
  const target=modal.querySelector('.jm49WheelDisc');
  target.append(createFace(slots));
  document.body.append(modal);
@@ -46,10 +46,12 @@ let view=null,playing=false;
 async function play(options){
  if(playing) return;
  playing=true;
- const {slots,stops,turbo=false,amount=0,onSpin,onStop}=options;
+ const {slots,stops,boardCells=16,turbo=false,amount=0,onSpin,onStop}=options;
  if(!Array.isArray(slots)||slots.length!==32||!Array.isArray(stops)||!stops.length){playing=false;throw Error('Invalid wheel configuration')}
  if(!view)view=build(slots);
  const {modal,disc,status,prize}=view;
+ const description=modal.querySelector('.jm49WheelExplanation');
+ if(description)description.textContent=boardCells+' QUADRADOS COMPLETOS · 32 CASAS';
  modal.classList.add('open');
  disc.style.transition='none';disc.style.transform='rotate(0deg)';
  prize.textContent='';status.textContent='TABULEIRO COMPLETO! ✨';
