@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: github-pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   publicar:
@@ -43,6 +43,7 @@ jobs:
       - name: Enviar ficheiros do jogo
         uses: actions/upload-pages-artifact@v4
         with:
+          name: github-pages-attempt-${{ github.run_attempt }}
           path: public
 
       - name: Libertar deployment Pages antigo bloqueado
@@ -57,3 +58,5 @@ jobs:
       - name: Publicar site
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-attempt-${{ github.run_attempt }}
