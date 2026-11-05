@@ -1142,7 +1142,8 @@ function mulOrbTop(v,x,y){return new Promise(resolve=>{const slot=$('orbs'),stag
 function updateShelf(){
  const box=$('orbs'),freeActive=freeSpins>0||freeAutoRunning||freeSettlePending||freeSummaryPending;
  const tag=document.querySelector('.shelfTag');
- if(tag)tag.innerHTML=freeActive?'MULTIS<br>FREE SPINS':'MULTIPLICADORES<br>ACUMULADOS';
+ if(tag)tag.innerHTML=freeActive?'MULTIS<br>FREE SPINS':'MULTIS<br>ACUMULADOS';
+ if(tag)tag.title='Multiplicadores acumulados';
  box.replaceChildren();
  // Em free spins, NENHUMA bola é apagada: ficam todas guardadas, podem
  // deslocar-se horizontalmente e a soma à direita mantém-se atualizada.
