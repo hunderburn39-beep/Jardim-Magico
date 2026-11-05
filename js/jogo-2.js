@@ -106,7 +106,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const R=x=>Math.floor(Math.random()*x);
 const pick=(arr)=>arr[R(arr.length)];
 let betIdx=2,balance=0,lastPrize=0,mode='normal',running=false,freeSpins=0,freeBet=20,bonus=null,session=null,history=[],mute=false;
-let freeBonusTotal=0,freeSummaryPending=false,freeSummaryCount=0; // V52 — fecho manual das free spins
+let freeBonusTotal=0,freeSummaryPending=false,freeSummaryCount=0;
+let vaultFictiveSum=0; // Valores exibidos nas moedas do porquinho; não entram nos prémios // V52 — fecho manual das free spins
 let grid=Array.from({length:5},()=>Array.from({length:3},()=>({id:pick(regular)})));
 let transitions=Array(5).fill(null),cascades=Array(5).fill(null),dropItems=[],burstParticles=[],lineGlow=[],floaters=[];
 let shelf=[],winRound=0,pixi=null,pixiSprites=[],nativeAssets={},nativeCtx=$('reelCanvas').getContext('2d'),tickerRunning=false,t0=performance.now();
@@ -137,8 +138,8 @@ function soundReelLanding(){
 }
 
 
-function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,freeBonusTotal,freeSummaryPending,freeSummaryCount,vaultCoins,musicEnabled,musicVolume,rtpConfig,profitPercent,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,progressivePools,progressiveCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
-function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;freeBonusTotal=Math.max(0,Math.round(Number(data.freeBonusTotal)||0));freeSummaryPending=!!data.freeSummaryPending;freeSummaryCount=Math.max(0,Math.round(Number(data.freeSummaryCount)||0));vaultCoins=Math.max(0,Number(data.vaultCoins)||0);bonus=([16,25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(0,Math.min(70,Number(data.profitPercent))):4;prizePool=Math.max(0,Math.floor(Number(data.prizePool)||0));operatorReserve=Math.max(0,Math.floor(Number(data.operatorReserve)||0));protectedReserve=Math.min(operatorReserve,Math.max(0,Math.floor(Number(data.protectedReserve??(operatorReserve*PROTECTED_SHARE)))));protectedCarry=Math.max(0,Number(data.protectedCarry)||0);ownerWithdrawn=Math.max(0,Math.floor(Number(data.ownerWithdrawn)||0));riskReserve=Math.max(0,Math.floor(Number(data.riskReserve)||0));ownerCarry=Math.max(0,Number(data.ownerCarry)||0);poolCarry=Math.max(0,Number(data.poolCarry)||0);
+function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,freeBonusTotal,freeSummaryPending,freeSummaryCount,vaultCoins,vaultFictiveSum,musicEnabled,musicVolume,rtpConfig,profitPercent,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,progressivePools,progressiveCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
+function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;freeBonusTotal=Math.max(0,Math.round(Number(data.freeBonusTotal)||0));freeSummaryPending=!!data.freeSummaryPending;freeSummaryCount=Math.max(0,Math.round(Number(data.freeSummaryCount)||0));vaultCoins=Math.max(0,Number(data.vaultCoins)||0);vaultFictiveSum=Math.max(0,Math.round(Number(data.vaultFictiveSum)||0));bonus=([16,25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(0,Math.min(70,Number(data.profitPercent))):4;prizePool=Math.max(0,Math.floor(Number(data.prizePool)||0));operatorReserve=Math.max(0,Math.floor(Number(data.operatorReserve)||0));protectedReserve=Math.min(operatorReserve,Math.max(0,Math.floor(Number(data.protectedReserve??(operatorReserve*PROTECTED_SHARE)))));protectedCarry=Math.max(0,Number(data.protectedCarry)||0);ownerWithdrawn=Math.max(0,Math.floor(Number(data.ownerWithdrawn)||0));riskReserve=Math.max(0,Math.floor(Number(data.riskReserve)||0));ownerCarry=Math.max(0,Number(data.ownerCarry)||0);poolCarry=Math.max(0,Number(data.poolCarry)||0);
 for(const type of Object.keys(JACKPOTS)){
  progressivePools[type]=Math.max(0,Math.floor(Number(data.progressivePools?.[type])||0));
  progressiveCarry[type]=Math.max(0,Number(data.progressiveCarry?.[type])||0);
@@ -164,7 +165,7 @@ function update(){
  const vaultText=vaultCoins+' MOEDAS',vaultWidth=Math.min(100,vaultCoins/40*100)+'%';
  $('vaultCount').textContent=vaultText;$('vaultFill').style.width=vaultWidth;$('vaultBtn').classList.toggle('ready',vaultCoins>=4);$('vaultBtn').classList.toggle('vaultFull',vaultCoins>=8);
  $('vaultBtn').style.setProperty('--vaultGrow',(1+Math.min(26,vaultCoins)*.022).toFixed(2));
- if($('vaultCountMobile'))$('vaultCountMobile').textContent=vaultText;if($('vaultFillMobile'))$('vaultFillMobile').style.width=vaultWidth;if($('vaultBtnMobile')){$('vaultBtnMobile').classList.toggle('ready',vaultCoins>=4);$('vaultBtnMobile').classList.toggle('vaultFull',vaultCoins>=8);$('vaultBtnMobile').style.setProperty('--vaultGrow',(1+Math.min(26,vaultCoins)*.022).toFixed(2));}
+ if($('vaultBtnMobile')){$('vaultBtnMobile').title='Cofre: '+money(vaultFictiveSum)+' (valores decorativos em créditos fictícios)';let value=$('vaultBtnMobile').querySelector('.jm52PigValue');if(!value){value=document.createElement('span');value.className='jm52PigValue';$('vaultBtnMobile').append(value);}value.textContent=money(vaultFictiveSum);}if($('vaultCountMobile'))$('vaultCountMobile').textContent=vaultText;if($('vaultFillMobile'))$('vaultFillMobile').style.width=vaultWidth;if($('vaultBtnMobile')){$('vaultBtnMobile').classList.toggle('ready',vaultCoins>=4);$('vaultBtnMobile').classList.toggle('vaultFull',vaultCoins>=8);$('vaultBtnMobile').style.setProperty('--vaultGrow',(1+Math.min(26,vaultCoins)*.022).toFixed(2));}
  refreshBuyOptions();
  $('withdrawBtn').disabled=running||!!bonus||freeSpins>0||!session||balance<=0;
  $('depositBtn').disabled=running||!!bonus||freeSpins>0;
@@ -216,7 +217,7 @@ function submitDeposit(){
 }
 function freshSession(credits){
  if(session){notice('Termina a sessão atual para começares outra.');return;}
- balance=Math.round(credits*100);lastPrize=0;freeSpins=0;vaultCoins=0;session={id:Date.now(),start:new Date().toISOString(),initial:balance,deposits:0,rtpPercent:RTP_REFERENCE,profitPercent,ownerWithdrawn:0, poolFunded:0,poolPaid:0,operatorFunded:0,bufferFunded:0,stake:0,prizes:0,withdrawn:0,spins:0,bonuses:0,events:[]};
+ balance=Math.round(credits*100);lastPrize=0;freeSpins=0;vaultCoins=0;vaultFictiveSum=0;session={id:Date.now(),start:new Date().toISOString(),initial:balance,deposits:0,rtpPercent:RTP_REFERENCE,profitPercent,ownerWithdrawn:0, poolFunded:0,poolPaid:0,operatorFunded:0,bufferFunded:0,stake:0,prizes:0,withdrawn:0,spins:0,bonuses:0,events:[]};
  log('entrada',balance,'Saldo inicial de créditos virtuais');modal('startModal',false);notice('Pronto para jogar. Boa sorte no jardim!');update();save();soundStart();
 }
 function doWithdraw(){if(!session||running||bonus||freeSpins>0)return;if($('withdrawPassword').value!==CASH_PIN){$('withdrawError').textContent='Palavra-passe incorreta. Usa a mesma do depósito.';$('withdrawPassword').value='';return;}const value=Number($('withdrawAmount').value);if(!Number.isFinite(value)||value<=0){alert('Indica um valor válido para levantar.');return;}const cents=Math.round(value*100);if(cents>balance){alert('O valor do levantamento não pode ser superior ao saldo disponível.');return;}balance-=cents;session.withdrawn=(session.withdrawn||0)+cents;log('levantamento',cents,'Levantamento virtual parcial');$('withdrawPassword').value='';$('withdrawError').textContent='';modal('withdrawModal',false);notice('Levantamento efetuado: -'+money(cents));if(balance<=0)notice('Saldo esgotado. Podes fazer depósito para continuar a jogar.');update();save()}
@@ -476,32 +477,32 @@ function sym(){const p=Math.random();if(freeSpins>0 || awardContext==='free'){
  if(p<.012)return {id:'mul',value:chooseSpinMul()};
  if(p<.047)return {id:'scatter'};
  if(p<.090)return {id:'wild',factor:2};
- if(p<.120)return {id:'coin',uid:++symbolSeq};
+ if(p<.120)return {id:'coin',uid:++symbolSeq,value:pick([10,20,50,100,200,500,1000,2000,5000])};
 }else{
  if(p<.0045)return {id:'mul',value:chooseSpinMul()};
  if(p<.0335)return {id:'scatter'};
  if(p<.0735)return {id:'wild',factor:2};
- if(p<.0995)return {id:'coin',uid:++symbolSeq};
+ if(p<.0995)return {id:'coin',uid:++symbolSeq,value:pick([10,20,50,100,200,500,1000,2000,5000])};
 }return {id:pick(regular)};}
 
-function flyCoinToVault(x,y,delay=0){
+function flyCoinToVault(x,y,delay=0,faceValue=0){
  return new Promise(resolve=>{
   const stage=$('stageWrap').getBoundingClientRect(),dst=$('vaultFace').getBoundingClientRect(),layer=$('vaultFlight');
   const sx=stage.left+(x+.5)*stage.width/5,sy=stage.top+(y+.5)*stage.height/3;
   const ex=dst.left+dst.width/2,ey=dst.top+dst.height/2;
-  const node=document.createElement('div');node.className='flyVaultCoin';node.textContent='✦';node.style.left=sx+'px';node.style.top=sy+'px';
+  const node=document.createElement('div');node.className='flyVaultCoin';node.textContent=faceValue?'+'+(faceValue/100).toLocaleString('pt-PT',{maximumFractionDigits:2})+'€':'✦';node.style.left=sx+'px';node.style.top=sy+'px';
   node.style.setProperty('--dx',(ex-sx)+'px');node.style.setProperty('--dy',(ey-sy)+'px');
   node.style.setProperty('--flyTime',mode==='turbo'?'380ms':'760ms');layer.append(node);
   setTimeout(()=>{node.classList.add('flying');audioFX('coin')},25+delay);
   const duration=(mode==='turbo'?380:760)+delay+80;
-  setTimeout(()=>{node.remove();vaultCoins++;roundVaultNew++;update();
+  setTimeout(()=>{node.remove();vaultCoins++;vaultFictiveSum+=faceValue;roundVaultNew++;update();
    const v=$('vaultFace');v.animate([{filter:'brightness(2.5)',transform:'scale(1.45)'},{filter:'brightness(1)',transform:'scale(1)'}],{duration:330,easing:'ease-out'});resolve();},duration);
  });
 }
 async function collectVaultCoins(){
- const fresh=[];for(let x=0;x<5;x++)for(let y=0;y<3;y++){const s=grid[x][y];if(s.id==='coin'&&!countedCoins.has(s.uid)){countedCoins.add(s.uid);fresh.push({x,y})}}
+ const fresh=[];for(let x=0;x<5;x++)for(let y=0;y<3;y++){const s=grid[x][y];if(s.id==='coin'&&!countedCoins.has(s.uid)){countedCoins.add(s.uid);fresh.push({x,y,value:Math.max(0,Math.round(Number(s.value)||0))})}}
  if(!fresh.length)return 0;
- await Promise.all(fresh.map((p,i)=>flyCoinToVault(p.x,p.y,i*(mode==='turbo'?18:75))));
+ await Promise.all(fresh.map((p,i)=>flyCoinToVault(p.x,p.y,i*(mode==='turbo'?18:75),p.value)));
  notice('✨ O cofre recebeu mais moedas...');return fresh.length;
 }
 function maybeTriggerVault(){
@@ -521,7 +522,7 @@ async function vaultExplosion(){
   coin.style.setProperty('--twist',rand(-1300,1300)+'deg');coin.style.setProperty('--endScale',rand(.28,1.45).toFixed(2));coin.style.setProperty('--life',rand(1000,1600).toFixed(0)+'ms');
   layer.appendChild(coin);setTimeout(()=>coin.remove(),1750);
  }
- await sleep(mode==='turbo'?950:1350);v.classList.remove('vaultBurst');ripple.remove();vaultCoins=0;roundVaultNew=0;update();
+ await sleep(mode==='turbo'?950:1350);v.classList.remove('vaultBurst');ripple.remove();vaultCoins=0;vaultFictiveSum=0;roundVaultNew=0;update();
 }
 async function showFeatureIntro(kind){
  const box=$('featureIntro');$('featureTitle').textContent=kind==='free'?'15 FREE SPINS!':'HOLD & WIN!';
@@ -1006,17 +1007,44 @@ async function animateCascade(remove){
 function mulOrbTop(v,x,y){return new Promise(resolve=>{const slot=$('orbs'),stage=$('stageWrap');const from=stage.getBoundingClientRect(),to=slot.getBoundingClientRect();const node=document.createElement('span');node.className='orbPill';node.textContent=v+'×';node.style.cssText=`position:fixed;z-index:90;pointer-events:none;left:${from.left+(x+.5)*from.width/5-19}px;top:${from.top+(y+.5)*from.height/3-19}px;transition:transform ${mode==='turbo'?.3:.65}s cubic-bezier(.18,.77,.21,1),opacity .7s;width:40px;height:40px;`;
  document.body.append(node);const dx=to.left+to.width*.7-(from.left+(x+.5)*from.width/5),dy=to.top+to.height*.5-(from.top+(y+.5)*from.height/3);requestAnimationFrame(()=>node.style.transform=`translate(${dx}px,${dy}px) scale(.65)`);setTimeout(()=>{node.remove();resolve()},mode==='turbo'?320:680)})}
 function updateShelf(){const box=$('orbs');box.replaceChildren();for(const s of shelf.slice(-10)){const e=document.createElement('span');e.className='orbPill';e.textContent=s+'×';box.append(e)}$('shelfTotal').textContent='×'+(shelf.length?shelf.reduce((a,b)=>a+b,0):1)}
+/* V52 — são seis moedas visíveis simultaneamente nos 5 tambores (5×3).
+   A chuva é apenas visual e o valor impresso em cada moeda é fictício. */
+function countReelCoins(){return grid.reduce((total,col)=>total+col.filter(s=>s?.id==='coin').length,0);}
+async function showSixCoinCascade(){
+ const stage=$('stageWrap');if(!stage)return;
+ const layer=document.createElement('div');layer.className='jm52CoinRain';
+ stage.append(layer);audioFX('bonus');
+ const count=mode==='turbo'?55:105;
+ for(let i=0;i<count;i++){
+  const coin=document.createElement('span');coin.className='jm52RainCoin';
+  coin.textContent='€';
+  coin.style.left=(2+Math.random()*96).toFixed(2)+'%';
+  coin.style.setProperty('--fall-delay',(Math.random()*(mode==='turbo'?.35:.70)).toFixed(3)+'s');
+  coin.style.setProperty('--fall-time',((mode==='turbo'?.9:1.45)+Math.random()*.38).toFixed(3)+'s');
+  coin.style.setProperty('--fall-shift',((Math.random()-.5)*160).toFixed(1)+'px');
+  coin.style.setProperty('--fall-rotate',((Math.random()-.5)*870).toFixed(1)+'deg');
+  coin.style.setProperty('--fall-scale',(.48+Math.random()*1.12).toFixed(2));
+  layer.append(coin);
+ }
+ notice('🪙 SEIS MOEDAS! HOLD & WIN DESBLOQUEADO!');
+ for(let i=0;i<7;i++)setTimeout(()=>audioFX('coin'),i*(mode==='turbo'?74:155));
+ await sleep(mode==='turbo'?1320:2450);
+ layer.remove();
+}
+
 async function doRound(){
  if(running||bonus||!session)return;
  const free=freeSpins>0,stake=free?0:BETS[betIdx],betAmount=free?freeBet:BETS[betIdx];if(balance<stake)return;
  running=true;scatterNoteStep=0;awardContext=free?'free':'base';roundVaultNew=0;if(free){freeSpins--;freeSummaryCount++;}else{balance-=stake;session.stake+=stake;fundWager(stake);log('aposta',-stake,'Rodada base · cofre '+money(prizePool));}session.spins++;update();soundStart();notice(free?'✦ Rodada grátis!':'Tambores a rodar...');shelf=[];updateShelf();clearLines();winRound=0;
- await spinColumns(wholeGrid());await collectVaultCoins();let scatterTrigger=0,cascadeCount=0;const maxCascades=8;
+ let sixCoinTrigger=false;
+ const detectSixCoins=async()=>{if(!sixCoinTrigger&&countReelCoins()>=6){sixCoinTrigger=true;await showSixCoinCascade();}};
+ await spinColumns(wholeGrid());await detectSixCoins();await collectVaultCoins();let scatterTrigger=0,cascadeCount=0;const maxCascades=8;
  while(cascadeCount++<maxCascades){
   scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));const ev=evaluate(grid,betAmount),m=mulIndices(grid);if(!ev.won.length&&!m.length)break;
   if(ev.won.length){winRound+=ev.amount;markLines(ev.won);notice(`Linha premiada: ${money(ev.amount)} • cascata ${cascadeCount}`);await sleep(mode==='turbo'?380:940);}
   const remove=new Set();for(const l of ev.won)for(const [x,y] of l.points)remove.add(`${x}:${y}`);
   for(const mm of m){shelf.push(mm.v);updateShelf();await mulOrbTop(mm.v,mm.x,mm.y);remove.add(`${mm.x}:${mm.y}`);audioFX('multiplier',mm.v)}
-  if(!remove.size)break;await animateCascade(remove);scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));await collectVaultCoins();
+  if(!remove.size)break;await animateCascade(remove);scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));await detectSixCoins();await collectVaultCoins();
  }
  scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));
  clearLines();const factor=shelf.length?shelf.reduce((a,b)=>a+b,0):1,requestedWin=Math.min(winRound*factor,betAmount*MAX_WIN_MULT),winnings=payFromVault(requestedWin);lastPrize=winnings;if(free)freeBonusTotal+=winnings;
@@ -1027,7 +1055,9 @@ async function doRound(){
   await showFeatureIntro('free');
  }
  else if(winnings)notice(`Prémio pago: ${money(winnings)} • ${factor}×${winnings<requestedWin?' • limite do cofre':''}`);else notice(free?'Rodada grátis concluída.':'Sem prémio desta vez.');
- if(!free&&scatterTrigger>=3){
+ if(sixCoinTrigger){
+  running=false;await launchBonus(false,'6_moedas');
+ }else if(!free&&scatterTrigger>=3){
   running=false;openFreeStart();
  }else if(!free&&maybeTriggerVault()){
   await vaultExplosion();running=false;await launchBonus(false,'cofre');
@@ -1116,7 +1146,7 @@ async function launchBonus(purchase=true,origin='compra'){
  const cost=BETS[betIdx]*100;if(purchase&&balance<cost)return false;
  running=true;
  if(purchase){balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;log('compra_hold_win',-cost,'Hold & Win 4×4 — 100× aposta');}
- else{session.bonuses++;log('ativacao_cofre',0,'Hold & Win 4×4 ativado pelo cofre mágico');}
+ else{session.bonuses++;log(origin==='6_moedas'?'ativacao_6_moedas':'ativacao_cofre',0,origin==='6_moedas'?'Hold & Win 4×4: seis moedas nos cinco tambores':'Hold & Win 4×4 ativado pelo cofre mágico');}
  bonus={left:3,coinsTotal:0,cells:Array(BONUS_CELLS).fill(null),factors:[],gems:{ULTRA:0,MAX:0,MED:0,MIN:0},jackpot:null,focus:pick(Object.keys(JACKPOTS)),finished:false,endReason:null,inMotion:false,stakeBet:BETS[betIdx],origin,rolls:0};
  const spots=randomEmptyCells();
  for(let i=0;i<7;i++)addBonusCoin(spots[i],bonus.stakeBet*pick([1,2,2,3,5,8,10]));
