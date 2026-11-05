@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 145" role="img" aria-label="Porco mealheiro rosa com moeda dourada">
+<defs><radialGradient id="pink" cx=".32" cy=".24" r=".85"><stop stop-color="#ffe7df"/><stop offset=".42" stop-color="#fa92ae"/><stop offset=".74" stop-color="#d9518f"/><stop offset="1" stop-color="#842a6e"/></radialGradient><linearGradient id="gold" x2=".1" y2="1"><stop stop-color="#fff8a9"/><stop offset=".5" stop-color="#ffce53"/><stop offset="1" stop-color="#b77d22"/></linearGradient></defs>
+<ellipse cx="91" cy="127" rx="70" ry="10" fill="#000" opacity=".25"/>
+<path d="M43 44L24 16Q54 10 70 38M117 42L147 15Q158 32 134 56" fill="#ed80a4" stroke="#7e2a61" stroke-width="5" stroke-linejoin="round"/>
+<circle cx="92" cy="75" r="58" fill="url(#pink)" stroke="#ffbfce" stroke-width="4"/>
+<path d="M39 81Q12 72 18 53" stroke="#e867a0" stroke-width="9" fill="none" stroke-linecap="round"/>
+<ellipse cx="128" cy="90" rx="32" ry="23" fill="#faafc4" stroke="#b34886" stroke-width="4"/>
+<ellipse cx="118" cy="90" rx="4" ry="6" fill="#b84d83"/><ellipse cx="137" cy="90" rx="4" ry="6" fill="#b84d83"/>
+<ellipse cx="75" cy="70" rx="6.5" ry="9" fill="#47283d"/><circle cx="73" cy="67" r="2" fill="#fff"/>
+<path d="M60 118L57 135M114 120L120 135" stroke="#ad3d70" stroke-width="12" stroke-linecap="round"/>
+<rect x="82" y="35" width="36" height="7" rx="4" fill="#622a54" stroke="#ffa8c5" stroke-width="2"/>
+<circle cx="106" cy="19" r="17" fill="url(#gold)" stroke="#fff2ae" stroke-width="3"/><text x="106" y="26" text-anchor="middle" font-family="Georgia,serif" font-weight="bold" font-size="20" fill="#93571b">€</text>
+<path d="M46 51Q61 31 83 31" stroke="#fff" stroke-width="7" opacity=".55" fill="none" stroke-linecap="round"/>
+</svg>
