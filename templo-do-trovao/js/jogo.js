@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V8.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V9.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -175,6 +175,10 @@
           column:landing.column,row:landing.row,kind:landing.kind,
           strength:.59+landing.row*.047
         });
+        // O MP3 que antes tocava no GIRAR agora acompanha o SCATTER.
+        // O motor de áudio evita repetições consecutivas quando chegam
+        // vários SCATTER ou quando o bónus é ativado nesta mesma sequência.
+        if(landing.kind==="scatter")sfx("scatter");
       },landing.when));
     }
     return landings.length?lastLanding+95:0;
