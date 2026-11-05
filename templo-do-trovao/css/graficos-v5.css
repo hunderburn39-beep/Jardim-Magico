@@ -1,0 +1,136 @@
+/* PORTÕES DO TROVÃO V5 — imagens WebP reais e brilho de cristais.
+ * Alterar somente este ficheiro para afinar o novo visual. */
+:root{--crystal-brightness:1.08;--crystal-saturation:1.18}
+.scene-image{
+  background-image:url("../assets/fundo-3d-v5.webp")!important;
+  background-position:center 53%!important;
+  background-size:cover!important;
+  filter:saturate(1.05) brightness(.92);
+}
+.scene-image::after{
+  background:linear-gradient(90deg,rgba(25,7,56,.42),transparent 32%,transparent 71%,rgba(25,7,56,.50)),
+             linear-gradient(0deg,rgba(28,13,53,.47),transparent 39%)!important;
+}
+.scene-halo{opacity:.46}
+.scene-cloud-back{opacity:.38;filter:blur(5px)}
+.scene-cloud-front{opacity:.39}
+.game-logo{
+  content:url("../assets/logotipo-3d-v5.webp");
+  filter:drop-shadow(0 3px 9px #1c0641) drop-shadow(0 0 9px #f2c75a91)!important;
+  animation:logoAwe 4.8s ease-in-out infinite alternate;
+}
+.brand{width:min(42vw,540px)!important}
+.board-shell{
+  background:rgba(37,13,62,.02)!important;
+  border:5px solid #d69d4b!important;
+  border-radius:8px!important;
+  box-shadow:0 0 20px #f7cb64a3,0 4px 20px #271040d9,inset 0 0 12px #ffe2a35b!important;
+  overflow:visible!important;
+}
+.board-shell::before{
+  content:""!important;
+  position:absolute!important;
+  inset:-18px!important;
+  z-index:8!important;
+  display:block!important;
+  background:url("../assets/moldura-3d-v5.webp") center/100% 100% no-repeat!important;
+  clip-path:none!important;
+  opacity:.95;
+  filter:drop-shadow(0 2px 10px #facc7977);
+  pointer-events:none!important;
+}
+.board-shell::after{pointer-events:none;opacity:.35}
+.board{background:rgba(16,7,39,.20)!important;backdrop-filter:none!important;overflow:hidden!important}
+.cell{background:transparent!important;overflow:visible;contain:layout}
+.cell:not(.winner)::after{z-index:6;pointer-events:none}
+.symbol-bitmap{
+  --ax:0%;--ay:0%;
+  position:relative;
+  display:block;
+  width:100%;
+  height:100%;
+  background-image:url("../assets/atlas-3d-v5.webp");
+  background-repeat:no-repeat;
+  background-size:500% 300%;
+  background-position:var(--ax) var(--ay);
+  pointer-events:none;
+  backface-visibility:hidden;
+  transform:translateZ(0);
+  filter:drop-shadow(0 2px 2px #120821) drop-shadow(0 0 5px var(--gem-glow,#f8c965))
+    brightness(var(--crystal-brightness)) saturate(var(--crystal-saturation));
+  will-change:filter,transform,opacity;
+}
+.symbol-bitmap::after{
+  content:"";position:absolute;inset:4%;pointer-events:none;
+  background:linear-gradient(112deg,transparent 34%,rgba(255,255,255,.24) 46%,rgba(255,248,191,.05) 53%,transparent 65%);
+  mix-blend-mode:screen;
+  opacity:.33;
+  animation:crystalGlintV5 4.1s ease-in-out infinite;
+}
+.cell:nth-child(5n+2) .symbol-bitmap::after{animation-delay:-2.4s}
+.cell:nth-child(7n+3) .symbol-bitmap::after{animation-delay:-1.1s}
+.symbol-fallback-text{display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-size:clamp(22px,4vw,58px);text-shadow:0 0 9px #f4dd9b;z-index:2}
+body.asset-fallback .symbol-bitmap,body:not(.assets-ready) .symbol-bitmap{background-image:none!important}
+body.asset-fallback .symbol-fallback-text,body:not(.assets-ready) .symbol-fallback-text{display:flex}
+body.asset-fallback .symbol-bitmap::after,body:not(.assets-ready) .symbol-bitmap::after{display:none}
+.cell:not(.winner):not(.burst-out):not(.drop-in) .symbol-bitmap{
+  animation:gemIdleV5 3.3s ease-in-out infinite alternate!important;
+}
+.cell:nth-child(3n) .symbol-bitmap{animation-delay:-1.6s!important}
+.cell:nth-child(8n) .symbol-bitmap{animation-delay:-2.9s!important}
+.cell.winner .symbol-bitmap{
+  filter:drop-shadow(0 0 12px #fff7c8) drop-shadow(0 0 14px var(--gem-glow,#f5cf7e))
+    brightness(1.5) saturate(1.35)!important;
+  transform:scale(1.10) translateZ(0);
+  animation:gemWinV5 .16s ease-in-out infinite alternate!important;
+}
+.cell.burst-out .symbol-bitmap{
+  animation:crystalExplode .34s ease-in forwards!important;
+  animation-delay:var(--burst-delay,0s)!important;
+}
+.cell.drop-in .symbol-bitmap{
+  animation:none!important;
+}
+.cell.multiplier .orb-value{z-index:6;font-family:Georgia,serif;font-weight:900;
+  color:#fff4bb;text-shadow:0 2px 3px #5f2d71,0 0 8px #ffe9ab,0 0 11px #fff;
+  font-size:clamp(14px,2vw,30px);}
+.cell.scatter .symbol-bitmap{filter:drop-shadow(0 0 8px #65c9ff) drop-shadow(0 0 5px #fff) brightness(1.12)}
+.cell.multiplier .symbol-bitmap{filter:drop-shadow(0 0 8px #e484ff) brightness(1.12)}
+.pay-symbol.symbol-bitmap{
+  display:inline-block;
+  vertical-align:middle;
+  width:clamp(40px,5.1vw,70px);
+  height:clamp(40px,5.1vw,70px);
+  flex:none;
+  filter:drop-shadow(0 1px 3px #000a) brightness(1.13);
+}
+.pay-symbol::after{display:none}
+.pay-symbol .symbol-fallback-text{font-size:22px}
+.paytable-table td.pay-name{vertical-align:middle}
+.paytable-table td.pay-name b{white-space:normal}
+@keyframes crystalGlintV5{
+  0%,22%,56%,100%{opacity:.06;transform:translateX(-14%)}
+  33%,45%{opacity:.56;transform:translateX(12%)}
+}
+@keyframes gemIdleV5{
+  0%{transform:translate3d(0,0,0) scale(.995);filter:drop-shadow(0 3px 3px #10041b) drop-shadow(0 0 3px var(--gem-glow)) brightness(1.05)}
+  100%{transform:translate3d(0,-2px,0) scale(1.035);filter:drop-shadow(0 3px 3px #120528) drop-shadow(0 0 9px var(--gem-glow)) brightness(1.24)}
+}
+@keyframes gemWinV5{
+  0%{transform:scale(1.07);opacity:1}
+  100%{transform:scale(1.14);opacity:1}
+}
+@media(orientation:landscape) and (max-height:540px){
+  .brand{width:min(37vw,270px)!important}
+  .board-shell::before{inset:-9px!important}
+  .cell.multiplier .orb-value{font-size:clamp(12px,1.7vw,25px)}
+  .symbol-bitmap::after{display:none}
+}
+@media(orientation:portrait){
+  .brand{width:min(58vw,280px)!important}
+  .board-shell::before{inset:-9px!important}
+  .pay-symbol.symbol-bitmap{width:40px;height:40px}
+}
+@media(prefers-reduced-motion:reduce){
+  .symbol-bitmap,.symbol-bitmap::after{animation:none!important}
+}
