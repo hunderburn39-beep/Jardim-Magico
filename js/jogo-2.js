@@ -111,6 +111,7 @@ let freeBaseTotal=0,freeMultiplierBalls=[],freeSettlePending=false,freeSettlemen
 let vaultFictiveSum=0; // Valores exibidos nas moedas do porquinho; não entram nos prémios // V52 — fecho manual das free spins
 let grid=Array.from({length:5},()=>Array.from({length:3},()=>({id:pick(regular)})));
 let transitions=Array(5).fill(null),cascades=Array(5).fill(null),dropItems=[],burstParticles=[],lineGlow=[],floaters=[];
+const claimedMultiplierCells=new Set(); // V55: recolhidos não permanecem visíveis nos rolos
 let shelf=[],winRound=0,pixi=null,pixiSprites=[],nativeAssets={},nativeCtx=$('reelCanvas').getContext('2d'),tickerRunning=false,t0=performance.now();
 let audioCtx=null, fxMaster=null, lastSchoolBellAt=-Infinity, musicEnabled=true, musicVolume=.25;
 // V40: os sons de SCATTER/suspense acompanham apenas os símbolos realmente parados.
@@ -995,7 +996,7 @@ function frame(t){
  if(pixiReady){
   for(let x=0;x<5;x++)for(let y=0;y<3;y++){
    const p=animationPosition(x,y,t),sp=pixiSprites[x][y],old=pixiSprites[x][y+3];
-   if(cascades[x]){sp.visible=false;old.visible=false;continue}
+   if(cascades[x]||claimedMultiplierCells.has(x+':'+y)){sp.visible=false;old.visible=false;continue}
    setPixiSprite(sp,p.cur);sp.position.set(x*CW+CW/2,p.y+CH/2);jmPixiMotion(sp,p.cur,x,t);
    if(p.old){setPixiSprite(old,p.old);old.position.set(x*CW+CW/2,p.oldY+CH/2);jmPixiMotion(old,p.old,x,t);}
    else old.visible=false;
@@ -1007,7 +1008,7 @@ function frame(t){
    const parts=cascades[x].items;
    for(const part of parts){let q=Math.max(0,Math.min(1,(t-part.start)/part.duration));if(t<part.start)continue;let e=1-(1-q)**3;drawSymbol(ctx,part.s,x*CW,part.fromY+(part.toY-part.fromY)*e,CW,CH,t);}
   } else if(!pixiReady){
-   for(let y=0;y<3;y++){const p=animationPosition(x,y,t);if(p.old)drawSymbol(ctx,p.old,x*CW,p.oldY,CW,CH,t);drawSymbol(ctx,p.cur,x*CW,p.y,CW,CH,t);}
+   for(let y=0;y<3;y++){if(claimedMultiplierCells.has(x+':'+y))continue;const p=animationPosition(x,y,t);if(p.old)drawSymbol(ctx,p.old,x*CW,p.oldY,CW,CH,t);drawSymbol(ctx,p.cur,x*CW,p.y,CW,CH,t);}
   }
   ctx.restore();
  }
@@ -1111,34 +1112,89 @@ function markLines(won){
  audioFX('win');
 }
 function clearLines(){ $('paylines').innerHTML='';$('floaters').replaceChildren();}
-async function animateCascade(remove){
- const old=grid;const next=old.map(col=>[...col]);
+/* V55 — a bola recolhida desaparece e todas as colunas afetadas
+   fazem a queda ao mesmo tempo, tanto em Canvas como em Pixi. */
+function multiplierPop(x,y,value){
+ const stage=$('stageWrap');if(!stage)return;
+ const burst=document.createElement('span');
+ burst.className='jm55MultiplierPop';burst.textContent=value+'×';
+ burst.style.left=((x+.5)*100/5)+'%';burst.style.top=((y+.5)*100/3)+'%';
+ stage.append(burst);
+ particlesAt((x+.5)*CW,(y+.5)*CH,'big');
+ setTimeout(()=>burst.remove(),mode==='turbo'?300:520);
+}
+function nonMultiplierSymbol(){
+ for(let i=0;i<12;i++){const piece=sym();if(piece.id!=='mul')return piece;}
+ return {id:pick(regular)};
+}
+async function animateCascade(remove,noMoreMultipliers=false){
+ if(!remove.size)return;
+ const old=grid,next=old.map(col=>[...col]),changed=[];
  for(let x=0;x<5;x++){
-  const removed=Array.from(remove).filter(k=>k.startsWith(x+':')).map(k=>Number(k.split(':')[1]));
+  const removed=[...remove].filter(k=>k.startsWith(x+':')).map(k=>Number(k.split(':')[1]));
   if(!removed.length)continue;
   const survivorPositions=[0,1,2].filter(y=>!removed.includes(y));
   const survivors=survivorPositions.map(y=>old[x][y]);
   const count=3-survivors.length;
-  next[x]=[...Array.from({length:count},sym),...survivors];
+  next[x]=[...Array.from({length:count},()=>noMoreMultipliers?nonMultiplierSymbol():sym()),...survivors];
+  changed.push({x,removed,survivorPositions,count});
   for(const y of removed)particlesAt((x+.5)*CW,(y+.5)*CH);
  }
- audioFX('burst');await sleep(mode==='turbo'?45:120);clearLines();
- for(let x=0;x<5;x++){
-  const removed=Array.from(remove).filter(k=>k.startsWith(x+':')).map(k=>Number(k.split(':')[1]));
-  if(!removed.length)continue;
-  const remainPos=[0,1,2].filter(y=>!removed.includes(y)),count=3-remainPos.length;
-  const now=performance.now(),duration=mode==='turbo'?165:400,stagger=mode==='turbo'?35:125;
+ if(!changed.length)return;
+ audioFX('burst');
+ await sleep(mode==='turbo'?55:145);clearLines();
+ const now=performance.now(),duration=mode==='turbo'?185:440,stagger=mode==='turbo'?35:100;
+ for(const {x,survivorPositions,count} of changed){
   const items=[];
-  remainPos.forEach((row,k)=>items.push({s:old[x][row],fromY:row*CH,toY:(count+k)*CH,start:now,duration}));
+  survivorPositions.forEach((row,k)=>items.push({s:old[x][row],fromY:row*CH,toY:(count+k)*CH,start:now,duration}));
   for(let k=0;k<count;k++)items.push({s:next[x][k],fromY:(-count+k)*CH,toY:k*CH,start:now+stagger*(k+1),duration});
   cascades[x]={items};
-  await sleep(duration+stagger*count);
-  grid[x]=next[x];cascades[x]=null;soundReelLanding();symbolLandingSounds(x);
  }
+ await sleep(duration+stagger*3+25);
  grid=next;
+ for(const {x,removed} of changed){
+  cascades[x]=null;
+  for(const y of removed)claimedMultiplierCells.delete(x+':'+y);
+  soundReelLanding();symbolLandingSounds(x);
+ }
 }
-function mulOrbTop(v,x,y){return new Promise(resolve=>{const slot=$('orbs'),stage=$('stageWrap');const from=stage.getBoundingClientRect(),to=slot.getBoundingClientRect();const node=document.createElement('span');node.className='orbPill';node.textContent=v+'×';node.style.cssText=`position:fixed;z-index:90;pointer-events:none;left:${from.left+(x+.5)*from.width/5-19}px;top:${from.top+(y+.5)*from.height/3-19}px;transition:transform ${mode==='turbo'?.3:.65}s cubic-bezier(.18,.77,.21,1),opacity .7s;width:40px;height:40px;`;
- document.body.append(node);const dx=to.left+to.width*.7-(from.left+(x+.5)*from.width/5),dy=to.top+to.height*.5-(from.top+(y+.5)*from.height/3);requestAnimationFrame(()=>node.style.transform=`translate(${dx}px,${dy}px) scale(.65)`);setTimeout(()=>{node.remove();resolve()},mode==='turbo'?320:680)})}
+function mulOrbTop(v,x,y){
+ return new Promise(resolve=>{
+  const stage=$('stageWrap'),box=$('orbs'),cell=stage.getBoundingClientRect(),top=box.getBoundingClientRect();
+  if(!cell.width||!cell.height){resolve();return;}
+  const size=mode==='turbo'?25:32;
+  const sx=cell.left+(x+.5)*cell.width/5,sy=cell.top+(y+.5)*cell.height/3;
+  const dx=top.left+Math.max(8,top.width-18)-sx,dy=top.top+top.height/2-sy;
+  const element=document.createElement('span');
+  element.className='jm55MultiplierFlight';
+  element.textContent=v+'×';element.style.left=(sx-size/2)+'px';element.style.top=(sy-size/2)+'px';
+  element.style.width=size+'px';element.style.height=size+'px';
+  document.body.append(element);
+  const duration=mode==='turbo'?230:470;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+   element.style.transition='transform '+duration+'ms cubic-bezier(.12,.72,.19,1),opacity '+duration+'ms ease';
+   element.style.transform='translate('+dx+'px,'+dy+'px) scale(.50)';
+   element.style.opacity='.14';
+  }));
+  setTimeout(()=>{element.remove();resolve();},duration+40);
+ });
+}
+async function collectReelMultipliers(list,free){
+ if(!list.length)return new Set();
+ const toRemove=new Set();
+ for(const m of list){
+  const key=m.x+':'+m.y;
+  if(claimedMultiplierCells.has(key))continue;
+  claimedMultiplierCells.add(key);toRemove.add(key);
+  shelf.push(m.v);
+  multiplierPop(m.x,m.y,m.v);
+  audioFX('multiplier',m.v);
+ }
+ updateShelf();
+ if(free)save();
+ await Promise.all(list.filter(m=>toRemove.has(m.x+':'+m.y)).map(m=>mulOrbTop(m.v,m.x,m.y)));
+ return toRemove;
+}
 function updateShelf(){
  const box=$('orbs'),freeActive=freeSpins>0||freeAutoRunning||freeSettlePending||freeSummaryPending;
  const tag=document.querySelector('.shelfTag');
@@ -1188,13 +1244,17 @@ async function doRound(){
  running=true;scatterNoteStep=0;awardContext=free?'free':'base';roundVaultNew=0;if(free){freeSpins--;freeSummaryCount++;}else{balance-=stake;session.stake+=stake;fundWager(stake);log('aposta',-stake,'Rodada base · cofre '+money(prizePool));}session.spins++;update();soundStart();notice(free?'✦ Rodada grátis!':'Tambores a rodar...');shelf=free?freeMultiplierBalls:[];updateShelf();clearLines();winRound=0;
  let sixCoinTrigger=false;
  const detectSixCoins=async()=>{if(!sixCoinTrigger&&countReelCoins()>=6){sixCoinTrigger=true;await showSixCoinCascade();}};
- await spinColumns(wholeGrid());await detectSixCoins();await collectVaultCoins();let scatterTrigger=0,cascadeCount=0;const maxCascades=8;
+ await spinColumns(wholeGrid());await detectSixCoins();await collectVaultCoins();let scatterTrigger=0,cascadeCount=0;const maxCascades=12;
  while(cascadeCount++<maxCascades){
   scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));const ev=evaluate(grid,betAmount),m=mulIndices(grid);if(!ev.won.length&&!m.length)break;
   if(ev.won.length){winRound+=ev.amount;markLines(ev.won);notice(`Linha premiada: ${money(ev.amount)} • cascata ${cascadeCount}`);await sleep(mode==='turbo'?380:940);}
-  const remove=new Set();for(const l of ev.won)for(const [x,y] of l.points)remove.add(`${x}:${y}`);
-  for(const mm of m){shelf.push(mm.v);updateShelf();if(free)save();await mulOrbTop(mm.v,mm.x,mm.y);remove.add(`${mm.x}:${mm.y}`);audioFX('multiplier',mm.v)}
-  if(!remove.size)break;await animateCascade(remove);scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));await detectSixCoins();await collectVaultCoins();
+  const remove=new Set();
+  for(const line of ev.won)for(const [x,y] of line.points)remove.add(x+':'+y);
+  const collected=await collectReelMultipliers(m,free);
+  for(const key of collected)remove.add(key);
+  if(!remove.size)break;
+  await animateCascade(remove,cascadeCount>=maxCascades);
+  scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));await detectSixCoins();await collectVaultCoins();
  }
  scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));
  clearLines();
