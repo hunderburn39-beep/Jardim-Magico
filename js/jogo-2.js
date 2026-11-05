@@ -501,11 +501,30 @@ function flyCoinToVault(x,y,delay=0,faceValue=0){
    const v=$('vaultFace');v.animate([{filter:'brightness(2.5)',transform:'scale(1.45)'},{filter:'brightness(1)',transform:'scale(1)'}],{duration:330,easing:'ease-out'});resolve();},duration);
  });
 }
+/* V56: moedas também estouram, voam para o porquinho e abrem uma casa
+   para a cascata. Os valores impressos continuam apenas decorativos. */
+function coinPop(x,y,value){
+ const stage=$('stageWrap');if(!stage)return;
+ const pop=document.createElement('span');pop.className='jm56CoinPop';
+ pop.textContent='€';pop.style.left=((x+.5)*100/5)+'%';pop.style.top=((y+.5)*100/3)+'%';
+ stage.append(pop);particlesAt((x+.5)*CW,(y+.5)*CH,'big');
+ setTimeout(()=>pop.remove(),mode==='turbo'?320:540);
+}
 async function collectVaultCoins(){
- const fresh=[];for(let x=0;x<5;x++)for(let y=0;y<3;y++){const s=grid[x][y];if(s.id==='coin'&&!countedCoins.has(s.uid)){countedCoins.add(s.uid);fresh.push({x,y,value:Math.max(0,Math.round(Number(s.value)||0))})}}
- if(!fresh.length)return 0;
- await Promise.all(fresh.map((p,i)=>flyCoinToVault(p.x,p.y,i*(mode==='turbo'?18:75),p.value)));
- notice('✨ O cofre recebeu mais moedas...');return fresh.length;
+ const fresh=[];
+ for(let x=0;x<5;x++)for(let y=0;y<3;y++){
+  const piece=grid[x][y];
+  if(piece?.id!=='coin'||countedCoins.has(piece.uid))continue;
+  countedCoins.add(piece.uid);
+  const key=x+':'+y;
+  claimedMultiplierCells.add(key); // fica invisível durante o voo
+  fresh.push({x,y,key,value:Math.max(0,Math.round(Number(piece.value)||0))});
+ }
+ if(!fresh.length)return new Set();
+ for(const coin of fresh)coinPop(coin.x,coin.y,coin.value);
+ await Promise.all(fresh.map((coin,i)=>flyCoinToVault(coin.x,coin.y,i*(mode==='turbo'?10:30),coin.value)));
+ notice('🪙 Moedas recolhidas pelo porquinho! Entram peças novas.');
+ return new Set(fresh.map(coin=>coin.key));
 }
 function maybeTriggerVault(){
  if(!roundVaultNew||vaultCoins<8)return false;
@@ -1124,7 +1143,7 @@ function multiplierPop(x,y,value){
  setTimeout(()=>burst.remove(),mode==='turbo'?300:520);
 }
 function nonMultiplierSymbol(){
- for(let i=0;i<12;i++){const piece=sym();if(piece.id!=='mul')return piece;}
+ for(let i=0;i<12;i++){const piece=sym();if(piece.id!=='mul'&&piece.id!=='coin')return piece;}
  return {id:pick(regular)};
 }
 async function animateCascade(remove,noMoreMultipliers=false){
@@ -1244,17 +1263,27 @@ async function doRound(){
  running=true;scatterNoteStep=0;awardContext=free?'free':'base';roundVaultNew=0;if(free){freeSpins--;freeSummaryCount++;}else{balance-=stake;session.stake+=stake;fundWager(stake);log('aposta',-stake,'Rodada base · cofre '+money(prizePool));}session.spins++;update();soundStart();notice(free?'✦ Rodada grátis!':'Tambores a rodar...');shelf=free?freeMultiplierBalls:[];updateShelf();clearLines();winRound=0;
  let sixCoinTrigger=false;
  const detectSixCoins=async()=>{if(!sixCoinTrigger&&countReelCoins()>=6){sixCoinTrigger=true;await showSixCoinCascade();}};
- await spinColumns(wholeGrid());await detectSixCoins();await collectVaultCoins();let scatterTrigger=0,cascadeCount=0;const maxCascades=12;
+ await spinColumns(wholeGrid());await detectSixCoins();let scatterTrigger=0,cascadeCount=0;const maxCascades=12;
  while(cascadeCount++<maxCascades){
-  scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));const ev=evaluate(grid,betAmount),m=mulIndices(grid);if(!ev.won.length&&!m.length)break;
-  if(ev.won.length){winRound+=ev.amount;markLines(ev.won);notice(`Linha premiada: ${money(ev.amount)} • cascata ${cascadeCount}`);await sleep(mode==='turbo'?380:940);}
+  scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));
+  const ev=evaluate(grid,betAmount),m=mulIndices(grid);
+  const hasCoins=grid.some(col=>col.some(piece=>piece?.id==='coin'&&!countedCoins.has(piece.uid)));
+  if(!ev.won.length&&!m.length&&!hasCoins)break;
+  if(ev.won.length){
+   winRound+=ev.amount;markLines(ev.won);
+   notice('Linha premiada: '+money(ev.amount)+' • cascata '+cascadeCount);
+   await sleep(mode==='turbo'?690:1380); // deixar ver as quantias a desvanecer
+  }
   const remove=new Set();
   for(const line of ev.won)for(const [x,y] of line.points)remove.add(x+':'+y);
-  const collected=await collectReelMultipliers(m,free);
-  for(const key of collected)remove.add(key);
+  const collectedMultis=await collectReelMultipliers(m,free);
+  for(const key of collectedMultis)remove.add(key);
+  const collectedCoins=await collectVaultCoins();
+  for(const key of collectedCoins)remove.add(key);
   if(!remove.size)break;
   await animateCascade(remove,cascadeCount>=maxCascades);
-  scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));await detectSixCoins();await collectVaultCoins();
+  scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));
+  await detectSixCoins();
  }
  scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));
  clearLines();
