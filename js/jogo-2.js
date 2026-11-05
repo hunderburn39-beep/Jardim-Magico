@@ -65,8 +65,19 @@ function fundWager(stake){
  if(session){session.poolFunded=(session.poolFunded||0)+toPool;session.jackpotFunded=(session.jackpotFunded||0)+jpFunding;session.operatorFunded=(session.operatorFunded||0)+own;session.bufferFunded=(session.bufferFunded||0)+buffer;}
  return {toPool,own,buffer};
 }
+/* V65: pagamentos SEMPRE inferiores aos fundos realmente disponíveis,
+   sem tocar na reserva do proprietário/comerciante nem nos quatro jackpots.
+   Rejeita NaN, números negativos e decimais inválidos. */
+function vaultPayable(requested,bet=0){
+ const available=Number.isFinite(prizePool)?Math.max(0,Math.floor(prizePool)):0;
+ const value=Number(requested);
+ if(!Number.isFinite(value)||value<=0)return 0;
+ const cap=Number.isFinite(bet)&&bet>0?Math.min(available,Math.floor(bet*MAX_WIN_MULT)):available;
+ return Math.min(cap,Math.round(value));
+}
 function payFromVault(requested){
- const amount=Math.max(0,Math.min(prizePool,Math.round(Math.max(0,requested))));
+ const amount=vaultPayable(requested);
+ if(!amount)return 0;
  prizePool-=amount;balance+=amount;
  if(session){session.prizes+=amount;session.poolPaid=(session.poolPaid||0)+amount;}
  return amount;
@@ -97,9 +108,11 @@ function jackpotPayable(type,bet){
  return Math.max(0,Math.min(Math.floor(progressivePools[type]||0),bet*JACKPOTS[type].mult));
 }
 function payProgressive(type,bet,remainingLimit){
- const awarded=Math.max(0,Math.min(jackpotPayable(type,bet),Math.floor(remainingLimit)));
- progressivePools[type]-=awarded;
- balance+=awarded;
+ const available=Math.max(0,Math.floor(Number(progressivePools[type])||0));
+ const limit=Number.isFinite(remainingLimit)?Math.max(0,Math.floor(remainingLimit)):0;
+ const awarded=Math.min(available,jackpotPayable(type,bet),limit);
+ if(!awarded)return 0;
+ progressivePools[type]-=awarded;balance+=awarded;
  if(session){session.prizes+=awarded;session.jackpotPaid=(session.jackpotPaid||0)+awarded;}
  return awarded;
 }
@@ -692,7 +705,7 @@ function fillFreeSummary(node){
  node.querySelector('.jm52FreeHeading').textContent='FREE SPINS CONCLUÍDAS';
  node.querySelector('.jm54FreeFactor').textContent='MULTIPLICADORES ×'+factor;
  const raw=freeBaseTotal*factor,eligible=Math.min(raw,freeBet*MAX_WIN_MULT);
- node.querySelector('.jm54FreeEquation').textContent=money(freeBaseTotal)+' × '+factor+' = '+money(raw);
+ node.querySelector('.jm54FreeEquation').textContent='POTENCIAL '+money(freeBaseTotal)+' × '+factor+' = '+money(raw);
  node.querySelector('.jm54FreeLimit').textContent=raw>eligible?'TETO 5000×: '+money(eligible):freeBonusTotal<eligible?'PAGO ATÉ AO SALDO DO COFRE':'';
  node.querySelector('.jm52FreeValue').textContent=money(freeBonusTotal);
  node.querySelector('.jm52FreeCount').textContent=freeSummaryCount+' JOGADAS GRÁTIS';
@@ -751,8 +764,9 @@ async function settleFreeSpins(){
  if(paid>0)log('premio_freespins_final',paid,'Free spins: base '+money(freeBaseTotal)+' ×'+factor+'; pedido '+money(requested)+'; pago '+money(paid));
  if(paid<requested)log('limite_cofre_freespins',0,'Limite de cofre aplicado ao total: '+money(requested)+' → '+money(paid));
  fillFreeSummary(node);
+ updateFreeExposure();
  node.querySelector('.jm54FreeLimit').textContent=paid<requested?'VALOR LIMITADO PELO COFRE: '+money(paid):(freeBaseTotal*factor>requested?'TETO 5000×: '+money(requested):'');
- node.querySelector('.jm54FreeEquation').textContent=money(freeBaseTotal)+' × '+factor+' = '+money(freeBaseTotal*factor);
+ node.querySelector('.jm54FreeEquation').textContent='POTENCIAL '+money(freeBaseTotal)+' × '+factor+' = '+money(freeBaseTotal*factor);
  audioFX(paid?'big':'win');
  notice('✦ FREE SPINS: '+money(freeBonusTotal)+' · CARREGA EM GIRO PARA CONTINUAR');
  update();save();
@@ -1230,14 +1244,31 @@ async function spinColumns(next){
    O valor desvanece independentemente da cascata seguinte. */
 /* V63: no tabuleiro aparece apenas o prémio desta queda; o acumulado vive
    num contador FIXO à esquerda da bola MULTI até começar a próxima spin. */
+/* O prémio potencial pode ultrapassar o cofre, mas nunca é apresentado
+   como garantido. A reserva da banca e os jackpots estão fora deste limite. */
+function updateFreeExposure(){
+ const target=$('jm65FreeExposure'),score=$('jm63DropValue');
+ if(!target||!score)return;
+ const freeActive=(freeSpins>0||freeAutoRunning||freeSettlePending||freeSettlementRunning||awardContext==='free')&&!freeSummaryPending;
+ const base=Math.max(0,Math.floor(Number(score.dataset.cents)||0));
+ if(!freeActive||base<=0){target.textContent='';return;}
+ const factor=freeMultiplierBalls.length?freeMultiplierBalls.reduce((sum,v)=>sum+v,0):1;
+ const possible=Math.min(base*factor,freeBet*MAX_WIN_MULT);
+ const available=vaultPayable(possible,freeBet);
+ target.textContent=available<possible
+  ?'POTENCIAL '+money(possible)+' · COFRE PAGA ATÉ '+money(available)
+  :'POTENCIAL ATÉ '+money(available)+' (COFRE)';
+ target.setAttribute('aria-label',target.textContent);
+}
 function updateDropScore(cents){
  const node=$('jm63DropValue');
  if(!node)return;
  const value=Math.max(0,Math.round(Number(cents)||0));
- node.textContent=money(value);
- node.setAttribute('aria-label','Valor acumulado das quedas nesta spin: '+money(value));
+ node.textContent=money(value);node.dataset.cents=String(value);
+ node.setAttribute('aria-label','Valor acumulado das quedas: '+money(value));
  node.classList.remove('jm63ScorePulse');
  if(value>0){void node.offsetWidth;node.classList.add('jm63ScorePulse');}
+ updateFreeExposure();
 }
 function markLines(won){
  const lines=$('paylines'),layer=$('floaters'),stage=$('stageWrap');
@@ -1376,6 +1407,7 @@ function updateShelf(){
  box.append(orb);
  $('shelfTotal').textContent='×'+factor;
  $('shelfTotal').title=orb.title;
+ updateFreeExposure(); // Bola × alterada: atualizar imediatamente o montante pagável do cofre.
 }
 /* V52 — são seis moedas visíveis simultaneamente nos 5 tambores (5×3).
    A chuva é apenas visual e o valor impresso em cada moeda é fictício. */
@@ -1562,7 +1594,13 @@ function renderBonus(newIndices=[]){
  }
  $('bonusGrid').replaceChildren(frag);
  $('bonusFactors').innerHTML=bonus.factors.length?bonus.factors.map(v=>`<span>${v}×</span>`).join(''):'×1';
- $('bonusFormula').textContent=`${money(bonus.coinsTotal)} × ${bonusFactorTotal()}${bonus.jackpot?' + '+bonus.jackpot+' '+money(jackpotPayable(bonus.jackpot,bonus.stakeBet)):''}`;
+ const holdFactor=bonusFactorTotal();
+ const potential=bonus.coinsTotal*holdFactor;
+ const baseMax=Math.min(potential,bonus.stakeBet*MAX_WIN_MULT);
+ const basePayable=vaultPayable(baseMax,bonus.stakeBet);
+ $('bonusFormula').textContent=`${money(bonus.coinsTotal)} × ${holdFactor} = ${money(potential)} (POTENCIAL)${bonus.jackpot?' + '+bonus.jackpot+' '+money(jackpotPayable(bonus.jackpot,bonus.stakeBet)):''}`;
+ const payableLabel=$('jm65BonusPayable');
+ if(payableLabel)payableLabel.textContent='BASE PAGÁVEL PELO COFRE: '+money(basePayable)+(basePayable<baseMax?' · LIMITE DE FUNDOS':'')+' · JACKPOTS EM FUNDOS SEPARADOS';
  $('bonusSpin').textContent=bonus.wheelPending?'ROLETA A GIRAR…':bonus.finished?'RECOLHER PRÉMIO':'RODAR BÓNUS';
  $('bonusSpin').disabled=bonus.inMotion||!!bonus.wheelPending;
 }
