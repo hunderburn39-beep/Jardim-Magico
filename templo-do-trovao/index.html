@@ -5,21 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#24112d">
   <meta name="description" content="Portões do Trovão: uma slot de demonstração com 6x5, quedas, multiplicadores e rodadas grátis. Só créditos virtuais.">
-  <title>Portões do Trovão — V3</title>
+  <title>Portões do Trovão — V4</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/estilo.css?v=1">
   <link rel="stylesheet" href="css/referencia-v2.css?v=2">
   <link rel="stylesheet" href="css/efeitos-v3.css?v=3">
+  <link rel="stylesheet" href="css/fundo-v4.css?v=4">
   <script defer src="js/audio.js?v=3"></script>
-  <script defer src="js/jogo.js?v=3"></script>
+  <script defer src="js/fundo-v4.js?v=4"></script>
+  <script defer src="js/jogo.js?v=4"></script>
 </head>
 <body>
   <div id="app" class="app">
+    <div class="scene-backdrop" aria-hidden="true">
+      <div class="scene-image"></div>
+      <div class="scene-halo"></div>
+      <div class="scene-cloud scene-cloud-back"></div>
+      <div class="scene-beam scene-beam-a"></div>
+      <div class="scene-beam scene-beam-b"></div>
+      <div class="scene-cloud scene-cloud-front"></div>
+      <div class="scene-motes" id="sceneMotes"></div>
+      <div class="scene-lightning"></div>
+    </div>
     <div class="sky-flash" aria-hidden="true"></div>
     <header class="topbar">
       <div class="brand">
-        <span class="brand-kicker">A LENDA DOS DEUSES</span>
-        <div class="brand-name"><span>PORTÕES DO</span><strong>TROVÃO</strong></div>
+        <img class="game-logo" src="assets/logotipo-v4.svg" alt="PORTÕES DO TROVÃO" draggable="false">
       </div>
       <div class="top-actions">
         <span class="demo-tag">MODO DEMONSTRAÇÃO</span>
@@ -92,7 +103,7 @@
       </div>
       <button id="btnTurbo" class="turbo-button" aria-pressed="false">⚡ TURBO <small>OFF</small></button>
     </footer>
-    <div class="version">V3.0 · DEMO · CRÉDITOS VIRTUAIS</div>
+    <div class="version">V4.0 · DEMO · CRÉDITOS VIRTUAIS</div>
   </div>
 
   <div id="modalBackdrop" class="modal-backdrop hidden" role="presentation">
