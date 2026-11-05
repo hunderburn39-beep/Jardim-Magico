@@ -37,7 +37,9 @@ const RTP_REFERENCE=96;
 // V65 — revisão de risco: as free spins V64 ultrapassavam o fundo esperado;
  // Hold & Win comprado custa 100× a aposta, diferente de bónus oferecidos.
  // Valores fixos e públicos; nunca variam com o lucro real da banca.
-const RTP_CALIBRATION={base:0.61,free:0.035,hold:0.25,holdPurchase:1.25};
+const RTP_CALIBRATION={base:0.34,free:0.015,hold:0.25,holdPurchase:1.25};
+// V66: coeficientes base/free calibrados em simulação com WILD fixo 1–5×;
+// constantes ao longo da sessão, sem depender do saldo ou histórico da banca.
 let autoSpinsTotal=0,rtpConfig=96,adminAudit=[],awardContext='base',adminUnlocked=false,adminTaps=0,adminTapDeadline=0,autoSpinsRemaining=0,freeStartPending=false,freeAutoRunning=false,freeAutoTimer=null,scatterNoteStep=0;
 const configuredRtp=()=>RTP_REFERENCE; // Fixo; sem alteração na interface de administração.
 let profitPercent=4, prizePool=0, operatorReserve=0, protectedReserve=0, ownerWithdrawn=0, protectedCarry=0, riskReserve=0, ownerCarry=0, poolCarry=0;
@@ -629,13 +631,13 @@ function chooseWildFactor(){
 function sym(){const p=Math.random();if(freeSpins>0 || awardContext==='free'){
  if(p<.012)return {id:'mul',value:chooseSpinMul()};
  if(p<.012+FREE_SCATTER_PROBABILITY)return {id:'scatter'};
- if(p<.090)return {id:'wild',factor:chooseWildFactor()};
- if(p<.120)return {id:'coin',uid:++symbolSeq,value:pick([10,20,50,100,200,500,1000,2000,5000])};
+ if(p<.064)return {id:'wild',factor:chooseWildFactor()};
+ if(p<.094)return {id:'coin',uid:++symbolSeq,value:pick([10,20,50,100,200,500,1000,2000,5000])};
 }else{
  if(p<.0045)return {id:'mul',value:chooseSpinMul()};
  if(p<.0335)return {id:'scatter'};
- if(p<.0735)return {id:'wild',factor:chooseWildFactor()};
- if(p<.0995)return {id:'coin',uid:++symbolSeq,value:pick([10,20,50,100,200,500,1000,2000,5000])};
+ if(p<.060)return {id:'wild',factor:chooseWildFactor()};
+ if(p<.0855)return {id:'coin',uid:++symbolSeq,value:pick([10,20,50,100,200,500,1000,2000,5000])};
 }return {id:chooseRegularSymbol()};}
 
 function flyCoinToVault(x,y,delay=0,faceValue=0){
