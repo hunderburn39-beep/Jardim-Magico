@@ -1022,6 +1022,13 @@ function bonusCellMarkup(c){
 }
 function renderBonus(newIndices=[]){
  if(!bonus)return;
+ const boardSide=Math.sqrt(bonus.cells.length);
+ const boardTitle=$('bonusModal')?.querySelector('h2');
+ if(boardTitle)boardTitle.textContent='🪙 HOLD & WIN '+boardSide+'×'+boardSide;
+ const board=$('bonusGrid');
+ board.setAttribute('aria-label','Grelha '+boardSide+' colunas por '+boardSide+' linhas');
+ const boardHelp=$('bonusModal')?.querySelector('.bonusHelpLine');
+ if(boardHelp)boardHelp.textContent='🪙 Moedas fixas · 💎 4 cristais iguais = jackpot · 🎡 '+bonus.cells.length+' casas completas = roleta de 32 setores (com RESPIN automático)';
  $('bonusAttempts').textContent=bonus.left;
  $('bonusSum').textContent=money(bonus.coinsTotal);
  gemProgress();
@@ -1155,7 +1162,7 @@ async function playFullBoardWheel(){
  try{
   if(window.JM_WHEEL_V49&&typeof window.JM_WHEEL_V49.play==='function'){
    await window.JM_WHEEL_V49.play({
-    slots:JACKPOT_WHEEL_32,stops:state.wheelStops,turbo:mode==='turbo',
+    slots:JACKPOT_WHEEL_32,stops:state.wheelStops,boardCells:state.cells.length,turbo:mode==='turbo',
     amount:money(jackpotPayable(state.wheelResult,state.stakeBet)),
     onSpin:()=>audioFX('bonus'),
     onStop:(type)=>{audioFX(type==='RESPIN'?'lock':'big');if(type!=='RESPIN')audioFX('schoolBell');}
