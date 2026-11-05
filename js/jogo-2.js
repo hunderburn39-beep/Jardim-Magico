@@ -33,6 +33,10 @@ const RTP_CALIBRATION={base:0.61,free:0.51,hold:0.25};
 let autoSpinsTotal=0,rtpConfig=96,adminAudit=[],awardContext='base',adminUnlocked=false,adminTaps=0,adminTapDeadline=0,autoSpinsRemaining=0,freeStartPending=false,freeAutoRunning=false,freeAutoTimer=null,scatterNoteStep=0;
 const configuredRtp=()=>RTP_REFERENCE; // Fixo; sem alteração na interface de administração.
 let profitPercent=4, prizePool=0, operatorReserve=0, protectedReserve=0, ownerWithdrawn=0, protectedCarry=0, riskReserve=0, ownerCarry=0, poolCarry=0;
+// V59: a reserva livre é distribuída entre o proprietário e o estabelecimento.
+// A reserva protegida, o cofre de prémios e os jackpots não são repartidos.
+let ownerPercent=60,ownerShareReserve=0,merchantShareReserve=0,shareCarry=0;
+let volatilityMode='equilibrado';
 const configuredProfit=()=>Math.max(1,Math.min(70,Number(profitPercent))); // Aplica-se às próximas apostas, sem retroatividade.
 const effectiveBudgetPercent=()=>Math.max(0,Math.min(configuredRtp(),100-configuredProfit()));
 // Integer cents and fractional carry avoid systematically losing 1 cent on small bets.
@@ -49,6 +53,13 @@ function fundWager(stake){
   const protectedExact=own*PROTECTED_SHARE+protectedCarry;
   const locked=Math.min(own,Math.floor(protectedExact+1e-10));
   protectedCarry=protectedExact-locked;protectedReserve+=locked;
+ // Apenas os créditos livres da reserva da banca entram na partilha.
+ const distributable=own-locked;
+ const exactOwner=distributable*ownerPercent/100+shareCarry;
+ const ownerAdd=Math.min(distributable,Math.floor(exactOwner+1e-10));
+ shareCarry=exactOwner-ownerAdd;
+ ownerShareReserve+=ownerAdd;
+ merchantShareReserve+=distributable-ownerAdd;
  if(session){session.poolFunded=(session.poolFunded||0)+toPool;session.jackpotFunded=(session.jackpotFunded||0)+jpFunding;session.operatorFunded=(session.operatorFunded||0)+own;session.bufferFunded=(session.bufferFunded||0)+buffer;}
  return {toPool,own,buffer};
 }
@@ -140,8 +151,22 @@ function soundReelLanding(){
 }
 
 
-function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,freeBonusTotal,freeSummaryPending,freeSummaryCount,freeBaseTotal,freeMultiplierBalls,freeSettlePending,vaultCoins,vaultFictiveSum,musicEnabled,musicVolume,rtpConfig,profitPercent,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,progressivePools,progressiveCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
-function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;freeBonusTotal=Math.max(0,Math.round(Number(data.freeBonusTotal)||0));freeSummaryPending=!!data.freeSummaryPending;freeSummaryCount=Math.max(0,Math.round(Number(data.freeSummaryCount)||0));freeBaseTotal=Math.max(0,Math.round(Number(data.freeBaseTotal)||0));freeMultiplierBalls=Array.isArray(data.freeMultiplierBalls)?data.freeMultiplierBalls.filter(v=>Number.isInteger(v)&&v>=2&&v<=1000):[];freeSettlePending=!!data.freeSettlePending;vaultCoins=Math.max(0,Number(data.vaultCoins)||0);vaultFictiveSum=Math.max(0,Math.round(Number(data.vaultFictiveSum)||0));bonus=([16,25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(0,Math.min(70,Number(data.profitPercent))):4;prizePool=Math.max(0,Math.floor(Number(data.prizePool)||0));operatorReserve=Math.max(0,Math.floor(Number(data.operatorReserve)||0));protectedReserve=Math.min(operatorReserve,Math.max(0,Math.floor(Number(data.protectedReserve??(operatorReserve*PROTECTED_SHARE)))));protectedCarry=Math.max(0,Number(data.protectedCarry)||0);ownerWithdrawn=Math.max(0,Math.floor(Number(data.ownerWithdrawn)||0));riskReserve=Math.max(0,Math.floor(Number(data.riskReserve)||0));ownerCarry=Math.max(0,Number(data.ownerCarry)||0);poolCarry=Math.max(0,Number(data.poolCarry)||0);
+function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,freeBonusTotal,freeSummaryPending,freeSummaryCount,freeBaseTotal,freeMultiplierBalls,freeSettlePending,vaultCoins,vaultFictiveSum,musicEnabled,musicVolume,rtpConfig,profitPercent,ownerPercent,ownerShareReserve,merchantShareReserve,shareCarry,volatilityMode,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,progressivePools,progressiveCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
+function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;freeBonusTotal=Math.max(0,Math.round(Number(data.freeBonusTotal)||0));freeSummaryPending=!!data.freeSummaryPending;freeSummaryCount=Math.max(0,Math.round(Number(data.freeSummaryCount)||0));freeBaseTotal=Math.max(0,Math.round(Number(data.freeBaseTotal)||0));freeMultiplierBalls=Array.isArray(data.freeMultiplierBalls)?data.freeMultiplierBalls.filter(v=>Number.isInteger(v)&&v>=2&&v<=1000):[];freeSettlePending=!!data.freeSettlePending;vaultCoins=Math.max(0,Number(data.vaultCoins)||0);vaultFictiveSum=Math.max(0,Math.round(Number(data.vaultFictiveSum)||0));bonus=([16,25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(1,Math.min(70,Number(data.profitPercent))):4;
+ownerPercent=Number.isFinite(Number(data.ownerPercent))?Math.max(0,Math.min(100,Math.round(Number(data.ownerPercent)))):60;
+volatilityMode=data.volatilityMode==='frequentes'?'frequentes':'equilibrado';
+prizePool=Math.max(0,Math.floor(Number(data.prizePool)||0));operatorReserve=Math.max(0,Math.floor(Number(data.operatorReserve)||0));protectedReserve=Math.min(operatorReserve,Math.max(0,Math.floor(Number(data.protectedReserve??(operatorReserve*PROTECTED_SHARE)))));protectedCarry=Math.max(0,Number(data.protectedCarry)||0);ownerWithdrawn=Math.max(0,Math.floor(Number(data.ownerWithdrawn)||0));riskReserve=Math.max(0,Math.floor(Number(data.riskReserve)||0));
+const unprotected=Math.max(0,operatorReserve-protectedReserve);
+const savedOwner=Math.floor(Number(data.ownerShareReserve)),savedMerchant=Math.floor(Number(data.merchantShareReserve));
+if(Number.isFinite(savedOwner)&&Number.isFinite(savedMerchant)&&savedOwner>=0&&savedMerchant>=0&&savedOwner+savedMerchant===unprotected){
+ ownerShareReserve=savedOwner;merchantShareReserve=savedMerchant;
+}else{
+ // Migração transparente: reservas anteriores à V59 são divididas 60/40 (ou nova preferência).
+ ownerShareReserve=Math.floor(unprotected*ownerPercent/100);
+ merchantShareReserve=unprotected-ownerShareReserve;
+}
+shareCarry=Number.isFinite(Number(data.shareCarry))?Math.max(0,Math.min(.999999,Number(data.shareCarry))):0;
+ownerCarry=Math.max(0,Number(data.ownerCarry)||0);poolCarry=Math.max(0,Number(data.poolCarry)||0);
 for(const type of Object.keys(JACKPOTS)){
  progressivePools[type]=Math.max(0,Math.floor(Number(data.progressivePools?.[type])||0));
  progressiveCarry[type]=Math.max(0,Number(data.progressiveCarry?.[type])||0);
