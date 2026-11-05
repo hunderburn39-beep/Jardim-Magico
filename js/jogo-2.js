@@ -1357,29 +1357,58 @@ function nonMultiplierSymbol(){
  for(let i=0;i<12;i++){const piece=sym();if(piece.id!=='mul'&&piece.id!=='coin')return piece;}
  return {id:pick(regular)};
 }
+/* V66 — quedas por segmentos, com WILD ancorado no mesmo (x,y).
+   Cada WILD ocupa a casa durante a spin atual. O símbolo não desce,
+   não é recolhido no prémio, e é substituído numa spin NOVA.
+   Os restantes símbolos descem apenas no segmento entre WILDs. */
+function buildStickyColumn(col,removedRows,makeSymbol,now=0,duration=440,stagger=100){
+ const next=Array(3),items=[];
+ let from=0;
+ for(let anchor=0;anchor<=3;anchor++){
+  if(anchor<3&&col[anchor]?.id!=='wild')continue;
+  const survivors=[];
+  for(let y=from;y<anchor;y++){
+   if(!removedRows.has(y))survivors.push({piece:col[y],fromY:y});
+  }
+  const count=anchor-from-survivors.length;
+  for(let k=0;k<count;k++){
+   const to=from+k,piece=makeSymbol();
+   next[to]=piece;
+   items.push({s:piece,fromY:(from-count+k)*CH,toY:to*CH,start:now+stagger*(k+1),duration});
+  }
+  survivors.forEach(({piece,fromY},k)=>{
+   const to=from+count+k;
+   next[to]=piece;
+   items.push({s:piece,fromY:fromY*CH,toY:to*CH,start:now,duration});
+  });
+  if(anchor<3){
+   next[anchor]=col[anchor];
+   items.push({s:col[anchor],fromY:anchor*CH,toY:anchor*CH,start:now,duration});
+  }
+  from=anchor+1;
+ }
+ if(next.some(p=>!p))throw Error('Falha numa casa da cascata sticky');
+ return {next,items};
+}
 async function animateCascade(remove,noMoreMultipliers=false){
  if(!remove.size)return;
  const old=grid,next=old.map(col=>[...col]),changed=[];
+ const now=performance.now(),duration=mode==='turbo'?185:440,stagger=mode==='turbo'?35:100;
  for(let x=0;x<5;x++){
-  const removed=[...remove].filter(k=>k.startsWith(x+':')).map(k=>Number(k.split(':')[1]));
+  const removed=[...remove].filter(k=>k.startsWith(x+':'))
+   .map(k=>Number(k.split(':')[1]))
+   .filter(y=>Number.isInteger(y)&&y>=0&&y<3&&old[x][y]?.id!=='wild');
   if(!removed.length)continue;
-  const survivorPositions=[0,1,2].filter(y=>!removed.includes(y));
-  const survivors=survivorPositions.map(y=>old[x][y]);
-  const count=3-survivors.length;
-  next[x]=[...Array.from({length:count},()=>noMoreMultipliers?nonMultiplierSymbol():sym()),...survivors];
-  changed.push({x,removed,survivorPositions,count});
+  const {next:col,items}=buildStickyColumn(old[x],new Set(removed),
+   ()=>noMoreMultipliers?nonMultiplierSymbol():sym(),now,duration,stagger);
+  next[x]=col;
+  changed.push({x,removed,items});
   for(const y of removed)particlesAt((x+.5)*CW,(y+.5)*CH);
  }
  if(!changed.length)return;
  audioFX('burst');
  await sleep(mode==='turbo'?55:145);clearLines();
- const now=performance.now(),duration=mode==='turbo'?185:440,stagger=mode==='turbo'?35:100;
- for(const {x,survivorPositions,count} of changed){
-  const items=[];
-  survivorPositions.forEach((row,k)=>items.push({s:old[x][row],fromY:row*CH,toY:(count+k)*CH,start:now,duration}));
-  for(let k=0;k<count;k++)items.push({s:next[x][k],fromY:(-count+k)*CH,toY:k*CH,start:now+stagger*(k+1),duration});
-  cascades[x]={items};
- }
+ for(const {x,items} of changed)cascades[x]={items};
  await sleep(duration+stagger*3+25);
  grid=next;
  for(const {x,removed} of changed){
@@ -1498,7 +1527,10 @@ async function doRound(){
    await sleep(mode==='turbo'?690:1380); // deixar ver as quantias a desvanecer
   }
   const remove=new Set();
-  for(const line of ev.won)for(const [x,y] of line.points)remove.add(x+':'+y);
+  for(const line of ev.won)for(const [x,y] of line.points){
+   // V66: nunca remover um WILD vencedor: permanece fixo nesta spin.
+   if(grid[x][y]?.id!=='wild')remove.add(x+':'+y);
+  }
   const collectedMultis=await collectReelMultipliers(m,free);
   for(const key of collectedMultis)remove.add(key);
   // A soma de todas as quedas + os multiplicadores pode subir de NICE a MEGA,
