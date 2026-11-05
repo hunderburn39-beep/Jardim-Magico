@@ -615,11 +615,13 @@ async function vaultExplosion(){
  }
  await sleep(mode==='turbo'?950:1350);v.classList.remove('vaultBurst');ripple.remove();vaultCoins=0;vaultFictiveSum=0;roundVaultNew=0;update();
 }
-async function showFeatureIntro(kind){
- const box=$('featureIntro');$('featureTitle').textContent=kind==='free'?'15 FREE SPINS!':'HOLD & WIN!';
- $('featureSub').textContent=kind==='free'?'✦ O JARDIM DESPERTOU ✦':'💥 O TESOURO FOI LIBERTADO!';
+async function showFeatureIntro(kind,count=15,retrigger=false){
+ const box=$('featureIntro');
+ $('featureTitle').textContent=kind==='free'?(retrigger?'+':'')+count+' FREE SPINS!':'HOLD & WIN!';
+ $('featureSub').textContent=kind==='free'?(retrigger?'✦ MAIS JOGADAS NO JARDIM ✦':'✦ O JARDIM DESPERTOU ✦'):'💥 O TESOURO FOI LIBERTADO!';
  box.classList.remove('active');void box.offsetWidth;box.classList.add('active');
- audioFX('schoolBell');await sleep(mode==='turbo'?870:1480);box.classList.remove('active');
+ playBonusJingle(kind==='free'?(retrigger?'scatter_extra':'freespins'):'hold');
+ await sleep(mode==='turbo'?870:1480);box.classList.remove('active');
 }
 
 /* V52 — resumo de free spins transparente, fechado apenas pelo GIRO principal. */
@@ -1358,7 +1360,7 @@ async function doRound(){
  let lastCascadeCelebration=0; // Nível mais alto já celebrado nesta spin.
  if(free){freeSpins--;freeSummaryCount++;}
  else{balance-=stake;session.stake+=stake;fundWager(stake);log('aposta',-stake,'Rodada base · cofre '+money(prizePool));}
- session.spins++;update();soundStart();notice(free?'✦ Rodada grátis!':'Tambores a rodar...');shelf=free?freeMultiplierBalls:[];updateShelf();clearLines();winRound=0;updateDropScore(0);
+ session.spins++;update();soundStart();notice(free?'✦ Rodada grátis!':'Tambores a rodar...');shelf=free?freeMultiplierBalls:[];updateShelf();clearLines();winRound=0;updateDropScore(free?freeBaseTotal:0);
  let sixCoinTrigger=false;
  const detectSixCoins=async()=>{if(!sixCoinTrigger&&countReelCoins()>=6){sixCoinTrigger=true;await showSixCoinCascade();}};
  await spinColumns(wholeGrid());await detectSixCoins();let scatterTrigger=0,cascadeCount=0;const maxCascades=12;
@@ -1369,7 +1371,7 @@ async function doRound(){
   if(!ev.won.length&&!m.length&&!hasCoins)break;
   if(ev.won.length){
    winRound+=ev.amount;
-   updateDropScore(winRound); // Soma todas as quedas PREMIADAS desta spin.
+   updateDropScore(free?freeBaseTotal+winRound:winRound); // A soma dura toda a sessão grátis; nas apostas normais, só uma spin.
    markLines(ev.won);     // Ao centro, apenas o valor desta queda.
    notice('Linha premiada: '+money(ev.amount)+' • cascata '+cascadeCount);
    await sleep(mode==='turbo'?690:1380); // deixar ver as quantias a desvanecer
@@ -1411,6 +1413,7 @@ async function doRound(){
  if(free){
   // A base é acumulada em cêntimos: não se multiplica nem se paga em cada giro.
   freeBaseTotal=Math.min(Number.MAX_SAFE_INTEGER,freeBaseTotal+winRound);
+  updateDropScore(freeBaseTotal); // Mantém o valor visível mesmo depois de acabar esta free spin.
   lastPrize=0;
   notice('FREE SPINS · Base '+money(freeBaseTotal)+' · MULTIPLICADORES ×'+factor+' · Pagamento no final');
  }else{
@@ -1419,12 +1422,21 @@ async function doRound(){
   if(winnings)log('prémio',winnings,`Cascatas; linhas ${money(winRound)} ×${factor}; pedido ${money(requestedWin)}; cofre ${money(prizePool)}`);
   if(winnings<requestedWin)log('limite_cofre',0,`Prémio limitado pelo fundo: ${money(requestedWin)} → ${money(winnings)}`);
  }
- if(scatterTrigger>=3){
+ // SCATTER: na base, 3 dão 15 free spins. Durante as free spins,
+ // 2 dão mais 8 e 3 ou mais dão 15. Máximo uma extensão por spin,
+ // mesmo que os SCATTER surjam entre várias cascatas na mesma jogada.
+ const extraFreeSpins=free?(scatterTrigger>=3?15:scatterTrigger===2?8:0):(scatterTrigger>=3?15:0);
+ if(extraFreeSpins){
   if(!free){freeBonusTotal=0;freeSummaryCount=0;freeSummaryPending=false;freeBaseTotal=0;freeMultiplierBalls=[];freeSettlePending=false;}
-  freeSpins+=15;freeBet=betAmount;notice('✦ 3 SCATTER: +15 FREE SPINS!');log('scatter',0,'Três SCATTER, +15 jogadas grátis');
-  await showFeatureIntro('free');
+  freeSpins+=extraFreeSpins;
+  freeBet=betAmount;
+  notice('✦ '+scatterTrigger+' SCATTER: +'+extraFreeSpins+' FREE SPINS! · Restam '+freeSpins);
+  log('scatter',0,scatterTrigger+' SCATTER: +'+extraFreeSpins+' free spins; total restante '+freeSpins);
+  await showFeatureIntro('free',extraFreeSpins,free);
  }
- else if(free)notice('FREE SPINS: '+money(freeBaseTotal)+' base, ×'+factor+' acumulado até ao final.');else if(winnings)notice(`Prémio pago: ${money(winnings)} • ${factor}×${winnings<requestedWin?' • limite do cofre':''}`);else notice('Sem prémio desta vez.');
+ else if(free)notice('FREE SPINS: '+money(freeBaseTotal)+' base, ×'+factor+' acumulado até ao final.');
+ else if(winnings)notice(`Prémio pago: ${money(winnings)} • ${factor}×${winnings<requestedWin?' • limite do cofre':''}`);
+ else notice('Sem prémio desta vez.');
  if(free&&freeSpins===0){freeSettlePending=true;save();}
  if(sixCoinTrigger){
   running=false;await launchBonus(false,'6_moedas');
@@ -1603,6 +1615,7 @@ function prepareFullBoardWheel(){
 async function playFullBoardWheel(){
  if(!bonus||!bonus.wheelPending)return;
  const state=bonus;
+ playBonusJingle('roleta');
  state.inMotion=true;renderBonus();
  modal('bonusModal',false);
  notice('TABULEIRO COMPLETO! Carrega em GIRO para parar a roleta.');
