@@ -1,0 +1,67 @@
+/* Jardim Mágico V62 — total por SPIN e MULTI vertical sem alterar a red ball. */
+#stageWrap #jm56WinValues .jm56WinAmount.jm57CenterWin.jm61CascadeTotal{
+ max-width:94%!important;gap:clamp(2px,.5dvh,5px)!important;
+}
+#stageWrap #jm56WinValues .jm61CascadeTotal .jm61CascadeHeading{
+ font:900 clamp(11px,3vw,22px)/1.15 Georgia,serif!important;
+ letter-spacing:.10em!important;
+ color:#fff5c9!important;
+ text-shadow:0 1px 3px #35132b,0 0 12px #ffce76!important;
+}
+#stageWrap #jm56WinValues .jm61CascadeTotal .jm61CascadeValue{
+ font:900 clamp(37px,8.7vw,78px)/1.08 Georgia,serif!important;
+ color:#fff2b3!important;
+ text-shadow:0 2px 4px #4b1935,0 0 14px #ffd67b,0 0 28px #ffe7a488!important;
+}
+#stageWrap #jm56WinValues .jm61CascadeTotal .jm61CascadeIncrement{
+ color:#d4ffb9!important;
+ font:800 clamp(12px,2.9vw,20px)/1.15 Georgia,serif!important;
+ text-shadow:0 1px 3px #172c21,0 0 9px #b8fa89!important;
+}
+#stageWrap #jm56WinValues .jm61CascadeTotal.jm62FirstDrop .jm61CascadeIncrement{
+ display:none!important;
+}
+/* O texto MULTI fica junto da bola, sem criar uma segunda bola. */
+.game .shelf::before{
+ content:'MULTI:';
+ position:absolute;top:50%;right:calc(100% + 8px);
+ transform:translateY(-50%);z-index:2;pointer-events:none;
+ color:#fff0bc;font:900 clamp(10px,2.4vw,15px)/1 Georgia,serif;
+ text-shadow:0 1px 3px #311326,0 0 9px #f5cd89;
+ white-space:nowrap;
+}
+.game .shelf .orbs .orbPill.jm56RedBall{
+ display:flex!important;flex-direction:column!important;
+ align-items:center!important;justify-content:center!important;
+ gap:0!important;line-height:1!important;overflow:hidden!important;
+ padding:0!important;
+}
+.game .shelf .orbs .orbPill.jm56RedBall .jm62MultiDigits{
+ display:block!important;flex:none;
+ max-width:100%;min-width:0;
+ padding:0!important;margin:0!important;
+ line-height:.96!important;
+ font-family:Georgia,serif!important;
+ font-weight:900!important;color:#fff9d8!important;
+ text-shadow:0 1px 2px #59101d,0 0 7px #ffe6b5!important;
+ letter-spacing:-.07em;white-space:nowrap!important;
+}
+.game .shelf .orbs .orbPill.jm56RedBall .jm62MultiX{
+ display:block!important;flex:none;
+ font:900 clamp(9px,2.6vw,12px)/.92 Georgia,serif!important;
+ color:#fff2c0!important;
+ padding:0!important;margin:0!important;
+ text-shadow:0 1px 3px #650a21!important;
+}
+@media(orientation:landscape) and (max-height:520px){
+ #stageWrap #jm56WinValues .jm61CascadeTotal .jm61CascadeHeading{font-size:clamp(10px,3.4dvh,17px)!important}
+ #stageWrap #jm56WinValues .jm61CascadeTotal .jm61CascadeValue{font-size:clamp(31px,9dvh,60px)!important}
+ #stageWrap #jm56WinValues .jm61CascadeTotal .jm61CascadeIncrement{font-size:clamp(11px,3.4dvh,16px)!important}
+ .game .shelf::before{font-size:10px}
+ .game .shelf .orbs .orbPill.jm56RedBall .jm62MultiDigits{font-size:20px!important}
+ .game .shelf .orbs .orbPill.jm56RedBall .jm62MultiX{font-size:9px!important}
+}
+@media(max-width:420px){
+ .game .shelf::before{right:calc(100% + 5px);font-size:9px}
+ .game .shelf .orbs .orbPill.jm56RedBall .jm62MultiDigits{max-width:94%}
+}
