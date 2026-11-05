@@ -72,3 +72,46 @@ body > .game,body > .game[data-layout="wide"]{position:absolute!important;top:0;
 /* Qualquer janela emergente pode ter scroll INTERNO sem deslocar o jogo. */
 .modal .dialog,.bonusDialog{max-height:calc(var(--jm-visible-height) - 14px);overflow-y:auto;overscroll-behavior:contain}
 #adminPage{max-height:var(--jm-visible-height);overflow-y:auto}
+
+/* V43 — vencedores iluminados sem riscos nem marcações de linhas. */
+#floaters .winningSymbolGlow{
+ position:absolute;
+ width:20%;height:33.333333%;
+ transform:translate(-50%,-50%);
+ border-radius:50%;
+ pointer-events:none;
+ z-index:1;
+ mix-blend-mode:screen;
+ background:radial-gradient(ellipse at center,
+  rgba(255,255,235,.44) 0%,
+  rgba(255,236,158,.34) 31%,
+  rgba(255,180,91,.14) 55%,
+  rgba(255,180,91,0) 75%);
+ box-shadow:inset 0 0 16px rgba(255,247,201,.34),0 0 16px rgba(255,194,95,.37);
+ animation:jmWinningGlow 940ms ease-in-out both;
+}
+#floaters .winText{
+ position:absolute;
+ z-index:3;
+ color:#fff5ce;
+ font-family:Georgia,"Trebuchet MS",serif;
+ font-weight:900;
+ font-variant-numeric:tabular-nums;
+ text-shadow:0 2px 2px #551029,0 0 12px #ffc15a,0 0 25px #ffdd87;
+ animation:jmPrizeFade 940ms ease-out both;
+}
+@keyframes jmWinningGlow{
+ 0%{opacity:0;filter:brightness(1)}
+ 22%{opacity:1;filter:brightness(1.45)}
+ 57%{opacity:.92;filter:brightness(1.28)}
+ 100%{opacity:0;filter:brightness(1)}
+}
+@keyframes jmPrizeFade{
+ 0%{opacity:0;transform:translate(-50%,-44%) scale(.86)}
+ 15%{opacity:1;transform:translate(-50%,-50%) scale(1.09)}
+ 44%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+ 100%{opacity:0;transform:translate(-50%,-63%) scale(1.03)}
+}
+@media(prefers-reduced-motion:reduce){
+ #floaters .winningSymbolGlow,#floaters .winText{animation-duration:180ms!important}
+}
