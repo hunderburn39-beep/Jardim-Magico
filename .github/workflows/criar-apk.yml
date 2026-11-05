@@ -1,9 +1,9 @@
 name: Criar APK Jardim Magico
 
 on:
+  # Compilar APK só quando solicitado manualmente no separador Actions.
+  # Publicar no navegador continua automático no workflow GitHub Pages.
   workflow_dispatch:
-  push:
-    branches: [main, master]
 
 jobs:
   build:
