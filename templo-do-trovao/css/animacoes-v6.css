@@ -1,0 +1,128 @@
+/* Portões do Trovão V6 — onze animações individuais, prémio legível e histórico */
+.cell[data-kind="sapphire"]:not(.winner):not(.burst-out):not(.drop-in) .symbol-bitmap{animation:sapphireShine 3.4s ease-in-out infinite alternate!important}
+.cell[data-kind="emerald"]:not(.winner):not(.burst-out):not(.drop-in) .symbol-bitmap{animation:emeraldBreathe 3.1s ease-in-out infinite alternate!important}
+.cell[data-kind="amber"]:not(.winner):not(.burst-out):not(.drop-in) .symbol-bitmap{animation:amberFire 3.9s ease-in-out infinite alternate!important}
+.cell[data-kind="amethyst"]:not(.winner):not(.burst-out):not(.drop-in) .symbol-bitmap{animation:amethystMystic 3.3s ease-in-out infinite alternate!important}
+.cell[data-kind="ruby"]:not(.winner):not(.burst-out):not(.drop-in) .symbol-bitmap{animation:rubyPulse 2.8s ease-in-out infinite alternate!important}
+.cell[data-kind="goblet"]:not(.winner):not(.burst-out):not(.drop-in) .symbol-bitmap{animation:gobletFloat 4.4s ease-in-out infinite alternate!important}
+.cell[data-kind="ring"]:not(.winner):not(.burst-out):not(.drop-in) .symbol-bitmap{animation:ringGlint 4.1s ease-in-out infinite alternate!important}
+.cell[data-kind="hourglass"]:not(.winner):not(.burst-out):not(.drop-in) .symbol-bitmap{animation:hourglassTilt 5.2s ease-in-out infinite alternate!important}
+.cell[data-kind="crown"]:not(.winner):not(.burst-out):not(.drop-in) .symbol-bitmap{animation:crownPower 4s ease-in-out infinite alternate!important}
+.cell[data-kind="scatter"]:not(.winner):not(.burst-out):not(.drop-in) .symbol-bitmap{animation:scatterStorm 2.5s ease-in-out infinite alternate!important}
+.cell[data-kind="mult"]:not(.winner):not(.burst-out):not(.drop-in) .symbol-bitmap{animation:orbMagic 4.7s ease-in-out infinite alternate!important}
+.cell:nth-child(4n) .symbol-bitmap{animation-delay:-1.3s!important}
+.cell:nth-child(7n) .symbol-bitmap{animation-delay:-2.2s!important}
+.cell .symbol-bitmap{transform-origin:center center}
+@keyframes sapphireShine{from{transform:scale(.98) rotate(-2deg);filter:brightness(1.09) drop-shadow(0 0 4px #36eaff)}to{transform:scale(1.07) rotate(2deg);filter:brightness(1.38) drop-shadow(0 0 13px #bdfbff)}}
+@keyframes emeraldBreathe{0%,100%{transform:scale(.99);filter:brightness(1.03) drop-shadow(0 0 4px #12fa96)}50%{transform:scale(1.075);filter:brightness(1.45) drop-shadow(0 0 17px #42ffb6)}}
+@keyframes amberFire{0%{transform:translateY(1px) scale(.98);filter:brightness(1.03) drop-shadow(0 0 4px #ffaa29)}50%{transform:translateY(-1px) scale(1.05);filter:brightness(1.41) drop-shadow(0 0 13px #ffdf75)}100%{transform:translateY(0) scale(1.025);filter:brightness(1.17) drop-shadow(0 0 8px #ffbd3c)}}
+@keyframes amethystMystic{0%{transform:rotate(-3deg) scale(.98);filter:brightness(1.07) drop-shadow(0 0 5px #bc66ff)}100%{transform:rotate(3deg) scale(1.05);filter:brightness(1.32) drop-shadow(0 0 15px #efaeff)}}
+@keyframes rubyPulse{0%,100%{transform:scale(.98);filter:brightness(1.09) drop-shadow(0 0 4px #e92c51)}44%,58%{transform:scale(1.08);filter:brightness(1.38) drop-shadow(0 0 16px #ff6388)}}
+@keyframes gobletFloat{0%{transform:translateY(2px) rotate(-2deg);filter:brightness(1.06) drop-shadow(0 0 4px #d3bbff)}100%{transform:translateY(-3px) rotate(3deg);filter:brightness(1.31) drop-shadow(0 0 12px #d1b5ff)}}
+@keyframes ringGlint{0%{transform:perspective(290px) rotateY(-9deg) scale(.99);filter:brightness(1.1) drop-shadow(0 0 5px #fba665)}100%{transform:perspective(290px) rotateY(10deg) scale(1.055);filter:brightness(1.42) drop-shadow(0 0 15px #ffe5a7)}}
+@keyframes hourglassTilt{0%,100%{transform:rotate(-3deg) translateY(0);filter:brightness(1.08) drop-shadow(0 0 4px #3de4db)}50%{transform:rotate(3deg) translateY(-2px);filter:brightness(1.34) drop-shadow(0 0 14px #8cfff2)}}
+@keyframes crownPower{0%{transform:translateY(1px) scale(.99);filter:brightness(1.1) drop-shadow(0 0 5px #ffc243)}100%{transform:translateY(-3px) scale(1.06);filter:brightness(1.45) drop-shadow(0 0 19px #fff0a4)}}
+@keyframes scatterStorm{0%,100%{transform:scale(.985) rotate(0);filter:brightness(1.08) drop-shadow(0 0 5px #a5e7ff)}50%{transform:scale(1.065) rotate(-1deg);filter:brightness(1.5) drop-shadow(0 0 21px #b0faff)}}
+@keyframes orbMagic{from{transform:perspective(320px) rotateY(-12deg) rotate(-4deg) scale(.98);filter:brightness(1.13) drop-shadow(0 0 8px #b98cff)}to{transform:perspective(320px) rotateY(11deg) rotate(5deg) scale(1.08);filter:brightness(1.51) drop-shadow(0 0 18px #ffc8ff)}}
+/* Mostrar o valor da sequência por mais tempo; número central e detalhe da peça */
+.board-overlay .prize-float{
+  display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;
+  padding:7px 15px;min-width:120px;max-width:91%;
+  border-radius:12px;border:2px solid #ffe39e9c;
+  background:linear-gradient(165deg,#2c0b3ce8,#502756db 68%,#25143cda);
+  backdrop-filter:blur(3px);box-shadow:0 0 25px #fbbd65a3,inset 0 0 12px #ffea8363;
+  animation:prizeFloatV6 var(--prize-duration,2200ms) ease-out both!important;
+  font-family:Cinzel,Georgia,serif;font-size:clamp(20px,3vw,41px);
+  color:#fff3a6;z-index:25
+}
+.prize-float small{font-family:Outfit,Arial,sans-serif;font-weight:700;letter-spacing:.03em;font-size:clamp(10px,1.1vw,16px);color:#fff8dd;text-shadow:0 1px 5px #180c30;white-space:normal;text-align:center}
+@keyframes prizeFloatV6{
+  0%{opacity:0;transform:translate(-50%,-28%) scale(.77)}
+  11%{opacity:1;transform:translate(-50%,-50%) scale(1.04)}
+  24%,73%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  91%{opacity:.55;transform:translate(-50%,-67%) scale(.96)}
+  100%{opacity:0;transform:translate(-50%,-86%) scale(.9)}
+}
+/* Dado histórico com os recortes 3D do atlas */
+.history-trigger{position:relative}
+.history-trigger .history-count{font-size:10px;font-weight:900;position:absolute;right:-4px;top:-4px;min-width:17px;border-radius:10px;background:#e8b652;color:#2d1742;padding:1px 3px;line-height:15px;text-align:center}
+.history-shade{position:fixed;inset:0;z-index:73;background:#100721a6;backdrop-filter:blur(2px)}
+.history-panel{
+  position:fixed;z-index:74;right:0;top:0;height:100vh;height:100dvh;
+  width:min(440px,96vw);min-width:min(310px,95vw);
+  background:linear-gradient(165deg,#48255bed,#241039f8 60%,#1c1032f9);
+  box-shadow:-8px 0 40px #0e0615c9,inset 4px 0 15px #ffdb8b30;
+  border-left:4px ridge #edbd70;
+  transform:translateX(104%);
+  transition:transform .33s ease;display:flex;flex-direction:column;
+  color:#fff4d8;pointer-events:none;
+}
+.history-panel.is-open{transform:translateX(0);pointer-events:auto}
+.history-header{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:13px 12px;border-bottom:2px solid #ffe5a26e;
+  background:linear-gradient(90deg,#4f285f,#66365e,#3a1d4e)
+}
+.history-header strong{display:block;font-family:Cinzel,Georgia,serif;color:#ffdc89;font-size:18px}
+.history-header small{font-size:11px;color:#fbe7c8}
+.history-header button,.history-bottom button{
+  border:2px solid #ffe4a0;border-radius:9px;
+  background:linear-gradient(#7b4d70,#2c1a46);color:#ffeac6;
+  padding:5px 12px;font-weight:900
+}
+.history-header button{font-size:24px;line-height:1}
+.history-list{overflow-y:auto;overscroll-behavior:contain;flex:1;padding:10px}
+.history-empty{text-align:center;padding:30px 10px;font-size:14px;line-height:1.5;color:#efddcb}
+.history-spin{
+  margin:0 0 9px;border:1px solid #dfb26b7f;border-radius:11px;overflow:hidden;
+  background:linear-gradient(160deg,#39204bcd,#221738d6);box-shadow:inset 0 0 11px #dba95d26
+}
+.history-spin-summary{cursor:pointer;list-style:none;padding:11px;display:flex;justify-content:space-between;align-items:center;gap:12px;background:#6c3c6960}
+.history-spin-summary::-webkit-details-marker{display:none}
+.history-spin-summary:focus-visible{outline:2px solid #a1ecff}
+.history-spin-left,.history-spin-right{display:flex;flex-direction:column;gap:2px}
+.history-spin-left strong,.history-spin-right strong{font-size:14px;color:#fff1b7}
+.history-spin-left small,.history-spin-right small{font-size:11px;color:#e8d4cd}
+.history-spin-right{text-align:right}
+.history-stage{padding:8px 10px;border-top:1px solid #e4b7803f}
+.history-stage-head{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.history-stage-head b{color:#ffdf91;font-size:13px}
+.history-stage-head span{font-size:12px;font-weight:800;color:#bbf3e5}
+.history-stage-sub{display:block;margin-top:3px;font-size:10px;opacity:.76}
+.history-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.history-chip{
+  display:inline-flex;align-items:center;gap:3px;padding:3px 5px;
+  background:linear-gradient(160deg,#68486b96,#371e4a);border:1px solid #f2d78c50;
+  border-radius:8px;font-size:11px;min-height:33px
+}
+.history-chip.paid{border-color:#f5d17e;background:linear-gradient(#735e54a8,#54436594);box-shadow:0 0 7px #ffe5a242}
+.history-chip-name{font-size:10px;color:#e9dadd}
+.history-chip-count{font-size:11px;color:#fff3b1}
+.history-chip-pay{font-size:11px;color:#b8fff0}
+.history-glyph{
+  flex:none;display:inline-block;width:27px;height:27px;
+  background-image:url('../assets/atlas-3d-v5.webp');
+  background-size:500% 300%;background-position:var(--ax,0%) var(--ay,0%);
+  background-repeat:no-repeat;filter:drop-shadow(0 0 3px #eebf77)
+}
+.history-awarded{margin-top:6px;padding:5px 8px;border:1px solid #ffe08d70;border-radius:8px;background:#bf993929}
+.history-awarded>div{display:flex;align-items:center;justify-content:space-between;gap:7px;font-size:12px}
+.history-awarded>div span:nth-child(2){flex:1}
+.history-awarded b{font-size:14px;color:#b8ffe8}
+.history-spin-footer{padding:10px;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;border-top:1px solid #f4d18c50;background:#1b102ea8;font-size:12px}
+.history-spin-footer strong{color:#ffdf7a}
+.history-bottom{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 13px;border-top:2px solid #d8af6b57;font-size:11px}
+@media(orientation:landscape) and (max-height:520px){
+ .history-header{padding:6px 11px}.history-header strong{font-size:15px}
+ .history-stage{padding:5px 9px}.history-trigger .history-count{font-size:8px}
+}
+@media(orientation:portrait){
+ .history-panel{width:min(430px,95vw)}
+ .history-glyph{height:25px;width:25px}
+ .board-overlay .prize-float{font-size:clamp(18px,5vw,29px);padding:6px 8px}
+}
+@media(prefers-reduced-motion:reduce){
+ .cell:not(.winner):not(.burst-out):not(.drop-in) .symbol-bitmap{animation:none!important}
+ .history-panel{transition:none}
+ .board-overlay .prize-float{animation-duration:.01ms!important}
+}
