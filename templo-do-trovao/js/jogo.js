@@ -113,6 +113,14 @@
     }
     el.board.appendChild(fragment);
   }
+  function showPrizeFloat(amount){
+    if(amount<=0)return;
+    const item=document.createElement("div");
+    item.className="prize-float";
+    item.textContent="+"+money(amount);
+    el.overlay.appendChild(item);
+    window.setTimeout(()=>item.remove(),state.turbo?380:950);
+  }
   function setMsg(t){el.msg.textContent=t}
   function setOverlay(text){
     el.overlay.replaceChildren();
@@ -152,7 +160,7 @@
     }catch(_){}
   }
   function openModal(title,html,buttons=[]){
-    modalOpen=true;el.modalTitle.textContent=title;el.modalBody.innerHTML=html;el.modalActions.replaceChildren();
+    modalOpen=true;const m=el.modal.querySelector(".modal");if(m)m.classList.remove("pay-modal");el.modalTitle.textContent=title;el.modalBody.innerHTML=html;el.modalActions.replaceChildren();
     for(const b of buttons){
       const button=document.createElement("button");button.textContent=b.text;
       if(b.secondary)button.classList.add("secondary");
@@ -161,17 +169,32 @@
     }
     el.modal.classList.remove("hidden");
   }
-  function closeModal(){modalOpen=false;el.modal.classList.add("hidden")}
+  function closeModal(){modalOpen=false;el.modal.classList.add("hidden");const m=el.modal.querySelector(".modal");if(m)m.classList.remove("pay-modal")}
   function showRules(){
-    const rows=SYMBOLS.map(s=>"<tr><td>"+LABELS[s]+"</td>"+PAY_TABLE[s].map(v=>"<td>"+String(v).replace(".",",")+"×</td>").join("")+"</tr>").join("");
-    openModal("REGRAS E PAGAMENTOS",
-      "<p><b>30 posições, 6 colunas × 5 linhas.</b> 8 ou mais símbolos iguais pagam em qualquer lugar do ecrã. Os símbolos premiados desaparecem e os restantes caem, criando novas combinações.</p>"+
-      "<p><b>SCATTER:</b> 4, 5 ou 6+ pagam 3×, 5× ou 100× a aposta. 4 ou mais numa grelha ativam 15 rodadas grátis; no bónus, 3 ou mais oferecem +5 rodadas.</p>"+
-      "<p><b>MULTIPLICADORES:</b> esferas de 2× a 500× são somadas numa sequência vencedora. No bónus, quando surgem em rodada premiada, somam-se ao multiplicador acumulado.</p>"+
-      "<p><b>Compra de bónus:</b> 100× a aposta. Prémio máximo por ciclo: 5 000× a aposta.</p>"+
-      "<table><thead><tr><th>Símbolo</th><th>8–9</th><th>10–11</th><th>12–30</th></tr></thead><tbody>"+rows+"</tbody></table>"+
-      "<p class='note'>Valores são multiplicadores da aposta. Tabela da versão clássica expressa por aposta; probabilidades e resultados desta demonstração são próprios. RTP não calculado ou certificado. Sem dinheiro real.</p>",
-      [{text:"ENTENDI",secondary:true}]);
+    // Ordem e valores da tabela enviada pelo utilizador. Uma única fonte:
+    // PAY_TABLE alimenta tanto os prémios do motor como esta grelha.
+    const order=["sapphire","emerald","amber","amethyst","ruby","goblet","ring","hourglass","crown"];
+    const fmt=v=>String(v).replace(".",",")+"×";
+    const symSvg=kind=>'<svg class="pay-symbol" viewBox="0 0 100 100" aria-hidden="true"><use href="assets/simbolos.svg#'+kind+'"></use></svg>';
+    const rows=order.map(kind=>
+      '<tr><td class="pay-name">'+symSvg(kind)+'<b>'+LABELS[kind]+'</b></td>'+
+      PAY_TABLE[kind].map(v=>'<td class="pay-value">'+fmt(v)+'</td>').join("")+'</tr>'
+    ).join("");
+    const scat='<tr class="scatter-row"><td class="pay-name">'+symSvg("scatter")+
+      '<b>SCATTER</b></td><td class="pay-value">3× <small>4 símbolos</small></td>'+
+      '<td class="pay-value">5× <small>5 símbolos</small></td>'+
+      '<td class="pay-value">100× <small>6+ símbolos</small></td></tr>';
+    openModal("TABELA DE PAGAMENTOS",
+      '<div class="pay-head">⚡ OS SÍMBOLOS PAGAM EM QUALQUER POSIÇÃO ⚡</div>'+
+      '<div class="pay-scroll"><table class="paytable-table"><thead><tr><th>SÍMBOLO</th><th>8–9</th><th>10–11</th><th>12+</th></tr></thead><tbody>'+rows+scat+'</tbody></table></div>'+
+      '<div class="pay-rules">'+
+      '<p><b>Grelha 6×5:</b> 8 ou mais figuras iguais pagam sem precisar de estar na mesma linha. As peças premiadas desaparecem, as restantes descem e entram novas.</p>'+
+      '<p><b>SCATTER:</b> 4, 5 ou 6+ pagam respetivamente 3×, 5× ou 100× a aposta. 4 ou mais ativam 15 rodadas grátis; durante o bónus, 3 ou mais oferecem +5.</p>'+
+      '<p><b>Multiplicadores:</b> 2× a 500×, somados numa jogada vencedora; nas rodadas grátis são acumuláveis nas condições do jogo.</p>'+
+      '<p><b>Comprar bónus:</b> 100× a aposta em créditos virtuais. Limite de 5 000× a aposta por ciclo.</p>'+
+      '<p class="note">Pagamentos idênticos aos valores da tabela de referência que enviaste. Os gráficos e as probabilidades são próprios deste protótipo. RTP não certificado; não utiliza dinheiro real.</p></div>',
+      [{text:"FECHAR TABELA",secondary:true}]);
+    const m=el.modal.querySelector(".modal");if(m)m.classList.add("pay-modal");
   }
   async function showBig(amount,label){
     if(amount<currentBet()*24)return;
@@ -220,7 +243,8 @@
       totalBase+=wins.pay;
       render(state.grid,{matchKinds:wins.matched});
       const text=wins.result.map(w=>LABELS[w.symbol]+" ×"+w.count).join(" + ");
-      setMsg("PRÉMIO! "+text+" • QUEDA "+steps);
+      setMsg("PRÉMIO! "+text+" • QUEDA "+steps+" • "+money(wins.pay));
+      showPrizeFloat(wins.pay);
       beep(520+steps*42,.11,.06);
       refresh();
       await pause(state.turbo?85:520);
