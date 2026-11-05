@@ -1,0 +1,27 @@
+/* V8 — queda de cada símbolo, contacto acolchoado, sem impacto metálico. */
+.cell.drop-in{
+  animation-name:leatherLandingV8!important;
+  animation-timing-function:cubic-bezier(.15,.55,.33,1)!important;
+}
+@keyframes leatherLandingV8{
+  0%{
+    transform:translateY(calc(var(--fall-rows,-4)*100%)) scale(.92,1.04);
+    opacity:.12;filter:brightness(1.28);
+  }
+  32%{opacity:1}
+  72%{filter:brightness(1.07)}
+  /* O contacto é no 83%: coincide com o áudio de cada pedra. */
+  83%{transform:translateY(4%) scale(1.045,.94);filter:brightness(1.16)}
+  90%{transform:translateY(-2.5%) scale(.99,1.012)}
+  100%{transform:translateY(0) scale(1);opacity:1;filter:brightness(1)}
+}
+/* Uma aterragem macia: reflexo discreto em vez de clarão forte. */
+.cell.drop-in .symbol-bitmap{
+  filter:drop-shadow(0 4px 3px #180a24)
+         drop-shadow(0 0 4px var(--gem-glow,#e9ca88))
+         brightness(1.06)!important;
+}
+.cell.drop-in::after{opacity:.14!important}
+@media(prefers-reduced-motion:reduce){
+  .cell.drop-in{animation-name:none!important;transform:none!important;opacity:1!important}
+}
