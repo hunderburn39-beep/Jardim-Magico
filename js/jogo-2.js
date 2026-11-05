@@ -4,7 +4,8 @@
 (() => {
 'use strict';
 const $=s=>document.getElementById(s), W=900,H=535,CW=W/5,CH=H/3;
-const BETS=[5,10,20,40,60,80,100];
+// Apostas em CÊNTIMOS: 0,05 € a 10,00 € por spin.
+const BETS=[5,10,20,40,60,80,100,200,300,500,1000];
 const regular=['heart','rose','mushroom','hat','teapot','potion','gem','green'];
 const allSymbols=[...regular,'wild','scatter','mul'];
 const IMGFILES={heart:'heart.png',rose:'rose.png',mushroom:'mushroom.png',hat:'hat.png',teapot:'teapot.png',potion:'potion.png',gem:'gem.png',green:'green.png',wild:'wild.png',scatter:'scatter.png'};
@@ -183,7 +184,7 @@ function soundReelLanding(){
 
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,freeBonusTotal,freeSummaryPending,freeSummaryCount,freeBaseTotal,freeMultiplierBalls,freeSettlePending,freeRetriggersUsed,vaultCoins,vaultFictiveSum,musicEnabled,musicVolume,rtpConfig,profitPercent,ownerPercent,ownerShareReserve,merchantShareReserve,shareCarry,volatilityMode,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,progressivePools,progressiveCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
-function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;freeBonusTotal=Math.max(0,Math.round(Number(data.freeBonusTotal)||0));freeSummaryPending=!!data.freeSummaryPending;freeSummaryCount=Math.max(0,Math.round(Number(data.freeSummaryCount)||0));freeBaseTotal=Math.max(0,Math.round(Number(data.freeBaseTotal)||0));freeMultiplierBalls=Array.isArray(data.freeMultiplierBalls)?data.freeMultiplierBalls.filter(v=>Number.isInteger(v)&&v>=2&&v<=1000):[];freeSettlePending=!!data.freeSettlePending;
+function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(BETS.length-1,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;freeBonusTotal=Math.max(0,Math.round(Number(data.freeBonusTotal)||0));freeSummaryPending=!!data.freeSummaryPending;freeSummaryCount=Math.max(0,Math.round(Number(data.freeSummaryCount)||0));freeBaseTotal=Math.max(0,Math.round(Number(data.freeBaseTotal)||0));freeMultiplierBalls=Array.isArray(data.freeMultiplierBalls)?data.freeMultiplierBalls.filter(v=>Number.isInteger(v)&&v>=2&&v<=1000):[];freeSettlePending=!!data.freeSettlePending;
  // Sem retirar spins já atribuídas em versões anteriores.
  // Quando não há contador V65, considera-se consumido o limite se o bónus antigo
  // já tiver mais de 30 ou 45 rodadas atribuídas.
@@ -223,7 +224,7 @@ function log(kind,amount,detail=''){if(!session)return;session.events.push({time
 function update(){
  $('balance').textContent=money(balance);$('lastPrize').textContent=money(lastPrize);$('betValue').textContent=money(BETS[betIdx]);renderJackpotCounters();
  const betLocked=running||!!bonus||freeSpins>0||freeSummaryPending||freeSettlePending||freeSettlementRunning;
- $('betMinus').disabled=betLocked||betIdx===0;$('betPlus').disabled=betLocked||betIdx===6;
+ $('betMinus').disabled=betLocked||betIdx===0;$('betPlus').disabled=betLocked||betIdx>=BETS.length-1;
  document.querySelector('.betPanel').classList.toggle('locked',!!bonus||freeSpins>0);
  $('spin').disabled=freeSettlementRunning||(!freeSummaryPending&&(freeSettlePending||!!bonus||freeStartPending||freeAutoRunning||!session||(autoSpinsRemaining===0&&(running||(freeSpins<=0&&balance<BETS[betIdx])))));
  $('buyBonus').disabled=running||!!bonus||!session||freeSpins>0;
@@ -2089,7 +2090,7 @@ function setup(){
  $('depositLoginCancel').onclick=()=>{depositAuthorized=false;modal('depositLoginModal',false)};
  $('depositLoginSubmit').onclick=()=>{if($('depositPassword').value===CASH_PIN){depositAuthorized=true;$('depositPassword').value='';showDepositForm()}else{$('depositError').textContent='Palavra-passe incorreta.';$('depositPassword').value=''}};
  $('depositPassword').addEventListener('keydown',e=>{if(e.key==='Enter')$('depositLoginSubmit').click()});
- $('betMinus').onclick=()=>{if(betIdx>0&&!running&&!bonus&&freeSpins===0){soundStart();audioFX('tap');betIdx--;makePaytable();update();save()}};$('betPlus').onclick=()=>{if(betIdx<6&&!running&&!bonus&&freeSpins===0){soundStart();audioFX('tap');betIdx++;makePaytable();update();save()}};
+ $('betMinus').onclick=()=>{if(betIdx>0&&!running&&!bonus&&freeSpins===0){soundStart();audioFX('tap');betIdx--;makePaytable();update();save()}};$('betPlus').onclick=()=>{if(betIdx<BETS.length-1&&!running&&!bonus&&freeSpins===0){soundStart();audioFX('tap');betIdx++;makePaytable();update();save()}};
  let spinLongTimer=null,spinHeld=false,spinLongUsed=false;
  const beginLongSpin=()=>{if($('spin').disabled||freeSummaryPending||window.JM_WHEEL_V49?.isPlaying?.())return;spinHeld=true;spinLongUsed=false;$('spin').classList.add('pressed');clearTimeout(spinLongTimer);if(autoSpinsRemaining>0||running||bonus||freeSpins>0)return;spinLongTimer=setTimeout(()=>{if(!spinHeld)return;spinLongUsed=true;$('spin').classList.remove('pressed');modal('autoModal',true);soundStart();},1000);};
  const cancelLongSpin=()=>{spinHeld=false;clearTimeout(spinLongTimer);$('spin').classList.remove('pressed');};
