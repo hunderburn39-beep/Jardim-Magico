@@ -1,0 +1,154 @@
+/* Jardim Mágico V44 — cabeçalho organizado, porco mealheiro e roleta do Hold & Win.
+   Não altera a lógica financeira nem o sorteio dos resultados. */
+
+/* Topo: só ferramentas no canto superior direito, separadas do logótipo. */
+.game .topbar{
+ display:flex!important;
+ justify-content:flex-end!important;
+ align-items:center!important;
+ min-height:clamp(38px,5.5dvh,54px);
+ margin:0 0 clamp(8px,1.5dvh,18px)!important;
+ padding:3px 2px 5px!important;
+ border-bottom:1px solid rgba(255,222,154,.23);
+}
+.game .topbar .branding{display:none!important;}
+.game .toptools{
+ width:auto!important;
+ max-width:100%!important;
+ display:flex!important;
+ justify-content:flex-end!important;
+ align-items:center!important;
+ margin-left:auto!important;
+ margin-right:0!important;
+ gap:clamp(6px,1.45vw,14px)!important;
+ flex-wrap:nowrap;
+}
+.game .toptools .roundSmall{
+ flex:0 0 auto;
+ width:clamp(30px,6.5vw,39px);
+ min-width:clamp(30px,6.5vw,39px)!important;
+ height:clamp(30px,6.5vw,39px)!important;
+ font-size:clamp(15px,3.2vw,20px);
+}
+.game .logoLoop,.game[data-layout="portrait"] .logoLoop,.game[data-layout="wide"] .logoLoop{
+ margin:5px auto 8px!important;
+}
+.game .logoLoop::before{opacity:.4;}
+.game .titleArt{
+ display:block;
+ width:100%;
+ object-fit:contain;
+ background:transparent!important;
+ mix-blend-mode:normal!important;
+ filter:drop-shadow(0 4px 9px rgba(0,0,0,.72)) drop-shadow(0 0 12px rgba(252,205,133,.12))!important;
+}
+.game .logoSpinLetters{display:none!important;}
+
+/* Cofre mágico: novo porco mealheiro, mantendo a mesma animação de crescimento e o destino das moedas. */
+.game .vaultMystery .vaultFace{
+ display:grid!important;
+ place-items:center;
+ width:clamp(53px,10vw,78px);
+ min-height:clamp(47px,7.5vw,68px);
+ max-width:96%;
+ font-size:0!important;
+ line-height:0!important;
+ margin:auto;
+ transform:scale(var(--vaultGrow,1));
+}
+.game .vaultMystery .vaultFace img{
+ display:block;
+ width:100%;
+ height:auto;
+ max-height:68px;
+ object-fit:contain;
+ pointer-events:none;
+ -webkit-user-drag:none;
+ filter:drop-shadow(0 2px 5px rgba(0,0,0,.56)) drop-shadow(0 0 8px rgba(255,211,122,.31));
+}
+.game .vaultMystery.vaultFull .vaultFace img{
+ filter:drop-shadow(0 1px 6px #fff0bd) drop-shadow(0 0 15px #f9c05e);
+}
+.game .vaultMystery .vaultHalo{background:radial-gradient(circle,rgba(255,221,168,.40),rgba(245,151,183,.22) 44%,transparent 74%)!important;}
+.game .vaultMystery .vaultSpark{color:#fff0a9!important;}
+
+/* Hold & Win: cada quadrado vazio simula o movimento de uma roleta; moedas fixas não rodam. */
+#bonusModal .bonusGrid .bonusCell.jmRouletteRolling{
+ position:relative;
+ isolation:isolate;
+ border:1px solid rgba(255,234,156,.89)!important;
+ background:linear-gradient(160deg,#304950,#294557 40%,#4c2e52 70%,#291d39)!important;
+ box-shadow:inset 0 0 12px rgba(223,210,255,.32),0 0 8px rgba(255,221,126,.33)!important;
+ overflow:hidden;
+}
+#bonusModal .bonusGrid .bonusCell.jmRouletteRolling::before{
+ content:'';
+ position:absolute;
+ inset:0;
+ background:linear-gradient(0deg,transparent,rgba(255,248,200,.16),transparent);
+ animation:jmRouletteShine .24s linear infinite;
+ pointer-events:none;
+}
+#bonusModal .bonusGrid .jmRouletteToken{
+ display:grid;
+ place-items:center;
+ width:100%;height:100%;
+ font:900 clamp(12px,2.8vw,24px)/1 Georgia,serif;
+ color:#fff0c1;
+ text-shadow:0 0 7px #ffe28f,0 2px 3px #1c0c2b;
+ animation:jmRouletteRoll .075s ease-out both;
+ will-change:transform,opacity;
+}
+#bonusModal .bonusGrid .bonusCell.jmRouletteStopped{
+ transition:background .16s,box-shadow .16s;
+}
+#bonusModal .bonusGrid .bonusCell.jmRouletteHit{
+ background:radial-gradient(circle at 50% 47%,rgba(255,233,134,.40),#4f3745 73%,#261d36)!important;
+ border:1px solid #ffda8c!important;
+ box-shadow:inset 0 0 12px rgba(255,226,132,.58),0 0 12px rgba(255,216,113,.60)!important;
+ animation:jmRouletteLanding .3s cubic-bezier(.2,1.3,.35,1) both;
+}
+#bonusModal .bonusGrid .bonusCell.jmRouletteHit .bonusToken,
+#bonusModal .bonusGrid .bonusCell.jmRouletteHit .bonusCrystal{
+ animation:jmRoulettePrize .25s cubic-bezier(.17,1.4,.25,1) both;
+}
+@keyframes jmRouletteRoll{
+ from{transform:translateY(-30%) scale(.65);opacity:.3;filter:blur(2px)}
+ to{transform:translateY(22%) scale(1.07);opacity:1;filter:blur(0)}
+}
+@keyframes jmRouletteShine{
+ from{transform:translateY(-100%)}
+ to{transform:translateY(100%)}
+}
+@keyframes jmRouletteLanding{
+ from{transform:scale(.82);filter:brightness(2.4)}
+ to{transform:scale(1);filter:brightness(1)}
+}
+@keyframes jmRoulettePrize{
+ from{transform:translateY(-30%) scale(.75);opacity:.25}
+ to{transform:translateY(0) scale(1);opacity:1}
+}
+@media(max-width:540px){
+ .game .topbar{margin-bottom:9px!important;min-height:34px;}
+ .game .toptools{gap:clamp(5px,1.25vw,9px)!important;}
+ .game .toptools .roundSmall{
+  min-width:clamp(27px,6.6vw,35px)!important;
+  width:clamp(27px,6.6vw,35px)!important;
+  height:clamp(27px,6.6vw,35px)!important;
+ }
+ .game[data-layout="portrait"] .logoLoop{margin:4px auto 8px!important;}
+ .game[data-layout="portrait"] .titleArt{height:clamp(55px,10dvh,89px)!important;}
+ .game .vaultMystery .vaultFace{width:clamp(49px,11vw,68px);min-height:42px;}
+}
+@media(orientation:landscape) and (max-height:520px){
+ .game .topbar{min-height:29px;padding:1px 2px!important;margin-bottom:5px!important;}
+ .game .toptools{gap:clamp(5px,1vw,11px)!important;}
+ .game .toptools .roundSmall{width:clamp(26px,5dvh,34px);height:clamp(26px,5dvh,34px)!important;min-width:clamp(26px,5dvh,34px)!important;}
+ .game[data-layout="wide"] .logoLoop{margin:1px auto 4px!important;}
+}
+@media(prefers-reduced-motion:reduce){
+ #bonusModal .bonusGrid .jmRouletteToken,
+ #bonusModal .bonusGrid .jmRouletteRolling::before,
+ #bonusModal .bonusGrid .jmRouletteHit,
+ #bonusModal .bonusGrid .jmRouletteHit .bonusToken{animation:none!important;}
+}
