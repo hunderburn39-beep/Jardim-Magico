@@ -218,7 +218,7 @@ function submitDeposit(){
 }
 function freshSession(credits){
  if(session){notice('Termina a sessão atual para começares outra.');return;}
- balance=Math.round(credits*100);lastPrize=0;freeSpins=0;vaultCoins=0;vaultFictiveSum=0;session={id:Date.now(),start:new Date().toISOString(),initial:balance,deposits:0,rtpPercent:RTP_REFERENCE,profitPercent,ownerWithdrawn:0, poolFunded:0,poolPaid:0,operatorFunded:0,bufferFunded:0,stake:0,prizes:0,withdrawn:0,spins:0,bonuses:0,events:[]};
+ balance=Math.round(credits*100);lastPrize=0;freeSpins=0;freeBonusTotal=0;freeSummaryPending=false;freeSummaryCount=0;freeBaseTotal=0;freeMultiplierBalls=[];freeSettlePending=false;freeSettlementRunning=false;shelf=[];vaultCoins=0;vaultFictiveSum=0;session={id:Date.now(),start:new Date().toISOString(),initial:balance,deposits:0,rtpPercent:RTP_REFERENCE,profitPercent,ownerWithdrawn:0, poolFunded:0,poolPaid:0,operatorFunded:0,bufferFunded:0,stake:0,prizes:0,withdrawn:0,spins:0,bonuses:0,events:[]};
  log('entrada',balance,'Saldo inicial de créditos virtuais');modal('startModal',false);notice('Pronto para jogar. Boa sorte no jardim!');update();save();soundStart();
 }
 function doWithdraw(){if(!session||running||bonus||freeSpins>0)return;if($('withdrawPassword').value!==CASH_PIN){$('withdrawError').textContent='Palavra-passe incorreta. Usa a mesma do depósito.';$('withdrawPassword').value='';return;}const value=Number($('withdrawAmount').value);if(!Number.isFinite(value)||value<=0){alert('Indica um valor válido para levantar.');return;}const cents=Math.round(value*100);if(cents>balance){alert('O valor do levantamento não pode ser superior ao saldo disponível.');return;}balance-=cents;session.withdrawn=(session.withdrawn||0)+cents;log('levantamento',cents,'Levantamento virtual parcial');$('withdrawPassword').value='';$('withdrawError').textContent='';modal('withdrawModal',false);notice('Levantamento efetuado: -'+money(cents));if(balance<=0)notice('Saldo esgotado. Podes fazer depósito para continuar a jogar.');update();save()}
@@ -1138,7 +1138,23 @@ async function animateCascade(remove){
 }
 function mulOrbTop(v,x,y){return new Promise(resolve=>{const slot=$('orbs'),stage=$('stageWrap');const from=stage.getBoundingClientRect(),to=slot.getBoundingClientRect();const node=document.createElement('span');node.className='orbPill';node.textContent=v+'×';node.style.cssText=`position:fixed;z-index:90;pointer-events:none;left:${from.left+(x+.5)*from.width/5-19}px;top:${from.top+(y+.5)*from.height/3-19}px;transition:transform ${mode==='turbo'?.3:.65}s cubic-bezier(.18,.77,.21,1),opacity .7s;width:40px;height:40px;`;
  document.body.append(node);const dx=to.left+to.width*.7-(from.left+(x+.5)*from.width/5),dy=to.top+to.height*.5-(from.top+(y+.5)*from.height/3);requestAnimationFrame(()=>node.style.transform=`translate(${dx}px,${dy}px) scale(.65)`);setTimeout(()=>{node.remove();resolve()},mode==='turbo'?320:680)})}
-function updateShelf(){const box=$('orbs');box.replaceChildren();for(const s of shelf.slice(-10)){const e=document.createElement('span');e.className='orbPill';e.textContent=s+'×';box.append(e)}$('shelfTotal').textContent='×'+(shelf.length?shelf.reduce((a,b)=>a+b,0):1)}
+function updateShelf(){
+ const box=$('orbs'),freeActive=freeSpins>0||freeAutoRunning||freeSettlePending||freeSummaryPending;
+ const tag=document.querySelector('.shelfTag');
+ if(tag)tag.innerHTML=freeActive?'MULTIS<br>FREE SPINS':'MULTIPLICADORES<br>ACUMULADOS';
+ box.replaceChildren();
+ // Em free spins, NENHUMA bola é apagada: ficam todas guardadas, podem
+ // deslocar-se horizontalmente e a soma à direita mantém-se atualizada.
+ for(const value of (freeActive?shelf:shelf.slice(-10))){
+  const chip=document.createElement('span');chip.className='orbPill';
+  chip.textContent=value+'×';chip.title='Multiplicador '+value+' vezes';
+  box.append(chip);
+ }
+ const factor=shelf.length?shelf.reduce((sum,v)=>sum+v,0):1;
+ $('shelfTotal').textContent='×'+factor;
+ $('shelfTotal').title=freeActive?'Soma dos multiplicadores até ao final das free spins':'Multiplicador desta rodada';
+ if(freeActive)requestAnimationFrame(()=>{box.scrollLeft=box.scrollWidth;});
+}
 /* V52 — são seis moedas visíveis simultaneamente nos 5 tambores (5×3).
    A chuva é apenas visual e o valor impresso em cada moeda é fictício. */
 function countReelCoins(){return grid.reduce((total,col)=>total+col.filter(s=>s?.id==='coin').length,0);}
