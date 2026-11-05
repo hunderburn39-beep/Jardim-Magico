@@ -231,7 +231,20 @@ function update(){
  const vaultText=vaultCoins+' MOEDAS',vaultWidth=Math.min(100,vaultCoins/40*100)+'%';
  $('vaultCount').textContent=vaultText;$('vaultFill').style.width=vaultWidth;$('vaultBtn').classList.toggle('ready',vaultCoins>=4);$('vaultBtn').classList.toggle('vaultFull',vaultCoins>=8);
  $('vaultBtn').style.setProperty('--vaultGrow',(1+Math.min(26,vaultCoins)*.022).toFixed(2));
- if($('vaultBtnMobile')){$('vaultBtnMobile').title='Cofre: '+money(vaultFictiveSum)+' (valores decorativos em créditos fictícios)';let value=$('vaultBtnMobile').querySelector('.jm52PigValue');if(!value){value=document.createElement('span');value.className='jm52PigValue';$('vaultBtnMobile').append(value);}value.textContent=money(vaultFictiveSum);}if($('vaultCountMobile'))$('vaultCountMobile').textContent=vaultText;if($('vaultFillMobile'))$('vaultFillMobile').style.width=vaultWidth;if($('vaultBtnMobile')){$('vaultBtnMobile').classList.toggle('ready',vaultCoins>=4);$('vaultBtnMobile').classList.toggle('vaultFull',vaultCoins>=8);$('vaultBtnMobile').style.setProperty('--vaultGrow',(1+Math.min(26,vaultCoins)*.022).toFixed(2));}
+ if($('vaultBtnMobile')){
+  const pig=$('vaultBtnMobile');
+  pig.title='Ganha até: '+money(vaultFictiveSum)+' (contador de moedas fictícias, não é prémio garantido)';
+  let display=pig.querySelector('.jm52PigValue');
+  if(!display){display=document.createElement('span');display.className='jm52PigValue';pig.append(display);}
+  let caption=display.querySelector('.jm67PigCaption'),amount=display.querySelector('.jm67PigTotal');
+  if(!caption||!amount){
+   caption=document.createElement('small');caption.className='jm67PigCaption';caption.textContent='GANHA ATÉ:';
+   amount=document.createElement('strong');amount.className='jm67PigTotal';
+   display.replaceChildren(caption,amount);
+  }
+  amount.textContent=money(vaultFictiveSum);
+  pig.setAttribute('aria-label','Porquinho, ganha até '+money(vaultFictiveSum)+' em créditos fictícios');
+ }if($('vaultCountMobile'))$('vaultCountMobile').textContent=vaultText;if($('vaultFillMobile'))$('vaultFillMobile').style.width=vaultWidth;if($('vaultBtnMobile')){$('vaultBtnMobile').classList.toggle('ready',vaultCoins>=4);$('vaultBtnMobile').classList.toggle('vaultFull',vaultCoins>=8);$('vaultBtnMobile').style.setProperty('--vaultGrow',(1+Math.min(26,vaultCoins)*.022).toFixed(2));}
  refreshBuyOptions();
  $('withdrawBtn').disabled=running||!!bonus||freeSpins>0||!session||balance<=0;
  $('depositBtn').disabled=running||!!bonus||freeSpins>0;
