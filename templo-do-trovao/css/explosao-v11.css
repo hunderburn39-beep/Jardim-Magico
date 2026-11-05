@@ -2,6 +2,8 @@
  * Camada independente, acima das peças e abaixo dos controlos.
  * Todos os efeitos são visuais; não alteram a matemática do jogo.
  */
+/* O valor do prémio continua legível sobre as explosões. */
+.board-shell > .board-overlay{z-index:16}
 .board-shell .winning-fx{
   position:absolute;inset:0;
   z-index:12;
