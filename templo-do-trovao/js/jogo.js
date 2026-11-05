@@ -151,9 +151,9 @@
         const shard=document.createElement("span");
         shard.className="crystal-shard";
         const angle=(n*360/7+i*21)*Math.PI/180;
-        const reach=48+(n%3)*24;
-        shard.style.setProperty("--sx",(Math.cos(angle)*reach)+"%");
-        shard.style.setProperty("--sy",(Math.sin(angle)*reach)+"%");
+        const reach=Math.max(18,Math.min(tile.clientWidth,tile.clientHeight)*(.52+(n%3)*.17));
+        shard.style.setProperty("--sx",(Math.cos(angle)*reach).toFixed(1)+"px");
+        shard.style.setProperty("--sy",(Math.sin(angle)*reach).toFixed(1)+"px");
         shard.style.setProperty("--sd",(n%3)*.025+"s");
         shard.style.setProperty("--shard-hue",tile.dataset.kind==="ruby"?"348":tile.dataset.kind==="sapphire"?"192":tile.dataset.kind==="emerald"?"146":tile.dataset.kind==="amethyst"?"278":"44");
         tile.appendChild(shard);
