@@ -1,0 +1,1025 @@
+/* Jardim Mágico — motor PixiJS/WebGL com alternativa Canvas 2D.
+ * Jogo recreativo; créditos, levantamentos e resultados do operador são virtuais.
+ */
+(() => {
+'use strict';
+const $=s=>document.getElementById(s), W=900,H=535,CW=W/5,CH=H/3;
+const BETS=[5,10,20,40,60,80,100];
+const regular=['heart','rose','mushroom','hat','teapot','potion','gem','green'];
+const allSymbols=[...regular,'wild','scatter','mul'];
+const IMGFILES={heart:'heart.png',rose:'rose.png',mushroom:'mushroom.png',hat:'hat.png',teapot:'teapot.png',potion:'potion.png',gem:'gem.png',green:'green.png',wild:'wild.png',scatter:'scatter.png'};
+const NAME={heart:'CORAÇÃO',rose:'ROSA',mushroom:'COGUMELO',hat:'CHAPÉU',teapot:'BULE',potion:'POÇÃO',gem:'GEMA ROXA',green:'GEMA VERDE',wild:'WILD',scatter:'SCATTER',mul:'MULTIPLICADOR'};
+const PAY={heart:[0,0,0,6,18,50],rose:[0,0,0,6,19,55],mushroom:[0,0,0,5,16,48],hat:[0,0,0,7,21,60],teapot:[0,0,0,8,23,75],potion:[0,0,0,10,30,85],gem:[0,0,0,12,38,100],green:[0,0,0,11,35,90],wild:[0,0,10,15,45,130]};
+const LINES=[
+ [1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],
+ [0,1,2,1,0],[2,1,0,1,2],[0,0,1,0,0],
+ [2,2,1,2,2],[1,2,2,2,1],[1,0,0,0,1],
+ [0,2,2,2,0],[2,0,0,0,2],[0,1,0,1,0],
+ [2,1,2,1,2],[1,1,0,1,1],[1,1,2,1,1]
+];
+const MAX_WIN_MULT=5000;
+const CASH_PIN='12345';
+const PROTECTED_SHARE=0.25; // Parte intocável da parcela reservada em cada aposta.
+
+const MULS=[2,5,10,15,20,25,50,100,250,500,1000];
+const KEY='jm_webgl_v20_funded';
+// Parametrização V34: jogo base + 3 SCATTER, free spins e Hold & Win avaliados separadamente por Monte Carlo independente.
+// Nota: o RTP observado pode ser inferior ao previsto devido ao limite de pagamento do cofre. Não é RTP certificado.
+const RTP_REFERENCE=96;
+const RTP_CALIBRATION={base:0.928,free:0.915,hold:1.0004}; // Referência histórica V34: rever cálculo estatístico após o prémio de 2 WILD da V41.
+let autoSpinsTotal=0,rtpConfig=96,adminAudit=[],awardContext='base',adminUnlocked=false,adminTaps=0,adminTapDeadline=0,autoSpinsRemaining=0,freeStartPending=false,freeAutoRunning=false,freeAutoTimer=null,scatterNoteStep=0;
+const configuredRtp=()=>RTP_REFERENCE; // Fixo; sem alteração na interface de administração.
+let profitPercent=4, prizePool=0, operatorReserve=0, protectedReserve=0, ownerWithdrawn=0, protectedCarry=0, riskReserve=0, ownerCarry=0, poolCarry=0;
+const configuredProfit=()=>Math.max(1,Math.min(70,Number(profitPercent))); // Aplica-se às próximas apostas, sem retroatividade.
+const effectiveBudgetPercent=()=>Math.max(0,Math.min(configuredRtp(),100-configuredProfit()));
+// Integer cents and fractional carry avoid systematically losing 1 cent on small bets.
+// Invariant: each wager is split into the prize vault, operator reserve and risk buffer.
+function fundWager(stake){
+ stake=Math.max(0,Math.round(stake));
+ const ownExact=stake*configuredProfit()/100+ownerCarry;
+ let own=Math.min(stake,Math.floor(ownExact+1e-10));ownerCarry=ownExact-own;
+ const poolExact=stake*effectiveBudgetPercent()/100+poolCarry;
+ let toPool=Math.min(stake-own,Math.floor(poolExact+1e-10));poolCarry=poolExact-toPool;
+ const buffer=stake-own-toPool;
+ operatorReserve+=own;riskReserve+=buffer;prizePool+=toPool;
+  const protectedExact=own*PROTECTED_SHARE+protectedCarry;
+  const locked=Math.min(own,Math.floor(protectedExact+1e-10));
+  protectedCarry=protectedExact-locked;protectedReserve+=locked;
+ if(session){session.poolFunded=(session.poolFunded||0)+toPool;session.operatorFunded=(session.operatorFunded||0)+own;session.bufferFunded=(session.bufferFunded||0)+buffer;}
+ return {toPool,own,buffer};
+}
+function payFromVault(requested){
+ const amount=Math.max(0,Math.min(prizePool,Math.round(Math.max(0,requested))));
+ prizePool-=amount;balance+=amount;
+ if(session){session.prizes+=amount;session.poolPaid=(session.poolPaid||0)+amount;}
+ return amount;
+}
+function validateVault(){return Number.isInteger(prizePool)&&Number.isInteger(operatorReserve)&&Number.isInteger(protectedReserve)&&Number.isInteger(riskReserve)&&prizePool>=0&&operatorReserve>=protectedReserve&&protectedReserve>=0&&riskReserve>=0}
+
+const rtpScaleFor=kind=>(effectiveBudgetPercent()/RTP_REFERENCE)*(RTP_CALIBRATION[kind]??1);
+const roundedPayout=value=>{if(!(value>0))return 0;let whole=Math.floor(value),fraction=value-whole;return whole+(Math.random()<fraction?1:0)};
+const rtpLabel=value=>Number(value).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
+const JACKPOTS={MINI:{mult:100,color:'#7bec88'},MEGA:{mult:250,color:'#d48aff'},MAJOR:{mult:500,color:'#82caff'},MAX:{mult:1000,color:'#ffd56d'}};
+let symbolSeq=0,vaultCoins=0,roundVaultNew=0;const countedCoins=new Set();
+const money=c=>(c/100).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const nfmt=n=>n.toLocaleString('pt-PT');
+const rand=(a,b)=>a+Math.random()*(b-a);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const R=x=>Math.floor(Math.random()*x);
+const pick=(arr)=>arr[R(arr.length)];
+let betIdx=2,balance=0,lastPrize=0,mode='normal',running=false,freeSpins=0,freeBet=20,bonus=null,session=null,history=[],mute=false;
+let grid=Array.from({length:5},()=>Array.from({length:3},()=>({id:pick(regular)})));
+let transitions=Array(5).fill(null),cascades=Array(5).fill(null),dropItems=[],burstParticles=[],lineGlow=[],floaters=[];
+let shelf=[],winRound=0,pixi=null,pixiSprites=[],nativeAssets={},nativeCtx=$('reelCanvas').getContext('2d'),tickerRunning=false,t0=performance.now();
+let audioCtx=null, fxMaster=null, lastSchoolBellAt=-Infinity, musicEnabled=true, musicVolume=.25;
+// V40: os sons de SCATTER/suspense acompanham apenas os símbolos realmente parados.
+let scatterSuspenseSequence=0;
+// Som original enviado pelo utilizador: impacto suave de 0,36 s em cada tambor.
+const REEL_LANDING_B64='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qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//vUZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//vUZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//vUZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//vUZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//vUZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//vUZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDCqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq';
+let reelLandingBuffer=null, reelLandingDecode=null;
+function preloadReelLanding(){
+ if(!audioCtx || reelLandingBuffer || reelLandingDecode) return;
+ try{
+  const binary=atob(REEL_LANDING_B64), bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  reelLandingDecode=audioCtx.decodeAudioData(bytes.buffer)
+   .then(buffer=>{reelLandingBuffer=buffer;})
+   .catch(err=>{console.warn('Som de queda indisponível',err);});
+ }catch(err){console.warn('Não foi possível carregar o som de queda',err)}
+}
+function soundReelLanding(){
+ if(mute)return;
+ if(!audioCtx || !reelLandingBuffer){audioFX('drop');return;}
+ try{
+  const source=audioCtx.createBufferSource(),volume=audioCtx.createGain();
+  source.buffer=reelLandingBuffer;volume.gain.value=.28;
+  source.connect(volume);volume.connect(audioCtx.destination);source.start();
+ }catch(e){audioFX('drop')}
+}
+
+
+function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,vaultCoins,musicEnabled,musicVolume,rtpConfig,profitPercent,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
+function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;vaultCoins=Math.max(0,Number(data.vaultCoins)||0);bonus=([25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(0,Math.min(70,Number(data.profitPercent))):4;prizePool=Math.max(0,Math.floor(Number(data.prizePool)||0));operatorReserve=Math.max(0,Math.floor(Number(data.operatorReserve)||0));protectedReserve=Math.min(operatorReserve,Math.max(0,Math.floor(Number(data.protectedReserve??(operatorReserve*PROTECTED_SHARE)))));protectedCarry=Math.max(0,Number(data.protectedCarry)||0);ownerWithdrawn=Math.max(0,Math.floor(Number(data.ownerWithdrawn)||0));riskReserve=Math.max(0,Math.floor(Number(data.riskReserve)||0));ownerCarry=Math.max(0,Number(data.ownerCarry)||0);poolCarry=Math.max(0,Number(data.poolCarry)||0);return true}}catch(e){}return false}
+function log(kind,amount,detail=''){if(!session)return;session.events.push({time:new Date().toISOString(),kind,amount,detail,balance});save()}
+function update(){
+ $('balance').textContent=money(balance);$('lastPrize').textContent=money(lastPrize);$('betValue').textContent=money(BETS[betIdx]);
+ const betLocked=running||!!bonus||freeSpins>0;
+ $('betMinus').disabled=betLocked||betIdx===0;$('betPlus').disabled=betLocked||betIdx===6;
+ document.querySelector('.betPanel').classList.toggle('locked',!!bonus||freeSpins>0);
+ $('spin').disabled=!!bonus||freeStartPending||freeAutoRunning||!session||(autoSpinsRemaining===0&&(running||(freeSpins<=0&&balance<BETS[betIdx])));
+ $('buyBonus').disabled=running||!!bonus||!session||freeSpins>0;
+ $('buyBonus').textContent='✨ COMPRAR BÓNUS';
+ const vaultText=vaultCoins+' MOEDAS',vaultWidth=Math.min(100,vaultCoins/40*100)+'%';
+ $('vaultCount').textContent=vaultText;$('vaultFill').style.width=vaultWidth;$('vaultBtn').classList.toggle('ready',vaultCoins>=4);$('vaultBtn').classList.toggle('vaultFull',vaultCoins>=8);
+ $('vaultBtn').style.setProperty('--vaultGrow',(1+Math.min(26,vaultCoins)*.022).toFixed(2));
+ if($('vaultCountMobile'))$('vaultCountMobile').textContent=vaultText;if($('vaultFillMobile'))$('vaultFillMobile').style.width=vaultWidth;if($('vaultBtnMobile')){$('vaultBtnMobile').classList.toggle('ready',vaultCoins>=4);$('vaultBtnMobile').classList.toggle('vaultFull',vaultCoins>=8);$('vaultBtnMobile').style.setProperty('--vaultGrow',(1+Math.min(26,vaultCoins)*.022).toFixed(2));}
+ refreshBuyOptions();
+ $('withdrawBtn').disabled=running||!!bonus||freeSpins>0||!session||balance<=0;
+ $('depositBtn').disabled=running||!!bonus||freeSpins>0;
+ $('autoSpinBtn').disabled=!!bonus||!session;
+ $('turboBtn').classList.toggle('active',mode==='turbo');$('turboBtn').setAttribute('aria-pressed',mode==='turbo'?'true':'false');$('turboBtn').textContent='⚡ TURBO '+(mode==='turbo'?'ON':'OFF');
+ $('autoInfo').textContent=autoSpinsRemaining>0?'AUTO '+autoSpinsRemaining+' / '+autoSpinsTotal:(autoSpinsTotal>0?'VOLTAS CONCLUÍDAS':'5–100 VOLTAS');$('autoProgress').style.width=autoSpinsTotal>0?(Math.max(0,Math.min(100,(autoSpinsTotal-autoSpinsRemaining)/autoSpinsTotal*100)))+'%':'0%';
+ $('freeTag').classList.toggle('show',freeSpins>0);$('freeTag').textContent=freeSpins+' FREE SPINS'+(freeAutoRunning?' • AUTO':'');
+ $('spin').querySelector('.cycle').textContent=freeSpins?'✦':'⟳';
+ const autoActive=autoSpinsRemaining>0;$('spinCount').hidden=!autoActive;$('spinCount').textContent=autoActive?autoSpinsRemaining+' VOLTAS':'';$('spinText').textContent=autoActive?'PARAR AUTO':'RODAR';$('spin').classList.toggle('autoRunning',autoActive);
+}
+function notice(s){$('notice').textContent=s;}
+function modal(id,open){$(id).classList.toggle('open',!!open)}
+// V21: carregamentos só após autenticação local; validade de um único movimento.
+let depositAuthorized=false;
+function openDepositLogin(){
+ if(running||bonus||freeSpins>0)return;
+ depositAuthorized=false;$('depositPassword').value='';$('depositError').textContent='';
+ $('depositLoginInfo').textContent=session?'Autoriza um carregamento adicional de créditos fictícios. O saldo atual será mantido.':'Autoriza o saldo inicial de créditos fictícios.';
+ modal('depositLoginModal',true);$('depositPassword').focus();
+}
+function showDepositForm(){
+ if(!depositAuthorized)return;
+ modal('depositLoginModal',false);
+ $('depositTitle').textContent=session?'✦ Adicionar créditos ✦':'✦ Bem-vindo ao Jardim Mágico ✦';
+ $('depositInstructions').textContent=session?'Escolhe quantos créditos fictícios queres acrescentar à sessão atual.':'Escolhe os créditos fictícios com que queres começar esta sessão.';
+ $('startBtn').textContent=session?'CONFIRMAR DEPÓSITO':'INICIAR JOGO';
+ $('openingCredits').value=50;
+ document.querySelectorAll('#choices button').forEach(b=>b.classList.toggle('selected',b.dataset.value==='50'));
+ updateDepositPreview();modal('startModal',true);
+}
+function updateDepositPreview(){
+ const n=Number($('openingCredits').value);$('depositConfirmPreview').textContent=Number.isFinite(n)&&n>0?(session?'Saldo atual: '+money(balance)+' · Adicionar: '+money(Math.round(n*100)):'Saldo inicial: '+money(Math.round(n*100))):'Indica um valor válido.';
+}
+function submitDeposit(){
+ if(!depositAuthorized)return;
+ if(running||bonus||freeSpins>0){notice('Não é possível depositar durante um bónus.');return;}
+ const value=Number($('openingCredits').value);
+ if(!Number.isFinite(value)||value<1||value>100000){alert('Indica um valor entre 1 e 100 000 créditos fictícios.');return;}
+ const cents=Math.round(value*100);
+ if(!Number.isSafeInteger(cents)||cents<=0){alert('Valor inválido.');return;}
+ const question=session?`Confirmar depósito adicional de ${money(cents)}?\nSaldo após depósito: ${money(balance+cents)}`:`Confirmar saldo inicial de ${money(cents)}?`;
+ if(!window.confirm(question))return;
+ depositAuthorized=false;
+ if(session){
+  balance+=cents;session.deposits=(session.deposits||0)+cents;
+  log('deposito',cents,'Carregamento adicional de créditos virtuais autorizado');
+  modal('startModal',false);notice('Depósito autorizado: +'+money(cents));update();save();soundStart();
+ }else freshSession(value);
+}
+function freshSession(credits){
+ if(session){notice('Termina a sessão atual para começares outra.');return;}
+ balance=Math.round(credits*100);lastPrize=0;freeSpins=0;vaultCoins=0;session={id:Date.now(),start:new Date().toISOString(),initial:balance,deposits:0,rtpPercent:RTP_REFERENCE,profitPercent,ownerWithdrawn:0, poolFunded:0,poolPaid:0,operatorFunded:0,bufferFunded:0,stake:0,prizes:0,withdrawn:0,spins:0,bonuses:0,events:[]};
+ log('entrada',balance,'Saldo inicial de créditos virtuais');modal('startModal',false);notice('Pronto para jogar. Boa sorte no jardim!');update();save();soundStart();
+}
+function doWithdraw(){if(!session||running||bonus||freeSpins>0)return;if($('withdrawPassword').value!==CASH_PIN){$('withdrawError').textContent='Palavra-passe incorreta. Usa a mesma do depósito.';$('withdrawPassword').value='';return;}const value=Number($('withdrawAmount').value);if(!Number.isFinite(value)||value<=0){alert('Indica um valor válido para levantar.');return;}const cents=Math.round(value*100);if(cents>balance){alert('O valor do levantamento não pode ser superior ao saldo disponível.');return;}balance-=cents;session.withdrawn=(session.withdrawn||0)+cents;log('levantamento',cents,'Levantamento virtual parcial');$('withdrawPassword').value='';$('withdrawError').textContent='';modal('withdrawModal',false);notice('Levantamento efetuado: -'+money(cents));if(balance<=0)notice('Saldo esgotado. Podes fazer depósito para continuar a jogar.');update();save()}
+function doBankerWithdraw(){
+ if(!adminUnlocked||!session||running||bonus||freeSpins>0){$('bankerWithdrawStatus').textContent='Termina a rodada ou bónus antes de levantar.';return;}
+ if($('bankerWithdrawPassword').value!==CASH_PIN){$('bankerWithdrawStatus').textContent='Palavra-passe incorreta. Usa a mesma do depósito.';$('bankerWithdrawPassword').value='';return;}
+ const amount=Number($('bankerWithdrawAmount').value),cents=Math.round(amount*100);
+ if(!Number.isFinite(amount)||!Number.isSafeInteger(cents)||cents<=0){$('bankerWithdrawStatus').textContent='Indica um valor válido.';return;}
+ const maximum=bankerAvailable();
+ if(cents>maximum){$('bankerWithdrawStatus').textContent='Máximo levantável sem tocar na reserva protegida ou no saldo dos jogadores: '+money(maximum);return;}
+ operatorReserve-=cents;ownerWithdrawn+=cents;session.ownerWithdrawn=(session.ownerWithdrawn||0)+cents;
+ const detail='Levantamento do banqueiro (créditos fictícios)';
+ log('levantamento_banqueiro',cents,detail);adminAudit.push({time:new Date().toISOString(),kind:'levantamento_banqueiro',amount:cents});
+ $('bankerWithdrawPassword').value='';$('bankerWithdrawAmount').value='';
+ $('bankerWithdrawStatus').textContent='Levantamento virtual do banqueiro: '+money(cents)+' • Reserva protegida intacta.';
+ updateAdmin();save();
+}
+function maybeContinueAuto(){if(freeStartPending||freeAutoRunning||freeSpins>0)return;if(autoSpinsRemaining>0&&!running&&!bonus&&session&&(freeSpins>0||balance>=BETS[betIdx])){setTimeout(()=>{if(autoSpinsRemaining>0&&!running&&!bonus&&session){autoSpinsRemaining--;update();doRound();}},mode==='turbo'?120:320);}else if(autoSpinsRemaining>0&&(!session||(!freeSpins&&balance<BETS[betIdx]))){autoSpinsRemaining=0;update();save();notice('Auto-spins terminadas.')}}
+function stopAuto(){autoSpinsRemaining=0;autoSpinsTotal=0;update();save();modal('autoModal',false);}
+function reportRows(){return [...history,...(session?[session]:[])];}
+function totals(){const a=reportRows();return a.reduce((v,s)=>({initial:v.initial+(s.initial||0),deposits:v.deposits+(s.deposits||0),stakes:v.stakes+(s.stake||0),prizes:v.prizes+(s.prizes||0),withdrawn:v.withdrawn+(s.withdrawn||0),ownerWithdrawn:v.ownerWithdrawn+(s.ownerWithdrawn||0),balance:v.balance+(s.end?0:s.id===session?.id?balance:0),spins:v.spins+(s.spins||0)}),{initial:0,deposits:0,stakes:0,prizes:0,withdrawn:0,ownerWithdrawn:0,balance:0,spins:0})}
+function cashMovements(){
+ const rows=[];let order=0;
+ const validMoney=n=>Number.isFinite(Number(n))?Math.max(0,Math.round(Number(n))):0;
+ for(const s of reportRows()){
+  const events=Array.isArray(s.events)?s.events:[];
+  const sid=String(s.id??'—');let summedIn=0,summedOut=0;
+  const old=[];
+  for(const e of events){
+   const kind=String(e.kind||'').toLowerCase();let inAmount=0,outAmount=0;
+   if(kind==='entrada'||kind==='deposito'||kind==='depósito')inAmount=validMoney(e.amount);
+   if(kind==='levantamento'||kind==='levantamento_banqueiro')outAmount=validMoney(e.amount);
+   if(!inAmount&&!outAmount)continue;
+   summedIn+=inAmount;summedOut+=outAmount;
+   old.push({date:e.time||s.start||'',session:sid,type:inAmount?'Depósito':kind==='levantamento_banqueiro'?'Levantamento banca':'Levantamento jogador',inAmount,outAmount,desc:String(e.detail||''),order:order++});
+  }
+  const expectedIn=validMoney(s.initial)+validMoney(s.deposits),expectedOut=validMoney(s.withdrawn)+validMoney(s.ownerWithdrawn);
+  // Compatibilidade com versões antigas que guardavam apenas os totais da sessão.
+  if(summedIn<expectedIn){old.unshift({date:s.start||'',session:sid,type:'Depósito histórico',inAmount:expectedIn-summedIn,outAmount:0,desc:'Movimento agregado de sessão anterior; hora individual indisponível',order:order++});}
+  if(summedOut<expectedOut){old.push({date:s.end||s.start||'',session:sid,type:'Levantamento histórico',inAmount:0,outAmount:expectedOut-summedOut,desc:'Movimento agregado de sessão anterior; hora individual indisponível',order:order++});}
+  rows.push(...old);
+ }
+ rows.sort((a,b)=>{const at=Date.parse(a.date),bt=Date.parse(b.date);if(Number.isFinite(at)&&Number.isFinite(bt)&&at!==bt)return at-bt;return a.order-b.order;});
+ let cash=0;
+ for(const r of rows){cash+=r.inAmount-r.outAmount;r.cash=cash;}
+ return rows;
+}
+function bankerAvailable(){return Math.max(0,Math.min(operatorReserve-protectedReserve,reportFinancials().ownerAvailable));}
+function reportFinancials(){
+ const t=totals();const deposited=t.initial+t.deposits;const withdrawn=t.withdrawn;const inVault=deposited-withdrawn-t.ownerWithdrawn;
+ const playerObligations=t.balance;const ownerAvailable=inVault-playerObligations;
+ return {t,deposited,withdrawn,inVault,playerObligations,ownerAvailable};
+}
+function escapeReport(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+function reportDate(raw){const d=new Date(raw);return Number.isNaN(d.getTime())?'Sem data':d.toLocaleString('pt-PT',{dateStyle:'short',timeStyle:'short'});}
+function formatSignedCents(c){return (c<0?'−':'')+money(Math.abs(c));}
+function buildReportHTML(){
+ const {t,deposited,withdrawn,inVault,playerObligations,ownerAvailable}=reportFinancials();
+ const movements=cashMovements();const generated=reportDate(new Date().toISOString());
+ const rowHtml=movements.length?movements.map((r,i)=>`<tr><td class="index">${i+1}</td><td>${escapeReport(reportDate(r.date))}</td><td>${escapeReport(r.session)}</td><td class="in">${r.inAmount?money(r.inAmount):'—'}</td><td class="out">${r.outAmount?money(r.outAmount):'—'}</td><td class="cash">${formatSignedCents(r.cash)}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Sem depósitos ou levantamentos registados.</td></tr>';
+ const explanatory='O fundo disponível para o operador desconta os saldos ainda atribuídos a jogadores. É um valor contabilístico estimado, não lucro garantido nem certificação de uma máquina com dinheiro real.';
+ return `<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Relatório de Caixa — Jardim Mágico — ${escapeReport(generated)}</title><link rel="stylesheet" href="css/estilo-3.css"></head><body><div class="tools"><button type="button" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button><button type="button" class="alt" onclick="window.close()">Fechar</button></div><main class="sheet"><div class="header"><div><h1>JARDIM MÁGICO</h1><div class="sub">Relatório de depósitos, levantamentos e cofre</div><div class="meta">Emitido em ${escapeReport(generated)}</div></div><div class="tag">CRÉDITOS FICTÍCIOS</div></div><div class="contents"><div class="cards"><div class="metric deposits"><span class="label">Total depositado</span><b>${money(deposited)}</b></div><div class="metric withdrawals"><span class="label">Total levantado</span><b>${money(withdrawn+t.ownerWithdrawn)}</b></div><div class="metric vault"><span class="label">Dinheiro em cofre</span><b>${formatSignedCents(inVault)}</b></div></div><h2 class="section-title">Registo de movimentos</h2><div class="table-scroll"><table><thead><tr><th>N.º</th><th>Data</th><th>Sessão</th><th>Depósito</th><th>Levantamento</th><th>Dinheiro em cofre</th></tr></thead><tbody>${rowHtml}</tbody></table></div><div class="totals"><h2>Resumo final do operador</h2><div class="total-row"><span>Total de depósitos</span><b>${money(deposited)}</b></div><div class="total-row"><span>Levantamentos dos jogadores</span><b>${money(withdrawn)}</b></div><div class="total-row"><span>Levantamentos do banqueiro</span><b>${money(t.ownerWithdrawn)}</b></div><div class="total-row highlight"><span>Dinheiro total em cofre</span><b>${formatSignedCents(inVault)}</b></div><div class="total-row"><span>Saldos ainda disponíveis aos jogadores</span><b>${money(playerObligations)}</b></div><div class="total-row owner"><span>Fundo líquido disponível para o dono</span><b>${formatSignedCents(ownerAvailable)}</b></div></div><p class="footer">Cálculos: cofre = depósitos − levantamentos dos jogadores − levantamentos da Banca; fundo líquido = cofre − saldos por levantar.<br>${escapeReport(explanatory)}<br>Este relatório reúne apenas os movimentos guardados neste navegador. Não constitui prova de dinheiro físico ou registo contabilístico certificado.</p><p class="meta right">Sessões: ${reportRows().length} · Jogadas: ${t.spins}</p></div></main></body></html>`;
+}
+// V26: o Safari não precisa de permitir pop-ups; o relatório completo abre num quadro interno.
+function openReportViewer(){
+ if(!adminUnlocked)return;
+ const viewer=$('reportViewer'),frame=$('reportFrame');
+ frame.srcdoc=buildReportHTML().replace('</style>','.tools{display:none!important}</style>');
+ viewer.hidden=false;
+ document.body.style.overflow='hidden';
+}
+function closeReportViewer(){
+ $('reportViewer').hidden=true;
+ $('reportFrame').removeAttribute('srcdoc');
+ document.body.style.overflow=adminUnlocked?'hidden':'';
+}
+function printReportViewer(){
+ if(!adminUnlocked)return;
+ if($('reportViewer').hidden){openReportViewer();return;}
+ const frame=$('reportFrame');
+ try{frame.contentWindow.focus();frame.contentWindow.print();}
+ catch(e){alert('Usa o botão Imprimir / Guardar PDF dentro do relatório ou guarda o ficheiro HTML.');}
+}
+function report(){openReportViewer();}
+function downloadHTMLReport(){
+ if(!adminUnlocked)return;
+ const html=buildReportHTML();
+ const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+ const href=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=href;a.download='Jardim_Magico_Relatorio_Caixa_'+new Date().toISOString().slice(0,10)+'.html';
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),30000);
+}
+function printHTMLReport(){printReportViewer();}
+
+function musicElement(){return $('bgMusic');}
+function musicUI(){
+ const a=musicElement();
+ if(a){a.loop=true;a.volume=Math.max(0,Math.min(1,musicVolume));}
+ $('btnMusic').textContent=musicEnabled?'♫':'♫̸';
+ $('btnMusic').classList.toggle('off',!musicEnabled);
+ $('btnMusic').setAttribute('aria-label',musicEnabled?'Desligar música de fundo':'Ligar música de fundo');
+ $('btnSound').textContent=mute?'🔇':'🔊';
+ $('btnSound').classList.toggle('off',mute);
+ $('btnSound').setAttribute('aria-label',mute?'Ligar efeitos sonoros':'Desligar efeitos sonoros');
+}
+function startMusic(){
+ const audio=musicElement();
+ if(!audio)return;
+ audio.volume=musicVolume;
+ if(!musicEnabled || !session){if(!musicEnabled)audio.pause();return;}
+ if(audio.paused){
+  try{
+   const request=audio.play();
+   if(request?.catch)request.catch(()=>{ /* Safari: reativar após um toque do utilizador */ });
+  }catch(e){}
+ }
+}
+function soundStart(){
+ // É invocado durante a ação física de iniciar sessão, comprar bónus ou rodar.
+ // O Safari bloqueia áudio antes de uma interação do utilizador.
+ startMusic();
+ if(mute)return;
+ try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume();fxOutput();preloadReelLanding();}catch(e){}
+}
+// V36: compressor/limitador exclusivo para FX. Os volumes independem da música.
+function fxOutput(){
+ if(!audioCtx)return null;
+ if(!fxMaster){
+  fxMaster=audioCtx.createDynamicsCompressor();
+  fxMaster.threshold.value=-13;fxMaster.knee.value=12;
+  fxMaster.ratio.value=7;fxMaster.attack.value=.004;fxMaster.release.value=.16;
+  fxMaster.connect(audioCtx.destination);
+ }
+ return fxMaster;
+}
+function tone(freq,d=.2,type='sine',vol=.02,startDelay=0,endFreq=freq){
+ if(!audioCtx||mute)return;
+ try{
+  const t=audioCtx.currentTime+startDelay,o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.type=type;o.frequency.setValueAtTime(freq,t);
+  if(endFreq!==freq)o.frequency.exponentialRampToValueAtTime(Math.max(45,endFreq),t+d);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.min(.35,vol),t+Math.min(.012,d/4));
+  g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g);g.connect(fxOutput());o.start(t);o.stop(t+d+.02);
+ }catch(e){}
+}
+function noiseBurst(duration=.15,volume=.03,cutoff=500){
+ if(!audioCtx||mute)return;
+ try{
+  const sr=audioCtx.sampleRate,len=Math.max(1,Math.floor(sr*duration)),buff=audioCtx.createBuffer(1,len,sr),ch=buff.getChannelData(0);
+  for(let i=0;i<len;i++)ch[i]=(Math.random()*2-1)*(1-i/len);
+  const src=audioCtx.createBufferSource(),filter=audioCtx.createBiquadFilter(),gain=audioCtx.createGain();
+  filter.type='bandpass';filter.frequency.value=cutoff;filter.Q.value=.7;
+  src.buffer=buff;gain.gain.value=Math.min(.2,volume);
+  src.connect(filter);filter.connect(gain);gain.connect(fxOutput());src.start();
+ }catch(e){}
+}
+// Campainha de escola antiga: golpes metálicos rápidos com harmónicos não inteiros.
+// Só tocar na entrada de uma funcionalidade ou na entrega de um prémio de bónus.
+function schoolBell(){
+ if(!audioCtx||mute)return;
+ const now=performance.now();if(now-lastSchoolBellAt<2100)return;
+ lastSchoolBellAt=now;
+ try{
+  const base=audioCtx.currentTime+.02;
+  const hits=[0,.21,.43,.66,.90,1.14,1.38];
+  const harmonics=[[1,.095],[1.51,.055],[2.14,.034],[2.91,.019],[3.86,.009]];
+  for(let i=0;i<hits.length;i++){
+   const t=base+hits[i],decay=i===hits.length-1?1.02:.36;
+   for(const [ratio,vol] of harmonics){
+    const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+    osc.type='sine';osc.frequency.setValueAtTime((i%2?821:854)*ratio,t);
+    osc.frequency.exponentialRampToValueAtTime((i%2?817:849)*ratio,t+decay);
+    gain.gain.setValueAtTime(.0001,t);
+    gain.gain.exponentialRampToValueAtTime(vol,t+.006);
+    gain.gain.exponentialRampToValueAtTime(.0001,t+decay);
+    osc.connect(gain);gain.connect(fxOutput());osc.start(t);osc.stop(t+decay+.03);
+   }
+  }
+ }catch(e){}
+}
+function audioFX(name,value=2){
+ if(!audioCtx||mute)return;
+ if(name==='tap'){
+  // Um clique mecânico breve, idêntico nos botões + e −.
+  tone(1130,.045,'triangle',.065,0,450);tone(290,.039,'sine',.046,0,175);noiseBurst(.019,.025,2700);
+ }
+ if(name==='lock'){tone(840,.045,'triangle',.046,0,250);noiseBurst(.038,.025,950);}
+ if(name==='drop'){tone(170,.11,'triangle',.03,0,76);noiseBurst(.055,.008,500);}
+ if(name==='coin'){[900,1240,1650].forEach((n,i)=>tone(n,.19,'sine',.024,i*.065));noiseBurst(.035,.009,1800);}
+ if(name==='burst'){noiseBurst(.26,.065,150);tone(130,.32,'sawtooth',.037,0,45);tone(680,.19,'sine',.02,.06,1210);}
+ if(name==='win'){[392,493.9,587.3,784,987.8].forEach((n,i)=>tone(n,.25,'triangle',.020,i*.065));}
+ if(name==='big'){[196,262,330,392,523,659,784,988].forEach((n,i)=>tone(n,.58,'triangle',.027,i*.12));noiseBurst(.32,.065,300);}
+ if(name==='scatter'){[740,1046,1318,1568,2093].forEach((n,i)=>tone(n,.50,'sine',.055,i*.09,n*1.13));noiseBurst(.12,.016,1200);}
+ if(name==='wild'){
+  tone(420,.42,'sawtooth',.068,0,970);
+  [880,1174,1568].forEach((n,i)=>tone(n,.33,'triangle',.045,.08+i*.082,n*1.07));
+  noiseBurst(.075,.023,3200);
+ }
+ if(name==='multiplier'){
+  // As bolas de multiplicação têm tilintar próprio, em duas oitavas.
+  const shift=Math.min(1.48,1+Math.log2(Math.max(2,Number(value)||2))*.065);
+  [650,920,1300,1810].forEach((f,i)=>tone(f*shift,.36,'sine',.055,i*.056,f*shift*1.09));
+  tone(290*shift,.28,'triangle',.048,0,920*shift);noiseBurst(.085,.025,2200);
+ }
+ if(name==='gem'){[440,659,880,1174,1760].forEach((n,i)=>tone(n,.40,'sine',.024,i*.075));}
+ if(name==='vault'){tone(95,.56,'sawtooth',.08,0,35);noiseBurst(.43,.11,105);[523,659,784,1047].forEach((f,i)=>tone(f,.4,'triangle',.022,.14+i*.11));}
+ if(name==='bonus'){[261,330,392,494,659,784].forEach((n,i)=>tone(n,.41,'triangle',.026,i*.14));}
+ if(name==='schoolBell')schoolBell();
+}
+function playScatterNote(){
+ // V40: nota SCATTER bem alta, com fundamental e harmónicos, comprimidos pelo FX master.
+ // As três notas Dó, Ré, Mi acompanham o SCATTER que chega aos cilindros.
+ if(!audioCtx||mute)return;
+ const notes=[523.25,587.33,659.25],note=notes[Math.min(scatterNoteStep,2)];
+ scatterNoteStep++;
+ tone(note,.68,'sine',.205,0,note);
+ tone(note*2,.51,'triangle',.108,.013,note*2);
+ tone(note*.5,.43,'triangle',.077,.009,note*.5);
+ tone(note*3,.25,'sine',.037,.04,note*3);
+ noiseBurst(.068,.025,2600);
+}
+function scatterSuspenseBeat(step){
+ if(!audioCtx||mute)return;
+ // Pulsações aceleram ligeiramente em altura. Nunca alteram a saída sorteada.
+ const base=215+Math.min(16,step)*17;
+ tone(base,.19,'triangle',.078,0,base*.92);
+ tone(base*1.5,.12,'sine',.053,.075,base*1.55);
+ tone(90,.115,'sine',.046,0,74);
+}
+function scatterSuspenseResolve(won){
+ if(!audioCtx||mute)return;
+ if(won){
+  [784,988,1175].forEach((f,i)=>tone(f,.37,'triangle',.075,i*.082));
+ }else{
+  [392,330,261].forEach((f,i)=>tone(f,.24,'sine',.032,i*.105));
+ }
+}
+function symbolLandingSounds(column){
+ for(const s of grid[column]){
+  if(s.id==='scatter')playScatterNote();
+  if(s.id==='wild')audioFX('wild');
+  if(s.id==='mul')audioFX('multiplier',s.value);
+  if(s.id==='coin')audioFX('coin');
+ }
+}
+
+function chooseSpinMul(){let r=Math.random();if(r<.82)return 2;if(r<.965)return 3;if(r<.992)return 5;if(r<.997)return 10;if(r<.9998)return 20;return 1000;}
+function chooseHoldFactor(){let r=Math.random();if(r<.83)return 2;if(r<.965)return 3;if(r<.99)return 5;if(r<.995)return 10;if(r<.998)return 20;if(r<.9995)return 50;if(r<.9999)return 100;return 1000;}
+function sym(){const p=Math.random();if(freeSpins>0 || awardContext==='free'){
+ if(p<.012)return {id:'mul',value:chooseSpinMul()};
+ if(p<.037)return {id:'scatter'};
+ if(p<.080)return {id:'wild',factor:2};
+ if(p<.110)return {id:'coin',uid:++symbolSeq};
+}else{
+ if(p<.0045)return {id:'mul',value:chooseSpinMul()};
+ if(p<.0195)return {id:'scatter'};
+ if(p<.0595)return {id:'wild',factor:2};
+ if(p<.0855)return {id:'coin',uid:++symbolSeq};
+}return {id:pick(regular)};}
+
+function flyCoinToVault(x,y,delay=0){
+ return new Promise(resolve=>{
+  const stage=$('stageWrap').getBoundingClientRect(),dst=$('vaultFace').getBoundingClientRect(),layer=$('vaultFlight');
+  const sx=stage.left+(x+.5)*stage.width/5,sy=stage.top+(y+.5)*stage.height/3;
+  const ex=dst.left+dst.width/2,ey=dst.top+dst.height/2;
+  const node=document.createElement('div');node.className='flyVaultCoin';node.textContent='✦';node.style.left=sx+'px';node.style.top=sy+'px';
+  node.style.setProperty('--dx',(ex-sx)+'px');node.style.setProperty('--dy',(ey-sy)+'px');
+  node.style.setProperty('--flyTime',mode==='turbo'?'380ms':'760ms');layer.append(node);
+  setTimeout(()=>{node.classList.add('flying');audioFX('coin')},25+delay);
+  const duration=(mode==='turbo'?380:760)+delay+80;
+  setTimeout(()=>{node.remove();vaultCoins++;roundVaultNew++;update();
+   const v=$('vaultFace');v.animate([{filter:'brightness(2.5)',transform:'scale(1.45)'},{filter:'brightness(1)',transform:'scale(1)'}],{duration:330,easing:'ease-out'});resolve();},duration);
+ });
+}
+async function collectVaultCoins(){
+ const fresh=[];for(let x=0;x<5;x++)for(let y=0;y<3;y++){const s=grid[x][y];if(s.id==='coin'&&!countedCoins.has(s.uid)){countedCoins.add(s.uid);fresh.push({x,y})}}
+ if(!fresh.length)return 0;
+ await Promise.all(fresh.map((p,i)=>flyCoinToVault(p.x,p.y,i*(mode==='turbo'?18:75))));
+ notice('✨ O cofre recebeu mais moedas...');return fresh.length;
+}
+function maybeTriggerVault(){
+ if(!roundVaultNew||vaultCoins<8)return false;
+  // Baixa frequência do bónus gratuito: também entra no RTP do jogo base.
+  return Math.random()<.001;
+}
+async function vaultExplosion(){
+ const v=$('vaultBtnMobile'),rect=v.getBoundingClientRect();const ox=rect.left+rect.width/2,oy=rect.top+rect.height/2;
+ const layer=$('vaultFlight');v.classList.add('vaultBurst');audioFX('vault');notice('💥 O cofre ficou tão cheio que EXPLODIU!');
+ const ripple=document.createElement('div');ripple.className='vaultRipple';ripple.style.left=ox+'px';ripple.style.top=oy+'px';layer.appendChild(ripple);
+ const bounds={w:innerWidth,h:innerHeight};
+ const count=mode==='turbo'?48:90;for(let i=0;i<count;i++){
+  const coin=document.createElement('div');coin.className='flyVaultCoin blast';coin.textContent=i%5===0?'◆':'✦';coin.style.left=ox+'px';coin.style.top=oy+'px';
+  const ang=2*Math.PI*i/count+rand(-.18,.18),length=rand(bounds.w*.18,bounds.w*.95);
+  coin.style.setProperty('--floatX',(Math.cos(ang)*length)+'px');coin.style.setProperty('--floatY',(Math.sin(ang)*length*.95-rand(0,bounds.h*.3))+'px');
+  coin.style.setProperty('--twist',rand(-1300,1300)+'deg');coin.style.setProperty('--endScale',rand(.28,1.45).toFixed(2));coin.style.setProperty('--life',rand(1000,1600).toFixed(0)+'ms');
+  layer.appendChild(coin);setTimeout(()=>coin.remove(),1750);
+ }
+ await sleep(mode==='turbo'?950:1350);v.classList.remove('vaultBurst');ripple.remove();vaultCoins=0;roundVaultNew=0;update();
+}
+async function showFeatureIntro(kind){
+ const box=$('featureIntro');$('featureTitle').textContent=kind==='free'?'15 FREE SPINS!':'HOLD & WIN!';
+ $('featureSub').textContent=kind==='free'?'✦ O JARDIM DESPERTOU ✦':'💥 O TESOURO FOI LIBERTADO!';
+ box.classList.remove('active');void box.offsetWidth;box.classList.add('active');
+ audioFX('schoolBell');await sleep(mode==='turbo'?870:1480);box.classList.remove('active');
+}
+
+function openFreeStart(){
+ if(!session||bonus||!freeSpins)return;
+ freeAutoRunning=false;freeStartPending=true;autoSpinsRemaining=0;autoSpinsTotal=0;
+ $('freeStartCount').textContent=freeSpins;modal('freeStartModal',true);update();save();
+}
+function scheduleFreeAuto(){
+ if(freeAutoTimer!==null){clearTimeout(freeAutoTimer);freeAutoTimer=null;}
+ if(!freeAutoRunning||freeStartPending||running||bonus||!session||$('bigWin').classList.contains('show'))return;
+ if(freeSpins<=0){freeAutoRunning=false;notice('✦ FREE SPINS CONCLUÍDAS!');update();save();return;}
+ freeAutoTimer=setTimeout(()=>{freeAutoTimer=null;if(freeAutoRunning&&!running&&!bonus&&!freeStartPending&&freeSpins>0)doRound();},mode==='turbo'?220:680);
+}
+function startFreeAuto(){
+ if(!session||bonus||!freeSpins||running)return;
+ modal('freeStartModal',false);freeStartPending=false;freeAutoRunning=true;
+ soundStart();update();save();doRound();
+}
+function wholeGrid(){return Array.from({length:5},()=>Array.from({length:3},sym));}
+// V41: só 3+ símbolos consecutivos da esquerda pagam nas linhas normais.
+// Exceção: um par WILD adjacente em qualquer posição da mesma linha paga por si.
+// Uma linha recebe no máximo um prémio; o prémio normal de 3+ tem prioridade.
+function evaluate(g,betAmount=BETS[betIdx]){
+ const won=[];let amount=0;
+ for(let i=0;i<LINES.length;i++){
+  const line=LINES[i],ids=line.map((row,x)=>g[x][row].id);
+  const firstNonWild=ids.find(id=>id!=='wild');
+  const target=firstNonWild&&PAY[firstNonWild]?firstNonWild:'wild';
+  let count=0;
+  for(let x=0;x<5;x++){
+   const id=ids[x];
+   if(id===target||(target!=='wild'&&id==='wild'))count++;
+   else break;
+  }
+  if(count>=3){
+   const wilds=ids.slice(0,count).filter(id=>id==='wild').length;
+   const wildMultiplier=Math.min(8,2**wilds);
+   const payout=Math.max(1,roundedPayout(betAmount/LINES.length*PAY[target][count]*wildMultiplier*rtpScaleFor(awardContext)));
+   amount+=payout;
+   won.push({line:i,points:Array.from({length:count},(_,x)=>[x,line[x]]),value:payout,which:target,wildMultiplier});
+   continue;
+  }
+  const pairStart=ids.findIndex((id,x)=>id==='wild'&&x<4&&ids[x+1]==='wild');
+  if(pairStart>=0){
+   const payout=Math.max(1,roundedPayout(betAmount/LINES.length*PAY.wild[2]*rtpScaleFor(awardContext)));
+   amount+=payout;
+   won.push({line:i,points:[[pairStart,line[pairStart]],[pairStart+1,line[pairStart+1]]],value:payout,which:'wild',wildMultiplier:1,special:'twoWild'});
+  }
+ }
+ return {won,amount};
+}
+function mulIndices(g){const out=[];for(let x=0;x<5;x++)for(let y=0;y<3;y++)if(g[x][y].id==='mul')out.push({x,y,v:g[x][y].value||2});return out;}
+function scatterCount(g){return g.flat().filter(x=>x.id==='scatter').length;}
+function imageLoad(){return Promise.all(Object.entries(IMGFILES).map(([id,path])=>new Promise(resolve=>{const img=new Image();img.onload=()=>{nativeAssets[id]=img;resolve()};img.onerror=()=>resolve();img.src=window.JM_INLINE_ASSETS[id]})));}
+function artBg(ctx,t){ctx.save();ctx.clearRect(0,0,W,H);
+ const wash=ctx.createLinearGradient(0,0,0,H);wash.addColorStop(0,'rgba(34,16,57,.12)');wash.addColorStop(.5,'rgba(50,20,79,.08)');wash.addColorStop(1,'rgba(16,13,36,.14)');ctx.fillStyle=wash;ctx.fillRect(0,0,W,H);
+ for(let i=0;i<7;i++){
+  const px=(Math.sin(t*.00035+i*1.3)*.5+.5)*W;
+  const py=(Math.cos(t*.00028+i*.9)*.5+.5)*H;
+  const r=55+(i%3)*18;
+  const halo=ctx.createRadialGradient(px,py,0,px,py,r);
+  halo.addColorStop(0,['rgba(255,216,146,.12)','rgba(152,220,255,.10)','rgba(206,145,255,.10)','rgba(153,255,202,.08)'][i%4]);
+  halo.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=halo;ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);ctx.fill();
+ }
+ for(let x=0;x<5;x++){
+  const gx=x*CW;
+  const g=ctx.createLinearGradient(gx,0,gx+CW,H);g.addColorStop(0,'rgba(255,255,255,.03)');g.addColorStop(.25,'rgba(182,126,255,.035)');g.addColorStop(.5,'rgba(23,7,36,.01)');g.addColorStop(.75,'rgba(126,224,255,.028)');g.addColorStop(1,'rgba(255,255,255,.03)');
+  ctx.fillStyle=g;ctx.fillRect(gx+4,0,CW-8,H);
+  ctx.strokeStyle='rgba(255,222,164,.18)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(gx+1,0);ctx.lineTo(gx+1,H);ctx.stroke();
+  const stripe=(t*.038+x*140)%(H+250)-125;let grad=ctx.createLinearGradient(0,stripe-90,0,stripe+90);grad.addColorStop(0,'rgba(255,255,255,0)');grad.addColorStop(.5,'rgba(255,255,255,.10)');grad.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=grad;ctx.fillRect(gx+8,stripe-90,CW-16,180);
+ }
+ ctx.strokeStyle='rgba(255,212,148,.26)';ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);ctx.restore()}
+
+const REEL_SYMBOL_ZOOM=1.47; // símbolos normais grandes
+const SPECIAL_REEL_ZOOM={wild:.91,scatter:.91,coin:.88}; // especiais totalmente visíveis, incluindo as letras
+function symbolZoom(s){return s&&SPECIAL_REEL_ZOOM[s.id]||REEL_SYMBOL_ZOOM;}
+function drawSymbol(ctx,s,x,y,w=CW,h=CH,time=0,zoom=REEL_SYMBOL_ZOOM){if(!s||s.id==='blank')return;ctx.save();const id=s.id;let sy=0,scale=1,angle=0;if(id==='rose'){sy=Math.sin(time*.0015+x*.02)*3;scale=1+Math.sin(time*.0021)*.02;}else if(id==='mushroom'){angle=Math.sin(time*.002+ x)*.055;}else if(id==='hat'){angle=Math.sin(time*.0015+x)*.045;}else if(id==='potion'){angle=Math.sin(time*.0019+x)*.065;}else if(id==='heart'){scale=1+Math.sin(time*.003)*.035;}else if(id==='gem'||id==='green'){sy=Math.sin(time*.002)*4;}else if(id==='teapot'){angle=Math.sin(time*.0015+x)*.04;}else if(id==='wild'){scale=1+Math.sin(time*.0035)*.048;}else if(id==='scatter'){angle=Math.sin(time*.0008)*.018;scale=1+Math.sin(time*.002)*.03;}
+ ctx.translate(x+w/2,y+h/2+sy);ctx.rotate(angle);ctx.scale(scale*(zoom===REEL_SYMBOL_ZOOM?symbolZoom(s):zoom),scale*(zoom===REEL_SYMBOL_ZOOM?symbolZoom(s):zoom));
+ const img=nativeAssets[id];if(img){const ww=w*.985,hh=h*.992;ctx.drawImage(img,-ww/2,-hh/2,ww,hh)}else if(id==='mul'){let rad=Math.min(w,h)*.37;let grad=ctx.createRadialGradient(-rad*.35,-rad*.5,3,0,0,rad);grad.addColorStop(0,'#fff1ed');grad.addColorStop(.25,'#f59ada');grad.addColorStop(.61,'#962a9f');grad.addColorStop(1,'#3a1047');ctx.fillStyle=grad;ctx.strokeStyle='#ffe2a0';ctx.lineWidth=6;ctx.beginPath();ctx.arc(0,0,rad,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.font=`900 ${rad*.75}px Georgia`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=4;ctx.strokeStyle='#632040';ctx.strokeText(s.value+'×',0,2);ctx.fillStyle='#ffe5a8';ctx.fillText(s.value+'×',0,2)}else if(id==='coin'){const rad=Math.min(w,h)*.35,gd=ctx.createRadialGradient(-rad*.4,-rad*.5,1,0,0,rad);gd.addColorStop(0,'#ffffe6');gd.addColorStop(.3,'#ffe28a');gd.addColorStop(.65,'#c88625');gd.addColorStop(1,'#6d401e');ctx.fillStyle=gd;ctx.strokeStyle='#ffe8a8';ctx.lineWidth=6;ctx.beginPath();ctx.arc(0,0,rad,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`900 ${rad*.95}px Georgia`;ctx.fillStyle='#fff3b1';ctx.fillText('✦',0,2)}
+ if(id==='wild'){ctx.fillStyle='#721953';ctx.strokeStyle='#ffe6a0';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(w*.12,-h*.40,w*.30,h*.16,6);ctx.fill();ctx.stroke();ctx.fillStyle='#fff0aa';ctx.font=`900 ${Math.max(13,h*.095)}px Georgia`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('×2',w*.27,-h*.32)}ctx.restore()}
+
+const imagesCanvases={};function makeSymbolCanvas(id){if(imagesCanvases[id])return imagesCanvases[id];const can=document.createElement('canvas');can.width=180;can.height=180;drawSymbol(can.getContext('2d'),{id,value:2},0,0,180,180,0,1);return imagesCanvases[id]=can;}function makeOrbCanvas(value){const key='mul'+value;if(imagesCanvases[key])return imagesCanvases[key];const can=document.createElement('canvas');can.width=180;can.height=180;drawSymbol(can.getContext('2d'),{id:'mul',value},0,0,180,180,0,1);return imagesCanvases[key]=can;}
+let pixiReady=false;
+async function initPixi(){
+ if(!window.PIXI?.Application)return false;
+ try{
+  const app=new PIXI.Application();await app.init({width:W,height:H,backgroundAlpha:0,antialias:true,resolution:1,preference:'webgl'});
+  if(!app.canvas)throw Error('no canvas');$('pixiMount').appendChild(app.canvas);pixi=app;
+  for(let x=0;x<5;x++){pixiSprites[x]=[];
+   const reelMask=new PIXI.Graphics().rect(x*CW,0,CW,H).fill(0xffffff);app.stage.addChild(reelMask);
+   for(let y=0;y<6;y++){const sp=new PIXI.Sprite(PIXI.Texture.EMPTY);sp.mask=reelMask;sp.anchor.set(.5);sp.width=CW*.992*REEL_SYMBOL_ZOOM;sp.height=CH*.995*REEL_SYMBOL_ZOOM;sp.position.set(x*CW+CW/2,(y%3)*CH+CH/2);pixiSprites[x][y]=sp;app.stage.addChild(sp)}}
+  pixiReady=true;return true;
+ }catch(e){console.warn('Pixi indisponível, Canvas de reserva ativo:',e);pixiReady=false;return false;}
+}
+const cacheTextures=new Map();
+function setPixiSprite(sp,s){if(!sp)return;if(!s){sp.visible=false;return}const key=s.id==='mul'?'mul'+(s.value||2):s.id;let texture=cacheTextures.get(key);if(!texture){const img=s.id==='mul'?makeOrbCanvas(s.value||2):s.id==='coin'||s.id==='wild'?makeSymbolCanvas(s.id):nativeAssets[s.id];if(!img){sp.visible=false;return}texture=PIXI.Texture.from(img);cacheTextures.set(key,texture)}sp.visible=true;sp.texture=texture;sp.width=CW*.985*symbolZoom(s);sp.height=CH*.992*symbolZoom(s);}
+function animationPosition(x,y,t){
+ const tr=transitions[x];
+ if(tr){
+  // O suspense mantém os tambores por parar a rodar, sem mostrar antecipadamente
+  // os símbolos que já foram sorteados para a rodada.
+  if(tr.scatterHold){
+   const cycle=mode==='turbo'?145:190,elapsed=Math.max(0,t-tr.start);
+   const step=Math.floor(elapsed/cycle),p=(elapsed%cycle)/cycle;
+   const items=tr.holdSymbols;
+   return {cur:items[(step+1)%items.length][y],y:y*CH-3*CH*(1-p),old:items[step%items.length][y],oldY:y*CH+3*CH*p};
+  }
+  const p=Math.max(0,Math.min(1,(t-tr.start)/tr.duration));const ease=1-Math.pow(1-p,3);
+  return {cur:tr.next[y],y:y*CH-3*CH*(1-ease),old:tr.old[y],oldY:y*CH+3*CH*ease};
+ }
+ return {cur:grid[x][y],y:y*CH};
+}
+function frame(t){
+ const ctx=nativeCtx;artBg(ctx,t);
+ if(pixiReady){
+  for(let x=0;x<5;x++)for(let y=0;y<3;y++){
+   const p=animationPosition(x,y,t),sp=pixiSprites[x][y],old=pixiSprites[x][y+3];
+   if(cascades[x]){sp.visible=false;old.visible=false;continue}
+   setPixiSprite(sp,p.cur);sp.position.set(x*CW+CW/2,p.y+CH/2);sp.alpha=.99;
+   if(sp.visible){sp.scale.set((CW*.985*symbolZoom(p.cur))/Math.max(sp.texture.width,1)*(1+Math.sin(t*.002+x+y)*.008),(CH*.992*symbolZoom(p.cur))/Math.max(sp.texture.height,1));}
+   if(p.old){setPixiSprite(old,p.old);old.position.set(x*CW+CW/2,p.oldY+CH/2);old.alpha=1;}
+   else old.visible=false;
+  }
+ }
+ for(let x=0;x<5;x++){
+  ctx.save();ctx.beginPath();ctx.rect(x*CW+4,0,CW-8,H);ctx.clip();
+  if(cascades[x]){
+   const parts=cascades[x].items;
+   for(const part of parts){let q=Math.max(0,Math.min(1,(t-part.start)/part.duration));if(t<part.start)continue;let e=1-(1-q)**3;drawSymbol(ctx,part.s,x*CW,part.fromY+(part.toY-part.fromY)*e,CW,CH,t);}
+  } else if(!pixiReady){
+   for(let y=0;y<3;y++){const p=animationPosition(x,y,t);if(p.old)drawSymbol(ctx,p.old,x*CW,p.oldY,CW,CH,t);drawSymbol(ctx,p.cur,x*CW,p.y,CW,CH,t);}
+  }
+  ctx.restore();
+ }
+ if(burstParticles.length){ctx.save();burstParticles=burstParticles.filter(p=>t-p.birth<p.life);for(const p of burstParticles){const k=(t-p.birth)/p.life;ctx.globalAlpha=1-k;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x+p.vx*k,p.y+p.vy*k+90*k*k,Math.max(.1,p.size*(1-k)),0,Math.PI*2);ctx.fill()}ctx.restore()}
+ requestAnimationFrame(frame)
+}
+function particlesAt(x,y,kind='burst'){const now=performance.now();for(let i=0;i<(kind==='big'?60:22);i++){const a=Math.random()*Math.PI*2,s=rand(40,150);burstParticles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,birth:now,life:rand(360,760),size:rand(2,7),color:pick(['#ffe697','#fff8d7','#f0a2ff','#f7b67f','#ffde55'])})}}
+function setGrid(g){grid=g;save()}
+function createScatterSuspense(){
+ const state={active:false,count:0,completed:0,triggerColumn:-1,beat:0,timer:null};
+ state.start=(x)=>{
+  if(state.active)return;
+  state.active=true;state.triggerColumn=x;state.beat=0;
+  document.getElementById('stageWrap')?.classList.add('scatterSuspense');
+  scatterSuspenseBeat(0);
+  state.timer=setInterval(()=>{
+   if(!state.active)return;
+   scatterSuspenseBeat(++state.beat);
+  },mode==='turbo'?265:345);
+  notice('2 SCATTER! Falta um...');
+ };
+ state.stop=(won)=>{
+  if(!state.active)return;
+  state.active=false;
+  if(state.timer!==null){clearInterval(state.timer);state.timer=null;}
+  document.getElementById('stageWrap')?.classList.remove('scatterSuspense');
+  scatterSuspenseResolve(won);
+  if(won)notice('3 SCATTER! Bónus desbloqueado!');
+  else notice('Faltou um SCATTER desta vez.');
+ };
+ state.onStop=(x,col)=>{
+  state.completed++;
+  state.count+=col.filter(s=>s.id==='scatter').length;
+  if(state.active && state.count>=3)state.stop(true);
+  else if(!state.active && state.count===2 && x<4)state.start(x);
+  if(state.active && state.completed===5)state.stop(false);
+ };
+ return state;
+}
+async function reelDrop(x,next,duration,scatterState=null){
+ const old=grid[x];
+ const transition={old,next,start:performance.now(),duration};
+ transitions[x]=transition;
+ await sleep(duration);
+ if(scatterState?.active && x>scatterState.triggerColumn){
+  // Em modo de suspense, continuar a mostrar símbolos em movimento antes da revelação.
+  // A grelha 'next' não é modificada; a pausa apenas prolonga a animação.
+  transition.scatterHold=true;
+  transition.start=performance.now();
+  transition.holdSymbols=Array.from({length:6},(_,k)=>Array.from({length:3},(_,y)=>({id:regular[(x*5+y+k*2)%regular.length]})));
+  const extra=(mode==='turbo'?340:750)+(x-scatterState.triggerColumn-1)*(mode==='turbo'?145:315);
+  const until=performance.now()+extra;
+  while(scatterState.active && performance.now()<until){await sleep(Math.min(75,Math.max(1,until-performance.now())));}
+  transition.scatterHold=false;
+  transition.old=transition.holdSymbols[0];
+  transition.start=performance.now();
+  transition.duration=mode==='turbo'?125:195;
+  await sleep(transition.duration);
+ }
+ grid[x]=next;transitions[x]=null;
+ soundReelLanding();symbolLandingSounds(x);
+ if(scatterState)scatterState.onStop(x,next);
+}
+async function spinColumns(next){
+ const duration=mode==='turbo'?185:520,stagger=mode==='turbo'?70:215;
+ const suspense=createScatterSuspense(),jobs=[];
+ try{
+  for(let x=0;x<5;x++)jobs.push((async()=>{await sleep(stagger*x);await reelDrop(x,next[x],duration,suspense);})());
+  await Promise.all(jobs);
+ }finally{suspense.stop(false);}
+}
+// V41: a linha premiada inteira (cinco tambores) é mostrada, mesmo que
+// apenas três símbolos tenham dado prémio. Os símbolos vencedores ficam sublinhados.
+function markLines(won){
+ const svg=$('paylines');svg.replaceChildren();const seen=new Set();
+ svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+ for(const l of won){
+  const pattern=LINES[l.line];if(!pattern)continue;
+  const points=pattern.map((row,x)=>`${(x+.5)*CW},${(row+.80)*CH}`).join(' ');
+  const line=document.createElementNS('http://www.w3.org/2000/svg','polyline');
+  line.setAttribute('points',points);
+  line.setAttribute('fill','none');line.setAttribute('stroke','#ffdf73');
+  line.setAttribute('stroke-width','7');line.setAttribute('stroke-linejoin','round');
+  line.setAttribute('stroke-linecap','round');line.setAttribute('filter','drop-shadow(0 0 7px #ffad35)');
+  line.setAttribute('class','completeWinLine');line.setAttribute('data-payline',String(l.line+1));
+  svg.appendChild(line);
+  for(const [x,y] of l.points){
+   const key=x+'-'+y;
+   if(!seen.has(key)){particlesAt((x+.5)*CW,(y+.5)*CH);seen.add(key)}
+   const underline=document.createElementNS('http://www.w3.org/2000/svg','line');
+   underline.setAttribute('x1',String((x+.30)*CW));underline.setAttribute('x2',String((x+.70)*CW));
+   underline.setAttribute('y1',String((y+.93)*CH));underline.setAttribute('y2',String((y+.93)*CH));
+   underline.setAttribute('stroke','#fff6be');underline.setAttribute('stroke-width','8');
+   underline.setAttribute('stroke-linecap','round');underline.setAttribute('class','winningSymbolUnderline');
+   svg.appendChild(underline);
+  }
+  const text=document.createElement('span');text.className='winText';
+  text.textContent='L'+(l.line+1)+' · '+money(l.value);
+  text.style.left='52%';text.style.top=((pattern[2]+.16)/3*100)+'%';
+  $('floaters').appendChild(text);
+ }
+ audioFX('win');
+}
+function clearLines(){ $('paylines').innerHTML='';$('floaters').replaceChildren();}
+async function animateCascade(remove){
+ const old=grid;const next=old.map(col=>[...col]);
+ for(let x=0;x<5;x++){
+  const removed=Array.from(remove).filter(k=>k.startsWith(x+':')).map(k=>Number(k.split(':')[1]));
+  if(!removed.length)continue;
+  const survivorPositions=[0,1,2].filter(y=>!removed.includes(y));
+  const survivors=survivorPositions.map(y=>old[x][y]);
+  const count=3-survivors.length;
+  next[x]=[...Array.from({length:count},sym),...survivors];
+  for(const y of removed)particlesAt((x+.5)*CW,(y+.5)*CH);
+ }
+ audioFX('burst');await sleep(mode==='turbo'?45:120);clearLines();
+ for(let x=0;x<5;x++){
+  const removed=Array.from(remove).filter(k=>k.startsWith(x+':')).map(k=>Number(k.split(':')[1]));
+  if(!removed.length)continue;
+  const remainPos=[0,1,2].filter(y=>!removed.includes(y)),count=3-remainPos.length;
+  const now=performance.now(),duration=mode==='turbo'?165:400,stagger=mode==='turbo'?35:125;
+  const items=[];
+  remainPos.forEach((row,k)=>items.push({s:old[x][row],fromY:row*CH,toY:(count+k)*CH,start:now,duration}));
+  for(let k=0;k<count;k++)items.push({s:next[x][k],fromY:(-count+k)*CH,toY:k*CH,start:now+stagger*(k+1),duration});
+  cascades[x]={items};
+  await sleep(duration+stagger*count);
+  grid[x]=next[x];cascades[x]=null;soundReelLanding();symbolLandingSounds(x);
+ }
+ grid=next;
+}
+function mulOrbTop(v,x,y){return new Promise(resolve=>{const slot=$('orbs'),stage=$('stageWrap');const from=stage.getBoundingClientRect(),to=slot.getBoundingClientRect();const node=document.createElement('span');node.className='orbPill';node.textContent=v+'×';node.style.cssText=`position:fixed;z-index:90;pointer-events:none;left:${from.left+(x+.5)*from.width/5-19}px;top:${from.top+(y+.5)*from.height/3-19}px;transition:transform ${mode==='turbo'?.3:.65}s cubic-bezier(.18,.77,.21,1),opacity .7s;width:40px;height:40px;`;
+ document.body.append(node);const dx=to.left+to.width*.7-(from.left+(x+.5)*from.width/5),dy=to.top+to.height*.5-(from.top+(y+.5)*from.height/3);requestAnimationFrame(()=>node.style.transform=`translate(${dx}px,${dy}px) scale(.65)`);setTimeout(()=>{node.remove();resolve()},mode==='turbo'?320:680)})}
+function updateShelf(){const box=$('orbs');box.replaceChildren();for(const s of shelf.slice(-10)){const e=document.createElement('span');e.className='orbPill';e.textContent=s+'×';box.append(e)}$('shelfTotal').textContent='×'+(shelf.length?shelf.reduce((a,b)=>a+b,0):1)}
+async function doRound(){
+ if(running||bonus||!session)return;
+ const free=freeSpins>0,stake=free?0:BETS[betIdx],betAmount=free?freeBet:BETS[betIdx];if(balance<stake)return;
+ running=true;scatterNoteStep=0;awardContext=free?'free':'base';roundVaultNew=0;if(free)freeSpins--;else{balance-=stake;session.stake+=stake;fundWager(stake);log('aposta',-stake,'Rodada base · cofre '+money(prizePool));}session.spins++;update();soundStart();notice(free?'✦ Rodada grátis!':'Tambores a rodar...');shelf=[];updateShelf();clearLines();winRound=0;
+ await spinColumns(wholeGrid());await collectVaultCoins();let scatterTrigger=0,cascadeCount=0;const maxCascades=8;
+ while(cascadeCount++<maxCascades){
+  scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));const ev=evaluate(grid,betAmount),m=mulIndices(grid);if(!ev.won.length&&!m.length)break;
+  if(ev.won.length){winRound+=ev.amount;markLines(ev.won);notice(`Linha premiada: ${money(ev.amount)} • cascata ${cascadeCount}`);await sleep(mode==='turbo'?150:520);}
+  const remove=new Set();for(const l of ev.won)for(const [x,y] of l.points)remove.add(`${x}:${y}`);
+  for(const mm of m){shelf.push(mm.v);updateShelf();await mulOrbTop(mm.v,mm.x,mm.y);remove.add(`${mm.x}:${mm.y}`);audioFX('multiplier',mm.v)}
+  if(!remove.size)break;await animateCascade(remove);scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));await collectVaultCoins();
+ }
+ scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));
+ clearLines();const factor=shelf.length?shelf.reduce((a,b)=>a+b,0):1,requestedWin=Math.min(winRound*factor,betAmount*MAX_WIN_MULT),winnings=payFromVault(requestedWin);lastPrize=winnings;
+ if(winnings)log('prémio',winnings,`Cascatas; linhas ${money(winRound)} ×${factor}; pedido ${money(requestedWin)}; cofre ${money(prizePool)}`);if(winnings<requestedWin)log('limite_cofre',0,`Prémio limitado pelo fundo: ${money(requestedWin)} → ${money(winnings)}`);
+ if(scatterTrigger>=3){
+  freeSpins+=15;freeBet=betAmount;notice('✦ 3 SCATTER: +15 FREE SPINS!');log('scatter',0,'Três SCATTER, +15 jogadas grátis');
+  await showFeatureIntro('free');
+ }
+ else if(winnings)notice(`Prémio pago: ${money(winnings)} • ${factor}×${winnings<requestedWin?' • limite do cofre':''}`);else notice(free?'Rodada grátis concluída.':'Sem prémio desta vez.');
+ if(!free&&scatterTrigger>=3){
+  running=false;openFreeStart();
+ }else if(maybeTriggerVault()){
+  await vaultExplosion();running=false;await launchBonus(false,'cofre');
+ }else{running=false;update();save();}
+ if(freeAutoRunning)scheduleFreeAuto();else maybeContinueAuto();
+}
+
+
+// Hold & Win V17: grelha 8x8, três tentativas, sem jackpot garantido.
+const BONUS_SIDE=5,BONUS_CELLS=BONUS_SIDE*BONUS_SIDE;
+const BONUS_FACTORS=[2,3,5,10,20,50,100,1000];
+function bonusFactorTotal(){return bonus?.factors.length?bonus.factors.reduce((a,b)=>a+b,0):1;}
+function randomEmptyCells(){const list=[];for(let i=0;i<bonus.cells.length;i++)if(!bonus.cells[i])list.push(i);for(let i=list.length-1;i>0;i--){const j=R(i+1);[list[i],list[j]]=[list[j],list[i]];}return list;}
+function addBonusCoin(i,value){if(bonus.cells[i])return false;const paid=roundedPayout(value*rtpScaleFor('hold'));bonus.cells[i]={kind:'coin',value:paid};bonus.coinsTotal+=paid;return true;}
+function addBonusFactor(i,value){if(bonus.cells[i])return false;bonus.cells[i]={kind:'factor',value};bonus.factors.push(value);return true;}
+function addBonusGem(i,type){if(bonus.cells[i]||bonus.gems[type]>=4)return false;bonus.cells[i]={kind:'gem',type};bonus.gems[type]++;audioFX('gem');if(bonus.gems[type]===4){bonus.jackpot=type;bonus.finished=true;bonus.endReason='jackpot';}return true;}
+function diamondSvg(jp){return `<svg class="bonusCrystal" style="--crystal-main:${jp.color}" viewBox="0 0 100 105" role="img" aria-label="Diamante de cristal" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="facet${jp.mult}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="white" stop-opacity=".96"/><stop offset=".35" stop-color="${jp.color}"/><stop offset="1" stop-color="#18112a"/></linearGradient></defs><path d="M25 10 L75 10 L97 37 L50 98 L3 37 Z" fill="url(#facet${jp.mult})" stroke="#fff4e1" stroke-width="3"/><path d="M25 10 L37 38 L3 37 Z" fill="white" opacity=".46"/><path d="M75 10 L63 38 L97 37 Z" fill="white" opacity=".22"/><path d="M37 38 L63 38 L50 98 Z" fill="white" opacity=".30"/><path d="M3 37 L37 38 L50 98 Z" fill="#130b29" opacity=".32"/><path d="M97 37 L63 38 L50 98 Z" fill="#1d1438" opacity=".45"/><path d="M25 10 L37 38 L63 38 L75 10 Z" fill="white" opacity=".36"/><path d="M50 6 L55 19 L50 15 L45 19Z" fill="white" opacity=".9"/></svg>`;}
+function gemProgress(){
+ $('gemCounters').innerHTML=Object.entries(JACKPOTS).map(([kind,data])=>`<div class="gemCounter ${bonus.jackpot===kind?'complete':''}" style="--jp-color:${data.color};color:${data.color}"><b>${kind}</b><small>${Array.from({length:4},(_,i)=>`<span class="gemTick ${i<bonus.gems[kind]?'got':''}">◆</span>`).join('')}</small></div>`).join('');
+}
+function bonusCellMarkup(c){
+ if(c.kind==='gem')return diamondSvg(JACKPOTS[c.type]);
+ if(c.kind==='factor')return `<div class="bonusToken factor" aria-label="Multiplicador ${c.value} vezes"><strong>${c.value}×</strong><small>MULTI</small></div>`;
+ return `<div class="bonusToken cash" aria-label="Moeda de ${money(c.value)}"><strong>${(c.value/100).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong><small>MOEDA</small></div>`;
+}
+function renderBonus(newIndices=[]){
+ if(!bonus)return;
+ $('bonusAttempts').textContent=bonus.left;
+ $('bonusSum').textContent=money(bonus.coinsTotal);
+ gemProgress();
+ const newer=new Set(newIndices),frag=document.createDocumentFragment();
+ $('bonusGrid').style.gridTemplateColumns='repeat('+(bonus.cells.length===64?8:5)+',minmax(0,1fr))';
+ for(let i=0;i<bonus.cells.length;i++){
+  const c=bonus.cells[i],el=document.createElement('div');
+  el.className='bonusCell '+(c?(c.kind==='coin'?'coinCell':c.kind==='factor'?'factorCell':'gemCell'):'emptyCell')+(newer.has(i)?' newItem':'');
+  el.dataset.cell=i;
+  if(c){
+   if(c.kind==='gem'){const jp=JACKPOTS[c.type];el.style.setProperty('--crystal-main',jp.color);el.style.setProperty('--crystal-glow',jp.color+'55');el.title=c.type+' • cristal '+bonus.gems[c.type]+'/4';}
+   else el.title=c.kind==='factor'?'Multiplicador '+c.value+'×':'Moeda '+money(c.value);
+   el.innerHTML=bonusCellMarkup(c);
+  }else el.textContent='✧';
+  frag.appendChild(el);
+ }
+ $('bonusGrid').replaceChildren(frag);
+ $('bonusFactors').innerHTML=bonus.factors.length?bonus.factors.map(v=>`<span>${v}×</span>`).join(''):'×1';
+ $('bonusFormula').textContent=`${money(bonus.coinsTotal)} × ${bonusFactorTotal()}${bonus.jackpot?' + '+bonus.jackpot:''}`;
+ $('bonusSpin').textContent=bonus.finished?'RECOLHER PRÉMIO':'RODAR BÓNUS';
+ $('bonusSpin').disabled=bonus.inMotion;
+}
+function flyFactorToBox(index,value){
+ const from=$('bonusGrid').querySelector(`[data-cell="${index}"]`), to=$('bonusFactors');
+ if(!from||!to)return Promise.resolve();
+ const a=from.getBoundingClientRect(),b=to.getBoundingClientRect(),node=document.createElement('div');
+ node.className='factorFly';node.textContent=value+'×';node.style.left=(a.left+a.width/2-22)+'px';node.style.top=(a.top+a.height/2-22)+'px';
+ document.body.appendChild(node);
+ const dx=b.left+b.width/2-(a.left+a.width/2),dy=b.top+b.height/2-(a.top+a.height/2);
+ requestAnimationFrame(()=>{node.style.transform=`translate(${dx}px,${dy}px) scale(.6)`;node.style.opacity='.05';});
+ audioFX('multiplier',value);return new Promise(resolve=>setTimeout(()=>{node.remove();resolve()},mode==='turbo'?310:590));
+}
+function flyGemToCounter(index,type){
+ const from=$('bonusGrid').querySelector(`[data-cell="${index}"]`),to=Array.from($('gemCounters').children).find(n=>n.textContent.includes(type));
+ if(!from||!to)return Promise.resolve();
+ const a=from.getBoundingClientRect(),b=to.getBoundingClientRect(),node=document.createElement('div');
+ node.className='gemFly';node.style.setProperty('--gem-color',JACKPOTS[type].color);node.innerHTML=diamondSvg(JACKPOTS[type]);
+ node.style.left=(a.left+a.width/2-23)+'px';node.style.top=(a.top+a.height/2-23)+'px';document.body.appendChild(node);
+ const dx=b.left+b.width/2-(a.left+a.width/2),dy=b.top+b.height/2-(a.top+a.height/2);
+ requestAnimationFrame(()=>{node.style.transform=`translate(${dx}px,${dy}px) scale(.40)`;node.style.opacity='.06';});
+ audioFX('gem');return new Promise(resolve=>setTimeout(()=>{node.remove();resolve()},mode==='turbo'?350:630));
+}
+function placeRandomBonusItem(index){
+ const r=Math.random();
+ if(r<.933)return addBonusCoin(index,bonus.stakeBet*pick([1,1,1,2,2,3,5,5,8,10]));
+ if(r<.945)return addBonusFactor(index,chooseHoldFactor());
+ const kind=Math.random()<.30?bonus.focus:pick(Object.keys(JACKPOTS));
+ return addBonusGem(index,kind);
+}
+async function launchBonus(purchase=true,origin='compra'){
+ if(!session||running||bonus)return false;
+ const cost=BETS[betIdx]*100;if(purchase&&balance<cost)return false;
+ running=true;
+ if(purchase){balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;log('compra_hold_win',-cost,'Hold & Win 5×5 — 100× aposta');}
+ else{session.bonuses++;log('ativacao_cofre',0,'Hold & Win 5×5 ativado pelo cofre mágico');}
+ bonus={left:3,coinsTotal:0,cells:Array(BONUS_CELLS).fill(null),factors:[],gems:{MINI:0,MEGA:0,MAJOR:0,MAX:0},jackpot:null,focus:pick(Object.keys(JACKPOTS)),finished:false,endReason:null,inMotion:false,stakeBet:BETS[betIdx],origin,rolls:0};
+ const spots=randomEmptyCells();
+ for(let i=0;i<7;i++)addBonusCoin(spots[i],bonus.stakeBet*pick([1,2,2,3,5,8,10]));
+ addBonusGem(spots[7],bonus.focus);
+ if(Math.random()<.012)addBonusFactor(spots[8],chooseHoldFactor());
+ renderBonus(spots.slice(0,9));
+ spots.slice(0,9).forEach((_,i)=>setTimeout(()=>audioFX('lock'),i*75));
+ $('bonusNote').textContent='3 tentativas. Cada símbolo novo repõe as 3. Sem novidades, perdes uma tentativa.';
+ modal('buyModal',false);soundStart();await showFeatureIntro('hold');modal('bonusModal',true);
+ running=false;update();save();return true;
+}
+async function bonusRespin(){
+ if(!bonus||bonus.inMotion)return;
+ if(bonus.finished){bonusFinish();return;}
+ bonus.inMotion=true;renderBonus();$('bonusNote').textContent='A procurar moedas, multiplicadores e cristais…';
+ await sleep(mode==='turbo'?200:540);bonus.rolls++;
+ const empties=randomEmptyCells(),added=[],newFactors=[],newGems=[];
+ // Cada tentativa pode falhar. Não existe jackpot atribuído artificialmente.
+ let number=0;
+ if(Math.random()>=.495){number=1+(Math.random()<.39?1:0)+(Math.random()<.17?1:0)}
+ for(let i=0;i<number&&empties.length&&!bonus.finished;i++){
+  const idx=empties.pop();if(!placeRandomBonusItem(idx))continue;
+  added.push(idx);if(bonus.cells[idx].kind==='factor')newFactors.push([idx,bonus.cells[idx].value]);if(bonus.cells[idx].kind==='gem')newGems.push([idx,bonus.cells[idx].type]);
+ }
+ bonus.left=added.length?3:Math.max(0,bonus.left-1);
+ if(!bonus.finished&&(!empties.length||bonus.left===0)){
+  bonus.finished=true;bonus.endReason=!empties.length?'completo':'tentativas';
+ }
+ renderBonus(added);
+ if(added.length){added.forEach((_,i)=>setTimeout(()=>audioFX('lock'),i*105));}
+ if(newFactors.length||newGems.length){await Promise.all([...newFactors.map(([idx,v])=>flyFactorToBox(idx,v)),...newGems.map(([idx,type])=>flyGemToCounter(idx,type))]);}
+ if(added.length){audioFX('coin');}
+ bonus.inMotion=false;renderBonus(added);
+ if(bonus.finished){
+  if(bonus.jackpot){$('bonusNote').textContent='🏆 4 CRISTAIS '+bonus.jackpot+'! JACKPOT COMPLETO!';audioFX('big');audioFX('schoolBell');}
+  else if(bonus.endReason==='tentativas')$('bonusNote').textContent='Esgotaste as 3 tentativas. Recolhe as moedas e multiplicadores!';
+  else $('bonusNote').textContent='Grelha completa. Recolhe os prémios!';
+ }else if(added.length){
+  $('bonusNote').textContent=`Caíram ${added.length} novo(s) símbolo(s). Tens novamente 3 tentativas!`;
+ }else $('bonusNote').textContent=`Não caiu nada. Restam ${bonus.left} tentativa(s).`;
+ save();
+}
+function bonusFinish(){
+ if(!bonus||!bonus.finished||bonus.inMotion)return;
+ const base=bonus.coinsTotal,factor=bonusFactorTotal(),jp=bonus.jackpot;
+ const jackpotWin=jp?roundedPayout(bonus.stakeBet*JACKPOTS[jp].mult*rtpScaleFor('hold')):0;
+  const rawFinal=base*factor+jackpotWin,requestedFinal=Math.min(rawFinal,bonus.stakeBet*MAX_WIN_MULT),final=payFromVault(requestedFinal);
+ lastPrize=final;
+ log('prémio_hold_win',final,`Hold & Win 5×5: ${money(base)} × ${factor}${jp?' + '+jp+' '+money(jackpotWin):' • sem jackpot'} • ${bonus.endReason}`);
+ modal('bonusModal',false);bonus=null;update();save();showBig(final,base,factor,jp,jackpotWin,final<requestedFinal?'cofre':final<rawFinal?'limite':null);
+}
+function refreshBuyOptions(){const costHold=BETS[betIdx]*100,costFree=BETS[betIdx]*20;$('buyHoldPrice').textContent=money(costHold);$('buyFreePrice').textContent=money(costFree);$('buyHoldChoice').disabled=balance<costHold||!session||running||!!bonus||freeSpins>0;$('buyFreeChoice').disabled=balance<costFree||!session||running||!!bonus||freeSpins>0;$('buyInfo').textContent='Saldo '+money(balance)+' • Hold & Win 100× a aposta • 15 free spins 20× a aposta';}
+function openBonusPurchase(){if(!session||running||bonus)return;refreshBuyOptions();modal('buyModal',true);soundStart()}
+async function buyFreeSpins(){if(!session||running||bonus||freeSpins)return false;const bet=BETS[betIdx],cost=bet*20;if(balance<cost)return false;balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;freeBet=bet;freeSpins+=15;log('compra_freespins',-cost,'15 free spins a 20× aposta '+money(bet));modal('buyModal',false);notice('🌟 Compraste 15 FREE SPINS por '+money(cost));running=true;update();soundStart();await showFeatureIntro('free');running=false;openFreeStart();return true;}
+
+function showBig(final,base,factor,jp,jackpotWin,capped=null){
+ $('bigFactor').textContent=jp?'4 CRISTAIS • '+jp:'HOLD & WIN • 3 TENTATIVAS';
+ $('bigTitle').textContent=jp?'JACKPOT '+jp+'!':final>=BETS[betIdx]*100?'BIG WIN!':'TOTAL HOLD & WIN';
+ $('bigAmount').textContent=money(final);
+ $('bigMath').textContent=`${money(base)} × ${factor}${jp?' + '+jp+' '+money(jackpotWin):''} = ${money(base*factor+jackpotWin)}${capped?' • PAGO '+money(final)+(capped==='cofre'?' (limite do cofre)':' (limite 5000×)'):''}`;
+ $('bigWin').classList.add('show');audioFX('big');if(final>0)audioFX('schoolBell');particlesAt(W/2,H/2,'big');
+}
+function drawWinLineMaps(){
+ const box=$('payLinesGrid');box.replaceChildren();
+ LINES.forEach((pattern,index)=>{
+  const card=document.createElement('div');card.className='payLineCard';
+  const num=document.createElement('b');num.className='lineNumber';num.textContent=String(index+1);card.append(num);
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 110 74');svg.setAttribute('role','img');svg.setAttribute('aria-label','Linha '+(index+1));
+  for(let row=0;row<3;row++)for(let col=0;col<5;col++){
+   const cell=document.createElementNS('http://www.w3.org/2000/svg','rect');
+   cell.setAttribute('x',String(3+col*21));cell.setAttribute('y',String(4+row*21));
+   cell.setAttribute('width','21');cell.setAttribute('height','21');
+   cell.setAttribute('fill','none');cell.setAttribute('stroke','#e5b76b');cell.setAttribute('stroke-width','0.9');
+   svg.append(cell);
+  }
+  const line=document.createElementNS('http://www.w3.org/2000/svg','polyline');
+  line.setAttribute('points',pattern.map((row,col)=>`${13.5+col*21},${14.5+row*21}`).join(' '));
+  line.setAttribute('fill','none');line.setAttribute('stroke','#ffe75a');line.setAttribute('stroke-width','5');
+  line.setAttribute('stroke-linecap','round');line.setAttribute('stroke-linejoin','round');
+  svg.append(line);card.append(svg);box.append(card);
+ });
+}
+function makePaytable(){
+ const el=$('payGrid');el.replaceChildren();
+ for(const id of [...regular,'wild','scatter']){
+  const div=document.createElement('div');div.className='payItem';
+  const img=document.createElement('img');img.src=window.JM_INLINE_ASSETS[id];img.alt=NAME[id];div.appendChild(img);
+  const t=document.createElement('span');
+  t.innerHTML=`<strong>${NAME[id]}</strong><br>${id==='wild'?`2 WILD juntos ≈ ${money(Math.max(1,Math.round(BETS[betIdx]*PAY.wild[2]/LINES.length*rtpScaleFor('base'))))}<br>`:''}${PAY[id]?
+   `3× ≈ ${money(Math.round(BETS[betIdx]*PAY[id][3]/LINES.length*rtpScaleFor('base')))}<br>4× ≈ ${money(Math.round(BETS[betIdx]*PAY[id][4]/LINES.length*rtpScaleFor('base')))}<br>5× ≈ ${money(Math.round(BETS[betIdx]*PAY[id][5]/LINES.length*rtpScaleFor('base')))}`
+   :'3 SCATTER = 15 free spins'}`;
+  div.append(t);el.append(div);
+ }
+ drawWinLineMaps();
+}
+
+// Painel reservado. A palavra-passe é apenas um bloqueio de interface num ficheiro local.
+function updateAdmin(){
+ const t=totals(),bankTotal=t.ownerWithdrawn;
+ $('adminProfitSet').textContent=rtpLabel(profitPercent);
+ $('adminProfitActive').textContent=session?rtpLabel(configuredProfit()):'—';
+ $('adminEffectiveRtp').textContent=rtpLabel(Math.min(RTP_REFERENCE,100-profitPercent));
+ $('adminCashIn').textContent=money(t.initial+t.deposits);
+ $('adminCashOut').textContent=money(t.withdrawn+bankTotal);
+ $('adminCashBalance').textContent=money(t.initial+t.deposits-t.withdrawn-bankTotal);
+ $('adminReserveTotal').textContent=money(operatorReserve);
+ $('adminReserveProtected').textContent=money(protectedReserve);
+ $('adminReserveWithdrawable').textContent=money(bankerAvailable());
+ $('adminReportSummary').innerHTML=`Apostas: <strong>${money(t.stakes)}</strong> · Prémios pagos: <strong>${money(t.prizes)}</strong> · Saldo dos jogadores: <strong>${money(t.balance)}</strong><br>Levantamentos do banqueiro: <strong>${money(bankTotal)}</strong> · Caixa livre contabilística: <strong>${money(reportFinancials().ownerAvailable)}</strong> · Rodadas: <strong>${t.spins}</strong>`;
+ $('adminMathInfo').textContent=`Ajuste manual de RTP desativado. Referência matemática fixa: ${rtpLabel(RTP_REFERENCE)}, sem certificação do RTP efetivo. Das apostas, ${rtpLabel(configuredProfit())} são reservadas pelo operador; 25% desses fundos ficam protegidos na máquina, e o restante só pode ser levantado se existir caixa livre depois de cobrir o saldo dos jogadores. Fundo de prémios da sessão: até ${rtpLabel(effectiveBudgetPercent())}. Máximo teórico por prémio: 5000× a aposta, sempre limitado pelo cofre. Nenhuma percentagem garante lucro económico real.`;
+}
+function openAdmin(){adminUnlocked=true;modal('adminLoginModal',false);$('adminPassword').value='';$('adminPage').hidden=false;document.body.style.overflow='hidden';$('adminProfitInput').value=profitPercent.toFixed(2);$('adminProfitSlider').value=profitPercent;$('adminProfitPreview').textContent=rtpLabel(profitPercent);$('bankerWithdrawAmount').value='';$('bankerWithdrawPassword').value='';$('bankerWithdrawStatus').textContent='';updateAdmin();}
+function closeAdmin(){if(!$('reportViewer').hidden)closeReportViewer();$('adminPage').hidden=true;adminUnlocked=false;$('bankerWithdrawPassword').value='';document.body.style.overflow='';modal('reportModal',false);}
+function saveAdminProfit(){
+ if(!adminUnlocked)return;let n=Number($('adminProfitInput').value);
+ if(!Number.isFinite(n)||n<1||n>70){$('adminProfitStatus').textContent='Introduz uma percentagem entre 1,00% e 70,00%.';return;}
+ n=Math.round(n*100)/100;const previous=profitPercent;profitPercent=n;
+ adminAudit.push({time:new Date().toISOString(),kind:'reserva_operador',previous,newValue:n});save();updateAdmin();
+ $('adminProfitStatus').textContent='Reserva configurada: '+rtpLabel(n)+'; a alteração aplica-se às apostas seguintes; não modifica valores já acumulados.';
+}
+
+function setupAdmin(){
+ const logo=$('adminHotspot');logo.addEventListener('click',()=>{const now=Date.now();if(now>adminTapDeadline)adminTaps=0;adminTaps++;adminTapDeadline=now+9000;if(adminTaps>=10){adminTaps=0;adminTapDeadline=0;$('adminLoginError').textContent='';$('adminPassword').value='';modal('adminLoginModal',true);$('adminPassword').focus();}});
+ $('adminLoginSubmit').onclick=()=>{if($('adminPassword').value==='1234567890')openAdmin();else{$('adminLoginError').textContent='Palavra-passe incorreta.';$('adminPassword').value='';}};
+ $('adminPassword').addEventListener('keydown',e=>{if(e.key==='Enter')$('adminLoginSubmit').click()});
+ $('adminLoginCancel').onclick=()=>{modal('adminLoginModal',false);$('adminPassword').value='';};
+ $('adminExit').onclick=closeAdmin;
+ $('adminResetOpen').onclick=()=>{if(!adminUnlocked)return;$('resetPassword').value='';$('resetAcknowledge').checked=false;$('resetError').textContent='';modal('resetModal',true)};
+ $('resetCancel').onclick=()=>modal('resetModal',false);
+ $('resetConfirm').onclick=()=>{if(!adminUnlocked)return;if(running||bonus||freeSpins>0||freeAutoRunning){$('resetError').textContent='Termina primeiro a jogada ou bónus.';return;}if($('resetPassword').value!=='12345'){$('resetError').textContent='Password incorreta.';return;}if(!$('resetAcknowledge').checked){$('resetError').textContent='Assinala a confirmação para continuar.';return;}localStorage.removeItem(KEY);window.location.reload();};
+ $('adminProfitSlider').oninput=()=>{const n=Number($('adminProfitSlider').value);$('adminProfitInput').value=n.toFixed(2);$('adminProfitPreview').textContent=rtpLabel(n);};
+ $('adminProfitInput').oninput=()=>{const n=Number($('adminProfitInput').value);if(Number.isFinite(n)&&n>=0&&n<=70){$('adminProfitSlider').value=n;$('adminProfitPreview').textContent=rtpLabel(n);}};
+  $('adminSaveProfit').onclick=saveAdminProfit;
+  $('bankerWithdrawButton').onclick=doBankerWithdraw;
+  $('bankerWithdrawPassword').addEventListener('keydown',e=>{if(e.key==='Enter')doBankerWithdraw()});
+ $('adminFullReport').onclick=()=>{if(adminUnlocked)report();};
+ $('reportViewSave').onclick=downloadHTMLReport;
+ $('reportViewPrint').onclick=printReportViewer;
+ $('reportViewClose').onclick=closeReportViewer;
+ $('adminExportCsv').onclick=downloadHTMLReport;$('adminPrintReport').onclick=printHTMLReport;
+}
+
+const DISPLAY_KEY='jm_game_display_ratio_v26';
+function setDisplayRatio(ratio){
+ const layout=ratio==='16:9'?'wide':'portrait';
+ document.querySelector('.game').dataset.layout=layout;
+ window.dispatchEvent(new Event('resize'));
+}
+function setup(){
+ document.querySelectorAll('#choices button').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('#choices button').forEach(b=>b.classList.toggle('selected',b===btn));$('openingCredits').value=btn.dataset.value;updateDepositPreview()});
+ $('startBtn').onclick=submitDeposit;
+ $('cancelDeposit').onclick=()=>{depositAuthorized=false;modal('startModal',false)};
+ $('depositBtn').onclick=openDepositLogin;
+ $('depositLoginCancel').onclick=()=>{depositAuthorized=false;modal('depositLoginModal',false)};
+ $('depositLoginSubmit').onclick=()=>{if($('depositPassword').value===CASH_PIN){depositAuthorized=true;$('depositPassword').value='';showDepositForm()}else{$('depositError').textContent='Palavra-passe incorreta.';$('depositPassword').value=''}};
+ $('depositPassword').addEventListener('keydown',e=>{if(e.key==='Enter')$('depositLoginSubmit').click()});
+ $('betMinus').onclick=()=>{if(betIdx>0&&!running&&!bonus&&freeSpins===0){soundStart();audioFX('tap');betIdx--;makePaytable();update();save()}};$('betPlus').onclick=()=>{if(betIdx<6&&!running&&!bonus&&freeSpins===0){soundStart();audioFX('tap');betIdx++;makePaytable();update();save()}};
+ let spinLongTimer=null,spinHeld=false,spinLongUsed=false;
+ const beginLongSpin=()=>{if($('spin').disabled)return;spinHeld=true;spinLongUsed=false;$('spin').classList.add('pressed');clearTimeout(spinLongTimer);if(autoSpinsRemaining>0||running||bonus||freeSpins>0)return;spinLongTimer=setTimeout(()=>{if(!spinHeld)return;spinLongUsed=true;$('spin').classList.remove('pressed');modal('autoModal',true);soundStart();},1000);};
+ const cancelLongSpin=()=>{spinHeld=false;clearTimeout(spinLongTimer);$('spin').classList.remove('pressed');};
+ $('spin').addEventListener('pointerdown',beginLongSpin);
+ ['pointerup','pointercancel','pointerleave'].forEach(eventName=>$('spin').addEventListener(eventName,cancelLongSpin));
+ $('spin').addEventListener('contextmenu',e=>e.preventDefault());
+ $('spin').onclick=()=>{if(autoSpinsRemaining>0){spinLongUsed=false;stopAuto();notice('Voltas automáticas paradas.');return;}if(spinLongUsed){spinLongUsed=false;return;}if(freeSpins>0){openFreeStart();return;}if(running)return;doRound()};$('freeStartBtn').onclick=startFreeAuto;$('normalBtn').onclick=()=>{mode='normal';update();save()};$('turboBtn').onclick=()=>{mode=mode==='turbo'?'normal':'turbo';update();save()};
+ $('buyBonus').onclick=openBonusPurchase;$('buyHoldChoice').onclick=()=>launchBonus(true,'compra');$('buyFreeChoice').onclick=buyFreeSpins;$('closeBuy').onclick=()=>modal('buyModal',false);
+ $('bonusSpin').onclick=bonusRespin;$('vaultBtn').onclick=$('vaultBtnMobile').onclick=()=>{notice('🪙 O cofre vai crescendo e pode rebentar de surpresa, ativando Hold & Win!')};
+ $('btnSound').onclick=()=>{mute=!mute;musicUI();if(!mute)soundStart()};
+ $('btnMusic').onclick=()=>{musicEnabled=!musicEnabled;if(musicEnabled){startMusic()}else musicElement().pause();musicUI();save()};
+ $('btnPay').onclick=()=>{makePaytable();modal('payModal',true)};$('closePay').onclick=()=>modal('payModal',false);
+ $('closeReport').onclick=()=>modal('reportModal',false);$('exportCsv').onclick=downloadHTMLReport;$('printReport').onclick=printHTMLReport;
+ $('withdrawBtn').onclick=()=>{if(!session||running||bonus||freeSpins>0)return;$('withdrawAmount').value=(balance/100).toFixed(2);$('withdrawInfo').textContent=`Saldo disponível para levantamento: ${money(balance)}.`;$('withdrawPassword').value='';$('withdrawError').textContent='';modal('withdrawModal',true);$('withdrawPassword').focus()};
+ $('cancelWithdraw').onclick=()=>{$('withdrawPassword').value='';$('withdrawError').textContent='';modal('withdrawModal',false)};$('confirmWithdraw').onclick=doWithdraw;$('withdrawPassword').addEventListener('keydown',e=>{if(e.key==='Enter')doWithdraw()});
+ $('autoSpinBtn').onclick=()=>{if(!session||bonus||freeSpins>0)return;document.querySelectorAll('#autoChoices button').forEach(b=>b.disabled=running);modal('autoModal',true)};document.querySelectorAll('#autoChoices button').forEach(btn=>btn.onclick=()=>{if(running)return;autoSpinsRemaining=Number(btn.dataset.auto)||0;autoSpinsTotal=autoSpinsRemaining;modal('autoModal',false);notice('Auto-spins ativadas: '+autoSpinsRemaining);update();save();if(!running&&!bonus){autoSpinsRemaining--;update();doRound();}});$('cancelAuto').onclick=()=>modal('autoModal',false);$('stopAuto').onclick=stopAuto;
+ $('btnHome').onclick=()=>{if(running||bonus||freeSpins>0)return;openDepositLogin()};
+ $('closeBig').onclick=()=>{$('bigWin').classList.remove('show');notice('JACKPOT recolhido. Boa continuação!');if(freeAutoRunning)scheduleFreeAuto();else if(freeSpins>0&&!freeStartPending)openFreeStart()};
+ $('openingCredits').addEventListener('input',()=>{document.querySelectorAll('#choices button').forEach(b=>b.classList.toggle('selected',Number(b.dataset.value)===Number($('openingCredits').value)));updateDepositPreview()});
+}
+
+(async()=>{setup();setupAdmin();load();setDisplayRatio(window.innerWidth>window.innerHeight*1.12?'16:9':'9:16');musicUI();document.addEventListener('pointerdown',()=>{if(session&&musicEnabled&&musicElement().paused)startMusic()},{passive:true});update();makePaytable();await imageLoad();requestAnimationFrame(frame);
+ // CDN PixiJS é opcional em execução: Canvas2D serve de alternativa quando offline/WebGL indisponível.
+ let ticks=0;const timer=setInterval(async()=>{if(window.PIXI?.Application){clearInterval(timer);await initPixi()}else if(++ticks>=30){clearInterval(timer);console.info('Canvas 2D de reserva ativo')}},100);
+ if(session){notice('Sessão retomada. Continua a jogar!');modal('startModal',false);if(bonus){renderBonus();modal('bonusModal',true);$('bonusNote').textContent=bonus.finished?'Bónus concluído. Recolhe o teu prémio.':'Bónus retomado: tens '+bonus.left+' tentativas restantes.';}if(freeSpins>0&&!bonus)openFreeStart();else if(autoSpinsRemaining>0&&!running&&!bonus)maybeContinueAuto();}else openDepositLogin();
+})();
+})();

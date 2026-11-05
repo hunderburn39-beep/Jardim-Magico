@@ -1,0 +1,93 @@
+
+/* V39: o formato adapta-se automaticamente, sem o botão de proporções. */
+#ratioButton{display:none!important}
+/* HOLD & WIN: janela de jogo própria, sempre dentro do ecrã visível. */
+#bonusModal{
+ position:fixed;inset:0;box-sizing:border-box;
+ padding:4px;
+ align-items:center;justify-content:center;
+ overflow:hidden!important;
+}
+#bonusModal .bonusDialog{
+ --jm-bonus-size:260px;
+ box-sizing:border-box;
+ display:flex;flex-direction:column;align-items:stretch;
+ gap:clamp(2px,.55dvh,5px);
+ width:min(calc(100vw - 8px),540px);
+ height:auto;max-height:calc(var(--jm-visible-height,100dvh) - 8px)!important;
+ padding:clamp(5px,.95dvh,10px);
+ margin:0;overflow:hidden!important;
+ border-width:2px;border-radius:clamp(10px,2.3dvh,18px);
+}
+#bonusModal .bonusDialog > *{box-sizing:border-box;min-width:0;flex-shrink:0}
+#bonusModal h2{margin:0;font-size:clamp(16px,3.4vw,24px);line-height:1.05;text-align:center}
+#bonusModal .bonusDialog > p{margin:0;text-align:center;font-size:clamp(10px,1.7vw,12px);line-height:1.15}
+#bonusModal .bonusStats{margin:0;gap:5px;min-height:0}
+#bonusModal .bonusStats>div{padding:3px 4px;font-size:clamp(9px,1.65vw,12px);border-width:1px;border-radius:8px}
+#bonusModal .bonusStats strong{font-size:clamp(13px,3.1vw,20px);line-height:1.1}
+#bonusModal .gemCounters{width:100%;max-width:100%;margin:0;gap:3px;min-height:0}
+#bonusModal .gemCounter{padding:2px 1px;font-size:clamp(8px,1.8vw,12px);min-height:0}
+#bonusModal .bonusGrid{
+ display:grid;
+ box-sizing:border-box;
+ width:var(--jm-bonus-size);height:var(--jm-bonus-size);
+ max-width:100%;max-height:none;aspect-ratio:1/1;
+ min-height:0;min-width:0;flex:0 0 auto;
+ align-self:center;
+ padding:clamp(2px,.6vw,6px);margin:0;
+ gap:clamp(1px,.35vw,3px);
+ border-width:2px;border-radius:clamp(7px,1.5dvh,14px);
+}
+#bonusModal .bonusCell{min-height:0;max-height:none;min-width:0;overflow:hidden;border-radius:clamp(3px,.7vw,7px)}
+#bonusModal .bonusToken{max-height:92%;max-width:92%;width:84%;aspect-ratio:1/1}
+#bonusModal .bonusToken strong{font-size:clamp(8px,1.7vw,15px);line-height:1}
+#bonusModal .bonusToken small{font-size:clamp(6px,1.25vw,9px)}
+#bonusModal .bonusCrystal{max-width:90%;max-height:90%}
+#bonusModal .bonusHelpLine{margin:0;line-height:1.15;font-size:clamp(9px,1.6vw,11px);text-align:center}
+#bonusModal .bonusMultiplier{margin:0;min-height:0;padding:3px;gap:3px;max-width:100%;font-size:clamp(9px,1.7vw,12px);flex-wrap:wrap}
+#bonusModal .bonusMultiplier span{height:auto;min-height:20px;min-width:23px;font-size:clamp(10px,1.8vw,13px);padding:2px 3px}
+#bonusModal .bonusInfoFormula{margin:0;text-align:center;line-height:1.15;font-size:clamp(9px,1.8vw,13px)}
+#bonusModal .bonusNote{min-height:0;margin:0;text-align:center;line-height:1.15;font-size:clamp(9px,1.8vw,12px)}
+#bonusModal #bonusSpin{margin:0;min-height:35px;padding:6px 6px;font-size:clamp(12px,2.3vw,16px);line-height:1.2;border-width:2px;flex:0 0 auto}
+@media(max-height:750px) and (orientation:portrait){
+ #bonusModal .bonusDialog > p{display:none}
+ #bonusModal .bonusHelpLine{font-size:9px}
+}
+/* Ecrã deitado: grelha grande à esquerda, indicadores e rodar à direita. */
+@media (orientation:landscape) {
+ #bonusModal .bonusDialog{
+  width:min(calc(100vw - 8px),930px);
+  max-width:none;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(145px,.7fr);
+  grid-template-rows:repeat(7,min-content);
+  grid-template-areas:
+    'grid heading'
+    'grid stats'
+    'grid gems'
+    'grid multi'
+    'grid formula'
+    'grid note'
+    'grid action';
+  column-gap:clamp(6px,1.3vw,14px);row-gap:clamp(1px,.65dvh,5px);
+  justify-content:stretch;align-content:center;align-items:center;
+  padding:clamp(4px,1dvh,9px);
+ }
+ #bonusModal .bonusDialog > p,#bonusModal .bonusHelpLine{display:none}
+ #bonusModal .bonusDialog > h2{grid-area:heading;font-size:clamp(15px,2.5dvh,25px)}
+ #bonusModal .bonusStats{grid-area:stats}
+ #bonusModal .gemCounters{grid-area:gems}
+ #bonusModal .bonusGrid{grid-area:grid;width:var(--jm-bonus-size);height:var(--jm-bonus-size);max-width:100%}
+ #bonusModal .bonusMultiplier{grid-area:multi}
+ #bonusModal .bonusInfoFormula{grid-area:formula}
+ #bonusModal .bonusNote{grid-area:note}
+ #bonusModal #bonusSpin{grid-area:action;min-height:clamp(29px,8dvh,42px)}
+}
+@media(max-height:370px) and (orientation:landscape){
+ #bonusModal .bonusDialog{row-gap:2px;padding:4px}
+ #bonusModal .bonusStats>div{padding:2px 3px;font-size:9px}
+ #bonusModal .bonusStats strong{font-size:14px}
+ #bonusModal .gemCounter{font-size:9px;padding:1px}
+ #bonusModal .bonusMultiplier{font-size:10px;padding:2px}
+ #bonusModal .bonusNote,#bonusModal .bonusInfoFormula{font-size:10px}
+}

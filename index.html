@@ -1,0 +1,158 @@
+<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#201534"><title>Jardim Mágico V39 — Ecrã Adaptativo + HOLD & WIN</title>
+<link rel="stylesheet" href="css/estilo.css">
+<link rel="stylesheet" href="css/estilo-2.css">
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@8.11.0/dist/pixi.min.js" async></script>
+</head><body>
+<main class="game"><div class="topbar"><span class="branding">✦ AVENTURA FANTÁSTICA ✦</span><div class="toptools"><button class="roundSmall" id="btnHome" aria-label="Nova sessão">⌂</button><button class="roundSmall" id="btnMusic" aria-label="Desligar música de fundo" title="Música de fundo">♫</button><button class="roundSmall" id="btnSound" aria-label="Desligar efeitos sonoros" title="Efeitos sonoros">🔊</button><button class="roundSmall" id="depositBtn" aria-label="Depósito" title="Depósito">✚</button><button class="roundSmall" id="withdrawBtn" aria-label="Levantamento" title="Levantamento">⇩</button><button class="roundSmall" id="btnPay" aria-label="Tabela de pagamentos">ⓘ</button></div></div>
+<div class="logoLoop"><div class="logoSpinLetters" aria-hidden="true"><span>J</span><span>A</span><span>R</span></div><img class="titleArt" src="assets/imagens/a8da072aa5d29f5e23.webp" alt="Jardim Mágico" id="adminHotspot" draggable="false" style="user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:default"></div>
+<div class="jackpots"><div class="jackpot"><b>MINI</b><strong>100×</strong></div><div class="jackpot"><b>MAJOR</b><strong>500×</strong></div><div class="jackpot max"><b>MAX WIN</b><strong>5000×</strong></div><div class="jackpot"><b>MEGA</b><strong>250×</strong></div></div>
+<div class="reelFrame"><div class="shelf"><div class="shelfTag">MULTIPLICADORES<br>ACUMULADOS</div><div class="orbs" id="orbs"><span style="opacity:.6">✧ ✧ ✧</span></div><div class="shelfTotal" id="shelfTotal">×1</div></div><div class="stageWrap" id="stageWrap"><div class="gardenWorld" aria-hidden="true">
+<svg class="forestBackdrop" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 535" preserveAspectRatio="xMidYMid slice">
+<defs>
+ <linearGradient id="jmSky" x1="0" y1="0" x2=".2" y2="1"><stop stop-color="#344476"/><stop offset=".35" stop-color="#486479"/><stop offset=".72" stop-color="#3d6b63"/><stop offset="1" stop-color="#203d36"/></linearGradient>
+ <radialGradient id="jmSun"><stop stop-color="#fff5b8" stop-opacity=".81"/><stop offset=".36" stop-color="#fbdc92" stop-opacity=".48"/><stop offset="1" stop-color="#ffe7a8" stop-opacity="0"/></radialGradient>
+ <linearGradient id="jmGround" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#648778"/><stop offset=".7" stop-color="#204c43"/><stop offset="1" stop-color="#17382f"/></linearGradient>
+ <linearGradient id="jmPath"><stop stop-color="#f6d9aa" stop-opacity=".48"/><stop offset="1" stop-color="#a0bba7" stop-opacity=".12"/></linearGradient>
+ <filter id="jmMisty"><feGaussianBlur stdDeviation="7"/></filter>
+</defs>
+<rect width="900" height="535" fill="url(#jmSky)"/>
+<ellipse cx="610" cy="140" rx="270" ry="220" fill="url(#jmSun)"/>
+<g opacity=".28" filter="url(#jmMisty)"><path d="M-30 272 Q155 155 310 230 Q470 140 630 230 Q780 135 930 225 L930 430 -30 430Z" fill="#7fc3a3"/></g>
+<path d="M0 299 Q115 240 235 288 Q364 216 472 283 Q641 215 739 277 Q844 217 900 260 V535 H0Z" fill="#294e58" opacity=".65"/>
+<path d="M0 339 Q96 280 198 332 Q304 268 444 317 Q566 282 669 315 Q808 250 900 319 V535 H0Z" fill="url(#jmGround)" opacity=".83"/>
+<path d="M490 313 C445 380 394 439 452 535 L719 535 C617 427 587 371 551 312Z" fill="url(#jmPath)" opacity=".5"/>
+<g fill="none" stroke-linecap="round">
+<path d="M24 546 Q67 280 98 35 M98 150 Q164 96 242 78 M87 273 Q21 192 -50 174" stroke="#172d38" stroke-width="49"/>
+<path d="M880 553 Q822 306 812 0 M828 180 Q718 92 663 87 M844 315 Q944 242 1018 207" stroke="#22363a" stroke-width="54"/>
+<path d="M260 532 Q254 250 278 65 M278 230 Q370 132 405 104" stroke="#294c46" stroke-width="22" opacity=".62"/>
+<path d="M656 527 Q670 257 655 63 M650 217 Q580 158 541 151" stroke="#27493c" stroke-width="20" opacity=".57"/>
+</g>
+<g fill="#2b6950" opacity=".83">
+<ellipse cx="70" cy="52" rx="152" ry="71"/><ellipse cx="192" cy="70" rx="135" ry="61"/>
+<ellipse cx="808" cy="38" rx="146" ry="81"/><ellipse cx="697" cy="66" rx="140" ry="62"/>
+<ellipse cx="275" cy="99" rx="87" ry="48"/><ellipse cx="658" cy="96" rx="92" ry="55"/>
+</g>
+<g fill="#62a779" opacity=".45">
+<ellipse cx="61" cy="20" rx="100" ry="27"/><ellipse cx="210" cy="58" rx="79" ry="25"/>
+<ellipse cx="816" cy="25" rx="85" ry="22"/><ellipse cx="656" cy="72" rx="76" ry="27"/>
+</g>
+<g fill="#1b614b" opacity=".9">
+<path d="M0 480 Q98 423 174 491 T344 473 L358 535 H0Z"/>
+<path d="M710 495 Q780 417 900 449 V535 H703Z"/>
+</g>
+<g fill="none" stroke="#9fd4a1" stroke-width="3" stroke-linecap="round" opacity=".43">
+<path d="M16 515l15 -53m23 58l16 -49m50 63l-5 -58m703 42l-24 -59m55 57l9 -55m55 57l-8 -42"/>
+</g>
+<g opacity=".7">
+<circle cx="178" cy="456" r="5" fill="#f5dca1"/><circle cx="184" cy="450" r="3" fill="#fff8c5"/>
+<circle cx="760" cy="444" r="6" fill="#e0bbfa"/><circle cx="769" cy="440" r="4" fill="#f9d3fa"/>
+<circle cx="323" cy="485" r="5" fill="#faaab6"/><circle cx="329" cy="480" r="3" fill="#ffefc0"/>
+</g>
+</svg>
+<span class="gardenBeam beamA"></span><span class="gardenBeam beamB"></span>
+<span class="gardenFirefly ff1"></span><span class="gardenFirefly ff2"></span><span class="gardenFirefly ff3"></span><span class="gardenFirefly ff4"></span><span class="gardenFirefly ff5"></span>
+<span class="gardenButterfly butterfly1"><svg class="butterShape" viewBox="0 0 62 50" aria-hidden="true"><g class="wingLeft"><path d="M30 23 C7 -15 -7 8 11 28 C-5 46 13 52 30 28Z" fill="currentColor" opacity=".83"/><path d="M28 23 C14 6 8 10 16 23" stroke="#fff7de" stroke-width="1.7" fill="none" opacity=".75"/></g><g class="wingRight"><path d="M32 23 C55 -15 69 8 51 28 C67 46 49 52 32 28Z" fill="currentColor" opacity=".83"/><path d="M34 23 C48 6 54 10 46 23" stroke="#fff7de" stroke-width="1.7" fill="none" opacity=".75"/></g><path d="M31 15 Q29 31 32 40" fill="none" stroke="#ffe8ca" stroke-width="3" stroke-linecap="round"/><path d="M31 15 Q20 1 18 7 M31 15 Q42 1 44 7" fill="none" stroke="#fff8d3" stroke-width="1.5"/></svg></span>
+<span class="gardenButterfly butterfly2"><svg class="butterShape" viewBox="0 0 62 50" aria-hidden="true"><g class="wingLeft"><path d="M30 23 C7 -15 -7 8 11 28 C-5 46 13 52 30 28Z" fill="currentColor" opacity=".83"/><path d="M28 23 C14 6 8 10 16 23" stroke="#fff7de" stroke-width="1.7" fill="none" opacity=".75"/></g><g class="wingRight"><path d="M32 23 C55 -15 69 8 51 28 C67 46 49 52 32 28Z" fill="currentColor" opacity=".83"/><path d="M34 23 C48 6 54 10 46 23" stroke="#fff7de" stroke-width="1.7" fill="none" opacity=".75"/></g><path d="M31 15 Q29 31 32 40" fill="none" stroke="#ffe8ca" stroke-width="3" stroke-linecap="round"/><path d="M31 15 Q20 1 18 7 M31 15 Q42 1 44 7" fill="none" stroke="#fff8d3" stroke-width="1.5"/></svg></span>
+<span class="gardenButterfly butterfly3"><svg class="butterShape" viewBox="0 0 62 50" aria-hidden="true"><g class="wingLeft"><path d="M30 23 C7 -15 -7 8 11 28 C-5 46 13 52 30 28Z" fill="currentColor" opacity=".83"/><path d="M28 23 C14 6 8 10 16 23" stroke="#fff7de" stroke-width="1.7" fill="none" opacity=".75"/></g><g class="wingRight"><path d="M32 23 C55 -15 69 8 51 28 C67 46 49 52 32 28Z" fill="currentColor" opacity=".83"/><path d="M34 23 C48 6 54 10 46 23" stroke="#fff7de" stroke-width="1.7" fill="none" opacity=".75"/></g><path d="M31 15 Q29 31 32 40" fill="none" stroke="#ffe8ca" stroke-width="3" stroke-linecap="round"/><path d="M31 15 Q20 1 18 7 M31 15 Q42 1 44 7" fill="none" stroke="#fff8d3" stroke-width="1.5"/></svg></span>
+<span class="gardenButterfly butterfly4"><svg class="butterShape" viewBox="0 0 62 50" aria-hidden="true"><g class="wingLeft"><path d="M30 23 C7 -15 -7 8 11 28 C-5 46 13 52 30 28Z" fill="currentColor" opacity=".83"/><path d="M28 23 C14 6 8 10 16 23" stroke="#fff7de" stroke-width="1.7" fill="none" opacity=".75"/></g><g class="wingRight"><path d="M32 23 C55 -15 69 8 51 28 C67 46 49 52 32 28Z" fill="currentColor" opacity=".83"/><path d="M34 23 C48 6 54 10 46 23" stroke="#fff7de" stroke-width="1.7" fill="none" opacity=".75"/></g><path d="M31 15 Q29 31 32 40" fill="none" stroke="#ffe8ca" stroke-width="3" stroke-linecap="round"/><path d="M31 15 Q20 1 18 7 M31 15 Q42 1 44 7" fill="none" stroke="#fff8d3" stroke-width="1.5"/></svg></span>
+<span class="gardenBird bird1"><svg class="birdShape" viewBox="0 0 85 42" aria-hidden="true"><path d="M4 25 Q21 2 42 21 Q58 4 81 25" stroke="currentColor" stroke-width="4.3" fill="none" stroke-linejoin="round" stroke-linecap="round"/><path d="M24 18 Q35 8 42 21 Q50 10 63 18" stroke="currentColor" stroke-width="2.3" fill="none" stroke-linecap="round"/></svg></span>
+<span class="gardenBird bird2"><svg class="birdShape" viewBox="0 0 85 42" aria-hidden="true"><path d="M4 25 Q21 2 42 21 Q58 4 81 25" stroke="currentColor" stroke-width="4.3" fill="none" stroke-linejoin="round" stroke-linecap="round"/><path d="M24 18 Q35 8 42 21 Q50 10 63 18" stroke="currentColor" stroke-width="2.3" fill="none" stroke-linecap="round"/></svg></span>
+<span class="gardenBird bird3"><svg class="birdShape" viewBox="0 0 85 42" aria-hidden="true"><path d="M4 25 Q21 2 42 21 Q58 4 81 25" stroke="currentColor" stroke-width="4.3" fill="none" stroke-linejoin="round" stroke-linecap="round"/><path d="M24 18 Q35 8 42 21 Q50 10 63 18" stroke="currentColor" stroke-width="2.3" fill="none" stroke-linecap="round"/></svg></span>
+</div><canvas id="reelCanvas" width="900" height="535"></canvas><div id="pixiMount"></div><div class="glassReels" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="glassSweep" aria-hidden="true"></div><svg id="paylines" aria-hidden="true"></svg><div class="reelFog"></div><div id="floaters"></div></div></div>
+<div class="underStage">
+  <div class="notice" id="notice">Escolhe o saldo para começar esta aventura.</div>
+  <div class="freeTag" id="freeTag">15 FREE SPINS</div>
+  <button class="vaultBtn" id="vaultBtn" style="display:none!important" aria-hidden="true" tabindex="-1"><small>COFRE MÁGICO</small><span class="vaultFace">💰</span><strong id="vaultCount">0 MOEDAS</strong><div class="vaultMeter"><span id="vaultFill"></span></div></button>
+</div>
+<div class="controlDock v37Dock">
+ <div class="controlStats" aria-label="Estado e controlos do jogo">
+  <div class="v37LeftStats">
+   <div class="hudPanel miniBalance"><small>SALDO</small><strong id="balance">0,00 €</strong></div>
+   <div class="hudPanel betPanel statBet"><button id="betMinus" aria-label="Diminuir aposta">−</button><div class="betInfo"><small>APOSTA</small><strong id="betValue">0,20 €</strong></div><button id="betPlus" aria-label="Aumentar aposta">+</button></div>
+  </div>
+  <div class="hudPanel statPrize"><small>ÚLTIMO PRÉMIO</small><strong id="lastPrize">0,00 €</strong></div>
+  <div class="v37RightStats">
+   <button type="button" class="vaultBtn vaultPremium vaultMystery" id="vaultBtnMobile" aria-label="Cofre mágico surpresa"><span class="vaultHalo" aria-hidden="true"></span><span class="vaultFace" id="vaultFace" aria-hidden="true">💰</span><span class="vaultSpark" aria-hidden="true">✦</span><strong id="vaultCountMobile" hidden aria-hidden="true">0 MOEDAS</strong><div class="vaultMeter" hidden aria-hidden="true"><span id="vaultFillMobile"></span></div></button>
+   <button id="buyBonus" class="deckButton premium v37Buy">✦ COMPRAR BÓNUS</button>
+  </div>
+ </div>
+ <div class="controlDeck v37SpinDeck" aria-label="Rodar e modo turbo">
+  <div class="v37Spacer" aria-hidden="true"></div>
+  <div class="spinCenter"><div class="spinHalo"><button id="spin" class="spinBtn" aria-label="Rodar tambores; manter 1 segundo para voltas automáticas"><span class="cycle">⟳</span><span class="spinLabel" id="spinText">RODAR</span><span class="spinCount" id="spinCount" hidden></span></button></div></div>
+  <div class="v37Turbo"><button id="turboBtn" class="deckButton turboToggle" aria-pressed="false">⚡ TURBO OFF</button></div>
+  <button id="autoSpinBtn" hidden aria-hidden="true" tabindex="-1">VOLTAS AUTO</button>
+  <div class="autoMeter" id="autoMeter" hidden aria-hidden="true"><div class="autoMeterText" id="autoInfo"></div><div class="autoMeterTrack"><span id="autoProgress"></span></div></div>
+  <button id="normalBtn" hidden aria-hidden="true" tabindex="-1">NORMAL</button>
+ </div>
+</div>
+<div class="orientationNote">Para o formato 16:9, roda o iPhone na horizontal.</div>
+<div class="foot">15 linhas • 3 SCATTER = 15 free spins • WILD ×2 • Cofre mágico de moedas • Apostas fixas nos bónus • Prémios limitados pelo cofre • Só créditos virtuais</div></main>
+<div class="modal" id="startModal"><div class="dialog"><h2 id="depositTitle">✦ Bem-vindo ao Jardim Mágico ✦</h2><p id="depositInstructions">Escolhe os créditos fictícios com que queres começar esta sessão.</p><div class="choices" id="choices"><button data-value="10">10</button><button data-value="20">20</button><button class="selected" data-value="50">50</button><button data-value="100">100</button><button data-value="200">200</button><button data-value="500">500</button></div><input class="creditsInput" type="number" min="1" max="100000" value="50" id="openingCredits" inputmode="decimal"><p id="depositConfirmPreview" class="depositConfirmPreview"></p><div class="modalActions"><button id="cancelDeposit" type="button" class="modalBtn">CANCELAR</button><button id="startBtn" type="button" class="modalBtn">INICIAR JOGO</button></div><p style="font-size:11px">O valor representa apenas créditos virtuais para brincar.</p></div></div>
+<div class="modal" id="depositLoginModal"><div class="dialog" role="dialog" aria-label="Autorização do depósito">
+ <h2>🔐 Depósito protegido</h2><p id="depositLoginInfo">Introduz a palavra-passe para escolher o valor do depósito em créditos fictícios.</p>
+ <input id="depositPassword" class="creditsInput" type="password" inputmode="numeric" autocomplete="off" placeholder="Palavra-passe" maxlength="32">
+ <p id="depositError" aria-live="polite" class="loginError"></p>
+ <div class="modalActions"><button type="button" id="depositLoginCancel" class="modalBtn">CANCELAR</button><button type="button" id="depositLoginSubmit" class="modalBtn">ENTRAR</button></div>
+ </div></div>
+<div class="modal" id="freeStartModal" role="dialog" aria-modal="true" aria-labelledby="freeStartTitle"><div class="dialog freeStartDialog"><div class="freeStartSparkles">✦ ✨ ✦</div><h2 id="freeStartTitle">15 FREE SPINS!</h2><p>Conseguiste 3 SCATTER! As jogadas grátis são automáticas e a aposta fica fixa durante todo o bónus.</p><div class="freeStartCount"><span id="freeStartCount">15</span><small>VOLTAS GRÁTIS</small></div><button id="freeStartBtn" type="button" class="modalBtn">▶ INICIAR FREE SPINS</button></div></div>
+<div class="modal" id="buyModal"><div class="dialog"><h2>✨ Comprar Bónus</h2><p>Escolhe uma das duas aventuras. Os custos são calculados pela aposta e debitados apenas em créditos fictícios.</p><div class="buyOptions"><button class="buyOption" id="buyHoldChoice"><strong>🪙 HOLD & WIN</strong><span>Grelha 8×8 • 3 tentativas • 4 cristais</span><em id="buyHoldPrice">20,00 €</em></button><button class="buyOption" id="buyFreeChoice"><strong>🌟 FREE SPINS</strong><span>15 rodadas • mais multiplicadores</span><em id="buyFreePrice">4,00 €</em></button></div><p id="buyInfo" style="font-size:12px"></p><button class="modalBtn" id="closeBuy">FECHAR</button></div></div>
+<div class="modal" id="bonusModal"><div class="dialog bonusDialog"><h2>🪙 HOLD &amp; WIN 5×5</h2><p>As moedas, os multiplicadores dourados e os cristais ficam fixos. Cada símbolo novo repõe as <b>3 tentativas</b>; sem novos símbolos em 3 tentativas, recolhes o prémio.</p><div class="bonusStats"><div>TENTATIVAS<strong id="bonusAttempts">3</strong></div><div>TOTAL MOEDAS<strong id="bonusSum">0,00 €</strong></div></div><div class="gemCounters" id="gemCounters"></div><div class="bonusGrid" id="bonusGrid" aria-label="Grelha 5 colunas por 5 linhas"></div><div class="bonusHelpLine">🪙 Moedas fixas · ✨ Moedas douradas multiplicam · 💎 4 cristais iguais = JACKPOT</div><div class="bonusMultiplier"><b>CAIXA DE MULTIPLICADORES: </b><span id="bonusFactors">×1</span></div><div class="bonusInfoFormula" id="bonusFormula">MOEDAS × MULTIPLICADORES + JACKPOT</div><div class="bonusNote" id="bonusNote">A aventura começou!</div><button class="modalBtn" id="bonusSpin">RODAR BÓNUS</button></div></div>
+<div class="modal" id="payModal"><div class="dialog"><h2>TABELA DE PAGAMENTOS</h2><p>Prémios para 3, 4 e 5 símbolos iguais da esquerda para a direita, em 15 linhas fixas. A aposta total divide-se pelas 15 linhas. Valores aproximados para a aposta escolhida.</p><div class="payGrid" id="payGrid"></div><h3 class="lineTableTitle">15 LINHAS DE PRÉMIO</h3><p class="lineLegend">Cada percurso é avaliado da esquerda para a direita · 5 cilindros × 3 posições</p><div class="payLinesGrid" id="payLinesGrid" aria-label="Desenhos das 15 linhas de vitória"></div><div class="pay5000"><strong>ATÉ 5000× A APOSTA</strong><div>Máximo teórico por rodada ou bónus, incluindo multiplicadores. Não é um prémio garantido: a vitória está sujeita aos resultados e ao saldo disponível no cofre virtual.</div></div><p>WILD substitui símbolos normais e multiplica as linhas vencedoras por 2× por WILD (até 8×). 3 SCATTER dão 15 free spins. Moedas alimentam o cofre. O Hold & Win 5×5 tem 3 tentativas, renovadas por cada símbolo novo; termina após 3 falhas ou 4 cristais iguais. Mesmo sem jackpot, as moedas e multiplicadores são pagos. Free spins podem ser comprados por 20× a aposta; o Hold & Win por 100×.</p><button class="modalBtn" id="closePay">FECHAR</button></div></div>
+<section id="reportViewer" class="reportViewer" role="dialog" aria-modal="true" aria-label="Relatório do operador" hidden>
+ <div class="reportViewerBar"><div><strong>RELATÓRIO DE CAIXA</strong><small>Movimentos de depósitos, levantamentos e cofre • créditos fictícios</small></div>
+ <div class="reportViewerActions"><button type="button" id="reportViewSave">Guardar HTML</button><button type="button" id="reportViewPrint">Imprimir / PDF</button><button type="button" id="reportViewClose">Fechar ×</button></div></div>
+ <iframe id="reportFrame" class="reportFrame" title="Relatório de caixa em formato de folha" referrerpolicy="no-referrer"></iframe>
+</section>
+<div class="modal" id="reportModal"><div class="dialog"><h2>Relatório do operador</h2><p>Contabilidade fictícia das sessões neste navegador.</p><div id="reportText" style="font-size:14px;line-height:1.85"></div><div class="modalActions"><button class="modalBtn" id="exportCsv">GUARDAR HTML</button><button class="modalBtn" id="printReport">IMPRIMIR / PDF</button><button class="modalBtn" id="closeReport">FECHAR</button></div></div></div>
+<div class="modal" id="withdrawModal"><div class="dialog"><h2>Levantamento virtual</h2><p id="withdrawInfo"></p><input class="creditsInput" type="number" min="0.01" step="0.01" id="withdrawAmount" inputmode="decimal" placeholder="Valor a levantar"><p style="font-size:11px">O valor levantado é descontado do saldo atual da sessão.</p><input id="withdrawPassword" class="creditsInput" type="password" inputmode="numeric" autocomplete="off" maxlength="32" placeholder="Palavra-passe do depósito (obrigatória)"><p id="withdrawError" class="loginError" aria-live="polite"></p><div class="modalActions"><button class="modalBtn" id="cancelWithdraw">CANCELAR</button><button class="modalBtn" id="confirmWithdraw">CONFIRMAR LEVANTAMENTO</button></div></div></div><div class="modal" id="autoModal"><div class="dialog"><h2>Voltas automáticas</h2><p>Escolhe 5, 10, 20, 30, 50, 70 ou 100 rodadas. Durante uma rodada podes parar as próximas.</p><div class="choices" id="autoChoices"><button data-auto="5">5</button><button data-auto="10">10</button><button data-auto="20">20</button><button data-auto="30">30</button><button data-auto="50">50</button><button data-auto="70">70</button><button data-auto="100">100</button></div><div class="modalActions"><button class="modalBtn" id="cancelAuto">CANCELAR</button><button class="modalBtn" id="stopAuto">PARAR AUTO</button></div></div></div>
+
+<div class="modal" id="resetModal"><div class="dialog" role="dialog" aria-label="Confirmação de reposição dos contadores"><h2>REPOR MÁQUINA A ZERO</h2><p>Esta operação elimina os créditos, os movimentos de caixa e os relatórios deste navegador. Exporta primeiro os teus relatórios.</p><input id="resetPassword" class="creditsInput" type="password" inputmode="numeric" autocomplete="off" placeholder="Password de reposição" maxlength="32"><label class="resetConfirm"><input id="resetAcknowledge" type="checkbox"> Confirmo que pretendo eliminar todos os contadores e saldos fictícios.</label><p class="loginError" id="resetError" aria-live="polite"></p><div class="modalActions"><button class="modalBtn" id="resetCancel" type="button">CANCELAR</button><button class="modalBtn" id="resetConfirm" type="button">ZERAR MÁQUINA</button></div></div></div>
+<div class="modal" id="adminLoginModal"><div class="dialog adminLoginDialog" role="dialog" aria-label="Autenticação do operador">
+ <h2>🔒 Acesso do operador</h2><p>Introduz a palavra-passe para abrir o painel reservado.</p>
+ <input id="adminPassword" class="creditsInput" type="password" autocomplete="off" inputmode="numeric" placeholder="Palavra-passe" maxlength="50">
+ <p id="adminLoginError" aria-live="polite" class="loginError"></p>
+ <div class="adminInline"><button class="modalBtn secondary" type="button" id="adminLoginCancel">CANCELAR</button><button class="modalBtn" type="button" id="adminLoginSubmit">ENTRAR</button></div>
+ </div></div>
+<section id="adminPage" class="adminPage" aria-label="Área privada de administração" hidden>
+ <div class="adminRoot"><header class="adminHeader"><div><small>JARDIM MÁGICO • CONFIGURAÇÃO</small><h1>Administração</h1></div><button id="adminExit" type="button">FECHAR <span aria-hidden="true">×</span></button></header>
+ <div class="adminContent">
+  <div class="adminPanel adminCashPanel">
+    <h2>💰 Caixa da máquina</h2>
+    <p>Resumo dos depósitos e levantamentos dos jogadores e da Banca neste navegador. Tudo em créditos fictícios.</p>
+    <div class="cashDashboard" aria-label="Entradas, levantamentos e valor em caixa">
+      <div class="cashTile incoming"><span>DEPOSITADO</span><strong id="adminCashIn">0,00 €</strong><small>Saldo inicial + depósitos adicionais</small></div>
+      <div class="cashTile outgoing"><span>LEVANTADO</span><strong id="adminCashOut">0,00 €</strong><small>Jogadores + Banca</small></div>
+      <div class="cashTile remaining"><span>NO COFRE</span><strong id="adminCashBalance">0,00 €</strong><small>Depositado − levantamentos dos jogadores e da Banca</small></div>
+    </div>
+    <p class="cashNote">O cofre contabilístico contabiliza os depósitos menos os levantamentos dos jogadores e do banqueiro. A reserva protegida não pode ser levantada pela Banca.</p>
+  </div>
+
+  <div class="adminPanel"><h2>Reserva da máquina e Banca</h2>
+   <p>Define a parcela de cada aposta que fica fora do cofre de prémios (1% a 70%); aplica-se às próximas apostas. Dessa parcela, 25% ficam protegidos na máquina e até 75% podem ficar disponíveis ao banqueiro, sempre respeitando os saldos dos jogadores.</p>
+   <div class="adminRtpValue" id="adminProfitPreview">4,00%</div>
+   <input id="adminProfitSlider" type="range" min="1" max="70" step="0.01" value="4" aria-label="Percentagem de cada aposta reservada pela máquina">
+   <div class="adminRtpForm"><label for="adminProfitInput">Parcela reservada por aposta (%)</label><input id="adminProfitInput" type="number" min="1" max="70" step="0.01" inputmode="decimal" value="4"><button id="adminSaveProfit" type="button">GUARDAR RESERVA</button></div>
+   <div id="adminProfitStatus" class="adminStatus" aria-live="polite"></div>
+   <div class="adminMeta"><div><span>Parcela configurada</span><strong id="adminProfitSet">4,00%</strong></div><div><span>Parcela sessão atual</span><strong id="adminProfitActive">4,00%</strong></div><div><span>Fundo de prémios (próxima sessão)</span><strong id="adminEffectiveRtp">96,00%</strong></div></div>
+    <div class="bankerFunds"><div><span>RESERVADO NO TOTAL</span><strong id="adminReserveTotal">0,00 €</strong></div><div><span>PROTEGIDO NA MÁQUINA</span><strong id="adminReserveProtected">0,00 €</strong></div><div><span>BANQUEIRO PODE LEVANTAR</span><strong id="adminReserveWithdrawable">0,00 €</strong></div></div>
+    <p>O levantamento da Banca usa apenas fundos livres da reserva do operador. O saldo dos jogadores e o cofre de prémios não são debitados.</p>
+    <div class="bankerPayoutForm"><label>Montante a levantar (créditos virtuais)<input id="bankerWithdrawAmount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00"></label><label>Palavra-passe do depósito<input id="bankerWithdrawPassword" type="password" inputmode="numeric" maxlength="32" autocomplete="off" placeholder="Obrigatória"></label><button id="bankerWithdrawButton" type="button">LEVANTAR</button></div>
+    <p id="bankerWithdrawStatus" class="adminStatus" aria-live="polite"></p>
+  </div>
+  <div class="adminPanel"><h2>Relatório do operador</h2><p>Depósitos, levantamentos e valor em cofre, apresentados numa tabela. O HTML inclui a opção de imprimir ou guardar em PDF.</p>
+   <div id="adminReportSummary" class="adminReportSummary"></div><div class="adminInline"><button id="adminFullReport" type="button">ABRIR RELATÓRIO</button><button id="adminExportCsv" type="button">GUARDAR HTML</button><button id="adminPrintReport" type="button" class="secondary">IMPRIMIR / PDF</button></div>
+  </div>
+  <div class="adminPanel"><h2>Reposição de contadores</h2><p>Apaga todos os registos de créditos fictícios, depósitos, levantamentos, saldos e contadores deste navegador. Exporta o relatório antes: não é possível recuperar o histórico depois.</p><div class="adminInline"><button id="adminResetOpen" type="button" class="secondary">LIMPAR CONTADORES / MÁQUINA A ZERO</button></div></div>
+  <div class="adminPanel"><h2>Verificação matemática</h2><p id="adminMathInfo">A parcela de prémios depende da reserva configurada, sem controlo manual do RTP. O retorno observado requer simulações de validação.</p>
+   <div class="adminMathGrid"><div><span>Jogo base</span><b>simulação de referência</b></div><div><span>Free Spins</span><b>15 rodadas · custo 20×</b></div><div><span>Hold &amp; Win</span><b>5×5 · custo 100×</b></div></div>
+   <p class="adminCaution">⚠️ Esta é uma simulação de cofre contabilístico, não uma certificação matemática ou de casino. A palavra-passe está no código local e não constitui segurança para operações com dinheiro real.</p>
+  </div>
+ </div></div>
+</section>
+<div id="vaultFlight" aria-hidden="true"></div><div id="featureIntro" aria-hidden="true"><div class="featureStars">✦ ✨ ✦</div><div id="featureTitle" class="featureTitle">FREE SPINS</div><div id="featureSub" class="featureSub">15 JOGADAS GRÁTIS!</div></div>
+<div class="bigWin" id="bigWin"><div id="bigFactor" class="equation">×5</div><h2 id="bigTitle">BIG WIN!</h2><div class="bigAmount" id="bigAmount">0,00 €</div><div class="equation" id="bigMath"></div><button id="closeBig">CONTINUAR</button></div>
+<audio id="bgMusic" src="assets/sons/55f774b30cb38f8d3d.mp3" loop preload="auto" playsinline aria-label="Música ambiente do Jardim Mágico"></audio>
+<script src="js/jogo.js"></script><script src="js/jogo-2.js"></script>
+<link rel="stylesheet" href="css/estilo-4.css">
+<script id="v38-fit-script" src="js/jogo-3.js"></script>
+<script id="v39-bonus-script" src="js/jogo-4.js"></script></body></html>

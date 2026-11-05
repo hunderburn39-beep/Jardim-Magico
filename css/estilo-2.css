@@ -1,0 +1,74 @@
+
+/* V38 — ecrã integral adaptativo: o jogo nunca aumenta a altura da página. */
+:root{--jm-visible-height:100dvh}
+html{width:100%!important;height:100%!important;overflow:hidden!important;overscroll-behavior:none}
+body{position:fixed!important;inset:0!important;min-height:0!important;height:var(--jm-visible-height)!important;overflow:hidden!important;overscroll-behavior:none}
+body > .game,body > .game[data-layout="wide"]{position:absolute!important;top:0;left:0;box-sizing:border-box!important;min-height:0!important;max-height:none!important;height:auto!important;width:100%;max-width:none!important;margin:0!important;transform-origin:0 0!important;aspect-ratio:auto!important;will-change:transform;padding:calc(env(safe-area-inset-top) + 4px) max(6px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 4px) max(6px,env(safe-area-inset-left))}
+.game .orientationNote{display:none!important}
+.game .foot{display:none!important}
+/* Vertical 9:16 — menor altura real, controles continuam todos visíveis. */
+.game[data-layout="portrait"]{display:block!important}
+.game[data-layout="portrait"] .titleArt{height:clamp(48px,9.5dvh,82px)!important}
+.game[data-layout="portrait"] .logoLoop{margin:-2px auto 0}
+.game[data-layout="portrait"] .jackpots{margin-bottom:5px;gap:4px}
+.game[data-layout="portrait"] .jackpot{padding:2px 1px;border-width:1px}
+.game[data-layout="portrait"] .jackpot b{font-size:clamp(9px,2.4vw,13px)}
+.game[data-layout="portrait"] .jackpot strong{font-size:clamp(12px,3.1vw,18px)}
+.game[data-layout="portrait"] .reelFrame{padding:3px 4px 6px;border-width:2px;border-radius:15px}
+.game[data-layout="portrait"] .shelf{min-height:32px;padding:1px 5px 2px;gap:4px}
+.game[data-layout="portrait"] .orbPill{width:clamp(25px,5.7vw,40px);height:clamp(25px,5.7vw,40px)}
+.game[data-layout="portrait"] .underStage{margin-top:5px;min-height:12px}
+.game[data-layout="portrait"] .controlStats{gap:4px;margin:3px 0 2px}
+.game[data-layout="portrait"] .v37LeftStats,.game[data-layout="portrait"] .v37RightStats{gap:4px}
+.game[data-layout="portrait"] .v37LeftStats .hudPanel,.game[data-layout="portrait"] .v37RightStats .vaultBtn{min-height:0!important}
+.game[data-layout="portrait"] .v37LeftStats .miniBalance{height:45px}
+.game[data-layout="portrait"] .v37LeftStats .statBet{height:43px}
+.game[data-layout="portrait"] .v37RightStats .vaultMystery{height:53px;flex:0 0 auto}
+.game[data-layout="portrait"] .v37RightStats .v37Buy{min-height:32px;padding:3px 2px}
+.game[data-layout="portrait"] .controlStats .statPrize{min-height:0}
+.game[data-layout="portrait"] .v37SpinDeck{margin:1px 0 2px;gap:3px;grid-template-columns:minmax(0,1fr) minmax(110px,1.25fr) minmax(0,1fr)}
+.game[data-layout="portrait"] .v37SpinDeck .spinHalo{max-width:105px!important}
+.game[data-layout="portrait"] .spinBtn{max-width:105px!important;border-width:3px}
+.game[data-layout="portrait"] .spinBtn .cycle{font-size:clamp(29px,6vw,40px)}
+.game[data-layout="portrait"] .v37Dock{gap:2px}
+.game[data-layout="portrait"] .v37Turbo .turboToggle{min-height:33px}
+/* Horizontal 16:9 — bancada à direita, cilindros à esquerda. */
+.game[data-layout="wide"]{display:grid!important;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);grid-template-rows:auto auto auto auto auto;grid-template-areas:'jm-top jm-top' 'jm-logo jm-dock' 'jm-jack jm-dock' 'jm-reels jm-dock' 'jm-under jm-dock';column-gap:clamp(5px,.9vw,14px);row-gap:2px;align-content:start;align-items:start}
+.game[data-layout="wide"] .topbar{grid-area:jm-top;min-width:0}
+.game[data-layout="wide"] .logoLoop{grid-area:jm-logo;width:min(92%,520px);max-width:100%;margin:0 auto}
+.game[data-layout="wide"] .titleArt{height:clamp(30px,8.2dvh,62px)!important}
+.game[data-layout="wide"] .logoSpinLetters span{width:clamp(12px,1.9vw,20px);height:clamp(12px,1.9vw,20px)}
+.game[data-layout="wide"] .jackpots{grid-area:jm-jack;width:100%;max-width:none;margin:0;gap:4px}
+.game[data-layout="wide"] .jackpot{padding:2px 1px;border-width:1px;border-radius:8px}
+.game[data-layout="wide"] .jackpot b{font-size:clamp(8px,1.3vw,14px)}
+.game[data-layout="wide"] .jackpot strong{font-size:clamp(11px,1.6vw,19px)}
+.game[data-layout="wide"] .reelFrame{grid-area:jm-reels;width:100%!important;max-width:none!important;margin:0!important;padding:3px 4px 5px;border-width:2px;border-radius:13px}
+.game[data-layout="wide"] .shelf{min-height:28px;padding:1px 4px;gap:3px}
+.game[data-layout="wide"] .orbPill{width:clamp(21px,3.1vw,38px);height:clamp(21px,3.1vw,38px);font-size:clamp(9px,1.6vw,14px)}
+.game[data-layout="wide"] .underStage{grid-area:jm-under;margin-top:3px;min-height:12px}
+.game[data-layout="wide"] .controlDock{grid-area:jm-dock;display:flex!important;flex-direction:column;justify-content:center;align-self:stretch;width:100%!important;max-width:none!important;min-width:0;margin:0!important;gap:3px}
+.game[data-layout="wide"] .controlStats{width:100%;gap:4px;margin:2px 0 3px}
+.game[data-layout="wide"] .v37LeftStats,.game[data-layout="wide"] .v37RightStats{gap:5px}
+.game[data-layout="wide"] .v37LeftStats .hudPanel,.game[data-layout="wide"] .v37RightStats .vaultBtn{min-height:0!important}
+.game[data-layout="wide"] .v37LeftStats .miniBalance{height:55px}
+.game[data-layout="wide"] .v37LeftStats .statBet{height:53px}
+.game[data-layout="wide"] .v37RightStats .vaultMystery{height:65px;flex:0 0 auto}
+.game[data-layout="wide"] .v37RightStats .v37Buy{min-height:39px;padding:4px 2px}
+.game[data-layout="wide"] .v37SpinDeck{width:100%;margin:2px 0;grid-template-columns:minmax(0,1fr) minmax(94px,1.2fr) minmax(0,1fr)}
+.game[data-layout="wide"] .v37SpinDeck .spinHalo{max-width:clamp(90px,13.5dvh,148px)!important}
+.game[data-layout="wide"] .spinBtn{max-width:clamp(90px,13.5dvh,148px)!important}
+.game[data-layout="wide"] .toptools .roundSmall{height:clamp(26px,6.8dvh,36px);min-width:clamp(26px,6.8dvh,36px)}
+.game[data-layout="wide"] .toptools .ratioButton{height:clamp(27px,6.8dvh,35px)}
+@media(max-height:510px) and (orientation:landscape){
+ .game[data-layout="wide"] .topbar .branding{font-size:9px}
+ .game[data-layout="wide"] .titleArt{height:clamp(29px,7dvh,47px)!important}
+ .game[data-layout="wide"] .shelf{min-height:25px}
+ .game[data-layout="wide"] .controlStats .hudPanel{padding:3px 2px}
+ .game[data-layout="wide"] .v37LeftStats .miniBalance{height:45px}
+ .game[data-layout="wide"] .v37LeftStats .statBet{height:43px}
+ .game[data-layout="wide"] .v37RightStats .vaultMystery{height:52px}
+ .game[data-layout="wide"] .v37RightStats .v37Buy{min-height:32px}
+}
+/* Qualquer janela emergente pode ter scroll INTERNO sem deslocar o jogo. */
+.modal .dialog,.bonusDialog{max-height:calc(var(--jm-visible-height) - 14px);overflow-y:auto;overscroll-behavior:contain}
+#adminPage{max-height:var(--jm-visible-height);overflow-y:auto}
