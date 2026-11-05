@@ -45,6 +45,9 @@
   }
   function unlock(){
     if(!enabled)return false;
+    // Desbloquear também o sintetizador de impactos no mesmo gesto do
+    // utilizador. Essencial no Safari/iPhone para ouvir pedras a pousar.
+    PREVIOUS?.unlock?.();
     try{
       build();
       if(!ctx)return false;
