@@ -549,10 +549,11 @@ function fillFreeSummary(node){
  const factor=freeMultiplierBalls.length?freeMultiplierBalls.reduce((sum,x)=>sum+x,0):1;
  node.querySelector('.jm52FreeHeading').textContent='FREE SPINS CONCLUÍDAS';
  node.querySelector('.jm54FreeFactor').textContent='MULTIPLICADORES ×'+factor;
- node.querySelector('.jm54FreeEquation').textContent=money(freeBaseTotal)+' × '+factor;
+ const raw=freeBaseTotal*factor,eligible=Math.min(raw,freeBet*MAX_WIN_MULT);
+ node.querySelector('.jm54FreeEquation').textContent=money(freeBaseTotal)+' × '+factor+' = '+money(raw);
+ node.querySelector('.jm54FreeLimit').textContent=raw>eligible?'TETO 5000×: '+money(eligible):freeBonusTotal<eligible?'PAGO ATÉ AO SALDO DO COFRE':'';
  node.querySelector('.jm52FreeValue').textContent=money(freeBonusTotal);
  node.querySelector('.jm52FreeCount').textContent=freeSummaryCount+' JOGADAS GRÁTIS';
- node.querySelector('.jm54FreeLimit').textContent='';
  node.querySelector('.jm52FreeHint').textContent='CARREGA EM GIRO PARA CONTINUAR';
  node.classList.remove('jm54Calculating');node.classList.add('show');
 }
@@ -607,8 +608,8 @@ async function settleFreeSpins(){
  if(paid>0)log('premio_freespins_final',paid,'Free spins: base '+money(freeBaseTotal)+' ×'+factor+'; pedido '+money(requested)+'; pago '+money(paid));
  if(paid<requested)log('limite_cofre_freespins',0,'Limite de cofre aplicado ao total: '+money(requested)+' → '+money(paid));
  fillFreeSummary(node);
- node.querySelector('.jm54FreeLimit').textContent=paid<requested?'VALOR LIMITADO PELO COFRE DISPONÍVEL':'';
- node.querySelector('.jm54FreeEquation').textContent=money(freeBaseTotal)+' × '+factor+' = '+money(requested);
+ node.querySelector('.jm54FreeLimit').textContent=paid<requested?'VALOR LIMITADO PELO COFRE: '+money(paid):(freeBaseTotal*factor>requested?'TETO 5000×: '+money(requested):'');
+ node.querySelector('.jm54FreeEquation').textContent=money(freeBaseTotal)+' × '+factor+' = '+money(freeBaseTotal*factor);
  audioFX(paid?'big':'win');
  notice('✦ FREE SPINS: '+money(freeBonusTotal)+' · CARREGA EM GIRO PARA CONTINUAR');
  update();save();
