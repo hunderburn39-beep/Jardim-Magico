@@ -1,10 +1,10 @@
-<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#201534"><title>Jardim Mágico V43 — Bosque Encantado</title>
+<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#201534"><title>Jardim Mágico V44 — Roleta Hold &amp; Win</title>
 <link rel="stylesheet" href="css/estilo.css">
 <link rel="stylesheet" href="css/estilo-2.css?v=43">
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@8.11.0/dist/pixi.min.js" async></script>
 </head><body>
-<main class="game"><div class="topbar"><span class="branding">✦ AVENTURA FANTÁSTICA ✦</span><div class="toptools"><button class="roundSmall" id="btnHome" aria-label="Nova sessão">⌂</button><button class="roundSmall" id="btnMusic" aria-label="Desligar música de fundo" title="Música de fundo">♫</button><button class="roundSmall" id="btnSound" aria-label="Desligar efeitos sonoros" title="Efeitos sonoros">🔊</button><button class="roundSmall" id="depositBtn" aria-label="Depósito" title="Depósito">✚</button><button class="roundSmall" id="withdrawBtn" aria-label="Levantamento" title="Levantamento">⇩</button><button class="roundSmall" id="btnPay" aria-label="Tabela de pagamentos">ⓘ</button></div></div>
-<div class="logoLoop"><div class="logoSpinLetters" aria-hidden="true"><span>J</span><span>A</span><span>R</span></div><img class="titleArt" src="assets/imagens/a8da072aa5d29f5e23.webp" alt="Jardim Mágico" id="adminHotspot" draggable="false" style="user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:default"></div>
+<main class="game"><div class="topbar"><div class="toptools"><button class="roundSmall" id="btnHome" aria-label="Nova sessão">⌂</button><button class="roundSmall" id="btnMusic" aria-label="Desligar música de fundo" title="Música de fundo">♫</button><button class="roundSmall" id="btnSound" aria-label="Desligar efeitos sonoros" title="Efeitos sonoros">🔊</button><button class="roundSmall" id="depositBtn" aria-label="Depósito" title="Depósito">✚</button><button class="roundSmall" id="withdrawBtn" aria-label="Levantamento" title="Levantamento">⇩</button><button class="roundSmall" id="btnPay" aria-label="Tabela de pagamentos">ⓘ</button></div></div>
+<div class="logoLoop"><div class="logoSpinLetters" aria-hidden="true"><span>J</span><span>A</span><span>R</span></div><img class="titleArt" src="assets/imagens/titulo-transparente-v44.svg" alt="Jardim Mágico" id="adminHotspot" draggable="false" style="user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:default"></div>
 <div class="jackpots" aria-label="Jackpots progressivos, valores atualmente elegíveis para a aposta escolhida"><div class="jackpot max"><b>ULTRA</b><strong id="jpULTRA">0,00 €</strong></div><div class="jackpot"><b>MAX</b><strong id="jpMAX">0,00 €</strong></div><div class="jackpot"><b>MED</b><strong id="jpMED">0,00 €</strong></div><div class="jackpot"><b>MIN</b><strong id="jpMIN">0,00 €</strong></div></div>
 <div class="reelFrame"><div class="shelf"><div class="shelfTag">MULTIPLICADORES<br>ACUMULADOS</div><div class="orbs" id="orbs"><span style="opacity:.6">✧ ✧ ✧</span></div><div class="shelfTotal" id="shelfTotal">×1</div></div><div class="stageWrap" id="stageWrap"><div class="gardenWorld" aria-hidden="true">
 <svg class="forestBackdrop" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 535" preserveAspectRatio="xMidYMid slice">
@@ -62,7 +62,7 @@
 <div class="underStage">
   <div class="notice" id="notice">Escolhe o saldo para começar esta aventura.</div>
   <div class="freeTag" id="freeTag">15 FREE SPINS</div>
-  <button class="vaultBtn" id="vaultBtn" style="display:none!important" aria-hidden="true" tabindex="-1"><small>COFRE MÁGICO</small><span class="vaultFace">💰</span><strong id="vaultCount">0 MOEDAS</strong><div class="vaultMeter"><span id="vaultFill"></span></div></button>
+  <button class="vaultBtn" id="vaultBtn" style="display:none!important" aria-hidden="true" tabindex="-1"><small>COFRE MÁGICO</small><span class="vaultFace">🐖</span><strong id="vaultCount">0 MOEDAS</strong><div class="vaultMeter"><span id="vaultFill"></span></div></button>
 </div>
 <div class="controlDock v37Dock">
  <div class="controlStats" aria-label="Estado e controlos do jogo">
@@ -72,7 +72,7 @@
   </div>
   <div class="hudPanel statPrize"><small>ÚLTIMO PRÉMIO</small><strong id="lastPrize">0,00 €</strong></div>
   <div class="v37RightStats">
-   <button type="button" class="vaultBtn vaultPremium vaultMystery" id="vaultBtnMobile" aria-label="Cofre mágico surpresa"><span class="vaultHalo" aria-hidden="true"></span><span class="vaultFace" id="vaultFace" aria-hidden="true">💰</span><span class="vaultSpark" aria-hidden="true">✦</span><strong id="vaultCountMobile" hidden aria-hidden="true">0 MOEDAS</strong><div class="vaultMeter" hidden aria-hidden="true"><span id="vaultFillMobile"></span></div></button>
+   <button type="button" class="vaultBtn vaultPremium vaultMystery" id="vaultBtnMobile" aria-label="Cofre mágico surpresa"><span class="vaultHalo" aria-hidden="true"></span><span class="vaultFace" id="vaultFace" aria-hidden="true"><img src="assets/imagens/porco-mealheiro-v44.svg" alt="" draggable="false"></span><span class="vaultSpark" aria-hidden="true">✦</span><strong id="vaultCountMobile" hidden aria-hidden="true">0 MOEDAS</strong><div class="vaultMeter" hidden aria-hidden="true"><span id="vaultFillMobile"></span></div></button>
    <button id="buyBonus" class="deckButton premium v37Buy">✦ COMPRAR BÓNUS</button>
   </div>
  </div>
@@ -155,5 +155,6 @@
 <script src="js/jogo.js"></script><script src="js/jogo-2.js?v=43"></script>
 <link rel="stylesheet" href="css/estilo-4.css">
 <link rel="stylesheet" href="css/estilo-5.css?v=43">
+<link rel="stylesheet" href="css/estilo-6.css?v=44">
 <script id="v38-fit-script" src="js/jogo-3.js"></script>
 <script id="v39-bonus-script" src="js/jogo-4.js"></script></body></html>
