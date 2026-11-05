@@ -225,8 +225,9 @@
         if(spinMult>0)state.bonusMult+=spinMult;
         // O acumulado só potencia rodadas com novo multiplicador vencedor.
         total=totalBase*(spinMult>0?Math.max(1,state.bonusMult):1);
-        state.bonusWon=Math.min(MAX_WIN_X*bet,state.bonusWon+total);
-        total=Math.min(total,MAX_WIN_X*bet-(state.bonusWon-total));
+        const remaining=Math.max(0,MAX_WIN_X*bet-state.bonusWon);
+        total=Math.min(total,remaining);
+        state.bonusWon=Math.round((state.bonusWon+total)*100)/100;
       }else{
         state.visibleMult=spinMult>0?spinMult:1;
         total=totalBase*state.visibleMult;
