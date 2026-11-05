@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V5.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V6.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -72,6 +72,7 @@
     turbo:false,sound:true,grid:[],currentWin:0,cascade:0
   };
   let ctx = null, holdTimer = null, longFired = false, modalOpen = false;
+  let landingTimers = [];
   const money = n => new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.max(0,n));
   const currentBet = () => BETS[state.betIndex];
   const pause = ms => new Promise(resolve=>setTimeout(resolve,ms));
@@ -127,6 +128,8 @@
     if(state.sound && window.TrovaoAudio) window.TrovaoAudio.play(kind,options);
   }
   function render(grid,options={}){
+    for(const timer of landingTimers)clearTimeout(timer);
+    landingTimers=[];
     el.board.textContent="";
     const fragment=document.createDocumentFragment();
     grid.forEach((symbol,index)=>{
@@ -159,11 +162,16 @@
     });
     el.board.appendChild(fragment);
     if(options.fallFrom||options.dropIds){
-      const landing=state.turbo?95:290;
+      // Som sincronizado com o contacto das pedras com a base da grelha:
+      // uma camada metálica e outra grave, com posição estéreo por coluna.
+      const landing=state.turbo?115:260;
       for(let col=0;col<COLS;col++){
-        // Timbres distintos conforme as colunas encaixam nos rolos.
-        window.setTimeout(()=>sfx("drop",{column:col,at:options.fallFrom?1:0}),
-          landing+col*(state.turbo?13:36));
+        const pos=col;
+        const when=landing+col*(state.turbo?24:48);
+        landingTimers.push(window.setTimeout(()=>{
+          sfx("drop",{column:pos,at:options.fallFrom?1:0,level:1.15});
+          sfx("land",{column:pos,at:options.fallFrom?1:0,level:1});
+        },when));
       }
     }
   }
@@ -193,13 +201,22 @@
     // Os raios do cenário reagem às combinações sem alterar os prémios.
     window.TrovaoScene?.reactToWin();
   }
-  function showPrizeFloat(amount){
+  function showPrizeFloat(amount,prizes=[]){
     if(amount<=0)return;
+    const existing=el.overlay.querySelectorAll(".prize-float");
+    if(existing.length>=2)existing[0].remove();
     const item=document.createElement("div");
     item.className="prize-float";
-    item.textContent="+"+money(amount);
+    item.appendChild(document.createTextNode("+"+money(amount)));
+    if(prizes.length){
+      const detail=document.createElement("small");
+      detail.textContent=prizes.map(p=>LABELS[p.symbol]+" ×"+p.count+" • "+money(p.amount)).join("  |  ");
+      item.appendChild(detail);
+    }
+    const lifetime=state.turbo?1250:2350;
+    item.style.setProperty("--prize-duration",lifetime+"ms");
     el.overlay.appendChild(item);
-    window.setTimeout(()=>item.remove(),state.turbo?380:950);
+    window.setTimeout(()=>item.remove(),lifetime+35);
   }
   function setMsg(t){el.msg.textContent=t}
   function setOverlay(text){
@@ -287,6 +304,7 @@
     else state.freeLeft--;
     state.cascade=0;state.visibleMult=1;
     state.grid=makeGrid();
+    window.TrovaoHistory?.startSpin({bet,bonus:bonusSpin,grid:state.grid});
     const previousIds=new Set(); // preenchimento inicial anima como queda
     state.grid.forEach(s=>previousIds.add(s.id));
     render(state.grid,{dropIds:previousIds});
@@ -313,10 +331,11 @@
       if(!wins.result.length||steps>=36)break; // limite de proteção contra ciclos excessivos
       steps++;state.cascade=steps;
       totalBase+=wins.pay;
+      window.TrovaoHistory?.recordWin(wins);
       render(state.grid,{matchKinds:wins.matched});
       const text=wins.result.map(w=>LABELS[w.symbol]+" ×"+w.count).join(" + ");
       setMsg("PRÉMIO! "+text+" • QUEDA "+steps+" • "+money(wins.pay));
-      showPrizeFloat(wins.pay);
+      showPrizeFloat(wins.pay,wins.result);
       if(spinMult>0&&steps===1)sfx("mult");
       refresh();
       await pause(state.turbo?105:280);
@@ -324,6 +343,8 @@
       await pause(state.turbo?165:400);
       const oldPositions=new Map(state.grid.map((s,index)=>[s.id,index]));
       state.grid=tumble(state.grid,wins.matched);
+      const bornIds=new Set(state.grid.filter(s=>!oldPositions.has(s.id)).map(s=>s.id));
+      window.TrovaoHistory?.recordFall(state.grid,bornIds);
       render(state.grid,{fallFrom:oldPositions});
       sfx("tumble");
       await pause(state.turbo?240:550);
@@ -350,6 +371,9 @@
       state.visibleMult=1;
       setMsg(bonusSpin?"A TROVOADA CONTINUA...":"SEM PRÉMIO • TENTA DE NOVO");
     }
+    window.TrovaoHistory?.endSpin({
+      total,scatterAward,mult:bonusSpin?(state.bonusMult||1):(state.visibleMult||1)
+    });
     if(bonusSpin&&retrigger){
       state.freeLeft+=5;setOverlay("+5 RODADAS GRÁTIS");
       sfx("scatter");await pause(state.turbo?250:900);setOverlay("");
