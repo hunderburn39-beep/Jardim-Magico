@@ -917,11 +917,46 @@ async function launchBonus(purchase=true,origin='compra'){
  modal('buyModal',false);soundStart();await showFeatureIntro('hold');modal('bonusModal',true);
  running=false;update();save();return true;
 }
+/* V44 — roleta visual independente em todas as casas livres do Hold & Win.
+   O resultado é calculado pelo jogo antes desta animação; a animação nunca sorteia prémios. */
+async function animateBonusRoulette(added){
+ const board=$('bonusGrid');
+ const squares=Array.from(board.querySelectorAll('.bonusCell.emptyCell'));
+ if(!squares.length)return;
+ const reduce=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+ if(reduce){await sleep(100);return;}
+ const quick=mode==='turbo',rounds=quick?10:16,frameDelay=quick?49:72;
+ const faces=['🪙','2×','💎','✦','🪙','5×','◆','10×','🪙','✧'];
+ const landed=new Set(added);
+ for(let tick=0;tick<rounds;tick++){
+  for(let i=0;i<squares.length;i++){
+   const cell=squares[i],cellIndex=Number(cell.dataset.cell);
+   const stopAt=rounds-5+(i%5);
+   if(tick>=stopAt){
+    if(!cell.classList.contains('jmRouletteStopped')){
+     cell.classList.remove('jmRouletteRolling');
+     cell.classList.add('jmRouletteStopped');
+     const prize=bonus.cells[cellIndex];
+     if(prize){
+      cell.classList.add('jmRouletteHit');
+      cell.innerHTML=bonusCellMarkup(prize);
+      if(landed.has(cellIndex))audioFX('lock');
+     }else cell.textContent='✧';
+    }
+   }else{
+    cell.classList.add('jmRouletteRolling');
+    cell.innerHTML='<span class="jmRouletteToken">'+faces[(tick+i*3)%faces.length]+'</span>';
+   }
+  }
+  await sleep(frameDelay);
+ }
+}
+
 async function bonusRespin(){
  if(!bonus||bonus.inMotion)return;
  if(bonus.finished){bonusFinish();return;}
  bonus.inMotion=true;renderBonus();$('bonusNote').textContent='A procurar moedas, multiplicadores e cristais…';
- await sleep(mode==='turbo'?200:540);bonus.rolls++;
+ bonus.rolls++;
  const empties=randomEmptyCells(),added=[],newFactors=[],newGems=[];
  // Cada tentativa pode falhar. Não existe jackpot atribuído artificialmente.
  let number=0;
@@ -934,8 +969,8 @@ async function bonusRespin(){
  if(!bonus.finished&&(!empties.length||bonus.left===0)){
   bonus.finished=true;bonus.endReason=!empties.length?'completo':'tentativas';
  }
+ await animateBonusRoulette(added);
  renderBonus(added);
- if(added.length){added.forEach((_,i)=>setTimeout(()=>audioFX('lock'),i*105));}
  if(newFactors.length||newGems.length){await Promise.all([...newFactors.map(([idx,v])=>flyFactorToBox(idx,v)),...newGems.map(([idx,type])=>flyGemToCounter(idx,type))]);}
  if(added.length){audioFX('coin');}
  bonus.inMotion=false;renderBonus(added);
