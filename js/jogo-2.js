@@ -137,7 +137,7 @@ function soundReelLanding(){
 
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,vaultCoins,musicEnabled,musicVolume,rtpConfig,profitPercent,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,progressivePools,progressiveCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
-function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;vaultCoins=Math.max(0,Number(data.vaultCoins)||0);bonus=([25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(0,Math.min(70,Number(data.profitPercent))):4;prizePool=Math.max(0,Math.floor(Number(data.prizePool)||0));operatorReserve=Math.max(0,Math.floor(Number(data.operatorReserve)||0));protectedReserve=Math.min(operatorReserve,Math.max(0,Math.floor(Number(data.protectedReserve??(operatorReserve*PROTECTED_SHARE)))));protectedCarry=Math.max(0,Number(data.protectedCarry)||0);ownerWithdrawn=Math.max(0,Math.floor(Number(data.ownerWithdrawn)||0));riskReserve=Math.max(0,Math.floor(Number(data.riskReserve)||0));ownerCarry=Math.max(0,Number(data.ownerCarry)||0);poolCarry=Math.max(0,Number(data.poolCarry)||0);
+function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;vaultCoins=Math.max(0,Number(data.vaultCoins)||0);bonus=([16,25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(0,Math.min(70,Number(data.profitPercent))):4;prizePool=Math.max(0,Math.floor(Number(data.prizePool)||0));operatorReserve=Math.max(0,Math.floor(Number(data.operatorReserve)||0));protectedReserve=Math.min(operatorReserve,Math.max(0,Math.floor(Number(data.protectedReserve??(operatorReserve*PROTECTED_SHARE)))));protectedCarry=Math.max(0,Number(data.protectedCarry)||0);ownerWithdrawn=Math.max(0,Math.floor(Number(data.ownerWithdrawn)||0));riskReserve=Math.max(0,Math.floor(Number(data.riskReserve)||0));ownerCarry=Math.max(0,Number(data.ownerCarry)||0);poolCarry=Math.max(0,Number(data.poolCarry)||0);
 for(const type of Object.keys(JACKPOTS)){
  progressivePools[type]=Math.max(0,Math.floor(Number(data.progressivePools?.[type])||0));
  progressiveCarry[type]=Math.max(0,Number(data.progressiveCarry?.[type])||0);
@@ -1003,8 +1003,8 @@ async function doRound(){
 }
 
 
-// Hold & Win V17: grelha 8x8, três tentativas, sem jackpot garantido.
-const BONUS_SIDE=5,BONUS_CELLS=BONUS_SIDE*BONUS_SIDE;
+// Hold & Win V51: 4×4 = 16 casas. Bónus antigos 5×5 / 8×8 guardados podem terminar sem perda de peças.
+const BONUS_SIDE=4,BONUS_CELLS=BONUS_SIDE*BONUS_SIDE;
 const BONUS_FACTORS=[2,3,5,10,20,50,100,1000];
 function bonusFactorTotal(){return bonus?.factors.length?bonus.factors.reduce((a,b)=>a+b,0):1;}
 function randomEmptyCells(){const list=[];for(let i=0;i<bonus.cells.length;i++)if(!bonus.cells[i])list.push(i);for(let i=list.length-1;i>0;i--){const j=R(i+1);[list[i],list[j]]=[list[j],list[i]];}return list;}
@@ -1026,7 +1026,7 @@ function renderBonus(newIndices=[]){
  $('bonusSum').textContent=money(bonus.coinsTotal);
  gemProgress();
  const newer=new Set(newIndices),frag=document.createDocumentFragment();
- $('bonusGrid').style.gridTemplateColumns='repeat('+(bonus.cells.length===64?8:5)+',minmax(0,1fr))';
+ $('bonusGrid').style.gridTemplateColumns='repeat('+(bonus.cells.length===64?8:bonus.cells.length===25?5:4)+',minmax(0,1fr))';
  for(let i=0;i<bonus.cells.length;i++){
   const c=bonus.cells[i],el=document.createElement('div');
   el.className='bonusCell '+(c?(c.kind==='coin'?'coinCell':c.kind==='factor'?'factorCell':'gemCell'):'emptyCell')+(newer.has(i)?' newItem':'');
@@ -1075,8 +1075,8 @@ async function launchBonus(purchase=true,origin='compra'){
  if(!session||running||bonus)return false;
  const cost=BETS[betIdx]*100;if(purchase&&balance<cost)return false;
  running=true;
- if(purchase){balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;log('compra_hold_win',-cost,'Hold & Win 5×5 — 100× aposta');}
- else{session.bonuses++;log('ativacao_cofre',0,'Hold & Win 5×5 ativado pelo cofre mágico');}
+ if(purchase){balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;log('compra_hold_win',-cost,'Hold & Win 4×4 — 100× aposta');}
+ else{session.bonuses++;log('ativacao_cofre',0,'Hold & Win 4×4 ativado pelo cofre mágico');}
  bonus={left:3,coinsTotal:0,cells:Array(BONUS_CELLS).fill(null),factors:[],gems:{ULTRA:0,MAX:0,MED:0,MIN:0},jackpot:null,focus:pick(Object.keys(JACKPOTS)),finished:false,endReason:null,inMotion:false,stakeBet:BETS[betIdx],origin,rolls:0};
  const spots=randomEmptyCells();
  for(let i=0;i<7;i++)addBonusCoin(spots[i],bonus.stakeBet*pick([1,2,2,3,5,8,10]));
@@ -1189,7 +1189,7 @@ async function bonusRespin(){
  }
  bonus.left=added.length?3:Math.max(0,bonus.left-1);
  if(bonus.cells.every(Boolean)){
-  bonus.finished=true;bonus.endReason='completo'; // A grelha 5×5 completa ativa a roleta mesmo no último respin.
+  bonus.finished=true;bonus.endReason='completo'; // A grelha completa (16 casas para bónus novos) ativa a roleta mesmo no último respin.
  }else if(!bonus.finished&&bonus.left===0){
   bonus.finished=true;bonus.endReason='tentativas';
  }
