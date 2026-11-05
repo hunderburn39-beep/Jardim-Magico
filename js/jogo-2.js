@@ -125,6 +125,8 @@ let transitions=Array(5).fill(null),cascades=Array(5).fill(null),dropItems=[],bu
 const claimedMultiplierCells=new Set(); // V55: recolhidos não permanecem visíveis nos rolos
 let shelf=[],winRound=0,pixi=null,pixiSprites=[],nativeAssets={},nativeCtx=$('reelCanvas').getContext('2d'),tickerRunning=false,t0=performance.now();
 let audioCtx=null, fxMaster=null, lastSchoolBellAt=-Infinity, musicEnabled=true, musicVolume=.25;
+// V64: áudio original do utilizador, guardado em assets/sons para funcionar online.
+let jm64BonusAudioBuffer=null,jm64BonusAudioLoading=null,jm64BonusSource=null;
 // V40: os sons de SCATTER/suspense acompanham apenas os símbolos realmente parados.
 let scatterSuspenseSequence=0;
 // Som original enviado pelo utilizador: impacto suave de 0,36 s em cada tambor.
@@ -395,7 +397,45 @@ function soundStart(){
  // O Safari bloqueia áudio antes de uma interação do utilizador.
  startMusic();
  if(mute)return;
- try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume();fxOutput();preloadReelLanding();}catch(e){}
+ try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();audioCtx.resume();fxOutput();preloadReelLanding();preloadBonusJingle();}catch(e){}
+}
+/* V64: jingle escolhido pelo utilizador. Preload em Web Audio para tocar
+   durante animações assíncronas no Safari; HTMLAudio como alternativa. */
+function preloadBonusJingle(){
+ if(jm64BonusAudioBuffer||jm64BonusAudioLoading||!audioCtx||!window.fetch)return;
+ jm64BonusAudioLoading=fetch('assets/sons/bonus-floraphonic-v64.mp3')
+  .then(response=>{if(!response.ok)throw new Error('Áudio indisponível: '+response.status);return response.arrayBuffer();})
+  .then(data=>audioCtx.decodeAudioData(data))
+  .then(buffer=>{jm64BonusAudioBuffer=buffer;return buffer;})
+  .catch(err=>{console.warn('Jingle de bónus:',err);jm64BonusAudioLoading=null;return null;});
+}
+function stopBonusJingle(){
+ if(jm64BonusSource){try{jm64BonusSource.stop();}catch(e){}jm64BonusSource=null;}
+ const el=$('jm64BonusAudio');
+ if(el&&!el.paused)el.pause();
+}
+function playBonusJingle(kind='bonus'){
+ if(mute)return false;
+ stopBonusJingle();
+ if(audioCtx&&jm64BonusAudioBuffer){
+  try{
+   const src=audioCtx.createBufferSource(),gain=audioCtx.createGain();
+   src.buffer=jm64BonusAudioBuffer;gain.gain.value=.66;
+   src.connect(gain);gain.connect(fxOutput()||audioCtx.destination);
+   src.onended=()=>{if(jm64BonusSource===src)jm64BonusSource=null;};
+   jm64BonusSource=src;src.start();return true;
+  }catch(e){console.warn('WebAudio jingle:',e);}
+ }
+ const el=$('jm64BonusAudio');
+ if(el){
+  try{
+   el.currentTime=0;el.volume=.82;
+   const p=el.play();
+   if(p&&typeof p.catch==='function')p.catch(err=>{console.warn('Reprodução do jingle:',kind,err);audioFX('bonus')});
+   return true;
+  }catch(e){console.warn('Reprodução direta:',e);}
+ }
+ audioFX('bonus');return false;
 }
 // V36: compressor/limitador exclusivo para FX. Os volumes independem da música.
 function fxOutput(){
@@ -719,6 +759,7 @@ function closeFreeSummary(){
  if(!freeSummaryPending||freeSettlementRunning)return;
  freeSummaryPending=false;freeSettlePending=false;
  freeBaseTotal=0;freeMultiplierBalls=[];shelf=[];
+ updateDropScore(0);
  $('jm52FreeSummary')?.classList.remove('show');
  updateShelf();
  notice('Pronto para uma nova jogada.');
@@ -1710,7 +1751,7 @@ function bonusFinish(){
 }
 function refreshBuyOptions(){const costHold=BETS[betIdx]*100,costFree=BETS[betIdx]*20;$('buyHoldPrice').textContent=money(costHold);$('buyFreePrice').textContent=money(costFree);$('buyHoldChoice').disabled=balance<costHold||!session||running||!!bonus||freeSpins>0;$('buyFreeChoice').disabled=balance<costFree||!session||running||!!bonus||freeSpins>0;$('buyInfo').textContent='Saldo '+money(balance)+' • Hold & Win 100× a aposta • 15 free spins 20× a aposta';}
 function openBonusPurchase(){if(!session||running||bonus)return;refreshBuyOptions();modal('buyModal',true);soundStart()}
-async function buyFreeSpins(){if(!session||running||bonus||freeSpins||freeSummaryPending)return false;const bet=BETS[betIdx],cost=bet*20;if(balance<cost)return false;balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;freeBonusTotal=0;freeSummaryCount=0;freeSummaryPending=false;freeBaseTotal=0;freeMultiplierBalls=[];freeSettlePending=false;freeBet=bet;freeSpins+=15;log('compra_freespins',-cost,'15 free spins a 20× aposta '+money(bet));modal('buyModal',false);notice('🌟 Compraste 15 FREE SPINS por '+money(cost));running=true;update();soundStart();await showFeatureIntro('free');running=false;openFreeStart();return true;}
+async function buyFreeSpins(){if(!session||running||bonus||freeSpins||freeSummaryPending)return false;const bet=BETS[betIdx],cost=bet*20;if(balance<cost)return false;balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;freeBonusTotal=0;freeSummaryCount=0;freeSummaryPending=false;freeBaseTotal=0;freeMultiplierBalls=[];freeSettlePending=false;freeBet=bet;freeSpins+=15;updateDropScore(0);log('compra_freespins',-cost,'15 free spins a 20× aposta '+money(bet));modal('buyModal',false);notice('🌟 Compraste 15 FREE SPINS por '+money(cost));running=true;update();soundStart();await showFeatureIntro('free');running=false;openFreeStart();return true;}
 
 function showBig(final,base,factor,jp,jackpotWin,capped=null,fromWheel=false,stake=BETS[betIdx]){
  $('bigFactor').textContent=fromWheel?'ROULETA 32 CASAS • '+jp:jp?'4 CRISTAIS • '+jp:'HOLD & WIN • 3 TENTATIVAS';
@@ -1899,7 +1940,7 @@ function setup(){
  $('spin').onclick=()=>{if(freeSummaryPending){spinLongUsed=false;closeFreeSummary();return;}if(window.JM_WHEEL_V49?.handleSpin?.()){spinLongUsed=false;return;}if(autoSpinsRemaining>0){spinLongUsed=false;stopAuto();notice('Voltas automáticas paradas.');return;}if(spinLongUsed){spinLongUsed=false;return;}if(freeSpins>0){openFreeStart();return;}if(running)return;doRound()};$('freeStartBtn').onclick=startFreeAuto;$('normalBtn').onclick=()=>{mode='normal';update();save()};$('turboBtn').onclick=()=>{mode=mode==='turbo'?'normal':'turbo';update();save()};
  $('buyBonus').onclick=openBonusPurchase;$('buyHoldChoice').onclick=()=>launchBonus(true,'compra');$('buyFreeChoice').onclick=buyFreeSpins;$('closeBuy').onclick=()=>modal('buyModal',false);
  $('bonusSpin').onclick=bonusRespin;$('vaultBtn').onclick=$('vaultBtnMobile').onclick=()=>{notice('🪙 O cofre vai crescendo e pode rebentar de surpresa, ativando Hold & Win!')};
- $('btnSound').onclick=()=>{mute=!mute;musicUI();if(!mute)soundStart()};
+ $('btnSound').onclick=()=>{mute=!mute;if(mute)stopBonusJingle();musicUI();if(!mute)soundStart()};
  $('btnMusic').onclick=()=>{musicEnabled=!musicEnabled;if(musicEnabled){startMusic()}else musicElement().pause();musicUI();save()};
  $('btnPay').onclick=()=>{makePaytable();modal('payModal',true)};$('closePay').onclick=()=>modal('payModal',false);
  $('closeReport').onclick=()=>modal('reportModal',false);$('exportCsv').onclick=downloadHTMLReport;$('printReport').onclick=printHTMLReport;
@@ -1911,7 +1952,7 @@ function setup(){
  $('openingCredits').addEventListener('input',()=>{document.querySelectorAll('#choices button').forEach(b=>b.classList.toggle('selected',Number(b.dataset.value)===Number($('openingCredits').value)));updateDepositPreview()});
 }
 
-(async()=>{setup();setupAdmin();load();setDisplayRatio(window.innerWidth>window.innerHeight*1.12?'16:9':'9:16');musicUI();document.addEventListener('pointerdown',()=>{if(session&&musicEnabled&&musicElement().paused)startMusic()},{passive:true});update();makePaytable();await imageLoad();requestAnimationFrame(frame);
+(async()=>{setup();setupAdmin();load();updateDropScore(freeSpins>0||freeSettlePending||freeSummaryPending?freeBaseTotal:0);setDisplayRatio(window.innerWidth>window.innerHeight*1.12?'16:9':'9:16');musicUI();document.addEventListener('pointerdown',()=>{if(session&&musicEnabled&&musicElement().paused)startMusic()},{passive:true});update();makePaytable();await imageLoad();requestAnimationFrame(frame);
  // CDN PixiJS é opcional em execução: Canvas2D serve de alternativa quando offline/WebGL indisponível.
  let ticks=0;const timer=setInterval(async()=>{if(window.PIXI?.Application){clearInterval(timer);await initPixi()}else if(++ticks>=30){clearInterval(timer);console.info('Canvas 2D de reserva ativo')}},100);
  if(session){notice('Sessão retomada. Continua a jogar!');modal('startModal',false);if(freeMultiplierBalls.length)shelf=freeMultiplierBalls;updateShelf();if(freeSummaryPending)showFreeSummary(true);if(freeSettlePending&&!bonus)showFreeSummary();if(bonus){if(bonus.finished&&bonus.endReason==='completo'&&bonus.cells.every(Boolean))prepareFullBoardWheel();renderBonus();modal('bonusModal',true);$('bonusNote').textContent=bonus.wheelPending?'Roleta de jackpots por concluir. O mesmo sorteio será retomado.':bonus.finished?'Bónus concluído. Recolhe o teu prémio.':'Bónus retomado: tens '+bonus.left+' tentativas restantes.';if(bonus.wheelPending)setTimeout(()=>playFullBoardWheel(),200);}if(freeSpins>0&&!bonus)openFreeStart();else if(autoSpinsRemaining>0&&!running&&!bonus&&!freeSettlePending&&!freeSummaryPending)maybeContinueAuto();}else openDepositLogin();
