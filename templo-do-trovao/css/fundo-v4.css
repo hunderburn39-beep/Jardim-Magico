@@ -1,0 +1,191 @@
+/* PORTÕES DO TROVÃO — V4
+   Cenário vivo, moldura com centro translúcido e logótipo próprio.
+   Ficheiro isolado para editar luz/templo/nuvens sem tocar nas regras. */
+.app{
+  background:#1a0c34!important;
+  overflow:hidden;
+}
+.scene-backdrop{
+  position:absolute;inset:-1px;z-index:0;
+  overflow:hidden;pointer-events:none;isolation:isolate;
+  contain:layout paint;
+}
+.scene-image{
+  position:absolute;inset:-4.5%;z-index:0;
+  background:url("../assets/olimpo.svg") center 49%/cover no-repeat;
+  transform:translate3d(var(--sky-x,0px),var(--sky-y,0px),0) scale(1.06);
+  animation:templeBreath 29s ease-in-out infinite alternate;
+  will-change:transform;
+}
+.scene-image:after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,#18092d5c,transparent 35%,transparent 75%,#210f48b0),
+  linear-gradient(0deg,#17102799,transparent 38%,#1b0f3040 95%);
+}
+.scene-halo{
+  position:absolute;inset:-15%;z-index:1;
+  opacity:.7;
+  background:
+    radial-gradient(ellipse 26% 30% at 70% 20%,#9aefff75,transparent 80%),
+    radial-gradient(ellipse 28% 26% at 42% 30%,#ffe8b847,transparent 76%),
+    radial-gradient(ellipse 35% 30% at 68% 78%,#df7eb64a,transparent 82%);
+  mix-blend-mode:screen;
+  animation:haloPulse 7s ease-in-out infinite alternate;
+}
+.scene-cloud{
+  position:absolute;width:185%;height:64%;left:-43%;z-index:2;
+  background:url("../assets/nuvens-v4.svg") center/100% 100% no-repeat;
+  will-change:transform;
+}
+.scene-cloud-back{
+  top:4%;opacity:.59;filter:blur(2px);
+  animation:cloudRide 49s ease-in-out infinite alternate;
+}
+.scene-cloud-front{
+  bottom:-15%;opacity:.64;
+  filter:blur(5px) hue-rotate(15deg);
+  animation:cloudRideReverse 38s ease-in-out infinite alternate;
+}
+.scene-beam{
+  position:absolute;top:-32%;height:165%;width:17%;z-index:3;opacity:.34;
+  transform-origin:50% 0;
+  background:linear-gradient(to bottom,#fff8db6b,#fff2b615 42%,transparent 92%);
+  clip-path:polygon(46% 0,56% 0,100% 100%,0% 100%);
+  filter:blur(17px);
+  mix-blend-mode:screen;
+  animation:beamSway 11s ease-in-out infinite alternate;
+}
+.scene-beam-a{left:28%;transform:rotate(-15deg)}
+.scene-beam-b{left:66%;opacity:.24;animation-delay:-5s;transform:rotate(19deg)}
+.scene-lightning{
+  position:absolute;inset:-4%;z-index:5;
+  background:url("../assets/relampagos-v4.svg") center/cover no-repeat;
+  mix-blend-mode:screen;
+  opacity:0;
+  filter:brightness(1.3) drop-shadow(0 0 24px #7cdcff);
+}
+.scene-motes{position:absolute;inset:0;z-index:4;overflow:hidden}
+.scene-mote{
+  position:absolute;
+  left:var(--mx,50%);top:var(--my,60%);
+  width:var(--ms,3px);height:var(--ms,3px);border-radius:50%;
+  background:#ffe5a3;
+  box-shadow:0 0 5px #fff4ba,0 0 12px #ffd28c;
+  opacity:0;will-change:transform,opacity;
+  animation:moteFloat var(--mt,10s) linear infinite;
+  animation-delay:var(--md,0s);
+}
+.scene-mote.blue{background:#c4faff;box-shadow:0 0 5px #fff,0 0 13px #75e5ff}
+.scene-mote.big{filter:blur(.8px)}
+.app.storm-burst .scene-lightning{animation:boltsFlash .82s steps(1,end) both}
+.app.storm-burst .scene-halo{animation:lightningHalo .8s ease-out both}
+.sky-flash{
+  z-index:21;opacity:0;animation:none!important;
+  background:#d9eaff;mix-blend-mode:screen;
+}
+.app.storm-burst .sky-flash{animation:skyFlashV4 .78s steps(1,end) both!important}
+.app.storm-burst .scene-beam{filter:blur(12px) brightness(1.3)}
+/* Título / logótipo 3D substitui o texto simples do cabeçalho. */
+.topbar{position:relative;z-index:3;isolation:isolate}
+.brand{
+  position:absolute;
+  width:min(38vw,470px);height:100%;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;
+  margin:0!important;
+  filter:drop-shadow(0 1px 5px #17052f);
+}
+.brand-kicker,.brand-name{display:none!important}
+.game-logo{
+  display:block;max-width:100%;width:100%;height:calc(100% + 10px);
+  object-fit:contain;
+  filter:drop-shadow(0 0 9px #f8d78468);
+  animation:logoAwe 4.8s ease-in-out infinite alternate;
+}
+.top-actions{position:relative;z-index:2;margin-left:auto}
+.demo-tag{display:none}
+@media(min-width:1300px){.brand{width:min(34vw,500px)}}
+@media(max-width:700px){
+ .brand{position:static;transform:none;width:min(58vw,280px);height:100%;margin-right:auto!important;left:auto}
+ .top-actions{margin-left:0}
+ .game-logo{height:100%;max-width:100%}
+}
+@media(orientation:landscape) and (max-height:530px){
+ .brand{position:absolute;transform:translate(-50%,-50%);width:min(36vw,230px);height:100%;left:50%;top:50%}
+ .top-actions{margin-left:auto}
+ .game-logo{height:calc(100% + 7px)}
+}
+/* Frame de ouro intacta; o centro mostra o fundo animado. */
+.board-shell{
+  background:rgba(42,15,64,.035)!important;
+  border-color:#ffe4a1;
+  box-shadow:
+   0 0 0 2px #67401bc9,
+   0 0 0 5px #d6a050a8,
+   0 0 24px #ffc96f9c,
+   inset 0 0 9px #fff4bc5e,
+   0 12px 19px #1a0a31bd!important;
+}
+.board-shell:has(.winner),.board-shell:has(.burst-out){
+  box-shadow:0 0 0 2px #916123,0 0 0 5px #ffe5a1,
+    0 0 35px #ffdb92,inset 0 0 15px #fff3bd,0 12px 26px #23153fc4!important;
+}
+.board{
+  background:linear-gradient(90deg,rgba(23,10,39,.27),rgba(23,10,39,.07) 40%,rgba(23,10,39,.25))!important;
+  border:1px solid #ffcf796b;
+  box-shadow:inset 0 0 26px #0c062d38,
+    inset 0 0 0 1px #ffee9918!important;
+  backdrop-filter:blur(.5px);
+  -webkit-backdrop-filter:blur(.5px);
+}
+.board:has(.burst-out){
+  background:radial-gradient(ellipse at 50% 44%,#ffda8240,rgba(28,12,55,.15) 64%)!important;
+}
+.cell{background:transparent!important;border-right:1px solid #f9d68d22;border-bottom:1px solid #f3da9124}
+.cell:nth-child(odd){background:#ffe7a803!important}
+.cell.winner{
+  background:radial-gradient(ellipse,#fff2b45c,rgba(255,222,123,.1) 70%,transparent)!important;
+}
+.cell svg{filter:drop-shadow(0 4px 4px #110826) drop-shadow(0 0 7px var(--gem-glow)) brightness(1.15) saturate(1.27)}
+.board-glow{opacity:.72;pointer-events:none}
+.machine-crown{background:linear-gradient(90deg,#30174bbb,#643c61b8 22%,#7b4978b8 50%,#311b4bd1 100%);backdrop-filter:blur(4px)}
+.god-column{filter:drop-shadow(0 0 9px #dbb3e533)}
+.god-lightning{animation:godEnergyV4 3.5s ease-in-out infinite alternate!important}
+.god-art{animation:godFloat 4.3s ease-in-out infinite,zeusGlintV4 7.5s ease-in-out infinite alternate!important}
+.side-panel .stat-frame{background:linear-gradient(140deg,rgba(54,26,82,.82),rgba(25,8,51,.73));backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.bottom-panel{background:linear-gradient(0deg,#1c0f32e6,#3f2352d9 65%,#5e3755b8);backdrop-filter:blur(6px)}
+/* Dinâmica de luz para o botão principal sem interferir na interação. */
+.spin-button:not(:disabled){animation:spinHaloV4 4.1s ease-in-out infinite alternate}
+@keyframes templeBreath{
+  0%{transform:translate3d(calc(var(--sky-x,0px) - 10px),calc(var(--sky-y,0px) - 5px),0) scale(1.055)}
+  100%{transform:translate3d(calc(var(--sky-x,0px) + 13px),calc(var(--sky-y,0px) + 7px),0) scale(1.11)}
+}
+@keyframes cloudRide{0%{transform:translate3d(-7%,0,0)}100%{transform:translate3d(9%,-4%,0)}}
+@keyframes cloudRideReverse{0%{transform:translate3d(9%,1%,0)}100%{transform:translate3d(-8%,-3%,0)}}
+@keyframes beamSway{from{transform:rotate(-8deg) scaleX(.75);opacity:.15}to{transform:rotate(9deg) scaleX(1.19);opacity:.38}}
+@keyframes haloPulse{from{opacity:.35;transform:scale(1)}to{opacity:.78;transform:scale(1.035)}}
+@keyframes lightningHalo{0%,100%{opacity:.55}11%,35%{opacity:1;filter:brightness(2)}22%,51%{opacity:.5}}
+@keyframes boltsFlash{0%,8%,24%,33%,50%,100%{opacity:0}9%,22%{opacity:.86}34%,48%{opacity:1}54%,72%{opacity:.25}}
+@keyframes skyFlashV4{0%,9%,25%,34%,50%,100%{opacity:0}11%{opacity:.11}36%{opacity:.20}53%{opacity:.035}}
+@keyframes moteFloat{
+  0%{opacity:0;transform:translate3d(0,36px,0) scale(.5)}
+  15%{opacity:.72}75%{opacity:.58}
+  100%{opacity:0;transform:translate3d(var(--mxdrift,38px),-85px,0) scale(1.3)}
+}
+@keyframes logoAwe{0%{filter:drop-shadow(0 0 7px #f9d68d87)}100%{filter:drop-shadow(0 0 13px #fff4c3bd) drop-shadow(0 0 7px #55e3ff85)}}
+@keyframes godEnergyV4{0%{opacity:.22;transform:scale(.94)}100%{opacity:.94;transform:scale(1.12)}}
+@keyframes zeusGlintV4{from{filter:drop-shadow(0 3px 8px #1b0d2b)}to{filter:drop-shadow(0 0 12px #8ceaffb0) drop-shadow(0 2px 7px #160726)}}
+@keyframes spinHaloV4{0%{filter:drop-shadow(0 0 1px #ffe9aa)}100%{filter:drop-shadow(0 0 10px #f6cc68a1)}}
+@media(prefers-reduced-motion:reduce){
+ .scene-image,.scene-cloud,.scene-halo,.scene-beam,.scene-mote,.game-logo,.god-art,.spin-button,.god-lightning{animation:none!important}
+ .app.storm-burst .scene-lightning,.app.storm-burst .sky-flash{animation:none!important}
+}
+@media(orientation:portrait){
+ .scene-image{background-position:51% center}
+ .scene-cloud{height:42%}
+ .scene-cloud-front{bottom:-3%}
+ .board{backdrop-filter:none;-webkit-backdrop-filter:none}
+ .brand{width:min(53vw,260px)}
+}
