@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V6.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V7.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -238,7 +238,7 @@
     el.spin.classList.toggle("auto-mode",state.autoRemaining>0);
     el.spinLabel.textContent=state.autoRemaining>0?"AUTO "+state.autoRemaining:state.busy?"A RODAR":"GIRAR";
     el.spinGlyph.textContent=state.autoRemaining>0?"⟳":"↻";
-    el.spinSub.textContent=state.autoRemaining>0?"TOCAR PARA PARAR":state.bonus?"BÓNUS ATIVO":"MANTER 3 S = AUTO";
+    el.spinSub.textContent=state.autoRemaining>0?"TOCAR PARA PARAR":state.bonus?"BÓNUS ATIVO":"MANTER 1 S = AUTO";
     el.turbo.classList.toggle("active",state.turbo);
     el.turbo.querySelector("small").textContent=state.turbo?"ON":"OFF";
     el.turbo.setAttribute("aria-pressed",String(state.turbo));
@@ -246,7 +246,7 @@
     $("btnBuy").disabled=lock;$("betDown").disabled=lock;$("betUp").disabled=lock;
   }
   function openModal(title,html,buttons=[]){
-    modalOpen=true;const m=el.modal.querySelector(".modal");if(m)m.classList.remove("pay-modal");el.modalTitle.textContent=title;el.modalBody.innerHTML=html;el.modalActions.replaceChildren();
+    modalOpen=true;const m=el.modal.querySelector(".modal");if(m){m.classList.remove("pay-modal");m.classList.remove("auto-modal")}el.modalTitle.textContent=title;el.modalBody.innerHTML=html;el.modalActions.replaceChildren();
     for(const b of buttons){
       const button=document.createElement("button");button.textContent=b.text;
       if(b.secondary)button.classList.add("secondary");
@@ -255,7 +255,7 @@
     }
     el.modal.classList.remove("hidden");
   }
-  function closeModal(){modalOpen=false;el.modal.classList.add("hidden");const m=el.modal.querySelector(".modal");if(m)m.classList.remove("pay-modal")}
+  function closeModal(){modalOpen=false;el.modal.classList.add("hidden");const m=el.modal.querySelector(".modal");if(m){m.classList.remove("pay-modal");m.classList.remove("auto-modal")}}
   function showRules(){
     // Ordem e valores da tabela enviada pelo utilizador. Uma única fonte:
     // PAY_TABLE alimenta tanto os prémios do motor como esta grelha.
@@ -443,11 +443,15 @@
   function showAutoOptions(){
     if(state.busy||state.bonus||modalOpen)return;
     openModal("RODADAS AUTOMÁTICAS",
-      "<p>Escolhe quantas rodadas queres executar. Podes tocar em <b>GIRAR</b> a qualquer momento para parar. Mantém o botão premido 3 segundos para abrir novamente este menu.</p>"+
-      "<p class='note'>Aposta e saldo são sempre de demonstração.</p>",
-      [10,25,50,100].map(n=>({text:n+" RODADAS",action:()=>{state.autoRemaining=n;refresh();void runAuto()}})).concat([{text:"CANCELAR",secondary:true}]));
+      '<span class="auto-symbol">⚡ ✦ ⚡</span>'+
+      '<p class="auto-instructions">Escolhe as rodadas que os deuses vão girar. '+
+      'Para interromper, toca novamente em <b>GIRAR</b>.</p>'+
+      '<p class="auto-sub">PRIME O BOTÃO DE GIRAR DURANTE 1 SEGUNDO PARA ABRIR ESTE QUADRO.</p>'+
+      '<p class="note">Jogo demonstrativo com créditos virtuais.</p>',
+      [10,25,50,100].map(n=>({text:n+" RODADAS",action:()=>{state.autoRemaining=n;refresh();void runAuto()}})).concat([{text:"FECHAR",secondary:true}]));
+    el.modal.querySelector(".modal")?.classList.add("auto-modal");
   }
-  function buyBonus(){
+    function buyBonus(){
     if(state.busy||state.bonus||state.autoRemaining>0)return;
     const cost=currentBet()*100;
     openModal("COMPRAR 15 RODADAS",
@@ -469,13 +473,13 @@
     if(state.busy||state.bonus||state.autoRemaining>0)return;
     state.betIndex=Math.max(0,Math.min(BETS.length-1,state.betIndex+delta));refresh();
   }
-  // Clique curto roda; manter 3 s abre o menu de auto-spins.
+  // Clique curto roda; manter 1 segundo abre o menu de auto-spins.
   el.spin.addEventListener("pointerdown",e=>{
     if(e.button!==undefined&&e.button!==0)return;
     longFired=false;clearTimeout(holdTimer);
     if(state.busy||state.bonus||state.autoRemaining>0)return;
     if(state.sound)window.TrovaoAudio?.unlock();
-    holdTimer=setTimeout(()=>{longFired=true;showAutoOptions()},3000);
+    holdTimer=setTimeout(()=>{longFired=true;showAutoOptions()},1000);
   });
   for(const name of ["pointerup","pointercancel","pointerleave"]){
     el.spin.addEventListener(name,()=>clearTimeout(holdTimer));
