@@ -1,0 +1,107 @@
+/* Jardim Mágico V56
+   Uma só bola vermelha com o MULTI total, moedas que estouram
+   e valores de linhas sem caixa com desvanecimento longo. */
+.game .shelf,.game[data-layout="portrait"] .shelf,.game[data-layout="wide"] .shelf{
+ position:relative!important;
+ width:clamp(42px,9.6vw,60px)!important;
+ min-width:0!important;max-width:60px!important;
+ height:clamp(40px,6dvh,51px)!important;
+ min-height:clamp(40px,6dvh,51px)!important;
+ margin:1px auto 3px!important;
+ padding:0!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ border:0!important;border-radius:50%!important;
+ background:transparent!important;
+ box-shadow:none!important;
+ overflow:visible!important;
+}
+.game .shelf .shelfTag,
+.game .shelf .shelfTotal{display:none!important}
+.game .shelf .orbs{
+ width:100%!important;height:100%!important;
+ flex:0 0 100%!important;max-width:none!important;
+ margin:0!important;padding:0!important;min-width:0!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ overflow:visible!important;
+}
+.game .shelf .orbs .orbPill.jm56RedBall,
+.game[data-layout="wide"] .shelf .orbs .orbPill.jm56RedBall,
+.game[data-layout="portrait"] .shelf .orbs .orbPill.jm56RedBall{
+ width:clamp(38px,8.7vw,51px)!important;
+ height:clamp(38px,8.7vw,51px)!important;
+ min-width:0!important;flex:0 0 auto!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ padding:0!important;
+ color:#fff7cc!important;
+ border:2px solid #ffdc8b!important;
+ border-radius:50%!important;
+ background:radial-gradient(circle at 31% 22%,#ffe5bb 0%,#ff8f90 17%,#e63b42 42%,#a3102f 75%,#610a25 100%)!important;
+ box-shadow:inset 0 2px 5px #fff8bbab,inset 0 -5px 7px #5e0619ad,0 0 12px #ff9c7ead,0 2px 4px #170913a8!important;
+ text-shadow:0 1px 2px #570d20,0 0 4px #fff1ab!important;
+ font-family:Georgia,serif!important;font-weight:900!important;
+ line-height:1!important;white-space:nowrap!important;
+}
+#stageWrap>.jm56CoinPop{
+ position:absolute;z-index:20;pointer-events:none;
+ width:clamp(38px,10vw,74px);height:clamp(38px,10vw,74px);
+ display:grid;place-items:center;border-radius:50%;
+ transform:translate(-50%,-50%);
+ font:900 clamp(20px,5vw,37px)/1 Georgia,serif;
+ color:#fff6c8;text-shadow:0 0 7px #fff1a6,0 0 10px #eea94c;
+ background:radial-gradient(circle,#ffecac 0%,#eeb55a 26%,#bd782b 46%,transparent 71%);
+ box-shadow:0 0 20px #ffd87db2,0 0 28px #f6a75565;
+ animation:jm56CoinBurst .53s ease-out both;
+}
+#stageWrap>.jm56CoinPop::after{
+ content:"";position:absolute;inset:-12%;
+ border:3px solid #fff2a3;border-radius:50%;
+ animation:jm56CoinRing .53s ease-out both;
+}
+@keyframes jm56CoinBurst{
+ 0%{opacity:.75;transform:translate(-50%,-50%) scale(.65)}
+ 30%{opacity:1;transform:translate(-50%,-50%) scale(1.28)}
+ 100%{opacity:0;transform:translate(-50%,-50%) scale(1.9)}
+}
+@keyframes jm56CoinRing{
+ 0%{opacity:1;transform:scale(.5)}
+ 100%{opacity:0;transform:scale(1.8)}
+}
+/* Os valores pertencem à linha premiada; são texto puro.
+   A camada vive fora de #floaters para a cascata seguinte não os apagar. */
+#stageWrap>#jm56WinValues{
+ position:absolute!important;inset:0!important;
+ z-index:16!important;overflow:visible!important;
+ pointer-events:none!important;
+}
+#stageWrap #jm56WinValues .jm56WinAmount{
+ display:block;position:absolute;
+ transform:translate(-50%,-50%) scale(.92);
+ white-space:nowrap;
+ max-width:36%;
+ padding:0!important;margin:0!important;
+ border:0!important;border-radius:0!important;
+ background:none!important;box-shadow:none!important;
+ backdrop-filter:none!important;
+ color:#fff5c0!important;
+ font:900 clamp(15px,3.8vw,29px)/1.16 Georgia,serif!important;
+ text-shadow:0 2px 3px #4f173a,0 0 6px #ffc969,0 0 11px #ffba778c!important;
+ animation:jm56WinDissolve var(--win-duration,3850ms) ease-in-out var(--win-delay,0ms) both!important;
+ will-change:transform,opacity;
+}
+@keyframes jm56WinDissolve{
+ 0%{opacity:0;transform:translate(-50%,-46%) scale(.80)}
+ 12%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}
+ 40%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+ 64%{opacity:.9;transform:translate(-50%,-51%) scale(1)}
+ 100%{opacity:0;transform:translate(-50%,-67%) scale(.96)}
+}
+@media(orientation:landscape) and (max-height:520px){
+ .game .shelf,.game[data-layout="wide"] .shelf{height:34px!important;min-height:34px!important;}
+ .game .shelf .orbs .orbPill.jm56RedBall{width:34px!important;height:34px!important}
+ #stageWrap #jm56WinValues .jm56WinAmount{font-size:clamp(13px,3vw,23px)!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #stageWrap>.jm56CoinPop,#stageWrap>.jm56CoinPop::after{animation-duration:60ms!important}
+ #stageWrap #jm56WinValues .jm56WinAmount{animation:jm56ReducedFade var(--win-duration,3850ms) ease-in-out var(--win-delay,0ms) both!important;will-change:auto}
+ @keyframes jm56ReducedFade{0%{opacity:0}15%,60%{opacity:1}100%{opacity:0}}
+}
