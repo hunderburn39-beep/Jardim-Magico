@@ -67,9 +67,9 @@ border:2px solid #ffed98;box-shadow:inset 0 0 10px #ffd79e,0 0 13px #ffe8a9,0 0 
 .paytable-table td{height:64px;text-align:center!important;border-bottom:1px solid #dcaf6d5c;padding:5px!important;font-size:clamp(13px,1.45vw,19px);font-weight:800}
 .paytable-table tr:nth-child(2n){background:#77467b20}
 .paytable-table tr:hover{background:#efc37a1c}
-.paytable-table .pay-name{display:flex;align-items:center;justify-content:flex-start;gap:clamp(5px,1.5vw,18px);text-align:left!important;color:#fff1c1}
-.paytable-table .pay-name b{font-size:clamp(12px,1.35vw,17px);text-align:left}
-.pay-symbol{width:clamp(40px,5.1vw,65px);height:clamp(40px,5.1vw,65px);flex-shrink:0;filter:drop-shadow(0 2px 3px #10041dcf)}
+.paytable-table .pay-name{display:table-cell;text-align:left!important;vertical-align:middle;white-space:nowrap;color:#fff1c1}
+.paytable-table .pay-name b{display:inline-block;font-size:clamp(12px,1.35vw,17px);text-align:left;vertical-align:middle;margin-left:clamp(4px,.9vw,12px)}
+.pay-symbol{display:inline-block;vertical-align:middle;width:clamp(40px,5.1vw,65px);height:clamp(40px,5.1vw,65px);filter:drop-shadow(0 2px 3px #10041dcf)}
 .pay-value{font-family:Cinzel,Georgia,serif;color:#ffe1a1;text-shadow:0 2px 3px #170722}
 .pay-value small{display:block;color:#e9d8c1;font-family:Outfit,Arial,sans-serif;font-weight:700;font-size:10px;line-height:1.1}
 .scatter-row{background:#f2b94b2b!important}
