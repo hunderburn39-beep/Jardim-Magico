@@ -1325,7 +1325,7 @@ function bonusFinish(){
  else showBig(final,base,factor,wheelJackpot||crystalJackpot,jackpotWin,capped,false);
  if(freeAutoRunning)scheduleFreeAuto();
  else if(freeSpins>0&&!freeStartPending&&!freeSummaryPending)openFreeStart();
- else if(autoSpinsRemaining>0)maybeContinueAuto();
+ else if(autoSpinsRemaining>0&&!$('bigWin').classList.contains('show'))maybeContinueAuto();
 }
 function refreshBuyOptions(){const costHold=BETS[betIdx]*100,costFree=BETS[betIdx]*20;$('buyHoldPrice').textContent=money(costHold);$('buyFreePrice').textContent=money(costFree);$('buyHoldChoice').disabled=balance<costHold||!session||running||!!bonus||freeSpins>0;$('buyFreeChoice').disabled=balance<costFree||!session||running||!!bonus||freeSpins>0;$('buyInfo').textContent='Saldo '+money(balance)+' • Hold & Win 100× a aposta • 15 free spins 20× a aposta';}
 function openBonusPurchase(){if(!session||running||bonus)return;refreshBuyOptions();modal('buyModal',true);soundStart()}
@@ -1451,7 +1451,7 @@ function setup(){
  $('cancelWithdraw').onclick=()=>{$('withdrawPassword').value='';$('withdrawError').textContent='';modal('withdrawModal',false)};$('confirmWithdraw').onclick=doWithdraw;$('withdrawPassword').addEventListener('keydown',e=>{if(e.key==='Enter')doWithdraw()});
  $('autoSpinBtn').onclick=()=>{if(!session||bonus||freeSpins>0)return;document.querySelectorAll('#autoChoices button').forEach(b=>b.disabled=running);modal('autoModal',true)};document.querySelectorAll('#autoChoices button').forEach(btn=>btn.onclick=()=>{if(running)return;autoSpinsRemaining=Number(btn.dataset.auto)||0;autoSpinsTotal=autoSpinsRemaining;modal('autoModal',false);notice('Auto-spins ativadas: '+autoSpinsRemaining);update();save();if(!running&&!bonus){autoSpinsRemaining--;update();doRound();}});$('cancelAuto').onclick=()=>modal('autoModal',false);$('stopAuto').onclick=stopAuto;
  $('btnHome').onclick=()=>{if(running||bonus||freeSpins>0)return;openDepositLogin()};
- $('closeBig').onclick=()=>{$('bigWin').classList.remove('show');notice('JACKPOT recolhido. Boa continuação!');if(freeAutoRunning)scheduleFreeAuto();else if(freeSpins>0&&!freeStartPending)openFreeStart()};
+ $('closeBig').onclick=()=>{$('bigWin').classList.remove('show');notice('JACKPOT recolhido. Boa continuação!');if(freeAutoRunning)scheduleFreeAuto();else if(freeSpins>0&&!freeStartPending)openFreeStart();else if(autoSpinsRemaining>0)maybeContinueAuto()};
  $('openingCredits').addEventListener('input',()=>{document.querySelectorAll('#choices button').forEach(b=>b.classList.toggle('selected',Number(b.dataset.value)===Number($('openingCredits').value)));updateDepositPreview()});
 }
 
