@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V7.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V8.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -132,6 +132,7 @@
     landingTimers=[];
     el.board.textContent="";
     const fragment=document.createDocumentFragment();
+    const landings=[];
     grid.forEach((symbol,index)=>{
       const tile=document.createElement("div");
       tile.className="cell "+(symbol.kind==="scatter"?"scatter":symbol.kind==="mult"?"multiplier":"");
@@ -144,9 +145,13 @@
         const travel=Math.max(0,row-oldRow);
         if(travel>0){
           tile.classList.add("drop-in");
+          const delay=index*(state.turbo?9:25);
+          const duration=state.turbo?210:450;
           tile.style.setProperty("--fall-rows",String(-travel));
-          tile.style.setProperty("--fall-delay",(col*(state.turbo?.012:.038)+row*(state.turbo?.008:.014))+"s");
-          tile.style.setProperty("--fall-duration",state.turbo?".20s":".46s");
+          tile.style.setProperty("--fall-delay",(delay/1000)+"s");
+          tile.style.setProperty("--fall-duration",(duration/1000)+"s");
+          // A pedra toca na base aos 83% da animação: um impacto por peça.
+          landings.push({column:col,row,kind:symbol.kind,when:Math.round(delay+duration*.83)});
         }
       }
       if(options.matchKinds?.has(symbol.kind))tile.classList.add("winner");
@@ -161,21 +166,20 @@
       fragment.appendChild(tile);
     });
     el.board.appendChild(fragment);
-    if(options.fallFrom||options.dropIds){
-      // Som sincronizado com o contacto das pedras com a base da grelha:
-      // uma camada metálica e outra grave, com posição estéreo por coluna.
-      const landing=state.turbo?115:260;
-      for(let col=0;col<COLS;col++){
-        const pos=col;
-        const when=landing+col*(state.turbo?24:48);
-        landingTimers.push(window.setTimeout(()=>{
-          sfx("drop",{column:pos,at:options.fallFrom?1:0,level:1.15});
-          sfx("land",{column:pos,at:options.fallFrom?1:0,level:1});
-        },when));
-      }
+    let lastLanding=0;
+    for(const landing of landings){
+      lastLanding=Math.max(lastLanding,landing.when);
+      landingTimers.push(window.setTimeout(()=>{
+        if(!state.sound)return;
+        window.TrovaoLeather?.play({
+          column:landing.column,row:landing.row,kind:landing.kind,
+          strength:.59+landing.row*.047
+        });
+      },landing.when));
     }
+    return landings.length?lastLanding+95:0;
   }
-  function explodeWinningSymbols(){
+    function explodeWinningSymbols(){
     const tiles=Array.from(el.board.querySelectorAll(".cell.winner"));
     if(!tiles.length)return;
     el.board.classList.remove("board-impact");
@@ -303,14 +307,18 @@
     if(!bonusSpin){state.balance=Math.round((state.balance-bet)*100)/100;state.currentWin=0}
     else state.freeLeft--;
     state.cascade=0;state.visibleMult=1;
+    setMsg(bonusSpin?"RODADA GRÁTIS • PODER ACUMULADO":"OS DEUSES ESTÃO A GIRAR...");
+    refresh();
+    // Primeira ação audível, ainda no gesto do utilizador. O MP3 salta
+    // o silêncio inicial; só depois começa a animação das peças.
+    sfx("spin");
+    await pause(state.turbo?65:150);
     state.grid=makeGrid();
     window.TrovaoHistory?.startSpin({bet,bonus:bonusSpin,grid:state.grid});
-    const previousIds=new Set(); // preenchimento inicial anima como queda
+    const previousIds=new Set();
     state.grid.forEach(s=>previousIds.add(s.id));
-    render(state.grid,{dropIds:previousIds});
-    setMsg(bonusSpin?"RODADA GRÁTIS • PODER ACUMULADO":"OS DEUSES ESTÃO A GIRAR...");
-    refresh();sfx("spin");
-    await pause(state.turbo?235:560);
+    const fallFinished=render(state.grid,{dropIds:previousIds});
+    await pause(fallFinished+(state.turbo?75:130));
     let totalBase=0,spinMult=0,steps=0,scatterTriggered=false,retrigger=false,scatterAward=0,maxScatterPaid=0;
     const countedMultipliers=new Set();
     for(;;){
@@ -345,9 +353,9 @@
       state.grid=tumble(state.grid,wins.matched);
       const bornIds=new Set(state.grid.filter(s=>!oldPositions.has(s.id)).map(s=>s.id));
       window.TrovaoHistory?.recordFall(state.grid,bornIds);
-      render(state.grid,{fallFrom:oldPositions});
       sfx("tumble");
-      await pause(state.turbo?240:550);
+      const tumbleFinished=render(state.grid,{fallFrom:oldPositions});
+      await pause(tumbleFinished+(state.turbo?70:105));
     }
     let total=totalBase;
     if(totalBase>0||scatterAward>0){
@@ -478,7 +486,7 @@
     if(e.button!==undefined&&e.button!==0)return;
     longFired=false;clearTimeout(holdTimer);
     if(state.busy||state.bonus||state.autoRemaining>0)return;
-    if(state.sound)window.TrovaoAudio?.unlock();
+    if(state.sound){window.TrovaoAudio?.unlock();window.TrovaoLeather?.unlock();}
     holdTimer=setTimeout(()=>{longFired=true;showAutoOptions()},1000);
   });
   for(const name of ["pointerup","pointercancel","pointerleave"]){
@@ -503,6 +511,7 @@
     $("btnSound").textContent=state.sound?"♫":"♪";
     $("btnSound").title=state.sound?"Desligar som":"Ativar som";
     window.TrovaoAudio?.setEnabled(state.sound);
+    window.TrovaoLeather?.setEnabled(state.sound);
     if(state.sound)sfx("reward");
   };
   $("btnFull").onclick=async()=>{
