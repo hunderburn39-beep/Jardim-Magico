@@ -1122,20 +1122,21 @@ function markLines(won){
  }
  let wins=$('jm56WinValues');
  if(!wins){wins=document.createElement('div');wins.id='jm56WinValues';stage.appendChild(wins);}
- const duration=mode==='turbo'?2500:3850;
- for(let i=0;i<won.length;i++){
-  const display=document.createElement('span');
-  display.className='jm56WinAmount';display.textContent=money(won[i].value);
-  display.style.left=(20+(i%3)*30)+'%';
-  display.style.top=(17+Math.floor(i/3)*15)+'%';
-  display.style.setProperty('--win-delay',(mode==='turbo'?75:135)*i+'ms');
-  display.style.setProperty('--win-duration',duration+'ms');
-  display.setAttribute('aria-label','Prémio de linha: '+money(won[i].value));
-  wins.appendChild(display);
-  setTimeout(()=>display.remove(),duration+i*(mode==='turbo'?75:135)+90);
- }
- // Uma cascata não corta a animação da anterior; evitar acumular DOM.
- while(wins.childElementCount>30)wins.firstElementChild.remove();
+ // V57: valor total das linhas premiadas desta cascata, grande e ao centro.
+ // Um só montante evita sobreposições quando várias linhas pagam simultaneamente.
+ const amount=won.reduce((sum,win)=>sum+win.value,0);
+ const display=document.createElement('span');
+ display.className='jm56WinAmount jm57CenterWin';
+ display.textContent=money(amount);
+ display.style.left='50%';
+ display.style.top='50%';
+ const duration=mode==='turbo'?2200:3650;
+ display.style.setProperty('--win-delay','0ms');
+ display.style.setProperty('--win-duration',duration+'ms');
+ display.setAttribute('aria-label','Prémio total das '+won.length+' linhas: '+money(amount));
+ // Uma cascata antiga não interfere com a seguinte.
+ wins.replaceChildren(display);
+ setTimeout(()=>display.remove(),duration+130);
  audioFX('win');
 }
 function clearLines(){ $('paylines').innerHTML='';$('floaters').replaceChildren();}
