@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" role="img" aria-label="Portões do Trovão">
+<defs>
+ <linearGradient id="plate" x1="0" y1="0" x2=".2" y2="1"><stop stop-color="#782a8e"/><stop offset=".35" stop-color="#492063"/><stop offset=".68" stop-color="#371453"/><stop offset="1" stop-color="#150a32"/></linearGradient>
+ <linearGradient id="gold" x1=".12" y1="0" x2=".85" y2="1"><stop stop-color="#fffbd1"/><stop offset=".16" stop-color="#fce4a1"/><stop offset=".31" stop-color="#d88b31"/><stop offset=".46" stop-color="#fff1a8"/><stop offset=".58" stop-color="#f9ca67"/><stop offset=".76" stop-color="#bd5c1d"/><stop offset=".89" stop-color="#f8c961"/><stop offset="1" stop-color="#fff5bd"/></linearGradient>
+ <linearGradient id="goldShadow" x2="0" y2="1"><stop stop-color="#a94f15"/><stop offset=".6" stop-color="#6d2233"/><stop offset="1" stop-color="#3c123e"/></linearGradient>
+ <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset=".17" stop-color="#adfaff"/><stop offset=".52" stop-color="#50ceff"/><stop offset="1" stop-color="#0574f2"/></linearGradient>
+ <radialGradient id="halo"><stop stop-color="#ffeab4" stop-opacity=".72"/><stop offset=".4" stop-color="#e68bfb" stop-opacity=".24"/><stop offset="1" stop-color="#a95efe" stop-opacity="0"/></radialGradient>
+ <filter id="shadow" x="-30%" y="-80%" width="160%" height="250%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#170521" flood-opacity=".98"/><feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#f0b94c" flood-opacity=".65"/></filter>
+ <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="5"/></filter>
+ <filter id="gem"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#88f0ff"/></filter>
+</defs>
+<ellipse cx="450" cy="162" rx="420" ry="143" fill="url(#halo)"/>
+<g filter="url(#shadow)">
+ <path d="M108 151 182 64 323 39 450 19 577 39 717 64 795 151 735 218 577 255 450 280 323 255 165 218Z" fill="url(#plate)" stroke="url(#gold)" stroke-width="11"/>
+ <path d="M130 151 195 82 328 56 450 37 572 56 704 82 772 151 720 201 572 238 450 259 328 238 180 201Z" fill="none" stroke="#ffe39a" stroke-width="2.3" opacity=".9"/>
+ <path d="M138 147 168 112 170 192 141 164" fill="#df9a3b" stroke="#fff0ac" stroke-width="2"/>
+ <path d="M762 147 732 112 730 192 759 164" fill="#df9a3b" stroke="#fff0ac" stroke-width="2"/>
+ <path d="M315 47Q450 5 585 47" fill="none" stroke="#fff5bb" stroke-width="3.2" opacity=".75"/>
+ <path d="M304 247Q450 291 596 247" fill="none" stroke="#ffe6a2" stroke-width="3.2" opacity=".75"/>
+</g>
+<g transform="translate(28 105)" filter="url(#shadow)" fill="url(#gold)" stroke="#fff1b2" stroke-width="2">
+ <path d="M152 17 95-3 110 23 51 5 80 41 9 36 47 62 1 80 56 85 34 113 100 90 149 74 121 62 84 66 109 48 82 34 132 40Z"/>
+ <path d="M692 17 749-3 734 23 793 5 764 41 835 36 797 62 843 80 788 85 810 113 744 90 695 74 723 62 760 66 735 48 762 34 712 40Z"/>
+</g>
+<g filter="url(#glow)" fill="none" stroke="#8bf7ff" stroke-width="6" opacity=".65">
+ <path d="M106 0 77 54 112 63 63 117"/>
+ <path d="M804 2 837 54 808 67 864 116"/>
+</g>
+<g fill="none" stroke="url(#blue)" stroke-width="3" stroke-linejoin="round">
+ <path d="M106 0 77 54 112 63 63 117"/>
+ <path d="M804 2 837 54 808 67 864 116"/>
+</g>
+<g filter="url(#shadow)" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-weight="900">
+ <text x="450" y="112" font-size="68" letter-spacing="4" fill="url(#goldShadow)" stroke="#2d0734" stroke-width="12" paint-order="stroke">PORTÕES DO</text>
+ <text x="450" y="105" font-size="68" letter-spacing="4" fill="url(#gold)" stroke="#884520" stroke-width="3" paint-order="stroke">PORTÕES DO</text>
+ <text x="450" y="225" font-family="Georgia,serif" font-size="131" letter-spacing="3" fill="#2b0a32" stroke="#3a0c3c" stroke-width="19" paint-order="stroke">TROVÃO</text>
+ <text x="450" y="219" font-family="Georgia,serif" font-size="131" letter-spacing="3" fill="url(#goldShadow)" stroke="#7c3019" stroke-width="10" paint-order="stroke">TROVÃO</text>
+ <text x="450" y="212" font-family="Georgia,serif" font-size="131" letter-spacing="3" fill="url(#gold)" stroke="#fff2af" stroke-width="1.8" paint-order="stroke">TROVÃO</text>
+</g>
+<g filter="url(#gem)">
+ <path d="M450 5 436 36 449 35 437 59 471 26 456 27 466 5Z" fill="url(#blue)" stroke="#fff" stroke-width="1.5"/>
+ <path d="M447 262 439 276 450 273 439 291 462 272 455 274 463 260Z" fill="url(#blue)" stroke="#fff6e0" stroke-width="1"/>
+</g>
+<g fill="#fff9d9">
+ <circle cx="260" cy="73" r="2.3"/><circle cx="647" cy="76" r="2.3"/><circle cx="174" cy="178" r="3"/><circle cx="727" cy="177" r="3"/>
+</g>
+</svg>
