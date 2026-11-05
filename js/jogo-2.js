@@ -1723,7 +1723,11 @@ function openAdmin(){adminUnlocked=true;modal('adminLoginModal',false);$('adminP
  $('bankerWithdrawAmount').value='';$('bankerWithdrawPassword').value='';$('bankerWithdrawStatus').textContent='';updateAdmin();}
 function closeAdmin(){if(!$('reportViewer').hidden)closeReportViewer();$('adminPage').hidden=true;adminUnlocked=false;$('bankerWithdrawPassword').value='';document.body.style.overflow='';modal('reportModal',false);}
 function saveAdminProfit(){
- if(!adminUnlocked)return;let n=Number($('adminProfitInput').value);
+ if(!adminUnlocked)return;
+ if(running||bonus||freeSpins>0||freeAutoRunning||freeSettlePending||freeSummaryPending||autoSpinsRemaining>0){
+  $('adminProfitStatus').textContent='Altera a margem apenas entre jogadas, fora dos bónus e giros automáticos.';return;
+ }
+ let n=Number($('adminProfitInput').value);
  if(!Number.isFinite(n)||n<1||n>70){$('adminProfitStatus').textContent='Introduz uma percentagem entre 1,00% e 70,00%.';return;}
  n=Math.round(n*100)/100;const previous=profitPercent;profitPercent=n;
  adminAudit.push({time:new Date().toISOString(),kind:'reserva_operador',previous,newValue:n});save();updateAdmin();
@@ -1743,6 +1747,9 @@ function previewAdminSplit(value){
 }
 function saveAdminSplit(){
  if(!adminUnlocked)return;
+ if(running||bonus||freeSpins>0||freeAutoRunning||freeSettlePending||freeSummaryPending||autoSpinsRemaining>0){
+  $('adminSplitStatus').textContent='Termina primeiro as jogadas e os bónus para repartir a reserva livre.';return;
+ }
  const input=Number($('adminOwnerPercentInput').value);
  if(!Number.isFinite(input)||!Number.isInteger(input)||input<0||input>100){
   $('adminSplitStatus').textContent='Escolhe percentagens inteiras entre 0% e 100%.';return;
