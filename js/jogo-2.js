@@ -528,6 +528,23 @@ function symbolLandingSounds(column){
 
 function chooseSpinMul(){let r=Math.random();if(r<.82)return 2;if(r<.965)return 3;if(r<.992)return 5;if(r<.997)return 10;if(r<.9998)return 20;return 1000;}
 function chooseHoldFactor(){let r=Math.random();if(r<.83)return 2;if(r<.965)return 3;if(r<.99)return 5;if(r<.995)return 10;if(r<.998)return 20;if(r<.9995)return 50;if(r<.9999)return 100;return 1000;}
+/* V59 — dois estilos de prémios NORMAIS, escolhidos antes da jogada.
+   O modo frequente concentra algumas figuras, originando mais trios,
+   mas reduz o prémio médio por linha (~0,78) para não consumir o cofre.
+   Não altera os pesos de WILD, SCATTER, moedas, bolas ou os jackpots. */
+const FREQUENT_SYMBOL_WEIGHTS=[3.5,2.7,1.7,1.1,1,1,1,1];
+const FREQUENT_LINE_PAYOUT=0.78;
+function chooseRegularSymbol(){
+ if(volatilityMode!=='frequentes')return pick(regular);
+ const total=FREQUENT_SYMBOL_WEIGHTS.reduce((a,b)=>a+b,0);
+ let r=Math.random()*total;
+ for(let i=0;i<regular.length;i++){
+  r-=FREQUENT_SYMBOL_WEIGHTS[i];
+  if(r<0)return regular[i];
+ }
+ return regular[regular.length-1];
+}
+const volatilityPayScale=()=>volatilityMode==='frequentes'?FREQUENT_LINE_PAYOUT:1;
 function sym(){const p=Math.random();if(freeSpins>0 || awardContext==='free'){
  if(p<.012)return {id:'mul',value:chooseSpinMul()};
  if(p<.047)return {id:'scatter'};
@@ -538,7 +555,7 @@ function sym(){const p=Math.random();if(freeSpins>0 || awardContext==='free'){
  if(p<.0335)return {id:'scatter'};
  if(p<.0735)return {id:'wild',factor:2};
  if(p<.0995)return {id:'coin',uid:++symbolSeq,value:pick([10,20,50,100,200,500,1000,2000,5000])};
-}return {id:pick(regular)};}
+}return {id:chooseRegularSymbol()};}
 
 function flyCoinToVault(x,y,delay=0,faceValue=0){
  return new Promise(resolve=>{
@@ -740,14 +757,14 @@ function evaluate(g,betAmount=BETS[betIdx]){
   if(count>=3){
    const wilds=ids.slice(0,count).filter(id=>id==='wild').length;
    const wildMultiplier=Math.min(8,2**wilds);
-   const payout=Math.max(1,roundedPayout(betAmount/LINES.length*PAY[target][count]*wildMultiplier*rtpScaleFor(awardContext)));
+   const payout=Math.max(1,roundedPayout(betAmount/LINES.length*PAY[target][count]*wildMultiplier*rtpScaleFor(awardContext)*volatilityPayScale()));
    amount+=payout;
    won.push({line:i,points:Array.from({length:count},(_,x)=>[x,line[x]]),value:payout,which:target,wildMultiplier});
    continue;
   }
   const pairStart=ids.findIndex((id,x)=>id==='wild'&&x<4&&ids[x+1]==='wild');
   if(pairStart>=0){
-   const payout=Math.max(1,roundedPayout(betAmount/LINES.length*PAY.wild[2]*rtpScaleFor(awardContext)));
+   const payout=Math.max(1,roundedPayout(betAmount/LINES.length*PAY.wild[2]*rtpScaleFor(awardContext)*volatilityPayScale()));
    amount+=payout;
    won.push({line:i,points:[[pairStart,line[pairStart]],[pairStart+1,line[pairStart+1]]],value:payout,which:'wild',wildMultiplier:1,special:'twoWild'});
   }
