@@ -329,3 +329,8 @@ html,body{margin:0;width:100%;min-height:100%;overflow-x:hidden}
  box-shadow:inset 0 4px 13px #fff8cf,0 0 15px #ffae4b,0 2px 0 #784619!important;
  transform:translateY(3px) scale(.97);filter:saturate(1.3);
 }
+
+/* V42: jackpots progressivos em euros virtuais e indicadores compactos no HOLD & WIN. */
+.jackpots .jackpot strong{display:block;font-size:clamp(9px,2.0vw,16px);letter-spacing:-.025em;white-space:nowrap;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.gemCounter .jpBonusValue{display:block;font-size:clamp(7px,1.45vw,11px);line-height:1.05;white-space:nowrap;font-weight:900;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:520px){.jackpots{gap:3px}.jackpots .jackpot{padding:3px 1px}.gemCounter{padding:2px 1px}}

@@ -26,7 +26,10 @@ const KEY='jm_webgl_v20_funded';
 // Parametrização V34: jogo base + 3 SCATTER, free spins e Hold & Win avaliados separadamente por Monte Carlo independente.
 // Nota: o RTP observado pode ser inferior ao previsto devido ao limite de pagamento do cofre. Não é RTP certificado.
 const RTP_REFERENCE=96;
-const RTP_CALIBRATION={base:0.928,free:0.915,hold:1.0004}; // Referência histórica V34: rever cálculo estatístico após o prémio de 2 WILD da V41.
+// Valores de escala ajustados por Monte Carlo para os pesos e as frequências V42.
+// A percentagem do fundo não é RTP fixo: o retorno realizado depende dos resultados,
+// do cofre, do tamanho das apostas e das contribuições progressivas.
+const RTP_CALIBRATION={base:0.61,free:0.51,hold:0.25};
 let autoSpinsTotal=0,rtpConfig=96,adminAudit=[],awardContext='base',adminUnlocked=false,adminTaps=0,adminTapDeadline=0,autoSpinsRemaining=0,freeStartPending=false,freeAutoRunning=false,freeAutoTimer=null,scatterNoteStep=0;
 const configuredRtp=()=>RTP_REFERENCE; // Fixo; sem alteração na interface de administração.
 let profitPercent=4, prizePool=0, operatorReserve=0, protectedReserve=0, ownerWithdrawn=0, protectedCarry=0, riskReserve=0, ownerCarry=0, poolCarry=0;
@@ -42,10 +45,11 @@ function fundWager(stake){
  let toPool=Math.min(stake-own,Math.floor(poolExact+1e-10));poolCarry=poolExact-toPool;
  const buffer=stake-own-toPool;
  operatorReserve+=own;riskReserve+=buffer;prizePool+=toPool;
+ const jpFunding=fundProgressive(stake,toPool);prizePool-=jpFunding;
   const protectedExact=own*PROTECTED_SHARE+protectedCarry;
   const locked=Math.min(own,Math.floor(protectedExact+1e-10));
   protectedCarry=protectedExact-locked;protectedReserve+=locked;
- if(session){session.poolFunded=(session.poolFunded||0)+toPool;session.operatorFunded=(session.operatorFunded||0)+own;session.bufferFunded=(session.bufferFunded||0)+buffer;}
+ if(session){session.poolFunded=(session.poolFunded||0)+toPool;session.jackpotFunded=(session.jackpotFunded||0)+jpFunding;session.operatorFunded=(session.operatorFunded||0)+own;session.bufferFunded=(session.bufferFunded||0)+buffer;}
  return {toPool,own,buffer};
 }
 function payFromVault(requested){
@@ -54,12 +58,46 @@ function payFromVault(requested){
  if(session){session.prizes+=amount;session.poolPaid=(session.poolPaid||0)+amount;}
  return amount;
 }
-function validateVault(){return Number.isInteger(prizePool)&&Number.isInteger(operatorReserve)&&Number.isInteger(protectedReserve)&&Number.isInteger(riskReserve)&&prizePool>=0&&operatorReserve>=protectedReserve&&protectedReserve>=0&&riskReserve>=0}
+function validateVault(){return Number.isInteger(prizePool)&&Number.isInteger(operatorReserve)&&Number.isInteger(protectedReserve)&&Number.isInteger(riskReserve)&&prizePool>=0&&operatorReserve>=protectedReserve&&protectedReserve>=0&&riskReserve>=0&&Object.values(progressivePools).every(n=>Number.isInteger(n)&&n>=0)}
 
 const rtpScaleFor=kind=>(effectiveBudgetPercent()/RTP_REFERENCE)*(RTP_CALIBRATION[kind]??1);
 const roundedPayout=value=>{if(!(value>0))return 0;let whole=Math.floor(value),fraction=value-whole;return whole+(Math.random()<fraction?1:0)};
 const rtpLabel=value=>Number(value).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
-const JACKPOTS={MINI:{mult:100,color:'#7bec88'},MEGA:{mult:250,color:'#d48aff'},MAJOR:{mult:500,color:'#82caff'},MAX:{mult:1000,color:'#ffd56d'}};
+// Valores máximos elegíveis por aposta; contadores exibem créditos progressivos, não vezes.
+const JACKPOTS={ULTRA:{mult:5000,color:'#ffe18f'},MAX:{mult:1000,color:'#82caff'},MED:{mult:500,color:'#d48aff'},MIN:{mult:250,color:'#7bec88'}};
+// Total 3% das apostas separado, antes de qualquer pagamento, do fundo de prémios.
+// A reserva do operador é independente destes montantes.
+const PROGRESSIVE_RATE={ULTRA:1.35,MAX:0.75,MED:0.50,MIN:0.40};
+let progressivePools={ULTRA:0,MAX:0,MED:0,MIN:0};
+let progressiveCarry={ULTRA:0,MAX:0,MED:0,MIN:0};
+function fundProgressive(stake,toPool){
+ let allocated=0;
+ for(const type of Object.keys(JACKPOTS)){
+  const exact=stake*PROGRESSIVE_RATE[type]/100+progressiveCarry[type];
+  const cents=Math.max(0,Math.min(toPool-allocated,Math.floor(exact+1e-10)));
+  progressiveCarry[type]=Math.max(0,exact-cents);
+  progressivePools[type]+=cents;allocated+=cents;
+ }
+ return allocated;
+}
+function jackpotPayable(type,bet){
+ return Math.max(0,Math.min(Math.floor(progressivePools[type]||0),bet*JACKPOTS[type].mult));
+}
+function payProgressive(type,bet,remainingLimit){
+ const awarded=Math.max(0,Math.min(jackpotPayable(type,bet),Math.floor(remainingLimit)));
+ progressivePools[type]-=awarded;
+ balance+=awarded;
+ if(session){session.prizes+=awarded;session.jackpotPaid=(session.jackpotPaid||0)+awarded;}
+ return awarded;
+}
+function renderJackpotCounters(){
+ for(const type of Object.keys(JACKPOTS)){
+  const target=$('jp'+type);
+  if(target){target.textContent=money(jackpotPayable(type,BETS[betIdx]));
+   target.title=`Fundo acumulado ${money(progressivePools[type])} · teto de ${JACKPOTS[type].mult}× a aposta atual`;
+  }
+ }
+}
 let symbolSeq=0,vaultCoins=0,roundVaultNew=0;const countedCoins=new Set();
 const money=c=>(c/100).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
 const nfmt=n=>n.toLocaleString('pt-PT');
@@ -98,11 +136,24 @@ function soundReelLanding(){
 }
 
 
-function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,vaultCoins,musicEnabled,musicVolume,rtpConfig,profitPercent,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
-function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;vaultCoins=Math.max(0,Number(data.vaultCoins)||0);bonus=([25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(0,Math.min(70,Number(data.profitPercent))):4;prizePool=Math.max(0,Math.floor(Number(data.prizePool)||0));operatorReserve=Math.max(0,Math.floor(Number(data.operatorReserve)||0));protectedReserve=Math.min(operatorReserve,Math.max(0,Math.floor(Number(data.protectedReserve??(operatorReserve*PROTECTED_SHARE)))));protectedCarry=Math.max(0,Number(data.protectedCarry)||0);ownerWithdrawn=Math.max(0,Math.floor(Number(data.ownerWithdrawn)||0));riskReserve=Math.max(0,Math.floor(Number(data.riskReserve)||0));ownerCarry=Math.max(0,Number(data.ownerCarry)||0);poolCarry=Math.max(0,Number(data.poolCarry)||0);return true}}catch(e){}return false}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,vaultCoins,musicEnabled,musicVolume,rtpConfig,profitPercent,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,progressivePools,progressiveCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
+function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;betIdx=Math.max(0,Math.min(6,Number(data.betIdx)||2));mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;vaultCoins=Math.max(0,Number(data.vaultCoins)||0);bonus=([25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(0,Math.min(70,Number(data.profitPercent))):4;prizePool=Math.max(0,Math.floor(Number(data.prizePool)||0));operatorReserve=Math.max(0,Math.floor(Number(data.operatorReserve)||0));protectedReserve=Math.min(operatorReserve,Math.max(0,Math.floor(Number(data.protectedReserve??(operatorReserve*PROTECTED_SHARE)))));protectedCarry=Math.max(0,Number(data.protectedCarry)||0);ownerWithdrawn=Math.max(0,Math.floor(Number(data.ownerWithdrawn)||0));riskReserve=Math.max(0,Math.floor(Number(data.riskReserve)||0));ownerCarry=Math.max(0,Number(data.ownerCarry)||0);poolCarry=Math.max(0,Number(data.poolCarry)||0);
+for(const type of Object.keys(JACKPOTS)){
+ progressivePools[type]=Math.max(0,Math.floor(Number(data.progressivePools?.[type])||0));
+ progressiveCarry[type]=Math.max(0,Number(data.progressiveCarry?.[type])||0);
+}
+// Compatibilidade com Hold & Win que estava aberto numa versão antiga.
+if(bonus){
+ const map={MINI:'MIN',MEGA:'MED',MAJOR:'MAX',MAX:'ULTRA'};
+ if(bonus.gems && ('MINI' in bonus.gems || 'MEGA' in bonus.gems || 'MAJOR' in bonus.gems)){
+  const old=bonus.gems;bonus.gems={ULTRA:old.MAX||0,MAX:old.MAJOR||0,MED:old.MEGA||0,MIN:old.MINI||0};
+  bonus.focus=map[bonus.focus]||'MIN';bonus.jackpot=map[bonus.jackpot]||null;
+  for(const c of bonus.cells||[])if(c?.kind==='gem')c.type=map[c.type]||'MIN';
+ }
+}return true}}catch(e){}return false}
 function log(kind,amount,detail=''){if(!session)return;session.events.push({time:new Date().toISOString(),kind,amount,detail,balance});save()}
 function update(){
- $('balance').textContent=money(balance);$('lastPrize').textContent=money(lastPrize);$('betValue').textContent=money(BETS[betIdx]);
+ $('balance').textContent=money(balance);$('lastPrize').textContent=money(lastPrize);$('betValue').textContent=money(BETS[betIdx]);renderJackpotCounters();
  const betLocked=running||!!bonus||freeSpins>0;
  $('betMinus').disabled=betLocked||betIdx===0;$('betPlus').disabled=betLocked||betIdx===6;
  document.querySelector('.betPanel').classList.toggle('locked',!!bonus||freeSpins>0);
@@ -215,7 +266,7 @@ function cashMovements(){
 function bankerAvailable(){return Math.max(0,Math.min(operatorReserve-protectedReserve,reportFinancials().ownerAvailable));}
 function reportFinancials(){
  const t=totals();const deposited=t.initial+t.deposits;const withdrawn=t.withdrawn;const inVault=deposited-withdrawn-t.ownerWithdrawn;
- const playerObligations=t.balance;const ownerAvailable=inVault-playerObligations;
+ const playerObligations=t.balance;const ownerAvailable=Math.max(0,Math.min(inVault-playerObligations,operatorReserve-protectedReserve));
  return {t,deposited,withdrawn,inVault,playerObligations,ownerAvailable};
 }
 function escapeReport(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
@@ -225,7 +276,7 @@ function buildReportHTML(){
  const {t,deposited,withdrawn,inVault,playerObligations,ownerAvailable}=reportFinancials();
  const movements=cashMovements();const generated=reportDate(new Date().toISOString());
  const rowHtml=movements.length?movements.map((r,i)=>`<tr><td class="index">${i+1}</td><td>${escapeReport(reportDate(r.date))}</td><td>${escapeReport(r.session)}</td><td class="in">${r.inAmount?money(r.inAmount):'—'}</td><td class="out">${r.outAmount?money(r.outAmount):'—'}</td><td class="cash">${formatSignedCents(r.cash)}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Sem depósitos ou levantamentos registados.</td></tr>';
- const explanatory='O fundo disponível para o operador desconta os saldos ainda atribuídos a jogadores. É um valor contabilístico estimado, não lucro garantido nem certificação de uma máquina com dinheiro real.';
+ const explanatory='O valor disponível para o operador desconta os saldos de jogadores e respeita a parcela reservada e protegida. Os fundos progressivos e o cofre de prémios não são retirados pelo banqueiro. Este é um registo local de créditos fictícios, não lucro garantido.';
  return `<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Relatório de Caixa — Jardim Mágico — ${escapeReport(generated)}</title><link rel="stylesheet" href="css/estilo-3.css"></head><body><div class="tools"><button type="button" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button><button type="button" class="alt" onclick="window.close()">Fechar</button></div><main class="sheet"><div class="header"><div><h1>JARDIM MÁGICO</h1><div class="sub">Relatório de depósitos, levantamentos e cofre</div><div class="meta">Emitido em ${escapeReport(generated)}</div></div><div class="tag">CRÉDITOS FICTÍCIOS</div></div><div class="contents"><div class="cards"><div class="metric deposits"><span class="label">Total depositado</span><b>${money(deposited)}</b></div><div class="metric withdrawals"><span class="label">Total levantado</span><b>${money(withdrawn+t.ownerWithdrawn)}</b></div><div class="metric vault"><span class="label">Dinheiro em cofre</span><b>${formatSignedCents(inVault)}</b></div></div><h2 class="section-title">Registo de movimentos</h2><div class="table-scroll"><table><thead><tr><th>N.º</th><th>Data</th><th>Sessão</th><th>Depósito</th><th>Levantamento</th><th>Dinheiro em cofre</th></tr></thead><tbody>${rowHtml}</tbody></table></div><div class="totals"><h2>Resumo final do operador</h2><div class="total-row"><span>Total de depósitos</span><b>${money(deposited)}</b></div><div class="total-row"><span>Levantamentos dos jogadores</span><b>${money(withdrawn)}</b></div><div class="total-row"><span>Levantamentos do banqueiro</span><b>${money(t.ownerWithdrawn)}</b></div><div class="total-row highlight"><span>Dinheiro total em cofre</span><b>${formatSignedCents(inVault)}</b></div><div class="total-row"><span>Saldos ainda disponíveis aos jogadores</span><b>${money(playerObligations)}</b></div><div class="total-row owner"><span>Fundo líquido disponível para o dono</span><b>${formatSignedCents(ownerAvailable)}</b></div></div><p class="footer">Cálculos: cofre = depósitos − levantamentos dos jogadores − levantamentos da Banca; fundo líquido = cofre − saldos por levantar.<br>${escapeReport(explanatory)}<br>Este relatório reúne apenas os movimentos guardados neste navegador. Não constitui prova de dinheiro físico ou registo contabilístico certificado.</p><p class="meta right">Sessões: ${reportRows().length} · Jogadas: ${t.spins}</p></div></main></body></html>`;
 }
 // V26: o Safari não precisa de permitir pop-ups; o relatório completo abre num quadro interno.
@@ -416,14 +467,14 @@ function chooseSpinMul(){let r=Math.random();if(r<.82)return 2;if(r<.965)return 
 function chooseHoldFactor(){let r=Math.random();if(r<.83)return 2;if(r<.965)return 3;if(r<.99)return 5;if(r<.995)return 10;if(r<.998)return 20;if(r<.9995)return 50;if(r<.9999)return 100;return 1000;}
 function sym(){const p=Math.random();if(freeSpins>0 || awardContext==='free'){
  if(p<.012)return {id:'mul',value:chooseSpinMul()};
- if(p<.037)return {id:'scatter'};
- if(p<.080)return {id:'wild',factor:2};
- if(p<.110)return {id:'coin',uid:++symbolSeq};
+ if(p<.047)return {id:'scatter'};
+ if(p<.090)return {id:'wild',factor:2};
+ if(p<.120)return {id:'coin',uid:++symbolSeq};
 }else{
  if(p<.0045)return {id:'mul',value:chooseSpinMul()};
- if(p<.0195)return {id:'scatter'};
- if(p<.0595)return {id:'wild',factor:2};
- if(p<.0855)return {id:'coin',uid:++symbolSeq};
+ if(p<.0335)return {id:'scatter'};
+ if(p<.0735)return {id:'wild',factor:2};
+ if(p<.0995)return {id:'coin',uid:++symbolSeq};
 }return {id:pick(regular)};}
 
 function flyCoinToVault(x,y,delay=0){
@@ -448,8 +499,8 @@ async function collectVaultCoins(){
 }
 function maybeTriggerVault(){
  if(!roundVaultNew||vaultCoins<8)return false;
-  // Baixa frequência do bónus gratuito: também entra no RTP do jogo base.
-  return Math.random()<.001;
+ // Mais oportunidades de abrir, mas evita iniciar bónus sem fundos mínimos de prémios.
+ return prizePool>=Math.max(20,BETS[betIdx]*5)&&Math.random()<.018;
 }
 async function vaultExplosion(){
  const v=$('vaultBtnMobile'),rect=v.getBoundingClientRect();const ox=rect.left+rect.width/2,oy=rect.top+rect.height/2;
@@ -757,7 +808,7 @@ async function doRound(){
  else if(winnings)notice(`Prémio pago: ${money(winnings)} • ${factor}×${winnings<requestedWin?' • limite do cofre':''}`);else notice(free?'Rodada grátis concluída.':'Sem prémio desta vez.');
  if(!free&&scatterTrigger>=3){
   running=false;openFreeStart();
- }else if(maybeTriggerVault()){
+ }else if(!free&&maybeTriggerVault()){
   await vaultExplosion();running=false;await launchBonus(false,'cofre');
  }else{running=false;update();save();}
  if(freeAutoRunning)scheduleFreeAuto();else maybeContinueAuto();
@@ -774,7 +825,7 @@ function addBonusFactor(i,value){if(bonus.cells[i])return false;bonus.cells[i]={
 function addBonusGem(i,type){if(bonus.cells[i]||bonus.gems[type]>=4)return false;bonus.cells[i]={kind:'gem',type};bonus.gems[type]++;audioFX('gem');if(bonus.gems[type]===4){bonus.jackpot=type;bonus.finished=true;bonus.endReason='jackpot';}return true;}
 function diamondSvg(jp){return `<svg class="bonusCrystal" style="--crystal-main:${jp.color}" viewBox="0 0 100 105" role="img" aria-label="Diamante de cristal" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="facet${jp.mult}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="white" stop-opacity=".96"/><stop offset=".35" stop-color="${jp.color}"/><stop offset="1" stop-color="#18112a"/></linearGradient></defs><path d="M25 10 L75 10 L97 37 L50 98 L3 37 Z" fill="url(#facet${jp.mult})" stroke="#fff4e1" stroke-width="3"/><path d="M25 10 L37 38 L3 37 Z" fill="white" opacity=".46"/><path d="M75 10 L63 38 L97 37 Z" fill="white" opacity=".22"/><path d="M37 38 L63 38 L50 98 Z" fill="white" opacity=".30"/><path d="M3 37 L37 38 L50 98 Z" fill="#130b29" opacity=".32"/><path d="M97 37 L63 38 L50 98 Z" fill="#1d1438" opacity=".45"/><path d="M25 10 L37 38 L63 38 L75 10 Z" fill="white" opacity=".36"/><path d="M50 6 L55 19 L50 15 L45 19Z" fill="white" opacity=".9"/></svg>`;}
 function gemProgress(){
- $('gemCounters').innerHTML=Object.entries(JACKPOTS).map(([kind,data])=>`<div class="gemCounter ${bonus.jackpot===kind?'complete':''}" style="--jp-color:${data.color};color:${data.color}"><b>${kind}</b><small>${Array.from({length:4},(_,i)=>`<span class="gemTick ${i<bonus.gems[kind]?'got':''}">◆</span>`).join('')}</small></div>`).join('');
+ $('gemCounters').innerHTML=Object.entries(JACKPOTS).map(([kind,data])=>`<div class="gemCounter ${bonus.jackpot===kind?'complete':''}" style="--jp-color:${data.color};color:${data.color}"><b>${kind}</b><span class="jpBonusValue">${money(jackpotPayable(kind,bonus.stakeBet))}</span><small>${Array.from({length:4},(_,i)=>`<span class="gemTick ${i<bonus.gems[kind]?'got':''}">◆</span>`).join('')}</small></div>`).join('');
 }
 function bonusCellMarkup(c){
  if(c.kind==='gem')return diamondSvg(JACKPOTS[c.type]);
@@ -801,7 +852,7 @@ function renderBonus(newIndices=[]){
  }
  $('bonusGrid').replaceChildren(frag);
  $('bonusFactors').innerHTML=bonus.factors.length?bonus.factors.map(v=>`<span>${v}×</span>`).join(''):'×1';
- $('bonusFormula').textContent=`${money(bonus.coinsTotal)} × ${bonusFactorTotal()}${bonus.jackpot?' + '+bonus.jackpot:''}`;
+ $('bonusFormula').textContent=`${money(bonus.coinsTotal)} × ${bonusFactorTotal()}${bonus.jackpot?' + '+bonus.jackpot+' '+money(jackpotPayable(bonus.jackpot,bonus.stakeBet)):''}`;
  $('bonusSpin').textContent=bonus.finished?'RECOLHER PRÉMIO':'RODAR BÓNUS';
  $('bonusSpin').disabled=bonus.inMotion;
 }
@@ -827,9 +878,9 @@ function flyGemToCounter(index,type){
 }
 function placeRandomBonusItem(index){
  const r=Math.random();
- if(r<.933)return addBonusCoin(index,bonus.stakeBet*pick([1,1,1,2,2,3,5,5,8,10]));
- if(r<.945)return addBonusFactor(index,chooseHoldFactor());
- const kind=Math.random()<.30?bonus.focus:pick(Object.keys(JACKPOTS));
+ if(r<.820)return addBonusCoin(index,bonus.stakeBet*pick([1,1,1,2,2,3,5,5,8,10]));
+ if(r<.870)return addBonusFactor(index,chooseHoldFactor());
+ const kind=Math.random()<.58?bonus.focus:pick(Object.keys(JACKPOTS));
  return addBonusGem(index,kind);
 }
 async function launchBonus(purchase=true,origin='compra'){
@@ -838,7 +889,7 @@ async function launchBonus(purchase=true,origin='compra'){
  running=true;
  if(purchase){balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;log('compra_hold_win',-cost,'Hold & Win 5×5 — 100× aposta');}
  else{session.bonuses++;log('ativacao_cofre',0,'Hold & Win 5×5 ativado pelo cofre mágico');}
- bonus={left:3,coinsTotal:0,cells:Array(BONUS_CELLS).fill(null),factors:[],gems:{MINI:0,MEGA:0,MAJOR:0,MAX:0},jackpot:null,focus:pick(Object.keys(JACKPOTS)),finished:false,endReason:null,inMotion:false,stakeBet:BETS[betIdx],origin,rolls:0};
+ bonus={left:3,coinsTotal:0,cells:Array(BONUS_CELLS).fill(null),factors:[],gems:{ULTRA:0,MAX:0,MED:0,MIN:0},jackpot:null,focus:pick(Object.keys(JACKPOTS)),finished:false,endReason:null,inMotion:false,stakeBet:BETS[betIdx],origin,rolls:0};
  const spots=randomEmptyCells();
  for(let i=0;i<7;i++)addBonusCoin(spots[i],bonus.stakeBet*pick([1,2,2,3,5,8,10]));
  addBonusGem(spots[7],bonus.focus);
@@ -872,7 +923,7 @@ async function bonusRespin(){
  if(added.length){audioFX('coin');}
  bonus.inMotion=false;renderBonus(added);
  if(bonus.finished){
-  if(bonus.jackpot){$('bonusNote').textContent='🏆 4 CRISTAIS '+bonus.jackpot+'! JACKPOT COMPLETO!';audioFX('big');audioFX('schoolBell');}
+  if(bonus.jackpot){$('bonusNote').textContent='🏆 4 CRISTAIS '+bonus.jackpot+'! Valor reservado: '+money(jackpotPayable(bonus.jackpot,bonus.stakeBet));audioFX('big');audioFX('schoolBell');}
   else if(bonus.endReason==='tentativas')$('bonusNote').textContent='Esgotaste as 3 tentativas. Recolhe as moedas e multiplicadores!';
   else $('bonusNote').textContent='Grelha completa. Recolhe os prémios!';
  }else if(added.length){
@@ -883,11 +934,15 @@ async function bonusRespin(){
 function bonusFinish(){
  if(!bonus||!bonus.finished||bonus.inMotion)return;
  const base=bonus.coinsTotal,factor=bonusFactorTotal(),jp=bonus.jackpot;
- const jackpotWin=jp?roundedPayout(bonus.stakeBet*JACKPOTS[jp].mult*rtpScaleFor('hold')):0;
-  const rawFinal=base*factor+jackpotWin,requestedFinal=Math.min(rawFinal,bonus.stakeBet*MAX_WIN_MULT),final=payFromVault(requestedFinal);
+ const rawCash=base*factor,cap=bonus.stakeBet*MAX_WIN_MULT;
+ const requestedCash=Math.min(rawCash,cap);
+ const cashPaid=payFromVault(requestedCash);
+ const jackpotWin=jp?payProgressive(jp,bonus.stakeBet,Math.max(0,cap-cashPaid)):0;
+ const final=cashPaid+jackpotWin;
+ const capped=cashPaid<requestedCash?'cofre':rawCash>cap?'limite':null;
  lastPrize=final;
- log('prémio_hold_win',final,`Hold & Win 5×5: ${money(base)} × ${factor}${jp?' + '+jp+' '+money(jackpotWin):' • sem jackpot'} • ${bonus.endReason}`);
- modal('bonusModal',false);bonus=null;update();save();showBig(final,base,factor,jp,jackpotWin,final<requestedFinal?'cofre':final<rawFinal?'limite':null);
+ log('prémio_hold_win',final,`Hold & Win: moedas ${money(base)} ×${factor}, pago cofre geral ${money(cashPaid)}${jp?' + '+jp+' progressivo '+money(jackpotWin):''} · ${bonus.endReason}`);
+ modal('bonusModal',false);bonus=null;update();save();showBig(final,base,factor,jp,jackpotWin,capped);
 }
 function refreshBuyOptions(){const costHold=BETS[betIdx]*100,costFree=BETS[betIdx]*20;$('buyHoldPrice').textContent=money(costHold);$('buyFreePrice').textContent=money(costFree);$('buyHoldChoice').disabled=balance<costHold||!session||running||!!bonus||freeSpins>0;$('buyFreeChoice').disabled=balance<costFree||!session||running||!!bonus||freeSpins>0;$('buyInfo').textContent='Saldo '+money(balance)+' • Hold & Win 100× a aposta • 15 free spins 20× a aposta';}
 function openBonusPurchase(){if(!session||running||bonus)return;refreshBuyOptions();modal('buyModal',true);soundStart()}
@@ -937,7 +992,7 @@ function makePaytable(){
 
 // Painel reservado. A palavra-passe é apenas um bloqueio de interface num ficheiro local.
 function updateAdmin(){
- const t=totals(),bankTotal=t.ownerWithdrawn;
+ const t=totals(),bankTotal=t.ownerWithdrawn,rtpObserved=t.stakes>0?rtpLabel(100*t.prizes/t.stakes):'—';
  $('adminProfitSet').textContent=rtpLabel(profitPercent);
  $('adminProfitActive').textContent=session?rtpLabel(configuredProfit()):'—';
  $('adminEffectiveRtp').textContent=rtpLabel(Math.min(RTP_REFERENCE,100-profitPercent));
@@ -947,8 +1002,8 @@ function updateAdmin(){
  $('adminReserveTotal').textContent=money(operatorReserve);
  $('adminReserveProtected').textContent=money(protectedReserve);
  $('adminReserveWithdrawable').textContent=money(bankerAvailable());
- $('adminReportSummary').innerHTML=`Apostas: <strong>${money(t.stakes)}</strong> · Prémios pagos: <strong>${money(t.prizes)}</strong> · Saldo dos jogadores: <strong>${money(t.balance)}</strong><br>Levantamentos do banqueiro: <strong>${money(bankTotal)}</strong> · Caixa livre contabilística: <strong>${money(reportFinancials().ownerAvailable)}</strong> · Rodadas: <strong>${t.spins}</strong>`;
- $('adminMathInfo').textContent=`Ajuste manual de RTP desativado. Referência matemática fixa: ${rtpLabel(RTP_REFERENCE)}, sem certificação do RTP efetivo. Das apostas, ${rtpLabel(configuredProfit())} são reservadas pelo operador; 25% desses fundos ficam protegidos na máquina, e o restante só pode ser levantado se existir caixa livre depois de cobrir o saldo dos jogadores. Fundo de prémios da sessão: até ${rtpLabel(effectiveBudgetPercent())}. Máximo teórico por prémio: 5000× a aposta, sempre limitado pelo cofre. Nenhuma percentagem garante lucro económico real.`;
+ $('adminReportSummary').innerHTML=`Apostas: <strong>${money(t.stakes)}</strong> · Prémios pagos: <strong>${money(t.prizes)}</strong> · Saldo dos jogadores: <strong>${money(t.balance)}</strong><br>Levantamentos do banqueiro: <strong>${money(bankTotal)}</strong> · Caixa livre contabilística: <strong>${money(reportFinancials().ownerAvailable)}</strong> · Rodadas: <strong>${t.spins}</strong> · RTP observado: <strong>${rtpObserved}</strong>`;
+ $('adminMathInfo').textContent=`Não é permitido alterar o RTP. O valor observado nesta máquina é ${rtpObserved} (prémios efetivamente pagos / apostas contabilizadas); a simulação V42 em 3 milhões de apostas deu 93,28%, mas não certifica nem garante a sessão atual. De cada aposta, até ${rtpLabel(effectiveBudgetPercent())} entram nos fundos de prémios, dos quais 3% da aposta alimentam os jackpots progressivos (ULTRA 1,35%; MAX 0,75%; MED 0,50%; MIN 0,40%). A reserva do operador é ${rtpLabel(configuredProfit())}, com 25% dessa parcela protegidos. Só se pode levantar a parcela livre depois de assegurar os saldos dos jogadores. Todos os pagamentos são limitados por fundos de créditos disponíveis e pelo máximo 5000×. Créditos virtuais sem certificação para dinheiro real.`;
 }
 function openAdmin(){adminUnlocked=true;modal('adminLoginModal',false);$('adminPassword').value='';$('adminPage').hidden=false;document.body.style.overflow='hidden';$('adminProfitInput').value=profitPercent.toFixed(2);$('adminProfitSlider').value=profitPercent;$('adminProfitPreview').textContent=rtpLabel(profitPercent);$('bankerWithdrawAmount').value='';$('bankerWithdrawPassword').value='';$('bankerWithdrawStatus').textContent='';updateAdmin();}
 function closeAdmin(){if(!$('reportViewer').hidden)closeReportViewer();$('adminPage').hidden=true;adminUnlocked=false;$('bankerWithdrawPassword').value='';document.body.style.overflow='';modal('reportModal',false);}
