@@ -236,7 +236,7 @@ function doBankerWithdraw(){
  $('bankerWithdrawStatus').textContent='Levantamento virtual do banqueiro: '+money(cents)+' • Reserva protegida intacta.';
  updateAdmin();save();
 }
-function maybeContinueAuto(){if(freeStartPending||freeAutoRunning||freeSpins>0)return;if(autoSpinsRemaining>0&&!running&&!bonus&&session&&(freeSpins>0||balance>=BETS[betIdx])){setTimeout(()=>{if(autoSpinsRemaining>0&&!running&&!bonus&&session){autoSpinsRemaining--;update();doRound();}},mode==='turbo'?120:320);}else if(autoSpinsRemaining>0&&(!session||(!freeSpins&&balance<BETS[betIdx]))){autoSpinsRemaining=0;update();save();notice('Auto-spins terminadas.')}}
+function maybeContinueAuto(){if(freeStartPending||freeAutoRunning||freeSpins>0||freeSettlePending||freeSettlementRunning||freeSummaryPending)return;if(autoSpinsRemaining>0&&!running&&!bonus&&session&&(freeSpins>0||balance>=BETS[betIdx])){setTimeout(()=>{if(autoSpinsRemaining>0&&!running&&!bonus&&session){autoSpinsRemaining--;update();doRound();}},mode==='turbo'?120:320);}else if(autoSpinsRemaining>0&&(!session||(!freeSpins&&balance<BETS[betIdx]))){autoSpinsRemaining=0;update();save();notice('Auto-spins terminadas.')}}
 function stopAuto(){autoSpinsRemaining=0;autoSpinsTotal=0;update();save();modal('autoModal',false);}
 function reportRows(){return [...history,...(session?[session]:[])];}
 function totals(){const a=reportRows();return a.reduce((v,s)=>({initial:v.initial+(s.initial||0),deposits:v.deposits+(s.deposits||0),stakes:v.stakes+(s.stake||0),prizes:v.prizes+(s.prizes||0),withdrawn:v.withdrawn+(s.withdrawn||0),ownerWithdrawn:v.ownerWithdrawn+(s.ownerWithdrawn||0),balance:v.balance+(s.end?0:s.id===session?.id?balance:0),spins:v.spins+(s.spins||0)}),{initial:0,deposits:0,stakes:0,prizes:0,withdrawn:0,ownerWithdrawn:0,balance:0,spins:0})}
@@ -533,32 +533,100 @@ async function showFeatureIntro(kind){
 }
 
 /* V52 — resumo de free spins transparente, fechado apenas pelo GIRO principal. */
+/* V54 — o valor das free spins só é atribuído no final, depois de todas as
+   bolas multiplicadoras viajarem da faixa superior até ao cálculo central. */
 function freeSummaryNode(){
  let node=$('jm52FreeSummary');
  if(!node){
   node=document.createElement('div');node.id='jm52FreeSummary';
   node.setAttribute('aria-live','polite');node.setAttribute('role','status');
-  node.innerHTML='<div class="jm52FreeHeading">FREE SPINS CONCLUÍDAS</div><div class="jm52FreeValue"></div><div class="jm52FreeCount"></div><div class="jm52FreeHint">CARREGA EM GIRO PARA CONTINUAR</div>';
+  node.innerHTML='<div class="jm52FreeHeading">FREE SPINS CONCLUÍDAS</div><div class="jm54FreeFactor"></div><div class="jm54FreeEquation"></div><div class="jm52FreeValue"></div><div class="jm52FreeCount"></div><div class="jm54FreeLimit"></div><div class="jm52FreeHint">CARREGA EM GIRO PARA CONTINUAR</div>';
   $('stageWrap').append(node);
  }
  return node;
 }
-function showFreeSummary(resume=false){
- if(freeSpins>0||bonus)return;
- freeAutoRunning=false;
- freeSummaryPending=true;
- autoSpinsRemaining=0;autoSpinsTotal=0;
- const node=freeSummaryNode();
+function fillFreeSummary(node){
+ const factor=freeMultiplierBalls.length?freeMultiplierBalls.reduce((sum,x)=>sum+x,0):1;
+ node.querySelector('.jm52FreeHeading').textContent='FREE SPINS CONCLUÍDAS';
+ node.querySelector('.jm54FreeFactor').textContent='MULTIPLICADORES ×'+factor;
+ node.querySelector('.jm54FreeEquation').textContent=money(freeBaseTotal)+' × '+factor;
  node.querySelector('.jm52FreeValue').textContent=money(freeBonusTotal);
  node.querySelector('.jm52FreeCount').textContent=freeSummaryCount+' JOGADAS GRÁTIS';
- node.classList.remove('show');void node.offsetWidth;node.classList.add('show');
+ node.querySelector('.jm54FreeLimit').textContent='';
+ node.querySelector('.jm52FreeHint').textContent='CARREGA EM GIRO PARA CONTINUAR';
+ node.classList.remove('jm54Calculating');node.classList.add('show');
+}
+async function settleFreeSpins(){
+ if(freeSettlementRunning||!freeSettlePending||freeSummaryPending||freeSpins>0||bonus||running)return;
+ freeSettlementRunning=true;freeAutoRunning=false;
+ autoSpinsRemaining=0;autoSpinsTotal=0;
+ const node=freeSummaryNode(),factor=freeMultiplierBalls.length?freeMultiplierBalls.reduce((sum,x)=>sum+x,0):1;
+ node.classList.add('show','jm54Calculating');
+ node.querySelector('.jm52FreeHeading').textContent='A SOMAR OS MULTIPLICADORES';
+ node.querySelector('.jm54FreeFactor').textContent='✦ ✦ ✦';
+ node.querySelector('.jm54FreeEquation').textContent=money(freeBaseTotal)+' × ?';
+ node.querySelector('.jm52FreeValue').textContent='…';
+ node.querySelector('.jm52FreeCount').textContent=freeSummaryCount+' JOGADAS GRÁTIS';
+ node.querySelector('.jm54FreeLimit').textContent='';
+ node.querySelector('.jm52FreeHint').textContent='A REVELAR O PRÉMIO FINAL';
+ update();save();
+ const ghosts=[];
+ try{
+  const visualPills=Array.from($('orbs').querySelectorAll('.orbPill'));
+  const target=node.querySelector('.jm54FreeFactor');
+  await sleep(mode==='turbo'?180:390);
+  const to=target.getBoundingClientRect();
+  for(let i=0;i<visualPills.length;i++){
+   const el=visualPills[i],rect=el.getBoundingClientRect();
+   if(!rect.width||!rect.height)continue;
+   const ghost=document.createElement('span');
+   ghost.className='jm54MultiplierFlight';ghost.textContent=el.textContent;
+   ghost.style.left=(rect.left+rect.width/2-17)+'px';
+   ghost.style.top=(rect.top+rect.height/2-17)+'px';
+   document.body.append(ghost);ghosts.push(ghost);
+   const dx=to.left+to.width/2-(rect.left+rect.width/2);
+   const dy=to.top+to.height/2-(rect.top+rect.height/2);
+   const duration=mode==='turbo'?440:800,delay=i*(mode==='turbo'?24:49);
+   ghost.style.transition='transform '+duration+'ms cubic-bezier(.13,.71,.18,1),opacity '+duration+'ms ease';
+   setTimeout(()=>{ghost.style.transform='translate('+dx+'px,'+dy+'px) scale(.45) rotate(260deg)';ghost.style.opacity='0';audioFX('coin');},30+delay);
+  }
+  await sleep(mode==='turbo'?650:1250);
+  node.querySelector('.jm54FreeFactor').textContent='×'+factor;
+  audioFX('win');
+  node.querySelector('.jm54FreeEquation').textContent=money(freeBaseTotal)+' × '+factor+' =';
+  await sleep(mode==='turbo'?330:750);
+ }catch(err){console.warn('Animação dos multiplicadores:',err);}
+ finally{ghosts.forEach(ghost=>ghost.remove());}
+ // Não há espera entre o débito do cofre, o registo e o save: uma atualização
+ // da página nunca duplica o pagamento da mesma sequência de free spins.
+ const requested=Math.min(freeBaseTotal*factor,freeBet*MAX_WIN_MULT);
+ const paid=payFromVault(requested);
+ freeBonusTotal+=paid;lastPrize=freeBonusTotal;
+ freeSettlePending=false;freeSummaryPending=true;
+ freeSettlementRunning=false;
+ if(paid>0)log('premio_freespins_final',paid,'Free spins: base '+money(freeBaseTotal)+' ×'+factor+'; pedido '+money(requested)+'; pago '+money(paid));
+ if(paid<requested)log('limite_cofre_freespins',0,'Limite de cofre aplicado ao total: '+money(requested)+' → '+money(paid));
+ fillFreeSummary(node);
+ node.querySelector('.jm54FreeLimit').textContent=paid<requested?'VALOR LIMITADO PELO COFRE DISPONÍVEL':'';
+ node.querySelector('.jm54FreeEquation').textContent=money(freeBaseTotal)+' × '+factor+' = '+money(requested);
+ audioFX(paid?'big':'win');
+ notice('✦ FREE SPINS: '+money(freeBonusTotal)+' · CARREGA EM GIRO PARA CONTINUAR');
+ update();save();
+}
+function showFreeSummary(resume=false){
+ if(freeSpins>0||bonus||running)return;
+ if(freeSettlePending&&!freeSummaryPending){void settleFreeSpins();return;}
+ freeAutoRunning=false;freeSummaryPending=true;autoSpinsRemaining=0;autoSpinsTotal=0;
+ const node=freeSummaryNode();fillFreeSummary(node);
  if(!resume){audioFX('win');notice('✦ Free spins terminadas! Carrega em GIRO para continuar.');}
  update();save();
 }
 function closeFreeSummary(){
- if(!freeSummaryPending)return;
- freeSummaryPending=false;
+ if(!freeSummaryPending||freeSettlementRunning)return;
+ freeSummaryPending=false;freeSettlePending=false;
+ freeBaseTotal=0;freeMultiplierBalls=[];shelf=[];
  $('jm52FreeSummary')?.classList.remove('show');
+ updateShelf();
  notice('Pronto para uma nova jogada.');
  update();save();
 }
@@ -1383,7 +1451,8 @@ function bonusFinish(){
  modal('bonusModal',false);bonus=null;update();save();
  if(wheelJackpot){notice('🏆 JACKPOT '+wheelJackpot+': '+money(wheelPaid)+' · TOTAL '+money(final));}
  else showBig(final,base,factor,wheelJackpot||crystalJackpot,jackpotWin,capped,false);
- if(freeAutoRunning)scheduleFreeAuto();
+ if(freeSettlePending&&!$('bigWin').classList.contains('show'))showFreeSummary();
+ else if(freeAutoRunning)scheduleFreeAuto();
  else if(freeSpins>0&&!freeStartPending&&!freeSummaryPending)openFreeStart();
  else if(autoSpinsRemaining>0&&!$('bigWin').classList.contains('show'))maybeContinueAuto();
 }
@@ -1511,13 +1580,13 @@ function setup(){
  $('cancelWithdraw').onclick=()=>{$('withdrawPassword').value='';$('withdrawError').textContent='';modal('withdrawModal',false)};$('confirmWithdraw').onclick=doWithdraw;$('withdrawPassword').addEventListener('keydown',e=>{if(e.key==='Enter')doWithdraw()});
  $('autoSpinBtn').onclick=()=>{if(!session||bonus||freeSpins>0)return;document.querySelectorAll('#autoChoices button').forEach(b=>b.disabled=running);modal('autoModal',true)};document.querySelectorAll('#autoChoices button').forEach(btn=>btn.onclick=()=>{if(running)return;autoSpinsRemaining=Number(btn.dataset.auto)||0;autoSpinsTotal=autoSpinsRemaining;modal('autoModal',false);notice('Auto-spins ativadas: '+autoSpinsRemaining);update();save();if(!running&&!bonus){autoSpinsRemaining--;update();doRound();}});$('cancelAuto').onclick=()=>modal('autoModal',false);$('stopAuto').onclick=stopAuto;
  $('btnHome').onclick=()=>{if(running||bonus||freeSpins>0)return;openDepositLogin()};
- $('closeBig').onclick=()=>{$('bigWin').classList.remove('show');notice('JACKPOT recolhido. Boa continuação!');if(freeAutoRunning)scheduleFreeAuto();else if(freeSpins>0&&!freeStartPending)openFreeStart();else if(autoSpinsRemaining>0)maybeContinueAuto()};
+ $('closeBig').onclick=()=>{$('bigWin').classList.remove('show');notice('JACKPOT recolhido. Boa continuação!');if(freeSettlePending)showFreeSummary();else if(freeAutoRunning)scheduleFreeAuto();else if(freeSpins>0&&!freeStartPending)openFreeStart();else if(autoSpinsRemaining>0)maybeContinueAuto()};
  $('openingCredits').addEventListener('input',()=>{document.querySelectorAll('#choices button').forEach(b=>b.classList.toggle('selected',Number(b.dataset.value)===Number($('openingCredits').value)));updateDepositPreview()});
 }
 
 (async()=>{setup();setupAdmin();load();setDisplayRatio(window.innerWidth>window.innerHeight*1.12?'16:9':'9:16');musicUI();document.addEventListener('pointerdown',()=>{if(session&&musicEnabled&&musicElement().paused)startMusic()},{passive:true});update();makePaytable();await imageLoad();requestAnimationFrame(frame);
  // CDN PixiJS é opcional em execução: Canvas2D serve de alternativa quando offline/WebGL indisponível.
  let ticks=0;const timer=setInterval(async()=>{if(window.PIXI?.Application){clearInterval(timer);await initPixi()}else if(++ticks>=30){clearInterval(timer);console.info('Canvas 2D de reserva ativo')}},100);
- if(session){notice('Sessão retomada. Continua a jogar!');modal('startModal',false);if(freeSummaryPending)showFreeSummary(true);if(bonus){if(bonus.finished&&bonus.endReason==='completo'&&bonus.cells.every(Boolean))prepareFullBoardWheel();renderBonus();modal('bonusModal',true);$('bonusNote').textContent=bonus.wheelPending?'Roleta de jackpots por concluir. O mesmo sorteio será retomado.':bonus.finished?'Bónus concluído. Recolhe o teu prémio.':'Bónus retomado: tens '+bonus.left+' tentativas restantes.';if(bonus.wheelPending)setTimeout(()=>playFullBoardWheel(),200);}if(freeSpins>0&&!bonus)openFreeStart();else if(autoSpinsRemaining>0&&!running&&!bonus)maybeContinueAuto();}else openDepositLogin();
+ if(session){notice('Sessão retomada. Continua a jogar!');modal('startModal',false);if(freeMultiplierBalls.length)shelf=freeMultiplierBalls;updateShelf();if(freeSummaryPending)showFreeSummary(true);if(freeSettlePending&&!bonus)showFreeSummary();if(bonus){if(bonus.finished&&bonus.endReason==='completo'&&bonus.cells.every(Boolean))prepareFullBoardWheel();renderBonus();modal('bonusModal',true);$('bonusNote').textContent=bonus.wheelPending?'Roleta de jackpots por concluir. O mesmo sorteio será retomado.':bonus.finished?'Bónus concluído. Recolhe o teu prémio.':'Bónus retomado: tens '+bonus.left+' tentativas restantes.';if(bonus.wheelPending)setTimeout(()=>playFullBoardWheel(),200);}if(freeSpins>0&&!bonus)openFreeStart();else if(autoSpinsRemaining>0&&!running&&!bonus&&!freeSettlePending&&!freeSummaryPending)maybeContinueAuto();}else openDepositLogin();
 })();
 })();
