@@ -1,0 +1,105 @@
+/* V48 — skin com recortes FOTOGRÁFICOS retirados da imagem fornecida
+ * pelo autor. As transparências deixam girar o jogo real dentro da moldura.
+ * Mantém o motor, RTP, apostas, jackpots, acessibilidade e eventos intactos. */
+:root{--jm48-gold:#ffe4a2;--jm48-plum:#361043;}
+html,body{background:#1a102c!important;}
+body::before{
+ content:""!important;position:fixed!important;inset:0!important;
+ background-image:linear-gradient(180deg,rgba(19,6,31,.08) 0%,rgba(27,9,45,.13) 66%,rgba(17,6,25,.02) 100%),url('../assets/imagens/ambiente-foto-v48.webp')!important;
+ background-position:center center!important;
+ background-size:cover!important;
+ background-repeat:no-repeat!important;
+ opacity:1!important;
+ filter:saturate(1.35) contrast(1.12)!important;
+ animation:none!important;
+}
+body::after{
+ content:""!important;position:fixed!important;inset:0!important;
+ background:radial-gradient(ellipse at 45% 10%,rgba(255,221,151,.11),transparent 46%),linear-gradient(90deg,rgba(24,5,36,.10),transparent 25%,transparent 75%,rgba(22,6,29,.10))!important;
+ pointer-events:none!important;animation:none!important;
+}
+/* O desenho dos troncos deixou de ser SVG vetorial tosco: usa os
+ * troncos entrelaçados, corda real e flores do modelo enviado. */
+.game .reelFrame::before{display:none!important;content:none!important;}
+.game .reelFrame::after{
+ content:""!important;
+ display:block!important;
+ position:absolute!important;
+ left:-3.1%!important;top:-1.7%!important;
+ width:106.2%!important;height:104%!important;
+ background-image:url('../assets/imagens/moldura-foto-v48.webp')!important;
+ background-position:center!important;
+ background-repeat:no-repeat!important;
+ background-size:100% 100%!important;
+ filter:drop-shadow(0 4px 5px rgba(13,3,20,.65)) drop-shadow(0 0 5px rgba(255,204,133,.30))!important;
+ pointer-events:none!important;
+ z-index:24!important;
+}
+/* A abertura fotográfica é transparente; o título, o contador
+ * de multiplicadores e os 15 símbolos continuam elementos de verdade. */
+.game .reelFrame,.game[data-layout="portrait"] .reelFrame{
+ background:linear-gradient(180deg,#4c1a61 0%,#20132f 14%,#231633 100%)!important;
+ padding:clamp(3px,.65vw,7px) clamp(5px,1vw,11px) clamp(5px,1vw,9px)!important;
+ border:1px solid rgba(224,174,102,.68)!important;
+ border-radius:10px!important;
+ box-shadow:0 0 8px rgba(240,162,110,.37),0 8px 14px #0c071aa3!important;
+}
+.game .shelf{background:linear-gradient(180deg,#66216c,#381243 70%,#2b173c)!important;box-shadow:inset 0 0 13px rgba(255,131,227,.23)!important;}
+.game .stageWrap{border-color:#c37a7380!important;}
+.game .gardenWorld{background:#281738!important;}
+.game .forestBackdrop{opacity:.12!important;filter:blur(3px) hue-rotate(34deg) saturate(.85)!important;}
+.game .gardenWorld::after{background:linear-gradient(90deg,rgba(14,6,33,.32),transparent 25%,transparent 75%,rgba(14,6,33,.32))!important;}
+.game .glassReels i{background:linear-gradient(90deg,rgba(20,9,45,.24),rgba(116,48,132,.05) 52%,rgba(20,9,45,.2))!important;}
+.game .reelFog{background:linear-gradient(180deg,rgba(16,8,31,.31),transparent 13%,transparent 84%,rgba(16,8,31,.28))!important;}
+/* Letreiro mais presente, com dimensões próximas da fotografia 1. */
+.game[data-layout="portrait"] .logoLoop,.game .logoLoop{
+ width:100%!important;max-width:100%!important;
+ margin:2px auto clamp(8px,1.2dvh,14px)!important;
+}
+.game[data-layout="portrait"] .titleArt,.game .titleArt{
+ width:100%!important;
+ height:clamp(106px,17.3dvh,164px)!important;
+ object-fit:contain!important;
+ filter:drop-shadow(0 5px 9px #160820) drop-shadow(0 0 7px rgba(248,156,212,.42))!important;
+}
+.game[data-layout="portrait"] .topbar{
+ padding:2px 2px 0!important;min-height:33px!important;
+ margin:0 0 3px!important;
+}
+.game .jackpots .jackpot{
+ background:radial-gradient(ellipse at 42% -20%,#a74a9f 0%,#672673 27%,#40104e 67%,#240a35)!important;
+ border-color:#f7d38a!important;
+ box-shadow:inset 0 1px 2px #fff0d49c,0 2px 0 #c17c4a,0 0 9px #ffc37588!important;
+}
+.game .jackpots .jackpot.max{background:linear-gradient(155deg,#a04475,#592046 60%,#3d163d)!important;}
+.game .jackpots .jackpot:nth-child(2){background:linear-gradient(160deg,#75348d,#51195c 57%,#351441)!important;}
+.game .jackpots .jackpot:nth-child(3){background:linear-gradient(160deg,#6a3989,#441a61 58%,#25133a)!important;}
+.game .jackpots .jackpot:nth-child(4){background:linear-gradient(160deg,#923675,#57205b 60%,#2d1643)!important;}
+.game .v37LeftStats .hudPanel,.game .statPrize,.game .v37RightStats .vaultMystery{
+ background:linear-gradient(155deg,#792878,#4b154f 51%,#281039)!important;
+}
+.game .spinHalo .spinBtn{
+ background:radial-gradient(circle at 34% 17%,#eeff9e,#82dd25 27%,#278e2c 54%,#064a23 82%)!important;
+ border:4px solid #fff1ab!important;
+ box-shadow:inset 0 4px 6px #f8ffcaa8,inset 0 -10px 16px #05321bc9,0 0 0 3px #a36e2f,0 0 0 6px #ffe99c,0 0 21px #b1f4538f!important;
+}
+.game .spinHalo .spinBtn:disabled{opacity:.66;}
+/* Somente a esfera do SCATTER tem movimento: Canvas separado
+   desenhado à frente do símbolo (seja Canvas2D ou PixiJS/WebGL). */
+#jmScatterOrbOverlay{
+ position:absolute!important;inset:0!important;
+ width:100%!important;height:100%!important;
+ z-index:4!important;
+ pointer-events:none!important;
+ mix-blend-mode:normal!important;
+}
+/* A interface continua utilizável na horizontal e em aparelhos pequenos. */
+.game[data-layout="wide"] .titleArt{height:clamp(39px,11dvh,87px)!important;}
+.game[data-layout="wide"] .logoLoop{margin:0 auto 4px!important;}
+.game[data-layout="wide"] .reelFrame::after{left:-2.7%!important;width:105.4%!important;}
+.game[data-layout="wide"] .reelFrame{padding:3px 7px 7px!important;}
+@media(max-width:390px){
+ .game[data-layout="portrait"] .titleArt{height:clamp(99px,15.7dvh,142px)!important;}
+ .game .toptools{gap:clamp(4px,1.15vw,8px)!important;}
+}
+@media(prefers-reduced-motion:reduce){.game .titleArt{animation:none!important;}}
