@@ -618,7 +618,7 @@ function jmMotion(s,x,t){
   case 'gem':a=.055*Math.sin(v*.95+p);light=1+.2*Math.sin(v*2.6)**2;break;
   case 'green':dx=3.4*Math.sin(v*1.15+p);dy=2.4*Math.cos(v*1.15+p);break;
   case 'wild':k=1+.045*Math.sin(v*3.3)**2;light=1+.38*Math.sin(v*4.2)**2;break;
-  case 'scatter':a=v*.63;k=1+.034*Math.sin(v*1.5)**2;light=1+.26*Math.sin(v*2.4)**2;break;
+  case 'scatter':a=0;k=1;light=1+.12*Math.sin(v*2.0)**2;break; // V48: só a esfera gira, o SCATTER é fixo
   case 'mul':k=1+.028*Math.sin(v*2.9)**2;break;
   case 'coin':a=.07*Math.sin(v*1.4+p);break;
  }
@@ -718,6 +718,69 @@ function animationPosition(x,y,t){
  }
  return {cur:grid[x][y],y:y*CH};
 }
+/* V48: esfera autónoma do SCATTER. A moldura, imagem e texto ficam imóveis.
+   Este Canvas fica acima do Pixi e cobre só o disco superior; não altera símbolos nem prémios. */
+let jmScatterCanvas=null,jmScatterCtx=null;
+function jmPrepareScatterCanvas(){
+ if(jmScatterCtx)return jmScatterCtx;
+ const stage=$('stageWrap');
+ if(!stage)return null;
+ jmScatterCanvas=document.createElement('canvas');
+ jmScatterCanvas.id='jmScatterOrbOverlay';
+ jmScatterCanvas.width=W;jmScatterCanvas.height=H;
+ jmScatterCanvas.setAttribute('aria-hidden','true');
+ stage.append(jmScatterCanvas);
+ jmScatterCtx=jmScatterCanvas.getContext('2d');
+ return jmScatterCtx;
+}
+function jmPaintScatterMoon(c,x,y,t){
+ if(JM_REDUCED)t=0;
+ const cx=(x+.5)*CW,cy=y+CH*.31,r=Math.min(CW,CH)*.155;
+ const turn=t*.00081;
+ c.save();c.translate(cx,cy);
+ c.shadowColor='#8ef8fa';c.shadowBlur=10;
+ c.beginPath();c.arc(0,0,r,0,2*Math.PI);c.fillStyle='#0a3857';c.fill();c.shadowBlur=0;
+ c.beginPath();c.arc(0,0,r,0,2*Math.PI);c.clip();
+ const halo=c.createRadialGradient(-r*.25,-r*.31,1,0,0,r*1.25);
+ halo.addColorStop(0,'#e6ffff');halo.addColorStop(.15,'#85f9f4');halo.addColorStop(.43,'#1cc4d1');halo.addColorStop(.70,'#1663a5');halo.addColorStop(1,'#0d244b');
+ c.fillStyle=halo;c.fillRect(-r,-r,r*2,r*2);
+ c.rotate(turn);
+ c.strokeStyle='#effffa';c.lineWidth=r*.11;c.lineCap='round';c.shadowColor='#8dfcf3';c.shadowBlur=5;
+ c.beginPath();c.ellipse(0,0,r*.71,r*.36,.32,-.6,Math.PI*1.5);c.stroke();
+ c.strokeStyle='#2ae9fb';c.lineWidth=r*.19;c.beginPath();c.ellipse(0,0,r*.67,r*.43,-.45,.1,Math.PI*1.9);c.stroke();
+ c.strokeStyle='#0a4771';c.lineWidth=r*.13;c.beginPath();c.ellipse(r*.05,r*.13,r*.36,r*.50,.6,-.9,Math.PI*1.3);c.stroke();
+ c.shadowBlur=0;
+ for(let j=0;j<6;j++){
+  const a=j*Math.PI/3,rr=r*(.25+(j%3)*.22);
+  c.fillStyle=j%2?'#ffffff':'#b6fbfa';
+  c.beginPath();c.arc(Math.cos(a)*rr,Math.sin(a)*rr,Math.max(1,r*.065),0,Math.PI*2);c.fill();
+ }
+ c.restore();
+ c.save();c.translate(cx,cy);c.strokeStyle='#cefff2';c.lineWidth=r*.11;
+ c.shadowColor='#d5ffff';c.shadowBlur=8;
+ c.beginPath();c.arc(0,0,r,0,Math.PI*2);c.stroke();
+ c.restore();
+}
+function jmRenderScatterMoons(t){
+ const c=jmPrepareScatterCanvas();if(!c)return;
+ c.clearRect(0,0,W,H);
+ for(let x=0;x<5;x++){
+  if(cascades[x]){
+   for(const part of cascades[x].items){
+    if(part.s?.id!=='scatter'||t<part.start)continue;
+    const q=Math.max(0,Math.min(1,(t-part.start)/part.duration)),ease=1-(1-q)**3;
+    jmPaintScatterMoon(c,x,part.fromY+(part.toY-part.fromY)*ease,t);
+   }
+   continue;
+  }
+  for(let y=0;y<3;y++){
+   const p=animationPosition(x,y,t);
+   if(p.cur?.id==='scatter')jmPaintScatterMoon(c,x,p.y,t);
+   if(p.old?.id==='scatter')jmPaintScatterMoon(c,x,p.oldY,t);
+  }
+ }
+}
+
 function frame(t){
  const ctx=nativeCtx;artBg(ctx,t);
  if(pixiReady){
@@ -740,6 +803,7 @@ function frame(t){
   ctx.restore();
  }
  if(burstParticles.length){ctx.save();burstParticles=burstParticles.filter(p=>t-p.birth<p.life);for(const p of burstParticles){const k=(t-p.birth)/p.life;ctx.globalAlpha=1-k;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x+p.vx*k,p.y+p.vy*k+90*k*k,Math.max(.1,p.size*(1-k)),0,Math.PI*2);ctx.fill()}ctx.restore()}
+ jmRenderScatterMoons(t);
  requestAnimationFrame(frame)
 }
 function particlesAt(x,y,kind='burst'){const now=performance.now();for(let i=0;i<(kind==='big'?60:22);i++){const a=Math.random()*Math.PI*2,s=rand(40,150);burstParticles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,birth:now,life:rand(360,760),size:rand(2,7),color:pick(['#ffe697','#fff8d7','#f0a2ff','#f7b67f','#ffde55'])})}}
