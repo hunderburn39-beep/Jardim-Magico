@@ -1,4 +1,4 @@
-# Portões do Trovão — V8.0
+# Portões do Trovão — V11.0
 
 Jogo independente de demonstração com créditos virtuais, inspirado no formato de slots de queda do Olimpo. **Não afiliado, licenciado ou certificado pela Pragmatic Play.** Sem depósitos, levantamentos ou prémios em dinheiro real.
 
@@ -104,3 +104,12 @@ Todos os gráficos desta pasta são novos e não reutilizam imagens nem logótip
 - `js/leather-v8.js` gera 7 pequenas variações de um som grave e abafado, parecido com contacto em almofada de couro, sem estalidos metálicos. Está isolado do áudio do botão e do motor de prémios.
 - `css/queda-couro-v8.css` controla a deformação macia e o ressalto reduzido no contacto, sem tocar na lógica de pagamento.
 - O tempo total do giro adapta-se às quedas individuais e à opção Turbo; não se apagam animações antes de as peças pousarem.
+
+## V9–V11 — som, rodapé e explosões
+
+- V9: o botão GIRAR usa um clique curto e o MP3 original do utilizador toca quando aparece SCATTER.
+- V10: os valores de saldo e aposta são apresentados sobre um rodapé transparente; os botões mantêm a funcionalidade.
+- V11: apenas os símbolos premiados (8 ou mais iguais) recebem o efeito de **explosão seguida de dissipação**. Um clarão inicia o efeito, surgem fragmentos de cristal, ondas de choque e partículas coloridas que se transformam numa névoa e desaparecem.
+- A nova camada `#winningFx` é desenhada por cima do tabuleiro e não intercepta toques. As animações são definidas exclusivamente em `css/explosao-v11.css`; a criação dos fragmentos fica em `explodeWinningSymbols()`, no `js/jogo.js`.
+- A próxima queda começa depois do tempo de dissipação (880 ms normal, 460 ms Turbo). Em dispositivos com movimento reduzido, o efeito é simplificado. Os valores de prémios ficam acima dos efeitos e continuam visíveis.
+- O cálculo dos prémios, as probabilidades, os multiplicadores e as regras de SCATTER **não foram alterados** nesta versão.
