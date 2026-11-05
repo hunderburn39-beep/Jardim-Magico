@@ -603,7 +603,9 @@ function symbolLandingSounds(column){
  }
 }
 
-function chooseSpinMul(){let r=Math.random();if(r<.82)return 2;if(r<.965)return 3;if(r<.992)return 5;if(r<.997)return 10;if(r<.9998)return 20;return 1000;}
+function chooseSpinMul(){let r=Math.random();if(r<.82)return 2;if(r<.965)return 3;if(r<.992)return 5;if(r<.997)return 10;if(r<.9998)return 20;return awardContext==='free'?20:1000;}
+// Uma bola de free spins vale até 20×; vários MULTI somam-se e podem atingir 80× ou mais.
+// O raro 1000× fora das free spins mantém-se e fica limitado pelo cofre / 5000×.
 function chooseHoldFactor(){let r=Math.random();if(r<.83)return 2;if(r<.965)return 3;if(r<.99)return 5;if(r<.995)return 10;if(r<.998)return 20;if(r<.9995)return 50;if(r<.9999)return 100;return 1000;}
 /* V59 — dois estilos de prémios NORMAIS, escolhidos antes da jogada.
    O modo frequente concentra algumas figuras, originando mais trios,
