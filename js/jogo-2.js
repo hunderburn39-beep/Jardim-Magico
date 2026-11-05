@@ -18,6 +18,9 @@ const LINES=[
  [2,1,2,1,2],[1,1,0,1,1],[1,1,2,1,1]
 ];
 const MAX_WIN_MULT=5000;
+// V66 — WILD por posição: 1–5× por símbolo, no máximo 5× por linha;
+// uma única linha pode usar cada WILD em cada queda, nunca mais de uma.
+const MAX_WILD_LINE_FACTOR=5;
 const MAX_FREE_RETRIGGERS=2; // Regra pública V65: duas extensões por sessão (até 45 jogadas se 3 SCATTER duas vezes).
 const FREE_SCATTER_PROBABILITY=.018; // Probabilidade FIXA por posição nas free spins; independente do saldo/cofre.
 const CASH_PIN='12345';
@@ -614,15 +617,24 @@ function chooseRegularSymbol(){
  return regular[regular.length-1];
 }
 const volatilityPayScale=()=>volatilityMode==='frequentes'?FREQUENT_LINE_PAYOUT:1;
+function chooseWildFactor(){
+ // Pesos fixos, independentes de saldo, cofre e histórico. Valor único por símbolo.
+ const p=Math.random();
+ if(p<.50)return 1;
+ if(p<.80)return 2;
+ if(p<.92)return 3;
+ if(p<.98)return 4;
+ return 5;
+}
 function sym(){const p=Math.random();if(freeSpins>0 || awardContext==='free'){
  if(p<.012)return {id:'mul',value:chooseSpinMul()};
  if(p<.012+FREE_SCATTER_PROBABILITY)return {id:'scatter'};
- if(p<.090)return {id:'wild',factor:2};
+ if(p<.090)return {id:'wild',factor:chooseWildFactor()};
  if(p<.120)return {id:'coin',uid:++symbolSeq,value:pick([10,20,50,100,200,500,1000,2000,5000])};
 }else{
  if(p<.0045)return {id:'mul',value:chooseSpinMul()};
  if(p<.0335)return {id:'scatter'};
- if(p<.0735)return {id:'wild',factor:2};
+ if(p<.0735)return {id:'wild',factor:chooseWildFactor()};
  if(p<.0995)return {id:'coin',uid:++symbolSeq,value:pick([10,20,50,100,200,500,1000,2000,5000])};
 }return {id:chooseRegularSymbol()};}
 
@@ -816,10 +828,17 @@ function wholeGrid(){return Array.from({length:5},()=>Array.from({length:3},sym)
 // V41: só 3+ símbolos consecutivos da esquerda pagam nas linhas normais.
 // Exceção: um par WILD adjacente em qualquer posição da mesma linha paga por si.
 // Uma linha recebe no máximo um prémio; o prémio normal de 3+ tem prioridade.
+// V66: WILD fixo em cascatas, válido UMA vez por queda, com número 1×...5×.
+// Quando várias linhas partilham a mesma casa WILD, paga apenas a melhor linha.
+// Isto evita contar um símbolo 3-15 vezes no mesmo resultado (risco de banca).
+function wildFactorOf(piece){
+ return piece?.id==='wild'?Math.max(1,Math.min(5,Math.floor(Number(piece.factor)||1))):1;
+}
 function evaluate(g,betAmount=BETS[betIdx]){
- const won=[];let amount=0;
+ const possible=[];
+ const coef=betAmount/LINES.length*rtpScaleFor(awardContext)*volatilityPayScale();
  for(let i=0;i<LINES.length;i++){
-  const line=LINES[i],ids=line.map((row,x)=>g[x][row].id);
+  const line=LINES[i],cells=line.map((row,x)=>g[x][row]),ids=cells.map(s=>s.id);
   const firstNonWild=ids.find(id=>id!=='wild');
   const target=firstNonWild&&PAY[firstNonWild]?firstNonWild:'wild';
   let count=0;
@@ -829,21 +848,34 @@ function evaluate(g,betAmount=BETS[betIdx]){
    else break;
   }
   if(count>=3){
-   const wilds=ids.slice(0,count).filter(id=>id==='wild').length;
-   const wildMultiplier=Math.min(8,2**wilds);
-   const payout=Math.max(1,roundedPayout(betAmount/LINES.length*PAY[target][count]*wildMultiplier*rtpScaleFor(awardContext)*volatilityPayScale()));
-   amount+=payout;
-   won.push({line:i,points:Array.from({length:count},(_,x)=>[x,line[x]]),value:payout,which:target,wildMultiplier});
+   const points=Array.from({length:count},(_,x)=>[x,line[x]]);
+   const wildKeys=points.filter(([x,y])=>g[x][y].id==='wild').map(([x,y])=>x+':'+y);
+   const multiplier=Math.min(MAX_WILD_LINE_FACTOR,points.reduce((v,[x,y])=>v*wildFactorOf(g[x][y]),1));
+   possible.push({line:i,points,which:target,wildMultiplier:multiplier,wildKeys,
+    raw:coef*PAY[target][count]*multiplier});
    continue;
   }
   const pairStart=ids.findIndex((id,x)=>id==='wild'&&x<4&&ids[x+1]==='wild');
   if(pairStart>=0){
-   const payout=Math.max(1,roundedPayout(betAmount/LINES.length*PAY.wild[2]*rtpScaleFor(awardContext)*volatilityPayScale()));
-   amount+=payout;
-   won.push({line:i,points:[[pairStart,line[pairStart]],[pairStart+1,line[pairStart+1]]],value:payout,which:'wild',wildMultiplier:1,special:'twoWild'});
+   const points=[[pairStart,line[pairStart]],[pairStart+1,line[pairStart+1]]];
+   const wildKeys=points.map(([x,y])=>x+':'+y);
+   const multiplier=Math.min(MAX_WILD_LINE_FACTOR,points.reduce((v,[x,y])=>v*wildFactorOf(g[x][y]),1));
+   possible.push({line:i,points,which:'wild',wildMultiplier:multiplier,wildKeys,special:'twoWild',
+    raw:coef*PAY.wild[2]*multiplier});
   }
  }
- return {won,amount};
+ // Primeiro as combinações mais valiosas; desempate pelo número da linha.
+ possible.sort((a,b)=>b.raw-a.raw||a.line-b.line);
+ const usedWilds=new Set(),chosen=[];
+ for(const candidate of possible){
+  if(candidate.wildKeys.some(key=>usedWilds.has(key)))continue;
+  candidate.wildKeys.forEach(key=>usedWilds.add(key));
+  const {raw,wildKeys,...pay}=candidate;
+  pay.value=Math.max(1,roundedPayout(raw));
+  chosen.push(pay);
+ }
+ chosen.sort((a,b)=>a.line-b.line);
+ return {won:chosen,amount:chosen.reduce((sum,win)=>sum+win.value,0)};
 }
 function mulIndices(g){const out=[];for(let x=0;x<5;x++)for(let y=0;y<3;y++)if(g[x][y].id==='mul')out.push({x,y,v:g[x][y].value||2});return out;}
 function scatterCount(g){return g.flat().filter(x=>x.id==='scatter').length;}
