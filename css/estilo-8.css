@@ -1,0 +1,284 @@
+/* JARDIM MÁGICO — V47 ILUSTRAÇÃO INTERATIVA.
+   Inspiração direta na imagem enviada: bosque violeta, luz dourada, troncos
+   de árvore ligados por cordas, borboleta no letreiro e pássaros em profundidade.
+   Só apresentação; a lógica das jogadas continua no motor de jogo. */
+:root{--jm47-gold:#ffdb83;--jm47-purple:#51145b;--jm47-night:#1b102b}
+html,body{background:#1c1230!important;}
+body::before{
+ inset:0!important;
+ background:linear-gradient(180deg,rgba(19,5,37,.04) 0%,rgba(22,9,39,.1) 65%,rgba(13,12,30,.13)),url('../assets/imagens/bosque-ilustrado-v47.svg') center center/cover no-repeat!important;
+ background-position:center center!important;
+ background-attachment:fixed!important;
+ filter:saturate(1.22) contrast(1.07)!important;
+ opacity:1!important;
+ animation:none!important;
+ z-index:-2!important;
+}
+body::after{
+ position:fixed!important;inset:0!important;z-index:-1!important;
+ background:radial-gradient(ellipse at 50% 12%,rgba(255,222,144,.12),transparent 43%),radial-gradient(circle at 48% 80%,rgba(239,91,255,.1),transparent 35%)!important;
+ pointer-events:none;
+ animation:none!important;
+}
+.game{isolation:isolate;overflow:visible;}
+
+/* Cabeçalho com ícones circulares de ametista e ouro */
+.game .topbar{
+ border-bottom:0!important;margin:0 0 3px!important;padding:2px 3px 1px!important;
+ min-height:clamp(32px,4.3dvh,43px)!important;position:relative;z-index:12;
+}
+.game .toptools{gap:clamp(7px,1.65vw,15px)!important;justify-content:flex-end!important;}
+.game .toptools .roundSmall{
+ width:clamp(29px,6.5vw,40px)!important;
+ min-width:clamp(29px,6.5vw,40px)!important;
+ height:clamp(29px,6.5vw,40px)!important;
+ border:2px solid #ffde89!important;
+ background:radial-gradient(circle at 35% 19%,#6e2878 0%,#3c0f4d 56%,#1e0e36 100%)!important;
+ box-shadow:inset 0 1px 2px #fff4cc99,inset 0 -5px 9px #10071bc9,0 0 5px #ffc35e99,0 4px 10px #0008!important;
+ color:#ffe9b1!important;text-shadow:0 1px 2px #2d1238;
+ font-size:clamp(15px,3vw,21px)!important;
+}
+.game .toptools .roundSmall:active{filter:brightness(1.28);transform:translateY(2px)}
+
+/* Título original escolhido pelo autor; bichos são DOM com animações próprias. */
+.game .logoLoop,.game[data-layout="portrait"] .logoLoop{
+ position:relative!important;isolation:isolate!important;
+ width:min(99%,790px)!important;max-width:100%!important;
+ margin:2px auto 9px!important;overflow:visible!important;
+ filter:drop-shadow(0 5px 5px #11051b7d);
+}
+.game .logoLoop::before{background:none!important;}
+.game .titleArt,.game[data-layout="portrait"] .titleArt{
+ position:relative;z-index:2!important;display:block!important;
+ height:clamp(73px,11.3dvh,123px)!important;
+ width:100%!important;object-fit:contain;
+ filter:drop-shadow(0 3px 4px #120a1ebc) drop-shadow(0 0 11px #ffb95e66)!important;
+ animation:jm47TitleBreath 6s ease-in-out infinite!important;
+}
+@keyframes jm47TitleBreath{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-1px) scale(1.009)}}
+.jmTitleAnim{position:absolute;pointer-events:none;width:clamp(31px,8vw,70px);height:auto;aspect-ratio:11/9}
+.jmTitleAnim svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 2px 3px #08081692)}
+.jmTitleAnim.jmBirdBack{z-index:1;top:0;left:-18%;animation:jm47BirdDepth 13s linear infinite;}
+.jmTitleAnim.jmBirdFront{z-index:4;left:-30%;top:43%;animation:jm47BirdFore 15s linear infinite 4s;}
+.jmTitleAnim.jmBirdHigh{z-index:4;left:-30%;top:-39%;width:clamp(22px,5vw,42px);animation:jm47BirdSky 18s linear infinite 7s;}
+.jmTitleAnim.jmButterflyPerch{
+ z-index:6;width:clamp(22px,5.9vw,51px);
+ left:110%;top:-35%;animation:jm47ButterPerch 15s ease-in-out infinite;
+}
+.jmButterflyLeft{transform-origin:49px 40px;animation:jm47FlapL .45s ease-in-out infinite alternate;}
+.jmButterflyRight{transform-origin:51px 40px;animation:jm47FlapR .45s ease-in-out infinite alternate;}
+@keyframes jm47FlapL{from{transform:scaleX(.48)}to{transform:scaleX(1)}}
+@keyframes jm47FlapR{from{transform:scaleX(.48)}to{transform:scaleX(1)}}
+@keyframes jm47BirdDepth{
+ 0%{left:-19%;top:-22%;opacity:0;z-index:1;transform:scale(.6) rotate(9deg)}
+ 9%{opacity:1}
+ 32%{left:37%;top:18%;z-index:1;transform:scale(.91) rotate(-5deg)}
+ 44%{left:52%;top:28%;z-index:1;transform:scale(1) rotate(-6deg)}
+ 48%{left:58%;top:28%;z-index:6;transform:scale(1.12) rotate(-3deg)}
+ 76%{left:103%;top:0%;opacity:1;z-index:6;transform:scale(1.1) rotate(-11deg)}
+ 87%,100%{left:128%;top:-25%;opacity:0;z-index:6;transform:scale(.9) rotate(-15deg)}
+}
+@keyframes jm47BirdFore{
+ 0%,7%{left:-25%;top:45%;opacity:0;transform:scale(.8) rotate(9deg)}
+ 13%{opacity:1}
+ 37%{left:32%;top:45%;transform:scale(.92) rotate(-5deg)}
+ 60%{left:69%;top:10%;opacity:1;transform:scale(1.1) rotate(-10deg)}
+ 80%{left:124%;top:-35%;opacity:0;transform:scale(.75) rotate(-19deg)}
+ 100%{left:124%;top:-35%;opacity:0}
+}
+@keyframes jm47BirdSky{
+ 0%,16%{left:-18%;top:-60%;opacity:0}
+ 25%{opacity:.75}
+ 53%{left:48%;top:-34%;opacity:.88;transform:scale(1.1)}
+ 85%,100%{left:115%;top:-68%;opacity:0;transform:scale(.65)}
+}
+@keyframes jm47ButterPerch{
+ 0%,7%{left:112%;top:-33%;opacity:0;transform:rotate(18deg) scale(.6)}
+ 16%{opacity:1}
+ 29%{left:80%;top:15%;opacity:1;transform:rotate(-12deg) scale(.92)}
+ 38%{left:75%;top:30%;transform:rotate(4deg) scale(.89)}
+ 45%,69%{left:75%;top:30%;opacity:1;transform:rotate(6deg) scale(.79)}
+ 79%{left:65%;top:-18%;transform:rotate(-23deg) scale(.86)}
+ 92%,100%{left:8%;top:-68%;opacity:0;transform:rotate(-36deg) scale(.64)}
+}
+
+/* Quatro cofres, como plaquetas reais de ametista polida */
+.game .jackpots,.game[data-layout="portrait"] .jackpots{
+ width:100%;max-width:100%!important;
+ gap:clamp(5px,1vw,11px)!important;
+ margin:1px auto clamp(7px,1.2dvh,11px)!important;
+}
+.game .jackpots .jackpot{
+ min-width:0;position:relative;isolation:isolate;
+ border:2px solid #fbe29b!important;
+ border-radius:clamp(9px,2vw,17px)!important;
+ padding:clamp(3px,.6dvh,6px) 2px!important;
+ background:linear-gradient(180deg,#742a82,#41104f 46%,#2f124b)!important;
+ box-shadow:inset 0 2px 4px #ffa9f66b,inset 0 -4px 6px #160c2b,0 2px 0 #ba6f35,0 0 8px #ffcf72b8!important;
+}
+.game .jackpots .jackpot.max{background:linear-gradient(180deg,#a5346c,#662042 54%,#471334)!important;}
+.game .jackpots .jackpot b{font:900 clamp(9px,2.5vw,17px)/1.06 Georgia,serif;color:#ffeab7!important;text-shadow:0 1px 2px #2c0b37;}
+.game .jackpots .jackpot strong{font:900 clamp(11px,2.95vw,21px)/1.2 Georgia,serif;color:#fff1af!important;text-shadow:0 1px 3px #521539,0 0 8px #ffcb7599;}
+.game .jackpots .jackpot::after{content:"✦";position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);font-size:10px;color:#ffdfa0;text-shadow:0 0 5px #fff1c6;pointer-events:none;}
+
+/* Troncos reais do cenário: a grelha e os controlos do jogo são independentes. */
+.game .reelFrame,.game[data-layout="portrait"] .reelFrame{
+ position:relative;isolation:isolate;
+ overflow:visible!important;
+ padding:clamp(5px,1vw,10px) clamp(8px,1.7vw,13px) clamp(7px,1.3vw,12px)!important;
+ border:none!important;
+ border-radius:12px!important;
+ background:linear-gradient(180deg,#59226b,#2a1239 15%,#1d1938 81%,#4a2548)!important;
+ box-shadow:0 0 0 2px #d8a4579c,0 0 13px #ffb86950,0 8px 16px #130725b0!important;
+}
+.game .reelFrame::before{content:none!important;display:none!important;}
+.game .reelFrame::after{
+ content:""!important;display:block!important;position:absolute;
+ top:-1.8%;left:-3.3%;width:106.6%;height:104%;
+ background:url('../assets/imagens/troncos-cordas-v47.svg') center/100% 100% no-repeat;
+ pointer-events:none!important;z-index:24!important;
+ filter:drop-shadow(0 3px 4px #0d0714aa);
+}
+.game .shelf,.game[data-layout="portrait"] .shelf{
+ position:relative;z-index:1;
+ min-height:clamp(39px,6dvh,58px)!important;
+ padding:clamp(3px,.65dvh,7px) clamp(6px,1vw,11px) clamp(3px,.5dvh,6px)!important;
+ border:1px solid #e5b06bbd!important;
+ border-radius:8px 8px 0 0!important;
+ background:linear-gradient(180deg,#6c2580,#3a144f 60%,#33103f)!important;
+ box-shadow:inset 0 0 15px #e798ed38,0 0 6px #eeae7d52!important;
+}
+.game .shelfTag{color:#ffe9b1!important;font-size:clamp(9px,2.4vw,17px)!important;text-shadow:0 1px 2px #281034;}
+.game .orbs{gap:clamp(3px,.75vw,8px);}
+.game .orbPill{color:#fff1a8!important;background:radial-gradient(circle at 29% 25%,#f6a5ef,#aa31c0 38%,#5d1c81 69%,#311144)!important;box-shadow:inset 0 2px 5px #fff5cb95,0 0 10px #fa9bff9c!important;border-color:#ffe39c!important;}
+.game .shelfTotal{color:#fff0ae!important;text-shadow:0 0 8px #ffc66d;}
+.game .stageWrap{
+ position:relative;
+ border:1px solid #ffc98254!important;
+ border-radius:0 0 8px 8px!important;
+ background:linear-gradient(90deg,#271939,#351b4c 40%,#241431)!important;
+ box-shadow:inset 0 0 19px #0c071ab5,inset 0 0 4px #e6b87566!important;
+}
+.game .gardenWorld{background:#302047!important;}
+.game .forestBackdrop{opacity:.24!important;filter:hue-rotate(38deg) saturate(1.65) contrast(.9) blur(1px)!important;}
+.game .gardenWorld::after{
+ background:radial-gradient(ellipse at 50% 20%,rgba(241,137,240,.12),transparent 68%),linear-gradient(90deg,#1d173b91,transparent 25%,transparent 75%,#140d2f8f)!important;
+}
+.game .glassReels i{
+ background:linear-gradient(90deg,rgba(9,5,23,.52),rgba(255,199,240,.06) 45%,rgba(14,7,36,.35))!important;
+ border-left:1px solid #ffddc22e!important;
+ border-right:1px solid #fff3bf35!important;
+ box-shadow:inset 0 0 15px #1407238a!important;
+}
+.game .reelFog{background:linear-gradient(180deg,#0e0c2447,transparent 13%,transparent 85%,#150d2f35)!important;}
+.game .glassSweep{opacity:.58;}
+
+/* Linha ornamentada entre as peças e o mostrador de créditos */
+.game .underStage{margin-top:clamp(7px,1.2dvh,13px)!important;min-height:15px;}
+.game .notice{color:#ffe5b6!important;font-size:clamp(12px,2.7vw,18px)!important;text-shadow:0 2px 3px #190827,0 0 9px #f4ac8970!important;font-family:Georgia,serif;}
+
+/* Indicadores de saldo, aposta, prémio, cofre e compra do bónus */
+.game .controlDock{position:relative;z-index:2;}
+.game .controlStats{gap:clamp(5px,1.2vw,11px)!important;margin:clamp(5px,1dvh,12px) 0 5px!important;}
+.game .controlStats .hudPanel,
+.game .v37RightStats .vaultMystery{
+ border:2px solid #ffdd90!important;border-radius:clamp(12px,2.7vw,24px)!important;
+ background:linear-gradient(160deg,#71277b,#4d145d 49%,#2e1045 100%)!important;
+ box-shadow:inset 0 2px 3px #fff0c16f,inset 0 -4px 11px #120a2a91,0 3px 0 #9d5d32,0 0 9px #ffda867a!important;
+ color:#fff0be;
+}
+.game .controlStats .hudPanel small{color:#ffebb9!important;text-shadow:0 1px 2px #190d32;font-size:clamp(10px,2.4vw,14px);}
+.game .controlStats .hudPanel strong{color:#fff1c5!important;text-shadow:0 1px 3px #260a3e,0 0 5px #ffcb7452!important;font-size:clamp(13px,3vw,22px);}
+.game .v37LeftStats .miniBalance{padding-top:clamp(4px,.7dvh,10px)!important;}
+.game .v37LeftStats .statBet{background:linear-gradient(145deg,#5c1d6d,#3b124d)!important;}
+.game .betPanel button{
+ background:linear-gradient(145deg,#783084,#41114c)!important;
+ border:2px solid #f8d486!important;color:#ffe3ab!important;
+ border-radius:50%!important;width:clamp(25px,5.8vw,43px);height:clamp(25px,5.8vw,43px);
+ line-height:1!important;display:grid!important;place-items:center!important;
+ box-shadow:inset 0 1px #ffedc786,0 0 4px #ffde825a!important;
+ font-size:clamp(19px,4vw,30px)!important;
+}
+.game .v37RightStats .vaultMystery{background:linear-gradient(160deg,#5d2077,#39134e)!important;}
+.game .vaultMystery .vaultFace img{filter:hue-rotate(85deg) saturate(1.3) brightness(1.12) drop-shadow(0 0 8px #ffcb5799)!important;}
+.game .v37RightStats .v37Buy{
+ border:2px solid #ffdb84!important;
+ border-radius:clamp(12px,2.4vw,22px)!important;
+ background:linear-gradient(180deg,#822c8c,#52155f 53%,#36104e)!important;
+ color:#ffe6a0!important;
+ font-size:clamp(10px,2.55vw,17px)!important;
+ font-weight:900;white-space:nowrap!important;
+ box-shadow:inset 0 2px 2px #fff5c89c,0 3px 0 #895128,0 0 10px #ffd58890!important;
+}
+
+/* Botão RODAR como joia verde, coroa floral e Turbo âmbar */
+.game .v37SpinDeck{position:relative;z-index:2;margin:clamp(5px,1dvh,10px) 0!important;align-items:center!important;}
+.game .v37SpinDeck .spinHalo{
+ position:relative;
+ max-width:clamp(118px,20dvh,185px)!important;
+ filter:drop-shadow(0 4px 11px #fff08080) drop-shadow(0 5px 6px #000b)!important;
+}
+.game .v37SpinDeck .spinHalo::before{
+ content:"❀";position:absolute;left:-17px;top:36%;z-index:4;pointer-events:none;
+ font:900 clamp(18px,4vw,30px)/1 Georgia,serif;color:#ff9acb;text-shadow:0 0 6px #fff3ad;
+}
+.game .v37SpinDeck .spinHalo::after{
+ content:"❀";position:absolute;right:-17px;bottom:13%;z-index:4;pointer-events:none;
+ font:900 clamp(18px,4vw,30px)/1 Georgia,serif;color:#e47af0;text-shadow:0 0 6px #fff3ad;
+}
+.game .spinHalo .spinBtn{
+ color:#fff1ac!important;
+ border:4px solid #ffe597!important;
+ background:radial-gradient(circle at 36% 17%,#e9ff98,#77d22e 28%,#199a38 56%,#066335 75%,#08422c 100%)!important;
+ box-shadow:inset 0 5px 9px #fffeb39a,inset 0 -8px 16px #01301ad1,0 0 0 4px #bb793c,0 0 0 6px #ffe39b,0 0 24px #a9f970a6!important;
+ text-shadow:0 2px 3px #13532e,0 0 10px #e8f4a2!important;
+}
+.game .v37Turbo .turboToggle{
+ border:2px solid #fff0ac!important;
+ border-radius:clamp(12px,3vw,20px)!important;
+ background:linear-gradient(180deg,#ffe9a2,#f6bc57 38%,#dc8735 100%)!important;
+ color:#6b351d!important;text-shadow:0 1px #fff0b2;
+ box-shadow:inset 0 2px 2px #fffcc3,0 3px 0 #8e4c25,0 0 12px #ffc67c8f!important;
+ font-weight:900;
+}
+.game .v37Turbo .turboToggle.active{filter:saturate(1.16);}
+
+/* A composição retrato ocupa o ecrã sem cortar o painel de pagamentos. */
+.game[data-layout="portrait"] .logoLoop{margin:0 auto 5px!important;}
+.game[data-layout="portrait"] .topbar{min-height:33px!important;}
+.game[data-layout="portrait"] .reelFrame{padding:4px 7px 8px!important;}
+.game[data-layout="portrait"] .shelf{min-height:clamp(35px,5dvh,46px)!important;}
+.game[data-layout="portrait"] .controlStats{margin:6px 0 4px!important;}
+.game[data-layout="portrait"] .v37LeftStats .miniBalance{height:clamp(46px,7dvh,63px)!important;}
+.game[data-layout="portrait"] .v37LeftStats .statBet{height:clamp(43px,6.7dvh,58px)!important;}
+.game[data-layout="portrait"] .v37RightStats .vaultMystery{height:clamp(53px,8dvh,72px)!important;}
+.game[data-layout="portrait"] .v37RightStats .v37Buy{min-height:clamp(34px,5dvh,47px)!important;}
+.game[data-layout="portrait"] .v37SpinDeck .spinHalo{max-width:clamp(113px,19dvh,177px)!important;}
+.game[data-layout="portrait"] .spinBtn{max-width:clamp(113px,19dvh,177px)!important;}
+.game[data-layout="portrait"] .v37Turbo .turboToggle{min-height:clamp(35px,5dvh,51px)!important;}
+
+/* Horizontal: manter os botões na coluna direita e a máquina completa à esquerda. */
+.game[data-layout="wide"] .titleArt{height:clamp(33px,8.5dvh,81px)!important;}
+.game[data-layout="wide"] .logoLoop{width:min(94%,550px)!important;margin:0 auto 4px!important;}
+.game[data-layout="wide"] .topbar{min-height:28px!important;}
+.game[data-layout="wide"] .reelFrame{padding:3px 7px 7px!important;}
+.game[data-layout="wide"] .shelf{min-height:clamp(24px,6dvh,39px)!important;}
+.game[data-layout="wide"] .reelFrame::after{left:-2.3%;width:104.6%;}
+.game[data-layout="wide"] .controlStats .hudPanel strong{font-size:clamp(12px,1.9vw,19px)!important;}
+.game[data-layout="wide"] .v37SpinDeck .spinHalo{max-width:clamp(93px,15dvh,150px)!important;}
+.game[data-layout="wide"] .spinBtn{max-width:clamp(93px,15dvh,150px)!important;}
+@media(max-width:380px){
+ .game .jackpots{gap:3px!important;}
+ .game .jackpots .jackpot{padding:3px 1px!important;border-width:1.5px!important;}
+ .game .jackpots .jackpot b{font-size:9px!important;}
+ .game .jackpots .jackpot strong{font-size:11px!important;}
+ .game .toptools{gap:5px!important;}
+ .game .toptools .roundSmall{min-width:27px!important;width:27px!important;height:27px!important;}
+}
+@media(prefers-reduced-motion:reduce){
+ .jmTitleAnim{animation:none!important;}
+ .jmTitleAnim.jmBirdBack,.jmTitleAnim.jmBirdFront,.jmTitleAnim.jmBirdHigh{display:none;}
+ .jmTitleAnim.jmButterflyPerch{left:74%;top:29%;opacity:1;transform:scale(.8);}
+ .jmButterflyLeft,.jmButterflyRight{animation:none!important;}
+ .game .titleArt{animation:none!important;}
+}
