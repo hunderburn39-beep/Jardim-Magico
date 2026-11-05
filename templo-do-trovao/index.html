@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#24112d">
+  <meta name="description" content="Portões do Trovão: uma slot de demonstração com 6x5, quedas, multiplicadores e rodadas grátis. Só créditos virtuais.">
+  <title>Portões do Trovão — V1</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/estilo.css?v=1">
+  <script defer src="js/jogo.js?v=1"></script>
+</head>
+<body>
+  <div id="app" class="app">
+    <div class="sky-flash" aria-hidden="true"></div>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-kicker">A LENDA DOS DEUSES</span>
+        <div class="brand-name"><span>PORTÕES DO</span><strong>TROVÃO</strong></div>
+      </div>
+      <div class="top-actions">
+        <span class="demo-tag">MODO DEMONSTRAÇÃO</span>
+        <button id="btnSound" class="round-icon" aria-label="Ativar ou desativar som" title="Som">♫</button>
+        <button id="btnHelp" class="round-icon" aria-label="Ver regras" title="Tabela de pagamentos">ⓘ</button>
+        <button id="btnFull" class="round-icon" aria-label="Ecrã completo" title="Ecrã completo">⛶</button>
+      </div>
+    </header>
+    <main class="arena">
+      <section class="side-panel" aria-label="Informação de jogo">
+        <div class="stat-frame multiplier-frame">
+          <div class="stat-caption">MULTIPLICADOR</div>
+          <div class="wings"><span>❯</span><strong id="totalMult">1×</strong><span>❮</span></div>
+          <div class="stat-sub" id="multHint">Até 500×</div>
+        </div>
+        <div class="stat-frame free-frame">
+          <div class="stat-caption">RODADAS GRÁTIS</div>
+          <strong id="freeLeft">—</strong>
+          <span class="stat-sub" id="freeHint">4 SCATTER ativam 15</span>
+        </div>
+        <div class="stat-frame cascade-frame">
+          <div class="stat-caption">QUEDAS</div>
+          <strong id="cascadeCount">0</strong>
+          <span class="stat-sub">Símbolos pagam em qualquer posição</span>
+        </div>
+      </section>
+      <section class="machine" aria-label="Rolos do jogo">
+        <div class="machine-crown"><span>✦</span><strong id="bannerTitle">TEMPLO DO TROVÃO</strong><span>✦</span></div>
+        <div class="board-shell">
+          <div class="board-glow" aria-hidden="true"></div>
+          <div class="board" id="board" aria-label="Grelha com 6 colunas e 5 linhas">
+          </div>
+          <div class="board-overlay" id="boardOverlay" aria-hidden="true"></div>
+        </div>
+        <div class="board-footer">
+          <span id="gameMessage" role="status" aria-live="polite">8 ou mais símbolos iguais dão prémio</span>
+          <strong id="winText">0,00 €</strong>
+        </div>
+      </section>
+      <aside class="god-column" aria-hidden="true">
+        <img class="god-art" src="assets/deus-trovao.svg" alt="">
+        <div class="god-lightning"></div>
+        <div class="god-label">O PODER DO OLIMPO</div>
+      </aside>
+    </main>
+    <footer class="bottom-panel">
+      <div class="balance-block">
+        <span>SALDO VIRTUAL</span>
+        <strong id="balance">1 000,00 €</strong>
+        <button id="btnRefill" class="refill-link" title="Repor créditos virtuais">+ REPOR CRÉDITOS</button>
+      </div>
+      <div class="bet-block">
+        <span>APOSTA</span>
+        <div class="bet-selector">
+          <button id="betDown" aria-label="Reduzir aposta">−</button>
+          <strong id="betValue">1,00 €</strong>
+          <button id="betUp" aria-label="Aumentar aposta">+</button>
+        </div>
+      </div>
+      <button id="btnBuy" class="buy-button">
+        <span>COMPRAR BÓNUS</span>
+        <strong id="buyCost">100,00 €</strong>
+      </button>
+      <div class="spin-cluster">
+        <button id="btnSpin" class="spin-button" aria-label="Rodar, manter premido para rodadas automáticas">
+          <span class="spin-glyph" id="spinGlyph">↻</span>
+          <strong id="spinLabel">GIRAR</strong>
+          <small id="spinSub">MANTER 3 S = AUTO</small>
+        </button>
+      </div>
+      <button id="btnTurbo" class="turbo-button" aria-pressed="false">⚡ TURBO <small>OFF</small></button>
+    </footer>
+    <div class="version">V1.0 · DEMO · CRÉDITOS VIRTUAIS</div>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden" role="presentation">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button id="modalClose" class="modal-close" aria-label="Fechar">×</button>
+      <h2 id="modalTitle"></h2>
+      <div id="modalBody"></div>
+      <div id="modalActions" class="modal-actions"></div>
+    </section>
+  </div>
+  <div id="bigWin" class="big-win hidden" aria-live="assertive">
+    <span>⚡</span><strong id="bigWinTitle">GRANDE PRÉMIO!</strong>
+    <div id="bigWinAmount">0,00 €</div>
+  </div>
+</body>
+</html>
