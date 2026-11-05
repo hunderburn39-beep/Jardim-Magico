@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+<defs>
+ <filter id="outerGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="11"/></filter>
+ <filter id="innerGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+</defs>
+<g fill="none" stroke-linejoin="round" stroke-linecap="round">
+ <g stroke="#75d6ff" opacity=".7" filter="url(#outerGlow)" stroke-width="31">
+  <path d="M104 0 244 98 212 156 369 251 317 332 468 454"/>
+  <path d="M1187 0 1271 101 1226 154 1391 240 1337 337 1509 452"/>
+  <path d="M1142 82 1008 182 1078 229 946 317"/>
+ </g>
+ <g stroke="#81ddff" opacity=".78" filter="url(#innerGlow)" stroke-width="12">
+  <path d="M104 0 244 98 212 156 369 251 317 332 468 454"/>
+  <path d="M1187 0 1271 101 1226 154 1391 240 1337 337 1509 452"/>
+  <path d="M1142 82 1008 182 1078 229 946 317"/>
+ </g>
+ <g stroke="#f5fdff" stroke-width="3.2">
+  <path d="M104 0 244 98 212 156 369 251 317 332 468 454"/>
+  <path d="M1187 0 1271 101 1226 154 1391 240 1337 337 1509 452"/>
+  <path d="M1142 82 1008 182 1078 229 946 317"/>
+  <path d="M244 98 317 71 360 108"/><path d="M369 251 449 240 501 277"/><path d="M1271 101 1345 62 1411 97"/>
+ </g>
+</g>
+</svg>
