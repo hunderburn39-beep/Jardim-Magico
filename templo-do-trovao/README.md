@@ -1,4 +1,4 @@
-# Portões do Trovão — V1.0
+# Portões do Trovão — V3.0
 
 Jogo independente de demonstração com créditos virtuais, inspirado no formato de slots de queda do Olimpo. **Não afiliado, licenciado ou certificado pela Pragmatic Play.** Sem depósitos, levantamentos ou prémios em dinheiro real.
 
@@ -11,8 +11,11 @@ Funciona em desktop e telemóvel, na horizontal (16:9) ou vertical. O botão ⛶
 ## Estrutura de edição
 
 - `index.html`: elementos e controlos da interface.
-- `css/estilo.css`: cores, grelha 6×5, animações, efeitos e responsividade.
-- `js/jogo.js`: geração dos símbolos, probabilidades, tabela de pagamentos, animações, interface, bónus e auto-spins.
+- `css/estilo.css`: layout base e responsividade.
+- `css/referencia-v2.css`: molduras douradas, botões e tabela ilustrada.
+- `css/efeitos-v3.css`: luz nas pedras, explosões, estilhaços, iluminação de símbolos vencedores e animações de queda.
+- `js/jogo.js`: geração dos símbolos, probabilidades, pagamentos, motor de sequências, efeitos e auto-spins.
+- `js/audio.js`: motor Web Audio, sons sintetizados de rolagem, queda de peças, explosões, multiplicadores, SCATTER e grandes prémios; não requer ficheiros externos.
 - `assets/simbolos.svg`: sprite de todos os símbolos, SCATTER e multiplicador.
 - `assets/olimpo.svg`: cenário com templo, nuvens e raios.
 - `assets/deus-trovao.svg`: personagem mitológica desenhada em vetor original.
@@ -20,10 +23,10 @@ Funciona em desktop e telemóvel, na horizontal (16:9) ou vertical. O botão ⛶
 
 O jogo **não partilha** código nem valores com a slot Jardim Mágico. A publicação do repositório copia este diretório para `public/templo-do-trovao/`.
 
-## Mecânicas da versão 1
+## Mecânicas da versão 3
 
 1. Tabuleiro de 6 colunas e 5 linhas. 8 ou mais símbolos iguais pagam em qualquer posição do tabuleiro.
-2. Símbolos premiados iluminam-se, desaparecem e são substituídos por gravidade (tumble). O processo repete-se enquanto houver vitórias.
+2. Símbolos premiados iluminam-se e explodem em estilhaços brilhantes; as peças sobreviventes descem da posição anterior e as novas entram por cima (tumble). O processo repete-se enquanto houver vitórias.
 3. Tabela clássica 8–9, 10–11 e 12–30 símbolos; e prémio SCATTER com 4, 5 ou 6+.
 4. Quatro ou mais SCATTER na mesma grelha, incluindo após quedas, ativam 15 rodadas grátis.
 5. Três ou mais SCATTER durante rodadas grátis dão cinco rodadas adicionais.
@@ -31,9 +34,17 @@ O jogo **não partilha** código nem valores com a slot Jardim Mágico. A public
 7. Compra de bónus com créditos **virtuais**, por 100× a aposta.
 8. Auto-spins: premir GIRAR durante três segundos, escolher 10/25/50/100; tocar novamente em GIRAR para parar. Turbo, som opcional e reposição de créditos virtuais.
 9. Limite de 5 000× a aposta por ciclo.
-10. V1.0 fixa um limite técnico de segurança de 36 cascatas numa jogada, distinto da versão comercial, para evitar uma execução interminável.
+10. V3 fixa um limite técnico de segurança de 36 cascatas numa jogada, distinto da versão comercial, para evitar uma execução interminável.
 
-## Alterar probabilidades e pagar
+## Alterar os gráficos e sons
+
+- Desenho e cores individuais das pedras: `assets/simbolos.svg` (5 gemas facetadas e os outros 6 símbolos).
+- Brilho, flash e explosão: `css/efeitos-v3.css` (regras `.cell`, `.burst-out`, `.crystal-shard`).
+- Queda por gravidade: `render()` em `js/jogo.js`, classe `.drop-in` em `css/efeitos-v3.css`.
+- Volume e timbres: `js/audio.js`; eventos `spin`, `drop`, `tumble`, `burst`, `reward`, `mult`, `scatter`, `bigwin`.
+- O áudio é opcional, está ativado de início e só toca depois da primeira interação permitida pelo navegador.
+
+## Alterar probabilidades e pagamentos
 
 As constantes `WEIGHTS`, `MULT_WEIGHTS`, `BETS`, `PAY_TABLE` e os limiares de `newSymbol()` estão no topo de `js/jogo.js`. As regras de pagamento ficam em `getWins()`, `scatterMultiplier()` e `playSpin()`.
 
