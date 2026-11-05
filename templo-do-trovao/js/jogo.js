@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V4.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V5.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -20,6 +20,40 @@
     amber:[.5,1,5],emerald:[.4,.9,4],sapphire:[.25,.75,2]
   };
   function scatterMultiplier(n){return n>=6?100:n===5?5:n===4?3:0}
+  // Recortes do atlas 3D (5 colunas, 3 linhas); as 11 peças têm arte própria.
+  const SPRITES=Object.freeze({
+    sapphire:[0,0],emerald:[1,0],amber:[2,0],amethyst:[3,0],ruby:[4,0],
+    goblet:[0,1],ring:[1,1],hourglass:[2,1],crown:[3,1],scatter:[4,1],mult:[0,2]
+  });
+  const FALLBACK=Object.freeze({
+    sapphire:"💎",emerald:"🔺",amber:"🔶",amethyst:"🔻",ruby:"❤️",
+    goblet:"🏆",ring:"💍",hourglass:"⌛",crown:"👑",scatter:"⚡",mult:"✦"
+  });
+  function spriteStyle(kind){
+    const xy=SPRITES[kind];
+    if(!xy)return ["0%","0%"];
+    return [(xy[0]*25)+"%",(xy[1]*50)+"%"];
+  }
+  function makeSprite(kind){
+    const art=document.createElement("span");
+    art.className="symbol-bitmap";
+    const [ax,ay]=spriteStyle(kind);
+    art.style.setProperty("--ax",ax);art.style.setProperty("--ay",ay);
+    const fallback=document.createElement("span");
+    fallback.className="symbol-fallback-text";
+    fallback.setAttribute("aria-hidden","true");
+    fallback.textContent=FALLBACK[kind]||"✦";
+    art.appendChild(fallback);
+    return art;
+  }
+  // Verificação de imagem: nenhum símbolo fica invisível em caso de falha de rede.
+  function preflightSymbols(){
+    if(typeof Image==="undefined"){document.body.classList.add("asset-fallback");return}
+    const test=new Image();
+    test.onload=()=>document.body.classList.add("assets-ready");
+    test.onerror=()=>document.body.classList.add("asset-fallback");
+    test.src="assets/atlas-3d-v5.webp?v=5";
+  }
   const INITIAL_CREDITS = 1000;
   let nextId = 1;
   const $ = id => document.getElementById(id);
@@ -115,11 +149,7 @@
       if(options.matchKinds?.has(symbol.kind))tile.classList.add("winner");
       if(options.scatterGlow&&symbol.kind==="scatter")tile.classList.add("scat-hit");
       tile.dataset.kind=symbol.kind;
-      const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");
-      svg.setAttribute("viewBox","0 0 100 100");
-      svg.setAttribute("aria-hidden","true");
-      const use=document.createElementNS("http://www.w3.org/2000/svg","use");
-      use.setAttribute("href","assets/simbolos.svg#"+symbol.kind);svg.appendChild(use);tile.appendChild(svg);
+      tile.appendChild(makeSprite(symbol.kind));
       if(symbol.kind==="mult"){
         const v=document.createElement("span");v.className="orb-value";
         v.textContent=symbol.value+"×";tile.appendChild(v);
@@ -214,7 +244,10 @@
     // PAY_TABLE alimenta tanto os prémios do motor como esta grelha.
     const order=["sapphire","emerald","amber","amethyst","ruby","goblet","ring","hourglass","crown"];
     const fmt=v=>String(v).replace(".",",")+"×";
-    const symSvg=kind=>'<svg class="pay-symbol" viewBox="0 0 100 100" aria-hidden="true"><use href="assets/simbolos.svg#'+kind+'"></use></svg>';
+    const symSvg=kind=>{
+      const [ax,ay]=spriteStyle(kind);
+      return '<span class="pay-symbol symbol-bitmap" aria-hidden="true" style="--ax:'+ax+';--ay:'+ay+'"><span class="symbol-fallback-text">'+FALLBACK[kind]+'</span></span>';
+    };
     const rows=order.map(kind=>
       '<tr><td class="pay-name">'+symSvg(kind)+'<b>'+LABELS[kind]+'</b></td>'+
       PAY_TABLE[kind].map(v=>'<td class="pay-value">'+fmt(v)+'</td>').join("")+'</tr>'
@@ -457,5 +490,6 @@
   });
   window.TrovaoAudio?.setEnabled(state.sound);
   $("btnSound").textContent=state.sound?"♫":"♪";
+  preflightSymbols();
   state.grid=makeGrid();render(state.grid);refresh();
 })();
