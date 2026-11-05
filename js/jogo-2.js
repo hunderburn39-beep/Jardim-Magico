@@ -1701,10 +1701,26 @@ function updateAdmin(){
  $('adminReserveTotal').textContent=money(operatorReserve);
  $('adminReserveProtected').textContent=money(protectedReserve);
  $('adminReserveWithdrawable').textContent=money(bankerAvailable());
- $('adminReportSummary').innerHTML=`Apostas: <strong>${money(t.stakes)}</strong> · Prémios pagos: <strong>${money(t.prizes)}</strong> · Saldo dos jogadores: <strong>${money(t.balance)}</strong><br>Levantamentos do banqueiro: <strong>${money(bankTotal)}</strong> · Caixa livre contabilística: <strong>${money(reportFinancials().ownerAvailable)}</strong> · Rodadas: <strong>${t.spins}</strong> · RTP observado: <strong>${rtpObserved}</strong>`;
- $('adminMathInfo').textContent=`Não é permitido alterar o RTP. O valor observado nesta máquina é ${rtpObserved} (prémios efetivamente pagos / apostas contabilizadas); a simulação V42 em 3 milhões de apostas deu 93,28%, mas não certifica nem garante a sessão atual. De cada aposta, até ${rtpLabel(effectiveBudgetPercent())} entram nos fundos de prémios, dos quais 3% da aposta alimentam os jackpots progressivos (ULTRA 1,35%; MAX 0,75%; MED 0,50%; MIN 0,40%). A reserva do operador é ${rtpLabel(configuredProfit())}, com 25% dessa parcela protegidos. Só se pode levantar a parcela livre depois de assegurar os saldos dos jogadores. Todos os pagamentos são limitados por fundos de créditos disponíveis e pelo máximo 5000×. Créditos virtuais sem certificação para dinheiro real.`;
+ const ownerAvailable=shareAvailable('proprietario'),merchantAvailable=shareAvailable('comerciante');
+ $('adminSplitOwnerPct').textContent=rtpLabel(ownerPercent);
+ $('adminSplitMerchantPct').textContent=rtpLabel(100-ownerPercent);
+ $('adminSplitOwnerValue').textContent=money(ownerAvailable);
+ $('adminSplitMerchantValue').textContent=money(merchantAvailable);
+ $('adminSplitProtected').textContent=money(protectedReserve);
+ $('adminSplitOwnerWithdrawn').textContent=money(t.ownerShareWithdrawn);
+ $('adminSplitMerchantWithdrawn').textContent=money(t.merchantWithdrawn);
+ $('adminVolatilityActive').textContent=volatilityMode==='frequentes'?'Prémios mais frequentes':'Equilibrado';
+
+ $('adminReportSummary').innerHTML=`Proprietário: <strong>${money(ownerAvailable)}</strong> (${ownerPercent}%) · Comerciante: <strong>${money(merchantAvailable)}</strong> (${100-ownerPercent}%)<br>Apostas: <strong>${money(t.stakes)}</strong> · Prémios pagos: <strong>${money(t.prizes)}</strong> · Saldo dos jogadores: <strong>${money(t.balance)}</strong><br>Levantamentos do banqueiro: <strong>${money(bankTotal)}</strong> · Caixa livre contabilística: <strong>${money(reportFinancials().ownerAvailable)}</strong> · Rodadas: <strong>${t.spins}</strong> · RTP observado: <strong>${rtpObserved}</strong>`;
+ $('adminMathInfo').textContent='Simulação de créditos virtuais. Percentagem reservada: '+rtpLabel(configuredProfit())+' por aposta; verba destinada aos prémios normais e aos jackpots: até '+rtpLabel(effectiveBudgetPercent())+'. O retorno observado nas apostas é '+rtpObserved+'; não é uma garantia de RTP. Os jackpots mantêm os multiplicadores ULTRA 5000×, MAX 1000×, MED 500× e MIN 250× e continuam separados. A reserva protegida continua a ser 25% da verba da banca. O modo Mais frequentes dá mais combinações normais e prémios médios de linha menores; é uma configuração fixa, aplicada apenas às próximas jogadas, não uma compensação automática após ganhos ou perdas.';
 }
-function openAdmin(){adminUnlocked=true;modal('adminLoginModal',false);$('adminPassword').value='';$('adminPage').hidden=false;document.body.style.overflow='hidden';$('adminProfitInput').value=profitPercent.toFixed(2);$('adminProfitSlider').value=profitPercent;$('adminProfitPreview').textContent=rtpLabel(profitPercent);$('bankerWithdrawAmount').value='';$('bankerWithdrawPassword').value='';$('bankerWithdrawStatus').textContent='';updateAdmin();}
+function openAdmin(){adminUnlocked=true;modal('adminLoginModal',false);$('adminPassword').value='';$('adminPage').hidden=false;document.body.style.overflow='hidden';$('adminProfitInput').value=profitPercent.toFixed(2);$('adminProfitSlider').value=profitPercent;$('adminProfitPreview').textContent=rtpLabel(profitPercent);
+ $('adminSplitSlider').value=ownerPercent;
+ $('adminOwnerPercentInput').value=ownerPercent;
+ $('adminMerchantPercentInput').value=100-ownerPercent;
+ $('adminVolatilityMode').value=volatilityMode;
+ previewAdminSplit(ownerPercent);
+ $('bankerWithdrawAmount').value='';$('bankerWithdrawPassword').value='';$('bankerWithdrawStatus').textContent='';updateAdmin();}
 function closeAdmin(){if(!$('reportViewer').hidden)closeReportViewer();$('adminPage').hidden=true;adminUnlocked=false;$('bankerWithdrawPassword').value='';document.body.style.overflow='';modal('reportModal',false);}
 function saveAdminProfit(){
  if(!adminUnlocked)return;let n=Number($('adminProfitInput').value);
@@ -1712,6 +1728,45 @@ function saveAdminProfit(){
  n=Math.round(n*100)/100;const previous=profitPercent;profitPercent=n;
  adminAudit.push({time:new Date().toISOString(),kind:'reserva_operador',previous,newValue:n});save();updateAdmin();
  $('adminProfitStatus').textContent='Reserva configurada: '+rtpLabel(n)+'; a alteração aplica-se às apostas seguintes; não modifica valores já acumulados.';
+}
+
+/* V59 — alteração da partilha não toca nos jackpots nem em reservas protegidas.
+   O saldo ainda não retirado é redistribuído; levantamentos passados permanecem. */
+function previewAdminSplit(value){
+ const pct=Math.max(0,Math.min(100,Math.round(Number(value)||0)));
+ $('adminSplitSlider').value=pct;
+ $('adminOwnerPercentInput').value=pct;
+ $('adminMerchantPercentInput').value=100-pct;
+ const avail=bankerAvailable();
+ const owner=Math.floor(avail*pct/100),merchant=avail-owner;
+ $('adminSplitPreview').textContent='Pré-visualização: tua parte '+money(owner)+' ('+pct+'%) · estabelecimento '+money(merchant)+' ('+(100-pct)+'%).';
+}
+function saveAdminSplit(){
+ if(!adminUnlocked)return;
+ const input=Number($('adminOwnerPercentInput').value);
+ if(!Number.isFinite(input)||!Number.isInteger(input)||input<0||input>100){
+  $('adminSplitStatus').textContent='Escolhe percentagens inteiras entre 0% e 100%.';return;
+ }
+ const previous=ownerPercent;ownerPercent=input;
+ const distributable=Math.max(0,operatorReserve-protectedReserve);
+ ownerShareReserve=Math.floor(distributable*ownerPercent/100);
+ merchantShareReserve=distributable-ownerShareReserve;
+ shareCarry=0;
+ adminAudit.push({time:new Date().toISOString(),kind:'partilha_banca',previous,newValue:ownerPercent,merchant:100-ownerPercent});
+ save();updateAdmin();previewAdminSplit(ownerPercent);
+ $('adminSplitStatus').textContent='Guardado: '+ownerPercent+'% para ti e '+(100-ownerPercent)+'% para o estabelecimento. Reservas disponíveis repartidas; levantamentos anteriores e jackpots intactos.';
+}
+function saveAdminVolatility(){
+ if(!adminUnlocked)return;
+ if(running||bonus||freeSpins>0||freeAutoRunning||freeSettlePending||freeSummaryPending||autoSpinsRemaining>0){
+  $('adminVolatilityStatus').textContent='Termina a sessão de free spins ou as jogadas automáticas antes de mudar a frequência.';return;
+ }
+ const next=$('adminVolatilityMode').value;
+ if(next!=='equilibrado'&&next!=='frequentes')return;
+ const previous=volatilityMode;volatilityMode=next;
+ adminAudit.push({time:new Date().toISOString(),kind:'frequencia_premios_normais',previous,newValue:next});
+ save();updateAdmin();
+ $('adminVolatilityStatus').textContent=next==='frequentes'?'Guardado: mais combinações comuns e valores médios de linha ajustados. Jackpots sem alteração.':'Guardado: distribuição equilibrada das figuras normais. Jackpots sem alteração.';
 }
 
 function setupAdmin(){
@@ -1726,6 +1781,18 @@ function setupAdmin(){
  $('adminProfitSlider').oninput=()=>{const n=Number($('adminProfitSlider').value);$('adminProfitInput').value=n.toFixed(2);$('adminProfitPreview').textContent=rtpLabel(n);};
  $('adminProfitInput').oninput=()=>{const n=Number($('adminProfitInput').value);if(Number.isFinite(n)&&n>=0&&n<=70){$('adminProfitSlider').value=n;$('adminProfitPreview').textContent=rtpLabel(n);}};
   $('adminSaveProfit').onclick=saveAdminProfit;
+  $('adminSplitSlider').oninput=()=>previewAdminSplit($('adminSplitSlider').value);
+  $('adminOwnerPercentInput').oninput=()=>previewAdminSplit($('adminOwnerPercentInput').value);
+  $('adminMerchantPercentInput').oninput=()=>{
+   const pct=Number($('adminMerchantPercentInput').value);
+   if(Number.isFinite(pct)&&pct>=0&&pct<=100)previewAdminSplit(100-pct);
+  };
+  $('adminSaveSplit').onclick=saveAdminSplit;
+  $('adminSaveVolatility').onclick=saveAdminVolatility;
+  $('adminWithdrawalRecipient').onchange=()=>{
+   const party=$('adminWithdrawalRecipient').value;
+   $('bankerWithdrawStatus').textContent='Disponível para '+(party==='comerciante'?'o estabelecimento':'ti')+': '+money(shareAvailable(party));
+  };
   $('bankerWithdrawButton').onclick=doBankerWithdraw;
   $('bankerWithdrawPassword').addEventListener('keydown',e=>{if(e.key==='Enter')doBankerWithdraw()});
  $('adminFullReport').onclick=()=>{if(adminUnlocked)report();};
