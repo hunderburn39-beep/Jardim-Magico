@@ -136,3 +136,18 @@
  }
  @keyframes jm57ReducedPayFade{0%{opacity:0}16%,70%{opacity:1}100%{opacity:0}}
 }
+
+/* V58 — número da versão sempre discreto no canto inferior esquerdo. */
+#jmVersionBadge{
+ position:fixed;left:max(7px,env(safe-area-inset-left));
+ bottom:max(6px,env(safe-area-inset-bottom));
+ z-index:45;pointer-events:none;user-select:none;
+ padding:2px 5px;border-radius:5px;
+ font:700 10px/1.25 system-ui,-apple-system,sans-serif;
+ letter-spacing:.04em;
+ color:rgba(255,239,199,.82);
+ background:rgba(24,13,39,.36);
+ text-shadow:0 1px 2px #1c0c24;
+ box-shadow:none;border:none;
+}
+@media(max-width:600px){#jmVersionBadge{font-size:9px;opacity:.82}}
