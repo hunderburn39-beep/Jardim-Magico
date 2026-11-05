@@ -31,7 +31,10 @@ const RTP_REFERENCE=96;
 // Valores de escala ajustados por Monte Carlo para os pesos e as frequências V42.
 // A percentagem do fundo não é RTP fixo: o retorno realizado depende dos resultados,
 // do cofre, do tamanho das apostas e das contribuições progressivas.
-const RTP_CALIBRATION={base:0.61,free:0.51,hold:0.25};
+// V65 — revisão de risco: as free spins V64 ultrapassavam o fundo esperado;
+ // Hold & Win comprado custa 100× a aposta, diferente de bónus oferecidos.
+ // Valores fixos e públicos; nunca variam com o lucro real da banca.
+const RTP_CALIBRATION={base:0.61,free:0.035,hold:0.25,holdPurchase:1.25};
 let autoSpinsTotal=0,rtpConfig=96,adminAudit=[],awardContext='base',adminUnlocked=false,adminTaps=0,adminTapDeadline=0,autoSpinsRemaining=0,freeStartPending=false,freeAutoRunning=false,freeAutoTimer=null,scatterNoteStep=0;
 const configuredRtp=()=>RTP_REFERENCE; // Fixo; sem alteração na interface de administração.
 let profitPercent=4, prizePool=0, operatorReserve=0, protectedReserve=0, ownerWithdrawn=0, protectedCarry=0, riskReserve=0, ownerCarry=0, poolCarry=0;
@@ -84,7 +87,10 @@ function payFromVault(requested){
 }
 function validateVault(){return Number.isInteger(prizePool)&&Number.isInteger(operatorReserve)&&Number.isInteger(protectedReserve)&&Number.isInteger(riskReserve)&&prizePool>=0&&operatorReserve>=protectedReserve&&protectedReserve>=0&&riskReserve>=0&&Object.values(progressivePools).every(n=>Number.isInteger(n)&&n>=0)}
 
-const rtpScaleFor=kind=>(effectiveBudgetPercent()/RTP_REFERENCE)*(RTP_CALIBRATION[kind]??1);
+const rtpScaleFor=kind=>{
+ const payoutKind=kind==='hold'&&bonus?.origin==='compra'?'holdPurchase':kind;
+ return (effectiveBudgetPercent()/RTP_REFERENCE)*(RTP_CALIBRATION[payoutKind]??1);
+};
 const roundedPayout=value=>{if(!(value>0))return 0;let whole=Math.floor(value),fraction=value-whole;return whole+(Math.random()<fraction?1:0)};
 const rtpLabel=value=>Number(value).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
 // Valores máximos elegíveis por aposta; contadores exibem créditos progressivos, não vezes.
