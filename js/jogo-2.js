@@ -1221,27 +1221,34 @@ async function playFullBoardWheel(){
  const state=bonus;
  state.inMotion=true;renderBonus();
  modal('bonusModal',false);
- notice('TABULEIRO COMPLETO! A roleta de 32 casas vai girar!');
+ notice('TABULEIRO COMPLETO! Carrega em GIRO para parar a roleta.');
+ // Montante exato que a roleta pode pagar, já descontando prémio base e cristal.
+ const cap=state.stakeBet*MAX_WIN_MULT;
+ const basePaid=Math.min(prizePool,Math.min(state.coinsTotal*bonusFactorTotal(),cap));
+ const crystalPaid=state.jackpot?Math.min(jackpotPayable(state.jackpot,state.stakeBet),Math.max(0,cap-basePaid)):0;
+ const rawWheel=jackpotPayable(state.wheelResult,state.stakeBet);
+ const wheelProjected=Math.max(0,Math.min(rawWheel-(state.wheelResult===state.jackpot?crystalPaid:0),cap-basePaid-crystalPaid));
+ let confirmed=false;
  try{
   if(window.JM_WHEEL_V49&&typeof window.JM_WHEEL_V49.play==='function'){
    await window.JM_WHEEL_V49.play({
     slots:JACKPOT_WHEEL_32,stops:state.wheelStops,boardCells:state.cells.length,turbo:mode==='turbo',
-    amount:money(jackpotPayable(state.wheelResult,state.stakeBet)),
+    amount:money(wheelProjected),
     onSpin:()=>audioFX('bonus'),
     onStop:(type)=>{audioFX(type==='RESPIN'?'lock':'big');if(type!=='RESPIN')audioFX('schoolBell');}
    });
+   confirmed=true;
   }else{
-   await sleep(550);
+   console.warn('Roleta não carregou: o resultado permanece guardado, sem pagar ou fechar.');
   }
- }catch(error){console.warn('Animação da roleta indisponível. Resultado guardado foi mantido.',error);}
+ }catch(error){console.warn('Roleta indisponível; o sorteio não foi repetido.',error);}
  if(bonus!==state)return;
- state.wheelPending=false;
  state.inMotion=false;
- modal('bonusModal',true);
- renderBonus();
- $('bonusNote').textContent='🏆 Roleta completa: '+state.wheelResult+'! Jackpot elegível: '+money(jackpotPayable(state.wheelResult,state.stakeBet))+'. Recolhe o prémio.';
- notice('Roleta 32 casas: '+state.wheelResult+'! Recolhe o teu prémio.');
+ if(!confirmed){modal('bonusModal',true);renderBonus();save();return;}
+ state.wheelPending=false;
  save();
+ // Depois de GIRO · CONTINUAR, pagar uma vez e voltar à máquina (sem popup duplicado).
+ bonusFinish();
 }
 
 async function bonusRespin(){
@@ -1270,6 +1277,7 @@ async function bonusRespin(){
  if(bonus.finished&&bonus.endReason==='completo'&&bonus.cells.every(Boolean)){
   prepareFullBoardWheel();
   await playFullBoardWheel();
+  if(!bonus)return; // A roleta confirmou e liquidou o bónus, sem segundo popup.
  }
  bonus.inMotion=false;renderBonus(added);
  if(bonus.finished){
@@ -1296,7 +1304,10 @@ function bonusFinish(){
  lastPrize=final;
  log('prémio_hold_win',final,`Hold & Win: moedas ${money(base)} ×${factor}; pago cofre geral ${money(cashPaid)}; cristais ${crystalJackpot||'—'} ${money(crystalPaid)}; roleta ${wheelJackpot||'—'} ${money(wheelPaid)}; total ${money(final)} · ${bonus.endReason}`);
  modal('bonusModal',false);bonus=null;update();save();
- showBig(final,base,factor,wheelJackpot||crystalJackpot,jackpotWin,capped,!!wheelJackpot);
+ if(wheelJackpot){notice('🏆 JACKPOT '+wheelJackpot+': '+money(wheelPaid)+' · TOTAL '+money(final));}
+ else showBig(final,base,factor,wheelJackpot||crystalJackpot,jackpotWin,capped,false);
+ if(freeAutoRunning)scheduleFreeAuto();
+ else if(freeSpins>0&&!freeStartPending&&!freeSummaryPending)openFreeStart();
 }
 function refreshBuyOptions(){const costHold=BETS[betIdx]*100,costFree=BETS[betIdx]*20;$('buyHoldPrice').textContent=money(costHold);$('buyFreePrice').textContent=money(costFree);$('buyHoldChoice').disabled=balance<costHold||!session||running||!!bonus||freeSpins>0;$('buyFreeChoice').disabled=balance<costFree||!session||running||!!bonus||freeSpins>0;$('buyInfo').textContent='Saldo '+money(balance)+' • Hold & Win 100× a aposta • 15 free spins 20× a aposta';}
 function openBonusPurchase(){if(!session||running||bonus)return;refreshBuyOptions();modal('buyModal',true);soundStart()}
