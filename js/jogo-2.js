@@ -1175,7 +1175,7 @@ async function spinColumns(next){
 // Mostra um único total por cascata, com desaparecimento progressivo.
 /* V56: cada linha apresenta apenas o montante, sem caixa.
    O valor desvanece independentemente da cascata seguinte. */
-function markLines(won){
+function markLines(won,accumulated=won.reduce((sum,win)=>sum+win.value,0)){
  const lines=$('paylines'),layer=$('floaters'),stage=$('stageWrap');
  lines.replaceChildren();layer.replaceChildren();
  const seen=new Set(),glowDuration=mode==='turbo'?1200:2050;
@@ -1195,17 +1195,20 @@ function markLines(won){
  if(!wins){wins=document.createElement('div');wins.id='jm56WinValues';stage.appendChild(wins);}
  // V57: valor total das linhas premiadas desta cascata, grande e ao centro.
  // Um só montante evita sobreposições quando várias linhas pagam simultaneamente.
- const amount=won.reduce((sum,win)=>sum+win.value,0);
+ const addition=won.reduce((sum,win)=>sum+win.value,0);
+ // V61: cada cascata acrescenta o seu prémio ao total em curso.
  const display=document.createElement('span');
- display.className='jm56WinAmount jm57CenterWin';
- display.textContent=money(amount);
+ display.className='jm56WinAmount jm57CenterWin jm61CascadeTotal';
+ const header=document.createElement('small');header.className='jm61CascadeHeading';header.textContent='ACUMULADO';
+ const total=document.createElement('strong');total.className='jm61CascadeValue';total.textContent=money(accumulated);
+ const delta=document.createElement('small');delta.className='jm61CascadeIncrement';delta.textContent='+'+money(addition)+' NESTA QUEDA';
+ display.append(header,total,delta);
  display.style.left='50%';
  display.style.top='50%';
  const duration=mode==='turbo'?2200:3650;
  display.style.setProperty('--win-delay','0ms');
  display.style.setProperty('--win-duration',duration+'ms');
- display.setAttribute('aria-label','Prémio total das '+won.length+' linhas: '+money(amount));
- // Uma cascata antiga não interfere com a seguinte.
+ display.setAttribute('aria-label','Prémios acumulados nesta sequência: '+money(accumulated)+'; nesta queda: '+money(addition));
  wins.replaceChildren(display);
  setTimeout(()=>display.remove(),duration+130);
  audioFX('win');
@@ -1341,7 +1344,8 @@ async function showSixCoinCascade(){
 async function doRound(){
  if(running||bonus||!session||freeSettlePending||freeSummaryPending||freeSettlementRunning)return;
  const free=freeSpins>0,stake=free?0:BETS[betIdx],betAmount=free?freeBet:BETS[betIdx];if(balance<stake)return;
- running=true;scatterNoteStep=0;awardContext=free?'free':'base';roundVaultNew=0;if(free){freeSpins--;freeSummaryCount++;}else{balance-=stake;session.stake+=stake;fundWager(stake);log('aposta',-stake,'Rodada base · cofre '+money(prizePool));}session.spins++;update();soundStart();notice(free?'✦ Rodada grátis!':'Tambores a rodar...');shelf=free?freeMultiplierBalls:[];updateShelf();clearLines();winRound=0;
+ running=true;scatterNoteStep=0;awardContext=free?'free':'base';roundVaultNew=0;
+ let lastCascadeCelebration=0; // V61: nível mais alto já celebrado nesta jogadaif(free){freeSpins--;freeSummaryCount++;}else{balance-=stake;session.stake+=stake;fundWager(stake);log('aposta',-stake,'Rodada base · cofre '+money(prizePool));}session.spins++;update();soundStart();notice(free?'✦ Rodada grátis!':'Tambores a rodar...');shelf=free?freeMultiplierBalls:[];updateShelf();clearLines();winRound=0;
  let sixCoinTrigger=false;
  const detectSixCoins=async()=>{if(!sixCoinTrigger&&countReelCoins()>=6){sixCoinTrigger=true;await showSixCoinCascade();}};
  await spinColumns(wholeGrid());await detectSixCoins();let scatterTrigger=0,cascadeCount=0;const maxCascades=12;
@@ -1351,7 +1355,7 @@ async function doRound(){
   const hasCoins=grid.some(col=>col.some(piece=>piece?.id==='coin'&&!countedCoins.has(piece.uid)));
   if(!ev.won.length&&!m.length&&!hasCoins)break;
   if(ev.won.length){
-   winRound+=ev.amount;markLines(ev.won);
+   winRound+=ev.amount;markLines(ev.won,winRound+(free?freeBaseTotal:0));
    notice('Linha premiada: '+money(ev.amount)+' • cascata '+cascadeCount);
    await sleep(mode==='turbo'?690:1380); // deixar ver as quantias a desvanecer
   }
@@ -1359,6 +1363,25 @@ async function doRound(){
   for(const line of ev.won)for(const [x,y] of line.points)remove.add(x+':'+y);
   const collectedMultis=await collectReelMultipliers(m,free);
   for(const key of collectedMultis)remove.add(key);
+  // A soma de todas as quedas + os multiplicadores pode subir de NICE a MEGA,
+  // SUPER, ÉPICO ou SENSACIONAL antes da cascata terminar.
+  // Só se celebra o montante elegível neste instante (já limitado pelo cofre).
+  if(!free&&winRound>0&&window.JM_WINCELEBRATION_V60){
+   const currentFactor=shelf.length?shelf.reduce((sum,v)=>sum+v,0):1;
+   const eligible=Math.min(prizePool,winRound*currentFactor,betAmount*MAX_WIN_MULT);
+   const currentTier=window.JM_WINCELEBRATION_V60.tierFor(eligible,betAmount);
+   if(currentTier&&currentTier.min>lastCascadeCelebration){
+    lastCascadeCelebration=currentTier.min;
+    await window.JM_WINCELEBRATION_V60.play({
+     value:eligible,bet:betAmount,turbo:mode==='turbo',
+     playSound:tier=>{
+      audioFX(tier.min>=50?'big':'win');
+      if(tier.min>=100)audioFX('schoolBell');
+      if(tier.min>=25)particlesAt(W/2,H/2,'big');
+     }
+    });
+   }
+  }
   const collectedCoins=await collectVaultCoins();
   for(const key of collectedCoins)remove.add(key);
   if(!remove.size)break;
@@ -1396,7 +1419,7 @@ async function doRound(){
   await vaultExplosion();running=false;await launchBonus(false,'cofre');
  }else{
   // V60: celebração só do valor REAL pago. Não mexe no sorteio nem nos jackpots.
-  if(!free&&winnings>0&&window.JM_WINCELEBRATION_V60){
+  if(!free&&winnings>0&&window.JM_WINCELEBRATION_V60?.tierFor(winnings,betAmount)?.min>lastCascadeCelebration){
    await window.JM_WINCELEBRATION_V60.play({
     value:winnings,bet:betAmount,turbo:mode==='turbo',
     playSound:tier=>{
