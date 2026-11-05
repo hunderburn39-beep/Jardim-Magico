@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#24112d">
   <meta name="description" content="Portões do Trovão: uma slot de demonstração com 6x5, quedas, multiplicadores e rodadas grátis. Só créditos virtuais.">
-  <title>Portões do Trovão — V10</title>
+  <title>Portões do Trovão — V11</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/estilo.css?v=1">
   <link rel="stylesheet" href="css/referencia-v2.css?v=2">
@@ -16,13 +16,14 @@
   <link rel="stylesheet" href="css/autospins-v7.css?v=7">
   <link rel="stylesheet" href="css/queda-couro-v8.css?v=8">
   <link rel="stylesheet" href="css/rodape-transparente-v10.css?v=10">
+  <link rel="stylesheet" href="css/explosao-v11.css?v=11">
   <script defer src="js/audio.js?v=3"></script>
   <script defer src="js/audio-v5.js?v=6"></script>
   <script defer src="js/audio-v7.js?v=9"></script>
   <script defer src="js/leather-v8.js?v=8"></script>
   <script defer src="js/fundo-v4.js?v=4"></script>
   <script defer src="js/historico-v6.js?v=6"></script>
-  <script defer src="js/jogo.js?v=9"></script>
+  <script defer src="js/jogo.js?v=11"></script>
 </head>
 <body>
   <div id="app" class="app">
@@ -73,6 +74,7 @@
           <div class="board-glow" aria-hidden="true"></div>
           <div class="board" id="board" aria-label="Grelha com 6 colunas e 5 linhas">
           </div>
+          <div class="winning-fx" id="winningFx" aria-hidden="true"></div>
           <div class="board-overlay" id="boardOverlay" aria-hidden="true"></div>
         </div>
         <div class="board-footer">
@@ -113,7 +115,7 @@
       </div>
       <button id="btnTurbo" class="turbo-button" aria-pressed="false">⚡ TURBO <small>OFF</small></button>
     </footer>
-    <div class="version">V10.0 · DEMO · CRÉDITOS VIRTUAIS</div>
+    <div class="version">V11.0 · DEMO · CRÉDITOS VIRTUAIS</div>
   </div>
 
   <div class="history-shade hidden" id="historyShade" aria-hidden="true"></div>
