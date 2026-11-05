@@ -834,7 +834,7 @@ function wholeGrid(){return Array.from({length:5},()=>Array.from({length:3},sym)
 function wildFactorOf(piece){
  return piece?.id==='wild'?Math.max(1,Math.min(5,Math.floor(Number(piece.factor)||1))):1;
 }
-function evaluate(g,betAmount=BETS[betIdx]){
+function evaluate(g,betAmount=BETS[betIdx],paidWildOnly=null){
  const possible=[];
  const coef=betAmount/LINES.length*rtpScaleFor(awardContext)*volatilityPayScale();
  for(let i=0;i<LINES.length;i++){
@@ -869,6 +869,12 @@ function evaluate(g,betAmount=BETS[betIdx]){
  const usedWilds=new Set(),chosen=[];
  for(const candidate of possible){
   if(candidate.wildKeys.some(key=>usedWilds.has(key)))continue;
+  // Uma sequência de WILDs isolados não volta a pagar só por outro
+  // símbolo cair noutra coluna; exige uma nova spin para novo sorteio.
+  const pureWild=candidate.points.every(([x,y])=>g[x][y].id==='wild');
+  const wildSignature=pureWild?candidate.points.map(([x,y])=>x+':'+y).join('|'):null;
+  if(wildSignature&&paidWildOnly?.has(wildSignature))continue;
+  if(wildSignature)paidWildOnly?.add(wildSignature);
   candidate.wildKeys.forEach(key=>usedWilds.add(key));
   const {raw,wildKeys,...pay}=candidate;
   pay.value=Math.max(1,roundedPayout(raw));
@@ -1046,9 +1052,18 @@ function drawSymbol(ctx,s,x,y,w=CW,h=CH,time=0,zoom=REEL_SYMBOL_ZOOM){
   ctx.lineWidth=3;ctx.strokeStyle='#6c0820';ctx.strokeText(s.value+'×',0,2);
   ctx.fillStyle='#fff6dc';ctx.fillText(s.value+'×',0,2)
 }else if(id==='coin'){const rad=Math.min(w,h)*.35,gd=ctx.createRadialGradient(-rad*.4,-rad*.5,1,0,0,rad);gd.addColorStop(0,'#ffffe6');gd.addColorStop(.3,'#ffe28a');gd.addColorStop(.65,'#c88625');gd.addColorStop(1,'#6d401e');ctx.fillStyle=gd;ctx.strokeStyle='#ffe8a8';ctx.lineWidth=6;ctx.beginPath();ctx.arc(0,0,rad,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`900 ${rad*.95}px Georgia`;ctx.fillStyle='#fff3b1';const cents=Math.max(0,Math.round(Number(s.value)||20));const label=(cents/100).toLocaleString('pt-PT',{maximumFractionDigits:2});ctx.font=`900 ${Math.max(rad*.46,rad*.85/(1+Math.max(0,label.length-2)*.12))}px Georgia`;ctx.fillText(label,0,2)}
- if(id==='wild'){ctx.fillStyle='#fff0aa';ctx.shadowColor='#ffcf76';ctx.shadowBlur=4;ctx.font=`900 ${Math.max(13,h*.095)}px Georgia`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('×2',w*.27,-h*.32);ctx.shadowBlur=0}ctx.restore()}
+ if(id==='wild'){ctx.fillStyle='#fff0aa';ctx.shadowColor='#ffcf76';ctx.shadowBlur=4;ctx.font=`900 ${Math.max(13,h*.095)}px Georgia`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('×'+wildFactorOf(s),w*.27,-h*.32);ctx.shadowBlur=0}ctx.restore()}
 
-const imagesCanvases={};function makeSymbolCanvas(id){if(imagesCanvases[id])return imagesCanvases[id];const can=document.createElement('canvas');can.width=180;can.height=180;drawSymbol(can.getContext('2d'),{id,value:2},0,0,180,180,0,1);return imagesCanvases[id]=can;}function makeCoinCanvas(value){const key='coin'+value;if(imagesCanvases[key])return imagesCanvases[key];const can=document.createElement('canvas');can.width=can.height=180;drawSymbol(can.getContext('2d'),{id:'coin',value},0,0,180,180,0,1);return imagesCanvases[key]=can;}
+const imagesCanvases={};function makeSymbolCanvas(id){if(imagesCanvases[id])return imagesCanvases[id];const can=document.createElement('canvas');can.width=180;can.height=180;drawSymbol(can.getContext('2d'),{id,value:2},0,0,180,180,0,1);return imagesCanvases[id]=can;}function makeWildCanvas(factor){
+ const fixed=Math.max(1,Math.min(5,Math.floor(Number(factor)||1)));
+ const key='wild'+fixed;
+ if(imagesCanvases[key])return imagesCanvases[key];
+ const can=document.createElement('canvas');
+ can.width=can.height=180;
+ drawSymbol(can.getContext('2d'),{id:'wild',factor:fixed},0,0,180,180,0,1);
+ return imagesCanvases[key]=can;
+}
+function makeCoinCanvas(value){const key='coin'+value;if(imagesCanvases[key])return imagesCanvases[key];const can=document.createElement('canvas');can.width=can.height=180;drawSymbol(can.getContext('2d'),{id:'coin',value},0,0,180,180,0,1);return imagesCanvases[key]=can;}
 function makeOrbCanvas(value){const key='mul'+value;if(imagesCanvases[key])return imagesCanvases[key];const can=document.createElement('canvas');can.width=180;can.height=180;drawSymbol(can.getContext('2d'),{id:'mul',value},0,0,180,180,0,1);return imagesCanvases[key]=can;}
 let pixiReady=false;
 async function initPixi(){
@@ -1063,7 +1078,7 @@ async function initPixi(){
  }catch(e){console.warn('Pixi indisponível, Canvas de reserva ativo:',e);pixiReady=false;return false;}
 }
 const cacheTextures=new Map();
-function setPixiSprite(sp,s){if(!sp)return;if(!s){sp.visible=false;return}const key=s.id==='mul'?'mul'+(s.value||2):s.id==='coin'?'coin'+(s.value||20):s.id;let texture=cacheTextures.get(key);if(!texture){const img=s.id==='mul'?makeOrbCanvas(s.value||2):s.id==='coin'?makeCoinCanvas(s.value||20):s.id==='wild'?makeSymbolCanvas(s.id):nativeAssets[s.id];if(!img){sp.visible=false;return}texture=PIXI.Texture.from(img);cacheTextures.set(key,texture)}sp.visible=true;sp.texture=texture;sp.width=CW*.985*symbolZoom(s);sp.height=CH*.992*symbolZoom(s);}
+function setPixiSprite(sp,s){if(!sp)return;if(!s){sp.visible=false;return}const key=s.id==='mul'?'mul'+(s.value||2):s.id==='coin'?'coin'+(s.value||20):s.id==='wild'?'wild'+wildFactorOf(s):s.id;let texture=cacheTextures.get(key);if(!texture){const img=s.id==='mul'?makeOrbCanvas(s.value||2):s.id==='coin'?makeCoinCanvas(s.value||20):s.id==='wild'?makeWildCanvas(wildFactorOf(s)):nativeAssets[s.id];if(!img){sp.visible=false;return}texture=PIXI.Texture.from(img);cacheTextures.set(key,texture)}sp.visible=true;sp.texture=texture;sp.width=CW*.985*symbolZoom(s);sp.height=CH*.992*symbolZoom(s);}
 function animationPosition(x,y,t){
  const tr=transitions[x];
  if(tr){
@@ -1508,6 +1523,7 @@ async function doRound(){
  $('jm56WinValues')?.replaceChildren(); // Uma nova spin não herda o valor visual da anterior.
  window.JM_WINCELEBRATION_V60?.clear();
  let lastCascadeCelebration=0; // Nível mais alto já celebrado nesta spin.
+ const paidWildOnly=new Set(); // Par de WILDs / linha só de WILDs não repete em cascatas seguintes.
  if(free){freeSpins--;freeSummaryCount++;}
  else{balance-=stake;session.stake+=stake;fundWager(stake);log('aposta',-stake,'Rodada base · cofre '+money(prizePool));}
  session.spins++;update();soundStart();notice(free?'✦ Rodada grátis!':'Tambores a rodar...');shelf=free?freeMultiplierBalls:[];updateShelf();clearLines();winRound=0;updateDropScore(free?freeBaseTotal:0);
@@ -1516,7 +1532,7 @@ async function doRound(){
  await spinColumns(wholeGrid());await detectSixCoins();let scatterTrigger=0,cascadeCount=0;const maxCascades=12;
  while(cascadeCount++<maxCascades){
   scatterTrigger=Math.max(scatterTrigger,scatterCount(grid));
-  const ev=evaluate(grid,betAmount),m=mulIndices(grid);
+  const ev=evaluate(grid,betAmount,paidWildOnly),m=mulIndices(grid);
   const hasCoins=grid.some(col=>col.some(piece=>piece?.id==='coin'&&!countedCoins.has(piece.uid)));
   if(!ev.won.length&&!m.length&&!hasCoins)break;
   if(ev.won.length){
