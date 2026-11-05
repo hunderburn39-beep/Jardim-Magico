@@ -630,29 +630,79 @@ function jmScatterTextArt(){
  return c;
 }
 
+/* V53 — recorte sem contornos artificiais, halos ou molduras retangulares.
+   As artes antigas incluem cenários roxos desenhados dentro de cada PNG;
+   removemos o fundo a partir das margens, sem pintar uma borda por cima. */
 function jmCutout(img,id){
  try{
   const n=256,c=document.createElement('canvas');c.width=c.height=n;
-  const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0,n,n);
-  const p=g.getImageData(0,0,n,n),d=p.data;let opaque=0,count=0;
-  for(let y=0;y<n;y+=16)for(let x=0;x<n;x+=16)if(x<32||y<32||x>n-33||y>n-33){count++;if(d[(y*n+x)*4+3]>240)opaque++}
-  // V52: aplicar máscara RGBA suave e eliminar superfícies escuras de fundo.
+  const ctx=c.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(img,0,0,n,n);
+  const data=ctx.getImageData(0,0,n,n),d=data.data;
+  let left=n,top=n,right=-1,bottom=-1;
   for(let y=0;y<n;y++)for(let x=0;x<n;x++){
-   const i=4*(y*n+x),red=d[i],green=d[i+1],blue=d[i+2];
-   const hi=Math.max(red,green,blue);
-   const dist=Math.hypot((x-128)/129,(y-128)/129);
-   const falloff=Math.max(0,Math.min(1,(1.12-dist)/.25));
-   const backdrop=hi<105&&(blue>green*1.12||red>green*1.42);
-   const fades=hi<38?0:backdrop?.08:hi<55?.35:1;
-   d[i+3]=Math.round(d[i+3]*falloff*fades);
+   const k=(y*n+x)*4;if(d[k+3]<24)continue;
+   if(x<left)left=x;if(x>right)right=x;
+   if(y<top)top=y;if(y>bottom)bottom=y;
   }
-  g.putImageData(p,0,0);
-  const out=document.createElement('canvas');out.width=out.height=n;const ctx=out.getContext('2d');
-  for(let k=0;k<12;k++){const a=k*Math.PI/6;ctx.drawImage(c,3.2*Math.cos(a),3.2*Math.sin(a));}
-  ctx.globalCompositeOperation='source-in';ctx.fillStyle=JM_COLORS[id]||'#ffe6ab';ctx.fillRect(0,0,n,n);
-  ctx.globalCompositeOperation='source-over';ctx.shadowColor=JM_COLORS[id]||'#ffe6ab';ctx.shadowBlur=(id==='wild'||id==='scatter')?19:12;ctx.drawImage(c,0,0);ctx.shadowBlur=0;
-  return out;
- }catch(e){return img;}
+  if(right<left)return img;
+  const w=right-left+1,h=bottom-top+1;
+  // O objeto fica dentro da caixa que já vem no ficheiro. As bordas
+  // e as manchas púrpuras/escuras são tratadas como fundo transparente.
+  const backgroundSamples=[];
+  for(let iy=0;iy<5;iy++)for(let ix=0;ix<5;ix++){
+   if(ix!==0&&ix!==4&&iy!==0&&iy!==4)continue;
+   const x=Math.min(right,Math.max(left,left+Math.round((w-1)*ix/4)));
+   const y=Math.min(bottom,Math.max(top,top+Math.round((h-1)*iy/4)));
+   const k=(y*n+x)*4;
+   if(d[k+3]>30&&Math.max(d[k],d[k+1],d[k+2])<172)
+    backgroundSamples.push([d[k],d[k+1],d[k+2]]);
+  }
+  const threshold=id==='hat'?63:id==='mushroom'?73:78;
+  const oldAlpha=new Uint8Array(n*n);
+  const bg=new Uint8Array(n*n),stack=new Int32Array(n*n);
+  let write=0,read=0;
+  for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)oldAlpha[y*n+x]=d[(y*n+x)*4+3];
+  function closeToBackground(x,y){
+   const k=(y*n+x)*4,r=d[k],g=d[k+1],b=d[k+2];
+   const hi=Math.max(r,g,b),lo=Math.min(r,g,b);
+   if(hi<43)return true;
+   if(hi<76&&b>g*.75)return true;
+   if(hi>166)return false;
+   // As cores de fundo da maior parte das cartas são violeta-escuro.
+   if(b>g*1.19&&r>g*1.18&&hi<116)return true;
+   for(const v of backgroundSamples){
+    const dr=r-v[0],dg=g-v[1],db=b-v[2];
+    if(dr*dr+dg*dg+db*db<threshold*threshold)return true;
+   }
+   return hi<96&&hi-lo<45;
+  }
+  function add(x,y){
+   if(x<left||x>right||y<top||y>bottom)return;
+   const i=y*n+x;if(bg[i]||oldAlpha[i]<4||!closeToBackground(x,y))return;
+   bg[i]=1;stack[write++]=i;
+  }
+  for(let x=left;x<=right;x++){add(x,top);add(x,bottom)}
+  for(let y=top;y<=bottom;y++){add(left,y);add(right,y)}
+  while(read<write){
+   const p=stack[read++],x=p%n,y=(p/n)|0;
+   add(x-1,y);add(x+1,y);add(x,y-1);add(x,y+1);
+  }
+  // Transparência por pixéis; não desenhamos strokes nem sombras externas.
+  for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++){
+   const i=y*n+x,k=i*4,hi=Math.max(d[k],d[k+1],d[k+2]);
+   if(!oldAlpha[i])continue;
+   const edge=Math.min(x-left,right-x,y-top,bottom-y);
+   const edgeFade=Math.min(1,Math.max(0,(edge-1)/5));
+   let alpha=oldAlpha[i]*edgeFade;
+   if(bg[i])alpha=0;
+   else if(hi<45)alpha*=.1;
+   else if(hi<72)alpha*=.45;
+   d[k+3]=Math.round(alpha);
+  }
+  ctx.putImageData(data,0,0);
+  return c;
+ }catch(err){console.warn('Recorte do símbolo indisponível',id,err);return img;}
 }
 function jmMotion(s,x,t){
  if(!s||JM_REDUCED)return {dy:0,dx:0,k:1,a:0,light:1};
@@ -709,10 +759,6 @@ function drawSymbol(ctx,s,x,y,w=CW,h=CH,time=0,zoom=REEL_SYMBOL_ZOOM){
  ctx.save();const id=s.id,m=jmMotion(s,x/CW,time);
  ctx.translate(x+w/2+m.dx,y+h/2+m.dy);ctx.rotate(m.a);
  const z=zoom===REEL_SYMBOL_ZOOM?symbolZoom(s):zoom;ctx.scale(m.k*z,m.k*z);
- if(id==='wild'||id==='scatter'||id==='potion'||id==='gem'||id==='green'){
-  const c=JM_COLORS[id],r=Math.min(w,h)*.45,g=ctx.createRadialGradient(0,0,4,0,0,r);
-  g.addColorStop(0,c+'35');g.addColorStop(1,c+'00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r,0,2*Math.PI);ctx.fill();
- }
  ctx.globalAlpha=Math.min(1,.90+(m.light-1)*.27);
  const img=nativeAssets[id];if(img){const ww=w*.985,hh=h*.992;ctx.drawImage(img,-ww/2,-hh/2,ww,hh)}else if(id==='mul'){
   const rad=Math.min(w,h)*.34;
@@ -734,7 +780,7 @@ function drawSymbol(ctx,s,x,y,w=CW,h=CH,time=0,zoom=REEL_SYMBOL_ZOOM){
   ctx.lineWidth=3;ctx.strokeStyle='#6c0820';ctx.strokeText(s.value+'×',0,2);
   ctx.fillStyle='#fff6dc';ctx.fillText(s.value+'×',0,2)
 }else if(id==='coin'){const rad=Math.min(w,h)*.35,gd=ctx.createRadialGradient(-rad*.4,-rad*.5,1,0,0,rad);gd.addColorStop(0,'#ffffe6');gd.addColorStop(.3,'#ffe28a');gd.addColorStop(.65,'#c88625');gd.addColorStop(1,'#6d401e');ctx.fillStyle=gd;ctx.strokeStyle='#ffe8a8';ctx.lineWidth=6;ctx.beginPath();ctx.arc(0,0,rad,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`900 ${rad*.95}px Georgia`;ctx.fillStyle='#fff3b1';const cents=Math.max(0,Math.round(Number(s.value)||20));const label=(cents/100).toLocaleString('pt-PT',{maximumFractionDigits:2});ctx.font=`900 ${Math.max(rad*.46,rad*.85/(1+Math.max(0,label.length-2)*.12))}px Georgia`;ctx.fillText(label,0,2)}
- if(id==='wild'){ctx.fillStyle='#721953';ctx.strokeStyle='#ffe6a0';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(w*.12,-h*.40,w*.30,h*.16,6);ctx.fill();ctx.stroke();ctx.fillStyle='#fff0aa';ctx.font=`900 ${Math.max(13,h*.095)}px Georgia`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('×2',w*.27,-h*.32)}ctx.restore()}
+ if(id==='wild'){ctx.fillStyle='#fff0aa';ctx.shadowColor='#ffcf76';ctx.shadowBlur=4;ctx.font=`900 ${Math.max(13,h*.095)}px Georgia`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('×2',w*.27,-h*.32);ctx.shadowBlur=0}ctx.restore()}
 
 const imagesCanvases={};function makeSymbolCanvas(id){if(imagesCanvases[id])return imagesCanvases[id];const can=document.createElement('canvas');can.width=180;can.height=180;drawSymbol(can.getContext('2d'),{id,value:2},0,0,180,180,0,1);return imagesCanvases[id]=can;}function makeCoinCanvas(value){const key='coin'+value;if(imagesCanvases[key])return imagesCanvases[key];const can=document.createElement('canvas');can.width=can.height=180;drawSymbol(can.getContext('2d'),{id:'coin',value},0,0,180,180,0,1);return imagesCanvases[key]=can;}
 function makeOrbCanvas(value){const key='mul'+value;if(imagesCanvases[key])return imagesCanvases[key];const can=document.createElement('canvas');can.width=180;can.height=180;drawSymbol(can.getContext('2d'),{id:'mul',value},0,0,180,180,0,1);return imagesCanvases[key]=can;}
