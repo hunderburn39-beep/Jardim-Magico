@@ -45,7 +45,9 @@
     g.gain.setValueAtTime(.0001,t);
     g.gain.exponentialRampToValueAtTime(Math.max(.0003,volume),t+.008);
     g.gain.exponentialRampToValueAtTime(.0001,end);
-    osc.connect(g);g.connect(pan(master,panValue));
+    const bus=pan(master,panValue);
+    osc.connect(g);g.connect(bus);
+    osc.onended=()=>{try{osc.disconnect();g.disconnect();if(bus!==master)bus.disconnect()}catch(_){}};
     osc.start(t);osc.stop(end+.025);
   }
   function noise(start,duration,volume=.08,low=900,high=5600,panValue=0){
@@ -59,7 +61,9 @@
     g.gain.setValueAtTime(.0001,t);
     g.gain.exponentialRampToValueAtTime(volume,t+.008);
     g.gain.exponentialRampToValueAtTime(.0001,end);
-    source.connect(filter);filter.connect(g);g.connect(pan(master,panValue));
+    const bus=pan(master,panValue);
+    source.connect(filter);filter.connect(g);g.connect(bus);
+    source.onended=()=>{try{source.disconnect();filter.disconnect();g.disconnect();if(bus!==master)bus.disconnect()}catch(_){}};
     source.start(t);source.stop(Math.min(end+.02,t+.68));
   }
   function play(event,opts={}){
