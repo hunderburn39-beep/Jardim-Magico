@@ -105,3 +105,34 @@
  #stageWrap #jm56WinValues .jm56WinAmount{animation:jm56ReducedFade var(--win-duration,3850ms) ease-in-out var(--win-delay,0ms) both!important;will-change:auto}
  @keyframes jm56ReducedFade{0%{opacity:0}15%,60%{opacity:1}100%{opacity:0}}
 }
+
+/* V57: um valor grande, centrado sobre os cinco tambores, sem qualquer caixa. */
+#stageWrap #jm56WinValues .jm56WinAmount.jm57CenterWin{
+ left:50%!important;top:50%!important;
+ max-width:95%!important;width:auto!important;
+ padding:0!important;margin:0!important;
+ border:none!important;background:transparent!important;box-shadow:none!important;
+ backdrop-filter:none!important;
+ color:#fff1ac!important;
+ font:900 clamp(35px,8.3vw,72px)/1.05 Georgia,serif!important;
+ letter-spacing:.015em!important;
+ text-shadow:0 3px 4px #361029,0 0 12px #ffc86b,0 0 25px #ffdd819c!important;
+ animation:jm57CenterPayFade var(--win-duration,3650ms) ease-in-out both!important;
+}
+@keyframes jm57CenterPayFade{
+ 0%{opacity:0;transform:translate(-50%,-50%) scale(.67)}
+ 14%{opacity:1;transform:translate(-50%,-50%) scale(1.16)}
+ 30%,64%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+ 100%{opacity:0;transform:translate(-50%,-57%) scale(.98)}
+}
+@media(orientation:landscape) and (max-height:550px){
+ #stageWrap #jm56WinValues .jm56WinAmount.jm57CenterWin{
+  font-size:clamp(32px,9dvh,61px)!important;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ #stageWrap #jm56WinValues .jm56WinAmount.jm57CenterWin{
+  animation:jm57ReducedPayFade var(--win-duration,3650ms) ease-in-out both!important;
+ }
+ @keyframes jm57ReducedPayFade{0%{opacity:0}16%,70%{opacity:1}100%{opacity:0}}
+}
