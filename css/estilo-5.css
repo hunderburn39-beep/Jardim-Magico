@@ -1,0 +1,235 @@
+/* JARDIM MÁGICO V43 — BOSQUE ENCANTADO
+   Camada exclusivamente visual: nenhuma regra de apostas, jackpots ou bónus é modificada.
+   Inspirada numa slot de fantasia com madeira entalhada e bosque luminoso. */
+:root{
+ --jm-oak:#6d3a1e;
+ --jm-oak-dark:#291810;
+ --jm-gold:#f9d782;
+ --jm-gold-edge:#bf7b34;
+ --jm-emerald:#55c99a;
+}
+html,body{background:#071b1b!important;}
+body::before{
+ background-image:linear-gradient(180deg,rgba(3,11,18,.20),rgba(4,19,19,.03) 30%,rgba(3,16,15,.25) 80%,rgba(1,10,11,.48)),url('../assets/imagens/floresta-v43.svg')!important;
+ background-position:center center!important;
+ background-size:cover!important;
+ background-repeat:no-repeat!important;
+ opacity:1!important;
+ filter:saturate(1.17) contrast(1.06);
+}
+body::after{
+ content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+ background:radial-gradient(circle at 48% 10%,rgba(188,244,209,.12),transparent 34%),radial-gradient(circle at 4% 74%,rgba(255,192,100,.11),transparent 27%),radial-gradient(circle at 96% 66%,rgba(135,210,185,.09),transparent 28%);
+ opacity:.75;
+}
+body>.game{z-index:1;}
+.game .topbar{border-bottom:1px solid rgba(246,220,136,.18);padding-bottom:3px;}
+.game .topbar .branding{
+ color:#ffe8ab;text-shadow:0 1px 3px #190c08,0 0 11px rgba(241,212,129,.42);
+ letter-spacing:.16em;
+}
+.game .roundSmall{
+ border:2px solid #dabd78;
+ background:radial-gradient(circle at 28% 16%,#536b49,#223c38 55%,#102724 78%,#15211d);
+ color:#f9e2ab;
+ box-shadow:inset 0 1px 0 rgba(255,244,172,.68),inset 0 -5px 10px #030f11,0 3px 0 #714225,0 6px 13px rgba(0,0,0,.48);
+ text-shadow:0 1px 4px #000;
+ transition:filter .2s,transform .18s;
+}
+.game .roundSmall:active{filter:brightness(1.4);transform:translateY(2px);}
+.game .logoLoop{
+ filter:drop-shadow(0 5px 9px rgba(0,0,0,.77));
+ z-index:1;
+}
+.game .logoLoop::before{
+ content:'';position:absolute;inset:18% 5% 3%;z-index:-1;pointer-events:none;
+ border-radius:55% 55% 40% 40%;
+ background:radial-gradient(ellipse,rgba(155,87,44,.42) 0%,rgba(46,27,22,.38) 42%,transparent 75%);
+}
+.game .titleArt{
+ filter:drop-shadow(0 2px 0 #261610) drop-shadow(0 5px 7px #090908b8) drop-shadow(0 0 12px rgba(242,203,99,.19));
+}
+.game .jackpots{position:relative;gap:6px;}
+.game .jackpots .jackpot{
+ position:relative;isolation:isolate;
+ border:2px solid #e9c77d!important;
+ border-radius:7px 7px 13px 13px!important;
+ padding:3px 3px 5px!important;
+ background:linear-gradient(175deg,#8f6035 0%,#4b211b 12%,#5b2b25 75%,#2b1c1c 100%)!important;
+ box-shadow:inset 0 1px 0 #fff2bbac,inset 0 0 0 2px #663b24,0 3px 0 #29180e,0 6px 9px #0009,0 0 10px #ffd07d33;
+}
+.game .jackpots .jackpot::before{
+ content:'';position:absolute;inset:3px 4px 4px;border-radius:5px 5px 8px 8px;z-index:-1;
+ background:linear-gradient(180deg,#a54436,#5a1d29 50%,#291722);
+ box-shadow:inset 0 1px 6px #070808a5;
+}
+.game .jackpots .jackpot:nth-child(2)::before{background:linear-gradient(180deg,#6e4594,#34224e 65%,#201a2e);}
+.game .jackpots .jackpot:nth-child(3)::before{background:linear-gradient(180deg,#326899,#1e395d 65%,#182536);}
+.game .jackpots .jackpot:nth-child(4)::before{background:linear-gradient(180deg,#397b48,#225233 60%,#182c21);}
+.game .jackpots .jackpot b{
+ color:#fff1b2!important;letter-spacing:.075em;
+ font-family:Georgia,serif;font-weight:900;
+ text-shadow:0 1px 2px #2b1015,0 0 6px rgba(255,216,140,.4);
+}
+.game .jackpots .jackpot strong{
+ font-family:Georgia,serif!important;font-variant-numeric:tabular-nums;
+ font-size:clamp(10px,2.3vw,21px);color:#ffeba8!important;
+ letter-spacing:-.025em;text-shadow:0 1px 1px #251710,0 0 9px #ffe5a959;
+}
+.game .reelFrame{
+ position:relative;isolation:isolate;
+ border:5px ridge #c38a46!important;
+ border-radius:17px!important;
+ padding:6px 7px 9px!important;
+ background:
+ repeating-linear-gradient(2deg,transparent 0 10px,rgba(253,210,115,.08) 11px 12px,transparent 13px 25px),
+ linear-gradient(95deg,#2d1a11,#633b1e 7%,#a26d39 10%,#40271c 14%,#4b2b1b 50%,#372315 86%,#b58548 91%,#362016)!important;
+ box-shadow:inset 0 0 0 2px #3a2217,inset 0 1px 3px #fff2bd,0 5px 0 #2d180d,0 10px 0 #160f0b,0 17px 24px #000a,0 0 35px rgba(246,191,101,.12)!important;
+}
+.game .reelFrame::before,.game .reelFrame::after{
+ content:'❦'!important;position:absolute;top:-14px;
+ font:900 25px/1 Georgia,serif;color:#a9d65e!important;
+ text-shadow:0 1px 0 #193c20,0 0 7px #ffdb6b,1px 3px #30210f;
+ pointer-events:none;z-index:9;
+}
+.game .reelFrame::before{left:7%;}
+.game .reelFrame::after{right:7%;transform:scaleX(-1);}
+.game .shelf{
+ border:2px solid #dba960!important;
+ border-bottom:1px solid #8e5329!important;
+ background:linear-gradient(180deg,#251d1b 0%,#40281e 40%,#231c21 100%)!important;
+ box-shadow:inset 0 1px #fff0b879,inset 0 -7px 12px #07090944!important;
+}
+.game .shelfTag{
+ color:#f9e3a8;text-shadow:0 2px 2px #170e0a;
+ letter-spacing:.03em;
+}
+.game .shelfTotal{color:#fff0ae;text-shadow:0 0 12px #ffc34a,0 2px #2f1919;}
+.game .orbPill{
+ border:2px solid #ffe09b!important;
+ background:radial-gradient(circle at 34% 24%,#fff2e2,#cf72fa 25%,#8728aa 58%,#36113c 90%)!important;
+ box-shadow:inset 0 2px 5px #fff8eeaa,0 0 9px #e3a5ff99,0 3px 4px #0008!important;
+ text-shadow:0 2px #4a154a;
+}
+.game .stageWrap{
+ border:2px solid #c49255!important;
+ border-radius:2px 2px 10px 10px!important;
+ background:linear-gradient(180deg,#0c2f31,#0a2428)!important;
+ box-shadow:inset 0 0 0 3px #34251e,inset 0 0 40px #020c15b0,0 3px 8px #140e0baa!important;
+}
+.game .gardenWorld{background:#0b3031!important;}
+.game .forestBackdrop{opacity:.86;filter:saturate(1.45) contrast(1.06) brightness(.80);}
+.game .gardenWorld::after{
+ background:linear-gradient(180deg,rgba(6,21,29,.24),transparent 35%,rgba(3,24,25,.23) 90%),radial-gradient(ellipse at center,transparent 10%,rgba(3,12,18,.48) 100%)!important;
+}
+.game .gardenBeam{opacity:.3;}
+.game .glassReels{mix-blend-mode:normal;}
+.game .glassReels i{
+ border-left:1px solid #d1bc7a7a;
+ border-right:2px solid #422c1fa8;
+ background:linear-gradient(90deg,rgba(2,16,21,.27) 0%,rgba(252,245,217,.045) 15%,transparent 37%,rgba(255,245,210,.02) 70%,rgba(1,10,15,.21) 100%)!important;
+ box-shadow:inset 2px 0 8px #071c2280,inset -2px 0 7px #1520259e!important;
+}
+.game .glassReels i:nth-child(even){
+ background:linear-gradient(90deg,rgba(5,20,24,.25),transparent 30%,rgba(255,242,200,.025) 64%,rgba(6,14,20,.24))!important;
+}
+.game .reelFog{
+ background:linear-gradient(180deg,#04192166 0%,transparent 13%,transparent 85%,#0714186b 100%)!important;
+}
+#floaters{position:absolute;inset:0;z-index:7;pointer-events:none;}
+#floaters .winningSymbolGlow{
+ position:absolute;z-index:8;pointer-events:none;
+ width:19%;height:31%;border-radius:13px;
+ transform:translate(-50%,-50%);
+ background:radial-gradient(ellipse,rgba(255,248,200,.13),rgba(255,216,99,.05) 65%,transparent 85%);
+ border:2px solid rgba(255,229,135,.73);
+ box-shadow:inset 0 0 17px 4px rgba(255,241,174,.51),inset 0 0 4px #fff4d6,0 0 13px 5px rgba(255,225,104,.54),0 0 35px 10px rgba(255,164,66,.24);
+ animation:jmSymbolWin 940ms ease-out both;
+}
+@keyframes jmSymbolWin{
+ 0%{opacity:0;filter:brightness(1.3);transform:translate(-50%,-50%) scale(.88)}
+ 18%{opacity:1;filter:brightness(1.5);transform:translate(-50%,-50%) scale(1.04)}
+ 67%{opacity:.9;filter:brightness(1.2);transform:translate(-50%,-50%) scale(1.02)}
+ 100%{opacity:0;filter:brightness(1);transform:translate(-50%,-50%) scale(.97)}
+}
+#floaters .winText{
+ z-index:12;padding:.13em .42em;border-radius:999px;
+ color:#ffefbe!important;font-family:Georgia,serif;font-size:clamp(18px,4.8vw,51px);
+ font-weight:900;letter-spacing:.015em;
+ background:radial-gradient(ellipse,rgba(39,23,12,.92),rgba(18,22,19,.65) 67%,transparent);
+ -webkit-text-stroke:.3px #9e672b;
+ text-shadow:0 1px #874d1a,0 3px #352114,0 0 10px #ffc04c,0 0 21px #ffed98;
+ animation-name:jmPrizeFloat!important;
+ animation-timing-function:ease-out!important;
+ animation-fill-mode:both!important;
+}
+@keyframes jmPrizeFloat{
+ 0%{opacity:0;transform:translate(-50%,-38%) scale(.65);filter:blur(3px)}
+ 19%{opacity:1;transform:translate(-50%,-50%) scale(1.16);filter:blur(0)}
+ 44%{opacity:1;transform:translate(-50%,-56%) scale(1.04)}
+ 73%{opacity:.85;transform:translate(-50%,-65%) scale(1)}
+ 100%{opacity:0;transform:translate(-50%,-79%) scale(.91);filter:blur(2px)}
+}
+.game .notice{color:#fff0c0;text-shadow:0 2px 4px #051a1e,0 0 9px #ffcf824d;}
+.game .controlStats .hudPanel{
+ border:2px solid #e2b574!important;
+ border-radius:12px!important;
+ background:linear-gradient(165deg,#60351f,#39281b 21%,#162b2a 70%,#1b2224)!important;
+ color:#fff1c8;
+ box-shadow:inset 0 2px 1px #ffe5ac70,inset 0 0 0 1px #6b472b,0 4px 0 #2a160d,0 6px 15px #0008!important;
+}
+.game .controlStats .hudPanel small{color:#f5d59a;text-shadow:0 1px 3px #100c0a;}
+.game .controlStats .hudPanel strong{color:#fff4d4;text-shadow:0 1px 2px #211313,0 0 7px #facb7b55;}
+.game .controlStats .betPanel button{
+ background:radial-gradient(circle at 30% 24%,#a98a58,#543b28 58%,#2a231c)!important;
+ border:1px solid #ead08a!important;color:#fff0b9;
+ box-shadow:inset 0 1px #fff3cb,0 2px 3px #0006;
+}
+.game .vaultMystery{
+ border:2px solid #dfb66a!important;
+ background:radial-gradient(ellipse at 50% 30%,#5a6338,#263b2f 40%,#202823 76%,#3b271b)!important;
+ box-shadow:inset 0 1px #fff3b073,inset 0 0 15px #d2d37c4f,0 4px 0 #261a12,0 7px 15px #0009!important;
+}
+.game .vaultMystery .vaultFace{filter:drop-shadow(0 0 12px #ffcd62);}
+.game .deckButton{
+ border:2px solid #e9c986!important;border-radius:11px!important;
+ color:#fff2bc!important;text-shadow:0 1px 3px #24160d;
+ background:linear-gradient(180deg,#6b4a32 0%,#493024 40%,#1d2827 100%)!important;
+ box-shadow:inset 0 1px 0 #fff0b698,0 3px 0 #2d190f,0 7px 12px #0008!important;
+}
+.game .deckButton.turboToggle[aria-pressed="true"]{background:linear-gradient(180deg,#e4aa48,#976027 50%,#392819)!important;}
+.game .spinHalo{filter:drop-shadow(0 3px 7px #ffd17555) drop-shadow(0 8px 12px #000b)!important;}
+.game .spinHalo .spinBtn{
+ border-color:#ffe7a3!important;
+ color:#fffacb!important;text-shadow:0 2px 2px #17472b,0 0 10px #f8e993;
+ background:radial-gradient(circle at 33% 21%,#d2f6ae 0%,#7dcc65 23%,#2a9064 49%,#11503a 79%,#082c2d 100%)!important;
+ box-shadow:inset 0 4px 7px #fffcbeab,inset 0 -8px 16px #021e20aa,0 5px 0 #68502d,0 9px 17px #000a,0 0 17px #96fc8b55!important;
+}
+.game .spinHalo .spinBtn.pressed:not(:disabled),.game .spinHalo .spinBtn:active:not(:disabled){
+ background:radial-gradient(circle at 34% 24%,#fff4aa,#ffbb3d 32%,#ed7a12 66%,#87341b)!important;
+ box-shadow:inset 0 4px 13px #fff8cf,0 0 15px #ffae4b,0 2px 0 #784619!important;
+ color:#fff!important;
+}
+.game .spinHalo .spinBtn:disabled{filter:grayscale(.2);opacity:.75;}
+.game .bigWin{background:radial-gradient(circle,#303e28ee,#151920eb 68%,#0c1015ee)!important;}
+.game .bigWin h2{color:#fff2a4;text-shadow:0 0 14px #f7c847;}
+.game .dialog{border-color:#cf9e58;background:linear-gradient(145deg,#18362c,#2e222e 73%,#201a22);}
+@media(max-width:540px){
+ .game .jackpots{gap:3px;}
+ .game .jackpots .jackpot{border-width:1px!important;padding:2px 1px 3px!important;}
+ .game .jackpots .jackpot b{font-size:clamp(9px,2.5vw,13px);}
+ .game .jackpots .jackpot strong{font-size:clamp(10px,2.55vw,15px);}
+ .game .reelFrame{padding:3px 4px 5px!important;border-width:3px!important;}
+ .game .reelFrame::before,.game .reelFrame::after{font-size:17px;top:-9px;}
+ .game .shelf{border-width:1px!important;}
+ #floaters .winningSymbolGlow{border-width:1.5px;border-radius:8px;}
+}
+@media(max-height:440px) and (orientation:landscape){
+ .game .reelFrame{border-width:2px!important;padding:2px 3px 3px!important;}
+ .game .jackpots .jackpot{padding:1px 2px 2px!important;border-width:1px!important;}
+ .game .reelFrame::before,.game .reelFrame::after{display:none;}
+}
+@media(prefers-reduced-motion:reduce){
+ .game .gardenFirefly,.game .gardenButterfly,.game .gardenBird,.game .forestBackdrop{animation:none!important;}
+ #floaters .winningSymbolGlow,#floaters .winText{animation-duration:.01ms!important;}
+}
