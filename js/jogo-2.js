@@ -1175,7 +1175,18 @@ async function spinColumns(next){
 // Mostra um único total por cascata, com desaparecimento progressivo.
 /* V56: cada linha apresenta apenas o montante, sem caixa.
    O valor desvanece independentemente da cascata seguinte. */
-function markLines(won,accumulated=won.reduce((sum,win)=>sum+win.value,0),winningDrops=1){
+/* V63: no tabuleiro aparece apenas o prémio desta queda; o acumulado vive
+   num contador FIXO à esquerda da bola MULTI até começar a próxima spin. */
+function updateDropScore(cents){
+ const node=$('jm63DropValue');
+ if(!node)return;
+ const value=Math.max(0,Math.round(Number(cents)||0));
+ node.textContent=money(value);
+ node.setAttribute('aria-label','Valor acumulado das quedas nesta spin: '+money(value));
+ node.classList.remove('jm63ScorePulse');
+ if(value>0){void node.offsetWidth;node.classList.add('jm63ScorePulse');}
+}
+function markLines(won){
  const lines=$('paylines'),layer=$('floaters'),stage=$('stageWrap');
  lines.replaceChildren();layer.replaceChildren();
  const seen=new Set(),glowDuration=mode==='turbo'?1200:2050;
@@ -1193,22 +1204,17 @@ function markLines(won,accumulated=won.reduce((sum,win)=>sum+win.value,0),winnin
  }
  let wins=$('jm56WinValues');
  if(!wins){wins=document.createElement('div');wins.id='jm56WinValues';stage.appendChild(wins);}
- // V62: a soma começa em zero em cada spin, nunca acumula jogadas anteriores.
- const addition=won.reduce((sum,win)=>sum+win.value,0);
+ // Cada queda mostra apenas a soma das linhas premiadas nessa queda.
+ const amount=won.reduce((sum,win)=>sum+win.value,0);
  const display=document.createElement('span');
- display.className='jm56WinAmount jm57CenterWin jm61CascadeTotal';
- const header=document.createElement('small');header.className='jm61CascadeHeading';header.textContent='VALOR DA QUEDA:';
- const total=document.createElement('strong');total.className='jm61CascadeValue';total.textContent=money(accumulated);
- const delta=document.createElement('small');delta.className='jm61CascadeIncrement';delta.textContent='+'+money(addition)+' NESTA QUEDA';
- display.append(header,total);
- if(winningDrops>1)display.append(delta); // Uma só queda: mostra apenas o prémio.
- display.classList.toggle('jm62FirstDrop',winningDrops===1);
+ display.className='jm56WinAmount jm57CenterWin jm63LineAmount';
+ display.textContent=money(amount);
  display.style.left='50%';
  display.style.top='50%';
  const duration=mode==='turbo'?2200:3650;
  display.style.setProperty('--win-delay','0ms');
  display.style.setProperty('--win-duration',duration+'ms');
- display.setAttribute('aria-label',(winningDrops===1?'Prémio da queda: ':'Total acumulado nesta spin: ')+money(accumulated)+(winningDrops>1?'; última queda: '+money(addition):''));
+ display.setAttribute('aria-label','Prémio das '+won.length+' linhas nesta queda: '+money(amount));
  wins.replaceChildren(display);
  setTimeout(()=>display.remove(),duration+130);
  audioFX('win');
@@ -1350,10 +1356,9 @@ async function doRound(){
  $('jm56WinValues')?.replaceChildren(); // Uma nova spin não herda o valor visual da anterior.
  window.JM_WINCELEBRATION_V60?.clear();
  let lastCascadeCelebration=0; // Nível mais alto já celebrado nesta spin.
- let winningDrops=0; // Número de quedas premiadas desta spin; reinicia sempre.
  if(free){freeSpins--;freeSummaryCount++;}
  else{balance-=stake;session.stake+=stake;fundWager(stake);log('aposta',-stake,'Rodada base · cofre '+money(prizePool));}
- session.spins++;update();soundStart();notice(free?'✦ Rodada grátis!':'Tambores a rodar...');shelf=free?freeMultiplierBalls:[];updateShelf();clearLines();winRound=0;
+ session.spins++;update();soundStart();notice(free?'✦ Rodada grátis!':'Tambores a rodar...');shelf=free?freeMultiplierBalls:[];updateShelf();clearLines();winRound=0;updateDropScore(0);
  let sixCoinTrigger=false;
  const detectSixCoins=async()=>{if(!sixCoinTrigger&&countReelCoins()>=6){sixCoinTrigger=true;await showSixCoinCascade();}};
  await spinColumns(wholeGrid());await detectSixCoins();let scatterTrigger=0,cascadeCount=0;const maxCascades=12;
@@ -1364,8 +1369,8 @@ async function doRound(){
   if(!ev.won.length&&!m.length&&!hasCoins)break;
   if(ev.won.length){
    winRound+=ev.amount;
-   winningDrops++;
-   markLines(ev.won,winRound,winningDrops);
+   updateDropScore(winRound); // Soma todas as quedas PREMIADAS desta spin.
+   markLines(ev.won);     // Ao centro, apenas o valor desta queda.
    notice('Linha premiada: '+money(ev.amount)+' • cascata '+cascadeCount);
    await sleep(mode==='turbo'?690:1380); // deixar ver as quantias a desvanecer
   }
