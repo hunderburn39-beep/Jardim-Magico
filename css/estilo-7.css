@@ -1,0 +1,36 @@
+/* Jardim Mágico V46 — chegada física das peças do Hold & Win.
+   Apenas efeitos visuais; sem influência no cálculo das jogadas. */
+#bonusGrid .bonusCell.factorCell.newItem .bonusToken.factor{
+ animation:jmMulLandV46 610ms cubic-bezier(.18,.73,.25,1.1) both;
+ filter:drop-shadow(0 0 8px #ffa86a) drop-shadow(0 0 16px #ffdb8755);
+}
+#bonusGrid .bonusCell.coinCell.newItem .bonusToken.cash{
+ animation:jmCoinLandV46 540ms cubic-bezier(.25,.8,.3,1.15) both;
+ filter:drop-shadow(0 0 9px #ffe5a466);
+}
+#bonusGrid .bonusCell.gemCell.newItem .bonusCrystal{
+ animation:jmGemLandV46 700ms ease-out both;
+ filter:drop-shadow(0 0 8px var(--crystal-main,#ffefab));
+}
+@keyframes jmMulLandV46{
+ 0%{transform:translateY(-28%) scale(.76) rotate(-9deg);opacity:.15}
+ 44%{transform:translateY(7%) scale(1.17) rotate(3deg);opacity:1}
+ 64%{transform:translateY(-9%) scale(.92) rotate(-1deg)}
+ 82%{transform:translateY(3%) scale(1.035)}
+ 100%{transform:translateY(0) scale(1) rotate(0);opacity:1}
+}
+@keyframes jmCoinLandV46{
+ 0%{transform:translateY(-24%) scale(.79);opacity:.3}
+ 55%{transform:translateY(4%) scale(1.13);opacity:1}
+ 75%{transform:translateY(-4%) scale(.96)}
+ 100%{transform:translateY(0) scale(1);opacity:1}
+}
+@keyframes jmGemLandV46{
+ 0%{transform:rotate(-19deg) scale(.7);opacity:0}
+ 55%{transform:rotate(7deg) scale(1.16);opacity:1}
+ 100%{transform:rotate(0) scale(1);opacity:1}
+}
+@media (prefers-reduced-motion:reduce){
+ #bonusGrid .bonusCell.newItem .bonusToken,
+ #bonusGrid .bonusCell.gemCell.newItem .bonusCrystal{animation:none!important;}
+}
