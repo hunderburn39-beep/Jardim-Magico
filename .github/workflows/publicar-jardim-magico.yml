@@ -46,14 +46,26 @@ jobs:
           name: github-pages-attempt-${{ github.run_attempt }}
           path: public
 
-      - name: Libertar deployment Pages antigo bloqueado
+      - name: Diagnosticar e cancelar deployment Pages antigo
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Limpeza pontual de deployment orfao identificado nos logs (05-11-2026).
-          # Ignorar 404 caso ja tenha sido removido pelo GitHub.
-          gh api -X POST "repos/${{ github.repository }}/pages/deployments/d1601de38adda519c991d5039fff154a67129ea0/cancel" || true
+          set -u
+          old="repos/${{ github.repository }}/pages/deployments/d1601de38adda519c991d5039fff154a67129ea0"
+          echo "::group::Estado da publicacao antiga antes de cancelar"
+          gh api "$old" || true
+          echo "::endgroup::"
+          echo "::group::Resposta HTTP do pedido de cancelamento"
+          gh api -i -X POST "$old/cancel" || true
+          echo "::endgroup::"
+          sleep 7
+          echo "::group::Estado da publicacao antiga depois de cancelar"
+          gh api "$old" || true
+          echo "::endgroup::"
+          echo "::group::Deployments registados no ambiente github-pages"
+          gh api "repos/${{ github.repository }}/deployments" --jq '[.[] | select(.environment=="github-pages") | {id,sha,created_at,ref}] | .[:7]' || true
+          echo "::endgroup::"
 
       - name: Publicar site
         id: deployment
