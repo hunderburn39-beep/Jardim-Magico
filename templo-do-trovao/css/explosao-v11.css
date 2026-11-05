@@ -143,7 +143,7 @@
 @keyframes v11Vapor{
   0%,19%{opacity:0;transform:translate(-50%,-50%) scale(.4)}
   31%{opacity:.50}
-  65%{opacity:.31;transform:translate(calc(-50% + var(--dx,0px)*.65),calc(-50% + var(--dy,0px)*.65)) scale(1.55)}
+  65%{opacity:.31;transform:translate(calc(-50% + var(--dx65,0px)),calc(-50% + var(--dy65,0px))) scale(1.55)}
   100%{opacity:0;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px))) scale(2.25);filter:blur(16px)}
 }
 @keyframes v11Streak{
