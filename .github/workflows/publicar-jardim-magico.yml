@@ -45,6 +45,15 @@ jobs:
         with:
           path: public
 
+      - name: Libertar deployment Pages antigo bloqueado
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Limpeza pontual de deployment orfao identificado nos logs (05-11-2026).
+          # Ignorar 404 caso ja tenha sido removido pelo GitHub.
+          gh api -X POST "repos/${{ github.repository }}/pages/deployments/d1601de38adda519c991d5039fff154a67129ea0/cancel" || true
+
       - name: Publicar site
         id: deployment
         uses: actions/deploy-pages@v4
