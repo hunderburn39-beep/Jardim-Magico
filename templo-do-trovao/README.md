@@ -1,4 +1,4 @@
-# Portões do Trovão — V6.0
+# Portões do Trovão — V7.0
 
 Jogo independente de demonstração com créditos virtuais, inspirado no formato de slots de queda do Olimpo. **Não afiliado, licenciado ou certificado pela Pragmatic Play.** Sem depósitos, levantamentos ou prémios em dinheiro real.
 
@@ -45,7 +45,7 @@ O jogo **não partilha** código nem valores com a slot Jardim Mágico. A public
 5. Três ou mais SCATTER durante rodadas grátis dão cinco rodadas adicionais.
 6. Esferas multiplicadoras até 500×. Várias esferas são somadas na rodada vencedora. Nas rodadas grátis, multiplicadores de rodadas premiadas acumulam-se durante o bónus.
 7. Compra de bónus com créditos **virtuais**, por 100× a aposta.
-8. Auto-spins: premir GIRAR durante três segundos, escolher 10/25/50/100; tocar novamente em GIRAR para parar. Turbo, som opcional e reposição de créditos virtuais.
+8. Auto-spins: premir GIRAR durante um segundo, escolher 10/25/50/100; tocar novamente em GIRAR para parar. Turbo, som opcional e reposição de créditos virtuais.
 9. Limite de 5 000× a aposta por ciclo.
 10. V5 fixa um limite técnico de segurança de 36 cascatas numa jogada, distinto da versão comercial, para evitar uma execução interminável.
 
@@ -89,3 +89,10 @@ Todos os gráficos desta pasta são novos e não reutilizam imagens nem logótip
 - O botão de histórico no topo abre um painel que mostra por rodada a grelha inicial, cada queda posterior, as pedras novas por tipo e quantidade, e o pagamento de cada combinação (8+). Registos de 24 rodadas durante a sessão, com botão limpar.
 - A rotação conserva o som MP3 original a 320 kbps / 48 kHz. O efeito de aterragem, sintetizado pelo Web Audio em 32-bit float, junta impactos graves e metálicos por coluna sincronizados com o pousar das peças. São 32 vozes simultâneas no motor PCM/MP3. **128 kbps seria pior do que 320 kbps; 128-bit PCM não é um formato de reprodução de áudio usual nem necessário.**
 - Mantém-se um jogo de demonstração, com créditos virtuais e RTP não certificado.
+
+## Novidades da V7 — som do spin e auto-spins
+
+- O botão GIRAR utiliza diretamente a gravação enviada pelo utilizador: `assets/sons/spin-original-256k-v7.mp3` (MP3 original estéreo 256 kbps, sem recompressão). O antigo efeito de rotação só é usado se a reprodução do áudio personalizado falhar.
+- A ligação ao motor está isolada em `js/audio-v7.js`. Os sons de queda, aterragem, multiplicadores e bónus continuam a utilizar o motor anterior.
+- Premir continuamente GIRAR durante **1 segundo** abre a seleção de 10, 25, 50 ou 100 rodadas automáticas.
+- A janela usa `css/autospins-v7.css`: estilo roxo e dourado, fundo quase transparente e efeito de vidro sobre a máquina.
