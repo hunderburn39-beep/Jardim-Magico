@@ -1,0 +1,30 @@
+/* V65 — fundos disponíveis e prémios potenciais visíveis.
+   Nota sempre no mesmo local; sem alterar o aspeto da bola MULTI. */
+.game .shelf .jm63DropCounter{
+ width:clamp(125px,31vw,220px)!important;
+ right:calc(100% + clamp(10px,2.5vw,19px))!important;
+}
+.game .shelf .jm65FreeExposure{
+ display:block!important;max-width:100%;padding:2px 0 0!important;
+ font:800 clamp(9px,1.9vw,12px)/1.25 system-ui,-apple-system,sans-serif!important;
+ color:#ffe7a8!important;text-align:right!important;
+ text-shadow:0 1px 3px #290e23,0 0 8px #d2a85f!important;
+ overflow-wrap:normal!important;white-space:normal!important;
+}
+.game .shelf .jm65FreeExposure:empty{display:none!important}
+#jm65BonusPayable{
+ margin:4px 0 7px;padding:6px 8px;
+ font:800 clamp(11px,2.6vw,15px)/1.28 system-ui,-apple-system,sans-serif;
+ color:#fff0b5;text-shadow:0 1px 2px #2e1138;
+ background:rgba(25,12,38,.42);
+ border:1px solid rgba(251,209,142,.35);
+ border-radius:8px;text-align:center;
+}
+@media(max-width:400px){
+ .game .shelf .jm63DropCounter{width:clamp(116px,33vw,155px)!important}
+ .game .shelf .jm65FreeExposure{font-size:9px!important}
+}
+@media(orientation:landscape) and (max-height:450px){
+ .game .shelf .jm63DropCounter{width:clamp(120px,18vw,195px)!important}
+ .game .shelf .jm65FreeExposure{font-size:10px!important}
+}
