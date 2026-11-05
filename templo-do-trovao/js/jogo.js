@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V9.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V11.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -58,7 +58,7 @@
   let nextId = 1;
   const $ = id => document.getElementById(id);
   const el = {
-    board:$("board"),overlay:$("boardOverlay"),balance:$("balance"),bet:$("betValue"),
+    board:$("board"),overlay:$("boardOverlay"),fx:$("winningFx"),balance:$("balance"),bet:$("betValue"),
     buyCost:$("buyCost"),win:$("winText"),msg:$("gameMessage"),mult:$("totalMult"),
     multHint:$("multHint"),free:$("freeLeft"),freeHint:$("freeHint"),
     cascades:$("cascadeCount"),spin:$("btnSpin"),spinLabel:$("spinLabel"),
@@ -184,30 +184,106 @@
     return landings.length?lastLanding+95:0;
   }
     function explodeWinningSymbols(){
+    // Só as peças assinaladas como vencedoras (8+ iguais) explodem.
     const tiles=Array.from(el.board.querySelectorAll(".cell.winner"));
-    if(!tiles.length)return;
+    if(!tiles.length)return 0;
+    const duration=state.turbo?460:880;
+    const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches===true;
     el.board.classList.remove("board-impact");
     void el.board.offsetWidth;
-    el.board.classList.add("board-impact");
-    const total=tiles.length;
+    if(!reduced)el.board.classList.add("board-impact");
+    const container=el.fx;
+    const frame=container?.getBoundingClientRect();
+    const fragment=document.createDocumentFragment();
+    const palette={
+      sapphire:"#69dafa",emerald:"#62fdb2",amber:"#ffcb63",
+      amethyst:"#dc83ff",ruby:"#ff7394",goblet:"#aaa4ff",
+      ring:"#f1c16e",hourglass:"#7fffe0",crown:"#ffeb99",
+      scatter:"#a5efff",mult:"#ffcf93"
+    };
+    // Menos partículas quando a grelha está cheia de vencedores;
+    // é mais leve no iPhone e não sacrifica o efeito de dissipação.
+    const sparks=reduced?0:tiles.length>20?5:9;
+    const dust=reduced?0:tiles.length>20?5:7;
     tiles.forEach((tile,i)=>{
+      const kind=tile.dataset.kind;
       tile.classList.add("burst-out");
-      tile.style.setProperty("--burst-delay",((i%COLS)*(state.turbo?.003:.014))+"s");
-      for(let n=0;n<7;n++){
-        const shard=document.createElement("span");
-        shard.className="crystal-shard";
-        const angle=(n*360/7+i*21)*Math.PI/180;
-        const reach=Math.max(18,Math.min(tile.clientWidth,tile.clientHeight)*(.52+(n%3)*.17));
-        shard.style.setProperty("--sx",(Math.cos(angle)*reach).toFixed(1)+"px");
-        shard.style.setProperty("--sy",(Math.sin(angle)*reach).toFixed(1)+"px");
-        shard.style.setProperty("--sd",(n%3)*.025+"s");
-        shard.style.setProperty("--shard-hue",tile.dataset.kind==="ruby"?"348":tile.dataset.kind==="sapphire"?"192":tile.dataset.kind==="emerald"?"146":tile.dataset.kind==="amethyst"?"278":"44");
-        tile.appendChild(shard);
+      tile.style.setProperty("--burst-delay","0ms");
+      tile.style.setProperty("--burst-lifetime",duration+"ms");
+      if(!container||!frame||reduced)return;
+      const rect=tile.getBoundingClientRect();
+      const anchor=document.createElement("span");
+      anchor.className="win-burst";
+      anchor.style.setProperty("--burst-color",palette[kind]||"#ffe6af");
+      anchor.style.setProperty("--burst-left",(rect.left-frame.left).toFixed(1)+"px");
+      anchor.style.setProperty("--burst-top",(rect.top-frame.top).toFixed(1)+"px");
+      anchor.style.setProperty("--burst-width",rect.width.toFixed(1)+"px");
+      anchor.style.setProperty("--burst-height",rect.height.toFixed(1)+"px");
+      anchor.style.setProperty("--burst-lifetime",duration+"ms");
+      const copy=makeSprite(kind);
+      copy.classList.add("win-copy");
+      anchor.appendChild(copy);
+      for(const cls of ["win-flare","win-ring"]){
+        const p=document.createElement("span");p.className=cls;anchor.appendChild(p);
       }
+      const extent=Math.max(27,Math.min(110,Math.min(rect.width,rect.height)*1.35));
+      const addParticle=(cls,n,total)=>{
+        const angle=(2*Math.PI*(n+.17*i)/total)+(cls==="win-dust"?.24:0);
+        const distance=extent*(.65+(n%5)*.16);
+        const p=document.createElement("i");
+        p.className=cls;
+        const dx=Math.cos(angle)*distance,dy=Math.sin(angle)*distance-6;
+        p.style.setProperty("--dx",dx.toFixed(1)+"px");
+        p.style.setProperty("--dy",dy.toFixed(1)+"px");
+        p.style.setProperty("--dx65",(dx*.65).toFixed(1)+"px");
+        p.style.setProperty("--dy65",(dy*.65).toFixed(1)+"px");
+        p.style.setProperty("--d",(n%4*13)+"ms");
+        if(cls==="win-crystal"){
+          p.style.setProperty("--rot",((n%2?1:-1)*(250+n*38))+"deg");
+          p.style.setProperty("--shard-width",Math.max(4,Math.min(11,rect.width*.095))+"px");
+          p.style.setProperty("--shard-height",Math.max(7,Math.min(19,rect.height*.18))+"px");
+        }
+        if(cls==="win-dust"){
+          p.style.setProperty("--dust-size",Math.max(4,Math.min(11,rect.width*.09))+"px");
+        }
+        anchor.appendChild(p);
+      };
+      for(let n=0;n<sparks;n++)addParticle("win-crystal",n,sparks);
+      for(let n=0;n<dust;n++)addParticle("win-dust",n,dust);
+      for(let n=0;n<2;n++){
+        const smoke=document.createElement("i");
+        smoke.className="win-smoke";
+        const vx=(n?1:-1)*extent*.32;
+        smoke.style.setProperty("--dx",vx.toFixed(1)+"px");
+        smoke.style.setProperty("--dy",(-extent*(.32+n*.12)).toFixed(1)+"px");
+        smoke.style.setProperty("--dx65",(vx*.65).toFixed(1)+"px");
+        smoke.style.setProperty("--dy65",(-extent*(.32+n*.12)*.65).toFixed(1)+"px");
+        smoke.style.setProperty("--d",(n*32)+"ms");
+        anchor.appendChild(smoke);
+      }
+      if(tiles.length<=19){
+        for(let n=0;n<2;n++){
+          const streak=document.createElement("i");
+          streak.className="win-streak";
+          streak.style.setProperty("--angle",((n*180+i*37)%360)+"deg");
+          streak.style.setProperty("--d",(n*22)+"ms");
+          anchor.appendChild(streak);
+        }
+      }
+      fragment.appendChild(anchor);
     });
-    sfx("burst",{level:Math.min(1.35,.72+total*.035)});
-    // Os raios do cenário reagem às combinações sem alterar os prémios.
+    if(container){
+      // Um efeito anterior nunca pode apagar uma explosão mais recente.
+      const token=String((Number(container.dataset.fxToken)||0)+1);
+      container.dataset.fxToken=token;
+      container.replaceChildren(fragment);
+      window.setTimeout(()=>{
+        if(container.dataset.fxToken===token)container.replaceChildren();
+      },duration+140);
+    }
+    sfx("burst",{level:Math.min(1.35,.72+tiles.length*.035)});
     window.TrovaoScene?.reactToWin();
+    return reduced?100:duration;
   }
   function showPrizeFloat(amount,prizes=[]){
     if(amount<=0)return;
@@ -308,6 +384,7 @@
       return false;
     }
     state.busy=true;
+    el.fx?.replaceChildren();
     if(!bonusSpin){state.balance=Math.round((state.balance-bet)*100)/100;state.currentWin=0}
     else state.freeLeft--;
     state.cascade=0;state.visibleMult=1;
@@ -351,8 +428,9 @@
       if(spinMult>0&&steps===1)sfx("mult");
       refresh();
       await pause(state.turbo?105:280);
-      explodeWinningSymbols();
-      await pause(state.turbo?165:400);
+      const explosionTime=explodeWinningSymbols();
+      // Esperar que os cristais se partam e se dissipem antes da queda.
+      await pause(explosionTime+(state.turbo?35:40));
       const oldPositions=new Map(state.grid.map((s,index)=>[s.id,index]));
       state.grid=tumble(state.grid,wins.matched);
       const bornIds=new Set(state.grid.filter(s=>!oldPositions.has(s.id)).map(s=>s.id));
