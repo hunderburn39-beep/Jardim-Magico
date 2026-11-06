@@ -445,11 +445,14 @@ function databaseModal(){
   bank.reserve=Math.round((bank.reserve+500)*100)/100;
   render();saveDemo('admin-fund-plus');say('Cofre demo aumentado em 500 créditos');
  }));
- wrap.append(choice('− Retirar 100 do cofre','Apenas se houver 100 créditos livres.',()=>{
+ wrap.append(choice('− Retirar 100 do cofre','Apenas com jogo base parado e fundo suficiente.',()=>{
+  if(spinBusy||bank.mode!=='base'){
+   say('Não é possível reduzir o cofre durante um bónus ou um giro');return;
+  }
   if(bank.reserve<100){say('Cofre insuficiente');return}
   bank.reserve=Math.round((bank.reserve-100)*100)/100;
   render();saveDemo('admin-fund-minus');say('Cofre demo reduzido em 100 créditos');
- }));
+ },spinBusy||bank.mode!=='base'||bank.reserve<100));
  wrap.append(choice('♻ Reiniciar demonstração','Apaga o saldo e histórico locais.',async()=>{
   if(!confirm('Apagar o saldo fictício e histórico deste dispositivo?'))return;
   autoRemaining=0;clearTimeout(nextTimer);await demoDB.clear();location.reload();
