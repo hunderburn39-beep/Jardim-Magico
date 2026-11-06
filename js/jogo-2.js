@@ -43,12 +43,16 @@ const RTP_REFERENCE=96;
 // V65 — revisão de risco: as free spins V64 ultrapassavam o fundo esperado;
  // Hold & Win comprado custa 100× a aposta, diferente de bónus oferecidos.
  // Valores fixos e públicos; nunca variam com o lucro real da banca.
-const RTP_CALIBRATION={base:0.34,free:0.015,hold:0.25,holdPurchase:1.25};
+// V71: probabilidades fixas; coeficientes calibrados independentemente do fundo.
+const RTP_CALIBRATION={base:0.56,free:0.076,hold:0.25,holdPurchase:1.30};
+const FREQUENT_RTP_CALIBRATION={base:0.515,free:0.060};
 // V66: coeficientes base/free calibrados em simulação com WILD fixo 1–5×;
 // constantes ao longo da sessão, sem depender do saldo ou histórico da banca.
 let autoSpinsTotal=0,rtpConfig=96,adminAudit=[],awardContext='base',adminUnlocked=false,adminTaps=0,adminTapDeadline=0,autoSpinsRemaining=0,freeStartPending=false,freeAutoRunning=false,freeAutoTimer=null,scatterNoteStep=0;
 const configuredRtp=()=>RTP_REFERENCE; // Fixo; sem alteração na interface de administração.
 let profitPercent=4, prizePool=0, operatorReserve=0, protectedReserve=0, ownerWithdrawn=0, protectedCarry=0, riskReserve=0, ownerCarry=0, poolCarry=0;
+let fundInvested=0,fundRecovered=0;
+const FUND_MIN_FACTOR=250,FUND_TARGET_FACTOR=1000;
 // V59: a reserva livre é distribuída entre o proprietário e o estabelecimento.
 // A reserva protegida, o cofre de prémios e os jackpots não são repartidos.
 let ownerPercent=60,ownerShareReserve=0,merchantShareReserve=0,shareCarry=0;
@@ -100,7 +104,8 @@ function validateVault(){return Number.isInteger(prizePool)&&Number.isInteger(op
 
 const rtpScaleFor=kind=>{
  const payoutKind=kind==='hold'&&bonus?.origin==='compra'?'holdPurchase':kind;
- return (effectiveBudgetPercent()/RTP_REFERENCE)*(RTP_CALIBRATION[payoutKind]??1);
+ const calibration=(volatilityMode==='frequentes'&&(payoutKind==='base'||payoutKind==='free'))?FREQUENT_RTP_CALIBRATION:RTP_CALIBRATION;
+  return (effectiveBudgetPercent()/RTP_REFERENCE)*(calibration[payoutKind]??RTP_CALIBRATION[payoutKind]??1);
 };
 const roundedPayout=value=>{if(!(value>0))return 0;let whole=Math.floor(value),fraction=value-whole;return whole+(Math.random()<fraction?1:0)};
 const rtpLabel=value=>Number(value).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
@@ -185,7 +190,7 @@ function soundReelLanding(){
 }
 
 
-function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,freeBonusTotal,freeSummaryPending,freeSummaryCount,freeBaseTotal,freeMultiplierBalls,freeSettlePending,freeRetriggersUsed,vaultCoins,vaultFictiveSum,musicEnabled,musicVolume,rtpConfig,profitPercent,ownerPercent,ownerShareReserve,merchantShareReserve,shareCarry,volatilityMode,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,progressivePools,progressiveCarry,adminAudit,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({balance,lastPrize,betIdx,mode,session,history,freeSpins,freeBet,freeBonusTotal,freeSummaryPending,freeSummaryCount,freeBaseTotal,freeMultiplierBalls,freeSettlePending,freeRetriggersUsed,vaultCoins,vaultFictiveSum,musicEnabled,musicVolume,rtpConfig,profitPercent,ownerPercent,ownerShareReserve,merchantShareReserve,shareCarry,volatilityMode,prizePool,operatorReserve,protectedReserve,protectedCarry,ownerWithdrawn,riskReserve,ownerCarry,poolCarry,progressivePools,progressiveCarry,adminAudit,fundInvested,fundRecovered,autoSpinsRemaining,autoSpinsTotal,bonus:bonus?{...bonus,inMotion:false}:null}));}catch(e){}}
 function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(data){balance=Number(data.balance)||0;lastPrize=Number(data.lastPrize)||0;const savedBetIndex=Number(data.betIdx);betIdx=Number.isInteger(savedBetIndex)?Math.max(0,Math.min(BETS.length-1,savedBetIndex)):2;mode=data.mode==='turbo'?'turbo':'normal';session=data.session||null;history=Array.isArray(data.history)?data.history:[];freeSpins=Number(data.freeSpins)||0;freeBet=Number(data.freeBet)||20;freeBonusTotal=Math.max(0,Math.round(Number(data.freeBonusTotal)||0));freeSummaryPending=!!data.freeSummaryPending;freeSummaryCount=Math.max(0,Math.round(Number(data.freeSummaryCount)||0));freeBaseTotal=Math.max(0,Math.round(Number(data.freeBaseTotal)||0));freeMultiplierBalls=Array.isArray(data.freeMultiplierBalls)?data.freeMultiplierBalls.filter(v=>Number.isInteger(v)&&v>=2&&v<=1000):[];freeSettlePending=!!data.freeSettlePending;
  // Sem retirar spins já atribuídas em versões anteriores.
  // Quando não há contador V65, considera-se consumido o limite se o bónus antigo
@@ -194,7 +199,10 @@ function load(){try{const data=JSON.parse(localStorage.getItem(KEY)||'null');if(
  freeRetriggersUsed=Number.isFinite(Number(data.freeRetriggersUsed))
   ?Math.max(0,Math.min(MAX_FREE_RETRIGGERS,Math.floor(Number(data.freeRetriggersUsed))))
   :Math.min(MAX_FREE_RETRIGGERS,Math.ceil(legacyGranted/15));
- vaultCoins=Math.max(0,Number(data.vaultCoins)||0);vaultFictiveSum=Math.max(0,Math.round(Number(data.vaultFictiveSum)||0));bonus=([16,25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(1,Math.min(70,Number(data.profitPercent))):4;
+ vaultCoins=Math.max(0,Number(data.vaultCoins)||0);vaultFictiveSum=Math.max(0,Math.round(Number(data.vaultFictiveSum)||0));bonus=([16,25,64].includes(data.bonus?.cells?.length))?{...data.bonus,inMotion:false}:null;autoSpinsRemaining=Math.max(0,Number(data.autoSpinsRemaining)||0);autoSpinsTotal=Math.max(autoSpinsRemaining,Number(data.autoSpinsTotal)||0);musicEnabled=data.musicEnabled!==false;musicVolume=Number.isFinite(Number(data.musicVolume))?Math.max(0,Math.min(1,Number(data.musicVolume))):.25;rtpConfig=RTP_REFERENCE;adminAudit=Array.isArray(data.adminAudit)?data.adminAudit:[];
+ fundInvested=Math.max(0,Math.floor(Number(data.fundInvested)||0));
+ fundRecovered=Math.max(0,Math.floor(Number(data.fundRecovered)||0));
+ profitPercent=Number.isFinite(Number(data.profitPercent))?Math.max(1,Math.min(70,Number(data.profitPercent))):4;
 ownerPercent=Number.isFinite(Number(data.ownerPercent))?Math.max(0,Math.min(100,Math.round(Number(data.ownerPercent)))):60;
 volatilityMode=data.volatilityMode==='frequentes'?'frequentes':'equilibrado';
 prizePool=Math.max(0,Math.floor(Number(data.prizePool)||0));operatorReserve=Math.max(0,Math.floor(Number(data.operatorReserve)||0));protectedReserve=Math.min(operatorReserve,Math.max(0,Math.floor(Number(data.protectedReserve??(operatorReserve*PROTECTED_SHARE)))));protectedCarry=Math.max(0,Number(data.protectedCarry)||0);ownerWithdrawn=Math.max(0,Math.floor(Number(data.ownerWithdrawn)||0));riskReserve=Math.max(0,Math.floor(Number(data.riskReserve)||0));
@@ -1993,7 +2001,61 @@ function makePaytable(){
 }
 
 // Painel reservado. A palavra-passe é apenas um bloqueio de interface num ficheiro local.
+
+/* V71: cofre de prémios e capital do operador, sempre em créditos fictícios.
+   Nunca utilizar estes movimentos para alterar probabilidades ou saldos do jogador. */
+function fundThresholds(){
+ const stake=BETS[betIdx],minimum=stake*FUND_MIN_FACTOR;
+ return {stake,minimum,target:stake*FUND_TARGET_FACTOR,full:stake*MAX_WIN_MULT,available:Math.max(0,prizePool-minimum)};
+}
+function updateAdminFund(){
+ const f=fundThresholds();
+ const map={adminFundCurrent:prizePool,adminFundAdded:fundInvested,adminFundRecovered:fundRecovered,
+  adminFundPending:Math.max(0,fundInvested-fundRecovered),
+  adminFundExtra:Math.max(0,fundRecovered-fundInvested),
+  adminFundAvailable:f.available,adminFundTarget:f.target,adminFundFull:f.full,adminFundStake:f.stake};
+ for(const [id,value] of Object.entries(map))$(id).textContent=money(value);
+ const level=prizePool<f.minimum?'critico':prizePool<f.target?'baixo':'adequado';
+ const advice=prizePool<f.target?'Faltam '+money(f.target-prizePool)+' para a referência.':'O cofre atingiu a referência.';
+ const elem=$('adminFundAdvice');elem.dataset.level=level;
+ elem.textContent='Fundo '+level+' · cobertura atual '+Math.floor(prizePool/f.stake)+'× aposta. '+advice+
+  ' Recomendação: 1000× aposta (não é garantia). Um prémio máximo 5000× exigiria '+money(f.full)+
+  ' à aposta escolhida. À aposta máxima de 10,00 € seriam necessários 50 000,00 €. Os jackpots são separados.';
+}
+function manageAdminFund(type){
+ if(!adminUnlocked)return;
+ const status=$('adminFundStatus');
+ if(running||bonus||freeSpins>0||freeStartPending||freeAutoRunning||freeSettlePending||freeSummaryPending||freeSettlementRunning||autoSpinsRemaining>0){
+  status.textContent='Termina primeiro as jogadas e os bónus.';return;
+ }
+ const raw=String($('adminFundAmount').value||'').trim().replace(',','.');
+ const value=Number(raw),amount=Math.round(value*100);
+ if(!/^\d+(?:\.\d{1,2})?$/.test(raw)||!Number.isFinite(value)||!Number.isSafeInteger(amount)||amount<1||amount>10000000){
+  status.textContent='Indica entre 0,01 € e 100 000,00 € (até duas casas decimais).';return;
+ }
+ if(!Number.isSafeInteger(prizePool+amount)||!Number.isSafeInteger(fundInvested+amount)||!Number.isSafeInteger(fundRecovered+amount)){
+  status.textContent='O contador não suporta esse valor.';return;
+ }
+ const before=prizePool;
+ if(type==='recover'){
+  if($('adminFundPin').value!==CASH_PIN){status.textContent='Introduz o PIN do depósito para recuperar o fundo.';return;}
+  const f=fundThresholds();
+  if(amount>f.available){status.textContent='Máximo recuperável '+money(f.available)+'. Mantém no cofre pelo menos '+money(f.minimum)+' (250× aposta).';return;}
+  if(!window.confirm('Recuperar '+money(amount)+' do fundo de prémios fictícios? O saldo passará para '+money(prizePool-amount)+'.'))return;
+  prizePool-=amount;fundRecovered+=amount;
+ }else if(type==='add'){
+  prizePool+=amount;fundInvested+=amount;
+ }else return;
+ const record={time:new Date().toISOString(),kind:type==='add'?'capital_operador_entrada':'capital_operador_recuperado',amount,before,after:prizePool,stake:BETS[betIdx]};
+ adminAudit.push(record);
+ if(session)log(record.kind,amount,'Fundo de prémios: '+money(before)+' → '+money(prizePool)+'; movimento do operador');
+ $('adminFundAmount').value='';$('adminFundPin').value='';
+ status.textContent=(type==='add'?'Adicionado ':'Recuperado ')+money(amount)+'; cofre '+money(prizePool)+'.';
+ update();updateAdmin();save();
+}
+
 function updateAdmin(){
+ updateAdminFund();
  const t=totals(),bankTotal=t.ownerWithdrawn,rtpObserved=t.stakes>0?rtpLabel(100*t.prizes/t.stakes):'—';
  $('adminProfitSet').textContent=rtpLabel(profitPercent);
  $('adminProfitActive').textContent=session?rtpLabel(configuredProfit()):'—';
@@ -2015,13 +2077,14 @@ function updateAdmin(){
  $('adminVolatilityActive').textContent=volatilityMode==='frequentes'?'Prémios mais frequentes':'Equilibrado';
 
  $('adminReportSummary').innerHTML=`Proprietário: <strong>${money(ownerAvailable)}</strong> (${ownerPercent}%) · Comerciante: <strong>${money(merchantAvailable)}</strong> (${100-ownerPercent}%)<br>Apostas: <strong>${money(t.stakes)}</strong> · Prémios pagos: <strong>${money(t.prizes)}</strong> · Saldo dos jogadores: <strong>${money(t.balance)}</strong><br>Levantamentos do banqueiro: <strong>${money(bankTotal)}</strong> · Caixa livre contabilística: <strong>${money(reportFinancials().ownerAvailable)}</strong> · Rodadas: <strong>${t.spins}</strong> · RTP observado: <strong>${rtpObserved}</strong>`;
- $('adminMathInfo').textContent='Simulação de créditos virtuais. Percentagem reservada: '+rtpLabel(configuredProfit())+' por aposta; verba destinada aos prémios normais e aos jackpots: até '+rtpLabel(effectiveBudgetPercent())+'. O retorno observado nas apostas é '+rtpObserved+'; não é uma garantia de RTP. Os jackpots mantêm os multiplicadores ULTRA 5000×, MAX 1000×, MED 500× e MIN 250× e continuam separados. A reserva protegida continua a ser 25% da verba da banca. V66: WILD 1×–5× fixos por posição durante uma spin, cada um contabilizado uma vez por queda e com teto 5× por linha. Base e free spins recalibrados para os WILD fixos. Bolas MULTI nas free spins: 0,9% fixos por posição. SCATTER: 1,8% fixos, com +8 ou +15 até duas extensões por sessão. Base e MULTI só são liquidados no fim das free spins. Hold atribuído e Hold comprado mantêm calibração própria. O cofre principal limita cada pagamento, e cada jackpot é pago apenas do seu fundo. A simulação de auditoria está em docs/auditoria-v66.md. O modo Mais frequentes altera apenas figuras comuns, com valores médios de linha ajustados; nada compensa automaticamente ganhos ou perdas.';
+ $('adminMathInfo').textContent='V71 · RTP de referência ~96%, não certificado, para margem de 4%. Calibração Equilibrado: base 0,56 e free 0,076; Frequentes: base 0,515 e free 0,060; Hold grátis 0,25, Hold comprado 1,30. Preços: 15 Free Spins por 20× aposta e Hold por 100×. A Pedra bloqueia combinações em 6% das casas. O RTP observado é '+rtpObserved+'. O cofre de prémios e os fundos de jackpots limitam os pagamentos; não existe compensação de probabilidades pelo cofre. A margem atual é '+rtpLabel(configuredProfit())+'. O fundo do operador está separado dos depósitos de jogadores. Ver docs/auditoria-rtp-v71.md.';
 }
 function openAdmin(){adminUnlocked=true;modal('adminLoginModal',false);$('adminPassword').value='';$('adminPage').hidden=false;document.body.style.overflow='hidden';$('adminProfitInput').value=profitPercent.toFixed(2);$('adminProfitSlider').value=profitPercent;$('adminProfitPreview').textContent=rtpLabel(profitPercent);
  $('adminSplitSlider').value=ownerPercent;
  $('adminOwnerPercentInput').value=ownerPercent;
  $('adminMerchantPercentInput').value=100-ownerPercent;
  $('adminVolatilityMode').value=volatilityMode;
+ $('adminFundAmount').value='';$('adminFundPin').value='';$('adminFundStatus').textContent='';
  previewAdminSplit(ownerPercent);
  $('bankerWithdrawAmount').value='';$('bankerWithdrawPassword').value='';$('bankerWithdrawStatus').textContent='';updateAdmin();}
 function closeAdmin(){if(!$('reportViewer').hidden)closeReportViewer();$('adminPage').hidden=true;adminUnlocked=false;$('bankerWithdrawPassword').value='';document.body.style.overflow='';modal('reportModal',false);}
@@ -2104,6 +2167,8 @@ function setupAdmin(){
    $('bankerWithdrawStatus').textContent='Disponível para '+(party==='comerciante'?'o estabelecimento':'ti')+': '+money(shareAvailable(party));
   };
   $('bankerWithdrawButton').onclick=doBankerWithdraw;
+  $('adminFundAdd').onclick=()=>manageAdminFund('add');
+  $('adminFundRecover').onclick=()=>manageAdminFund('recover');
   $('bankerWithdrawPassword').addEventListener('keydown',e=>{if(e.key==='Enter')doBankerWithdraw()});
  $('adminFullReport').onclick=()=>{if(adminUnlocked)report();};
  $('reportViewSave').onclick=downloadHTMLReport;
