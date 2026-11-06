@@ -1,0 +1,243 @@
+/* V80 — Jardim Mágico · acabamento 3D fotográfico.
+   A paisagem é independente de elementos interactivos.
+   Só utiliza gradientes e sombras ESTÁTICAS para manter a fluidez em iPhone. */
+:root{
+ --jm80-metal:#ffe6a0;--jm80-metal-dark:#8b431e;
+ --jm80-amethyst:#340a4c;--jm80-deep:#150923;--jm80-blossom:#ff83de;
+}
+html,body{
+ background:#201833 url('../assets/imagens/jm80-cenario-imersivo.svg')
+   center center/cover no-repeat!important;
+}
+body::before,body::after{content:none!important;display:none!important;}
+body>.game,body>.game[data-layout="portrait"],body>.game[data-layout="wide"]{
+ background:transparent!important;
+ background-image:none!important;
+ box-shadow:none!important;
+ isolation:isolate;
+}
+.game>.jm75BackdropTop,.game>.jm75BackdropBottom{display:none!important;}
+
+/* Cabeçalho leve: seis medalhões pequenos, sem uma barra retangular. */
+.game .topbar .roundSmall{
+ border:2px solid #ffe7a4!important;
+ border-radius:50%!important;
+ color:#fff2c4!important;
+ background:
+ radial-gradient(circle at 30% 19%,rgba(250,153,240,.43),transparent 42%),
+ radial-gradient(circle at 50% 70%,#552069,#220d3d 77%)!important;
+ box-shadow:inset 0 1px 2px #fffbd3cc,inset 0 -3px 5px #160825,
+ 0 2px 2px #9b5523,0 0 6px rgba(255,151,221,.48)!important;
+ filter:none!important;
+ -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+}
+.game .logoLoop,.game .logoLoop::before,.game .logoLoop::after{
+ background:none!important;box-shadow:none!important;
+}
+.game .logoLoop{isolation:isolate;overflow:visible!important;}
+.game .titleArt{
+ background:none!important;
+ mix-blend-mode:normal!important;
+ object-fit:contain!important;
+ image-rendering:auto!important;
+ filter:drop-shadow(0 5px 4px rgba(13,4,28,.79))
+   drop-shadow(0 0 9px rgba(252,104,205,.31))!important;
+ animation:none!important;
+}
+
+/* Placas jackpot em veludo roxo polido e ouro com reflexo real. */
+.game .jackpot,.game .jackpot.max{
+ position:relative!important;
+ border:2px solid #ffe2a2!important;
+ border-radius:clamp(11px,2.7vw,18px)!important;
+ background:
+ radial-gradient(ellipse at 50% 0,rgba(255,207,227,.22),transparent 48%),
+ linear-gradient(165deg,#a32a80 0%,#5d125c 24%,#2d0b48 79%,#63205d)!important;
+ box-shadow:
+ inset 0 2px 2px rgba(255,245,194,.84),
+ inset 0 -3px 3px rgba(16,4,24,.82),
+ 0 3px 0 #98592b,
+ 0 5px 9px rgba(16,3,26,.51),
+ 0 0 9px rgba(238,101,179,.46)!important;
+}
+.game .jackpot.max{
+ background:
+ radial-gradient(ellipse at 50% 0,rgba(255,205,154,.24),transparent 56%),
+ linear-gradient(175deg,#af397d,#69154f 47%,#300a48)!important;
+}
+.game .jackpot::before{
+ content:''!important;display:block!important;pointer-events:none;
+ position:absolute;left:9%;right:9%;top:3px;height:24%;
+ border-radius:50%;
+ background:linear-gradient(#fffbd142,transparent)!important;
+ opacity:.75!important;
+}
+.game .jackpot b,.game .jackpot strong{
+ position:relative;
+ color:#fff0b9!important;
+ text-shadow:0 2px 2px #350733,0 0 5px #ffca8566!important;
+}
+
+/* Prateleira e moldura visualmente integradas, mas sem ocultar os 5 rolos. */
+.game .reelFrame{
+ background:
+ linear-gradient(92deg,#391a12,#d59c54 2%,#5d2d1b 5%,
+ #4d1e32 47%,#4c201c 94%,#f4c57b 98%,#421b14)!important;
+ border:3px solid #eabb72!important;
+ border-radius:14px!important;
+ box-shadow:
+ inset 0 2px 2px #fff1bbad,
+ 0 2px 0 #84501e,0 6px 2px rgba(68,26,18,.72),
+ 0 13px 21px rgba(14,4,23,.54),
+ 0 0 12px rgba(253,157,225,.44)!important;
+ overflow:visible!important;
+}
+.game .shelf{
+ background:
+ linear-gradient(180deg,rgba(251,216,252,.15),transparent 20%),
+ linear-gradient(180deg,#712669,#390c50 30%,#200934 80%,#521653)!important;
+ border:2px solid #e7b96e!important;border-bottom:0!important;
+ border-radius:12px 12px 0 0!important;
+ box-shadow:inset 0 1px 2px #ffe9c5ab,0 0 9px rgba(253,171,231,.43)!important;
+}
+.game .jm63DropLabel,.game .shelfTag,.game .shelfTotal{
+ color:#fff1b8!important;
+ text-shadow:0 1px 2px #3b0d3e,0 0 5px rgba(255,222,124,.39)!important;
+}
+.game .orbPill{
+ background:
+ radial-gradient(circle at 30% 22%,#ffdef7,#ee83d5 22%,#b333ae 52%,#52105e 89%)!important;
+ color:#ffedac!important;
+ border:2px solid #ffdb8e!important;
+ box-shadow:inset 0 2px 3px #fff2d7a9,
+ inset 0 -4px 5px #360b4a,0 0 8px #ff9feb9e!important;
+}
+.game .stageWrap{
+ border:1px solid rgba(251,213,140,.39)!important;
+ border-radius:0 0 9px 9px!important;
+ -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+ background:
+ linear-gradient(180deg,rgba(52,16,77,.28),rgba(28,10,43,.2) 45%,rgba(32,8,48,.33)),
+ repeating-linear-gradient(90deg,#311148 0%,#260c3c 19.65%,
+ rgba(247,190,127,.25) 19.9%,#2d123f 20.2%)!important;
+ box-shadow:inset 0 7px 14px rgba(9,2,19,.3),
+ inset 0 -8px 14px rgba(9,2,19,.26)!important;
+}
+.game .stageWrap .jm75PhotoFrame{
+ pointer-events:none!important;
+ z-index:6!important;
+ filter:drop-shadow(0 2px 2px rgba(12,3,15,.43))!important;
+}
+.game .stageWrap .glassReels i{
+ background:linear-gradient(90deg,
+ rgba(10,3,23,.07),rgba(255,238,191,.042) 8%,transparent 25%,
+ transparent 78%,rgba(249,231,169,.035) 94%,rgba(10,3,23,.08))!important;
+ border-right:1px solid rgba(255,226,147,.17)!important;
+ box-shadow:inset 1px 0 2px rgba(255,237,193,.07)!important;
+}
+.game .stageWrap .reelFog{
+ background:linear-gradient(180deg,
+ rgba(250,222,174,.10) 0%,transparent 11%,transparent 87%,
+ rgba(19,3,34,.21) 100%)!important;
+}
+.game #pixiMount canvas,.game #reelCanvas{
+ image-rendering:auto!important;
+}
+
+/* Banca HUD: painéis com o MESMO material, sem fotografias esticadas. */
+.game .controlStats .hudPanel,.game #vaultBtnMobile{
+ background:
+ linear-gradient(180deg,rgba(255,240,198,.20),transparent 17%),
+ radial-gradient(ellipse at 50% 0,rgba(232,110,212,.19),transparent 57%),
+ linear-gradient(167deg,#962975,#56125b 34%,#260a45 84%,#541353)!important;
+ border:2px solid #ffe0a0!important;
+ border-radius:clamp(12px,3vw,19px)!important;
+ box-shadow:inset 0 2px 2px #fff2c6ba,
+ inset 0 -3px 4px #170527,0 3px 0 #925025,
+ 0 5px 9px rgba(20,5,32,.57)!important;
+}
+.game .controlStats .hudPanel small,
+.game .controlStats .hudPanel strong,
+.game #vaultBtnMobile small,.game #vaultBtnMobile strong{
+ color:#fff2c2!important;
+ text-shadow:0 1px 3px rgba(30,5,37,.9),0 0 5px rgba(255,204,113,.43)!important;
+}
+.game .betPanel button{
+ background:radial-gradient(circle at 28% 18%,#c77bba,#61206e 49%,#2b0c40)!important;
+ color:#fff0c0!important;
+ border:2px solid #ffe8a7!important;
+ box-shadow:inset 0 1px 2px #fff4cfbb,0 2px 2px #260837!important;
+ opacity:1!important;
+}
+.game #buyBonus{
+ background:
+ linear-gradient(180deg,#bf458d,#641457 42%,#3c0b50 84%,#781e61)!important;
+ color:#ffe7b0!important;
+ border:2px solid #ffdda0!important;
+ border-radius:25px!important;
+ box-shadow:inset 0 2px 3px #fff1c5a0,0 3px 0 #935125,
+ 0 0 8px rgba(247,117,208,.4)!important;
+}
+.game #turboBtn,.game #turboBtn[aria-pressed="true"]{
+ border:2px solid #fff1b4!important;
+ border-radius:28px!important;
+ background:linear-gradient(175deg,#fff8d7,#ffe49a 28%,#f5af44 65%,#b06128)!important;
+ color:#4c1c37!important;
+ text-shadow:0 1px 1px #fff5ba!important;
+ box-shadow:inset 0 2px 3px #fffbe8,
+ 0 4px 0 #965326,0 7px 9px rgba(16,4,25,.44)!important;
+}
+.game #turboBtn[aria-pressed="true"]{
+ background:linear-gradient(175deg,#fffbd0,#daf38c 37%,#8fc642 69%,#4f7d2e)!important;
+}
+.game .spinHalo{
+ filter:drop-shadow(0 0 8px rgba(255,210,111,.46))
+        drop-shadow(0 5px 5px rgba(21,5,22,.56))!important;
+}
+.game .spinHalo .spinBtn{
+ background:url('../assets/imagens/jm76-rodar-luxo.svg') center/100% 100% no-repeat!important;
+ border:0!important;
+ box-shadow:none!important;
+}
+.game .spinHalo .spinBtn:disabled{
+ opacity:1!important;
+ filter:brightness(.97) saturate(.98)!important;
+}
+
+/* Manter largura 5x3 da V78.1, evitando voltar a tapar as peças. */
+@media(orientation:portrait){
+ .game[data-layout="portrait"] .reelFrame{
+  width:calc(100% + 2px)!important;
+  margin:0 -1px!important;
+  padding:1px!important;
+  border-width:2px!important;
+ }
+ .game[data-layout="portrait"] .stageWrap{
+  aspect-ratio:5/3.04!important;
+ }
+ .game[data-layout="portrait"] .stageWrap .jm75PhotoFrame{
+  inset:0!important;
+  transform:scale(1.12,1.18)!important;
+  transform-origin:center!important;
+ }
+ .game[data-layout="portrait"] .jackpots{
+  margin-bottom:5px!important;
+ }
+ .game[data-layout="portrait"] .logoLoop{
+  margin-top:clamp(22px,3.4dvh,33px)!important;
+ }
+ .game[data-layout="portrait"] .controlStats{
+  margin-top:3px!important;
+ }
+ .game[data-layout="portrait"] .v37SpinDeck .spinHalo{
+  max-width:min(38vw,158px)!important;
+ }
+}
+@media(orientation:landscape){
+ .game[data-layout="wide"] .stageWrap .jm75PhotoFrame{
+  transform:scale(1.08,1.12)!important;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .game .logoLoop,.game .spinHalo{animation:none!important;}
+}
