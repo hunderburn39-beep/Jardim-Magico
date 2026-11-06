@@ -1,7 +1,7 @@
 /* Jardim Mágico 3D V2 — Controlador da demonstração visual.
    Toda a aposta, carteira e prémio neste módulo são valores FICTÍCIOS.
    O engine demonstrativo é separado do renderizador PlayCanvas. */
-import {DemoBank,SYMBOLS,LABELS,PAYLINES,money} from './demo-engine.js?v=2.3';
+import {DemoBank,SYMBOLS,LABELS,PAYLINES,money} from './demo-engine.js?v=2.4';
 
 const $=id=>document.getElementById(id);
 const bank=new DemoBank();
@@ -204,10 +204,14 @@ function showLineBreakdown(lineWins,total,capped=null,multiplier=1){
  if(!target)return;
  if(!lineWins?.length){target.hidden=true;target.textContent='';return}
  const individual=lineWins.map(win=>money(win.amount));
+ // Muitas combinações não devem cobrir os rolos nem os botões.
+ // O valor integral continua contabilizado e apresentado.
+ const terms=individual.length<=6?individual.join(' + '):
+   individual.slice(0,4).join(' + ')+' + … ('+(individual.length-4)+' restantes)';
  const multiplied=multiplier>1?' ×'+multiplier+' = '+money(total*multiplier):'';
  const cap=capped!==null?' · PAGO '+money(capped):'';
  target.textContent=lineWins.length+' COMBINAÇÕES · '+
-   individual.join(' + ')+' = '+money(total)+multiplied+cap;
+   terms+' = '+money(total)+multiplied+cap;
  target.hidden=false;
 }
 /* V2.3 — a animação percorre todas as quedas calculadas pelo motor.
