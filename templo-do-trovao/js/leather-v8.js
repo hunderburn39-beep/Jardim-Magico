@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V8 — aterragem individual de cada peça.
+/* PORTÕES DO TROVÃO V12 — aterragem individual de cada peça.
  * Som de couro/almofada: ataque macio, ressonância curta e abafada.
  * O timbre é sintetizado localmente em PCM float32 à taxa de amostragem
  * nativa (normalmente 48 kHz). Sem rede, sem estalos metálicos.
@@ -53,18 +53,19 @@
     try{voice.source.disconnect();voice.gain.disconnect();voice.pan?.disconnect()}catch(_){}
     voices.delete(voice);
   }
-  function play({column=2.5,row=0,kind="amber",strength=.75}={}){
+  function play({column=2.5,row=0,kind="amber",strength=.75,whenMs=0}={}){
     if(!enabled||!init()||ctx.state!=="running"||!buffers.length)return;
     if(voices.size>=maxVoices)return;
     const index=(Math.abs(Math.floor(column)*3+Math.floor(row)+String(kind).length))%variants;
     const source=ctx.createBufferSource(),gain=ctx.createGain();
     const pan=typeof ctx.createStereoPanner==="function"?ctx.createStereoPanner():null;
     const volume=clamp(strength,.22,1)*(.52+Math.random()*.14);
+    const startAt=ctx.currentTime+Math.max(0,whenMs)/1000;
     source.buffer=buffers[index];
     source.playbackRate.value=.94+Math.random()*.105;
-    gain.gain.setValueAtTime(.0001,ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(Math.max(.0005,volume),ctx.currentTime+.009);
-    gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.145);
+    gain.gain.setValueAtTime(.0001,startAt);
+    gain.gain.exponentialRampToValueAtTime(Math.max(.0005,volume),startAt+.009);
+    gain.gain.exponentialRampToValueAtTime(.0001,startAt+.145);
     source.connect(gain);
     if(pan){
       pan.pan.value=clamp((column-2.5)/4,-.68,.68);
@@ -73,15 +74,30 @@
     const voice={source,gain,pan};
     voices.add(voice);
     source.onended=()=>stop(voice);
-    source.start();
-    source.stop(ctx.currentTime+.17);
+    source.start(startAt);
+    source.stop(startAt+.17);
+  }
+  function schedule(entries){
+    if(!enabled||!entries?.length)return;
+    // O WebAudio agenda os impactos pelo relógio de áudio (sem dezenas de timers JS).
+    for(const hit of entries){
+      play({
+        column:hit.column,row:hit.row,kind:hit.kind,
+        strength:.59+hit.row*.047,whenMs:hit.when
+      });
+    }
   }
   function setEnabled(value){
     enabled=Boolean(value);
-    if(!enabled&&ctx?.state==="running")ctx.suspend().catch(()=>{});
+    if(!enabled){
+      for(const voice of Array.from(voices)){
+        try{voice.source.stop()}catch(_){}
+      }
+      if(ctx?.state==="running")ctx.suspend().catch(()=>{});
+    }
     if(enabled)init();
   }
-  window.TrovaoLeather={play,unlock:init,setEnabled,getInfo:()=>({
+  window.TrovaoLeather={play,schedule,unlock:init,setEnabled,getInfo:()=>({
     material:"Couro acolchoado",variants,voices:voices.size,
     sampleRate:ctx?.sampleRate??null,format:"WebAudio PCM float32"
   })};
