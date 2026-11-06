@@ -193,3 +193,45 @@
 @media(prefers-reduced-motion:reduce){
  .game>.jm75BackdropTop,.game>.jm75BackdropBottom{animation:none!important;}
 }
+
+
+/* V75.1 — os próprios painéis também vêm da fotografia.
+   O centro foi limpo para receber saldo, jackpot e texto ATUALIZADOS. */
+.game .jackpot,.game .jackpot.max{
+ background:url('../assets/imagens/jm75-jackpot-painel.webp') center/100% 100% no-repeat!important;
+ border:0!important;box-shadow:none!important;
+ border-radius:17px!important;
+}
+.game .shelf{
+ background:url('../assets/imagens/jm75-multi-painel.webp') center/100% 100% no-repeat!important;
+ border:0!important;border-radius:12px!important;
+ box-shadow:none!important;
+}
+.game .controlStats .hudPanel,
+.game #vaultBtnMobile{
+ background:url('../assets/imagens/jm75-hud-painel.webp') center/100% 100% no-repeat!important;
+ border:0!important;box-shadow:none!important;
+ border-radius:18px!important;
+}
+.game #buyBonus{
+ background:url('../assets/imagens/jm75-buy-painel.webp') center/100% 100% no-repeat!important;
+ border:0!important;box-shadow:none!important;
+ border-radius:28px!important;
+ color:#ffe7ad!important;
+}
+.game #turboBtn,.game #turboBtn[aria-pressed="true"]{
+ background:url('../assets/imagens/jm75-turbo-painel.webp') center/100% 100% no-repeat!important;
+ border:0!important;box-shadow:none!important;
+ border-radius:28px!important;
+ color:#401832!important;
+}
+.game #turboBtn[aria-pressed="true"]{
+ filter:drop-shadow(0 0 7px rgba(244,227,137,.65));
+}
+.game .controlStats .betPanel button{
+ border:2px solid #ffe08e!important;
+ box-shadow:inset 0 1px 3px #fff2cc,0 1px 2px #311039!important;
+}
+@media(prefers-reduced-motion:reduce){
+ .game #turboBtn[aria-pressed="true"]{filter:none!important;}
+}
