@@ -43,3 +43,13 @@ A versão V74 aplica ao jogo funcional a direção de arte da imagem de referên
 - `js/jogo-2.js?v=73`: mantém o motor PixiJS GPU da versão anterior; pagamentos, RTP, fundos e reservas não foram alterados na migração gráfica.
 - Cópia de segurança da V73: branch `backup/jardim-v73-antes-arte-v74`.
 - A adaptação utiliza gráficos existentes e um novo elemento SVG; não inclui uma conversão literal da imagem ilustrativa completa em símbolos individuais. Validação visual nos dispositivos reais e testes de performance continuam recomendados.
+
+## V75 — gráficos originais da fotografia, aplicados ao jogo funcional
+
+A V75 utiliza **recortes da fotografia de referência fornecida pelo utilizador**, em vez de uma recriação apenas por CSS. São ficheiros WebP reais em `assets/imagens/`: `jm75-logo-recortado.webp`, `jm75-topo-cenario.webp`, `jm75-rodape-cenario.webp`, `jm75-moldura.webp`, `jm75-botao-anel.webp` e `jm75-simbolos.webp`.
+
+O atlas fotográfico `jm75-simbolos.webp` tem 3 colunas × 3 linhas, com as seguintes figuras, por ordem: poção, cristal verde, coração, bule, WILD, cristal roxo, cogumelo, chapéu e rosa. `js/jogo-2.js` separa os nove símbolos em canvases no carregamento, atualiza a tabela de pagamentos e entrega as texturas a PixiJS/WebGL (ou Canvas 2D na alternativa). As animações e os valores continuam verdadeiramente dinâmicos; a fotografia **não** é apresentada como tabuleiro estático.
+
+A folha `css/estilo-25.css` acrescenta as camadas decorativas sobre o layout funcional, mantendo os elementos interativos reais e os seus identificadores. A fotografia do botão tem centro transparente para deixar visíveis os textos dinâmicos «RODAR», «PARAR AUTO» e a contagem de rodadas.
+
+Não foram modificadas as fórmulas de RTP, o cofre, os jackpots nem as probabilidades. Os gráficos importados somam aproximadamente 140 kB de WebP. Cópia de segurança antes da importação: `backup/jardim-v74-antes-foto-v75`.
