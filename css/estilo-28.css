@@ -1,0 +1,264 @@
+/* Jardim Mágico V78 — layout móvel aberto, orgânico e responsivo.
+   Apenas apresentação. Não altera RTP, banca, regras ou eventos dos botões.
+   Em 16:9 mantém-se a distribuição lateral da V77.1. */
+
+/* A imagem fotográfica do logótipo tem agora clipPath SVG, compatível com iOS.
+   O cenário do body é único: nada de acrescentar faixas por detrás do logo. */
+.game .logoLoop,
+.game .logoLoop::before,
+.game .logoLoop::after {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+.game .titleArt {
+  background: transparent !important;
+  mix-blend-mode: normal !important;
+  object-fit: contain !important;
+  animation: none !important;
+}
+
+/* Borda útil dos rolos e vidro sem filtros de blur dispendiosos. */
+.game .stageWrap {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+.game .stageWrap .jm75PhotoFrame {
+  pointer-events: none !important;
+}
+.game .controlDock, .game .reelFrame, .game .logoLoop {
+  min-width: 0;
+}
+
+/* Retrato — compõe o ecrã por níveis de profundidade em vez de uma coluna rígida.
+   O topo de ações flutua acima do título; jackpots encostam à direita;
+   tambor usa quase a largura do dispositivo; a bancada fica desencontrada. */
+.game[data-layout="portrait"] {
+  padding-top: calc(env(safe-area-inset-top) + 3px) !important;
+  padding-left: max(3px, env(safe-area-inset-left)) !important;
+  padding-right: max(3px, env(safe-area-inset-right)) !important;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 5px) !important;
+  overflow: visible !important;
+}
+
+/* O cabeçalho deixa de ocupar uma linha vertical inteira. */
+.game[data-layout="portrait"] .topbar {
+  position: absolute !important;
+  top: calc(env(safe-area-inset-top) + 2px) !important;
+  right: max(4px, env(safe-area-inset-right)) !important;
+  width: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  z-index: 30 !important;
+}
+.game[data-layout="portrait"] .toptools {
+  width: auto !important;
+  gap: clamp(3px, .9vw, 6px) !important;
+  justify-content: flex-end !important;
+}
+.game[data-layout="portrait"] .toptools .roundSmall {
+  height: clamp(27px, 7.3vw, 35px) !important;
+  min-width: clamp(27px, 7.3vw, 35px) !important;
+  width: clamp(27px, 7.3vw, 35px) !important;
+  padding: 0 !important;
+  font-size: clamp(13px, 3.4vw, 18px) !important;
+}
+
+/* Logótipo destacado, leve assimetria e sem fundo quadrado. */
+.game[data-layout="portrait"] .logoLoop {
+  position: relative !important;
+  width: 93% !important;
+  max-width: 415px !important;
+  margin: clamp(23px, 3.6dvh, 34px) auto -2px 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  outline: none !important;
+  filter: none !important;
+}
+.game[data-layout="portrait"] .titleArt {
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: 650/216 !important;
+  filter: drop-shadow(0 5px 4px #170a30a6)
+          drop-shadow(0 0 6px #f98be046) !important;
+}
+
+/* Jackpot como banda independente, ligeiramente deslocada para a direita. */
+.game[data-layout="portrait"] .jackpots {
+  width: 97% !important;
+  max-width: none !important;
+  margin: -2px 0 6px auto !important;
+  gap: clamp(3px, 1vw, 6px) !important;
+}
+.game[data-layout="portrait"] .jackpot {
+  min-height: clamp(42px, 6dvh, 53px) !important;
+  padding: 2px 1px !important;
+  border-radius: 12px !important;
+}
+.game[data-layout="portrait"] .jackpot b {
+  font-size: clamp(9px, 2.6vw, 13px) !important;
+}
+.game[data-layout="portrait"] .jackpot strong {
+  font-size: clamp(12px, 3.5vw, 19px) !important;
+}
+
+/* A moldura fica praticamente de ponta a ponta: cinco colunas maiores. */
+.game[data-layout="portrait"] .reelFrame {
+  display: block !important;
+  width: calc(100% + 2px) !important;
+  max-width: none !important;
+  margin: 0 -1px 0 -1px !important;
+  padding: 3px !important;
+  border-width: 2px !important;
+  border-radius: 12px !important;
+  box-sizing: border-box !important;
+}
+.game[data-layout="portrait"] .shelf {
+  width: 100% !important;
+  min-height: clamp(36px, 5.8dvh, 47px) !important;
+  padding: 2px 5px 3px !important;
+  gap: 4px !important;
+  border-radius: 9px 9px 0 0 !important;
+}
+.game[data-layout="portrait"] .stageWrap {
+  width: 100% !important;
+  aspect-ratio: 5/3.04 !important;
+  margin: 0 !important;
+  border-radius: 0 0 9px 9px !important;
+}
+.game[data-layout="portrait"] .orbPill {
+  width: clamp(26px, 6.5vw, 39px) !important;
+  height: clamp(26px, 6.5vw, 39px) !important;
+}
+.game[data-layout="portrait"] .stageWrap .jm75PhotoFrame {
+  inset: -1.1% -0.25% !important;
+  background-size: 100% 100% !important;
+}
+.game[data-layout="portrait"] .underStage {
+  width: 96% !important;
+  margin: 4px 0 3px auto !important;
+  min-height: 15px !important;
+}
+.game[data-layout="portrait"] .underStage .notice {
+  font-size: clamp(10px, 2.85vw, 14px) !important;
+  line-height: 1.15 !important;
+}
+
+/* Área de prémios, saldo, aposta e cofre com alturas alternadas,
+   em vez de 3 painéis transformados num retângulo único. */
+.game[data-layout="portrait"] .controlDock {
+  position: relative !important;
+  width: 100% !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+.game[data-layout="portrait"] .controlStats {
+  width: 97% !important;
+  margin: 1px auto 2px 0 !important;
+  gap: 5px !important;
+  grid-template-columns: minmax(0,1.08fr) minmax(0,.91fr) minmax(0,1.07fr) !important;
+  align-items: end !important;
+}
+.game[data-layout="portrait"] .v37LeftStats,
+.game[data-layout="portrait"] .v37RightStats {
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+.game[data-layout="portrait"] .v37LeftStats {
+  position: relative !important;
+  top: 5px !important;
+}
+.game[data-layout="portrait"] .controlStats .statPrize {
+  position: relative !important;
+  top: -4px !important;
+  min-height: 94px !important;
+}
+.game[data-layout="portrait"] .v37RightStats {
+  position: relative !important;
+  top: 3px !important;
+}
+.game[data-layout="portrait"] .v37LeftStats .miniBalance {
+  height: 49px !important;
+}
+.game[data-layout="portrait"] .v37LeftStats .statBet {
+  height: 41px !important;
+}
+.game[data-layout="portrait"] .v37RightStats .vaultMystery {
+  height: 52px !important;
+  flex: 0 0 auto !important;
+}
+.game[data-layout="portrait"] .v37RightStats .v37Buy {
+  min-height: 35px !important;
+  padding: 3px 2px !important;
+}
+.game[data-layout="portrait"] .controlStats .hudPanel strong {
+  font-size: clamp(15px, 3.9vw, 23px) !important;
+}
+
+/* Controlo principal fora do eixo dos painéis: roda de destaque no lago.
+   Os transforms não modificam o fluxo nem interferem com eventos touch. */
+.game[data-layout="portrait"] .v37SpinDeck {
+  position: relative !important;
+  width: 96% !important;
+  margin: 5px 0 0 auto !important;
+  gap: 3px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0,.73fr) minmax(132px,1.32fr) minmax(0,.95fr) !important;
+  align-items: center !important;
+}
+.game[data-layout="portrait"] .spinCenter {
+  position: relative !important;
+  transform: translate(-9px,-5px);
+}
+.game[data-layout="portrait"] .v37SpinDeck .spinHalo {
+  width: 100% !important;
+  max-width: min(37vw,154px) !important;
+  margin: 0 auto !important;
+}
+.game[data-layout="portrait"] .spinHalo .spinBtn {
+  min-height: 0 !important;
+  max-width: none !important;
+  height: 100% !important;
+}
+.game[data-layout="portrait"] .v37Turbo {
+  position: relative !important;
+  align-self: center !important;
+  transform: translate(-2px,10px);
+  min-width: 0 !important;
+}
+.game[data-layout="portrait"] .v37Turbo #turboBtn {
+  width: 100% !important;
+  min-height: 38px !important;
+  font-size: clamp(9px,2.5vw,14px) !important;
+  padding: 5px 2px !important;
+}
+
+/* Nos ecrãs curtos protege mais espaço vertical, mantendo toque e símbolos. */
+@media (orientation: portrait) and (max-height: 730px) {
+  .game[data-layout="portrait"] .logoLoop {
+    margin-top: 26px !important;
+    width: 88% !important;
+  }
+  .game[data-layout="portrait"] .jackpot {
+    min-height: 40px !important;
+  }
+  .game[data-layout="portrait"] .stageWrap {
+    aspect-ratio: 5/2.95 !important;
+  }
+  .game[data-layout="portrait"] .v37SpinDeck .spinHalo {
+    max-width: min(34vw,145px) !important;
+  }
+}
+
+/* Paisagem não recebe posições absolutas de portrait. Mantém os dois painéis. */
+@media (orientation: landscape) {
+  .game[data-layout="wide"] .logoLoop,
+  .game[data-layout="wide"] .reelFrame,
+  .game[data-layout="wide"] .controlDock {
+    transform: none !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game .titleArt { animation: none !important; }
+}
