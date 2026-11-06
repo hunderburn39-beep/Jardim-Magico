@@ -1,4 +1,4 @@
-# Portões do Trovão — V13.0
+# Portões do Trovão — V14.0
 
 Jogo independente de demonstração com créditos virtuais, inspirado no formato de slots de queda do Olimpo. **Não afiliado, licenciado ou certificado pela Pragmatic Play.** Sem depósitos, levantamentos ou prémios em dinheiro real.
 
@@ -135,3 +135,17 @@ Todos os gráficos desta pasta são novos e não reutilizam imagens nem logótip
 - **Detalhes, amostras, distribuição dos Wild e limitações:** [RELATORIO-RTP-V13.md](tools/RELATORIO-RTP-V13.md).
 
 **Nota:** as simulações são estimativas e não equivalem a certificação de RTP/RNG. O jogo é uma demonstração com créditos virtuais.
+
+## V14 — regra WILD definitiva (12 testes de regressão)
+
+O WILD, com valores de **1× a 5×**, substitui qualquer um dos **9 símbolos pagantes**: coroa, anel, ampulheta, cálice e as cinco pedras coloridas. **Nunca substitui SCATTER, outra peça WILD ou a esfera multiplicadora (MULT)**. A contagem dos SCATTER continua independente dos WILDs.
+
+Quando há vários WILDs na grelha, o motor escolhe o maior valor (máximo 5×), aplica-o a **uma única combinação mais vantajosa por queda** e não duplica os pagamentos. As outras combinações naturais continuam válidas. O WILD é removido com a combinação que ajuda a premiar, e a reposição segue as quedas normais.
+
+As regras já estavam implementadas na V13; esta revisão documenta explicitamente as exclusões, atualiza a tabela de pagamentos e acrescenta **12 testes automáticos de regressão**, disponíveis em `tools/testar-wild-v14.js`. Executar com:
+
+```bash
+node tools/testar-wild-v14.js
+```
+
+**Sem alterações nas probabilidades, no RTP anteriormente estimado ou no teto de 5.000×.** Os valores de RTP anteriores continuam aproximados e não certificados. A demonstração utiliza exclusivamente créditos virtuais.
