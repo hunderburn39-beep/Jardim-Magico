@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 166" role="img" aria-label="Cofre mágico, porquinho dourado">
+<defs>
+<radialGradient id="gold" cx=".31" cy=".2" r=".86"><stop stop-color="#fffde3"/><stop offset=".18" stop-color="#ffe78d"/><stop offset=".48" stop-color="#f5bd37"/><stop offset=".74" stop-color="#c6821c"/><stop offset="1" stop-color="#753916"/></radialGradient>
+<linearGradient id="rim" x2=".2" y2="1"><stop stop-color="#fffbd8"/><stop offset=".3" stop-color="#eebc3e"/><stop offset=".7" stop-color="#9f5317"/><stop offset="1" stop-color="#ffe089"/></linearGradient>
+<radialGradient id="shine"><stop stop-color="#fffcd0" stop-opacity=".92"/><stop offset="1" stop-color="#ffefb0" stop-opacity="0"/></radialGradient>
+</defs>
+<ellipse cx="106" cy="144" rx="84" ry="13" fill="#000" opacity=".28"/>
+<g fill="#ffe8a0" opacity=".8"><path d="M20 34l4 13 13 4-13 4-4 13-4-13L3 51l13-4z"/><path d="M177 17l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/><path d="M184 107l3 11 11 3-11 3-3 11-3-11-11-3 11-3z"/></g>
+<path d="M60 44L46 16Q74 8 88 42M132 41L159 14Q176 35 146 62" fill="url(#gold)" stroke="#a96920" stroke-width="6" stroke-linejoin="round"/>
+<path d="M34 82q-21-20-22-1q-1 20 18 12" fill="none" stroke="url(#rim)" stroke-width="9" stroke-linecap="round"/>
+<ellipse cx="105" cy="80" rx="77" ry="62" fill="url(#gold)" stroke="url(#rim)" stroke-width="7"/>
+<path d="M75 31Q101 20 123 33" fill="none" stroke="#fff8cf" stroke-width="8" stroke-linecap="round" opacity=".65"/>
+<ellipse cx="159" cy="96" rx="35" ry="24" fill="url(#gold)" stroke="#96501a" stroke-width="5"/>
+<ellipse cx="150" cy="95" rx="5" ry="7" fill="#9b521a"/><ellipse cx="170" cy="95" rx="5" ry="7" fill="#9b521a"/>
+<ellipse cx="87" cy="71" rx="7" ry="10" fill="#4e260f"/><circle cx="84" cy="67" r="2.5" fill="#fff"/>
+<path d="M72 132l-3 22m55-21 5 21" stroke="#b27a29" stroke-width="15" stroke-linecap="round"/>
+<path d="M83 40q23-8 42 0" fill="none" stroke="#b87624" stroke-width="6" stroke-linecap="round"/>
+<text x="106" y="109" font-size="61" font-family="Georgia,serif" font-weight="bold" fill="#7f3d15" stroke="#fff3b5" stroke-width="2.7" paint-order="stroke" text-anchor="middle">$</text>
+<ellipse cx="79" cy="57" rx="38" ry="26" fill="url(#shine)" opacity=".6"/>
+</svg>
