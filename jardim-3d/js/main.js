@@ -4,6 +4,7 @@
  * Mobile: WebGL 2, DPR <=1.5, luzes estáticas sem sombras em tempo real.
  */
 import * as pc from 'playcanvas';
+import {enhanceReels} from './visual-v22.js?v=2.2';
 
 const $=id=>document.getElementById(id);
 const canvas=$('application');
@@ -567,6 +568,7 @@ function build(){
  cabinet();
  decorate3D();
  reels();
+ enhanceReels({pc,model,mat,reelTiles,app});
  loadOriginalSymbolArt();
  setCamera();
  quality.textContent='PLAYCANVAS';
@@ -589,6 +591,22 @@ function build(){
    }
    state.cam+=(state.camTarget-state.cam)*Math.min(1,dt*3.2);
    setCamera();
+   // V2.2: cascata e lago com movimento físico muito leve (sem vídeo).
+   // Uma única passagem por geometria simples em cada frame.
+   for(const wave of lakeRipples){
+     const t=age*.72+wave.phase;
+     wave.e.setLocalPosition(wave.x+.10*Math.sin(t),-6.50+.014*Math.sin(t*1.7),wave.z);
+     const w=.61+.12*Math.sin(t+.6)**2;
+     wave.e.setLocalScale(w,.023,.12+.025*Math.sin(t));
+   }
+   for(const water of falls){
+     const travel=(age*.78+water.phase)%2.4;
+     water.e.setLocalPosition(water.x,2.55-travel,-7.81);
+   }
+   for(const puff of mistPuffs){
+     const theta=age*.48+puff.phase;
+     puff.e.setLocalPosition(puff.x+.07*Math.sin(theta),puff.y+.065*Math.cos(theta),-7.4);
+   }
    // Poucos objetos animados e sem sombras para preservar a fluidez
    for(const f of fireflies){
      f.e.setLocalPosition(f.e.getLocalPosition().x,
