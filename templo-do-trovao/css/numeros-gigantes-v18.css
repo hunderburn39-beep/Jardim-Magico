@@ -1,0 +1,24 @@
+/* PORTÕES DO TROVÃO V18 — GLIFOS PNG COM 2× O TAMANHO DA V17.
+ * O JS reduz apenas quando um montante longo ultrapassa a largura da grelha.
+ * Sem caixas, sem texto explicativo, sem novas animações pesadas.
+ */
+.board-overlay .prize-float.prize-amount-png{
+  font-size:clamp(112px,15.6vw,204px)!important;
+  max-width:96%!important;
+}
+@media(orientation:landscape) and (max-height:600px){
+  .board-overlay .prize-float.prize-amount-png{
+    font-size:clamp(108px,34vh,184px)!important;
+  }
+}
+@media(orientation:portrait){
+  .board-overlay .prize-float.prize-amount-png{
+    font-size:clamp(98px,28vw,174px)!important;
+  }
+}
+/* A classe permanece sem preenchimento: os dígitos são imagens PNG. */
+.board-overlay .prize-float.prize-amount-png{
+  border:0!important;
+  background:none!important;
+  box-shadow:none!important;
+}
