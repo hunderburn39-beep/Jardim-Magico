@@ -68,11 +68,36 @@ const scene=new Reel();
 scene.ready=true;
 scene.busy=false;
 scene.textures={exists:()=>true};
+// Simular vários frames até à paragem para verificar que o resultado
+// aparece DURANTE a última descida, nunca trocado pelo onComplete.
+let preStopColumns=0;
+let swappedOnStop=0;
 scene.tweens={
  add(cfg){
-  if('distance'in cfg)cfg.targets.distance=cfg.distance;
-  if('y'in cfg)cfg.targets.y=cfg.y;
-  cfg.onUpdate?.();cfg.onComplete?.();
+  if('distance'in cfg){
+   const frames=cfg.distance*8;
+   for(let frame=0;frame<=frames;frame++){
+    cfg.targets.distance=cfg.distance*frame/frames;
+    cfg.onUpdate?.();
+   }
+   const currentColumn=preStopColumns++;
+   const beforeStop=scene.columns[currentColumn].items
+    .filter(item=>item.slot>=0&&item.slot<3)
+    .sort((a,b)=>a.slot-b.slot)
+    .map(item=>item.symbol);
+   const expected=after[currentColumn].map(id=>SYMBOLS[id]);
+   assert.deepEqual(beforeStop,expected,
+    'O resultado deve entrar pelo topo ANTES da paragem');
+   cfg.onComplete?.();
+   const afterStop=scene.columns[currentColumn].items
+    .filter(item=>item.slot>=0&&item.slot<3)
+    .sort((a,b)=>a.slot-b.slot)
+    .map(item=>item.symbol);
+   if(JSON.stringify(beforeStop)!==JSON.stringify(afterStop))swappedOnStop++;
+  }else{
+   if('y'in cfg)cfg.targets.y=cfg.y;
+   cfg.onUpdate?.();cfg.onComplete?.();
+  }
  },
  killAll(){}
 };
@@ -88,6 +113,8 @@ scene.columns=Array.from({length:5},(_,c)=>{
 scene.board=exact;
 scene.setBoard(exact);
 await scene.spin(after,{turbo:true});
+ok(preStopColumns===5,'As cinco colunas terminaram com imagens previamente posicionadas');
+ok(swappedOnStop===0,'Nenhuma coluna altera imagens no instante da paragem');
 for(let c=0;c<5;c++)for(let r=0;r<3;r++){
  ok(scene.columns[c].visible[r].symbol===SYMBOLS[after[c][r]],'resultado do giro '+c+','+r);
  ok(scene.columns[c].visible[r].sprite.y===(r+.5)*180,'tambores alinhados '+c+','+r);
@@ -121,4 +148,8 @@ ok(main.includes('finally{')&&main.includes('running=false;'),
  'giro desbloqueia após exceção');
 ok(reels.includes('this.tweens.add('),'Phaser usa tweens nativos');
 ok(reels.includes('Phaser.Scale.FIT'),'canvas responsivo em dispositivos móveis');
-console.log('Phaser V1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+ok(reels.includes("function enteringSymbol("),'motor tem injeção antecipada da figura');
+ok(!reels.slice(reels.indexOf('onComplete:()=>{',reels.indexOf(' spin(target,')),reels.indexOf(' burst(cells,')).includes('this.useSymbol(item,target'),
+ 'paragem não altera qualquer textura');
+
+console.log('Phaser V1.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
