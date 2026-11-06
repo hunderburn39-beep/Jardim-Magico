@@ -1,7 +1,7 @@
 /* Jardim Mágico 3D V2 — Controlador da demonstração visual.
    Toda a aposta, carteira e prémio neste módulo são valores FICTÍCIOS.
    O engine demonstrativo é separado do renderizador PlayCanvas. */
-import {DemoBank,SYMBOLS,LABELS,PAYLINES,money} from './demo-engine.js?v=2.1';
+import {DemoBank,SYMBOLS,LABELS,PAYLINES,money} from './demo-engine.js?v=2.3';
 
 const $=id=>document.getElementById(id);
 const bank=new DemoBank();
@@ -210,64 +210,111 @@ function showLineBreakdown(lineWins,total,capped=null,multiplier=1){
    individual.join(' + ')+' = '+money(total)+multiplied+cap;
  target.hidden=false;
 }
+/* V2.3 — a animação percorre todas as quedas calculadas pelo motor.
+   A banca já reservou e limitou o prémio antes dos movimentos: não se
+   pode obter créditos extra ao interromper ou acelerar a animação. */
 function runSpin(){
  clearTimeout(nextTimer);
- if(spinBusy||activeDialog||bank.mode==='hold'){if(bank.mode==='hold')showHold();return}
+ if(spinBusy||activeDialog||bank.mode==='hold'){
+  if(bank.mode==='hold')showHold();
+  return;
+ }
  if(!window.JM3D){say('Motor 3D a iniciar…');return}
  const outcome=bank.spin();
  if(!outcome.ok){autoRemaining=0;render();say(outcome.message);return}
+ const stages=outcome.stages||[{board:outcome.board,ev:outcome.ev,removed:[]}];
  setSpinning(true);
  showLineBreakdown([],0);
- $('spinState').textContent='TAMBORES A RODAR…';
- say(outcome.free?'FREE SPIN · '+bank.freeSpins+' restantes':'Tambores tridimensionais em movimento');
+ $('spinState').textContent='TAMBORES A DESCER ↓';
+ say(outcome.free?'FREE SPIN · '+bank.freeSpins+' restantes':
+  'Tambores a rodar de cima para baixo');
  if(!outcome.free&&autoRemaining>0)autoRemaining--;
- const completed=()=>{
+ let stageTimer=null;
+ function nextStage(i){
+  const stage=stages[i];
+  const wins=stage.ev.lineWins||[];
+  const cells=winningCoordinates(wins);
+  const isMultiple=wins.length>=2;
+  const hasDrop=i<stages.length-1;
+  const lineFactor=stage.ev.wilds?outcome.wildMultiplier:1;
+  const duration=wins.length?(isMultiple?1090:750):200;
+  if(wins.length&&hasDrop){
+   // Mesmo com uma linha, as peças precisam de desaparecer para cair.
+   window.JM3D.burstWinners?.(cells,duration);
+  }else if(isMultiple){
+   window.JM3D.burstWinners?.(cells,duration);
+  }else if(wins.length){
+   window.JM3D.highlight?.(cells,duration);
+  }
+  showLineBreakdown(wins,stage.ev.raw,null,lineFactor);
+  showMultiply(outcome.wildMultiplier,stage.ev.wilds);
+  if(wins.length){
+   const suffix=stages.length>1?' · QUEDA '+(i+1):'';
+   $('spinState').textContent=wins.length+' COMBINAÇÃO'+
+     (wins.length===1?'':'ÕES')+' PREMIADA'+(wins.length===1?'':'S')+suffix;
+   const value=Math.round(stage.ev.raw*lineFactor*100)/100;
+   say(wins.length+' combinação'+(wins.length===1?'':'ões')+
+     ' · queda '+(i+1)+' · '+money(value)+' créditos');
+   if(isMultiple)bigWin('✨ +'+money(value)+' ✨');
+  }else{
+   $('spinState').textContent='QUEDA '+(i+1)+' · SEM NOVAS LINHAS';
+   say('Queda concluída');
+  }
+  if(hasDrop){
+   nextTimer=setTimeout(()=>{
+    const next=stages[i+1];
+    $('spinState').textContent='↓ PEÇAS A CAIR ↓';
+    showLineBreakdown([],0);
+    if(!window.JM3D.cascade?.(next.board,next.removed,()=>nextStage(i+1))){
+     // Não alterar pagamentos ou resultados se o render falhar.
+     say('Não foi possível animar a queda');
+     finish();
+    }
+   },duration+80);
+  }else{
+   nextTimer=setTimeout(finish,Math.max(180,duration));
+  }
+ }
+ function finish(){
   setSpinning(false);
   render();
-  const wins=outcome.ev.lineWins||[];
-  const allWinners=winningCoordinates(wins);
-  const simultaneous=wins.length>=2;
-  if(simultaneous&&window.JM3D?.burstWinners){
-   // Explosão de TODAS as peças vencedoras em simultâneo.
-   window.JM3D.burstWinners(allWinners,1100);
-  }else if(wins.length===1&&window.JM3D?.highlight){
-   window.JM3D.highlight(allWinners,1100);
+  const allWins=stages.flatMap(stage=>stage.ev.lineWins||[]);
+  if(allWins.length){
+   const total=outcome.free?outcome.rawTotal:outcome.potential;
+   showLineBreakdown(allWins,outcome.rawTotal,
+     !outcome.free&&outcome.credited<outcome.potential?outcome.credited:null);
+   const suffix=stages.length>1?' · '+(stages.length-1)+' QUEDAS':'';
+   $('spinState').textContent=allWins.length+
+    ' COMBINAÇÕES SOMADAS'+suffix;
+   if(!outcome.free)bigWin('✨ TOTAL '+money(outcome.credited)+' ✨');
+  }else{
+   showLineBreakdown([],0);
+   $('spinState').textContent='TAMBORES 3D PRONTOS';
   }
-  $('spinState').textContent=simultaneous?
-   wins.length+' COMBINAÇÕES PREMIADAS!':
-   wins.length===1?'1 COMBINAÇÃO PREMIADA':'TAMBORES 3D PRONTOS';
-  const lineFactor=outcome.ev.wilds?outcome.wildMultiplier:1;
-  const effectiveTotal=Math.round(outcome.ev.raw*lineFactor*100)/100;
-  showLineBreakdown(wins,outcome.ev.raw,
-    !outcome.free&&outcome.credited<effectiveTotal?outcome.credited:null,
-    lineFactor);
-  const win=outcome.free?outcome.potential:outcome.credited;
-  showMultiply(outcome.wildMultiplier,outcome.ev.wilds);
   if(outcome.triggered){
    say(outcome.triggered);
    freeBanner('✨ '+outcome.triggered+' ✨');
+   if(outcome.triggered.includes('Free Spins'))bigWin('FREE SPINS!');
   }else if(outcome.free){
    say('Valor acumulado: '+money(bank.freeTotal)+' ×'+bank.freeMultiplier);
-  }else if(simultaneous){
-   say(wins.length+' combinações · prémio total: '+money(outcome.credited)+' créditos');
-  }else say(win>0?'Prémio demo: '+money(win)+' créditos':'Sem prémio neste giro');
-  if(simultaneous){
-   const shown=outcome.free?outcome.ev.raw:outcome.credited;
-   bigWin('✨ TOTAL '+money(shown)+' ✨');
-  }else if(outcome.credited>=bank.stake*15){
-   bigWin('✨ '+money(outcome.credited)+' ✨');
+  }else if(allWins.length){
+   say(allWins.length+' combinações · prémio total: '+
+     money(outcome.credited)+' créditos');
+  }else say('Sem prémio neste giro');
+  if(bank.mode==='hold'){
+   nextTimer=setTimeout(showHold,950);return;
   }
-  if(outcome.ev.scatter>=3&&outcome.triggered)bigWin('FREE SPINS!');
-  // Respeitar o tempo do estouro conjunto antes de mudar os tambores.
-  const minimumDelay=simultaneous?1350:0;
-  if(bank.mode==='hold'){nextTimer=setTimeout(showHold,Math.max(900,minimumDelay));return}
   if(bank.mode==='free'){
-   nextTimer=setTimeout(runSpin,Math.max(1100,minimumDelay));return;
+   nextTimer=setTimeout(runSpin,1100);return;
   }
-  if(autoRemaining>0)nextTimer=setTimeout(runSpin,Math.max(bank.stake<0.1?650:800,minimumDelay));
- };
- if(!window.JM3D.spin(outcome.board,completed)){
-  setSpinning(false);say('Tambores ocupados');render();
+  if(autoRemaining>0){
+   nextTimer=setTimeout(runSpin,bank.stake<.1?600:780);
+  }
+ }
+ if(!window.JM3D.spin(outcome.board,()=>nextStage(0))){
+  setSpinning(false);
+  say('Tambores ocupados');
+  render();
  }
 }
 function changeStake(delta){
