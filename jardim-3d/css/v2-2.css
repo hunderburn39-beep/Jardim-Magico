@@ -1,0 +1,155 @@
+/* Jardim Mágico 3D V2.2 — acabamentos de luxo em harmonia com a fotografia.
+   Apenas CSS: os objetos do bosque, moldura e tambores são geometrias reais.
+   Efeitos no ecrã estáticos; sem blur dinâmico de página inteira no iPhone. */
+
+:root{
+ --jm22-amber:#f9d68b;
+ --jm22-amber-deep:#a4652d;
+ --jm22-amethyst:#501766;
+ --jm22-night:#230939;
+ --jm22-rose:#e978bf;
+}
+
+/* Logótipo isolado: sem fotografia rectangular por detrás. */
+.brand{overflow:visible!important;isolation:isolate}
+.brand-art{
+ width:min(90vw,470px)!important;
+ max-height:min(18dvh,165px)!important;
+ object-fit:contain!important;
+ filter:drop-shadow(0 6px 5px rgba(15,4,28,.85))
+        drop-shadow(0 0 5px rgba(255,190,218,.4))!important;
+}
+
+/* Metais iluminados uniformemente pela mesma direcção de luz. */
+.pot,.pot.hero{
+ position:relative;
+ border:2px solid #ffe3a2!important;
+ border-radius:15px!important;
+ background:
+ radial-gradient(ellipse at 24% -15%,rgba(255,250,213,.29),transparent 53%),
+ linear-gradient(165deg,#b04b9d,#65206e 36%,#27083f 82%,#6a265e)!important;
+ box-shadow:
+ inset 0 2px 2px rgba(255,247,205,.95),
+ inset 0 -3px 3px #160624,
+ 0 3px 0 #915521,
+ 0 7px 11px #100420a8,
+ 0 0 8px rgba(255,153,226,.48)!important;
+}
+.pot.hero{
+ background:
+ radial-gradient(ellipse at 26% 0,rgba(255,236,166,.3),transparent 47%),
+ linear-gradient(170deg,#b8477e,#751d55 41%,#351044 90%)!important;
+}
+.pot:before{
+ content:"";position:absolute;pointer-events:none;
+ height:17%;top:4px;left:12%;right:12%;
+ background:linear-gradient(90deg,transparent,rgba(255,242,206,.28),transparent);
+ border-radius:50%;
+}
+.pot strong{color:#fff1b9!important;text-shadow:0 1px 2px #46113c,0 0 5px #ffdc787a!important}
+.pot em{color:#ffc5f4!important}
+
+/* Barra dos multiplicadores: esmalte profundo com reflexos de vidro. */
+.reelHead{
+ border:2px solid #ffdb98!important;
+ background:
+ radial-gradient(ellipse at 35% -40%,rgba(255,190,236,.38),transparent 50%),
+ linear-gradient(180deg,#8b3c85,#4d135c 22%,#2b0b45 76%,#652360)!important;
+ box-shadow:inset 0 2px 3px rgba(255,252,219,.76),
+ inset 0 -3px 4px #160629,
+ 0 3px 0 #985824,0 0 9px #e68aca79!important;
+}
+.orbBank b{
+ border:2px solid #ffe7ac!important;
+ background:radial-gradient(circle at 27% 21%,#fff4dc,#ee8ed9 27%,#ae2dac 59%,#461266 92%)!important;
+ box-shadow:inset 0 2px 3px #fffbd4da,
+ inset 0 -4px 6px #4b1465,0 0 7px #ff9ed5ab!important;
+}
+.reelMultiplier{color:#fff1a8!important;text-shadow:0 1px 2px #220524,0 0 9px #ffc05b8f!important}
+
+/* HUD — um único material para cofre, saldo, aposta e prémios. */
+.hudPanel,.vaultBtn,.buyBonus{
+ border:2px solid #ffe5ad!important;
+ background:
+ radial-gradient(ellipse at 15% 0,rgba(255,236,202,.23),transparent 38%),
+ linear-gradient(170deg,#a14d96 0%,#60216c 24%,#2f0b48 72%,#61255f)!important;
+ box-shadow:
+ inset 0 2px 2px #fff3ccaa,
+ inset 0 -3px 4px #150524,
+ 0 3px 0 #a15d2b,
+ 0 7px 10px #100418ba!important;
+}
+.hudPanel strong,.vaultBtn strong{
+ color:#fff1b9!important;text-shadow:0 2px 2px #250923,0 0 7px #ffc67788!important;
+}
+.betControls button{
+ border:2px solid #ffdfa3!important;
+ background:linear-gradient(155deg,#bf58a1,#762f89 47%,#3b0c53)!important;
+ box-shadow:inset 0 1px 2px #fff2d2cc,0 3px 0 #613228,0 4px 6px #210829!important;
+}
+.betControls button:active:not(:disabled){transform:translateY(2px)}
+.buyBonus{
+ background:
+ radial-gradient(ellipse at 30% 0,rgba(255,233,192,.24),transparent 40%),
+ linear-gradient(173deg,#d05eae,#762473 44%,#45104f 80%)!important;
+}
+.vaultBtn .pig{filter:drop-shadow(0 0 5px #f79ae77a) drop-shadow(0 3px 2px #270a2a)!important}
+
+/* RODAR de esmeralda com aro dourado de maior profundidade. */
+.controls .spin{
+ position:relative;
+ border:5px solid #ffe7ab!important;
+ background:
+ radial-gradient(ellipse at 31% 12%,#f6ffdc 0,#c0f87e 16%,#49cf4a 39%,#16783b 65%,#064831 83%,#02362b 100%)!important;
+ box-shadow:
+ inset 0 3px 4px rgba(255,255,219,.99),
+ inset 0 -11px 12px #04442c,
+ inset 0 0 0 3px #a7e46c,
+ 0 4px 0 #b77332,
+ 0 7px 0 #6a3a25,
+ 0 9px 12px #13051d,
+ 0 0 14px #e6b8626a!important;
+ text-shadow:0 2px 2px #053a24,0 0 7px #aafda2!important;
+}
+.controls .spin:after{
+ content:"";position:absolute;pointer-events:none;
+ top:7%;left:22%;width:55%;height:21%;
+ border-radius:50%;
+ background:linear-gradient(180deg,rgba(255,255,224,.29),transparent);
+ transform:rotate(-15deg);
+}
+.controls .spin:disabled{opacity:.96!important}
+.controls .secondary{
+ border:2px solid #ffe7b0!important;
+ box-shadow:
+ inset 0 2px 2px #fff7d6e2,
+ inset 0 -3px 4px #8d513f70,
+ 0 3px 0 #a45e2d,
+ 0 7px 9px #1c0828b6!important;
+}
+.controls .turbo{
+ background:linear-gradient(175deg,#fffbd8,#ffe8aa 21%,#f5bf65 63%,#a85d2c)!important;
+ color:#512d30!important;
+}
+.controls .auto{
+ background:linear-gradient(165deg,#f9cce9,#d587d4 33%,#752f93 70%,#3a1355)!important;
+}
+.controls .secondary:active:not(:disabled){transform:translateY(2px) scale(.98)}
+.toptools .roundSmall,.topline .back{
+ box-shadow:inset 0 2px 2px #fff2c693,
+ inset 0 -2px 3px #2e0b49,
+ 0 3px 0 #9f622b,0 0 8px #ffb8e57a!important;
+}
+.bigWin.visible{filter:drop-shadow(0 0 8px #f7b862);font-size:clamp(24px,7.2vw,45px)!important}
+.winBreakdown{background:linear-gradient(165deg,rgba(77,20,85,.93),rgba(31,7,52,.94))!important;border:1.5px solid #ffdf9e!important}
+.holdBoard>div.filled{box-shadow:inset 0 2px 2px #fff8cd,0 0 10px #e5a45b!important}
+.holdCard,.dialogCard{box-shadow:inset 0 3px 4px #fff3bd9e,0 0 20px #ff81d172,0 15px 22px #090217de!important}
+@media(max-width:390px) and (orientation:portrait){
+ .brand-art{max-width:91vw!important}
+ .pot{border-width:1.5px!important}
+ .reelHead{padding:3px 5px!important}
+ .hudPanel,.vaultBtn,.buyBonus{border-width:1.5px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ .controls .spin,.brand-art,.pot{animation:none!important;transition:none!important}
+}
