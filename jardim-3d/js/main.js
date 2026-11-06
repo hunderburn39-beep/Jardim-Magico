@@ -533,15 +533,35 @@ function startSpin(matrix=null,whenDone=null){
  output.textContent='Os cinco tambores estão a descer';
  const count=++state.spins;
  if($('spins'))$('spins').textContent=String(count);
- const started=reelMotion.startSpin(board,state.turbo,()=>{
+ try{
+  const started=reelMotion.startSpin(board,state.turbo,()=>{
    state.running=false;
    button.disabled=false;
    status.textContent='Tambores verticais parados';
    if(!whenDone)output.textContent='Giro '+state.spins+' concluído';
    if(whenDone)whenDone();
- });
- if(!started){state.running=false;button.disabled=false}
- return started;
+  });
+  if(!started)recoverView(board);
+  return started;
+ }catch(err){
+  console.error('Erro ao iniciar giro 3D:',err);
+  recoverView(board);
+  window.dispatchEvent(new CustomEvent('jm3d-motion-error',{detail:{message:String(err)}}));
+  return false;
+ }
+}
+function recoverView(board){
+ cancelBurst();
+ winPulseUntil=0;
+ for(const tile of winPulseCells)tile.face.setLocalScale(.947,.965,.16);
+ winPulseCells=[];
+ if(reelMotion?.forceReset && Array.isArray(board)&&board.length===5){
+  reelMotion.forceReset(board);
+ }
+ state.running=false;
+ button.disabled=false;
+ status.textContent='Tambores prontos';
+ return true;
 }
 function cascadeDown(board,removed,whenDone){
  if(state.running||!reelMotion)return false;
@@ -550,18 +570,32 @@ function cascadeDown(board,removed,whenDone){
  state.running=true;
  button.disabled=true;
  status.textContent='Queda: símbolos a descer…';
- const result=reelMotion.beginCascade(board,removed,()=>{
-   state.running=false;
-   button.disabled=false;
-   status.textContent='Queda concluída';
-   if(whenDone)whenDone();
- },state.turbo?.38:.68);
- if(!result){state.running=false;button.disabled=false}
- return result;
+ try{
+  const started=reelMotion.beginCascade(board,removed,()=>{
+    state.running=false;
+    button.disabled=false;
+    status.textContent='Queda concluída';
+    if(whenDone)whenDone();
+  },state.turbo?.38:.68);
+  if(started)return true;
+  recoverView(board);
+  return false;
+ }catch(err){
+  console.error('Erro no movimento dos tambores:',err);
+  recoverView(board);
+  window.dispatchEvent(new CustomEvent('jm3d-motion-error',{detail:{message:String(err)}}));
+  return false;
+ }
 }
 function updateSpin(dt){
  if(!reelMotion)return;
- reelMotion.update(dt);
+ try{reelMotion.update(dt)}
+ catch(err){
+  console.error('Erro de animação 3D:',err);
+  state.running=false;
+  button.disabled=false;
+  window.dispatchEvent(new CustomEvent('jm3d-motion-error',{detail:{message:String(err)}}));
+ }
 }
 
 function build(){
@@ -634,6 +668,7 @@ function build(){
   spin:(board,callback)=>startSpin(board,callback),
   showBoard:board=>reelMotion.showBoard(board),
   cascade:(board,removed,callback)=>cascadeDown(board,removed,callback),
+  recover:(board)=>recoverView(board),
   isRunning:()=>state.running,
   burstWinners:(coords,duration=1100)=>explodeWinners(coords,duration),
   isBursting:()=>!!burst,
