@@ -88,3 +88,9 @@ Revisão visual focada na diferença entre a primeira arte 9:16 e as capturas no
 - `js/jogo-2.js` (PixiJS/WebGL), pagamentos, RTP, Jackpot e banca não foram alterados nesta atualização.
 - Recuperação possível através de `backup/jardim-v78-1-antes-arte-fotografica-v79`.
 - Os assets provêm de recortes da referência, mas esta ainda é uma composição interativa e não uma reprodução pixel a pixel. Convém testar o resultado num iPhone real.
+
+## V79.1 — símbolos HD na arte fotográfica
+- Substituição opcional das nove texturas do atlas comprimido por PNG individuais em alta definição já presentes em `assets/imagens` (poção, gema verde, coração, bule, WILD, gema roxa, cogumelo, chapéu e rosa).
+- `js/jogo-2.js` carrega as imagens de forma assíncrona, recorta o fundo, centra os objetos e guarda texturas de 256×256 para PixiJS. Se um asset falhar, utiliza a imagem anterior do atlas.
+- A lógica de prémios, tabela de pagamentos, jackpots e banca mantém-se inalterada.
+- `index.html` atualiza a versão para V79.1 e invalida a cache da biblioteca visual no Safari.
