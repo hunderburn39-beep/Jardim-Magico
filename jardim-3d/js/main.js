@@ -4,7 +4,7 @@
  * Mobile: WebGL 2, DPR <=1.5, luzes estáticas sem sombras em tempo real.
  */
 import * as pc from 'playcanvas';
-import {createVerticalReels} from './reels-v23.js?v=3.1';
+import {createVerticalReels} from './reels-v23.js?v=3.2';
 import {drawMagicBonus} from './symbol-art-v3.js?v=3.1';
 import {createSymbolFace,createVibrantMaterial} from './symbol-face-v32.js?v=3.2';
 
@@ -134,34 +134,10 @@ function background(){
    const wave=model('Ondulação do lago','sphere',[xx,-6.50,zz],[.68,.026,.15],water2);
    lakeRipples.push({e:wave,x:xx,z:zz,phase:i*.83});
  }
- const trunk=mat('#674126',{metal:.03,gloss:20});
- const trunk2=mat('#87552f',{metal:.05,gloss:24});
- const foliage=mat('#1c5c41',{gloss:24});
- const foliage2=mat('#37794c',{gloss:24});
- for(const [x,side] of [[-4.55,-1],[4.55,1]]){
-   const t=model('Tronco 3D','cylinder',[x,.45,-6],[1.04,12,1.04],side===1?trunk2:trunk);
-   t.setLocalEulerAngles(0,0,side*9);
-   for(let i=0;i<4;i++){
-     model('Copa volumétrica','sphere',[x-side*i*.32,4.4+i*.73,-6.3-i*.2],[2.55-i*.16,1.4,.95+i*.08],i%2?foliage:foliage2);
-   }
- }
- const waterfall=mat('#5ac0e1',{gloss:80,metal:.18,emissive:'#168bad',emission:.65,opacity:.79});
- const rocks=mat('#53516b',{metal:.06,gloss:16});
- const whiteWater=mat('#b6eefa',{metal:.04,gloss:92,emissive:'#93def8',emission:.47,opacity:.67});
- for(let i=0;i<6;i++){
-   const x=2.73+i*.26;
-   model('Coluna da cascata','box',[x,1.55-(i%2)*.22,-8.02+i*.03],
-     [.19,2.85+(i%3)*.32,.14],waterfall);
-   sphere('Pedra da cascata',2.62+i*.46,.11,-8+i*.15,.48,rocks);
-   const strip=model('Fio de espuma cintilante','box',[x+.026,2.45,-7.82],
-      [.028,.41,.033],whiteWater);
-   falls.push({e:strip,x,phase:i*.35});
- }
- const foam=mat('#a1d9df',{metal:.03,gloss:40,emissive:'#61a5bf',emission:.24,opacity:.46});
- for(let i=0;i<5;i++){
-   const e=sphere('Névoa junto à cascata',2.72+i*.23,-.3+(i%2)*.12,-7.4,.17,foam);
-   mistPuffs.push({e,x:2.72+i*.23,y:-.3+(i%2)*.12,phase:i*1.41});
- }
+ // As árvores fotográficas estão no cenário único; retirar os grandes
+ // cilindros e copas esféricas que pareciam bonecos por detrás do logótipo.
+ // Retiradas as barras turquesa da cascata geométrica. A lagoa e a
+ // cascata pertencem à imagem de fundo contínua e não tapam os tambores.
  for(let i=0;i<12;i++){
    const side=i%2?-1:1;
    const depth=-4.8-(i%4)*.46;
@@ -444,7 +420,7 @@ function loadOriginalSymbolArt(){
   };
   im.src='../assets/imagens/'+file+'?v=3.2';
  }))).then(()=>{
-  quality.textContent='SÍMBOLOS HD '+loaded+'/9';
+  quality.textContent='3D V3.2 · HD '+loaded+'/9';
   return loaded;
  });
 }
