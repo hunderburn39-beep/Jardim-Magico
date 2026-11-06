@@ -184,6 +184,28 @@ export function createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol}
   }
   return true;
  }
+ function forceReset(board){
+  // Recuperação determinística: independente de RAF/callbacks perdidos.
+  // Cancela a animação e coloca as 15 peças no resultado já calculado.
+  spinning=null;dropping=null;
+  for(let c=0;c<5;c++){
+   const column=columns[c];
+   column.finished=true;
+   column.completed=0;column.elapsed=0;column.steps=0;
+   column.tiles=[...reelTiles[c],extras[c]];
+   for(let r=0;r<3;r++){
+    const tile=reelTiles[c][r];
+    tile.slot=r;tile.homeRow=r;
+    tile.node.enabled=true;tile.face.enabled=true;
+    tile.face.setLocalEulerAngles(0,0,0);
+    tile.face.setLocalScale(.947,.965,.16);
+    applySymbol(tile,board[c][r]);
+    setY(tile,rowY(r));
+   }
+   extras[c].node.enabled=false;
+  }
+  return true;
+ }
  return {reelTiles,extras,symbolMaterials,startSpin,beginCascade,
-  update,showBoard,isBusy:()=>!!(spinning||dropping)};
+  update,showBoard,forceReset,isBusy:()=>!!(spinning||dropping)};
 }
