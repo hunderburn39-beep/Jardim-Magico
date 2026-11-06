@@ -30,12 +30,12 @@
    <rect x="380" y="0" width="561" height="117" fill="#000" />
    <ellipse cx="470" cy="271" rx="325" ry="151" fill="#000"/>
  </mask>
- <mask id="bottomCut">
+ <mask id="bottomCut" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse"><g transform="translate(0 1292)">
    <rect width="941" height="380" fill="#000"/>
    <rect x="0" y="160" width="941" height="220" fill="url(#fadeBottom)"/>
    <rect x="0" y="0" width="300" height="225" fill="url(#sideFadeL)"/>
    <rect x="671" y="0" width="270" height="225" fill="url(#sideFadeR)"/>
- </mask>
+ </g></mask>
  <radialGradient id="firefly"><stop stop-color="#fff9bf" stop-opacity=".85"/><stop offset="1" stop-color="#ffbde9" stop-opacity="0"/></radialGradient>
 </defs>
 <rect width="941" height="1672" fill="url(#base)"/>
