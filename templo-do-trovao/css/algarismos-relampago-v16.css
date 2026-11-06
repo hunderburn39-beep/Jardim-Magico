@@ -1,0 +1,99 @@
+/* V16 — VALORES DE QUEDA DESENHADOS NO PRÓPRIO PNG, NÃO TEXTO.
+   Atlas de 7 colunas × 2 linhas; ordem "0123456789,.€".
+   Os glifos são pixels de relâmpagos dourados num PNG RGBA transparente.
+   Sem caixas, raios laterais ou caracteres de fonte.
+*/
+.board-overlay .prize-float.prize-amount-png{
+  display:flex!important;
+  flex-direction:row!important;
+  justify-content:center!important;
+  align-items:center!important;
+  gap:clamp(0px,.08vw,2px)!important;
+  width:max-content!important;
+  min-width:0!important;
+  max-width:98%!important;
+  height:auto!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:none!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  text-shadow:none!important;
+  filter:drop-shadow(0 2px 2px #3a1b30)
+         drop-shadow(0 0 7px #f8d47870);
+  font-size:clamp(31px,5vw,79px);
+  line-height:1;
+  isolation:isolate;
+  white-space:nowrap;
+  pointer-events:none;
+  will-change:transform,opacity;
+  animation:prizePNGFloatV16 var(--prize-duration,2350ms) ease-out both!important;
+}
+.board-overlay .prize-float.prize-amount-png::before,
+.board-overlay .prize-float.prize-amount-png::after{
+  content:none!important;
+  display:none!important;
+  animation:none!important;
+}
+.board-overlay .prize-amount-png .prize-png-glyph{
+  display:block!important;
+  flex:none!important;
+  width:.55em!important;
+  height:.80em!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background-image:url("../assets/algarismos-relampago-v16.png")!important;
+  background-repeat:no-repeat!important;
+  background-size:700% 200%!important;
+  background-position:var(--png-x,0%) var(--png-y,0%)!important;
+  box-shadow:none!important;
+  filter:none!important;
+  -webkit-text-fill-color:initial!important;
+}
+.board-overlay .prize-amount-png .prize-png-gap{
+  display:block;
+  flex:none;
+  width:.15em;
+  height:.8em;
+}
+.board-overlay .prize-amount-png .prize-png-fallback{
+  display:block;
+  flex:none;
+  -webkit-text-fill-color:#ffdc7f!important;
+  color:#ffdc7f!important;
+  font-size:.75em;
+  text-shadow:0 0 5px #ffce73;
+}
+@keyframes prizePNGFloatV16{
+  0%{opacity:0;transform:translate(-50%,-35%) scale(.83)}
+  10%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}
+  23%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  70%{opacity:1;transform:translate(-50%,-54%) scale(1)}
+  91%{opacity:.51;transform:translate(-50%,-74%) scale(.96)}
+  100%{opacity:0;transform:translate(-50%,-91%) scale(.91)}
+}
+@media(orientation:portrait){
+  .board-overlay .prize-float.prize-amount-png{
+    font-size:clamp(24px,6.9vw,45px);
+  }
+}
+@media(orientation:landscape) and (max-height:520px){
+  .board-overlay .prize-float.prize-amount-png{
+    font-size:clamp(25px,8vh,54px);
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .board-overlay .prize-float.prize-amount-png{
+    animation:prizePNGReducedV16 var(--prize-duration,2350ms) linear both!important;
+  }
+}
+@keyframes prizePNGReducedV16{
+  0%{opacity:0;transform:translate(-50%,-50%)}
+  10%,80%{opacity:1;transform:translate(-50%,-50%)}
+  100%{opacity:0;transform:translate(-50%,-50%)}
+}
