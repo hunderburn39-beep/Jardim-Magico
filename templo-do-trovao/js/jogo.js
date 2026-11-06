@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V16.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V18.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -252,6 +252,20 @@
     const lifetime=state.turbo?1250:2350;
     item.style.setProperty("--prize-duration",lifetime+"ms");
     el.overlay.appendChild(item);
+    // V18: usa sempre o dobro do tamanho V17, salvo se o montante
+    // ultrapassar a largura real do tabuleiro. Aí ajusta apenas o
+    // tamanho dessa ocorrência (nunca corta algarismos nos lados).
+    if(typeof window.getComputedStyle==="function"){
+      const nominal=parseFloat(window.getComputedStyle(item).fontSize);
+      const available=(el.overlay.clientWidth||el.board.clientWidth||0)*.94;
+      const widthInEm=Array.from(value).reduce((sum,char)=>{
+        if(characters.includes(char))return sum+.685;
+        return sum+(char.trim()===""?.07:.65);
+      },0);
+      if(nominal>0&&available>0&&widthInEm>0&&nominal*widthInEm>available){
+        item.style.setProperty("font-size",(available/widthInEm).toFixed(2)+"px","important");
+      }
+    }
     window.setTimeout(()=>item.remove(),lifetime+35);
   }
   function setMsg(t){el.msg.textContent=t}
