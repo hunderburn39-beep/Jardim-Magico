@@ -26,6 +26,9 @@ let reelTiles=[];
 let symbolMaterials=[];
 let requestedBoard=null;
 let finishSpin=null;
+let winPulseUntil=0;
+let winPulseStart=0;
+let winPulseCells=[];
 const fireflies=[];
 const glows=[];
 
@@ -339,6 +342,9 @@ function startSpin(matrix=null,whenDone=null){
  if(state.running)return false;
  requestedBoard=matrix;finishSpin=whenDone;
  state.running=true;state.timer=0;
+ winPulseUntil=0;
+ for(const cell of winPulseCells)cell.face.setLocalScale(.96,.98,.14);
+ winPulseCells=[];
  button.disabled=true;
  status.textContent='A rodar em 3D…';
  output.textContent='Os cinco tambores estão a rodar';
@@ -414,6 +420,13 @@ function build(){
  app.on('update',(dt)=>{
    age+=dt;
    updateSpin(dt);
+   if(winPulseUntil){
+    const t=Date.now();
+    const active=t<winPulseUntil;
+    const v=active?1+.13*Math.sin((t-winPulseStart)*.019)**2:1;
+    for(const cell of winPulseCells)cell.face.setLocalScale(.96*v,.98*v,.14);
+    if(!active){winPulseUntil=0;winPulseCells=[]}
+   }
    if(state.orbit){
      state.camTarget=.35*Math.sin(age*.58);
    }else{
@@ -444,6 +457,11 @@ function build(){
    return true;
   },
   isRunning:()=>state.running,
+  highlight:(coords,duration=1250)=>{
+   if(state.running||!Array.isArray(coords))return;
+   winPulseCells=coords.map(({c,r})=>reelTiles[c]?.[r]).filter(Boolean);
+   winPulseStart=Date.now();winPulseUntil=winPulseStart+duration;
+  },
   setTurbo:on=>{state.turbo=!!on;turboButton.setAttribute('aria-pressed',String(state.turbo));},
   setOrbit:on=>{state.orbit=!!on;cameraButton.setAttribute('aria-pressed',String(state.orbit));}
  };
