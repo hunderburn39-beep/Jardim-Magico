@@ -1,7 +1,8 @@
 /* Jardim Mágico 3D V2 — Controlador da demonstração visual.
    Toda a aposta, carteira e prémio neste módulo são valores FICTÍCIOS.
    O engine demonstrativo é separado do renderizador PlayCanvas. */
-import {DemoBank,SYMBOLS,LABELS,PAYLINES,money} from './demo-engine.js?v=2.5.1';
+import {DemoBank,SYMBOLS,LABELS,PAYLINES,money} from './demo-engine.js?v=3';
+import {demoDB} from './database-v3.js?v=3';
 
 const $=id=>document.getElementById(id);
 const bank=new DemoBank();
@@ -13,7 +14,51 @@ let holdConsumed=false;
 let holdTimer=null;
 let nextTimer=null;
 let winTimer=null;
+let gameReady=false;
+let lastBoard=null;
+let saveFailed=false;
 window.JM3DGameController=true;
+function saveDemo(type,details={}){
+ const eventId=(typeof crypto!=='undefined'&&crypto.randomUUID)?
+  crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2);
+ return demoDB.save(bank.snapshot,details.board||lastBoard,{
+  id:eventId,type,stake:bank.stake,paid:details.paid||0,
+  stages:details.stages||0
+ }).then(ok=>{
+  if(!ok){
+   saveFailed=true;
+   $('dbStatus').textContent='BASE LOCAL: ERRO';
+  }
+  return ok;
+ }).catch(err=>{
+  console.error('Base de dados:',err);
+  saveFailed=true;$('dbStatus').textContent='BASE LOCAL: ERRO';
+  return false;
+ });
+}
+function restoreBank(data){
+ const snapshot=data?.snapshot;
+ if(!snapshot||typeof snapshot!=='object')return false;
+ const validNum=['balance','reserve','stake','spins','lastWin','freeSpins',
+   'freeTotal','freeMultiplier','freePlayed','freeAwarded'];
+ for(const key of validNum){
+  const value=Number(snapshot[key]);
+  if(!Number.isFinite(value)||value<0)continue;
+  bank[key]=value;
+ }
+ if(['base','free','hold'].includes(snapshot.mode))bank.mode=snapshot.mode;
+ if(bank.mode==='hold'&&Array.isArray(snapshot.hold?.grid)&&
+    snapshot.hold.grid.length===16){
+  bank.hold=JSON.parse(JSON.stringify(snapshot.hold));
+ }else if(bank.mode==='hold'){
+  bank.mode='base';bank.hold=null;
+ }
+ bank.freeSpins=Math.min(60,bank.freeSpins);
+ bank.freeMultiplier=Math.min(5,Math.max(1,bank.freeMultiplier));
+ if(typeof snapshot.status==='string')bank.status=snapshot.status.slice(0,200);
+ if(Array.isArray(data.board)&&data.board.length===5)lastBoard=data.board;
+ return true;
+}
 
 const button=$('spin'),banner=$('bonusBanner'),msg=$('result');
 function say(text){
@@ -253,6 +298,7 @@ async function runSpin(){
   if(bank.mode==='hold')showHold();
   return;
  }
+ if(!gameReady){say('A carregar base de dados local…');return}
  if(!window.JM3D){say('Motor 3D a iniciar…');return}
  let outcome;
  try{outcome=bank.spin()}
@@ -262,12 +308,16 @@ async function runSpin(){
  const finalBoard=stages.at(-1).board;
  let recovered=false;
  setSpinning(true);render();
+ lastBoard=finalBoard;
  showLineBreakdown([],0);
  $('spinState').textContent='TAMBORES A DESCER ↓';
  say(outcome.free?'FREE SPIN · '+bank.freeSpins+' restantes':
   'Tambores a rodar de cima para baixo');
  if(!outcome.free&&autoRemaining>0)autoRemaining--;
  try{
+  // Persistir o prémio integral e o resultado final ANTES de o animar.
+  // Assim, recarregar a página durante uma queda não perde nem duplica créditos.
+  await saveDemo('spin',{board:finalBoard,paid:outcome.credited,stages:stages.length});
   if((await playMotion(done=>window.JM3D.spin(outcome.board,done),
     outcome.board,6500))!=='ok')recovered=true;
   for(let i=0;i<stages.length;i++){
