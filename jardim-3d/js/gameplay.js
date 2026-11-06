@@ -490,7 +490,13 @@ function bind(){
   button.addEventListener(type,()=>clearTimeout(holdTimer))
  }
  document.addEventListener('visibilitychange',()=>{
-  if(document.hidden){autoRemaining=0;clearTimeout(nextTimer);render()}
+  if(document.hidden){
+   autoRemaining=0;clearTimeout(nextTimer);render();
+  }else if(gameReady&&!spinBusy&&bank.mode==='free'){
+   // iPhone/Safari suspende temporizadores ao sair da aplicação.
+   // Recomeçar as Free Spins guardadas quando a página volta a aparecer.
+   nextTimer=setTimeout(runSpin,400);
+  }
  });
 }
 render();bind();
