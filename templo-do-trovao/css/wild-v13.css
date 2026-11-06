@@ -1,0 +1,70 @@
+/* PORTÕES DO TROVÃO V13 — a mesma arte do WILD do Jardim Mágico.
+ * NÃO redesenhar: esta imagem é carregada diretamente da pasta original
+ * /Jardim-Magico/assets/imagens/05ad729435e7487db8.png.
+ */
+.cell.wild{
+  --gem-glow:#ffdd7f;
+  position:relative;
+  isolation:isolate;
+  background:radial-gradient(ellipse at 50% 55%,#ffdb5d24,transparent 70%)!important;
+}
+body.wild-asset-ready .cell.wild .wild-bitmap,
+body.wild-asset-ready .pay-symbol.wild-bitmap{
+  background-image:url("../../assets/imagens/05ad729435e7487db8.png")!important;
+  background-size:contain!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+}
+body.wild-asset-ready .wild-bitmap .symbol-fallback-text{display:none!important}
+body:not(.wild-asset-ready) .wild-bitmap{background-image:none!important}
+body:not(.wild-asset-ready) .wild-bitmap .symbol-fallback-text{display:flex!important}
+.cell.wild .wild-bitmap{
+  display:block;width:100%;height:100%;
+  transform-origin:50% 48%;
+  filter:drop-shadow(0 2px 3px #32182c) brightness(1.16)!important;
+}
+.cell.wild:not(.drop-in):not(.winner):not(.burst-out) .wild-bitmap{
+  animation:wildFloatV13 3.15s ease-in-out infinite alternate!important;
+}
+.cell.wild .wild-value{
+  position:absolute;z-index:9;bottom:4%;left:50%;
+  min-width:42%;padding:2px 5px;
+  display:block;text-align:center;
+  transform:translateX(-50%);
+  font-family:Cinzel,Georgia,serif;
+  font-size:clamp(14px,2.4vw,29px);
+  font-weight:900;
+  line-height:1.04;
+  color:#fff9be;
+  -webkit-text-stroke:.4px #5c2454;
+  text-shadow:0 1px 2px #211024,0 0 8px #ffeab1;
+  border:2px ridge #ffe29b;
+  border-radius:11px;
+  background:linear-gradient(145deg,#873a73f0,#321c54e9 62%,#6c3a4cec);
+  box-shadow:0 0 9px #ffd98282,inset 0 0 4px #fff1a17a;
+  pointer-events:none;
+  white-space:nowrap;
+}
+.cell.wild.winner .wild-value{box-shadow:0 0 17px #fff0a4,inset 0 0 8px #ffdf94}
+.pay-symbol.wild-bitmap{background-size:contain!important}
+.paytable-table .wild-payrow{background:#f4ca6640}
+.paytable-table .wild-payrow td{font-size:12px;color:#fff1b9}
+.paytable-table .wild-payrow td:last-child{text-align:left!important;white-space:normal}
+.history-glyph[data-kind="wild"]{
+  background-image:url("../../assets/imagens/05ad729435e7487db8.png")!important;
+  background-size:contain!important;
+  background-repeat:no-repeat!important;
+  background-position:center!important;
+  filter:drop-shadow(0 0 3px #ffe0a4);
+}
+@keyframes wildFloatV13{
+  0%{transform:translateY(1px) scale(.98)}
+  100%{transform:translateY(-2px) scale(1.055)}
+}
+@media(max-width:850px){
+ .cell.wild .wild-value{font-size:clamp(11px,3.5vw,21px);padding:1px 3px;border-width:1px}
+ .cell.wild:not(.drop-in):not(.winner):not(.burst-out) .wild-bitmap{animation-duration:4.3s!important}
+}
+@media(prefers-reduced-motion:reduce){
+ .cell.wild .wild-bitmap{animation:none!important}
+}
