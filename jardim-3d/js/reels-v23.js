@@ -20,7 +20,15 @@ export function createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol,
  let spinning=null,dropping=null;
  function applySymbol(tile,index){
   tile.idx=index;
-  tile.face.render.material=symbolMaterials[index]||symbolMaterials[0];
+  const material=symbolMaterials[index]||symbolMaterials[0];
+  // Para malhas 2D personalizadas, atualizar o MeshInstance diretamente;
+  // o setter render.material é ignorado em certos tipos de renderização.
+  const instances=tile.face.render.meshInstances;
+  if(instances?.length){
+   for(const instance of instances)instance.material=material;
+  }else{
+   tile.face.render.material=material;
+  }
   tile.halo.enabled=[4,5,9,11].includes(index)&&tile.node.enabled;
   if(tile.halo.enabled)tile.halo.render.material=waveMaterials[index===4?0:index===5?1:2];
  }
