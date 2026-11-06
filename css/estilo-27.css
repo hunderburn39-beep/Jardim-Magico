@@ -1,0 +1,114 @@
+/* Jardim Mágico V77 — separação definitiva entre cenário e componentes.
+   A captura do iPhone mostrava duas fotografias com UI já desenhada por baixo
+   do logótipo e dos botões reais. Agora há UM só cenário e apenas controlos vivos. */
+html{
+  background:#101b35 url('../assets/imagens/jm76-jardim-profundo.svg')
+    center center / cover no-repeat!important;
+}
+body{
+  background:#101b35 url('../assets/imagens/jm76-jardim-profundo.svg')
+    center center / cover no-repeat!important;
+}
+/* Remover o pseudo-fundo duplicado e a animação de todo o ecrã. */
+body::before,body::after{
+  content:none!important;
+  display:none!important;
+  animation:none!important;
+}
+/* O fundo pertence apenas ao body; o jogo fica transparente.
+   Mantemos o layout e a escala V38 do iPhone, sem alterar dimensões. */
+body>.game,
+body>.game[data-layout="portrait"],
+body>.game[data-layout="wide"]{
+  background:transparent!important;
+  background-image:none!important;
+  isolation:isolate!important;
+  box-shadow:none!important;
+}
+/* Os recortes V75 continham desenhos de controlos e parte do título.
+   Não podem ser usados como cenário, mesmo que tenham máscara de opacidade. */
+.game>.jm75BackdropTop,
+.game>.jm75BackdropBottom{
+  display:none!important;
+  background:none!important;
+  visibility:hidden!important;
+}
+/* O logo V77 tem uma máscara de silhueta e transparência REAL:
+   só as letras, moldura, flor, lanternas e pássaros são visíveis. */
+.game .logoLoop,
+.game[data-layout="portrait"] .logoLoop,
+.game[data-layout="wide"] .logoLoop{
+  background:transparent!important;
+  border:0!important;
+  filter:none!important;
+  overflow:visible;
+  isolation:isolate;
+}
+.game .logoLoop::before,.game .logoLoop::after{
+  display:none!important;
+  content:none!important;
+}
+.game .titleArt{
+  display:block;
+  background:transparent!important;
+  max-width:100%!important;
+  image-rendering:auto;
+  filter:drop-shadow(0 5px 4px rgba(31,6,36,.7))
+         drop-shadow(0 0 7px rgba(237,94,203,.25))!important;
+  animation:none!important;
+}
+/* Nenhuma imagem de rodapé por trás do RODAR e do TURBO.
+   O lago e as flores do SVG contínuo ficam visíveis sem linhas de corte. */
+.game .controlDock,
+.game .controlDeck,
+.game .v37SpinDeck,
+.game .v37Turbo,
+.game .spinCenter,
+.game .spinHalo{
+  background-image:none!important;
+}
+/* Mantemos o próprio botão 3D como asset independente e funcional. */
+.game .spinHalo .spinBtn{
+  background-image:url('../assets/imagens/jm76-rodar-luxo.svg')!important;
+  background-repeat:no-repeat!important;
+  background-position:center!important;
+  background-size:100% 100%!important;
+}
+.game .spinHalo .spinBtn::before,
+.game .spinHalo .spinBtn::after{
+  content:none!important;
+  display:none!important;
+}
+/* Pontos de separação com luz, sem caixas fotográficas. */
+.game .topbar,
+.game .logoLoop,
+.game .jackpots,
+.game .reelFrame,
+.game .underStage,
+.game .controlDock{
+  position:relative;
+  z-index:2;
+}
+@media(orientation:portrait){
+  .game[data-layout="portrait"]{
+    background:transparent!important;
+  }
+  .game[data-layout="portrait"] .logoLoop{
+    width:97%!important;
+    margin:0 auto 3px!important;
+  }
+  .game[data-layout="portrait"] .titleArt{
+    width:100%!important;
+    height:auto!important;
+  }
+}
+@media(orientation:landscape){
+  .game[data-layout="wide"]{
+    background:transparent!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .game .titleArt{
+    animation:none!important;
+  }
+}
