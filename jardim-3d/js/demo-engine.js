@@ -73,10 +73,12 @@ export function evaluate(board,bet){
    coins:count(board,COIN)
  };
 }
-/* Cascatas limitadas: após estourarem as vencedoras, as restantes
-   descem dentro da sua coluna e as novas entram por cima.
-   O resultado é pré-calculado antes de mostrar animações, evitando
-   créditos dependentes do FPS ou de interrupções no Safari. */
+/* Cascatas sem limite artificial: enquanto uma etapa tiver
+   combinações premiadas, as peças vencedoras desaparecem, as restantes
+   descem na coluna e entram peças novas de cima.
+   Termina apenas quando uma etapa já não tem combinação premiada.
+   O pagamento é calculado antes da animação e limitado ao fundo virtual,
+   nunca o número de quedas. */
 export function winningCells(evaluation){
  const ids=new Map();
  for(const line of evaluation.lineWins||[])for(const cell of line.cells){
@@ -98,14 +100,19 @@ export function collapseBoard(board,removed,rng=Math.random,free=false){
  }
  return next;
 }
-function cascadeStages(board,bet,rng,free,maxWins=4){
- const stages=[{board,ev:evaluate(board,bet),removed:[]}];
- while(stages.length<maxWins){
-   const previous=stages[stages.length-1];
-   const removed=winningCells(previous.ev);
-   if(!removed.length)break;
-   const next=collapseBoard(previous.board,removed,rng,free);
-   stages.push({board:next,ev:evaluate(next,bet),removed});
+function cascadeStages(board,bet,rng,free){
+ const stages=[];
+ let currentBoard=board;
+ let removed=[];
+ // Nunca interromper uma sequência por limite de quedas ou pelo cofre.
+ // Incluir sempre a última grelha SEM prémios antes de encerrar o giro.
+ for(;;){
+   const ev=evaluate(currentBoard,bet);
+   stages.push({board:currentBoard,ev,removed});
+   const winners=winningCells(ev);
+   if(winners.length===0)break;
+   currentBoard=collapseBoard(currentBoard,winners,rng,free);
+   removed=winners;
  }
  return stages;
 }
@@ -201,8 +208,9 @@ export class DemoBank{
    }
    this.spins++;
    const board=newBoard(rng,free);
-   // Máximo quatro etapas premiadas por giro para limitar exposição.
-   const stages=cascadeStages(board,this.stake,rng,free,4);
+   // As quedas continuam até a última grelha não ter combinações.
+   // A banca virtual limita somente o pagamento, não a sequência.
+   const stages=cascadeStages(board,this.stake,rng,free);
    const ev=stages[0].ev;
    const wildMultiplier=clamp(1+Math.floor(rng()*5),1,5);
    const rawTotal=round(stages.reduce((sum,stage)=>sum+stage.ev.raw,0));
