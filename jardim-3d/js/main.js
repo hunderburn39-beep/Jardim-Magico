@@ -438,7 +438,7 @@ function cancelBurst(){
  if(!burst)return;
  for(const cell of burst.cells){
   cell.face.enabled=true;
-  cell.face.setLocalScale(.96,.98,.14);
+  cell.face.setLocalScale(.947,.965,.16);
   cell.face.setLocalEulerAngles(0,0,0);
  }
  for(const part of burst.parts)part.entity.enabled=false;
@@ -449,7 +449,7 @@ function explodeWinners(coordinates,duration=1100){
  if(state.running||!Array.isArray(coordinates))return 0;
  cancelBurst();
  winPulseUntil=0;
- for(const cell of winPulseCells)cell.face.setLocalScale(.96,.98,.14);
+ for(const cell of winPulseCells)cell.face.setLocalScale(.947,.965,.16);
  winPulseCells=[];
  prepareBurstParticles();
  const seen=new Set(),cells=[],parts=[],waves=[];
@@ -490,7 +490,7 @@ function updateBurst(dt){
  else if(t<.82)scale=.006;
  else scale=.006+(1-.006)*Math.sin(((t-.82)/.18)*Math.PI/2);
  for(const cell of effect.cells){
-  cell.face.setLocalScale(.96*scale,.98*scale,.14*Math.max(scale,.006));
+  cell.face.setLocalScale(.947*scale,.965*scale,.16*Math.max(scale,.006));
   cell.face.setLocalEulerAngles(0,t>.25&&t<.82?120*(t-.25):0,0);
  }
  const phase=Math.min(1,Math.max(0,(t-.25)/.62));
