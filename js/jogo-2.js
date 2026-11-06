@@ -44,8 +44,8 @@ const RTP_REFERENCE=96;
  // Hold & Win comprado custa 100× a aposta, diferente de bónus oferecidos.
  // Valores fixos e públicos; nunca variam com o lucro real da banca.
 // V71: probabilidades fixas; coeficientes calibrados independentemente do fundo.
-const RTP_CALIBRATION={base:0.56,free:0.076,hold:0.25,holdPurchase:1.30};
-const FREQUENT_RTP_CALIBRATION={base:0.515,free:0.060};
+const RTP_CALIBRATION={base:0.57,free:0.067,hold:0.25,holdPurchase:1.35};
+const FREQUENT_RTP_CALIBRATION={base:0.535,free:0.058};
 // V66: coeficientes base/free calibrados em simulação com WILD fixo 1–5×;
 // constantes ao longo da sessão, sem depender do saldo ou histórico da banca.
 let autoSpinsTotal=0,rtpConfig=96,adminAudit=[],awardContext='base',adminUnlocked=false,adminTaps=0,adminTapDeadline=0,autoSpinsRemaining=0,freeStartPending=false,freeAutoRunning=false,freeAutoTimer=null,scatterNoteStep=0;
@@ -2077,7 +2077,7 @@ function updateAdmin(){
  $('adminVolatilityActive').textContent=volatilityMode==='frequentes'?'Prémios mais frequentes':'Equilibrado';
 
  $('adminReportSummary').innerHTML=`Proprietário: <strong>${money(ownerAvailable)}</strong> (${ownerPercent}%) · Comerciante: <strong>${money(merchantAvailable)}</strong> (${100-ownerPercent}%)<br>Apostas: <strong>${money(t.stakes)}</strong> · Prémios pagos: <strong>${money(t.prizes)}</strong> · Saldo dos jogadores: <strong>${money(t.balance)}</strong><br>Levantamentos do banqueiro: <strong>${money(bankTotal)}</strong> · Caixa livre contabilística: <strong>${money(reportFinancials().ownerAvailable)}</strong> · Rodadas: <strong>${t.spins}</strong> · RTP observado: <strong>${rtpObserved}</strong>`;
- $('adminMathInfo').textContent='V71 · RTP de referência ~96%, não certificado, para margem de 4%. Calibração Equilibrado: base 0,56 e free 0,076; Frequentes: base 0,515 e free 0,060; Hold grátis 0,25, Hold comprado 1,30. Preços: 15 Free Spins por 20× aposta e Hold por 100×. A Pedra bloqueia combinações em 6% das casas. O RTP observado é '+rtpObserved+'. O cofre de prémios e os fundos de jackpots limitam os pagamentos; não existe compensação de probabilidades pelo cofre. A margem atual é '+rtpLabel(configuredProfit())+'. O fundo do operador está separado dos depósitos de jogadores. Ver docs/auditoria-rtp-v71.md.';
+ $('adminMathInfo').textContent='V71 · RTP de referência ~96%, não certificado, para margem de 4%. Calibração Equilibrado: base 0,57 e free 0,067; Frequentes: base 0,535 e free 0,058; Hold grátis 0,25, Hold comprado 1,35. Preços: 15 Free Spins por 20× aposta e Hold por 100×. A Pedra bloqueia combinações em 6% das casas. O RTP observado é '+rtpObserved+'. O cofre de prémios e os fundos de jackpots limitam os pagamentos; não existe compensação de probabilidades pelo cofre. A margem atual é '+rtpLabel(configuredProfit())+'. O fundo do operador está separado dos depósitos de jogadores. Ver docs/auditoria-rtp-v71.md.';
 }
 function openAdmin(){adminUnlocked=true;modal('adminLoginModal',false);$('adminPassword').value='';$('adminPage').hidden=false;document.body.style.overflow='hidden';$('adminProfitInput').value=profitPercent.toFixed(2);$('adminProfitSlider').value=profitPercent;$('adminProfitPreview').textContent=rtpLabel(profitPercent);
  $('adminSplitSlider').value=ownerPercent;
