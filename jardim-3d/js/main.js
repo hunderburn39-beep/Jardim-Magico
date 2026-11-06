@@ -425,7 +425,13 @@ function loadOriginalSymbolArt(){
     const index=Number(id);
     symbolMaterials[index]=material;
     for(const col of reelTiles)for(const tile of col){
-     if(tile.idx===index)tile.face.render.material=material;
+     if(tile.idx!==index)continue;
+     const instances=tile.face.render.meshInstances;
+     if(instances?.length){
+      for(const instance of instances)instance.material=material;
+     }else{
+      tile.face.render.material=material;
+     }
     }
     loaded++;
    }catch(e){
