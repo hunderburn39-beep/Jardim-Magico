@@ -1,4 +1,4 @@
-# Portões do Trovão — V11.0
+# Portões do Trovão — V12.0
 
 Jogo independente de demonstração com créditos virtuais, inspirado no formato de slots de queda do Olimpo. **Não afiliado, licenciado ou certificado pela Pragmatic Play.** Sem depósitos, levantamentos ou prémios em dinheiro real.
 
@@ -113,3 +113,12 @@ Todos os gráficos desta pasta são novos e não reutilizam imagens nem logótip
 - A nova camada `#winningFx` é desenhada por cima do tabuleiro e não intercepta toques. As animações são definidas exclusivamente em `css/explosao-v11.css`; a criação dos fragmentos fica em `explodeWinningSymbols()`, no `js/jogo.js`.
 - A próxima queda começa depois do tempo de dissipação (880 ms normal, 460 ms Turbo). Em dispositivos com movimento reduzido, o efeito é simplificado. Os valores de prémios ficam acima dos efeitos e continuam visíveis.
 - O cálculo dos prémios, as probabilidades, os multiplicadores e as regras de SCATTER **não foram alterados** nesta versão.
+
+## V12 — correção de fluidez / otimização de recursos
+
+- `js/jogo.js` reutiliza os elementos DOM de cada símbolo, evitando reconstruir imagens WebP em cada queda e vitória.
+- `js/leather-v8.js` agora agenda o som individual das peças diretamente no relógio WebAudio, sem criar dezenas de temporizadores JavaScript simultâneos.
+- `css/desempenho-v12.css` mantém brilho, explosões e visual do templo, mas elimina efeitos de filtro animado excessivos, troca centenas de partículas por 2–3 lascas por peça e pausa animações do fundo durante as rodadas.
+- `js/desempenho-v12.js` observa brevemente a fluidez durante as jogadas e ativa `perf-low` automaticamente em dispositivos que tenham vários frames lentos.
+- Explosões com dissipação: 570 ms normal e 310 ms turbo; não interferem com o cálculo de prémios, frequência de SCATTER, apostas ou RTP.
+- Os indicadores `data-performance-mode` no elemento `#app` são destinados ao diagnóstico técnico, sem efeitos em pagamentos.
