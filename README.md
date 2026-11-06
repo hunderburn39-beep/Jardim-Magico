@@ -68,3 +68,12 @@ Ajustes visuais baseados numa captura de ecrã do utilizador:
 - Cópia anterior: branch `backup/jardim-v75-antes-retoque-v76`.
 
 Validação: sintaxe JavaScript e publicação GitHub Pages; o resultado visual final ainda requer abrir e ver no iPhone, pois não foi executado um teste visual remoto na versão publicada.
+
+## V78 — interface aberta no iPhone
+- `css/estilo-28.css`: camadas visuais livres em ecrã vertical, barra superior flutuante, logótipo separado, jackpot ligeiramente à direita, tambores quase à largura total, painéis inferiores desencontrados e RODAR/TURBO integrados no cenário.
+- `assets/imagens/jm77-logo-isolado.svg`: recorte fotográfico do logótipo alterado de máscara SVG para `clipPath` para melhor compatibilidade com Safari no iPhone e eliminação do retângulo residual.
+- `js/jogo-3.js`: cálculo inicial da largura móvel atualizado para usar a largura do dispositivo antes de aplicar a escala final para o `VisualViewport`; mantém o limite de altura e sem scroll.
+- `index.html`: ativada V78 e a folha de estilo nova.
+- Não foram alteradas regras, pagamentos, RTP, jackpots nem lógica da banca.
+- Backup da V77.1: `backup/jardim-v77-1-antes-layout-v78`.
+- A sintaxe foi validada; a disposição final deve ser confirmada visualmente num iPhone, por depender da altura livre no navegador.
