@@ -4,9 +4,9 @@
  * Mobile: WebGL 2, DPR <=1.5, luzes estáticas sem sombras em tempo real.
  */
 import * as pc from 'playcanvas';
-import {createOrganicFrame} from './frame-v23.js?v=2.3';
-import {createVerticalReels} from './reels-v23.js?v=2.3';
-import {drawMagicBonus} from './symbol-art-v3.js?v=3';
+import {createOrganicFrame} from './frame-v23.js?v=3.1';
+import {createVerticalReels} from './reels-v23.js?v=3.1';
+import {drawMagicBonus} from './symbol-art-v3.js?v=3.1';
 
 const $=id=>document.getElementById(id);
 const canvas=$('application');
@@ -628,7 +628,7 @@ function build(){
  symbolMaterials=reelMotion.symbolMaterials;
  loadOriginalSymbolArt();
  setCamera();
- quality.textContent='PLAYCANVAS';
+ quality.textContent='3D V3.1';
  let age=0;
  app.on('update',(dt)=>{
    age+=dt;
