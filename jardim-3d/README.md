@@ -75,10 +75,26 @@ Acesso: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-3d/?v=2.4
 
 - Cada queda é avaliada e, havendo novas linhas premiadas, as peças vencedoras explodem e outras descem de cima.
 - **Só termina quando a última grelha não tiver nenhuma combinação premiada**, sem máximo fixo de quatro ou outro número de quedas.
-- O cofre virtual limita **o prémio pago**, não a quantidade de animações ou de quedas.
+- O cofre virtual condiciona **as combinações geradas antes de jogar**, nunca reduz o valor de uma combinação que tenha sido mostrada. Continua sem limitar a quantidade de quedas.
 - Todos os resultados e valores são calculados antes de iniciar as animações, para não variar por FPS, TURBO ou interrupção.
 - Para sequências muito compridas, o painel resume os valores individuais mas mantém a soma integral e o total real.
 - As restrições das Free Spins e a matemática são específicas da simulação; o RTP não está auditado.
 
 Teste especial: foram produzidas 13 quedas premiadas consecutivas e uma 14.ª sem prémio; a sequência terminou naturalmente, mesmo com o cofre virtual esgotado. Teste aleatório de 15 000 giros sem erros de soma.
 Backup: `backup/jardim-3d-v2-3-antes-cascatas-sem-limite`.
+
+## V2.5 — Gerador de prémios financiáveis, sem cortes
+
+Abrir: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-3d/?v=2.5
+
+- **Não se corta nenhum prémio depois de sair**: quando aparece uma combinação de valores fictícios, o valor total é pago, incluindo Wilds e todas as cascatas.
+- Antes de animar os tambores, o motor calcula a **sequência inteira**, com valor de cada linha e queda, e compara a soma com a reserva virtual.
+- Se o cofre não suportar uma sequência, o motor tenta outras peças e outras cascatas, mantendo coerentes as peças sobreviventes. Se as sobreviventes tornarem inevitável um prémio excessivo, escolhe um novo giro **antes de apresentar qualquer resultado**.
+- Continua a haver tantas quedas quantas as combinações encontradas: **não existe limite artificial de quedas**. A última grelha é sempre uma grelha sem linhas premiadas.
+- Free Spins: a seleção antecipa o valor acumulado e o multiplicador final; só mostra resultados cujo prémio integral caberá na reserva virtual.
+- Hold & Win: as seis moedas iniciais e as seguintes são escolhidas apenas entre valores financiáveis. A última moeda só aparece se o cofre também suportar o prémio adicional da grelha 4×4. Termina por esgotar as três tentativas ou por completar a grelha.
+- Se nem as seis moedas iniciais forem financiáveis, o Hold não pode começar. Não se atribuem moedas fictícias que excedam a reserva.
+- Quando há falta de verba, a máquina pode gerar uma **jogada sem prémios** em vez de mostrar um prémio e pagá-lo parcialmente.
+- O motor continua a ser apenas uma **demonstração de créditos fictícios**: a seleção condicionada pelo fundo não é uma matemática de apostas reais auditada.
+
+Cópia de segurança anterior: `backup/jardim-3d-v2-4-antes-gerador-solvente`.
