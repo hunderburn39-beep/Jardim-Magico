@@ -122,11 +122,11 @@ function safeOpening(rng=Math.random,free=false){
  }
  return board;
 }
-function safeCollapse(previous,removed,rng,free,afford){
+function safeCollapse(previous,removed,rng,free,afford,bet){
  // Repetir APENAS as novas peças do topo: manter sempre as sobreviventes.
  for(let attempt=0;attempt<32;attempt++){
    const next=collapseBoard(previous,removed,rng,free);
-   const ev=evaluate(next,1);
+   const ev=evaluate(next,bet);
    if(ev.lines===0&&afford(ev))return next;
  }
  // Se o fundo não suporta novas linhas, preencher os espaços que caíram
@@ -139,12 +139,13 @@ function safeCollapse(previous,removed,rng,free,afford){
    const number=removed.filter(p=>p.c===col).length;
    for(let row=0;row<number;row++)next[col][row]=STONE;
  }
- if(evaluate(next,1).lines!==0||!afford(evaluate(next,1))){
-   throw new Error('Não foi possível gerar uma queda sem prémios financiável');
- }
+ const ev=evaluate(next,bet);
+ // Uma combinação inevitável formada pelas peças sobreviventes exige
+ // outra sequência inteira: nenhuma linha visível pode ficar por pagar.
+ if(ev.lines!==0||!afford(ev))return null;
  return next;
 }
-export function cascadeStages(board,bet,rng=Math.random,free=false,policy={}){
+function tryCascadeStages(board,bet,rng=Math.random,free=false,policy={}){
  const reserve=policy.reserve===undefined?Infinity:Math.max(0,policy.reserve);
  const freeCarry=policy.freeTotal||0;
  const freeMultiplier=policy.freeMultiplier||1;
@@ -181,10 +182,11 @@ export function cascadeStages(board,bet,rng=Math.random,free=false,policy={}){
      }
      if(!accepted){
        currentBoard=stages.length?
-         safeCollapse(stages.at(-1).board,removed,rng,free,afford):
+         safeCollapse(stages.at(-1).board,removed,rng,free,afford,bet):
          safeOpening(rng,free);
+       if(!currentBoard)return null;
        ev=evaluate(currentBoard,bet);
-       if(!afford(ev))throw new Error('Grelha segura excedeu o cofre virtual');
+       if(!afford(ev))return null;
      }
    }
    stages.push({board:currentBoard,ev,removed});
@@ -198,6 +200,20 @@ export function cascadeStages(board,bet,rng=Math.random,free=false,policy={}){
    removed=winners;
  }
  return stages;
+}
+export function cascadeStages(board,bet,rng=Math.random,free=false,policy={}){
+ // Os cenários são gerados e verificados ANTES de iniciar a animação.
+ // Se uma queda obrigasse a pagar mais do que o fundo permite, descartar
+ // o giro inteiro e procurar outra trajetória solvente.
+ for(let attempt=0;attempt<48;attempt++){
+   const candidate=attempt===0?board:newBoard(rng,free);
+   const outcome=tryCascadeStages(candidate,bet,rng,free,policy);
+   if(outcome)return outcome;
+ }
+ const safe=safeOpening(rng,free);
+ const result=tryCascadeStages(safe,bet,rng,free,policy);
+ if(!result)throw new Error('Não existe grelha financiável para o cofre');
+ return result;
 }
 
 export class DemoBank{
