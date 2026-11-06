@@ -237,8 +237,8 @@
       const digit=document.createElement("span");
       if(pos>=0){
         digit.className="prize-png-glyph";
-        digit.style.setProperty("--glyph-x",String(pos%7));
-        digit.style.setProperty("--glyph-y",String(Math.floor(pos/7)));
+        digit.style.setProperty("--png-x",((pos%7)*100/6).toFixed(5)+"%");
+        digit.style.setProperty("--png-y",Math.floor(pos/7)*100+"%");
         digit.setAttribute("aria-hidden","true");
       }else if(/\\s/u.test(char)){
         digit.className="prize-png-gap";
