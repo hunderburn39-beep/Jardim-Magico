@@ -73,6 +73,42 @@ export function evaluate(board,bet){
    coins:count(board,COIN)
  };
 }
+/* Cascatas limitadas: após estourarem as vencedoras, as restantes
+   descem dentro da sua coluna e as novas entram por cima.
+   O resultado é pré-calculado antes de mostrar animações, evitando
+   créditos dependentes do FPS ou de interrupções no Safari. */
+export function winningCells(evaluation){
+ const ids=new Map();
+ for(const line of evaluation.lineWins||[])for(const cell of line.cells){
+   ids.set(cell.c+','+cell.r,{c:cell.c,r:cell.r});
+ }
+ return [...ids.values()];
+}
+export function collapseBoard(board,removed,rng=Math.random,free=false){
+ const winners=new Set(removed.map(p=>p.c+','+p.r));
+ const next=Array.from({length:5},()=>Array(3).fill(null));
+ for(let c=0;c<5;c++){
+   const survivors=[];
+   for(let r=2;r>=0;r--){
+     if(!winners.has(c+','+r))survivors.push(board[c][r]);
+   }
+   let dest=2;
+   for(const symbol of survivors)next[c][dest--]=symbol;
+   while(dest>=0)next[c][dest--]=weighted(rng,free);
+ }
+ return next;
+}
+function cascadeStages(board,bet,rng,free,maxWins=4){
+ const stages=[{board,ev:evaluate(board,bet),removed:[]}];
+ while(stages.length<maxWins){
+   const previous=stages[stages.length-1];
+   const removed=winningCells(previous.ev);
+   if(!removed.length)break;
+   const next=collapseBoard(previous.board,removed,rng,free);
+   stages.push({board:next,ev:evaluate(next,bet),removed});
+ }
+ return stages;
+}
 export class DemoBank{
  constructor(){
    this.balance=100;
@@ -159,23 +195,32 @@ export class DemoBank{
  spin(rng=Math.random){
    if(!this.canSpin())return {ok:false,message:'Saldo virtual insuficiente ou bónus ativo'};
    const free=this.mode==='free';
-   if(!free){this.balance=round(this.balance-this.stake);this.reserve=round(this.reserve+this.stake*.48)}
+   if(!free){
+     this.balance=round(this.balance-this.stake);
+     this.reserve=round(this.reserve+this.stake*.48);
+   }
    this.spins++;
    const board=newBoard(rng,free);
-   const ev=evaluate(board,this.stake);
+   // Máximo quatro etapas premiadas por giro para limitar exposição.
+   const stages=cascadeStages(board,this.stake,rng,free,4);
+   const ev=stages[0].ev;
    const wildMultiplier=clamp(1+Math.floor(rng()*5),1,5);
-   const potential=round(ev.raw*(ev.wilds?wildMultiplier:1));
-   let credited=0;
-   let triggered='';
+   const rawTotal=round(stages.reduce((sum,stage)=>sum+stage.ev.raw,0));
+   const totalWilds=stages.reduce((sum,stage)=>sum+stage.ev.wilds,0);
+   const scatterCount=Math.max(...stages.map(stage=>stage.ev.scatter));
+   const coinCount=Math.max(...stages.map(stage=>stage.ev.coins));
+   const potential=round(stages.reduce((sum,stage)=>
+     sum+stage.ev.raw*(stage.ev.wilds?wildMultiplier:1),0));
+   let credited=0,triggered='';
    if(free){
-     this.freeTotal=round(this.freeTotal+ev.raw);
-     this.freeMultiplier=clamp(this.freeMultiplier+(ev.wilds?wildMultiplier-1:0),1,5);
+     this.freeTotal=round(this.freeTotal+rawTotal);
+     this.freeMultiplier=clamp(this.freeMultiplier+(totalWilds?wildMultiplier-1:0),1,5);
      this.freeSpins--;
      this.freePlayed++;
      const space=Math.max(0,60-this.freePlayed-this.freeSpins);
-     if(ev.scatter>=3&&space>0){
+     if(scatterCount>=3&&space>0){
        const n=Math.min(15,space);this.freeSpins+=n;triggered='Reativação: +'+n+' Free Spins';
-     }else if(ev.scatter>=2&&space>0){
+     }else if(scatterCount>=2&&space>0){
        const n=Math.min(8,space);this.freeSpins+=n;triggered='Reativação: +'+n+' Free Spins';
      }
      if(this.freeSpins===0){
@@ -193,11 +238,12 @@ export class DemoBank{
      this.reserve=round(this.reserve-credited);
      this.balance=round(this.balance+credited);
      this.lastWin=credited;
-     if(ev.scatter>=3){this.addFree(15);triggered='15 Free Spins!'}
-     else if(ev.coins>=6){this.startHold();triggered='Hold & Win!'}
+     if(scatterCount>=3){this.addFree(15);triggered='15 Free Spins!'}
+     else if(coinCount>=6){this.startHold();triggered='Hold & Win!'}
    }
    this.status=triggered||(credited?'Prémio: '+credited.toFixed(2):'Tenta novamente');
-   return {ok:true,board,ev,free,credited,potential,wildMultiplier,triggered,state:this.snapshot};
+   return {ok:true,board,ev,stages,rawTotal,free,credited,potential,
+     wildMultiplier,triggered,state:this.snapshot};
  }
 }
 export const money=v=>Number(v).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2});
