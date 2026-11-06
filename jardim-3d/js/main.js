@@ -4,7 +4,6 @@
  * Mobile: WebGL 2, DPR <=1.5, luzes estáticas sem sombras em tempo real.
  */
 import * as pc from 'playcanvas';
-import {createOrganicFrame} from './frame-v23.js?v=3.1';
 import {createVerticalReels} from './reels-v23.js?v=3.1';
 import {drawMagicBonus} from './symbol-art-v3.js?v=3.1';
 import {createSymbolFace,createVibrantMaterial} from './symbol-face-v32.js?v=3.2';
@@ -400,7 +399,29 @@ function loadOriginalSymbolArt(){
      p[i+3]=Math.round(alpha*preserve);
     }
     g.putImageData(pixels,0,0);
-    const material=createVibrantMaterial({pc,app,canvas:cut,opacity:true});
+    // Recortar uma segunda vez, agora pela figura que RESTOU após
+    // retirar o quadrado escuro. Isto amplia a poção, cristal ou flor
+    // sem cortar nem inverter a arte original.
+    let l2=size,t2=size,r2=0,b2=0;
+    for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+     const k=(y*size+x)*4;
+     const hi=Math.max(p[k],p[k+1],p[k+2]);
+     if(p[k+3]<105||hi<100)continue;
+     l2=Math.min(l2,x);t2=Math.min(t2,y);
+     r2=Math.max(r2,x);b2=Math.max(b2,y);
+    }
+    let art=cut;
+    if(r2-l2>40&&b2-t2>40){
+     const framed=document.createElement('canvas');
+     framed.width=framed.height=size;
+     const fg=framed.getContext('2d');
+     const ww=r2-l2+1,hh=b2-t2+1;
+     const factor=Math.min(486/ww,486/hh);
+     fg.drawImage(cut,l2,t2,ww,hh,
+       (size-ww*factor)/2,(size-hh*factor)/2,ww*factor,hh*factor);
+     art=framed;
+    }
+    const material=createVibrantMaterial({pc,app,canvas:art,opacity:true});
     const index=Number(id);
     symbolMaterials[index]=material;
     for(const col of reelTiles)for(const tile of col){
@@ -635,7 +656,8 @@ function build(){
  app.root.addChild(camera);
  lighting();
  background();
- createOrganicFrame({pc,model,mat,app});
+ // Moldura floral fiel à referência: CSS 2.5D com centro transparente.
+ // Retirados os postes de madeira 3D que tapavam a moldura original.
  reelMotion=createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol,createSymbolFace});
  reelTiles=reelMotion.reelTiles;
  symbolMaterials=reelMotion.symbolMaterials;
