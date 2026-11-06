@@ -62,6 +62,7 @@ class Entity{
  setLocalPosition(...v){this.position=v}
  setLocalScale(...v){this.scale=v}
  setLocalEulerAngles(...v){this.rotation=v}
+ addComponent(type,data){if(type==='render')this.render={...this.render,...data}}
  addChild(child){this.children.push(child)}
 }
 const pc={Entity};
