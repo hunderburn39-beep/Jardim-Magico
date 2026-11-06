@@ -175,3 +175,25 @@ button{font:inherit}
  .controls{min-height:78px}
  .controls .spin{width:clamp(78px,23vw,110px);height:clamp(78px,23vw,110px)}
 }
+
+/* V2.1 — valores das combinações exibidos JUNTOS após a paragem.
+   O grande total aparece no efeito de vitória; o cálculo não se repete. */
+.winBreakdown{
+ position:absolute;top:63.3%;left:3%;right:3%;z-index:5;
+ max-width:94%;margin:0 auto;padding:5px 8px;
+ border-radius:17px;border:1px solid #ffe6a09c;
+ background:linear-gradient(130deg,rgba(39,8,57,.90),rgba(93,21,85,.90));
+ box-shadow:inset 0 1px 2px #fff0b155,0 2px 7px #1a052e90;
+ color:#fff0bb;text-align:center;
+ font:900 clamp(9px,2.3vw,13px)/1.25 Georgia,serif;
+ text-shadow:0 1px 2px #240627,0 0 7px #ffd47c8a;
+ overflow-wrap:anywhere;
+ pointer-events:none;
+}
+.winBreakdown[hidden]{display:none!important;}
+@media(orientation:landscape){
+ .winBreakdown{top:56%;left:36%;right:2%;max-width:62%;font-size:clamp(9px,1.5vw,13px);padding:3px 5px;}
+}
+@media(max-height:700px) and (orientation:portrait){
+ .winBreakdown{top:61%;padding:3px 6px;font-size:clamp(9px,2.2vw,12px);}
+}
