@@ -634,7 +634,8 @@ function build(){
  camera=new pc.Entity('Câmara 3D');
  camera.addComponent('camera',{clearColor:new pc.Color(0,0,0,0),fov:47,nearClip:.1,farClip:120});
  camera.camera.gammaCorrection=pc.GAMMA_SRGB;
- camera.camera.toneMapping=pc.TONEMAP_ACES;
+ // Neutral preserva os vermelhos, verdes e violetas vivos da arte original.
+ camera.camera.toneMapping=pc.TONEMAP_NEUTRAL;
  app.root.addChild(camera);
  lighting();
  background();
