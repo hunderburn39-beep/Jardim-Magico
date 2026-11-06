@@ -262,3 +262,54 @@
 @media (prefers-reduced-motion: reduce) {
   .game .titleArt { animation: none !important; }
 }
+
+/* V78.1 — abrir a janela da moldura, sem esticar ou mover os rolos.
+   A imagem original tem madeira em ~7% dos lados e ~12% em cima/baixo.
+   Ampliar APENAS a moldura move a madeira para as extremidades, enquanto
+   PixiJS, máscaras dos tambores, símbolos e áreas de toque ficam intactos. */
+.game[data-layout="portrait"] .reelFrame {
+  padding: 1px !important;
+  border-width: 2px !important;
+}
+.game[data-layout="portrait"] .stageWrap {
+  width: 100% !important;
+  /* Manter a proporção do motor de 5 rolos × 3 linhas. */
+  aspect-ratio: 5/3.04 !important;
+  overflow: hidden !important;
+  border-radius: 0 0 8px 8px !important;
+}
+.game[data-layout="portrait"] .stageWrap .jm75PhotoFrame {
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  transform: scale(1.12, 1.18) !important;
+  transform-origin: 50% 50% !important;
+  pointer-events: none !important;
+  z-index: 6 !important;
+}
+.game[data-layout="portrait"] .stageWrap .glassReels {
+  inset: 0 !important;
+}
+.game[data-layout="portrait"] .stageWrap .glassReels i {
+  background: linear-gradient(90deg,
+    rgba(0,0,10,.09),
+    rgba(255,238,178,.015) 10%,
+    transparent 63%,
+    rgba(255,235,170,.028) 98%) !important;
+}
+/* Ecrãs mais baixos: impedir que a regra V78 achate os símbolos. */
+@media (orientation: portrait) and (max-height: 730px) {
+  .game[data-layout="portrait"] .stageWrap {
+    aspect-ratio: 5/3.04 !important;
+  }
+}
+/* Também reduzir ligeiramente a sobreposição em paisagem. */
+.game[data-layout="wide"] .stageWrap .jm75PhotoFrame {
+  inset: 0 !important;
+  transform: scale(1.08,1.12) !important;
+  transform-origin: center !important;
+  pointer-events: none !important;
+}
