@@ -1,0 +1,262 @@
+/* Jardim Mágico V74 • arte 3D-fantasia inspirada na referência 9:16.
+   É uma camada VISUAL: não interfere no motor, no RTP, no cofre ou nos handlers. */
+:root {
+ --jm74-gold:#ffe49a; --jm74-orange:#ffac36; --jm74-violet:#3b0b53;
+ --jm74-rose:#fc41d1; --jm74-dark:#14091f;
+}
+html,body { background:#10182a!important; }
+body::before {
+ background:url('../assets/imagens/bosque-ilustrado-v47.svg') center center/cover no-repeat!important;
+ opacity:1!important;
+ filter:saturate(1.24) contrast(1.045);
+}
+body::after {
+ background:linear-gradient(180deg,rgba(4,8,30,.18),transparent 24%,rgba(14,5,29,.22) 68%,rgba(10,19,45,.11))!important;
+ opacity:1!important;
+ pointer-events:none;
+}
+.game{
+ background:
+ radial-gradient(ellipse at 48% 2%,rgba(251,174,255,.18),transparent 24%),
+ radial-gradient(ellipse at 48% 57%,rgba(71,14,97,.08),transparent 45%);
+ isolation:isolate;
+ color:#fff0bd!important;
+ font-family:Georgia,'Times New Roman',serif;
+}
+.game .topbar { position:relative;z-index:20;justify-content:flex-end!important; }
+.game .toptools { width:100%;justify-content:flex-end;gap:clamp(4px,1.2vw,10px); }
+.game .roundSmall,.game .ratioButton{
+ display:inline-flex;align-items:center;justify-content:center;
+ width:clamp(29px,7.2vw,43px);min-width:clamp(29px,7.2vw,43px);
+ height:clamp(29px,7.2vw,43px);border-radius:50%;
+ background:radial-gradient(circle at 28% 18%,#87316d 0%,#3f0d56 44%,#270b38 86%)!important;
+ color:#fff6bc!important;border:2px solid #ffdd81!important;
+ box-shadow:inset 0 2px 3px #fff5cb87,inset 0 -4px 5px #1a082a,0 3px 1px #7c3f20,0 0 9px #fc93d14d!important;
+ font-size:clamp(13px,3.3vw,21px);
+ backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+ text-shadow:0 1px 3px #29051d;
+}
+.game .ratioButton{width:auto;min-width:43px;font-size:10px;padding:2px 6px;letter-spacing:0}
+.game .logoLoop {
+ z-index:2;
+ margin:clamp(0px,.7dvh,7px) auto clamp(2px,.6dvh,6px)!important;
+ width:min(100%,740px)!important;
+ filter:drop-shadow(0 7px 5px #1e0b35a0);
+}
+.game .logoLoop::before {
+ content:'';position:absolute;inset:10% 5% 0;
+ background:radial-gradient(ellipse at 50% 28%,rgba(255,112,224,.42),rgba(204,29,167,.24) 32%,transparent 66%);
+ pointer-events:none;z-index:-1;
+}
+.game .titleArt {
+ width:100%;object-fit:contain;
+ filter:drop-shadow(0 3px 0 #6c2142) drop-shadow(0 7px 4px #1a1030aa) drop-shadow(0 0 11px #ffb3ef88)!important;
+}
+.game .jackpots {
+ position:relative;z-index:2;max-width:950px!important;
+ gap:clamp(4px,1vw,10px);margin-bottom:clamp(3px,.6dvh,8px)!important;
+}
+.game .jackpot {
+ min-width:0;
+ border:2px solid #ffe3a0!important;
+ border-radius:clamp(11px,2.6vw,20px)!important;
+ padding:clamp(3px,.7vh,8px) 2px!important;
+ background:linear-gradient(180deg,#9a2773 0%,#561064 15%,#2c0b4b 66%,#521157 95%)!important;
+ box-shadow:inset 0 2px 2px #fff6cdb3,inset 0 -3px 3px #100b31,0 3px 1px #7a4221,0 0 12px #ed3ea077!important;
+ text-align:center;
+}
+.game .jackpot.max {
+ background:linear-gradient(170deg,#ac316b 0%,#72104f 35%,#3c073f 83%,#7a2053)!important;
+ box-shadow:inset 0 1px 2px #fffacb,0 3px 2px #623517,0 0 13px #ff9c49b6!important;
+}
+.game .jackpot b {
+ color:#ffe6a7!important;
+ font-size:clamp(9px,2.8vw,16px)!important;
+ font-weight:900;
+ letter-spacing:.035em;text-shadow:0 1px 2px #2b093b;
+}
+.game .jackpot strong{
+ display:block;
+ color:#fff0bd!important;
+ font-size:clamp(11px,3.4vw,22px)!important;
+ font-weight:900;text-shadow:0 2px 3px #450b3f,0 0 9px #ffc87755;
+ font-variant-numeric:tabular-nums;
+}
+/* Troncos e flores: ilustração SVG já existente no projeto, sem mais pedidos HTTP. */
+.game .reelFrame {
+ z-index:3;overflow:visible;
+ padding:clamp(7px,1.2vw,12px)!important;
+ border:clamp(4px,1vw,9px) solid #b87535!important;
+ border-radius:clamp(17px,4.2vw,30px)!important;
+ background:
+ linear-gradient(94deg,#543015,#e2a855 3%,#673518 7%,#482218 92%,#efb961 97%,#4b2415)!important;
+ box-shadow:inset 0 2px 2px #ffefa2,0 2px 0 #fbd37e,0 6px 0 #75441d,0 12px 19px rgba(11,4,23,.55),0 0 18px #eb6ed655!important;
+}
+.game .reelFrame::before {
+ content:''!important;
+ position:absolute;inset:-4% -4%;
+ background:url('../assets/imagens/troncos-cordas-v47.svg') center/100% 100% no-repeat;
+ z-index:8;pointer-events:none;
+ filter:drop-shadow(0 5px 4px #1d0a20b0) saturate(1.20);
+}
+.game .reelFrame::after { content:'✿ ✧ ❀ ✧ ✿';font-size:clamp(11px,2.2vw,20px);
+ color:#ffc6f1;text-shadow:0 0 5px #ff6ac8,0 0 12px #ff4bbd;right:5%;top:auto;bottom:-14px;z-index:10;pointer-events:none; }
+.game .shelf {
+ position:relative;z-index:1;
+ border:2px solid #eec27b!important;border-bottom:0!important;
+ border-radius:12px 12px 0 0!important;
+ background:linear-gradient(90deg,#411046,#2b093d 34%,#500e53 68%,#250a3b)!important;
+ box-shadow:inset 0 2px 4px #f8c9ff5a,0 0 8px #ef88d05e!important;
+ color:#ffe5a9;
+}
+.game .shelfTag,.game .jm63DropLabel{color:#ffe6ad!important;font-weight:900;text-shadow:0 2px #2c0c31}
+.game .shelfTotal,.game .jm62MultiDigits{color:#fff5b2!important;text-shadow:0 1px 3px #3a103e,0 0 6px #ffc5ed;}
+.game .orbPill {border:2px solid #ffce69!important;background:radial-gradient(circle at 29% 23%,#ffbaf3,#c03cac 36%,#791486 76%,#3c0c54)!important;
+ box-shadow:inset 0 1px 5px #ffcbfb,0 0 9px #ffa9ed8a!important; }
+.game .stageWrap{
+ border:2px solid rgba(247,187,101,.58)!important;
+ border-radius:0 0 12px 12px!important;
+ background:
+ radial-gradient(ellipse at 50% 40%,rgba(72,20,90,.53),rgba(23,7,40,.83) 88%)!important;
+ box-shadow:inset 0 8px 26px #15041b,0 0 10px #fff2ac37!important;
+ backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+.game .gardenWorld {opacity:.30!important;mix-blend-mode:screen;}
+.game .forestBackdrop{opacity:.48!important;}
+.game .glassReels{opacity:.98!important;}
+.game .glassReels i{
+ border-left:1px solid #ffe39b29!important;
+ border-right:1px solid #ffe49e33!important;
+ background:linear-gradient(90deg,rgba(5,0,21,.15),rgba(255,230,153,.045) 5%,transparent 22%,transparent 77%,rgba(255,240,180,.035) 90%,rgba(11,4,32,.15))!important;
+ box-shadow:inset -2px 0 3px #ffe2a21f!important;
+}
+.game .underStage{
+ justify-content:center;position:relative;z-index:1;
+ margin:clamp(6px,1.3dvh,13px) 0 clamp(3px,.6dvh,7px)!important;
+}
+.game .notice {
+ font-size:clamp(11px,2.6vw,16px)!important;
+ font-weight:700;color:#fff1c3!important;
+ text-shadow:0 2px #360b4f,0 0 9px #ffc6ee8c;
+}
+.game .controlDock {z-index:3;position:relative;}
+.game .controlStats {align-items:stretch;}
+.game .controlStats .hudPanel,
+.game #vaultBtnMobile,.game #buyBonus {
+ border:2px solid #ffdc86!important;
+ border-radius:clamp(12px,3.3vw,22px)!important;
+ background:linear-gradient(163deg,#9a327c 0%,#5c155e 17%,#350a4c 70%,#240631)!important;
+ color:#ffedb9!important;
+ box-shadow:inset 0 2px 2px #fff6d2ad,inset 0 -2px 5px #140523,0 3px 0 #8a471d,0 5px 10px #10051e7a,0 0 8px #ff6bb14c!important;
+}
+.game .controlStats .hudPanel small,.game .controlStats .betInfo small{
+ color:#ffe9b0!important;font-weight:900!important;
+ font-size:clamp(10px,2.8vw,15px)!important;
+ text-shadow:0 1px 2px #39072b;
+}
+.game .controlStats .hudPanel strong{
+ color:#fff0be!important;font-weight:900!important;
+ font-size:clamp(17px,4.4vw,27px)!important;
+ text-shadow:0 2px 2px #421035,0 0 9px #ffdf9977!important;
+}
+.game .betPanel button{
+ border:2px solid #ffe1a4!important;
+ background:radial-gradient(circle at 30% 28%,#a84c9a,#551052 65%,#2b0b39)!important;
+ color:#ffe9ad!important;
+ box-shadow:inset 0 1px 3px #fff5bc7b,0 1px 3px #100a30!important;
+}
+.game #vaultBtnMobile{
+ overflow:visible!important;
+ background:linear-gradient(165deg,#9a277c,#360c4d 70%)!important;
+}
+.game #vaultBtnMobile .vaultFace {filter:drop-shadow(0 0 7px #ffd57ccc)!important;}
+.game #vaultBtnMobile .vaultFace img{
+ width:auto!important;max-width:100%;max-height:100%;
+ object-fit:contain;filter:drop-shadow(0 2px 3px #331326);
+}
+.game #buyBonus{
+ background:linear-gradient(175deg,#8c266d,#500f55 52%,#2b0d42)!important;
+ border-radius:30px!important;
+ color:#ffe9a6!important;
+ letter-spacing:.01em;
+ font-size:clamp(10px,2.7vw,14px)!important;
+ text-shadow:0 1px #34112c,0 0 6px #ffe9ab77;
+ min-height:32px!important;
+}
+.game .spinHalo{
+ max-width:155px!important;
+ padding:8px!important;
+ background:radial-gradient(circle,#fff4c735 53%,#ffe9979c 62%,#c68a2c 68%,transparent 71%)!important;
+ filter:drop-shadow(0 0 8px #ffe46aa8) drop-shadow(0 6px 5px #140a25b9)!important;
+}
+.game .spinHalo .spinBtn{
+ border:clamp(4px,1vw,7px) ridge #ffe39a!important;
+ border-radius:50%!important;
+ background:radial-gradient(circle at 34% 16%,#d5ff94,#6bd12b 27%,#279626 52%,#066625 76%,#034329 96%)!important;
+ color:#ffeab4!important;
+ text-shadow:0 2px 1px #254e17,0 0 9px #fffccf!important;
+ box-shadow:inset 0 5px 7px #f5ffd4ad,inset 0 -9px 14px #003c20bf,0 4px 0 #81501d,0 0 14px #ffe2797a!important;
+ font-family:Georgia,serif;
+}
+.game .spinHalo .spinBtn .cycle{color:#fff1b1!important;filter:drop-shadow(0 1px 3px #14591b);}
+.game .spinHalo .spinBtn:active{filter:brightness(1.19);transform:scale(.96);}
+.game #turboBtn{
+ min-height:43px!important;border:2px solid #fff2b5!important;border-radius:28px!important;
+ background:linear-gradient(165deg,#fff4b9 0%,#ffe18b 27%,#ecaa37 59%,#c36a1d 96%)!important;
+ box-shadow:inset 0 2px 4px #fffde6,0 4px 1px #8c4216,0 0 10px #ffae4b77!important;
+ color:#3a1732!important;text-shadow:0 1px #fff2b0!important;
+ font-weight:900;letter-spacing:.015em;
+}
+.game #turboBtn[aria-pressed="true"] {
+ background:linear-gradient(165deg,#f9fdb9,#c4e867 38%,#73a839 75%,#427d29)!important;
+}
+#jmVersionBadge{color:#ffe2a7!important;border-color:#ffc66a!important;background:#3c105a!important;opacity:.75;}
+@media(orientation:portrait){
+ .game[data-layout="portrait"] {
+  padding-top:calc(env(safe-area-inset-top) + 5px)!important;
+  padding-bottom:calc(env(safe-area-inset-bottom) + 20px)!important;
+  background:
+   radial-gradient(ellipse at 50% 10%,rgba(255,118,224,.14),transparent 29%),
+   radial-gradient(ellipse at 50% 71%,rgba(61,7,71,.16),transparent 36%),
+   url('../assets/imagens/bosque-ilustrado-v47.svg') center center/100% 100% no-repeat!important;
+ }
+ .game[data-layout="portrait"] .topbar{min-height:32px;}
+ .game[data-layout="portrait"] .logoLoop{width:100%!important;margin-top:3px!important;}
+ .game[data-layout="portrait"] .titleArt{height:clamp(105px,15dvh,190px)!important;}
+ .game[data-layout="portrait"] .jackpots{margin-top:1px!important;}
+ .game[data-layout="portrait"] .jackpot{min-height:clamp(48px,6.2dvh,78px)!important;display:flex;flex-direction:column;justify-content:center;}
+ .game[data-layout="portrait"] .reelFrame{padding:7px 8px 9px!important;border-width:5px!important;}
+ .game[data-layout="portrait"] .shelf{min-height:48px!important;padding:4px 5px 5px!important;}
+ .game[data-layout="portrait"] .stageWrap{aspect-ratio:5/3.04!important;}
+ .game[data-layout="portrait"] .controlStats{gap:5px!important;margin:5px 0 7px!important;grid-template-columns:1.03fr .91fr 1.03fr!important;}
+ .game[data-layout="portrait"] .v37LeftStats,.game[data-layout="portrait"] .v37RightStats{gap:6px!important;}
+ .game[data-layout="portrait"] .v37LeftStats .miniBalance{height:55px!important;}
+ .game[data-layout="portrait"] .v37LeftStats .statBet{height:44px!important;}
+ .game[data-layout="portrait"] .v37RightStats .vaultMystery{height:58px!important;}
+ .game[data-layout="portrait"] .v37RightStats .v37Buy{min-height:36px!important;}
+ .game[data-layout="portrait"] .statPrize{min-height:99px!important;}
+ .game[data-layout="portrait"] .v37SpinDeck{
+  margin:9px 0 12px!important;gap:5px!important;
+  grid-template-columns:minmax(0,1fr) minmax(125px,1.25fr) minmax(0,1fr)!important;
+  align-items:center;
+ }
+ .game[data-layout="portrait"] .spinHalo{max-width:145px!important;}
+ .game[data-layout="portrait"] .spinHalo .spinBtn{max-width:none!important;border-width:5px!important;}
+ .game[data-layout="portrait"] .spinBtn .cycle{font-size:clamp(42px,8.5vw,58px)!important;}
+ .game[data-layout="portrait"] .v37Turbo{align-self:center;}
+ .game[data-layout="portrait"] .v37Turbo #turboBtn{font-size:clamp(10px,2.7vw,15px);padding:9px 4px!important;}
+}
+@media(orientation:landscape){
+ .game[data-layout="wide"] {
+  background:url('../assets/imagens/bosque-ilustrado-v47.svg') center 60%/cover no-repeat!important;
+ }
+ .game[data-layout="wide"] .logoLoop{width:100%!important;}
+ .game[data-layout="wide"] .titleArt{height:clamp(49px,10dvh,102px)!important;}
+ .game[data-layout="wide"] .reelFrame{padding:5px!important;}
+ .game[data-layout="wide"] .reelFrame::before{inset:-3% -3%;}
+ .game[data-layout="wide"] .shelf{min-height:32px!important;}
+ .game[data-layout="wide"] .controlDock{background:linear-gradient(90deg,transparent,#29083b48);border-radius:18px;}
+}
+@media(prefers-reduced-motion:reduce){
+ .game .logoLoop,.game .titleArt,.game .forestBackdrop{animation:none!important;}
+}
