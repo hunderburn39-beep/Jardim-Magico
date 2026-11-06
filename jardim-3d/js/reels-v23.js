@@ -4,7 +4,7 @@
  * O movimento não decide os pagamentos. Recebe matrizes já calculadas.
  */
 export function createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol}){
- const STEP=1.10, TOP=.26+STEP, MAX_Y=2.00, MIN_Y=-1.52;
+ const STEP=1.10, TOP=.26+STEP, MAX_Y=1.71, MIN_Y=-1.23;
  const rowY=r=>TOP-r*STEP;
  const reelTiles=[],extras=[],columns=[];
  const symbolMaterials=symbols.map(textureFromSymbol);
@@ -26,7 +26,7 @@ export function createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol}
  }
  function setY(tile,y){
   tile.node.setLocalPosition(tile.x,y,0);
-  // A madeira curva oculta naturalmente o topo/baixo das tiras.
+  // Entrada e saída recortadas pelos limites interiores da madeira.
   // Ocultamos qualquer objeto totalmente fora da janela dos tambores.
   const visible=y<MAX_Y&&y>MIN_Y;
   tile.node.enabled=visible;
