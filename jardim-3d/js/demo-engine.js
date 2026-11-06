@@ -13,20 +13,22 @@ export const PAYLINES=[
 const WILD=4,SCATTER=9,STONE=10,COIN=11;
 const round=v=>Math.round((v+Number.EPSILON)*100)/100;
 const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
-const weighted=(rng=Math.random)=>{
- const total=WEIGHTS.reduce((a,b)=>a+b,0);
+const weighted=(rng=Math.random,free=false)=>{
+ const weights=free?WEIGHTS.map((x,i)=>i===9?2:x):WEIGHTS;
+ const total=weights.reduce((a,b)=>a+b,0);
  let x=rng()*total;
- for(let i=0;i<WEIGHTS.length;i++){x-=WEIGHTS[i];if(x<0)return i}
- return WEIGHTS.length-1;
+ for(let i=0;i<weights.length;i++){x-=weights[i];if(x<0)return i}
+ return weights.length-1;
 };
-export function newBoard(rng=Math.random){
- return Array.from({length:5},()=>Array.from({length:3},()=>weighted(rng)));
+export function newBoard(rng=Math.random,free=false){
+ return Array.from({length:5},()=>Array.from({length:3},()=>weighted(rng,free)));
 }
 export function count(board,id){return board.flat().filter(x=>x===id).length}
 export function evaluate(board,bet){
  let raw=0,lines=0,wilds=0;
  for(const path of PAYLINES){
    const chain=path.map((row,c)=>board[c][row]);
+   if(chain[0]===WILD&&chain[1]===WILD){raw+=bet*.55;lines++}
    let first=chain.find(s=>s!==WILD);
    if(first===undefined)first=WILD;
    if([SCATTER,STONE,COIN].includes(first))continue;
@@ -39,8 +41,6 @@ export function evaluate(board,bet){
      const pay=[0,0,0,.65,2.1,6.6][n]*([3,4,8,5,10,7,4,4,7,0,0,0][first]||1);
      raw+=bet*pay*Math.min(5,1+wm);
      lines++;wilds+=wm;
-   }else if(n===2 && chain[0]===WILD && chain[1]===WILD){
-     raw+=bet*.55;lines++;
    }
  }
  return {raw:round(raw),lines,wilds,scatter:count(board,SCATTER),coins:count(board,COIN)};
@@ -56,6 +56,7 @@ export class DemoBank{
    this.freeTotal=0;
    this.freeMultiplier=1;
    this.freeAwarded=0;
+   this.freePlayed=0;
    this.mode='base';
    this.hold=null;
    this.status='Pronto para rodar';
@@ -68,7 +69,7 @@ export class DemoBank{
  canSpin(){return this.mode==='free'||(this.mode==='base'&&this.balance>=this.stake)}
  addFree(count=15){
    if(this.mode==='hold')return false;
-   if(this.mode==='base'){this.mode='free';this.freeTotal=0;this.freeMultiplier=1;this.freeAwarded=0;this.freeSpins=0;}
+   if(this.mode==='base'){this.mode='free';this.freeTotal=0;this.freeMultiplier=1;this.freeAwarded=0;this.freeSpins=0;this.freePlayed=0;}
    this.freeSpins=clamp(this.freeSpins+count,0,60);
    this.status=count+' Free Spins de demonstração';
    return true;
@@ -132,7 +133,7 @@ export class DemoBank{
    const free=this.mode==='free';
    if(!free){this.balance=round(this.balance-this.stake);this.reserve=round(this.reserve+this.stake*.48)}
    this.spins++;
-   const board=newBoard(rng);
+   const board=newBoard(rng,free);
    const ev=evaluate(board,this.stake);
    const wildMultiplier=clamp(1+Math.floor(rng()*5),1,5);
    const potential=round(ev.raw*(ev.wilds?wildMultiplier:1));
@@ -142,8 +143,13 @@ export class DemoBank{
      this.freeTotal=round(this.freeTotal+potential);
      this.freeMultiplier=clamp(this.freeMultiplier+(ev.wilds?wildMultiplier-1:0),1,80);
      this.freeSpins--;
-     if(ev.scatter>=3){this.freeSpins=clamp(this.freeSpins+15,0,60);triggered='Reativação: +15 Free Spins'}
-     else if(ev.scatter>=2){this.freeSpins=clamp(this.freeSpins+8,0,60);triggered='Reativação: +8 Free Spins'}
+     this.freePlayed++;
+     const space=Math.max(0,60-this.freePlayed-this.freeSpins);
+     if(ev.scatter>=3&&space>0){
+       const n=Math.min(15,space);this.freeSpins+=n;triggered='Reativação: +'+n+' Free Spins';
+     }else if(ev.scatter>=2&&space>0){
+       const n=Math.min(8,space);this.freeSpins+=n;triggered='Reativação: +'+n+' Free Spins';
+     }
      if(this.freeSpins===0){
        const total=round(this.freeTotal*this.freeMultiplier);
        credited=Math.min(this.reserve,total);
