@@ -1056,16 +1056,31 @@ async function imageLoad(){
   const ready=new Promise((resolve,reject)=>{
    img.onload=resolve;img.onerror=()=>reject(new Error('O atlas fotográfico não carregou'));
   });
-  img.src='assets/imagens/jm75-simbolos.webp?v=75';
+  img.src='assets/imagens/jm75-simbolos.webp?v=76';
   await ready;
   const cell=Math.floor(img.naturalWidth/3);
   if(cell<50||img.naturalHeight<cell*3)throw new Error('Atlas inválido');
   for(let i=0;i<kinds.length;i++){
    const canvas=document.createElement('canvas');
    canvas.width=canvas.height=256;
-   const ctx=canvas.getContext('2d');
+   const ctx=canvas.getContext('2d',{willReadFrequently:true});
+   ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
    ctx.clearRect(0,0,256,256);
    ctx.drawImage(img,(i%3)*cell,Math.floor(i/3)*cell,cell,cell,0,0,256,256);
+   // V76: realce ligeiro dos detalhes das texturas 3D.
+   // Feito só no carregamento (não durante as animações).
+   const frame=ctx.getImageData(0,0,256,256),src=new Uint8ClampedArray(frame.data),dst=frame.data;
+   for(let y=1;y<255;y++)for(let x=1;x<255;x++){
+    const k=(y*256+x)*4;
+    if(src[k+3]<45)continue;
+    const near=[k-4,k+4,k-1024,k+1024];
+    if(near.some(n=>src[n+3]<22))continue;
+    for(let c=0;c<3;c++){
+     const mean=(src[k-4+c]+src[k+4+c]+src[k-1024+c]+src[k+1024+c])/4;
+     dst[k+c]=Math.max(0,Math.min(255,Math.round(src[k+c]+.25*(src[k+c]-mean))));
+    }
+   }
+   ctx.putImageData(frame,0,0);
    nativeAssets[kinds[i]]=canvas;
    // Mesmas artes na tabela de pagamentos (o jogo usa nomes e regras intactos).
    window.JM_INLINE_ASSETS[kinds[i]]=canvas.toDataURL('image/png');
@@ -1104,8 +1119,8 @@ function artBg(ctx,t){ctx.save();ctx.clearRect(0,0,W,H);
  }
  ctx.strokeStyle='rgba(255,212,148,.26)';ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);ctx.restore()}
 
-const REEL_SYMBOL_ZOOM=1.27; // V52: peças normais mais pequenas, recortadas
-const SPECIAL_REEL_ZOOM={wild:1.10,scatter:1.20,coin:1.02,mul:1.06,stone:1.08}; // especiais sobressaem
+const REEL_SYMBOL_ZOOM=1.10; // V76: ajustar peças ao espaço sem cortar e sem ampliar o atlas em excesso
+const SPECIAL_REEL_ZOOM={wild:1.05,scatter:1.14,coin:1.00,mul:1.02,stone:1.03}; // V76: evitar cortes de símbolos especiais
 function symbolZoom(s){return s&&SPECIAL_REEL_ZOOM[s.id]||REEL_SYMBOL_ZOOM;}
 function drawSymbol(ctx,s,x,y,w=CW,h=CH,time=0,zoom=REEL_SYMBOL_ZOOM){
  if(!s||s.id==='blank')return;
@@ -1191,17 +1206,17 @@ function jmReliefCanvas(img,id){
  if(!img||id==='scatter')return img;
  const c=document.createElement('canvas');c.width=c.height=256;
  const g=c.getContext('2d');if(!g)return img;
- g.shadowColor='rgba(6,5,19,.80)';g.shadowBlur=12;g.shadowOffsetX=2;g.shadowOffsetY=8;
+ g.shadowColor='rgba(6,5,19,.80)';g.shadowBlur=6;g.shadowOffsetX=1;g.shadowOffsetY=4;
  g.drawImage(img,9,8,238,238);
  g.shadowColor='transparent';g.shadowBlur=0;g.shadowOffsetX=0;g.shadowOffsetY=0;
  g.drawImage(img,9,8,238,238);
  g.globalCompositeOperation='source-atop';
  const shine=g.createLinearGradient(20,12,237,252);
- shine.addColorStop(0,'rgba(255,253,230,.21)');
+ shine.addColorStop(0,'rgba(255,253,230,.12)');
  shine.addColorStop(.20,'rgba(255,255,255,.065)');
  shine.addColorStop(.42,'rgba(255,255,255,0)');
  shine.addColorStop(.72,'rgba(17,8,40,.065)');
- shine.addColorStop(1,'rgba(10,8,28,.17)');
+ shine.addColorStop(1,'rgba(10,8,28,.11)');
  g.fillStyle=shine;g.fillRect(0,0,256,256);
  g.globalCompositeOperation='source-over';
  return c;
