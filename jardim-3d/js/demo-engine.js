@@ -232,20 +232,41 @@ export class DemoBank{
    return {ok:true,message:'Compraste 15 Free Spins fictícias'};
  }
  buyHold(){
-   if(this.mode!=='base'||this.balance<this.holdPrice)return {ok:false,message:'Saldo virtual insuficiente'};
-   this.balance=round(this.balance-this.holdPrice);
-   this.reserve=round(this.reserve+this.holdPrice);
-   this.startHold();
+   if(this.mode!=='base'||this.balance<this.holdPrice){
+     return {ok:false,message:'Saldo virtual insuficiente'};
+   }
+   // Compra voluntária: acrescenta o preço ao fundo antes de gerar moedas.
+   const price=this.holdPrice;
+   if(round(this.reserve+price)<round(this.stake*6)){
+     return {ok:false,message:'Cofre virtual sem capacidade para iniciar o Hold'};
+   }
+   this.balance=round(this.balance-price);
+   this.reserve=round(this.reserve+price);
+   const result=this.startHold();
+   if(!result)throw new Error('Compra do Hold sem grelha financiável');
    return {ok:true,message:'Hold & Win de demonstração iniciado'};
  }
- startHold(){
-   this.mode='hold';
-   this.hold={grid:Array(16).fill(0),tries:3,rounds:0,total:0};
-   // Seis moedas iniciais, sempre sem custo real.
+ startHold(rng=Math.random){
+   if(this.mode!=='base'||round(this.stake*6)>this.reserve){
+     this.status='Cofre sem capacidade para as seis moedas iniciais';
+     return false;
+   }
+   // Reserva suficiente para pagar TODAS as moedas já desenhadas,
+   // sem reduzir o seu valor depois.
    const positions=new Set();
-   while(positions.size<6)positions.add(Math.floor(Math.random()*16));
-   for(const p of positions)this.hold.grid[p]=[1,2,3,5,10][Math.floor(Math.random()*5)];
-   this.hold.total=round(this.hold.grid.reduce((a,b)=>a+b,0)*this.stake);
+   while(positions.size<6)positions.add(Math.floor(rng()*16));
+   const grid=Array(16).fill(0);
+   const multipliers=[1,2,3,5,10];
+   let sum=0;
+   for(const p of positions){
+     const eligible=multipliers.filter(x=>
+       round((sum+x)*this.stake)<=this.reserve);
+     if(!eligible.length)throw new Error('Moedas iniciais não financiadas');
+     const pick=eligible[Math.floor(rng()*eligible.length)];
+     grid[p]=pick;sum+=pick;
+   }
+   this.mode='hold';
+   this.hold={grid,tries:3,rounds:0,total:round(sum*this.stake)};
    this.status='Hold & Win · 3 tentativas';
    return this.snapshot;
  }
@@ -253,30 +274,44 @@ export class DemoBank{
    if(this.mode!=='hold')return {ok:false,message:'Hold & Win não ativo'};
    const h=this.hold;
    const empty=h.grid.flatMap((n,i)=>n?[]:[i]);
+   let newCoins=0;
    if(empty.length&&rng()<.72){
-     const countNew=Math.min(empty.length,rng()<.18?2:1);
-     for(let j=0;j<countNew;j++){
-       const pos=Math.floor(rng()*empty.length),i=empty.splice(pos,1)[0];
-       h.grid[i]=[1,2,3,5,10,20][Math.floor(rng()*6)];
+     const target=Math.min(empty.length,rng()<.18?2:1);
+     for(let j=0;j<target;j++){
+       const nextLast=empty.length===1;
+       const base=h.grid.reduce((sum,n)=>sum+n,0);
+       const valid=[1,2,3,5,10,20].filter(x=>{
+         const coinsValue=round((base+x)*this.stake);
+         // Fechar o 4×4 pode ativar um prémio extra de 250×.
+         const completePrize=nextLast?round(this.stake*250):0;
+         return round(coinsValue+completePrize)<=this.reserve;
+       });
+       if(!valid.length)break; // Não deixar cair moeda que não possa pagar.
+       const index=Math.floor(rng()*empty.length);
+       const pos=empty.splice(index,1)[0];
+       h.grid[pos]=valid[Math.floor(rng()*valid.length)];
+       newCoins++;
      }
-     h.tries=3;
-   }else h.tries--;
+   }
+   h.tries=newCoins?3:h.tries-1;
    h.rounds++;
-   h.total=round(h.grid.reduce((a,b)=>a+b,0)*this.stake);
-   const complete=h.tries<=0||h.grid.every(Boolean)||h.rounds>=28;
+   h.total=round(h.grid.reduce((sum,n)=>sum+n,0)*this.stake);
+   const filled=h.grid.every(Boolean);
+   const complete=h.tries<=0||filled;
    if(!complete){
      this.status='Hold & Win · '+h.tries+' tentativas';
      return {ok:true,done:false,hold:{...h,grid:[...h.grid]}};
    }
-   const potential=h.total+(h.grid.every(Boolean)?this.stake*250:0);
-   const prize=Math.min(this.reserve,round(potential));
+   const prize=round(h.total+(filled?round(this.stake*250):0));
+   if(prize>this.reserve)throw new Error('Grelha Hold não financiada');
    this.reserve=round(this.reserve-prize);
    this.balance=round(this.balance+prize);
    this.lastWin=prize;
    this.mode='base';
    this.status='Hold & Win: '+prize.toFixed(2)+' créditos';
    const result={ok:true,done:true,prize,hold:{...h,grid:[...h.grid]}};
-   this.hold=null;return result;
+   this.hold=null;
+   return result;
  }
  spin(rng=Math.random){
    if(!this.canSpin())return {ok:false,message:'Saldo virtual insuficiente ou bónus ativo'};
