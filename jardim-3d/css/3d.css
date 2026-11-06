@@ -1,0 +1,73 @@
+/* Jardim Mágico — 3D real PlayCanvas (protótipo).
+   O fundo e a moldura são geometrias de verdade: CSS só mostra valores e botões.
+   Pensado para Safari/iPhone em 9:16, com suporte paisagem. */
+:root{color-scheme:dark;--gold:#ffe2a1;--gold2:#f5ba56;--purple:#2a083f;--rose:#e960b8;--ink:#1b092c}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;height:100dvh;margin:0;overflow:hidden;overscroll-behavior:none;background:#130d2a;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:manipulation}
+#application{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:pan-x}
+.vignette{position:fixed;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(8,2,26,.50),transparent 25%,transparent 70%,rgba(12,4,26,.43)),radial-gradient(ellipse at center,transparent 42%,rgba(7,3,19,.42));z-index:2}
+.overlay{position:fixed;inset:0;z-index:3;pointer-events:none;color:#fff5cc;text-align:center;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+.top{position:absolute;top:max(5px,env(safe-area-inset-top));left:3%;right:3%;display:flex;flex-direction:column;align-items:center}
+.topline{align-self:stretch;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tag{display:flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid rgba(255,231,173,.47);background:rgba(30,9,52,.72);border-radius:20px;font-size:10px;letter-spacing:.08em;font-weight:900;box-shadow:0 2px 8px #0004}
+.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#8bf0b2;box-shadow:0 0 7px #95ffc1}
+.back{pointer-events:auto;color:#f8dfab;text-decoration:none;font-size:11px;font-weight:800;border-radius:20px;border:1px solid #d9b36b88;padding:6px 10px;background:#24123dbb}
+.back:active{transform:scale(.97)}
+.brand{margin-top:clamp(0px,1vh,12px);display:flex;align-items:center;flex-direction:column;filter:drop-shadow(0 4px 3px #12001c)}
+.brand>span{display:block;font-family:Georgia,"Times New Roman",serif;font-weight:900;font-style:italic;letter-spacing:-.075em;line-height:.78;font-size:clamp(44px,13.1vw,77px);color:#f9c865;background:linear-gradient(180deg,#fff9d5 2%,#ffec9d 17%,#eaa83d 42%,#fff0a1 63%,#b66e23 89%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;-webkit-text-stroke:.6px #ffe5a4;text-shadow:none}
+.brand>span:first-child{transform:translateX(-5%);font-size:clamp(41px,11.8vw,73px)}
+.brand>span:nth-child(2){transform:translateX(7%);margin-top:7px}
+.brand small{margin-top:12px;font-size:clamp(8px,1.8vw,12px);color:#ffd0ee;letter-spacing:.27em;font-weight:900;text-shadow:0 2px 4px #2c073d}
+.jackpots{position:absolute;top:clamp(190px,25%,270px);left:4%;right:4%;display:grid;grid-template-columns:1fr 1.22fr 1fr 1fr;gap:4px}
+.pot{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:47px;padding:5px 2px;border-radius:13px;border:1.5px solid #ffe7ae;background:linear-gradient(155deg,rgba(187,70,142,.95),rgba(65,8,79,.97) 47%,rgba(34,9,53,.97));box-shadow:inset 0 1px 2px #fff8cf,0 3px 0 #815125,0 5px 6px #0c032790,0 0 7px #fe94d278}
+.pot.hero{background:linear-gradient(160deg,#ae395b,#711343 52%,#32103d);border-color:#ffdf83}
+.pot small{font-size:clamp(10px,2.35vw,15px);line-height:1.1;font-weight:900;color:#ffdc9b;letter-spacing:.08em}
+.pot strong{font-family:Georgia,serif;font-size:clamp(14px,3.2vw,21px);color:#ffecac;text-shadow:0 1px 1px #3e0929;white-space:nowrap}
+.center-info{position:absolute;top:33.7%;right:0;left:0;text-align:center;color:#fff2c0;font-size:10px;font-weight:800;letter-spacing:.08em;text-shadow:0 2px 5px #10041d}
+.bottom{position:absolute;left:3%;right:3%;bottom:max(10px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
+.info{display:grid;grid-template-columns:1.4fr .65fr .86fr;gap:7px}
+.info>div{min-width:0;display:flex;flex-direction:column;gap:2px;padding:8px 4px;border:2px solid #f9d78c;border-radius:14px;background:linear-gradient(175deg,#8a267a 0%,#481153 38%,#250938 100%);box-shadow:inset 0 1px 2px #ffeca2a6,0 3px 0 #844419,0 5px 7px #08031499}
+.info small{font-size:9px;color:#ffd6ac;font-weight:900;letter-spacing:.07em}
+.info strong{font-size:clamp(11px,2.8vw,16px);color:#fff3b8;white-space:nowrap}
+.controls{display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:12px;align-items:center;justify-items:center;min-height:102px}
+.controls button{pointer-events:auto;cursor:pointer;font-family:inherit;font-weight:900;touch-action:manipulation;user-select:none;-webkit-user-select:none;transition:transform .13s,filter .13s;min-width:0}
+.controls button:active:not(:disabled){transform:translateY(2px) scale(.96)}
+.controls .secondary{width:100%;max-width:126px;padding:10px 4px;border:2px solid #ffe1a1;border-radius:25px;background:linear-gradient(180deg,#fff6d1 0%,#fac975 44%,#b5662a 100%);box-shadow:inset 0 2px 2px #fff9de,0 3px 0 #7e3e20,0 6px 8px #120621;color:#50283f;font-size:clamp(10px,2.4vw,14px)}
+.controls .secondary[aria-pressed="true"]{background:linear-gradient(#dffbbb,#94d66f,#416b3f);color:#244626}
+.controls .spin{width:clamp(95px,27vw,149px);height:clamp(95px,27vw,149px);border-radius:50%;border:5px solid #ffeab2;background:radial-gradient(circle at 34% 20%,#bbffb7,#49b667 29%,#147f42 55%,#033c35 85%);box-shadow:inset 0 5px 7px #fff5b6c7,inset 0 -12px 15px #042a2a,0 5px 0 #9f5c24,0 8px 8px #0b0424,0 0 15px #ffc6738c;color:#fff7c0;text-shadow:0 2px 2px #063a21;display:flex;align-items:center;justify-content:center;flex-direction:column;line-height:1;font-size:clamp(16px,4.1vw,23px)}
+.spin-icon{font-family:Arial,sans-serif;font-weight:900;font-size:clamp(37px,11vw,65px);line-height:.85;margin-bottom:6px}
+.spin:disabled{opacity:.86;filter:saturate(.82)}
+.result{margin:0;min-height:18px;font-size:clamp(10px,2.7vw,14px);font-weight:900;color:#ffeeb7;text-shadow:0 1px 4px #240b32}
+.disclaimer{margin:0;color:#ffebc8c4;font-size:9px;letter-spacing:.02em}
+.error{position:fixed;z-index:8;inset:0;background:#140d2beb;display:flex;justify-content:center;align-items:center;flex-direction:column;gap:13px;text-align:center;padding:30px;font-size:14px}
+.error[hidden]{display:none}
+.error a{color:#ffe4a4}
+@media(orientation:landscape){
+ .top{left:2%;right:auto;width:34%}
+ .brand>span{font-size:clamp(24px,5.4vw,49px)!important}
+ .brand small{font-size:7px;letter-spacing:.13em;margin-top:5px}
+ .topline{gap:5px}
+ .jackpots{top:10%;left:36%;right:2%}
+ .center-info{top:22%;left:36%;right:2%}
+ .bottom{left:37%;right:2%;bottom:4px;gap:4px}
+ .info{gap:4px}
+ .info>div{padding:4px}
+ .controls{min-height:48px}
+ .controls .spin{width:clamp(55px,12vh,89px);height:clamp(55px,12vh,89px)}
+ .spin-icon{font-size:30px;margin:0}
+ .controls .secondary{font-size:10px;padding:6px 2px}
+ .disclaimer{display:none}
+}
+@media(max-height:720px) and (orientation:portrait){
+ .brand>span{font-size:clamp(38px,12vw,67px)}
+ .brand>span:first-child{font-size:clamp(36px,11vw,64px)}
+ .brand small{margin-top:8px}
+ .jackpots{top:24.5%;min-height:36px}
+ .pot{min-height:42px}
+ .center-info{top:31.8%}
+ .bottom{gap:6px}
+ .controls{min-height:90px}
+ .controls .spin{width:clamp(90px,26vw,120px);height:clamp(90px,26vw,120px)}
+ .disclaimer{font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){.controls button{transition:none}}
