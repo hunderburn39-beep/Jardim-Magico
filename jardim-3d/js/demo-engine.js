@@ -100,22 +100,101 @@ export function collapseBoard(board,removed,rng=Math.random,free=false){
  }
  return next;
 }
-function cascadeStages(board,bet,rng,free){
+/* Gerador solvente para CRÉDITOS FICTÍCIOS.
+   Nunca corta o pagamento depois de mostrar as peças. Escolhe a grelha
+   e TODAS as cascatas verificando antecipadamente o fundo disponível.
+   O número de cascatas não tem limite: acabam numa grelha sem prémios.
+   As tentativas internas apenas procuram uma combinação financeiramente
+   viável, não interrompem uma cadeia visível ao jogador. */
+function safeOpening(rng=Math.random,free=false){
+ // Primeiro tentar uma grelha natural sem linhas pagas.
+ for(let n=0;n<48;n++){
+   const board=newBoard(rng,free);
+   if(evaluate(board,1).lines===0&&count(board,SCATTER)<3&&count(board,COIN)<6)return board;
+ }
+ // Resguardo determinístico para fontes pseudoaleatórias defeituosas.
+ // A pedra bloqueia as linhas e não é apresentada como símbolo premiado.
+ const board=newBoard(rng,free);
+ for(let c=0;c<3;c++)for(let row=0;row<3;row++)board[c][row]=STONE;
+ return board;
+}
+function safeCollapse(previous,removed,rng,free){
+ // Repetir APENAS as novas peças do topo: manter sempre as sobreviventes.
+ for(let attempt=0;attempt<32;attempt++){
+   const next=collapseBoard(previous,removed,rng,free);
+   if(evaluate(next,1).lines===0)return next;
+ }
+ // Se o fundo não suporta novas linhas, preencher os espaços que caíram
+ // com pedras; a coluna permanece coerente e acaba naturalmente.
+ const stoneRng=()=>0;
+ const next=collapseBoard(previous,removed,stoneRng,free);
+ const touched=new Set(removed.map(p=>p.c));
+ for(let col=0;col<5;col++){
+   if(!touched.has(col))continue;
+   const number=removed.filter(p=>p.c===col).length;
+   for(let row=0;row<number;row++)next[col][row]=STONE;
+ }
+ if(evaluate(next,1).lines!==0){
+   throw new Error('Não foi possível gerar uma queda sem prémios');
+ }
+ return next;
+}
+export function cascadeStages(board,bet,rng=Math.random,free=false,policy={}){
+ const reserve=policy.reserve===undefined?Infinity:Math.max(0,policy.reserve);
+ const freeCarry=policy.freeTotal||0;
+ const freeMultiplier=policy.freeMultiplier||1;
+ const wildMultiplier=policy.wildMultiplier||1;
  const stages=[];
- let currentBoard=board;
- let removed=[];
- // Nunca interromper uma sequência por limite de quedas ou pelo cofre.
- // Incluir sempre a última grelha SEM prémios antes de encerrar o giro.
+ let currentBoard=board,removed=[],raw=0,potential=0,wildCount=0,maxCoins=0;
+ // O fundo NÃO decide a duração, apenas que novos símbolos são possíveis.
+ const afford=(ev)=>{
+   const nextRaw=round(raw+ev.raw);
+   const nextPotential=round(potential+ev.raw*(ev.wilds?wildMultiplier:1));
+   const nextWilds=wildCount+ev.wilds;
+   const projectedMultiplier=clamp(freeMultiplier+
+     (nextWilds>0?wildMultiplier-1:0),1,5);
+   const eventualFreePrize=round((freeCarry+nextRaw)*projectedMultiplier);
+   const fullPrize=free?eventualFreePrize:nextPotential;
+   // Se cair um Hold, as seis moedas iniciais têm de ser integralmente
+   // pagáveis depois de qualquer prémio da mesma jogada.
+   const triggeringHold=!free&&Math.max(maxCoins,ev.coins)>=6;
+   const minHold=triggeringHold?round(bet*6):0;
+   return round(fullPrize+minHold)<=round(reserve);
+ };
  for(;;){
-   const ev=evaluate(currentBoard,bet);
+   let ev=evaluate(currentBoard,bet);
+   if(!afford(ev)){
+     let accepted=false;
+     for(let attempt=0;attempt<48;attempt++){
+       const candidate=stages.length?
+         collapseBoard(stages.at(-1).board,removed,rng,free):
+         newBoard(rng,free);
+       const candidateEv=evaluate(candidate,bet);
+       if(afford(candidateEv)){
+         currentBoard=candidate;ev=candidateEv;accepted=true;break;
+       }
+     }
+     if(!accepted){
+       currentBoard=stages.length?
+         safeCollapse(stages.at(-1).board,removed,rng,free):
+         safeOpening(rng,free);
+       ev=evaluate(currentBoard,bet);
+       if(!afford(ev))throw new Error('Grelha segura excedeu o cofre virtual');
+     }
+   }
    stages.push({board:currentBoard,ev,removed});
+   raw=round(raw+ev.raw);
+   potential=round(potential+ev.raw*(ev.wilds?wildMultiplier:1));
+   wildCount+=ev.wilds;
+   maxCoins=Math.max(maxCoins,ev.coins);
    const winners=winningCells(ev);
-   if(winners.length===0)break;
+   if(!winners.length)break;
    currentBoard=collapseBoard(currentBoard,winners,rng,free);
    removed=winners;
  }
  return stages;
 }
+
 export class DemoBank{
  constructor(){
    this.balance=100;
@@ -207,12 +286,15 @@ export class DemoBank{
      this.reserve=round(this.reserve+this.stake*.48);
    }
    this.spins++;
-   const board=newBoard(rng,free);
-   // As quedas continuam até a última grelha não ter combinações.
-   // A banca virtual limita somente o pagamento, não a sequência.
-   const stages=cascadeStages(board,this.stake,rng,free);
-   const ev=stages[0].ev;
    const wildMultiplier=clamp(1+Math.floor(rng()*5),1,5);
+   // Selecionar apenas grelhas/cascatas inteiramente pagáveis pelo fundo.
+   // Não há "prémio cortado": todas as linhas que saírem são pagas.
+   const stages=cascadeStages(newBoard(rng,free),this.stake,rng,free,{
+     reserve:this.reserve,freeTotal:this.freeTotal,
+     freeMultiplier:this.freeMultiplier,wildMultiplier
+   });
+   const board=stages[0].board;
+   const ev=stages[0].ev;
    const rawTotal=round(stages.reduce((sum,stage)=>sum+stage.ev.raw,0));
    const totalWilds=stages.reduce((sum,stage)=>sum+stage.ev.wilds,0);
    const scatterCount=Math.max(...stages.map(stage=>stage.ev.scatter));
@@ -233,7 +315,8 @@ export class DemoBank{
      }
      if(this.freeSpins===0){
        const total=round(this.freeTotal*this.freeMultiplier);
-       credited=Math.min(this.reserve,total);
+       if(total>this.reserve)throw new Error('Prémio Free Spins não financiado');
+       credited=total;
        this.balance=round(this.balance+credited);
        this.reserve=round(this.reserve-credited);
        this.lastWin=credited;
@@ -242,7 +325,8 @@ export class DemoBank{
        this.freeAwarded=credited;
      }
    }else{
-     credited=Math.min(this.reserve,potential);
+     if(potential>this.reserve)throw new Error('Prémio base não financiado');
+     credited=potential;
      this.reserve=round(this.reserve-credited);
      this.balance=round(this.balance+credited);
      this.lastWin=credited;
