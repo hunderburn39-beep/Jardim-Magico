@@ -32,6 +32,8 @@ let winPulseStart=0;
 let winPulseCells=[];
 let burst=null;
 const burstPool=[];
+const burstWaves=[];
+let burstColors=[];
 const fireflies=[];
 const glows=[];
 const lakeRipples=[];
@@ -399,7 +401,10 @@ function setCamera(){
  const x=wide?2.45:0;
  const z=wide?15.6:18.1;
  const y=wide?.14:0;
- camera.setPosition(x+Math.sin(state.cam)*.48,y,z);
+ // Impacto de câmara subtil nas explosões sem movimento contínuo obrigatório.
+ const shake=burst?.elapsed<burst?.duration*.45
+  ?Math.sin(burst.elapsed*64)*.035*(1-burst.elapsed/(burst.duration*.45)):0;
+ camera.setPosition(x+Math.sin(state.cam)*.48+shake,y+shake*.55,z);
  camera.lookAt(x,0,0);
 }
 let camera;
@@ -408,17 +413,23 @@ let camera;
    apenas uma vez. O cálculo monetário nunca depende desta animação. */
 function prepareBurstParticles(){
  if(burstPool.length)return;
- const colors=[
+ burstColors=[
   mat('#ffe8a1',{metal:.65,gloss:85,emissive:'#ffc25d',emission:.62}),
   mat('#ff83d5',{metal:.30,gloss:88,emissive:'#ce2baf',emission:.58}),
   mat('#bf8cff',{metal:.26,gloss:81,emissive:'#8547e4',emission:.58}),
-  mat('#d6fff0',{metal:.25,gloss:85,emissive:'#5cdcbf',emission:.43})
+  mat('#d6fff0',{metal:.25,gloss:85,emissive:'#5cdcbf',emission:.43}),
+  mat('#ffdf6c',{metal:.78,gloss:98,emissive:'#d99923',emission:.70})
  ];
- // No máximo 15 peças × 4 partículas de volume reduzido no iPhone.
- for(let i=0;i<60;i++){
-  const entity=model('Faísca 3D premiada','box',[0,0,.92],[.01,.01,.01],colors[i%4]);
-  entity.enabled=false;
-  burstPool.push(entity);
+ // Pool reutilizável: até 15 peças × 5 fragmentos.
+ for(let i=0;i<75;i++){
+  const kind=i%5===0?'cone':i%5===1?'sphere':'box';
+  const entity=model('Estilhaço de vitória 3D',kind,[0,0,.92],[.01,.01,.01],burstColors[i%5]);
+  entity.enabled=false;burstPool.push(entity);
+ }
+ const waveMat=mat('#fff2bd',{metal:.08,gloss:85,emissive:'#f7c06d',emission:.63,opacity:.21});
+ for(let i=0;i<15;i++){
+  const e=model('Onda de luz do prémio','sphere',[0,0,.68],[.01,.01,.015],waveMat);
+  e.enabled=false;burstWaves.push(e);
  }
 }
 function cancelBurst(){
@@ -429,6 +440,7 @@ function cancelBurst(){
   cell.face.setLocalEulerAngles(0,0,0);
  }
  for(const part of burst.parts)part.entity.enabled=false;
+ for(const wave of burst.waves)wave.entity.enabled=false;
  burst=null;
 }
 function explodeWinners(coordinates,duration=1100){
@@ -438,7 +450,7 @@ function explodeWinners(coordinates,duration=1100){
  for(const cell of winPulseCells)cell.face.setLocalScale(.96,.98,.14);
  winPulseCells=[];
  prepareBurstParticles();
- const seen=new Set(),cells=[],parts=[];
+ const seen=new Set(),cells=[],parts=[],waves=[];
  for(const {c,r} of coordinates){
   if(!Number.isInteger(c)||!Number.isInteger(r)||c<0||c>4||r<0||r>2)continue;
   const key=c+','+r;
@@ -447,9 +459,13 @@ function explodeWinners(coordinates,duration=1100){
   const cell=reelTiles[c]?.[r];if(!cell)continue;
   cells.push(cell);
   const x=(c-2)*1.066,y=.26+(1-r)*1.1;
-  for(let j=0;j<4;j++){
+  const wave=burstWaves[c*3+r];
+  wave.enabled=false;
+  waves.push({entity:wave,x,y});
+  for(let j=0;j<5;j++){
    const entity=burstPool[parts.length];
-   const angle=(j/4)*Math.PI*2+(c+r)*.61;
+   entity.render.material=burstColors[cell.idx===4?4:cell.idx===5||cell.idx===1?3:cell.idx===6||cell.idx===8?1:j%5];
+   const angle=(j/5)*Math.PI*2+(c+r)*.61;
    const speed=.57+.25*((c+j+r)%3);
    entity.enabled=false;
    parts.push({entity,x,y,dx:Math.cos(angle)*speed,dy:Math.sin(angle)*speed,
@@ -457,7 +473,7 @@ function explodeWinners(coordinates,duration=1100){
   }
  }
  if(!cells.length)return 0;
- burst={elapsed:0,duration:Math.max(.65,duration/1000),cells,parts};
+ burst={elapsed:0,duration:Math.max(.65,duration/1000),cells,parts,waves};
  return cells.length;
 }
 function updateBurst(dt){
@@ -476,6 +492,15 @@ function updateBurst(dt){
   cell.face.setLocalEulerAngles(0,t>.25&&t<.82?120*(t-.25):0,0);
  }
  const phase=Math.min(1,Math.max(0,(t-.25)/.62));
+ // Reflexo radial por peça, ao mesmo tempo em todas as linhas.
+ for(const wave of effect.waves){
+  const active=t>=.21&&t<.76;
+  wave.entity.enabled=active;
+  if(!active)continue;
+  const prog=(t-.21)/.55;
+  wave.entity.setLocalPosition(wave.x,wave.y,.70);
+  wave.entity.setLocalScale(.18+1.16*prog,.18+1.16*prog,.018);
+ }
  for(const shard of effect.parts){
   const active=t>=.25&&t<.90;
   shard.entity.enabled=active;
@@ -485,7 +510,7 @@ function updateBurst(dt){
    shard.y+shard.dy*phase-.12*phase*phase,
    .78+shard.dz*phase
   );
-  const size=.11*Math.pow(1-phase,1.3)+.004;
+  const size=.14*Math.pow(1-phase,1.3)+.004;
   shard.entity.setLocalScale(size,size*(.62+.40*Math.sin(shard.angle+phase*3)**2),size*.45);
   shard.entity.setLocalEulerAngles(0,0,(shard.angle+phase*6)*180/Math.PI);
  }
