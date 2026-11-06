@@ -24,6 +24,12 @@ jobs:
       - name: Obter jogo
         uses: actions/checkout@v4
 
+      - name: Testar banco, cascatas, rolos e persistencia da versao 3D
+        shell: bash
+        run: |
+          node --version
+          node jardim-3d/tests/smoke-v3.mjs
+
       - name: Preparar pagina com fontes editaveis
         shell: bash
         run: |
