@@ -14,6 +14,22 @@ export function createOrganicFrame({pc,model,mat,app}){
  const pink=mat('#f5bad8',{metal:.04,gloss:68,emissive:'#ac537f',emission:.13});
  const lilac=mat('#c18ae6',{metal:.07,gloss:65,emissive:'#713893',emission:.14});
  const center=mat('#f5d78c',{metal:.38,gloss:91,emissive:'#b48d36',emission:.21});
+ // Interior recuado é uma peça física de veludo (não uma fotografia).
+ // Fica por trás dos rolos e permite ver as peças com bom contraste.
+ model('Veludo recuado dos tambores','box',[0,.24,-.61],[5.56,3.72,.19],
+   mat('#29113d',{metal:.09,gloss:48,emissive:'#250d35',emission:.12}));
+ const lantern=mat('#ffe2a1',{metal:.18,gloss:93,emissive:'#ffc977',emission:.72});
+ const hook=mat('#9c733d',{metal:.57,gloss:80});
+ for(const side of [-1,1]){
+  const x=side*3.16;
+  rodLantern(x);
+ }
+ function rodLantern(x){
+  model('Corrente fina da lanterna','cylinder',[x,2.78,.42],[.025,.48,.025],hook);
+  model('Lanterna mágica','sphere',[x,2.39,.44],[.23,.34,.19],lantern);
+  model('Topo metálico da lanterna','cone',[x,2.68,.44],[.25,.16,.22],hook);
+  model('Base metálica da lanterna','cylinder',[x,2.12,.44],[.25,.10,.21],hook);
+ }
  const woodPoints=[];
  function rod(name,a,b,radius,material){
   const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2];
