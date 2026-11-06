@@ -1,0 +1,214 @@
+/* Jardim Mágico V76 — restauro visual mobile.
+   Regras de negócio e eventos do jogo não são modificados.
+   Novo cenário contínuo, HUD vetorial/CSS nítido e botão 3D legível. */
+:root{--jm76-gold:#ffe49a;--jm76-pink:#f768d4;--jm76-dark:#220a35;}
+html,body{
+  background:#0c1630!important;
+}
+body::before{
+  background-image:url('../assets/imagens/jm76-jardim-profundo.svg')!important;
+  background-size:cover!important;
+  background-position:center center!important;
+  opacity:1!important;
+  filter:none!important;
+}
+body::after{display:none!important;}
+.game,.game[data-layout="portrait"],.game[data-layout="wide"]{
+  background:
+    linear-gradient(180deg,rgba(28,11,44,.01) 0%,rgba(18,7,39,.12) 39%,rgba(16,6,32,.15) 77%,rgba(16,40,54,.02) 100%),
+    url('../assets/imagens/jm76-jardim-profundo.svg') center center/100% 100% no-repeat!important;
+  isolation:isolate;
+}
+/* Os recortes V75 incluíam botões pintados e transparências pretas; não sobrepor.
+   Assim desaparecem as faixas escuras e o falso TURBO atrás dos controlos. */
+.game>.jm75BackdropBottom{display:none!important;}
+.game>.jm75BackdropTop{
+  background-position:center top!important;
+  background-size:100% auto!important;
+  opacity:.82!important;
+  z-index:0;
+}
+.game .topbar,.game .logoLoop,.game .jackpots,
+.game .reelFrame,.game .underStage,.game .controlDock{position:relative;z-index:2;}
+.game .logoLoop{
+  filter:drop-shadow(0 3px 5px rgba(25,4,33,.55))!important;
+}
+.game .titleArt{
+  object-fit:contain!important;
+  filter:drop-shadow(0 2px 3px rgba(29,5,40,.6)) drop-shadow(0 0 6px rgba(245,105,210,.26))!important;
+  transform:translateZ(0);
+}
+/* Quadros de jackpot e valores deixam de ser WebP de 200px esticado. */
+.game .jackpot,.game .jackpot.max{
+  position:relative;
+  border:2px solid #ffdf8d!important;
+  border-radius:clamp(12px,2.3vw,20px)!important;
+  background:
+    linear-gradient(180deg,rgba(255,234,167,.32),transparent 15%),
+    linear-gradient(168deg,#992e88 0%,#56115e 17%,#2c0a47 72%,#50104e 100%)!important;
+  box-shadow:
+    inset 0 2px 1px #fff8d6cb,inset 0 -3px 5px #21082c,
+    0 3px 0 #8e502b,0 5px 10px #17041f94,0 0 8px #f959bd7a!important;
+  overflow:hidden;
+}
+.game .jackpot.max{
+  background:linear-gradient(180deg,rgba(255,221,146,.34),transparent 15%),linear-gradient(155deg,#a53383,#71115e 40%,#360640)!important;
+  box-shadow:inset 0 2px 2px #fff0c2,0 3px 0 #ad6a38,0 0 12px #ffcb7970!important;
+}
+.game .jackpot::before{
+  content:"";position:absolute;inset:3px 8px auto;height:29%;
+  border-radius:100% 100% 70% 70%;
+  background:linear-gradient(180deg,#fffbd433,transparent);
+  pointer-events:none;
+}
+.game .jackpot b,.game .jackpot strong{
+  position:relative;z-index:1;
+  color:#fff0c2!important;
+  text-shadow:0 1px 2px #380b4b,0 0 6px #f9e8ae60!important;
+}
+/* Moldura com madeira fotográfica, aresta e fundo preto-violeta profundo. */
+.game .reelFrame{
+  border:3px solid #e1a251!important;
+  border-radius:16px!important;
+  background:linear-gradient(100deg,#49240f,#b37834 3%,#432017 7%,#331123 93%,#d8a054 97%,#6a3719)!important;
+  box-shadow:inset 0 2px 2px #ffebb9,0 5px 2px #603217,0 11px 18px #09051a91,0 0 12px #ff8bdb55!important;
+}
+.game .stageWrap{
+  background:
+    linear-gradient(180deg,rgba(46,18,66,.22),rgba(30,12,49,.17) 48%,rgba(23,5,37,.32)),
+    repeating-linear-gradient(90deg,rgba(50,16,69,.72) 0%,rgba(36,9,56,.86) 19.7%,rgba(222,157,94,.16) 19.9%,rgba(222,157,94,.16) 20%,rgba(56,19,72,.70) 20.1%)!important;
+  border:1px solid rgba(255,211,135,.28)!important;
+  box-shadow:inset 0 6px 22px #100319,0 0 8px #fdd49b31!important;
+}
+.game .stageWrap .jm75PhotoFrame{
+  inset:-1.5% -0.3%!important;
+  background-size:100% 100%!important;
+  image-rendering:auto!important;
+  z-index:6!important;
+}
+.game .stageWrap .glassReels i{
+  border-right:1px solid rgba(255,228,153,.15)!important;
+  border-left:0!important;
+  background:linear-gradient(90deg,rgba(0,0,10,.19),rgba(255,238,178,.035) 12%,transparent 60%,rgba(255,235,170,.05) 96%)!important;
+}
+.game .stageWrap .reelFog{
+  background:linear-gradient(180deg,rgba(248,217,155,.05),transparent 12%,transparent 83%,rgba(10,0,25,.17))!important;
+}
+/* Multiplicadores: painel em veludo violeta, não fotografia recortada. */
+.game .shelf{
+  border:2px solid #daa358!important;
+  border-bottom:0!important;
+  border-radius:12px 12px 0 0!important;
+  background:linear-gradient(180deg,#722367 0%,#360b4b 20%,#270b41 77%,#4a114e)!important;
+  box-shadow:inset 0 2px 3px #ffe5c86e,0 0 9px #e8a0c554!important;
+}
+.game .shelfTag,.game .jm63DropLabel,.game .shelfTotal{
+  color:#ffe4a1!important;
+  text-shadow:0 1px 2px #27082b,0 0 4px #ffda9d63!important;
+}
+/* Painéis de saldo e aposta são novamente vetoriais e legíveis. */
+.game .controlStats .hudPanel,.game #vaultBtnMobile{
+  position:relative;
+  border:2px solid #ffdc96!important;
+  border-radius:16px!important;
+  background:
+    linear-gradient(180deg,#fff1bc2e 0%,transparent 19%),
+    linear-gradient(169deg,#8c2675,#4b105b 29%,#280b47 87%,#52114f)!important;
+  box-shadow:inset 0 2px 2px #fff7d4c2,inset 0 -3px 4px #160722,0 3px 0 #975127,0 5px 8px #13072191!important;
+  overflow:hidden;
+}
+.game .controlStats .hudPanel small,
+.game .controlStats .hudPanel strong{
+  color:#fff0bd!important;text-shadow:0 1px 2px #21082f,0 0 4px #ffcc8b3a!important;
+  font-variant-numeric:tabular-nums;
+}
+.game .controlStats .hudPanel strong{font-weight:900!important;}
+.game .controlStats .betPanel button{
+  background:radial-gradient(circle at 30% 22%,#a757a2,#3a0b58 71%)!important;
+  color:#ffe7b2!important;
+  border:2px solid #fbd893!important;
+  box-shadow:inset 0 1px 2px #ffe6bd,0 2px 3px #210a2e!important;
+  opacity:1!important;
+}
+.game #vaultBtnMobile{overflow:visible!important;}
+.game #vaultBtnMobile .vaultFace img{filter:drop-shadow(0 2px 4px #f8aa4599)!important;}
+.game #buyBonus{
+  border:2px solid #ffe2a1!important;border-radius:28px!important;
+  background:linear-gradient(180deg,#ad3d80 0%,#65145c 19%,#350c51 82%,#4e0c53 100%)!important;
+  box-shadow:inset 0 1px 2px #ffe5c9b0,0 2px 0 #8f4e2a,0 4px 8px #1d0926ad!important;
+  color:#ffe9aa!important;text-shadow:0 1px 2px #22042c!important;
+}
+.game #turboBtn,.game #turboBtn[aria-pressed="true"]{
+  border:2px solid #fff0ad!important;border-radius:24px!important;
+  background:linear-gradient(175deg,#fff6bd,#fcd17a 39%,#f3aa3b 72%,#ae551d)!important;
+  box-shadow:inset 0 2px 3px #fffbe1,0 3px 0 #a45b24,0 5px 8px #140a2691!important;
+  color:#4f2334!important;text-shadow:0 1px #fff1bb!important;
+  font-weight:900;
+}
+.game #turboBtn[aria-pressed="true"]{
+  background:linear-gradient(170deg,#f8ffcb,#e0ee80 33%,#94c442 72%,#438227)!important;
+}
+.game .spinHalo{
+  background:none!important;padding:0!important;
+  filter:none!important;
+  overflow:visible;
+  width:100%;aspect-ratio:1;
+}
+.game .spinHalo .spinBtn{
+  position:relative;overflow:visible!important;isolation:isolate;
+  background:url('../assets/imagens/jm76-rodar-luxo.svg') center / 100% 100% no-repeat!important;
+  border:0!important;border-radius:50%!important;box-shadow:none!important;
+  width:100%!important;height:100%!important;min-height:0!important;aspect-ratio:1!important;
+  color:#fff3bd!important;
+  text-shadow:0 2px 1px #15411b,0 0 5px #fff7c4!important;
+}
+.game .spinHalo .spinBtn::before{display:none!important;content:none!important;}
+.game .spinHalo .spinBtn::after{display:none!important;content:none!important;}
+.game .spinBtn .cycle{
+  font-size:clamp(31px,7vw,54px)!important;
+  line-height:.83!important;
+  color:#fff7bf!important;text-shadow:0 3px 2px #1a4c21,0 0 9px #ffffe9!important;
+}
+.game .spinBtn .spinLabel{
+  font-size:clamp(13px,3.9vw,25px)!important;
+  line-height:1.0!important;
+  color:#fff4bc!important;text-shadow:0 2px 2px #16552b,0 0 8px #ffe9ac!important;
+}
+.game .spinBtn:disabled,.game .spinBtn[disabled]{
+  opacity:1!important;filter:brightness(.96) saturate(.96)!important;
+  cursor:default;
+}
+.game .spinBtn:disabled .spinLabel,.game .spinBtn:disabled .cycle{opacity:.94!important;}
+.game .spinBtn:active:not(:disabled){transform:scale(.97)!important;}
+.game .controlDeck {z-index:4!important;position:relative;}
+.game .v37Turbo {z-index:4!important;}
+.game .underStage .notice{color:#ffedbe!important;text-shadow:0 1px 2px #230a30,0 0 7px #ffc8737a!important;}
+@media(orientation:portrait){
+ .game[data-layout="portrait"]{
+  background:
+    linear-gradient(180deg,rgba(15,13,41,.06),rgba(26,7,43,.03) 60%,rgba(9,32,45,.04)),
+    url('../assets/imagens/jm76-jardim-profundo.svg') center/100% 100% no-repeat!important;
+ }
+ .game[data-layout="portrait"] .logoLoop{margin:0 auto 2px!important;width:97%!important;}
+ .game[data-layout="portrait"] .jackpots{margin-bottom:5px!important;}
+ .game[data-layout="portrait"] .spinHalo{
+  max-width:158px!important;
+ }
+ .game[data-layout="portrait"] .spinHalo .spinBtn{
+  max-width:none!important;min-height:0!important;
+ }
+ .game[data-layout="portrait"] .v37SpinDeck{
+  margin:2px 0 5px!important;
+  align-items:center!important;
+ }
+ .game[data-layout="portrait"] .v37Turbo{align-self:center!important;}
+ .game[data-layout="portrait"] .underStage{margin:5px 0 3px!important;}
+}
+@media(orientation:landscape){
+ .game[data-layout="wide"]>.jm75BackdropTop{display:none!important;}
+ .game[data-layout="wide"] .spinHalo{max-width:140px!important;}
+ .game[data-layout="wide"] .titleArt{object-fit:contain!important;}
+}
+@media(prefers-reduced-motion:reduce){
+ .game .spinBtn,.game .titleArt{animation:none!important;}
+}
