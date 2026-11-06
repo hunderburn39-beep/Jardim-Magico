@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V14.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V15.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -222,18 +222,14 @@
     if(tiles.length>=10)window.TrovaoScene?.reactToWin();
     return reduced?70:duration;
   }
-  function showPrizeFloat(amount,prizes=[]){
+  function showPrizeFloat(amount){
     if(amount<=0)return;
-    const existing=el.overlay.querySelectorAll(".prize-float");
-    if(existing.length>=2)existing[0].remove();
+    // Mostrar APENAS o valor individual desta queda: sem acumulado, texto
+    // de símbolos, prefixo "+" ou qualquer quadro.
+    for(const previous of el.overlay.querySelectorAll(".prize-float"))previous.remove();
     const item=document.createElement("div");
     item.className="prize-float";
-    item.appendChild(document.createTextNode("+"+money(amount)));
-    if(prizes.length){
-      const detail=document.createElement("small");
-      detail.textContent=prizes.map(p=>LABELS[p.symbol]+" ×"+p.count+(p.wildCount?" + WILD ×"+p.wildMultiplier:"")+" • "+money(p.amount)).join("  |  ");
-      item.appendChild(detail);
-    }
+    item.textContent=money(amount);
     const lifetime=state.turbo?1250:2350;
     item.style.setProperty("--prize-duration",lifetime+"ms");
     el.overlay.appendChild(item);
@@ -363,9 +359,10 @@
       totalBase+=wins.pay;
       window.TrovaoHistory?.recordWin(wins);
       render(state.grid,{matchKinds:wins.matched});
-      const text=wins.result.map(w=>LABELS[w.symbol]+" ×"+w.count+(w.wildCount?" com "+w.wildCount+" WILD ×"+w.wildMultiplier:"")).join(" + ");
-      setMsg("PRÉMIO! "+text+" • QUEDA "+steps+" • "+money(wins.pay));
-      showPrizeFloat(wins.pay,wins.result);
+      // O painel de histórico conserva as peças e prémios discriminados,
+      // mas durante a jogada só se vê o valor desta queda, em dourado.
+      setMsg(money(wins.pay));
+      showPrizeFloat(wins.pay);
       if(spinMult>0&&steps===1)sfx("mult");
       refresh();
       await pause(state.turbo?105:280);
