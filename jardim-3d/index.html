@@ -1,59 +1,113 @@
 <!doctype html>
 <html lang="pt-PT">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-  <meta name="theme-color" content="#170c2e">
-  <meta name="description" content="Jardim Mágico — pré-visualização 3D PlayCanvas.">
-  <title>Jardim Mágico 3D — Protótipo PlayCanvas</title>
-  <link rel="stylesheet" href="./css/3d.css?v=1">
-  <script type="importmap">
-    {"imports":{"playcanvas":"https://cdn.jsdelivr.net/npm/playcanvas@2.23.3/build/playcanvas.mjs"}}
-  </script>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+ <meta name="theme-color" content="#1c1036">
+ <meta name="description" content="Jardim Mágico 3D V2 — pré-visualização gráfica e jogável com créditos fictícios.">
+ <title>Jardim Mágico 3D V2 — Bosque Encantado</title>
+ <link rel="stylesheet" href="./css/3d.css?v=2">
+ <script type="importmap">{"imports":{"playcanvas":"https://cdn.jsdelivr.net/npm/playcanvas@2.23.3/build/playcanvas.mjs"}}</script>
 </head>
 <body>
-  <canvas id="application" aria-label="Cena tridimensional do Jardim Mágico"></canvas>
-  <div class="vignette" aria-hidden="true"></div>
-  <main class="overlay">
-    <header class="top">
-      <div class="topline">
-        <span class="tag"><span class="live-dot"></span> PROTÓTIPO 3D</span>
-        <a class="back" href="../index.html?v=80.1" aria-label="Voltar ao jogo original">Jogo original <span>↗</span></a>
+ <canvas id="application" aria-label="Jardim Mágico tridimensional com tambores e cenário 3D"></canvas>
+ <div class="vignette" aria-hidden="true"></div>
+ <main class="overlay">
+  <header class="top">
+   <div class="topline">
+    <a class="back" href="../index.html" title="Jogo original">⌂ <span>ORIGINAL</span></a>
+    <div class="toptools">
+     <button id="btnDemoCredits" class="roundSmall" title="Adicionar créditos fictícios" aria-label="Adicionar créditos de demonstração">＋</button>
+     <button id="toggleCamera" class="roundSmall" aria-pressed="false" title="Câmara cinematográfica" aria-label="Câmara cinematográfica">◈</button>
+     <button id="btnInfo" class="roundSmall" title="Informações e pagamentos" aria-label="Tabela de pagamentos">ⓘ</button>
+    </div>
+   </div>
+   <div class="brand">
+    <img class="brand-art" src="../assets/imagens/jm77-logo-isolado.svg?v=78" alt="Jardim Mágico" decoding="async">
+    <small>O BOSQUE GANHOU VIDA EM 3D</small>
+   </div>
+  </header>
+
+  <section class="jackpots" aria-label="Prémios máximos ilustrativos calculados para a aposta">
+   <div class="pot"><small>MIN</small><strong id="jpMin">—</strong><em>250×</em></div>
+   <div class="pot"><small>MED</small><strong id="jpMed">—</strong><em>500×</em></div>
+   <div class="pot"><small>MAX</small><strong id="jpMax">—</strong><em>1000×</em></div>
+   <div class="pot hero"><small>ULTRA</small><strong id="jpUltra">—</strong><em>5000×</em></div>
+  </section>
+
+  <section class="reelHead">
+   <span class="reelHeadLabel">MULTIPLICADORES<br>ACUMULADOS</span>
+   <span id="multiOrbs" class="orbBank"><b>×1</b><b>×1</b><b>×1</b></span>
+   <span id="multiTotal" class="reelMultiplier">×1</span>
+  </section>
+  <p class="reelMessage" id="spinState">Tambores 3D prontos a rodar</p>
+  <div class="bonusBanner" id="bonusBanner" hidden>✨ 15 FREE SPINS ✨</div>
+  <div class="bigWin" id="bigWin" aria-hidden="true"></div>
+
+  <section class="bottom" aria-label="Área de comandos do jogo">
+   <div class="status"><span id="notice">Pronto para jogar</span><span id="freeMeter" hidden>FREE SPINS: <b id="freeCount">0</b></span></div>
+   <div class="info">
+    <div class="leftHud">
+     <div class="hudPanel"><small>SALDO DEMO</small><strong id="balance">100,00</strong></div>
+     <div class="hudPanel betPanel">
+      <small>APOSTA</small>
+      <div class="betControls">
+       <button type="button" id="betMinus" aria-label="Diminuir aposta">−</button>
+       <strong id="stake">0,20</strong>
+       <button type="button" id="betPlus" aria-label="Aumentar aposta">＋</button>
       </div>
-      <div class="brand" aria-label="Jardim Mágico">
-        <span>Jardim</span><span>Mágico</span>
-        <small>O BOSQUE GANHOU VIDA</small>
-      </div>
-    </header>
-    <section class="jackpots" aria-label="Jackpots ilustrativos">
-      <div class="pot tiny"><small>MIN</small><strong>250×</strong></div>
-      <div class="pot hero"><small>ULTRA</small><strong>5000×</strong></div>
-      <div class="pot"><small>MAX</small><strong>1000×</strong></div>
-      <div class="pot"><small>MED</small><strong>500×</strong></div>
-    </section>
-    <section class="center-info">
-      <span id="spinState">Tambores tridimensionais</span>
-    </section>
-    <section class="bottom">
-      <div class="info">
-        <div><small>MODO</small><strong>DEMONSTRAÇÃO</strong></div>
-        <div><small>GIROS</small><strong id="spins">0</strong></div>
-        <div><small>EFEITO</small><strong id="quality">3D REAL</strong></div>
-      </div>
-      <div class="controls">
-        <button id="toggleCamera" type="button" class="secondary" aria-pressed="false">✧ CÂMARA</button>
-        <button id="spin" type="button" class="spin" aria-label="Rodar tambores 3D"><span class="spin-icon">↻</span><span>RODAR</span></button>
-        <button id="turbo" type="button" class="secondary" aria-pressed="false">⚡ TURBO</button>
-      </div>
-      <p id="result" class="result" role="status" aria-live="polite">Toca em RODAR e observa os tambores em 3D</p>
-      <p class="disclaimer">Pré-visualização gráfica, sem apostas, saldo ou pagamentos.</p>
-    </section>
-  </main>
-  <div class="error" id="error" hidden>
-    <strong>Não foi possível iniciar o motor 3D.</strong>
-    <span>Verifica a ligação à Internet e abre no Safari ou Chrome atualizado.</span>
-    <a href="../index.html">Abrir a versão original</a>
+     </div>
+    </div>
+    <div class="hudPanel prizePanel">
+     <small>ÚLTIMO PRÉMIO</small>
+     <strong id="lastWin">0,00</strong>
+     <span class="totalWin" id="freeTotal" hidden>ACUMULADO 0,00</span>
+    </div>
+    <div class="rightHud">
+     <button type="button" id="vaultBtn" class="vaultBtn" title="Abrir cofre mágico">
+      <span class="pig">🐷</span><small>COFRE MÁGICO</small>
+      <strong id="vaultAmount">2 300,00</strong>
+     </button>
+     <button type="button" id="buyBonus" class="buyBonus">✦ COMPRAR BÓNUS ✦</button>
+    </div>
+   </div>
+
+   <div class="controls">
+    <button id="autoBtn" type="button" class="secondary auto" aria-label="Giros automáticos">AUTO <span id="autoCount">∞</span></button>
+    <button id="spin" type="button" class="spin" aria-label="Rodar tambores tridimensionais"><span class="spin-icon">↻</span><span>RODAR</span></button>
+    <button id="turbo" type="button" class="secondary turbo" aria-pressed="false">⚡ TURBO</button>
+   </div>
+
+   <p id="result" class="result" role="status" aria-live="polite">Prémios e saldos ilustrativos, sem dinheiro real.</p>
+   <p class="disclaimer"><span id="quality">PLAYCANVAS 3D</span> · Créditos fictícios · RTP não auditado</p>
+  </section>
+ </main>
+
+ <div class="dialogShade" id="dialogShade" hidden>
+  <section class="dialogCard" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+   <div class="dialogHead"><h2 id="dialogTitle">Jardim Mágico</h2><button id="dialogClose" aria-label="Fechar janela">×</button></div>
+   <div id="dialogBody" class="dialogBody"></div>
+  </section>
+ </div>
+
+ <div class="holdScreen" id="holdScreen" hidden>
+  <div class="holdCard">
+   <h2>✨ HOLD &amp; WIN ✨</h2>
+   <p>Recolhe moedas. Cada nova moeda repõe as 3 tentativas.</p>
+   <div id="holdBoard" class="holdBoard" aria-label="Grelha de moedas 4 por 4"></div>
+   <p id="holdTries">3 tentativas</p>
+   <button id="holdSpin" type="button">RODAR MOEDAS</button>
+   <small>Simulação fictícia com limite no cofre de demonstração.</small>
   </div>
-  <script type="module" src="./js/main.js?v=1"></script>
+ </div>
+
+ <div class="error" id="error" hidden>
+  <strong>Não foi possível iniciar o motor 3D.</strong>
+  <span>Abre no Safari ou Chrome atualizado, com acesso à Internet.</span>
+  <a href="../index.html">Abrir a versão original</a>
+ </div>
+
+ <script type="module" src="./js/main.js?v=2"></script>
+ <script type="module" src="./js/gameplay.js?v=2"></script>
 </body>
 </html>
