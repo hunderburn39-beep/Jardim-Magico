@@ -7,6 +7,7 @@ import * as pc from 'playcanvas';
 import {createOrganicFrame} from './frame-v23.js?v=3.1';
 import {createVerticalReels} from './reels-v23.js?v=3.1';
 import {drawMagicBonus} from './symbol-art-v3.js?v=3.1';
+import {createSymbolFace,createVibrantMaterial} from './symbol-face-v32.js?v=3.2';
 
 const $=id=>document.getElementById(id);
 const canvas=$('application');
@@ -317,21 +318,7 @@ function textureFromSymbol(symbol,index){
   g.fillText(symbol,128,136);
   g.shadowBlur=0;
  }
- const t=new pc.Texture(app.graphicsDevice,{width:256,height:256,format:pc.PIXELFORMAT_RGBA8,mipmaps:true});
- t.setSource(c);
- const m=mat('#ffffff',{metal:.12,gloss:75});
- m.diffuseMap=t;
- m.emissiveMap=t;
- m.emissive=new pc.Color(.18,.1,.23);
- m.emissiveIntensity=.14;
- if(index>=9){
-  m.opacityMap=t;
-  m.opacityMapChannel='a';
-  m.blendType=pc.BLEND_NORMAL;
-  m.depthWrite=false;
- }
- m.update();
- return m;
+ return createVibrantMaterial({pc,app,canvas:c,opacity:true});
 }
 function reels(){
  symbolMaterials=symbols.map(textureFromSymbol);
@@ -353,60 +340,86 @@ function reels(){
 /* Arte original da fotografia: aplicada a modelos 3D individuais. */
 function loadOriginalSymbolArt(){
  const images={
-  0:'3f3213b7316d5cf176.png',1:'e776f95aa9fd19f865.png',
-  2:'66cb91b07aa8094c90.png',3:'49d6874847ff87abe4.png',
-  4:'05ad729435e7487db8.png',5:'6db9f4dd9d6abeb732.png',
-  6:'81cc7b8d8f2c0d0b18.png',7:'ab10713bfdfc732017.png',
+  0:'3f3213b7316d5cf176.png',
+  1:'e776f95aa9fd19f865.png',
+  2:'66cb91b07aa8094c90.png',
+  3:'49d6874847ff87abe4.png',
+  4:'05ad729435e7487db8.png',
+  5:'6db9f4dd9d6abeb732.png',
+  6:'81cc7b8d8f2c0d0b18.png',
+  7:'ab10713bfdfc732017.png',
   8:'ae9c51465776decce9.png'
  };
- for(const [id,file] of Object.entries(images)){
-  const im=new Image();im.decoding='async';
+ const entries=Object.entries(images);
+ let loaded=0;
+ return Promise.all(entries.map(([id,file])=>new Promise(resolve=>{
+  const im=new Image();
+  im.decoding='async';
   im.onload=()=>{
    try{
-    const cut=document.createElement('canvas');cut.width=cut.height=512;
-    const ctx=cut.getContext('2d',{willReadFrequently:true});
-    ctx.drawImage(im,0,0,512,512);
-    const a=ctx.getImageData(0,0,512,512);
-    let l=512,t=512,r=0,b=0;
-    for(let y=0;y<512;y++)for(let x=0;x<512;x++){
-     const k=4*(y*512+x);
-     if(a.data[k+3]<40)continue;
-     l=Math.min(l,x);t=Math.min(t,y);r=Math.max(r,x);b=Math.max(b,y);
+    const size=512;
+    const input=document.createElement('canvas');
+    input.width=input.height=size;
+    const ctx=input.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(im,0,0,size,size);
+    const image=ctx.getImageData(0,0,size,size),src=image.data;
+    let l=size,top=size,r=0,b=0;
+    for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+     const k=(y*size+x)*4;
+     if(src[k+3]<50)continue;
+     l=Math.min(l,x);top=Math.min(top,y);
+     r=Math.max(r,x);b=Math.max(b,y);
     }
-    if(r-l<30||b-t<30)return;
-    const normalized=document.createElement('canvas');
-    normalized.width=normalized.height=512;
-    const g=normalized.getContext('2d',{willReadFrequently:true});
-    const w=r-l+1,h=b-t+1,k=Math.min(454/w,454/h);
-    g.drawImage(cut,l,t,w,h,(512-w*k)/2,(512-h*k)/2,w*k,h*k);
-    const pixels=g.getImageData(0,0,512,512),p=pixels.data;
-    for(let j=0;j<p.length;j+=4){
-     const hi=Math.max(p[j],p[j+1],p[j+2]);
-     if(hi<47)p[j+3]=Math.round(p[j+3]*.1);
-     else if(hi<96&&p[j+2]>p[j+1]*1.18)p[j+3]=Math.round(p[j+3]*.42);
+    if(r-l<32||b-top<32)throw Error('Arte sem área útil');
+    const cut=document.createElement('canvas');
+    cut.width=cut.height=size;
+    const g=cut.getContext('2d',{willReadFrequently:true});
+    const w=r-l+1,h=b-top+1;
+    const fit=Math.min(490/w,490/h);
+    const drawW=w*fit,drawH=h*fit;
+    g.drawImage(input,l,top,w,h,
+      (size-drawW)/2,(size-drawH)/2,drawW,drawH);
+    const pixels=g.getImageData(0,0,size,size),p=pixels.data;
+    // A fotografia contém um quadrado violeta por detrás de cada figura.
+    // Remover SÓ essa base, não a cor do cristal nem o brilho da flor.
+    for(let i=0;i<p.length;i+=4){
+     const alpha=p[i+3];if(alpha===0)continue;
+     const red=p[i],green=p[i+1],blue=p[i+2];
+     const high=Math.max(red,green,blue);
+     const low=Math.min(red,green,blue);
+     const purpleBg=green<red*.77&&blue>green*1.2;
+     let preserve=(high-38)/90;
+     preserve=Math.min(1,Math.max(0,preserve));
+     if(purpleBg&&high<135)preserve*=.28;
+     // As cores saturadas quentes/verdes pertencem ao símbolo original.
+     if((red>green*1.5&&red>110)||
+        (green>red*1.25&&green>108)||
+        (blue>150&&high-low>86&&green>80)){
+       preserve=Math.max(preserve,.94);
+     }
+     p[i+3]=Math.round(alpha*preserve);
     }
     g.putImageData(pixels,0,0);
-    const tex=new pc.Texture(app.graphicsDevice,{width:512,height:512,format:pc.PIXELFORMAT_RGBA8,mipmaps:true});
-    tex.setSource(normalized);
-    const material=mat('#ffffff',{metal:.08,gloss:79});
-    material.diffuseMap=tex;
-    material.opacityMap=tex;
-    material.opacityMapChannel='a';
-    material.blendType=pc.BLEND_NORMAL;
-    material.depthWrite=false;
-    material.emissive=rgb('#65435e');
-    material.emissiveMap=tex;
-    material.emissiveIntensity=.2;
-    material.update();
+    const material=createVibrantMaterial({pc,app,canvas:cut,opacity:true});
     const index=Number(id);
     symbolMaterials[index]=material;
-    for(const col of reelTiles)for(const tile of col)
+    for(const col of reelTiles)for(const tile of col){
      if(tile.idx===index)tile.face.render.material=material;
-   }catch(e){console.warn('Símbolo 3D HD:',file,e)}
+    }
+    loaded++;
+   }catch(e){
+    console.error('Não consegui preparar o símbolo original:',file,e);
+   }finally{resolve()}
   };
-  im.onerror=()=>console.warn('Textura HD não carregou:',file);
-  im.src='../assets/imagens/'+file;
- }
+  im.onerror=()=>{
+   console.error('Ficheiro HD não encontrado',file);
+   resolve();
+  };
+  im.src='../assets/imagens/'+file+'?v=3.2';
+ }))).then(()=>{
+  quality.textContent='SÍMBOLOS HD '+loaded+'/9';
+  return loaded;
+ });
 }
 
 function setCamera(){
@@ -449,7 +462,7 @@ function cancelBurst(){
  if(!burst)return;
  for(const cell of burst.cells){
   cell.face.enabled=true;
-  cell.face.setLocalScale(.947,.965,.075);
+  cell.face.setLocalScale(.98,.98,1);
   cell.face.setLocalEulerAngles(0,0,0);
  }
  for(const part of burst.parts)part.entity.enabled=false;
@@ -460,7 +473,7 @@ function explodeWinners(coordinates,duration=1100){
  if(state.running||!Array.isArray(coordinates))return 0;
  cancelBurst();
  winPulseUntil=0;
- for(const cell of winPulseCells)cell.face.setLocalScale(.947,.965,.075);
+ for(const cell of winPulseCells)cell.face.setLocalScale(.98,.98,1);
  winPulseCells=[];
  prepareBurstParticles();
  const seen=new Set(),cells=[],parts=[],waves=[];
@@ -501,7 +514,7 @@ function updateBurst(dt){
  else if(t<.82)scale=.006;
  else scale=.006+(1-.006)*Math.sin(((t-.82)/.18)*Math.PI/2);
  for(const cell of effect.cells){
-  cell.face.setLocalScale(.947*scale,.965*scale,.075*Math.max(scale,.006));
+  cell.face.setLocalScale(.98*scale,.98*scale,Math.max(scale,.006));
   cell.face.setLocalEulerAngles(0,t>.25&&t<.82?120*(t-.25):0,0);
  }
  const phase=Math.min(1,Math.max(0,(t-.25)/.62));
@@ -534,7 +547,7 @@ function startSpin(matrix=null,whenDone=null){
  if(state.running||!reelMotion)return false;
  cancelBurst();
  winPulseUntil=0;
- for(const cell of winPulseCells)cell.face.setLocalScale(.947,.965,.075);
+ for(const cell of winPulseCells)cell.face.setLocalScale(.98,.98,1);
  winPulseCells=[];
  const board=matrix||Array.from({length:5},
    ()=>Array.from({length:3},()=>Math.floor(Math.random()*symbols.length)));
@@ -623,7 +636,7 @@ function build(){
  lighting();
  background();
  createOrganicFrame({pc,model,mat,app});
- reelMotion=createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol});
+ reelMotion=createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol,createSymbolFace});
  reelTiles=reelMotion.reelTiles;
  symbolMaterials=reelMotion.symbolMaterials;
  loadOriginalSymbolArt();
@@ -638,7 +651,7 @@ function build(){
     const t=Date.now();
     const active=t<winPulseUntil;
     const v=active?1+.13*Math.sin((t-winPulseStart)*.019)**2:1;
-    for(const cell of winPulseCells)cell.face.setLocalScale(.947*v,.965*v,.075);
+    for(const cell of winPulseCells)cell.face.setLocalScale(.98*v,.98*v,1);
     if(!active){winPulseUntil=0;winPulseCells=[]}
    }
    if(state.orbit){
