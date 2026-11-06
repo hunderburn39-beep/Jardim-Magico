@@ -53,7 +53,8 @@ export class DemoDatabase{
     updatedAt:new Date().toISOString()};
   const log={eventId:event.id||('ev-'+Date.now()+'-'+Math.random().toString(36).slice(2)),
     timestamp:payload.updatedAt,type:event.type||'update',
-    stake:Number(event.stake||0),paid:Number(event.paid||0),
+    stake:Number(event.stake||0),wager:Number(event.wager||0),
+    cost:Number(event.cost||0),paid:Number(event.paid||0),
     spins:Number(snapshot.spins||0),balance:Number(snapshot.balance||0),
     reserve:Number(snapshot.reserve||0),stages:Number(event.stages||0)};
   this.pending=this.pending.catch(()=>{}).then(()=>this.write(payload,log));
