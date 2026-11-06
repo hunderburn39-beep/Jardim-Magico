@@ -8,9 +8,9 @@ const SYMBOL_NAMES={
  sapphire:"Pedra azul",emerald:"Pedra verde",amber:"Pedra amarela",
  amethyst:"Pedra roxa",ruby:"Pedra vermelha",goblet:"Cálice",
  ring:"Anel",hourglass:"Ampulheta",crown:"Coroa",
- scatter:"SCATTER",mult:"Multiplicador"
+ scatter:"SCATTER",mult:"Multiplicador",wild:"WILD"
 };
-const ORDER=["crown","hourglass","ring","goblet","ruby","amethyst","amber","emerald","sapphire","scatter","mult"];
+const ORDER=["crown","hourglass","ring","goblet","ruby","amethyst","amber","emerald","sapphire","wild","scatter","mult"];
 const POSITION={
  sapphire:[0,0],emerald:[1,0],amber:[2,0],amethyst:[3,0],ruby:[4,0],
  goblet:[0,1],ring:[1,1],hourglass:[2,1],crown:[3,1],scatter:[4,1],mult:[0,2]
@@ -47,7 +47,7 @@ function recordWin(wins){
  if(!active||!wins||!wins.result)return;
  const current=active.stages[active.stages.length-1];if(!current)return;
  for(const w of wins.result){
-   current.prizes.push({symbol:w.symbol,count:w.count,amount:Number(w.amount)||0});
+   current.prizes.push({symbol:w.symbol,count:w.count,amount:Number(w.amount)||0,wildCount:w.wildCount||0,wildMultiplier:w.wildMultiplier||1});
    current.payout+=Number(w.amount)||0;
    active.baseWin+=Number(w.amount)||0;
  }
@@ -138,7 +138,7 @@ function refresh(){
    section.append(block);
    if(step.prizes?.length){
     const awarded=node("div","history-awarded");
-    for(const p of step.prizes){const prize=node("div","");prize.append(makeGlyph(p.symbol));prize.append(node("span","",p.count+" iguais"));prize.append(node("b","",money(p.amount)));awarded.append(prize)}
+    for(const p of step.prizes){const prize=node("div","");prize.append(makeGlyph(p.symbol));prize.append(node("span","",p.count+" iguais"+(p.wildCount?" • "+p.wildCount+" WILD ×"+p.wildMultiplier:"")));prize.append(node("b","",money(p.amount)));awarded.append(prize)}
     section.append(awarded);
    }
    details.append(section);
