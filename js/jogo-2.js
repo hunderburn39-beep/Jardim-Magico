@@ -1344,7 +1344,15 @@ function updateDropScore(cents){
  if(value>0){void node.offsetWidth;node.classList.add('jm63ScorePulse');}
  updateFreeExposure();
 }
-function markLines(won){
+// V69 — o valor mostrado em cada queda da BASE não excede o montante
+// ainda disponível no cofre para esta spin; o pagamento final continua
+// limitado ao cofre e ao teto de 5000×. Free spins ficam independentes.
+function affordableBaseDrop(requested,accumulated,stake){
+ const available=Number.isFinite(prizePool)?Math.max(0,Math.floor(prizePool)):0;
+ const maxBase=Math.min(available,Math.floor(Math.max(0,stake)*MAX_WIN_MULT));
+ return Math.max(0,Math.min(Math.floor(Number(requested)||0),maxBase-Math.max(0,Math.floor(accumulated))));
+}
+function markLines(won,visibleAmount=won.reduce((sum,win)=>sum+win.value,0)){
  const lines=$('paylines'),layer=$('floaters'),stage=$('stageWrap');
  lines.replaceChildren();layer.replaceChildren();
  const seen=new Set(),glowDuration=mode==='turbo'?1200:2050;
@@ -1363,7 +1371,8 @@ function markLines(won){
  let wins=$('jm56WinValues');
  if(!wins){wins=document.createElement('div');wins.id='jm56WinValues';stage.appendChild(wins);}
  // Cada queda mostra apenas a soma das linhas premiadas nessa queda.
- const amount=won.reduce((sum,win)=>sum+win.value,0);
+ const amount=Math.max(0,Math.floor(visibleAmount));
+ if(amount===0)return;
  const display=document.createElement('span');
  display.className='jm56WinAmount jm57CenterWin jm63LineAmount';
  display.textContent=money(amount);
@@ -1557,11 +1566,19 @@ async function doRound(){
   const hasCoins=grid.some(col=>col.some(piece=>piece?.id==='coin'&&!countedCoins.has(piece.uid)));
   if(!ev.won.length&&!m.length&&!hasCoins)break;
   if(ev.won.length){
-   winRound+=ev.amount;
-   updateDropScore(free?freeBaseTotal+winRound:winRound); // A soma dura toda a sessão grátis; nas apostas normais, só uma spin.
-   markLines(ev.won);     // Ao centro, apenas o valor desta queda.
-   notice('Linha premiada: '+money(ev.amount)+' • cascata '+cascadeCount);
-   await sleep(mode==='turbo'?690:1380); // deixar ver as quantias a desvanecer
+   // Na base, não anunciar um valor maior do que o cofre suporta.
+   // O WILD continua com as mesmas regras de contagem e não se mexe
+   // no sorteio nem nas posições dos símbolos vencedores.
+   const payableDrop=free?ev.amount:affordableBaseDrop(ev.amount,winRound,betAmount);
+   winRound+=payableDrop;
+   updateDropScore(free?freeBaseTotal+winRound:winRound);
+   if(payableDrop>0){
+    markLines(ev.won,payableDrop); // Centro: só a queda pagável, não o valor bruto.
+    notice('Linha premiada: '+money(payableDrop)+' • cascata '+cascadeCount+(payableDrop<ev.amount?' • limitado pelo cofre':''));
+    await sleep(mode==='turbo'?690:1380);
+   }else if(!free){
+    notice('Cofre sem fundos disponíveis para pagar esta queda.');
+   }
   }
   const remove=new Set();
   for(const line of ev.won)for(const [x,y] of line.points){
