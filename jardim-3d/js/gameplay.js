@@ -149,10 +149,10 @@ function bonusModal(){
   'Bónus voluntários com créditos fictícios. Não existem pagamentos ou levantamento.',
   [
    ['✨ 15 Free Spins','Custo fictício: '+money(bank.bonusPrice)+' créditos',()=>{
-     const r=bank.buyFree();render();say(r.message);if(r.ok){freeBanner('✨ 15 FREE SPINS ✨');nextTimer=setTimeout(runSpin,1150)}
+     const r=bank.buyFree();render();say(r.message);if(r.ok){saveDemo('buy-free');freeBanner('✨ 15 FREE SPINS ✨');nextTimer=setTimeout(runSpin,1150)}
    },bank.balance<bank.bonusPrice],
    ['🪙 Hold & Win 4×4','Custo fictício: '+money(bank.holdPrice)+' créditos',()=>{
-     const r=bank.buyHold();render();say(r.message);if(r.ok)showHold();
+     const r=bank.buyHold();render();say(r.message);if(r.ok){saveDemo('buy-hold');showHold()}
    },bank.balance<bank.holdPrice]
   ]);
 }
@@ -179,10 +179,10 @@ function payModal(){
  note.textContent='AVISO: matemática e frequências desta demonstração não são o RTP nem o sistema de pagamentos do jogo original.';
  b.append(note);
  b.append(choice('✨ Experimentar Free Spins','Apenas para testar o visual 3D.',()=>{
-  bank.addFree(15);render();freeBanner('✨ FREE SPINS DEMO ✨');nextTimer=setTimeout(runSpin,1200)
+  bank.addFree(15);render();saveDemo('test-free');freeBanner('✨ FREE SPINS DEMO ✨');nextTimer=setTimeout(runSpin,1200)
  },bank.mode!=='base'||spinBusy));
  b.append(choice('🪙 Experimentar Hold & Win','Grelha interativa 4×4 com moedas fictícias.',()=>{
-  if(bank.startHold()){render();showHold()}
+  if(bank.startHold()){render();saveDemo('test-hold');showHold()}
   else{render();say('Cofre virtual insuficiente para as moedas iniciais')}
  },bank.mode!=='base'||spinBusy));
  dialog('Regras da demonstração',b);
@@ -192,11 +192,11 @@ function vaultModal(){
  'Fundo virtual disponível para pagar prémios simulados: '+money(bank.reserve)+' créditos. Este valor não representa dinheiro depositado ou disponível para levantamento.',
  [
  ['🪙 Testar Hold & Win','Ativar uma demonstração sem compra real.',()=>{
-  if(bank.startHold()){render();showHold()}
+  if(bank.startHold()){render();saveDemo('test-hold');showHold()}
   else{render();say('Cofre virtual insuficiente para as moedas iniciais')}
  },bank.mode!=='base'||spinBusy],
  ['＋ Adicionar créditos DEMO','Acrescenta 25 créditos fictícios ao saldo.',()=>{
-  bank.creditDemo(25);render();say('Foram adicionados 25 créditos fictícios')
+  bank.creditDemo(25);render();saveDemo('credit-demo');say('Foram adicionados 25 créditos fictícios')
  }]
  ]);
 }
@@ -229,6 +229,7 @@ function updateHold(){
 function holdStep(){
  const r=bank.holdTurn();
  if(!r.ok)return;
+ saveDemo(r.done?'hold-paid':'hold-turn',{paid:r.prize||0});
  if(r.done){
   $('holdScreen').hidden=true;
   render();say('Hold & Win DEMO: '+money(r.prize)+' créditos');
@@ -393,16 +394,49 @@ async function runSpin(){
 function changeStake(delta){
  const idx=BETS.findIndex(v=>Math.abs(v-bank.stake)<1e-5);
  const next=BETS[Math.max(0,Math.min(BETS.length-1,(idx<0?2:idx)+delta))];
- if(bank.setStake(next)){render();say('Aposta virtual: '+money(next))}
+ if(bank.setStake(next)){render();saveDemo('stake');say('Aposta virtual: '+money(next))}
 }
 function charge(){
- bank.creditDemo(25);render();say('＋25 créditos fictícios adicionados');
+ bank.creditDemo(25);render();saveDemo('credit-demo');say('＋25 créditos fictícios adicionados');
+}
+function databaseModal(){
+ const wrap=document.createElement('div');
+ const p=document.createElement('p');
+ p.textContent='Base de dados '+(demoDB.mode==='indexedDB'?'IndexedDB':'localStorage')+
+  ' no dispositivo. São créditos fictícios; não é uma base online e não sincroniza entre dispositivos.';
+ wrap.appendChild(p);
+ const report=document.createElement('p');
+ report.textContent='A carregar histórico…';wrap.appendChild(report);
+ demoDB.history().then(rows=>{
+  const spins=rows.filter(x=>x.type==='spin');
+  const wins=spins.reduce((sum,x)=>sum+x.paid,0);
+  report.textContent='Giros registados: '+spins.length+
+   ' · prémios fictícios: '+money(wins)+
+   ' · saldo: '+money(bank.balance)+' · fundo: '+money(bank.reserve);
+ }).catch(()=>{report.textContent='Histórico indisponível'});
+ wrap.append(choice('⬇ Exportar histórico e saldo','Guardar cópia JSON neste dispositivo.',async()=>{
+  try{
+   const data=await demoDB.exportData();
+   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+   const url=URL.createObjectURL(blob);
+   const a=document.createElement('a');a.href=url;
+   a.download='jardim-magico-demo-'+new Date().toISOString().slice(0,10)+'.json';
+   document.body.append(a);a.click();a.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),2000);
+  }catch(err){say('Erro ao exportar os dados')}
+ }));
+ wrap.append(choice('♻ Reiniciar demonstração','Apaga o saldo e histórico locais.',async()=>{
+  if(!confirm('Apagar o saldo fictício e histórico deste dispositivo?'))return;
+  autoRemaining=0;clearTimeout(nextTimer);await demoDB.clear();location.reload();
+ }));
+ dialog('Dados e histórico local',wrap);
 }
 function bind(){
  $('betMinus').addEventListener('click',()=>changeStake(-1));
  $('betPlus').addEventListener('click',()=>changeStake(1));
  $('btnDemoCredits').addEventListener('click',charge);
  $('btnInfo').addEventListener('click',payModal);
+ $('btnDb').addEventListener('click',databaseModal);
  $('buyBonus').addEventListener('click',bonusModal);
  $('vaultBtn').addEventListener('click',vaultModal);
  $('autoBtn').addEventListener('click',autoModal);
@@ -425,9 +459,26 @@ function bind(){
  });
 }
 render();bind();
-if(window.JM3D) say('Jardim Mágico 3D pronto — créditos virtuais');
-else{
- window.addEventListener('jm3d-ready',()=>{
-  say('Jardim Mágico 3D pronto — créditos virtuais');
- },{once:true});
+async function launch(){
+ const label=$('dbStatus');
+ try{
+  const mode=await demoDB.connect();
+  const existing=await demoDB.load();
+  if(existing)restoreBank(existing);
+  label.textContent=mode==='indexedDB'?'DB LOCAL ✓':'GUARDADO LOCALMENTE';
+  gameReady=true;render();
+  if(lastBoard){
+   if(window.JM3D)window.JM3D.showBoard?.(lastBoard);
+   else window.addEventListener('jm3d-ready',
+     ()=>window.JM3D?.showBoard?.(lastBoard),{once:true});
+  }
+  if(bank.mode==='hold')showHold();
+  else if(bank.mode==='free')nextTimer=setTimeout(runSpin,1200);
+  say('Jardim Mágico pronto · progresso recuperável');
+ }catch(err){
+  console.error('Erro ao abrir base local:',err);
+  label.textContent='DB INDISPONÍVEL';
+  gameReady=true;render();say('A jogar sem base de dados persistente');
+ }
 }
+launch();
