@@ -155,3 +155,27 @@
  .board .cell.winner.burst-out::after,
  .board .cell.winner.burst-out .v12-fragment{display:none!important}
 }
+
+/* Se o jogo detetar várias frames acima de 27 ms, entra automaticamente
+   em modo leve. As recompensas e a sequência das quedas são idênticas. */
+.app.perf-low .scene-cloud,
+.app.perf-low .scene-image,
+.app.perf-low .scene-halo,
+.app.perf-low .scene-motes,
+.app.perf-low .scene-beam,
+.app.perf-low .god-art,
+.app.perf-low .game-logo{
+  animation:none!important;
+}
+.app.perf-low .scene-cloud-front,
+.app.perf-low .scene-motes,
+.app.perf-low .scene-beam,
+.app.perf-low .sky-flash{
+  display:none!important;
+}
+.app.perf-low .board .cell:not(.winner):not(.drop-in):not(.burst-out) .symbol-bitmap{
+  animation:none!important;
+}
+.app.perf-low .board .cell.winner.burst-out .v12-fragment:nth-of-type(n+2){
+  display:none!important;
+}
