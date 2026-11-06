@@ -25,25 +25,53 @@ export function newBoard(rng=Math.random,free=false){
 }
 export function count(board,id){return board.flat().filter(x=>x===id).length}
 export function evaluate(board,bet){
- let raw=0,lines=0,wilds=0;
- for(const path of PAYLINES){
+ // Uma combinação paga por linha; quaisquer várias linhas somam sempre.
+ // Cada combinação inclui as posições exatas que participam na vitória.
+ // Um WILD partilhado por duas linhas pode contar nas DUAS linhas,
+ // mas será animado uma única vez pelo renderizador 3D.
+ const lineWins=[];
+ let wilds=0;
+ for(let index=0;index<PAYLINES.length;index++){
+   const path=PAYLINES[index];
    const chain=path.map((row,c)=>board[c][row]);
-   if(chain[0]===WILD&&chain[1]===WILD){raw+=bet*.55;lines++}
-   let first=chain.find(s=>s!==WILD);
-   if(first===undefined)first=WILD;
-   if([SCATTER,STONE,COIN].includes(first))continue;
-   let n=0,wm=0;
-   for(const s of chain){
-     if(s!==first && s!==WILD)break;
-     n++;if(s===WILD)wm++;
+   const pairWild=chain[0]===WILD&&chain[1]===WILD;
+   const first=chain.find(s=>s!==WILD)??WILD;
+   let amount=pairWild?bet*.55:0;
+   let matched=pairWild?2:0;
+   let wm=0;
+   if(![SCATTER,STONE,COIN].includes(first)){
+     let n=0;
+     for(const symbol of chain){
+       if(symbol!==first&&symbol!==WILD)break;
+       n++;if(symbol===WILD)wm++;
+     }
+     if(n>=3){
+       const pay=[0,0,0,.07,.25,.8][n]*([3,4,8,5,10,7,4,4,7,0,0,0][first]||1);
+       amount+=bet*pay*Math.min(5,1+wm);
+       matched=n;
+       wilds+=wm;
+     }
    }
-   if(n>=3){
-     const pay=[0,0,0,.07,.25,.8][n]*([3,4,8,5,10,7,4,4,7,0,0,0][first]||1);
-     raw+=bet*pay*Math.min(5,1+wm);
-     lines++;wilds+=wm;
+   if(amount>0){
+     lineWins.push({
+       line:index+1,
+       symbol:first,
+       count:matched,
+       amount:round(amount),
+       cells:path.slice(0,matched).map((r,c)=>({c,r}))
+     });
    }
  }
- return {raw:round(raw),lines,wilds,scatter:count(board,SCATTER),coins:count(board,COIN)};
+ // A soma visível de cada combinação tem de ser igual ao prémio das linhas.
+ const raw=round(lineWins.reduce((sum,win)=>sum+win.amount,0));
+ return {
+   raw,
+   lines:lineWins.length,
+   lineWins,
+   wilds,
+   scatter:count(board,SCATTER),
+   coins:count(board,COIN)
+ };
 }
 export class DemoBank{
  constructor(){
