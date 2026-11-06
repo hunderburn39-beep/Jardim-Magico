@@ -644,9 +644,20 @@ function build(){
  reelMotion=createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol,createSymbolFace});
  reelTiles=reelMotion.reelTiles;
  symbolMaterials=reelMotion.symbolMaterials;
- loadOriginalSymbolArt();
+ // Não expor substitutos emoji enquanto as imagens originais carregam.
+ // As 15 faces recebem primeiro a arte HD, antes de permitir RODAR.
+ let assetsReady=false;
+ button.disabled=true;
+ quality.textContent='A CARREGAR PEÇAS HD';
+ loadOriginalSymbolArt().then(count=>{
+  assetsReady=true;button.disabled=false;
+  quality.textContent=count===9?'3D V3.2 · HD':'3D V3.2 · HD '+count+'/9';
+  window.dispatchEvent(new Event('jm3d-assets-ready'));
+ }).catch(err=>{
+  console.error('Erro a carregar arte HD:',err);
+  assetsReady=true;button.disabled=false;
+ });
  setCamera();
- quality.textContent='3D V3.1';
  let age=0;
  app.on('update',(dt)=>{
    age+=dt;
@@ -694,7 +705,8 @@ function build(){
    if(document.hidden){state.orbit=false;cameraButton.setAttribute('aria-pressed','false');}
  });
  window.JM3D={
-  spin:(board,callback)=>startSpin(board,callback),
+  assetsReady:()=>assetsReady,
+  spin:(board,callback)=>assetsReady&&startSpin(board,callback),
   showBoard:board=>reelMotion.showBoard(board),
   cascade:(board,removed,callback)=>cascadeDown(board,removed,callback),
   recover:(board)=>recoverView(board),
