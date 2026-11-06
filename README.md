@@ -23,3 +23,13 @@ para `app/src/main/assets/`. Ambos os formatos usam o mesmo jogo.
 ## Cópia de segurança
 `JardimMagicoAndroid.zip` contém a versão antiga e foi preservado.
 A partir de agora, **editar os ficheiros organizados**, não o ZIP.
+
+## V73 — gráficos 2.5D acelerados por GPU
+
+- `js/jogo-2.js`: um único ciclo de animação para PixiJS/WebGL e Canvas 2D; não são iniciados dois tickers em paralelo.
+- As cascatas dos símbolos passam para sprites Pixi reutilizáveis, com apenas cinco máscaras (uma por rolo). Canvas 2D permanece como alternativa se o WebGL não estiver disponível.
+- Texturas com relevo pré-calculado (sombra, profundidade e reflexo recortado), sem filtros 3D pesados a cada frame. Cache das moedas dinâmicas limitado para evitar crescimento indefinido de memória.
+- `css/estilo-23.css`: vidro e iluminação 2.5D com fundos estáticos mais leves, incluindo ajustes para mobile e utilizadores com preferência por menos movimento.
+- Alvo: animação até 60 FPS em aparelhos compatíveis; o resultado real depende do dispositivo e do browser. A medição de FPS e a inspeção visual em equipamentos físicos continuam necessárias.
+- As regras, prémios, RTP, depósitos/levantamentos e cálculos da banca não foram alterados nesta versão.
+- Versão anterior preservada no branch `backup/jardim-v72-antes-grafico-v73`.
