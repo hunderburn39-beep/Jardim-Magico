@@ -1,4 +1,4 @@
-/* Portões do Trovão V13 — regras matemáticas puras de SCATTER/WILD.
+/* Portões do Trovão V14 — regras definitivas de substituição do WILD.
  * O RNG é fornecido pelo motor do jogo. Nunca adapta probabilidades
  * ao saldo, às perdas, aos prémios recentes ou ao jogador.
  * RTP: estimar com tools/simular-rtp-v13.js; demo, não certificado.
@@ -6,6 +6,8 @@
 (function(){
  "use strict";
  const KINDS=["crown","ring","goblet","hourglass","ruby","sapphire","emerald","amethyst","amber"];
+ const EXCLUDED_WILD_KINDS=Object.freeze(["scatter","mult","wild"]);
+ const canWildReplace=kind=>KINDS.includes(kind)&&!EXCLUDED_WILD_KINDS.includes(kind);
  const WEIGHTS=[5,6,6,7,8,9,9,9,9];
  const MULTIPLIERS=[2,3,4,5,6,8,10,12,15,20,25,50,100,250,500];
  const MULT_WEIGHTS=[44,30,17,8,4,2,1,.6,.35,.22,.12,.03,.012,.003,.001];
@@ -45,6 +47,9 @@
    let wildX=1;
    for(const w of wild)wildX=Math.max(wildX,Math.min(5,Math.max(1,w.value|0)));
    for(const kind of KINDS){
+     // O Wild substitui qualquer uma das nove peças pagantes; NUNCA
+     // SCATTER, esfera multiplicadora ou outro WILD.
+     if(!canWildReplace(kind))continue;
      const n=counts[kind];
      const native=n>=8?bet*payTable[kind][n>=12?2:n>=10?1:0]:0;
      if(native>0){
@@ -71,5 +76,5 @@
    return {result,pay,matched};
  }
  function scatterMultiplier(n){return n>=6?100:n===5?5:n>=4?3:0}
- window.TrovaoRules={CONFIG,KINDS,WEIGHTS,MULTIPLIERS,MULT_WEIGHTS,WILD_VALUES,WILD_WEIGHTS,draw,score,scatterMultiplier};
+ window.TrovaoRules={CONFIG,KINDS,EXCLUDED_WILD_KINDS,canWildReplace,WEIGHTS,MULTIPLIERS,MULT_WEIGHTS,WILD_VALUES,WILD_WEIGHTS,draw,score,scatterMultiplier};
 })();
