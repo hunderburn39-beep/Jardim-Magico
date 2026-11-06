@@ -226,6 +226,65 @@ function reels(){
    }
  }
 }
+/* Arte original da fotografia: aplicada a modelos 3D individuais. */
+function loadOriginalSymbolArt(){
+ const images={
+  0:'3f3213b7316d5cf176.png',1:'e776f95aa9fd19f865.png',
+  2:'66cb91b07aa8094c90.png',3:'49d6874847ff87abe4.png',
+  4:'05ad729435e7487db8.png',5:'6db9f4dd9d6abeb732.png',
+  6:'81cc7b8d8f2c0d0b18.png',7:'ab10713bfdfc732017.png',
+  8:'ae9c51465776decce9.png'
+ };
+ for(const [id,file] of Object.entries(images)){
+  const im=new Image();im.decoding='async';
+  im.onload=()=>{
+   try{
+    const cut=document.createElement('canvas');cut.width=cut.height=256;
+    const ctx=cut.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(im,0,0,256,256);
+    const a=ctx.getImageData(0,0,256,256);
+    let l=256,t=256,r=0,b=0;
+    for(let y=0;y<256;y++)for(let x=0;x<256;x++){
+     const k=4*(y*256+x);
+     if(a.data[k+3]<40)continue;
+     l=Math.min(l,x);t=Math.min(t,y);r=Math.max(r,x);b=Math.max(b,y);
+    }
+    if(r-l<30||b-t<30)return;
+    const normalized=document.createElement('canvas');
+    normalized.width=normalized.height=256;
+    const g=normalized.getContext('2d',{willReadFrequently:true});
+    const w=r-l+1,h=b-t+1,k=Math.min(228/w,228/h);
+    g.drawImage(cut,l,t,w,h,(256-w*k)/2,(256-h*k)/2,w*k,h*k);
+    const pixels=g.getImageData(0,0,256,256),p=pixels.data;
+    for(let j=0;j<p.length;j+=4){
+     const hi=Math.max(p[j],p[j+1],p[j+2]);
+     if(hi<47)p[j+3]=Math.round(p[j+3]*.1);
+     else if(hi<96&&p[j+2]>p[j+1]*1.18)p[j+3]=Math.round(p[j+3]*.42);
+    }
+    g.putImageData(pixels,0,0);
+    const tex=new pc.Texture(app.graphicsDevice,{width:256,height:256,format:pc.PIXELFORMAT_RGBA8,mipmaps:true});
+    tex.setSource(normalized);
+    const material=mat('#ffffff',{metal:.08,gloss:79});
+    material.diffuseMap=tex;
+    material.opacityMap=tex;
+    material.opacityMapChannel='a';
+    material.blendType=pc.BLEND_NORMAL;
+    material.depthWrite=false;
+    material.emissive=rgb('#65435e');
+    material.emissiveMap=tex;
+    material.emissiveIntensity=.2;
+    material.update();
+    const index=Number(id);
+    symbolMaterials[index]=material;
+    for(const col of reelTiles)for(const tile of col)
+     if(tile.idx===index)tile.face.render.material=material;
+   }catch(e){console.warn('Símbolo 3D HD:',file,e)}
+  };
+  im.onerror=()=>console.warn('Textura HD não carregou:',file);
+  im.src='../assets/imagens/'+file;
+ }
+}
+
 function setCamera(){
  const wide=innerWidth>innerHeight*1.12;
  const x=wide?2.45:0;
@@ -306,6 +365,7 @@ function build(){
  background();
  cabinet();
  reels();
+ loadOriginalSymbolArt();
  setCamera();
  quality.textContent='PLAYCANVAS';
  let age=0;
