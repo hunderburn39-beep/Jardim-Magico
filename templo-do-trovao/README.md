@@ -1,4 +1,4 @@
-# Portões do Trovão — V12.0
+# Portões do Trovão — V13.0
 
 Jogo independente de demonstração com créditos virtuais, inspirado no formato de slots de queda do Olimpo. **Não afiliado, licenciado ou certificado pela Pragmatic Play.** Sem depósitos, levantamentos ou prémios em dinheiro real.
 
@@ -122,3 +122,16 @@ Todos os gráficos desta pasta são novos e não reutilizam imagens nem logótip
 - `js/desempenho-v12.js` observa brevemente a fluidez durante as jogadas e ativa `perf-low` automaticamente em dispositivos que tenham vários frames lentos.
 - Explosões com dissipação: 570 ms normal e 310 ms turbo; não interferem com o cálculo de prémios, frequência de SCATTER, apostas ou RTP.
 - Os indicadores `data-performance-mode` no elemento `#app` são destinados ao diagnóstico técnico, sem efeitos em pagamentos.
+
+## V13 — WILD do Jardim Mágico, 5.000× e novo RTP
+
+- **Imagem Wild:** a mesma imagem do Jardim Mágico, carregada de `../assets/imagens/05ad729435e7487db8.png`, com animação e selo visível **×1 a ×5**. Não é uma reprodução.
+- **Código separado:** `js/regras-wild-v13.js` define as probabilidades e as regras do Wild; `css/wild-v13.css` define só o aspeto; `js/jogo.js` mantém o motor das quedas, os bónus e a interface.
+- **Regra:** WILD substitui uma figura em, no máximo, uma combinação premiada por queda. Não é contado duas vezes. Se houver vários WILD, usa-se o maior multiplicador (máximo ×5).
+- **Mais prémios pequenos:** em 600.000 rodadas base simuladas, cerca de **31,4%** tiveram algum pagamento, contra ~14% numa simulação anterior do motor sem WILD.
+- **RTP:** média simulada **~95,9%** incluindo ativação natural de bónus; simulações independentes deram **95,33% e 96,51%**. Compra de bónus 100×: retorno esperado separado **~94,7%**.
+- **Teto absoluto:** 5.000× a aposta por jogada ou conjunto de free spins, como antes.
+- **Reproduzir:** `node tools/simular-rtp-v13.js 300000 5500 681925`.
+- **Detalhes, amostras, distribuição dos Wild e limitações:** [RELATORIO-RTP-V13.md](tools/RELATORIO-RTP-V13.md).
+
+**Nota:** as simulações são estimativas e não equivalem a certificação de RTP/RNG. O jogo é uma demonstração com créditos virtuais.
