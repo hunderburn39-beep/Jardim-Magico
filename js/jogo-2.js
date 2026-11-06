@@ -1046,7 +1046,44 @@ function jmPixiMotion(sp,s,x,t){
  const z=symbolZoom(s);sp.scale.set(CW*.985*z*m.k/Math.max(1,sp.texture.width),CH*.992*z*m.k/Math.max(1,sp.texture.height));
 }
 
-function imageLoad(){return Promise.all(Object.entries(IMGFILES).map(([id,path])=>new Promise(resolve=>{const img=new Image();img.onload=()=>{nativeAssets[id]=id==='scatter'?jmScatterTextArt():jmCutout(img,id);resolve()};img.onerror=()=>resolve();img.src=window.JM_INLINE_ASSETS[id]})));}
+/* V75 — Figuras 3D recortadas da fotografia enviada. O atlas é uma imagem
+   real, separada em 9 canvases uma única vez. PixiJS move estas texturas em
+   vez de transformar a foto num screenshot estático. */
+async function imageLoad(){
+ const kinds=['potion','green','heart','teapot','wild','gem','mushroom','hat','rose'];
+ try{
+  const img=new Image();img.decoding='async';
+  const ready=new Promise((resolve,reject)=>{
+   img.onload=resolve;img.onerror=()=>reject(new Error('O atlas fotográfico não carregou'));
+  });
+  img.src='assets/imagens/jm75-simbolos.webp?v=75';
+  await ready;
+  const cell=Math.floor(img.naturalWidth/3);
+  if(cell<50||img.naturalHeight<cell*3)throw new Error('Atlas inválido');
+  for(let i=0;i<kinds.length;i++){
+   const canvas=document.createElement('canvas');
+   canvas.width=canvas.height=256;
+   const ctx=canvas.getContext('2d');
+   ctx.clearRect(0,0,256,256);
+   ctx.drawImage(img,(i%3)*cell,Math.floor(i/3)*cell,cell,cell,0,0,256,256);
+   nativeAssets[kinds[i]]=canvas;
+   // Mesmas artes na tabela de pagamentos (o jogo usa nomes e regras intactos).
+   window.JM_INLINE_ASSETS[kinds[i]]=canvas.toDataURL('image/png');
+  }
+  window.JM75_PHOTO_SYMBOLS_READY=true;
+ }catch(e){
+  console.warn('Jardim V75: fotografias indisponíveis; mantendo símbolos anteriores.',e);
+ }
+ await Promise.all(Object.entries(IMGFILES).map(([id,path])=>{
+  if(nativeAssets[id])return Promise.resolve();
+  return new Promise(resolve=>{
+   const img=new Image();
+   img.onload=()=>{nativeAssets[id]=id==='scatter'?jmScatterTextArt():jmCutout(img,id);resolve();};
+   img.onerror=()=>resolve();
+   img.src=window.JM_INLINE_ASSETS[id];
+  });
+ }));
+}
 function artBg(ctx,t){ctx.save();ctx.clearRect(0,0,W,H);
  const wash=ctx.createLinearGradient(0,0,0,H);wash.addColorStop(0,'rgba(34,16,57,.12)');wash.addColorStop(.5,'rgba(50,20,79,.08)');wash.addColorStop(1,'rgba(16,13,36,.14)');ctx.fillStyle=wash;ctx.fillRect(0,0,W,H);
  for(let i=0;i<7;i++){
@@ -2324,7 +2361,7 @@ function setup(){
  $('openingCredits').addEventListener('input',()=>{document.querySelectorAll('#choices button').forEach(b=>b.classList.toggle('selected',Number(b.dataset.value)===Number($('openingCredits').value)));updateDepositPreview()});
 }
 
-(async()=>{setup();setupAdmin();load();updateDropScore(freeSpins>0||freeSettlePending||freeSummaryPending?freeBaseTotal:0);setDisplayRatio(window.innerWidth>window.innerHeight*1.12?'16:9':'9:16');musicUI();document.addEventListener('pointerdown',()=>{if(session&&musicEnabled&&musicElement().paused)startMusic()},{passive:true});update();makePaytable();await imageLoad();requestAnimationFrame(frame);
+(async()=>{setup();setupAdmin();load();updateDropScore(freeSpins>0||freeSettlePending||freeSummaryPending?freeBaseTotal:0);setDisplayRatio(window.innerWidth>window.innerHeight*1.12?'16:9':'9:16');musicUI();document.addEventListener('pointerdown',()=>{if(session&&musicEnabled&&musicElement().paused)startMusic()},{passive:true});update();makePaytable();await imageLoad();makePaytable();requestAnimationFrame(frame);
  // CDN PixiJS é opcional em execução: Canvas2D serve de alternativa quando offline/WebGL indisponível.
  let ticks=0;const timer=setInterval(async()=>{if(window.PIXI?.Application){clearInterval(timer);await initPixi()}else if(++ticks>=30){clearInterval(timer);console.info('Canvas 2D de reserva ativo')}},100);
  if(session){notice('Sessão retomada. Continua a jogar!');modal('startModal',false);if(freeMultiplierBalls.length)shelf=freeMultiplierBalls;updateShelf();if(freeSummaryPending)showFreeSummary(true);if(freeSettlePending&&!bonus)showFreeSummary();if(bonus){if(bonus.finished&&bonus.endReason==='completo'&&bonus.cells.every(Boolean))prepareFullBoardWheel();renderBonus();modal('bonusModal',true);$('bonusNote').textContent=bonus.wheelPending?'Roleta de jackpots por concluir. O mesmo sorteio será retomado.':bonus.finished?'Bónus concluído. Recolhe o teu prémio.':'Bónus retomado: tens '+bonus.left+' tentativas restantes.';if(bonus.wheelPending)setTimeout(()=>playFullBoardWheel(),200);}if(freeSpins>0&&!bonus)openFreeStart();else if(autoSpinsRemaining>0&&!running&&!bonus&&!freeSettlePending&&!freeSummaryPending)maybeContinueAuto();}else openDepositLogin();
