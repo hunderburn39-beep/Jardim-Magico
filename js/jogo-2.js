@@ -160,7 +160,7 @@ let vaultFictiveSum=0; // Valores exibidos nas moedas do porquinho; não entram 
 let grid=Array.from({length:5},()=>Array.from({length:3},()=>({id:pick(regular)})));
 let transitions=Array(5).fill(null),cascades=Array(5).fill(null),dropItems=[],burstParticles=[],lineGlow=[],floaters=[];
 const claimedMultiplierCells=new Set(); // V55: recolhidos não permanecem visíveis nos rolos
-let shelf=[],winRound=0,pixi=null,pixiSprites=[],nativeAssets={},nativeCtx=$('reelCanvas').getContext('2d'),tickerRunning=false,t0=performance.now();
+let shelf=[],winRound=0,pixi=null,pixiSprites=[],pixiCascadeSprites=[],nativeAssets={},nativeCtx=$('reelCanvas').getContext('2d'),tickerRunning=false,t0=performance.now(),jmLastCanvasFX=-Infinity;
 let audioCtx=null, fxMaster=null, lastSchoolBellAt=-Infinity, musicEnabled=true, musicVolume=.25;
 // V64: áudio original do utilizador, guardado em assets/sons para funcionar online.
 let jm64BonusAudioBuffer=null,jm64BonusAudioLoading=null,jm64BonusSource=null;
@@ -1116,20 +1116,90 @@ const imagesCanvases={};function makeSymbolCanvas(id){if(imagesCanvases[id])retu
 }
 function makeCoinCanvas(value){const key='coin'+value;if(imagesCanvases[key])return imagesCanvases[key];const can=document.createElement('canvas');can.width=can.height=180;drawSymbol(can.getContext('2d'),{id:'coin',value},0,0,180,180,0,1);return imagesCanvases[key]=can;}
 function makeOrbCanvas(value){const key='mul'+value;if(imagesCanvases[key])return imagesCanvases[key];const can=document.createElement('canvas');can.width=180;can.height=180;drawSymbol(can.getContext('2d'),{id:'mul',value},0,0,180,180,0,1);return imagesCanvases[key]=can;}
+/* V73 — um só ciclo visual (requestAnimationFrame) para Canvas e Pixi.
+   O Pixi não arranca outro ticker. Cinco máscaras (uma por rolo), cascatas também GPU. */
 let pixiReady=false;
 async function initPixi(){
  if(!window.PIXI?.Application)return false;
  try{
-  const app=new PIXI.Application();await app.init({width:W,height:H,backgroundAlpha:0,antialias:true,resolution:1,preference:'webgl'});
-  if(!app.canvas)throw Error('no canvas');$('pixiMount').appendChild(app.canvas);pixi=app;
-  for(let x=0;x<5;x++){pixiSprites[x]=[];
-   const reelMask=new PIXI.Graphics().rect(x*CW,0,CW,H).fill(0xffffff);app.stage.addChild(reelMask);
-   for(let y=0;y<6;y++){const sp=new PIXI.Sprite(PIXI.Texture.EMPTY);sp.mask=reelMask;sp.anchor.set(.5);sp.width=CW*.992*REEL_SYMBOL_ZOOM;sp.height=CH*.995*REEL_SYMBOL_ZOOM;sp.position.set(x*CW+CW/2,(y%3)*CH+CH/2);pixiSprites[x][y]=sp;app.stage.addChild(sp)}}
+  const app=new PIXI.Application();
+  await app.init({width:W,height:H,backgroundAlpha:0,antialias:false,resolution:1,preference:'webgl',autoStart:false});
+  if(!app.canvas)throw Error('canvas Pixi indisponível');
+  $('pixiMount').appendChild(app.canvas);
+  pixi=app;
+  for(let x=0;x<5;x++){
+   pixiSprites[x]=[];pixiCascadeSprites[x]=[];
+   const reelMask=new PIXI.Graphics().rect(x*CW,0,CW,H).fill(0xffffff);
+   app.stage.addChild(reelMask);
+   const reel=new PIXI.Container();reel.mask=reelMask;app.stage.addChild(reel);
+   for(let y=0;y<6;y++){
+    const sp=new PIXI.Sprite(PIXI.Texture.EMPTY);
+    sp.anchor.set(.5);sp.visible=false;sp.position.set(x*CW+CW/2,(y%3)*CH+CH/2);
+    pixiSprites[x][y]=sp;reel.addChild(sp);
+   }
+   // Pool reutilizável: nada de criar ou remover sprites durante cada queda.
+   for(let k=0;k<8;k++){
+    const sp=new PIXI.Sprite(PIXI.Texture.EMPTY);
+    sp.anchor.set(.5);sp.visible=false;pixiCascadeSprites[x].push(sp);reel.addChild(sp);
+   }
+  }
+  app.canvas.addEventListener('webglcontextlost',ev=>{ev.preventDefault();pixiReady=false;app.canvas.style.display='none';});
+  app.canvas.addEventListener('webglcontextrestored',()=>{app.canvas.style.display='block';pixiReady=true;});
   pixiReady=true;return true;
  }catch(e){console.warn('Pixi indisponível, Canvas de reserva ativo:',e);pixiReady=false;return false;}
 }
+/* O efeito 3D é pré-renderizado UMA vez na textura: sombra profunda, especular
+   recortado à silhueta e realce de superfície. Sem filtros por frame. */
+function jmReliefCanvas(img,id){
+ if(!img||id==='scatter')return img;
+ const c=document.createElement('canvas');c.width=c.height=256;
+ const g=c.getContext('2d');if(!g)return img;
+ g.shadowColor='rgba(6,5,19,.80)';g.shadowBlur=12;g.shadowOffsetX=2;g.shadowOffsetY=8;
+ g.drawImage(img,9,8,238,238);
+ g.shadowColor='transparent';g.shadowBlur=0;g.shadowOffsetX=0;g.shadowOffsetY=0;
+ g.drawImage(img,9,8,238,238);
+ g.globalCompositeOperation='source-atop';
+ const shine=g.createLinearGradient(20,12,237,252);
+ shine.addColorStop(0,'rgba(255,253,230,.21)');
+ shine.addColorStop(.20,'rgba(255,255,255,.065)');
+ shine.addColorStop(.42,'rgba(255,255,255,0)');
+ shine.addColorStop(.72,'rgba(17,8,40,.065)');
+ shine.addColorStop(1,'rgba(10,8,28,.17)');
+ g.fillStyle=shine;g.fillRect(0,0,256,256);
+ g.globalCompositeOperation='source-over';
+ return c;
+}
 const cacheTextures=new Map();
-function setPixiSprite(sp,s){if(!sp)return;if(!s){sp.visible=false;return}const key=s.id==='mul'?'mul'+(s.value||2):s.id==='coin'?'coin'+(s.value||20):s.id==='wild'?'wild'+wildFactorOf(s):s.id;let texture=cacheTextures.get(key);if(!texture){const img=s.id==='mul'?makeOrbCanvas(s.value||2):s.id==='coin'?makeCoinCanvas(s.value||20):s.id==='wild'?makeWildCanvas(wildFactorOf(s)):nativeAssets[s.id];if(!img){sp.visible=false;return}texture=PIXI.Texture.from(img);cacheTextures.set(key,texture)}sp.visible=true;sp.texture=texture;sp.width=CW*.985*symbolZoom(s);sp.height=CH*.992*symbolZoom(s);}
+function jmLimitCoinTextureCache(){
+ if(cacheTextures.size<150)return;
+ const visible=new Set();
+ for(const reel of [...pixiSprites,...pixiCascadeSprites])
+  for(const sp of reel||[])if(sp.visible)visible.add(sp.texture);
+ let removed=0;
+ for(const [key,texture] of cacheTextures){
+  if(!key.startsWith('coin')||visible.has(texture))continue;
+  cacheTextures.delete(key);delete imagesCanvases[key];
+  texture.destroy();
+  if(++removed>=45)break;
+ }
+}
+function setPixiSprite(sp,s){
+ if(!sp)return;
+ if(!s||s.id==='blank'){sp.visible=false;return;}
+ const key=s.id==='mul'?'mul'+(s.value||2):s.id==='coin'?'coin'+(s.value||20):s.id==='wild'?'wild'+wildFactorOf(s):s.id;
+ let texture=cacheTextures.get(key);
+ if(!texture){
+  const img=s.id==='mul'?makeOrbCanvas(s.value||2):
+   s.id==='coin'?makeCoinCanvas(s.value||20):
+   s.id==='wild'?makeWildCanvas(wildFactorOf(s)):nativeAssets[s.id];
+  if(!img){sp.visible=false;return;}
+  texture=PIXI.Texture.from(jmReliefCanvas(img,s.id));
+  cacheTextures.set(key,texture);
+  jmLimitCoinTextureCache();
+ }
+ sp.visible=true;
+ if(sp.texture!==texture)sp.texture=texture;
+}
 function animationPosition(x,y,t){
  const tr=transitions[x];
  if(tr){
@@ -1252,30 +1322,68 @@ function jmRenderScatterMoons(t){
  }
 }
 
+/* V73 — desenhar Pixi 60 FPS com um único RAF; Canvas FX a ~30 FPS
+   para eliminar gradientes repetidos e poupar energia no telemóvel. */
 function frame(t){
- const ctx=nativeCtx;artBg(ctx,t);
+ requestAnimationFrame(frame);
+ if(document.hidden)return;
+ const canvasFrame=!pixiReady||t-jmLastCanvasFX>=32;
+ const ctx=nativeCtx;
+ if(canvasFrame){jmLastCanvasFX=t;artBg(ctx,t);}
  if(pixiReady){
-  for(let x=0;x<5;x++)for(let y=0;y<3;y++){
-   const p=animationPosition(x,y,t),sp=pixiSprites[x][y],old=pixiSprites[x][y+3];
-   if(cascades[x]||claimedMultiplierCells.has(x+':'+y)){sp.visible=false;old.visible=false;continue}
-   setPixiSprite(sp,p.cur);sp.position.set(x*CW+CW/2,p.y+CH/2);jmPixiMotion(sp,p.cur,x,t);
-   if(p.old){setPixiSprite(old,p.old);old.position.set(x*CW+CW/2,p.oldY+CH/2);jmPixiMotion(old,p.old,x,t);}
-   else old.visible=false;
+  for(let x=0;x<5;x++){
+   if(cascades[x]){
+    for(const sp of pixiSprites[x])sp.visible=false;
+    const parts=cascades[x].items,pool=pixiCascadeSprites[x];
+    for(let k=0;k<pool.length;k++){
+     const sp=pool[k],part=parts[k];
+     if(!part||t<part.start){sp.visible=false;continue;}
+     const q=Math.max(0,Math.min(1,(t-part.start)/part.duration)),e=1-(1-q)**3;
+     setPixiSprite(sp,part.s);
+     sp.position.set(x*CW+CW/2,part.fromY+(part.toY-part.fromY)*e+CH/2);
+     jmPixiMotion(sp,part.s,x,t);
+    }
+   }else{
+    for(const sp of pixiCascadeSprites[x])sp.visible=false;
+    for(let y=0;y<3;y++){
+     const p=animationPosition(x,y,t),sp=pixiSprites[x][y],old=pixiSprites[x][y+3];
+     if(claimedMultiplierCells.has(x+':'+y)){sp.visible=false;old.visible=false;continue;}
+     setPixiSprite(sp,p.cur);sp.position.set(x*CW+CW/2,p.y+CH/2);jmPixiMotion(sp,p.cur,x,t);
+     if(p.old){setPixiSprite(old,p.old);old.position.set(x*CW+CW/2,p.oldY+CH/2);jmPixiMotion(old,p.old,x,t);}
+     else old.visible=false;
+    }
+   }
+  }
+  pixi.render();
+ }
+ if(!canvasFrame)return;
+ if(!pixiReady){
+  for(let x=0;x<5;x++){
+   ctx.save();ctx.beginPath();ctx.rect(x*CW+4,0,CW-8,H);ctx.clip();
+   if(cascades[x]){
+    for(const part of cascades[x].items){
+     if(t<part.start)continue;
+     const q=Math.max(0,Math.min(1,(t-part.start)/part.duration)),e=1-(1-q)**3;
+     drawSymbol(ctx,part.s,x*CW,part.fromY+(part.toY-part.fromY)*e,CW,CH,t);
+    }
+   }else for(let y=0;y<3;y++){
+    if(claimedMultiplierCells.has(x+':'+y))continue;
+    const p=animationPosition(x,y,t);
+    if(p.old)drawSymbol(ctx,p.old,x*CW,p.oldY,CW,CH,t);
+    drawSymbol(ctx,p.cur,x*CW,p.y,CW,CH,t);
+   }
+   ctx.restore();
   }
  }
- for(let x=0;x<5;x++){
-  ctx.save();ctx.beginPath();ctx.rect(x*CW+4,0,CW-8,H);ctx.clip();
-  if(cascades[x]){
-   const parts=cascades[x].items;
-   for(const part of parts){let q=Math.max(0,Math.min(1,(t-part.start)/part.duration));if(t<part.start)continue;let e=1-(1-q)**3;drawSymbol(ctx,part.s,x*CW,part.fromY+(part.toY-part.fromY)*e,CW,CH,t);}
-  } else if(!pixiReady){
-   for(let y=0;y<3;y++){if(claimedMultiplierCells.has(x+':'+y))continue;const p=animationPosition(x,y,t);if(p.old)drawSymbol(ctx,p.old,x*CW,p.oldY,CW,CH,t);drawSymbol(ctx,p.cur,x*CW,p.y,CW,CH,t);}
+ if(burstParticles.length){
+  ctx.save();burstParticles=burstParticles.filter(p=>t-p.birth<p.life);
+  for(const p of burstParticles){
+   const k=(t-p.birth)/p.life;ctx.globalAlpha=1-k;ctx.fillStyle=p.color;
+   ctx.beginPath();ctx.arc(p.x+p.vx*k,p.y+p.vy*k+90*k*k,Math.max(.1,p.size*(1-k)),0,Math.PI*2);ctx.fill();
   }
   ctx.restore();
  }
- if(burstParticles.length){ctx.save();burstParticles=burstParticles.filter(p=>t-p.birth<p.life);for(const p of burstParticles){const k=(t-p.birth)/p.life;ctx.globalAlpha=1-k;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x+p.vx*k,p.y+p.vy*k+90*k*k,Math.max(.1,p.size*(1-k)),0,Math.PI*2);ctx.fill()}ctx.restore()}
  jmRenderScatterMoons(t);
- requestAnimationFrame(frame)
 }
 function particlesAt(x,y,kind='burst'){const now=performance.now();for(let i=0;i<(kind==='big'?60:22);i++){const a=Math.random()*Math.PI*2,s=rand(40,150);burstParticles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,birth:now,life:rand(360,760),size:rand(2,7),color:pick(['#ffe697','#fff8d7','#f0a2ff','#f7b67f','#ffde55'])})}}
 function setGrid(g){grid=g;save()}
