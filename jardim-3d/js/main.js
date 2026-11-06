@@ -6,6 +6,7 @@
 import * as pc from 'playcanvas';
 import {createOrganicFrame} from './frame-v23.js?v=2.3';
 import {createVerticalReels} from './reels-v23.js?v=2.3';
+import {drawMagicBonus} from './symbol-art-v3.js?v=3';
 
 const $=id=>document.getElementById(id);
 const canvas=$('application');
@@ -304,14 +305,18 @@ function textureFromSymbol(symbol,index){
  grad.addColorStop(0,hi);
  grad.addColorStop(.72,'rgba(49,17,67,.18)');
  grad.addColorStop(1,'rgba(21,9,34,.01)');
- g.fillStyle=grad;g.fillRect(0,0,256,256);
- // Iluminação do objeto sem fotografias sobrepostas
- g.shadowColor='rgba(255,205,117,.55)';
- g.shadowBlur=18;
- g.textAlign='center';g.textBaseline='middle';
- g.font='170px "Apple Color Emoji","Segoe UI Emoji",system-ui,sans-serif';
- g.fillText(symbol,128,136);
- g.shadowBlur=0;
+ if(index>=9){
+  drawMagicBonus(g,index,256);
+ }else{
+  g.fillStyle=grad;g.fillRect(0,0,256,256);
+  // Temporário durante carregamento da imagem HD original.
+  g.shadowColor='rgba(255,205,117,.55)';
+  g.shadowBlur=18;
+  g.textAlign='center';g.textBaseline='middle';
+  g.font='170px "Apple Color Emoji","Segoe UI Emoji",system-ui,sans-serif';
+  g.fillText(symbol,128,136);
+  g.shadowBlur=0;
+ }
  const t=new pc.Texture(app.graphicsDevice,{width:256,height:256,format:pc.PIXELFORMAT_RGBA8,mipmaps:true});
  t.setSource(c);
  const m=mat('#ffffff',{metal:.12,gloss:75});
@@ -319,6 +324,12 @@ function textureFromSymbol(symbol,index){
  m.emissiveMap=t;
  m.emissive=new pc.Color(.18,.1,.23);
  m.emissiveIntensity=.14;
+ if(index>=9){
+  m.opacityMap=t;
+  m.opacityMapChannel='a';
+  m.blendType=pc.BLEND_NORMAL;
+  m.depthWrite=false;
+ }
  m.update();
  return m;
 }
