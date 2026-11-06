@@ -1086,6 +1086,54 @@ async function imageLoad(){
    window.JM_INLINE_ASSETS[kinds[i]]=canvas.toDataURL('image/png');
   }
   window.JM75_PHOTO_SYMBOLS_READY=true;
+  // V79.1 — originais PNG em alta definição, do mesmo conjunto artístico.
+  // Mantém-se o atlas fotográfico como reserva: se uma textura HD falhar,
+  // a versão anterior continua a ser desenhada pelo PixiJS.
+  const originals={
+    potion:'3f3213b7316d5cf176.png',
+    green:'e776f95aa9fd19f865.png',
+    heart:'66cb91b07aa8094c90.png',
+    teapot:'49d6874847ff87abe4.png',
+    wild:'05ad729435e7487db8.png',
+    gem:'6db9f4dd9d6abeb732.png',
+    mushroom:'81cc7b8d8f2c0d0b18.png',
+    hat:'ab10713bfdfc732017.png',
+    rose:'ae9c51465776decce9.png'
+  };
+  await Promise.all(Object.entries(originals).map(async ([id,file])=>{
+    try {
+      const art=new Image();art.decoding='async';
+      await new Promise((resolve,reject)=>{
+        art.onload=resolve;art.onerror=reject;
+        art.src='assets/imagens/'+file;
+      });
+      const cut=jmCutout(art,id);
+      const pixels=cut.getContext('2d',{willReadFrequently:true})
+        .getImageData(0,0,256,256).data;
+      let left=256,top=256,right=-1,bottom=-1;
+      for(let y=0;y<256;y++)for(let x=0;x<256;x++){
+        const k=(y*256+x)*4,alpha=pixels[k+3];
+        if(alpha<54)continue;
+        if(x<left)left=x;if(x>right)right=x;
+        if(y<top)top=y;if(y>bottom)bottom=y;
+      }
+      if(right<=left||bottom<=top)throw Error('Objeto não recortável');
+      const cw=right-left+1,ch=bottom-top+1;
+      const scale=Math.min(220/cw,220/ch);
+      const out=document.createElement('canvas');
+      out.width=out.height=256;
+      const g=out.getContext('2d');
+      g.imageSmoothingEnabled=true;
+      g.imageSmoothingQuality='high';
+      const ow=cw*scale,oh=ch*scale;
+      g.drawImage(cut,left,top,cw,ch,(256-ow)/2,(256-oh)/2,ow,oh);
+      nativeAssets[id]=out;
+      window.JM_INLINE_ASSETS[id]=out.toDataURL('image/png');
+    } catch(e) {
+      console.warn('Jardim V79.1: mantendo símbolo fotográfico',id,e);
+    }
+  }));
+
  }catch(e){
   console.warn('Jardim V75: fotografias indisponíveis; mantendo símbolos anteriores.',e);
  }
