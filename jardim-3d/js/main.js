@@ -29,6 +29,8 @@ let finishSpin=null;
 let winPulseUntil=0;
 let winPulseStart=0;
 let winPulseCells=[];
+let burst=null;
+const burstPool=[];
 const fireflies=[];
 const glows=[];
 
@@ -338,10 +340,100 @@ function setCamera(){
  camera.lookAt(x,0,0);
 }
 let camera;
+/* V2.1 — estouro simultâneo das peças de TODAS as linhas vencedoras.
+   Partículas 3D previamente criadas; uma peça usada em duas linhas explode
+   apenas uma vez. O cálculo monetário nunca depende desta animação. */
+function prepareBurstParticles(){
+ if(burstPool.length)return;
+ const colors=[
+  mat('#ffe8a1',{metal:.65,gloss:85,emissive:'#ffc25d',emission:.62}),
+  mat('#ff83d5',{metal:.30,gloss:88,emissive:'#ce2baf',emission:.58}),
+  mat('#bf8cff',{metal:.26,gloss:81,emissive:'#8547e4',emission:.58}),
+  mat('#d6fff0',{metal:.25,gloss:85,emissive:'#5cdcbf',emission:.43})
+ ];
+ // No máximo 15 peças × 4 partículas de volume reduzido no iPhone.
+ for(let i=0;i<60;i++){
+  const entity=model('Faísca 3D premiada','box',[0,0,.92],[.01,.01,.01],colors[i%4]);
+  entity.enabled=false;
+  burstPool.push(entity);
+ }
+}
+function cancelBurst(){
+ if(!burst)return;
+ for(const cell of burst.cells){
+  cell.face.enabled=true;
+  cell.face.setLocalScale(.96,.98,.14);
+  cell.face.setLocalEulerAngles(0,0,0);
+ }
+ for(const part of burst.parts)part.entity.enabled=false;
+ burst=null;
+}
+function explodeWinners(coordinates,duration=1100){
+ if(state.running||!Array.isArray(coordinates))return 0;
+ cancelBurst();
+ winPulseUntil=0;
+ for(const cell of winPulseCells)cell.face.setLocalScale(.96,.98,.14);
+ winPulseCells=[];
+ prepareBurstParticles();
+ const seen=new Set(),cells=[],parts=[];
+ for(const {c,r} of coordinates){
+  if(!Number.isInteger(c)||!Number.isInteger(r)||c<0||c>4||r<0||r>2)continue;
+  const key=c+','+r;
+  if(seen.has(key))continue;
+  seen.add(key);
+  const cell=reelTiles[c]?.[r];if(!cell)continue;
+  cells.push(cell);
+  const x=(c-2)*1.066,y=.26+(1-r)*1.1;
+  for(let j=0;j<4;j++){
+   const entity=burstPool[parts.length];
+   const angle=(j/4)*Math.PI*2+(c+r)*.61;
+   const speed=.57+.25*((c+j+r)%3);
+   entity.enabled=false;
+   parts.push({entity,x,y,dx:Math.cos(angle)*speed,dy:Math.sin(angle)*speed,
+    dz:(j%2?1:-1)*.19,angle});
+  }
+ }
+ if(!cells.length)return 0;
+ burst={elapsed:0,duration:Math.max(.65,duration/1000),cells,parts};
+ return cells.length;
+}
+function updateBurst(dt){
+ if(!burst)return;
+ const effect=burst;
+ effect.elapsed+=Math.min(dt,.07);
+ const t=Math.min(1,effect.elapsed/effect.duration);
+ // Todos os símbolos vencedores aumentam, estouram e reaparecem juntos.
+ let scale;
+ if(t<.25)scale=1+.18*Math.sin((t/.25)*Math.PI/2);
+ else if(t<.51)scale=1.18*Math.pow(1-(t-.25)/.26,2);
+ else if(t<.82)scale=.006;
+ else scale=.006+(1-.006)*Math.sin(((t-.82)/.18)*Math.PI/2);
+ for(const cell of effect.cells){
+  cell.face.setLocalScale(.96*scale,.98*scale,.14*Math.max(scale,.006));
+  cell.face.setLocalEulerAngles(0,t>.25&&t<.82?120*(t-.25):0,0);
+ }
+ const phase=Math.min(1,Math.max(0,(t-.25)/.62));
+ for(const shard of effect.parts){
+  const active=t>=.25&&t<.90;
+  shard.entity.enabled=active;
+  if(!active)continue;
+  shard.entity.setLocalPosition(
+   shard.x+shard.dx*phase,
+   shard.y+shard.dy*phase-.12*phase*phase,
+   .78+shard.dz*phase
+  );
+  const size=.11*Math.pow(1-phase,1.3)+.004;
+  shard.entity.setLocalScale(size,size*(.62+.40*Math.sin(shard.angle+phase*3)**2),size*.45);
+  shard.entity.setLocalEulerAngles(0,0,(shard.angle+phase*6)*180/Math.PI);
+ }
+ if(t>=1)cancelBurst();
+}
+
 function startSpin(matrix=null,whenDone=null){
  if(state.running)return false;
  requestedBoard=matrix;finishSpin=whenDone;
  state.running=true;state.timer=0;
+ cancelBurst();
  winPulseUntil=0;
  for(const cell of winPulseCells)cell.face.setLocalScale(.96,.98,.14);
  winPulseCells=[];
@@ -420,6 +512,7 @@ function build(){
  app.on('update',(dt)=>{
    age+=dt;
    updateSpin(dt);
+   updateBurst(dt);
    if(winPulseUntil){
     const t=Date.now();
     const active=t<winPulseUntil;
@@ -457,6 +550,8 @@ function build(){
    return true;
   },
   isRunning:()=>state.running,
+  burstWinners:(coords,duration=1100)=>explodeWinners(coords,duration),
+  isBursting:()=>!!burst,
   highlight:(coords,duration=1250)=>{
    if(state.running||!Array.isArray(coords))return;
    winPulseCells=coords.map(({c,r})=>reelTiles[c]?.[r]).filter(Boolean);
