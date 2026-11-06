@@ -1,41 +1,34 @@
-# Jardim Mágico — protótipo em 3D real (PlayCanvas)
+# Jardim Mágico 3D V2 — PlayCanvas
 
-Acesso após publicação: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-3d/
+**Jogo 3D:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-3d/?v=2
 
-Este é um **protótipo visual e interativo isolado**. **Não substitui** o jogo estável em `/index.html`.
-Usa PlayCanvas Engine 2.23.3, via import map em GitHub Pages, e WebGL.
+Esta versão usa **geometria tridimensional real**, materiais, iluminação e texturas individuais para os símbolos, seguindo a referência gráfica fornecida pelo utilizador: jardim de flores, cascata, madeira dourada e veludo roxo. Não utiliza a fotografia inteira como fundo.
 
-## Estrutura
+## Ficheiros
 
-- `index.html`: canvas 3D, UI, comandos, modo demonstração
-- `css/3d.css`: UI adaptada a iPhone 9:16 e paisagem 16:9
-- `js/main.js`: cena 3D real e giros de demonstração
+- `index.html`: interface de jogo e painéis, modais para informações e Hold & Win.
+- `css/3d.css`: base de ecrã vertical/horizontal e canvas.
+- `css/v2.css`: acabamento gráfico inspirado na referência, jackpots, HUD, logótipo e botões.
+- `js/main.js`: cena PlayCanvas, flores, árvores, cascata, lótus e lanternas em 3D; 5×3 peças animadas e texturas HD.
+- `js/demo-engine.js`: motor **autónomo de créditos virtuais** com regras demonstrativas e limites.
+- `js/gameplay.js`: ligação entre a interface, a animação 3D e os resultados demonstrativos.
 
-## O que já funciona
+## Interações existentes nesta demonstração
 
-- geometria tridimensional para jardim, árvores, flores, lago e cascata
-- luzes direcionais, ponto de luz e materiais com especular/metálico
-- moldura 3D com centro aberto, cristais, ouro e madeira
-- quinze peças 3D (cinco colunas e três linhas) com símbolos
-- giros visuais com rotação 3D e paragem escalonada
-- alternância TURBO e movimento suave de câmara
-- ecrã vertical/horizontal responsivo
-- resolução máxima adaptada ao iPhone (device pixel ratio máximo 1,5)
+- RODAR, TURBO, câmara 3D móvel, brilho dos símbolos premiados.
+- Saldo e apostas fictícios ajustáveis entre 0,05 e 10,00 créditos; recarregamento demo +25.
+- Dez linhas de prémios ilustrativos; WILD; pedras sem valor; SCATTER.
+- 15 Free Spins, +8 com 2 Scatter ou +15 com 3 Scatter dentro do bónus (limite total de 60 giros por sequência para segurança).
+- Hold & Win 4×4 com moedas e três tentativas.
+- Compra voluntária de bónus **com créditos fictícios** (Free Spins 20×, Hold & Win 30×).
+- AUTO 10/25/50 e seleção por pressão longa (3 segundos) no RODAR.
+- Jackpots MIN 250×, MED 500×, MAX 1000× e ULTRA 5000× mostrados como limites ilustrativos em função da aposta e do cofre virtual.
+- Fundo virtual que limita os pagamentos da demonstração, sem permitir valor negativo.
 
-## Limitado de propósito nesta fase
+## Aviso importante
 
-- **Não usa nem replica a matemática da banca**, RTP, linhas premiadas, freespins, hold & win, jackpots ou pagamentos.
-- Não permite depósitos, levantamentos ou operações monetárias.
-- Os símbolos ainda são protótipos; devem ser substituídos por arte 3D aprovada e otimizada.
-- O objetivo é validar se o visual e o desempenho no iPhone justificam migrar o motor do jogo.
+**Esta é uma pré-visualização gráfica e jogável.** Não opera depósitos, levantamentos nem pagamentos em dinheiro, nem representa um RTP verificado. As regras ilustrativas não substituem a matemática, a gestão da banca, o RTP ou o sistema completo do jogo Jardim Mágico original.
 
-## Próximos passos para migrar realmente o Jardim Mágico
+Antes de migrar para o motor 3D definitivo, faltam testar rigorosamente probabilidades, RTP, jackpots efetivos, validação de prémios, armazenamento, relatórios e integração administrativa. O [jogo original](../index.html) mantém-se intacto.
 
-1. Definir modelos/texturas 3D finais de cenário, moldura e símbolos.
-2. Medir FPS e memória no iPhone, otimizar tamanho de texturas e draw calls.
-3. Migrar com testes automáticos as regras do jogo existente e os eventos de UI.
-4. Validar cenários extremos (Wild 1×–5×, freespins, banca insuficiente, cofres e jackpot).
-5. Publicar nova versão de produção apenas após testes e aprovação visual.
-
-O jogo original permanece disponível em:
-https://hunderburn39-beep.github.io/Jardim-Magico/
+Backup do protótipo PlayCanvas V1: `backup/jardim-3d-v1-antes-v2`.
