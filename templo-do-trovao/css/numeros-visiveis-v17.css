@@ -1,0 +1,66 @@
+/* PORTÕES DO TROVÃO V17 — ALGARISMOS-RELÂMPAGO MAIS VISÍVEIS
+ * Preserva a arte original em PNG RGBA, sem caixa nem texto de símbolos.
+ * Amplia os números, reforça o contorno e mantém o efeito leve no iPhone.
+ */
+.board-overlay .prize-float.prize-amount-png{
+  top:48%!important;
+  font-size:clamp(56px,7.8vw,102px)!important;
+  gap:0!important;
+  max-width:96%!important;
+  filter:
+    drop-shadow(0 3px 1px rgba(30,10,15,.96))
+    drop-shadow(1px 0 1px rgba(42,13,24,.9))
+    drop-shadow(0 0 7px rgba(255,248,180,.95))
+    drop-shadow(0 0 14px rgba(255,191,58,.82))!important;
+  /* A imagem PNG é a única origem dos caracteres apresentados. */
+  background:none!important;
+  box-shadow:none!important;
+  border:0!important;
+  padding:0!important;
+  opacity:1;
+}
+.board-overlay .prize-amount-png .prize-png-glyph{
+  width:.685em!important;
+  height:1em!important;
+  image-rendering:auto;
+  filter:brightness(1.25) contrast(1.13) saturate(1.15)!important;
+}
+.board-overlay .prize-amount-png .prize-png-gap{
+  width:.07em!important;
+  height:1em!important;
+}
+.board-overlay .prize-amount-png .prize-png-fallback{
+  font-size:.85em!important;
+  color:#fff1a1!important;
+}
+/* Foco mais rápido: os valores entram já grandes e ficam legíveis até
+   quase ao fim, desvanecendo com uma subida curta. */
+.board-overlay .prize-float.prize-amount-png{
+  animation:prizePNGVisibleV17 var(--prize-duration,2350ms) ease-out both!important;
+}
+@keyframes prizePNGVisibleV17{
+  0%{opacity:0;transform:translate(-50%,-42%) scale(.93)}
+  7%{opacity:1;transform:translate(-50%,-50%) scale(1.075)}
+  18%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  79%{opacity:1;transform:translate(-50%,-52%) scale(1)}
+  93%{opacity:.58;transform:translate(-50%,-64%) scale(.985)}
+  100%{opacity:0;transform:translate(-50%,-77%) scale(.965)}
+}
+@media(orientation:landscape) and (max-height:600px){
+  .board-overlay .prize-float.prize-amount-png{
+    font-size:clamp(54px,17vh,92px)!important;
+  }
+}
+@media(orientation:portrait){
+  .board-overlay .prize-float.prize-amount-png{
+    font-size:clamp(49px,14vw,87px)!important;
+    max-width:97%!important;
+  }
+}
+/* Não ativar filtros animados nem blur de fundo: melhora legibilidade
+   sem voltar a causar soluços nas cascatas. */
+@media(prefers-reduced-motion:reduce){
+  .board-overlay .prize-float.prize-amount-png{
+    animation:prizePNGReducedV16 var(--prize-duration,2350ms) linear both!important;
+  }
+}
