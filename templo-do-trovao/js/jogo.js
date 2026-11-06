@@ -255,6 +255,7 @@
     const p=document.createElement("div");p.className="overlay-banner";p.textContent=text;el.overlay.appendChild(p);
   }
   function refresh(){
+    $("app").classList.toggle("is-spinning",state.busy);
     el.balance.textContent=money(state.balance);
     el.bet.textContent=money(currentBet());
     el.buyCost.textContent=money(currentBet()*100);
