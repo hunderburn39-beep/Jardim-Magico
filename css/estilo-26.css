@@ -21,7 +21,17 @@ body::after{display:none!important;}
 }
 /* Os recortes V75 incluíam botões pintados e transparências pretas; não sobrepor.
    Assim desaparecem as faixas escuras e o falso TURBO atrás dos controlos. */
-.game>.jm75BackdropBottom{display:none!important;}
+.game>.jm75BackdropBottom{
+ display:block!important;
+ background-image:url('../assets/imagens/jm75-rodape-cenario.webp')!important;
+ background-position:center bottom!important;
+ background-size:100% 100%!important;
+ opacity:.96!important;
+ z-index:0!important;
+ pointer-events:none!important;
+ -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 17%,#000 100%);
+ mask-image:linear-gradient(to bottom,transparent 0%,#000 17%,#000 100%);
+}
 .game>.jm75BackdropTop{
   background-position:center top!important;
   background-size:100% auto!important;
