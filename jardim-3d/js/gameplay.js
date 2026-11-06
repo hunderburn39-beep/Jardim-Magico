@@ -189,18 +189,24 @@ function holdStep(){
   if(autoRemaining>0)nextTimer=setTimeout(runSpin,700);
  }else updateHold();
 }
-function winningCoordinates(board){
- const out=new Set();
- for(const path of PAYLINES){
-  const line=path.map((row,col)=>board[col][row]);
-  if(line[0]===4&&line[1]===4){out.add('0,'+path[0]);out.add('1,'+path[1])}
-  const target=line.find(id=>id!==4);
-  if(target===undefined||[9,10,11].includes(target))continue;
-  let count=0;
-  for(const x of line){if(x!==target&&x!==4)break;count++}
-  if(count>=3)for(let c=0;c<count;c++)out.add(c+','+path[c]);
+function winningCoordinates(lineWins){
+ // A mesma peça pode pertencer a duas combinações e é animada uma só vez.
+ const unique=new Map();
+ for(const win of lineWins||[]){
+  for(const cell of win.cells||[]){
+   unique.set(cell.c+','+cell.r,{c:cell.c,r:cell.r});
+  }
  }
- return [...out].map(key=>{const [c,r]=key.split(',').map(Number);return {c,r}});
+ return [...unique.values()];
+}
+function showLineBreakdown(lineWins,total,capped){
+ const target=$('winBreakdown');
+ if(!target)return;
+ if(!lineWins?.length){target.hidden=true;target.textContent='';return}
+ const individual=lineWins.map(win=>money(win.amount));
+ target.textContent=lineWins.length+' COMBINAÇÕES · '+individual.join(' + ')+
+   ' = '+money(total)+(capped?' · pago '+money(capped):'');
+ target.hidden=false;
 }
 function runSpin(){
  clearTimeout(nextTimer);
@@ -209,17 +215,27 @@ function runSpin(){
  const outcome=bank.spin();
  if(!outcome.ok){autoRemaining=0;render();say(outcome.message);return}
  setSpinning(true);
+ showLineBreakdown([],0);
  $('spinState').textContent='TAMBORES A RODAR…';
  say(outcome.free?'FREE SPIN · '+bank.freeSpins+' restantes':'Tambores tridimensionais em movimento');
  if(!outcome.free&&autoRemaining>0)autoRemaining--;
  const completed=()=>{
   setSpinning(false);
   render();
-  if(outcome.ev.lines&&window.JM3D?.highlight){
-   window.JM3D.highlight(winningCoordinates(outcome.board),1350);
+  const wins=outcome.ev.lineWins||[];
+  const allWinners=winningCoordinates(wins);
+  const simultaneous=wins.length>=2;
+  if(simultaneous&&window.JM3D?.burstWinners){
+   // Explosão de TODAS as peças vencedoras em simultâneo.
+   window.JM3D.burstWinners(allWinners,1100);
+  }else if(wins.length===1&&window.JM3D?.highlight){
+   window.JM3D.highlight(allWinners,1100);
   }
-  $('spinState').textContent=outcome.ev.lines?
-   outcome.ev.lines+' LINHA(S) PREMIADA(S)':'TAMBORES A RODAR…';
+  $('spinState').textContent=simultaneous?
+   wins.length+' COMBINAÇÕES PREMIADAS!':
+   wins.length===1?'1 COMBINAÇÃO PREMIADA':'TAMBORES 3D PRONTOS';
+  showLineBreakdown(wins,outcome.ev.raw,
+    !outcome.free&&outcome.credited<outcome.ev.raw?outcome.credited:null);
   const win=outcome.free?outcome.potential:outcome.credited;
   showMultiply(outcome.wildMultiplier,outcome.ev.wilds);
   if(outcome.triggered){
@@ -227,14 +243,23 @@ function runSpin(){
    freeBanner('✨ '+outcome.triggered+' ✨');
   }else if(outcome.free){
    say('Valor acumulado: '+money(bank.freeTotal)+' ×'+bank.freeMultiplier);
+  }else if(simultaneous){
+   say(wins.length+' combinações · prémio total: '+money(outcome.credited)+' créditos');
   }else say(win>0?'Prémio demo: '+money(win)+' créditos':'Sem prémio neste giro');
-  if(outcome.credited>=bank.stake*15)bigWin('✨ '+money(outcome.credited)+' ✨');
-  if(outcome.ev.scatter>=3&&outcome.triggered)bigWin('FREE SPINS!');
-  if(bank.mode==='hold'){nextTimer=setTimeout(showHold,900);return}
-  if(bank.mode==='free'){
-   nextTimer=setTimeout(runSpin,1100);return;
+  if(simultaneous){
+   const shown=outcome.free?outcome.ev.raw:outcome.credited;
+   bigWin('✨ TOTAL '+money(shown)+' ✨');
+  }else if(outcome.credited>=bank.stake*15){
+   bigWin('✨ '+money(outcome.credited)+' ✨');
   }
-  if(autoRemaining>0)nextTimer=setTimeout(runSpin,bank.stake<0.1?650:800);
+  if(outcome.ev.scatter>=3&&outcome.triggered)bigWin('FREE SPINS!');
+  // Respeitar o tempo do estouro conjunto antes de mudar os tambores.
+  const minimumDelay=simultaneous?1350:0;
+  if(bank.mode==='hold'){nextTimer=setTimeout(showHold,Math.max(900,minimumDelay));return}
+  if(bank.mode==='free'){
+   nextTimer=setTimeout(runSpin,Math.max(1100,minimumDelay));return;
+  }
+  if(autoRemaining>0)nextTimer=setTimeout(runSpin,Math.max(bank.stake<0.1?650:800,minimumDelay));
  };
  if(!window.JM3D.spin(outcome.board,completed)){
   setSpinning(false);say('Tambores ocupados');render();
