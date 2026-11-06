@@ -94,3 +94,12 @@ Revisão visual focada na diferença entre a primeira arte 9:16 e as capturas no
 - `js/jogo-2.js` carrega as imagens de forma assíncrona, recorta o fundo, centra os objetos e guarda texturas de 256×256 para PixiJS. Se um asset falhar, utiliza a imagem anterior do atlas.
 - A lógica de prémios, tabela de pagamentos, jackpots e banca mantém-se inalterada.
 - `index.html` atualiza a versão para V79.1 e invalida a cache da biblioteca visual no Safari.
+
+## V80 — cenário fotográfico limpo e acabamento 3D
+- `assets/imagens/jm80-cenario-imersivo.svg`: reutiliza as partes fotográficas da referência, mas limita a fotografia antiga desfocada às margens para evitar o fantasma de painéis, botão ou moldura atrás da interface.
+- `css/estilo-30.css`: material unificado em roxo, ouro e rosa, com acabamento luminoso em jackpots, multiplicadores, moldura de madeira, saldo/aposta, cofre e botões.
+- Mantém o espaço interior da moldura ampliado na V78.1, a composição mobile assimétrica, a fotografia de fundo e os símbolos PNG HD da V79.1.
+- Nenhuma animação de ecrã inteiro, apenas gradientes e sombras estáticas, para preservar a fluidez.
+- Nenhuma alteração à matemática dos prémios, RTP, banca, depósito ou levantamento.
+- Backup da versão anterior: `backup/jardim-v79-1-antes-arte-v80`.
+- Testes realizados: integridade das referências de ficheiros e publicação no GitHub Pages; a validação visual num iPhone real continua necessária.
