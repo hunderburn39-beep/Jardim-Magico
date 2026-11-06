@@ -70,6 +70,10 @@ function freeBanner(text){
 function closeModal(){
  activeDialog=false;$('dialogShade').hidden=true;
  $('dialogBody').replaceChildren();
+ // Se o jogador abriu a ajuda durante as Free Spins, continuar ao fechar.
+ if(bank.mode==='free'&&!spinBusy){
+  clearTimeout(nextTimer);nextTimer=setTimeout(runSpin,300);
+ }
 }
 function dialog(title,content){
  activeDialog=true;autoRemaining=0;render();
@@ -131,10 +135,10 @@ function payModal(){
  b.append(note);
  b.append(choice('✨ Experimentar Free Spins','Apenas para testar o visual 3D.',()=>{
   bank.addFree(15);render();freeBanner('✨ FREE SPINS DEMO ✨');nextTimer=setTimeout(runSpin,1200)
- }));
+ },bank.mode!=='base'||spinBusy));
  b.append(choice('🪙 Experimentar Hold & Win','Grelha interativa 4×4 com moedas fictícias.',()=>{
   bank.startHold();render();showHold()
- }));
+ },bank.mode!=='base'||spinBusy));
  dialog('Regras da demonstração',b);
 }
 function vaultModal(){
@@ -143,7 +147,7 @@ function vaultModal(){
  [
  ['🪙 Testar Hold & Win','Ativar uma demonstração sem compra real.',()=>{
   bank.startHold();render();showHold()
- }],
+ },bank.mode!=='base'||spinBusy],
  ['＋ Adicionar créditos DEMO','Acrescenta 25 créditos fictícios ao saldo.',()=>{
   bank.creditDemo(25);render();say('Foram adicionados 25 créditos fictícios')
  }]
