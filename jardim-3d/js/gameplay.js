@@ -381,6 +381,10 @@ async function runSpin(){
   if(allWins.length){
    showLineBreakdown(allWins,outcome.rawTotal,
     !outcome.free&&outcome.credited<outcome.potential?outcome.credited:null);
+   if(!outcome.free&&outcome.potential!==outcome.rawTotal){
+    const summary=$('winBreakdown');
+    summary.textContent+=' · COM WILD '+money(outcome.potential);
+   }
    $('spinState').textContent=allWins.length+' COMBINAÇÕES SOMADAS · '+
     (stages.length-1)+' QUEDAS';
    if(!outcome.free)bigWin('✨ TOTAL '+money(outcome.credited)+' ✨');
