@@ -13,16 +13,19 @@ const button=$('spin');
 const cameraButton=$('toggleCamera');
 const turboButton=$('turbo');
 const quality=$('quality');
-const symbols=['🌺','🦋','⭐','🍒','💎','🍄','🌹','💚','🎩','🌙','🪨'];
-const labels=['Flor Encantada','Borboleta','Estrela','Cerejas','Cristal','Cogumelo','Rosa','Amuleto','Chapéu','Lua','Pedra'];
+const symbols=['🧪','💚','❤️','🫖','🌟','💎','🍄','🎩','🌹','✨','🪨','🪙'];
+const labels=['Poção','Esmeralda','Coração','Bule','WILD','Cristal','Cogumelo','Chapéu','Rosa','SCATTER','Pedra','Moeda'];
 const palette=[
- [0.82,0.26,0.53],[0.31,0.57,0.95],[1,.78,.23],[.82,.20,.34],
- [.43,.84,.99],[.9,.48,.37],[1,.28,.55],[.45,.94,.61],
- [.66,.38,.93],[.78,.78,1],[.46,.47,.56]
+ [.90,.26,.70],[.26,1,.53],[1,.3,.54],[.68,.37,.98],
+ [1,.72,.21],[.66,.25,1],[1,.38,.48],[.66,.38,.93],
+ [1,.23,.49],[.91,.65,.2],[.46,.47,.56],[1,.82,.31]
 ];
 const state={running:false,turbo:false,orbit:false,spins:0,timer:0,cam:0,camTarget:0};
 let app;
 let reelTiles=[];
+let symbolMaterials=[];
+let requestedBoard=null;
+let finishSpin=null;
 const fireflies=[];
 const glows=[];
 
@@ -207,7 +210,7 @@ function textureFromSymbol(symbol,index){
  return m;
 }
 function reels(){
- const symbolMaterials=symbols.map(textureFromSymbol);
+ symbolMaterials=symbols.map(textureFromSymbol);
  const tileEdge=mat('#c38b4b',{metal:.74,gloss:83});
  const tileBase=mat('#38114f',{metal:.25,gloss:60});
  const backGlow=mat('#552371',{metal:.18,gloss:52,emissive:'#461369',emission:.15});
@@ -232,8 +235,9 @@ function setCamera(){
  camera.lookAt(x,0,0);
 }
 let camera;
-function startSpin(){
- if(state.running)return;
+function startSpin(matrix=null,whenDone=null){
+ if(state.running)return false;
+ requestedBoard=matrix;finishSpin=whenDone;
  state.running=true;state.timer=0;
  button.disabled=true;
  status.textContent='A rodar em 3D…';
@@ -243,7 +247,8 @@ function startSpin(){
    const cell=reelTiles[c][r];cell.done=false;cell.lastStep=-1;
  }
  state.spins=count;
- $('spins').textContent=String(count);
+ if($('spins'))$('spins').textContent=String(count);
+ return true;
 }
 function updateSpin(dt){
  if(!state.running)return;
@@ -261,7 +266,7 @@ function updateSpin(dt){
        if(!cell.done){
          cell.done=true;
          cell.face.setLocalEulerAngles(0,0,0);
-         cell.idx=Math.floor(Math.random()*symbols.length);
+         cell.idx=requestedBoard?.[c]?.[r]??Math.floor(Math.random()*symbols.length);
          cell.face.render.material=cell.materials[cell.idx];
        }
      }else if(tt>=0){
@@ -281,7 +286,9 @@ function updateSpin(dt){
    state.running=false;button.disabled=false;
    status.textContent='Tambores tridimensionais';
    const center=reelTiles[2][1];
-   output.textContent='Giro '+state.spins+' concluído · '+labels[center.idx]+' no centro';
+   if(!finishSpin)output.textContent='Giro '+state.spins+' concluído · '+labels[center.idx]+' no centro';
+   const done=finishSpin;finishSpin=null;requestedBoard=null;
+   if(done)done();
  }
 }
 function build(){
@@ -323,7 +330,23 @@ function build(){
  document.addEventListener('visibilitychange',()=>{
    if(document.hidden){state.orbit=false;cameraButton.setAttribute('aria-pressed','false');}
  });
- button.addEventListener('click',startSpin);
+ window.JM3D={
+  spin:(board,callback)=>startSpin(board,callback),
+  showBoard:board=>{
+   if(state.running)return false;
+   for(let c=0;c<5;c++)for(let r=0;r<3;r++){
+    const t=reelTiles[c][r];t.idx=board[c][r];
+    t.face.setLocalEulerAngles(0,0,0);
+    t.face.render.material=t.materials[t.idx];
+   }
+   return true;
+  },
+  isRunning:()=>state.running,
+  setTurbo:on=>{state.turbo=!!on;turboButton.setAttribute('aria-pressed',String(state.turbo));},
+  setOrbit:on=>{state.orbit=!!on;cameraButton.setAttribute('aria-pressed',String(state.orbit));}
+ };
+ window.dispatchEvent(new Event('jm3d-ready'));
+ button.addEventListener('click',()=>{if(!window.JM3DGameController)startSpin();});
  turboButton.addEventListener('click',()=>{
    state.turbo=!state.turbo;
    turboButton.setAttribute('aria-pressed',String(state.turbo));
