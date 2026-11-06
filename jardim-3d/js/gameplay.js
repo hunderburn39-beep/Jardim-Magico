@@ -3,6 +3,7 @@
    O engine demonstrativo é separado do renderizador PlayCanvas. */
 import {DemoBank,SYMBOLS,LABELS,PAYLINES,money} from './demo-engine.js?v=3';
 import {demoDB} from './database-v3.js?v=3';
+import {audio} from './audio-v3.js?v=3';
 
 const $=id=>document.getElementById(id);
 const bank=new DemoBank();
@@ -103,12 +104,14 @@ function showMultiply(mult,wilds){
  }
 }
 function bigWin(text){
+ audio.play('win');
  const el=$('bigWin');
  clearTimeout(winTimer);
  el.textContent=text;el.classList.add('visible');
  winTimer=setTimeout(()=>el.classList.remove('visible'),1600);
 }
 function freeBanner(text){
+ audio.play('bonus');
  banner.textContent=text;banner.hidden=false;
  setTimeout(()=>{banner.hidden=true},1150);
 }
@@ -311,6 +314,7 @@ async function runSpin(){
   return;
  }
  if(!outcome.ok){autoRemaining=0;render();say(outcome.message);return}
+ audio.play('spin');
  const stages=outcome.stages||[{board:outcome.board,ev:outcome.ev,removed:[]}];
  const finalBoard=stages.at(-1).board;
  let recovered=false;
@@ -358,6 +362,7 @@ async function runSpin(){
    }
    await framePause(duration+70);
    if(hasDrop){
+    audio.play('cascade');
     const next=stages[i+1];
     $('spinState').textContent='↓ PEÇAS A CAIR ↓';
     showLineBreakdown([],0);
@@ -443,6 +448,16 @@ function bind(){
  $('btnDemoCredits').addEventListener('click',charge);
  $('btnInfo').addEventListener('click',payModal);
  $('btnDb').addEventListener('click',databaseModal);
+ $('btnSound').addEventListener('click',()=>{
+  const on=audio.toggleEffects();
+  $('btnSound').setAttribute('aria-pressed',String(on));
+  $('btnSound').textContent=on?'🔊':'🔇';
+ });
+ $('btnMusic').addEventListener('click',()=>{
+  const on=audio.toggleMusic();
+  $('btnMusic').setAttribute('aria-pressed',String(on));
+  $('btnMusic').textContent=on?'♫':'♪';
+ });
  $('buyBonus').addEventListener('click',bonusModal);
  $('vaultBtn').addEventListener('click',vaultModal);
  $('autoBtn').addEventListener('click',autoModal);
