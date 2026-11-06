@@ -1,0 +1,195 @@
+/* Jardim Mágico V75 — FOTOGRAFIA REAL COMO ARTE DO JOGO.
+   Camadas WebP extraídas da referência, combinadas com HTML e PixiJS.
+   Ações, lógica da banca, prémios e probabilidades permanecem independentes. */
+.game { isolation:isolate; }
+.game>.jm75BackdropTop,
+.game>.jm75BackdropBottom {
+ position:absolute;left:0;width:100%;pointer-events:none;z-index:0;
+ background-repeat:no-repeat;background-position:center;background-size:100% 100%;
+}
+.game>.jm75BackdropTop{
+ top:0;aspect-ratio:864/355;
+ background-image:url('../assets/imagens/jm75-topo-cenario.webp');
+}
+.game>.jm75BackdropBottom{
+ bottom:0;aspect-ratio:864/316;
+ background-image:url('../assets/imagens/jm75-rodape-cenario.webp');
+}
+.game .logoLoop{z-index:2;max-width:780px;}
+.game .logoLoop::before{display:none!important;}
+.game .titleArt {
+ height:auto!important;aspect-ratio:650/216;
+ object-fit:contain!important;
+ filter:drop-shadow(0 3px 3px rgba(41,3,37,.65))!important;
+ animation:none!important;
+}
+/* O logótipo já contém o mesmo dourado, flores, pássaros e lanternas da foto. */
+.game .logoSpinLetters{display:none!important;}
+.game .reelFrame{
+ overflow:visible!important;
+ border:3px solid #d69a48!important;
+ background:linear-gradient(90deg,#6d421e,#f6cd6d 2%,#462514 7%,#482114 93%,#ffe28f 98%,#6b391a)!important;
+ box-shadow:inset 0 1px 2px #ffe7a4,0 6px 13px #1c0b26a8,0 0 9px #ed8ec57e!important;
+}
+.game .reelFrame::before{display:none!important;}
+.game .reelFrame::after{display:none!important;}
+.game .shelf{
+ border:1px solid #e5ac61!important;
+ border-radius:13px 13px 0 0!important;
+ background:linear-gradient(180deg,#7e245f 0%,#380d4d 20%,#230735 75%,#4c124b 100%)!important;
+ box-shadow:inset 0 1px 4px #ffcbfd86,0 0 6px #fcb46169!important;
+}
+.game .shelfTag{letter-spacing:.04em;color:#ffe9b5!important;}
+.game .stageWrap{
+ position:relative;overflow:hidden;
+ background:linear-gradient(180deg,#392047 0%,#2a123d 46%,#250c39 100%)!important;
+ border:0!important;border-radius:0!important;
+ box-shadow:inset 0 8px 17px rgba(9,0,24,.47),inset 0 -6px 15px rgba(9,0,24,.43)!important;
+ isolation:isolate;
+}
+.game .stageWrap .gardenWorld{display:none!important;}
+.game .stageWrap::before,.game .stageWrap::after{
+ animation:none!important;opacity:0!important;pointer-events:none;
+}
+.game .stageWrap .jm75PhotoFrame{
+ position:absolute;inset:-1.3% -0.3%;
+ z-index:5;pointer-events:none;
+ background:url('../assets/imagens/jm75-moldura.webp') center/100% 100% no-repeat;
+ filter:none!important;
+}
+.game .stageWrap .glassReels{
+ z-index:3;mix-blend-mode:normal!important;
+}
+.game .stageWrap .glassReels i{
+ border-right:1px solid rgba(255,201,107,.10)!important;
+ border-left:1px solid rgba(255,217,137,.20)!important;
+ background:linear-gradient(90deg,rgba(2,0,16,.12),transparent 18%,transparent 87%,rgba(248,190,94,.046))!important;
+ box-shadow:none!important;
+}
+.game .stageWrap .reelFog{
+ z-index:4;
+ background:linear-gradient(180deg,rgba(220,156,237,.08),transparent 15%,transparent 84%,rgba(12,3,26,.25))!important;
+}
+.game #floaters,.game #jm56WinValues{pointer-events:none;}
+.game .jackpot{
+ background:linear-gradient(175deg,#a93486,#5b0b61 22%,#3c0b54 72%,#60134e)!important;
+ border:2px solid #ffda76!important;
+ box-shadow:inset 0 2px 2px #fff4b3bd,inset 0 -3px 5px #2a0b3e,0 4px 0 #683818,0 0 11px #ef8bc773!important;
+}
+.game .jackpot.max{
+ background:linear-gradient(175deg,#ba376b,#710d4e 36%,#410939)!important;
+}
+.game .jackpots strong{font-variant-numeric:tabular-nums;}
+.game .controlStats .hudPanel,
+.game #vaultBtnMobile,.game #buyBonus{
+ background:linear-gradient(178deg,#8b2f78 0%,#510d57 15%,#2d0b47 71%,#3a0c48 100%)!important;
+ border:2px solid #ffd684!important;
+ box-shadow:inset 0 2px 3px #fff2c39b,inset 0 -4px 4px #0f031d,0 3px 0 #914e20,0 0 9px #e566ad88!important;
+}
+.game #vaultBtnMobile .vaultFace img {filter:drop-shadow(0 0 9px #ffe19c)!important;}
+.game .controlStats .hudPanel small,
+.game .controlStats .hudPanel strong{
+ color:#fff1bd!important;text-shadow:0 2px 2px #3d0a38,0 0 6px #ffdd8a70!important;
+}
+.game .underStage .notice{
+ color:#ffefba!important;font-weight:700;text-shadow:0 0 8px #fec784!important;
+}
+.game .spinHalo {
+ position:relative;
+ background:none!important;
+ filter:drop-shadow(0 5px 6px #160c27a9)!important;
+ padding:3px!important;
+}
+.game .spinHalo .spinBtn{
+ position:relative;overflow:visible!important;isolation:isolate;
+ border:0!important;border-radius:50%!important;
+ background:radial-gradient(circle at 32% 18%,#b8ff58,#54c72c 31%,#119122 59%,#056226 87%,#014323)!important;
+ box-shadow:inset 0 3px 11px rgba(255,255,177,.60),inset 0 -7px 10px rgba(0,45,26,.65)!important;
+ text-shadow:0 2px 2px #154920,0 0 7px #fff4ad!important;
+ color:#ffe7a1!important;
+}
+.game .spinHalo .spinBtn::before{
+ content:'';position:absolute;z-index:1;
+ inset:-15% -18%;background:url('../assets/imagens/jm75-botao-anel.webp') center/100% 100% no-repeat;
+ pointer-events:none;
+}
+.game .spinHalo .spinBtn .cycle,
+.game .spinHalo .spinBtn .spinLabel,
+.game .spinHalo .spinBtn .spinCount{
+ position:relative;z-index:2;color:#fff0b9!important;
+ text-shadow:0 2px 1px #1d5f20,0 0 6px #fff8ca9f!important;
+}
+.game .spinHalo .spinBtn .cycle{line-height:1;}
+.game #turboBtn{
+ background:linear-gradient(175deg,#fff7d4 0%,#ffdf88 31%,#f6b23c 62%,#c96d25)!important;
+ border:2px solid #fff1af!important;
+ box-shadow:inset 0 2px 3px #fffbea,0 3px 0 #ac581b,0 0 8px #ffab5182!important;
+ color:#42203b!important;font-weight:900;
+}
+.game #turboBtn[aria-pressed="true"]{
+ background:linear-gradient(165deg,#fff6aa,#dcf478 30%,#8ac440 60%,#508527)!important;
+}
+@media (orientation:portrait){
+ .game[data-layout="portrait"]{
+  background:
+   radial-gradient(ellipse at 30% 55%,rgba(91,24,102,.26),transparent 44%),
+   url('../assets/imagens/bosque-ilustrado-v47.svg') center/100% 100% no-repeat!important;
+ }
+ .game[data-layout="portrait"] .topbar{position:relative;z-index:20;min-height:32px;}
+ .game[data-layout="portrait"] .logoLoop{
+  width:95%!important;max-width:none!important;
+  margin:0 auto 3px!important;
+ }
+ .game[data-layout="portrait"] .titleArt{
+  display:block!important;width:100%!important;height:auto!important;max-height:none!important;
+ }
+ .game[data-layout="portrait"] .jackpots{gap:5px!important;margin-top:0!important;margin-bottom:5px!important;}
+ .game[data-layout="portrait"] .jackpot{
+  min-height:47px!important;padding:3px 2px!important;
+  border-radius:13px!important;
+ }
+ .game[data-layout="portrait"] .reelFrame{
+  border-width:3px!important;padding:4px!important;
+  border-radius:11px!important;
+ }
+ .game[data-layout="portrait"] .shelf{
+  min-height:40px!important;padding:2px 5px 4px!important;
+ }
+ .game[data-layout="portrait"] .stageWrap{aspect-ratio:5/3.02!important;}
+ .game[data-layout="portrait"] .underStage{margin:6px 0 4px!important;}
+ .game[data-layout="portrait"] .controlStats{
+  margin:4px 0 8px!important;gap:5px!important;
+  grid-template-columns:minmax(0,1.1fr) minmax(0,.85fr) minmax(0,1.08fr)!important;
+ }
+ .game[data-layout="portrait"] .v37LeftStats .miniBalance{height:54px!important;}
+ .game[data-layout="portrait"] .v37LeftStats .statBet{height:45px!important;}
+ .game[data-layout="portrait"] .controlStats .statPrize{min-height:99px!important;}
+ .game[data-layout="portrait"] .v37RightStats .vaultMystery{height:57px!important;}
+ .game[data-layout="portrait"] .v37RightStats .v37Buy{min-height:35px!important;}
+ .game[data-layout="portrait"] .v37SpinDeck{
+  margin:8px 0 9px!important;
+  grid-template-columns:minmax(0,1fr) minmax(134px,1.22fr) minmax(0,1fr)!important;
+ }
+ .game[data-layout="portrait"] .v37SpinDeck .spinHalo{max-width:155px!important;}
+ .game[data-layout="portrait"] .spinHalo .spinBtn{
+  border:0!important;max-width:none!important;min-height:130px;
+ }
+ .game[data-layout="portrait"] .spinBtn .cycle{
+  font-size:clamp(36px,9vw,53px)!important;
+ }
+ .game[data-layout="portrait"] #turboBtn{
+  min-height:39px!important;font-size:clamp(10px,2.6vw,15px)!important;
+ }
+}
+@media (orientation:landscape){
+ .game[data-layout="wide"]>.jm75BackdropTop{opacity:.45;height:33%;aspect-ratio:auto;}
+ .game[data-layout="wide"]>.jm75BackdropBottom{opacity:.55;height:40%;aspect-ratio:auto;}
+ .game[data-layout="wide"] .logoLoop{max-width:100%!important;}
+ .game[data-layout="wide"] .titleArt{height:clamp(54px,12vh,112px)!important;width:100%!important;}
+ .game[data-layout="wide"] .reelFrame{padding:4px!important;}
+ .game[data-layout="wide"] .spinHalo{max-width:140px!important;}
+ .game[data-layout="wide"] .spinHalo .spinBtn{min-height:92px;}
+}
+@media(prefers-reduced-motion:reduce){
+ .game>.jm75BackdropTop,.game>.jm75BackdropBottom{animation:none!important;}
+}
