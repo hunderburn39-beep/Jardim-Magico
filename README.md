@@ -77,3 +77,14 @@ Validação: sintaxe JavaScript e publicação GitHub Pages; o resultado visual 
 - Não foram alteradas regras, pagamentos, RTP, jackpots nem lógica da banca.
 - Backup da V77.1: `backup/jardim-v77-1-antes-layout-v78`.
 - A sintaxe foi validada; a disposição final deve ser confirmada visualmente num iPhone, por depender da altura livre no navegador.
+
+## V79 — aproximação à arte fotográfica de referência
+
+Revisão visual focada na diferença entre a primeira arte 9:16 e as capturas no Safari do iPhone. A V78.1 tinha um bosque vetorial bastante plano e flores grandes que não correspondiam à fotografia original.
+
+- `assets/imagens/jm79-cenario-fotografico.svg` reúne três elementos fotográficos já presentes no projeto: bosque superior, ambiente desfocado e lago/cascata. As máscaras excluem elementos de interface que existiam nas imagens, evitando logótipos ou botões duplicados.
+- `css/estilo-29.css` liga esse cenário como fundo único do ecrã, reforça o ouro/púrpura e o relevo dos jackpots, moldura, multiplicadores, botões e painéis. Os cinco rolos, símbolos e controlos continuam dinâmicos.
+- `index.html` identifica a versão V79 e ativa a nova folha de estilo.
+- `js/jogo-2.js` (PixiJS/WebGL), pagamentos, RTP, Jackpot e banca não foram alterados nesta atualização.
+- Recuperação possível através de `backup/jardim-v78-1-antes-arte-fotografica-v79`.
+- Os assets provêm de recortes da referência, mas esta ainda é uma composição interativa e não uma reprodução pixel a pixel. Convém testar o resultado num iPhone real.
