@@ -177,8 +177,11 @@ class ReelScene extends Phaser.Scene{
   }
  }
  useSymbol(item,symbol){
-  const key=asKey(symbol);
-  item.symbol=symbol;
+  // O motor guarda IDs numéricos; Phaser usa nomes das texturas.
+  // Converter aqui garante que uma vitória não cria sprites vazios.
+  const name=typeof symbol==='number'?SYMBOLS[symbol]:symbol;
+  const key=asKey(name);
+  item.symbol=name;
   if(!this.textures.exists(key))return;
   item.sprite.setTexture(key);
   item.sprite.setDisplaySize(CW*.93,CH*.94);
