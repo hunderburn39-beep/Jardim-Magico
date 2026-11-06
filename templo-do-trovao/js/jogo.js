@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V15.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V16.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -224,12 +224,31 @@
   }
   function showPrizeFloat(amount){
     if(amount<=0)return;
-    // Mostrar APENAS o valor individual desta queda: sem acumulado, texto
-    // de símbolos, prefixo "+" ou qualquer quadro.
+    // Mostrar só o valor DESTA queda, composto exclusivamente por
+    // caracteres de um PNG transparente de relâmpagos dourados.
     for(const previous of el.overlay.querySelectorAll(".prize-float"))previous.remove();
+    const value=money(amount);
     const item=document.createElement("div");
-    item.className="prize-float";
-    item.textContent=money(amount);
+    item.className="prize-float prize-amount-png";
+    item.setAttribute("aria-label",value);
+    const characters="0123456789,.€";
+    for(const char of value){
+      const pos=characters.indexOf(char);
+      const digit=document.createElement("span");
+      if(pos>=0){
+        digit.className="prize-png-glyph";
+        digit.style.setProperty("--glyph-x",String(pos%7));
+        digit.style.setProperty("--glyph-y",String(Math.floor(pos/7)));
+        digit.setAttribute("aria-hidden","true");
+      }else if(/\\s/u.test(char)){
+        digit.className="prize-png-gap";
+        digit.setAttribute("aria-hidden","true");
+      }else{
+        digit.className="prize-png-fallback";
+        digit.textContent=char;
+      }
+      item.appendChild(digit);
+    }
     const lifetime=state.turbo?1250:2350;
     item.style.setProperty("--prize-duration",lifetime+"ms");
     el.overlay.appendChild(item);
