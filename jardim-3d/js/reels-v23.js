@@ -36,21 +36,24 @@ export function createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol}
   const node=new pc.Entity('Tambor '+(col+1)+' peça '+slot);
   app.root.addChild(node);
   const x=(col-2)*1.066;
-  const b=model('Corpo espesso','box',[0,0,.22],[1.052,1.071,.16],edge,node);
-  model('Rebaixo violeta','box',[0,0,.333],[1.005,1.014,.12],inner,node);
-  model('Bisel 3D','box',[0,0,.398],[.973,.986,.08],glaze,node);
-  const halo=model('Halo por baixo da arte','sphere',[0,0,.465],[.73,.73,.035],waveMaterials[0],node);
-  const face=model('Arte HD em face volumétrica','box',[0,0,.507],[.947,.965,.16],
+  // A fotografia original não tem quadrados dourados por cada símbolo:
+  // as figuras flutuam num painel violeta, entre separadores de coluna.
+  const halo=model('Luminescência do símbolo','sphere',[0,0,.405],[.83,.83,.022],waveMaterials[0],node);
+  const face=model('Arte HD de alto relevo','box',[0,0,.507],[.947,.965,.075],
    symbolMaterials[(col*3+Math.max(0,row))%symbols.length],node);
-  model('Ouro superior em relevo','box',[0,.506,.553],[.986,.021,.056],gold,node);
-  model('Ouro inferior em relevo','box',[0,-.506,.553],[.986,.021,.056],gold,node);
-  model('Ouro esquerdo','box',[-.506,0,.553],[.024,.982,.056],gold,node);
-  model('Ouro direito','box',[.506,0,.553],[.024,.982,.056],gold,node);
   const tile={node,face,halo,idx:0,materials:symbolMaterials,x,homeRow:row,slot,
    col,done:true};
   applySymbol(tile,(col*3+Math.max(0,row))%symbols.length);
   setY(tile,rowY(slot));
   return tile;
+ }
+ // Fundo comum aos cinco rolos, sem divisões em quadrados individuais.
+ const reelVelvet=mat('#2b1048',{metal:.09,gloss:44,emissive:'#240839',emission:.23});
+ const separator=mat('#dd9d50',{metal:.81,gloss:88,emissive:'#59331b',emission:.11});
+ model('Veludo dos cinco tambores','box',[0,.26,-.14],[5.40,3.30,.11],reelVelvet);
+ for(let sep=0;sep<4;sep++){
+  const x=(sep-1.5)*1.066;
+  model('Separador fino vertical','box',[x,.26,.45],[.026,3.21,.055],separator);
  }
  for(let col=0;col<5;col++){
   const tiles=[];
@@ -198,7 +201,7 @@ export function createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol}
     tile.slot=r;tile.homeRow=r;
     tile.node.enabled=true;tile.face.enabled=true;
     tile.face.setLocalEulerAngles(0,0,0);
-    tile.face.setLocalScale(.947,.965,.16);
+    tile.face.setLocalScale(.947,.965,.075);
     applySymbol(tile,board[c][r]);
     setY(tile,rowY(r));
    }
