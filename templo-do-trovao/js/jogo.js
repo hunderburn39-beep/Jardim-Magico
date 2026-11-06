@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V12.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V13.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -6,7 +6,9 @@
 (() => {
   const COLS = 6, ROWS = 5, SIZE = COLS * ROWS;
   const SYMBOLS = ["crown","ring","goblet","hourglass","ruby","sapphire","emerald","amethyst","amber"];
-  const LABELS = {crown:"Coroa",ring:"Anel",goblet:"Cálice",hourglass:"Ampulheta",ruby:"Rubi",sapphire:"Safira",emerald:"Esmeralda",amethyst:"Ametista",amber:"Âmbar"};
+  const RULES=window.TrovaoRules;
+  if(!RULES)throw Error("Motor WILD indisponível");
+  const LABELS = {crown:"Coroa",ring:"Anel",goblet:"Cálice",hourglass:"Ampulheta",ruby:"Rubi",sapphire:"Safira",emerald:"Esmeralda",amethyst:"Ametista",amber:"Âmbar",wild:"WILD"};
   const WEIGHTS = [5,6,6,7,8,9,9,9,9];
   const MULT_VALUES = [2,3,4,5,6,8,10,12,15,20,25,50,100,250,500];
   const MULT_WEIGHTS = [28,21,15,11,8,6,4,3,2,1.5,1,.45,.18,.045,.012];
@@ -26,7 +28,7 @@
     goblet:[0,1],ring:[1,1],hourglass:[2,1],crown:[3,1],scatter:[4,1],mult:[0,2]
   });
   const FALLBACK=Object.freeze({
-    sapphire:"💎",emerald:"🔺",amber:"🔶",amethyst:"🔻",ruby:"❤️",
+    sapphire:"💎",emerald:"🔺",amber:"🔶",amethyst:"🔻",ruby:"❤️",wild:"🌟",
     goblet:"🏆",ring:"💍",hourglass:"⌛",crown:"👑",scatter:"⚡",mult:"✦"
   });
   function spriteStyle(kind){
@@ -37,6 +39,7 @@
   function makeSprite(kind){
     const art=document.createElement("span");
     art.className="symbol-bitmap";
+    if(kind==="wild")art.classList.add("wild-bitmap");
     const [ax,ay]=spriteStyle(kind);
     art.style.setProperty("--ax",ax);art.style.setProperty("--ay",ay);
     const fallback=document.createElement("span");
@@ -53,6 +56,10 @@
     test.onload=()=>document.body.classList.add("assets-ready");
     test.onerror=()=>document.body.classList.add("asset-fallback");
     test.src="assets/atlas-3d-v5.webp";
+    const wildTest=new Image();
+    wildTest.onload=()=>document.body.classList.add("wild-asset-ready");
+    wildTest.onerror=()=>document.body.classList.add("wild-asset-fallback");
+    wildTest.src="../assets/imagens/05ad729435e7487db8.png";
   }
   const INITIAL_CREDITS = 1000;
   let nextId = 1;
@@ -91,28 +98,11 @@
     for(let i=0;i<values.length;i++){p-=weights[i];if(p<0)return values[i];}
     return values[values.length-1];
   }
-  function newSymbol(){
-    const p=rand();
-    // Frequências específicas desta demonstração, não da versão comercial.
-    if(p<(state.bonus?.029:.021))return {id:nextId++,kind:"scatter"};
-    if(p<(state.bonus?.063:.055))return {id:nextId++,kind:"mult",value:weighted(MULT_VALUES,MULT_WEIGHTS)};
-    return {id:nextId++,kind:weighted(SYMBOLS,WEIGHTS)};
-  }
+  function newSymbol(){return RULES.draw(state.bonus,nextId++,rand)}
   function makeGrid(){return Array.from({length:SIZE},newSymbol)}
   function countScatter(grid){return grid.filter(s=>s.kind==="scatter").length}
-  function getWins(grid){
-    const count=Object.fromEntries(SYMBOLS.map(s=>[s,0]));
-    for(const s of grid){if(Object.hasOwn(count,s.kind))count[s.kind]++}
-    const result=[];let pay=0;
-    for(const symbol of SYMBOLS){
-      const n=count[symbol];
-      if(n<8)continue;
-      const amount=currentBet()*PAY_TABLE[symbol][n>=12?2:n>=10?1:0];
-      pay+=amount;result.push({symbol,count:n,amount});
-    }
-    return {result,pay,matched:new Set(result.map(r=>r.symbol))};
-  }
-  function tumble(grid,matched){
+  function getWins(grid){return RULES.score(grid,PAY_TABLE,currentBet())}
+    function tumble(grid,matched){
     const next=Array(SIZE);
     for(let col=0;col<COLS;col++){
       const survivors=[];
@@ -141,14 +131,15 @@
       if(!tile){
         tile=document.createElement("div");
         tile.appendChild(makeSprite(symbol.kind));
-        if(symbol.kind==="mult"){
+        if(symbol.kind==="mult"||symbol.kind==="wild"){
           const v=document.createElement("span");
-          v.className="orb-value";v.textContent=symbol.value+"×";
+          v.className=symbol.kind==="wild"?"wild-value":"orb-value";
+          v.textContent=symbol.kind==="wild"?"×"+symbol.value:symbol.value+"×";
           tile.appendChild(v);
         }
         tileCache.set(symbol.id,tile);
       }
-      tile.className="cell "+(symbol.kind==="scatter"?"scatter":symbol.kind==="mult"?"multiplier":"");
+      tile.className="cell "+(symbol.kind==="scatter"?"scatter":symbol.kind==="mult"?"multiplier":symbol.kind==="wild"?"wild":"");
       const col=index%COLS,row=Math.floor(index/COLS);
       const was=options.fallFrom?.get(symbol.id);
       if(options.dropIds?.has(symbol.id)||options.fallFrom){
@@ -167,7 +158,7 @@
       if(options.matchKinds?.has(symbol.kind))tile.classList.add("winner");
       if(options.scatterGlow&&symbol.kind==="scatter")tile.classList.add("scat-hit");
       tile.dataset.kind=symbol.kind;
-      tile.setAttribute("aria-label",symbol.kind==="mult"?"Multiplicador "+symbol.value+" vezes":symbol.kind==="scatter"?"Scatter":LABELS[symbol.kind]);
+      tile.setAttribute("aria-label",symbol.kind==="mult"?"Multiplicador "+symbol.value+" vezes":symbol.kind==="wild"?"WILD "+symbol.value+" vezes":symbol.kind==="scatter"?"Scatter":LABELS[symbol.kind]);
       fragment.appendChild(tile);
     });
     // Move as mesmas imagens sobreviventes em vez de reconstruí-las.
@@ -207,7 +198,7 @@
       sapphire:"#69dafa",emerald:"#62fdb2",amber:"#ffcb63",
       amethyst:"#dc83ff",ruby:"#ff7394",goblet:"#aaa4ff",
       ring:"#f1c16e",hourglass:"#7fffe0",crown:"#ffeb99",
-      scatter:"#a5efff",mult:"#ffcf93"
+      scatter:"#a5efff",mult:"#ffcf93",wild:"#f3d182"
     };
     el.fx?.replaceChildren();
     for(let i=0;i<tiles.length;i++){
@@ -240,7 +231,7 @@
     item.appendChild(document.createTextNode("+"+money(amount)));
     if(prizes.length){
       const detail=document.createElement("small");
-      detail.textContent=prizes.map(p=>LABELS[p.symbol]+" ×"+p.count+" • "+money(p.amount)).join("  |  ");
+      detail.textContent=prizes.map(p=>LABELS[p.symbol]+" ×"+p.count+(p.wildCount?" + WILD ×"+p.wildMultiplier:"")+" • "+money(p.amount)).join("  |  ");
       item.appendChild(detail);
     }
     const lifetime=state.turbo?1250:2350;
@@ -310,6 +301,7 @@
       '<div class="pay-rules">'+
       '<p><b>Grelha 6×5:</b> 8 ou mais figuras iguais pagam sem precisar de estar na mesma linha. As peças premiadas desaparecem, as restantes descem e entram novas.</p>'+
       '<p><b>SCATTER:</b> 4, 5 ou 6+ pagam respetivamente 3×, 5× ou 100× a aposta. 4 ou mais ativam 15 rodadas grátis; durante o bónus, 3 ou mais oferecem +5.</p>'+
+      '<p><b>WILD (1×–5×):</b> substitui um símbolo normal para formar 8 ou mais. Participa numa única combinação por queda e usa o multiplicador WILD mais alto (até 5×), sem duplicar pagamentos. A imagem é a mesma do Jardim Mágico.</p>'+
       '<p><b>Multiplicadores:</b> 2× a 500×, somados numa jogada vencedora; nas rodadas grátis são acumuláveis nas condições do jogo.</p>'+
       '<p><b>Comprar bónus:</b> 100× a aposta em créditos virtuais. Limite de 5 000× a aposta por ciclo.</p>'+
       '<p class="note">Pagamentos idênticos aos valores da tabela de referência que enviaste. Os gráficos e as probabilidades são próprios deste protótipo. RTP não certificado; não utiliza dinheiro real.</p></div>',
@@ -369,7 +361,7 @@
       totalBase+=wins.pay;
       window.TrovaoHistory?.recordWin(wins);
       render(state.grid,{matchKinds:wins.matched});
-      const text=wins.result.map(w=>LABELS[w.symbol]+" ×"+w.count).join(" + ");
+      const text=wins.result.map(w=>LABELS[w.symbol]+" ×"+w.count+(w.wildCount?" com "+w.wildCount+" WILD ×"+w.wildMultiplier:"")).join(" + ");
       setMsg("PRÉMIO! "+text+" • QUEDA "+steps+" • "+money(wins.pay));
       showPrizeFloat(wins.pay,wins.result);
       if(spinMult>0&&steps===1)sfx("mult");
