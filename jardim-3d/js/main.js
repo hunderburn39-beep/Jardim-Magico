@@ -4,7 +4,8 @@
  * Mobile: WebGL 2, DPR <=1.5, luzes estáticas sem sombras em tempo real.
  */
 import * as pc from 'playcanvas';
-import {enhanceReels} from './visual-v22.js?v=2.2';
+import {createOrganicFrame} from './frame-v23.js?v=2.3';
+import {createVerticalReels} from './reels-v23.js?v=2.3';
 
 const $=id=>document.getElementById(id);
 const canvas=$('application');
@@ -25,6 +26,7 @@ const state={running:false,turbo:false,orbit:false,spins:0,timer:0,cam:0,camTarg
 let app;
 let reelTiles=[];
 let symbolMaterials=[];
+let reelMotion=null;
 let requestedBoard=null;
 let finishSpin=null;
 let winPulseUntil=0;
@@ -518,65 +520,50 @@ function updateBurst(dt){
 }
 
 function startSpin(matrix=null,whenDone=null){
- if(state.running)return false;
- requestedBoard=matrix;finishSpin=whenDone;
- state.running=true;state.timer=0;
+ if(state.running||!reelMotion)return false;
  cancelBurst();
  winPulseUntil=0;
- for(const cell of winPulseCells)cell.face.setLocalScale(.96,.98,.14);
+ for(const cell of winPulseCells)cell.face.setLocalScale(.947,.965,.16);
  winPulseCells=[];
+ const board=matrix||Array.from({length:5},
+   ()=>Array.from({length:3},()=>Math.floor(Math.random()*symbols.length)));
+ state.running=true;
  button.disabled=true;
- status.textContent='A rodar em 3D…';
- output.textContent='Os cinco tambores estão a rodar';
- const count=state.spins+1;
- for(let c=0;c<5;c++)for(let r=0;r<3;r++){
-   const cell=reelTiles[c][r];cell.done=false;cell.lastStep=-1;
- }
- state.spins=count;
+ status.textContent='Tambores a descer de cima para baixo…';
+ output.textContent='Os cinco tambores estão a descer';
+ const count=++state.spins;
  if($('spins'))$('spins').textContent=String(count);
- return true;
+ const started=reelMotion.startSpin(board,state.turbo,()=>{
+   state.running=false;
+   button.disabled=false;
+   status.textContent='Tambores verticais parados';
+   if(!whenDone)output.textContent='Giro '+state.spins+' concluído';
+   if(whenDone)whenDone();
+ });
+ if(!started){state.running=false;button.disabled=false}
+ return started;
+}
+function cascadeDown(board,removed,whenDone){
+ if(state.running||!reelMotion)return false;
+ cancelBurst();
+ winPulseUntil=0;
+ state.running=true;
+ button.disabled=true;
+ status.textContent='Queda: símbolos a descer…';
+ const result=reelMotion.beginCascade(board,removed,()=>{
+   state.running=false;
+   button.disabled=false;
+   status.textContent='Queda concluída';
+   if(whenDone)whenDone();
+ },state.turbo?.38:.68);
+ if(!result){state.running=false;button.disabled=false}
+ return result;
 }
 function updateSpin(dt){
- if(!state.running)return;
- state.timer+=Math.min(dt,.07);
- const speed=state.turbo?2.45:1;
- let allDone=true;
- for(let c=0;c<5;c++){
-   const delay=c*.15/speed;
-   const duration=(1.1+c*.22)/speed;
-   const tt=state.timer-delay;
-   const done=tt>=duration;
-   for(let r=0;r<3;r++){
-     const cell=reelTiles[c][r];
-     if(done){
-       if(!cell.done){
-         cell.done=true;
-         cell.face.setLocalEulerAngles(0,0,0);
-         cell.idx=requestedBoard?.[c]?.[r]??Math.floor(Math.random()*symbols.length);
-         cell.face.render.material=cell.materials[cell.idx];
-       }
-     }else if(tt>=0){
-       allDone=false;
-       const step=Math.floor(tt*13*speed);
-       if(step!==cell.lastStep){
-         cell.lastStep=step;
-         cell.idx=Math.floor(Math.random()*symbols.length);
-         cell.face.render.material=cell.materials[cell.idx];
-       }
-       // Virar as peças com eixo 3D, não um sprite vertical falso
-       cell.face.setLocalEulerAngles((tt*840*speed+r*4)%360,Math.sin(tt*4+r)*3,0);
-     }else{allDone=false;}
-   }
- }
- if(allDone){
-   state.running=false;button.disabled=false;
-   status.textContent='Tambores tridimensionais';
-   const center=reelTiles[2][1];
-   if(!finishSpin)output.textContent='Giro '+state.spins+' concluído · '+labels[center.idx]+' no centro';
-   const done=finishSpin;finishSpin=null;requestedBoard=null;
-   if(done)done();
- }
+ if(!reelMotion)return;
+ reelMotion.update(dt);
 }
+
 function build(){
  app=new pc.Application(canvas,{graphicsDeviceOptions:{antialias:true,alpha:false,powerPreference:'high-performance'}});
  app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
@@ -590,10 +577,10 @@ function build(){
  app.root.addChild(camera);
  lighting();
  background();
- cabinet();
- decorate3D();
- reels();
- enhanceReels({pc,model,mat,reelTiles,app});
+ createOrganicFrame({pc,model,mat,app});
+ reelMotion=createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol});
+ reelTiles=reelMotion.reelTiles;
+ symbolMaterials=reelMotion.symbolMaterials;
  loadOriginalSymbolArt();
  setCamera();
  quality.textContent='PLAYCANVAS';
@@ -606,7 +593,7 @@ function build(){
     const t=Date.now();
     const active=t<winPulseUntil;
     const v=active?1+.13*Math.sin((t-winPulseStart)*.019)**2:1;
-    for(const cell of winPulseCells)cell.face.setLocalScale(.96*v,.98*v,.14);
+    for(const cell of winPulseCells)cell.face.setLocalScale(.947*v,.965*v,.16);
     if(!active){winPulseUntil=0;winPulseCells=[]}
    }
    if(state.orbit){
@@ -645,15 +632,8 @@ function build(){
  });
  window.JM3D={
   spin:(board,callback)=>startSpin(board,callback),
-  showBoard:board=>{
-   if(state.running)return false;
-   for(let c=0;c<5;c++)for(let r=0;r<3;r++){
-    const t=reelTiles[c][r];t.idx=board[c][r];
-    t.face.setLocalEulerAngles(0,0,0);
-    t.face.render.material=t.materials[t.idx];
-   }
-   return true;
-  },
+  showBoard:board=>reelMotion.showBoard(board),
+  cascade:(board,removed,callback)=>cascadeDown(board,removed,callback),
   isRunning:()=>state.running,
   burstWinners:(coords,duration=1100)=>explodeWinners(coords,duration),
   isBursting:()=>!!burst,
