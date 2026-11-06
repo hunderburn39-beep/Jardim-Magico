@@ -302,8 +302,14 @@ async function runSpin(){
  if(!gameReady){say('A carregar base de dados local…');return}
  if(!window.JM3D){say('Motor 3D a iniciar…');return}
  let outcome;
+ const beforeSpin=bank.snapshot;
  try{outcome=bank.spin()}
- catch(err){console.error('Falha de cálculo:',err);say('Não foi possível calcular o giro.');return}
+ catch(err){
+  restoreBank({snapshot:beforeSpin,board:lastBoard});
+  console.error('Falha de cálculo:',err);
+  render();say('Erro no cálculo; saldo e fundo preservados.');
+  return;
+ }
  if(!outcome.ok){autoRemaining=0;render();say(outcome.message);return}
  const stages=outcome.stages||[{board:outcome.board,ev:outcome.ev,removed:[]}];
  const finalBoard=stages.at(-1).board;
