@@ -285,7 +285,7 @@
     const fmt=v=>String(v).replace(".",",")+"×";
     const symSvg=kind=>{
       const [ax,ay]=spriteStyle(kind);
-      return '<span class="pay-symbol symbol-bitmap" aria-hidden="true" style="--ax:'+ax+';--ay:'+ay+'"><span class="symbol-fallback-text">'+FALLBACK[kind]+'</span></span>';
+      return '<span class="pay-symbol symbol-bitmap'+(kind==="wild"?" wild-bitmap":"")+'" aria-hidden="true" style="--ax:'+ax+';--ay:'+ay+'"><span class="symbol-fallback-text">'+FALLBACK[kind]+'</span></span>';
     };
     const rows=order.map(kind=>
       '<tr><td class="pay-name">'+symSvg(kind)+'<b>'+LABELS[kind]+'</b></td>'+
@@ -295,9 +295,11 @@
       '<b>SCATTER</b></td><td class="pay-value">3× <small>4 símbolos</small></td>'+
       '<td class="pay-value">5× <small>5 símbolos</small></td>'+
       '<td class="pay-value">100× <small>6+ símbolos</small></td></tr>';
+    const wildRow='<tr class="wild-payrow"><td class="pay-name">'+symSvg("wild")+'<b>WILD</b></td>'+
+      '<td colspan="3">Substitui as pedras normais e multiplica o prémio da combinação de 1× até 5×. Não é pago duas vezes na mesma queda.</td></tr>';
     openModal("TABELA DE PAGAMENTOS",
       '<div class="pay-head">⚡ OS SÍMBOLOS PAGAM EM QUALQUER POSIÇÃO ⚡</div>'+
-      '<div class="pay-scroll"><table class="paytable-table"><thead><tr><th>SÍMBOLO</th><th>8–9</th><th>10–11</th><th>12+</th></tr></thead><tbody>'+rows+scat+'</tbody></table></div>'+
+      '<div class="pay-scroll"><table class="paytable-table"><thead><tr><th>SÍMBOLO</th><th>8–9</th><th>10–11</th><th>12+</th></tr></thead><tbody>'+rows+scat+wildRow+'</tbody></table></div>'+
       '<div class="pay-rules">'+
       '<p><b>Grelha 6×5:</b> 8 ou mais figuras iguais pagam sem precisar de estar na mesma linha. As peças premiadas desaparecem, as restantes descem e entram novas.</p>'+
       '<p><b>SCATTER:</b> 4, 5 ou 6+ pagam respetivamente 3×, 5× ou 100× a aposta. 4 ou mais ativam 15 rodadas grátis; durante o bónus, 3 ou mais oferecem +5.</p>'+
