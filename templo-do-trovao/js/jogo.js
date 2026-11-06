@@ -240,7 +240,7 @@
         digit.style.setProperty("--png-x",((pos%7)*100/6).toFixed(5)+"%");
         digit.style.setProperty("--png-y",Math.floor(pos/7)*100+"%");
         digit.setAttribute("aria-hidden","true");
-      }else if(/\\s/u.test(char)){
+      }else if(char.trim()===""){
         digit.className="prize-png-gap";
         digit.setAttribute("aria-hidden","true");
       }else{
