@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#170c2e">
+  <meta name="description" content="Jardim Mágico — pré-visualização 3D PlayCanvas.">
+  <title>Jardim Mágico 3D — Protótipo PlayCanvas</title>
+  <link rel="stylesheet" href="./css/3d.css?v=1">
+  <script type="importmap">
+    {"imports":{"playcanvas":"https://cdn.jsdelivr.net/npm/playcanvas@2.23.3/build/playcanvas.mjs"}}
+  </script>
+</head>
+<body>
+  <canvas id="application" aria-label="Cena tridimensional do Jardim Mágico"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+  <main class="overlay">
+    <header class="top">
+      <div class="topline">
+        <span class="tag"><span class="live-dot"></span> PROTÓTIPO 3D</span>
+        <a class="back" href="../index.html?v=80.1" aria-label="Voltar ao jogo original">Jogo original <span>↗</span></a>
+      </div>
+      <div class="brand" aria-label="Jardim Mágico">
+        <span>Jardim</span><span>Mágico</span>
+        <small>O BOSQUE GANHOU VIDA</small>
+      </div>
+    </header>
+    <section class="jackpots" aria-label="Jackpots ilustrativos">
+      <div class="pot tiny"><small>MIN</small><strong>250×</strong></div>
+      <div class="pot hero"><small>ULTRA</small><strong>5000×</strong></div>
+      <div class="pot"><small>MAX</small><strong>1000×</strong></div>
+      <div class="pot"><small>MED</small><strong>500×</strong></div>
+    </section>
+    <section class="center-info">
+      <span id="spinState">Tambores tridimensionais</span>
+    </section>
+    <section class="bottom">
+      <div class="info">
+        <div><small>MODO</small><strong>DEMONSTRAÇÃO</strong></div>
+        <div><small>GIROS</small><strong id="spins">0</strong></div>
+        <div><small>EFEITO</small><strong id="quality">3D REAL</strong></div>
+      </div>
+      <div class="controls">
+        <button id="toggleCamera" type="button" class="secondary" aria-pressed="false">✧ CÂMARA</button>
+        <button id="spin" type="button" class="spin" aria-label="Rodar tambores 3D"><span class="spin-icon">↻</span><span>RODAR</span></button>
+        <button id="turbo" type="button" class="secondary" aria-pressed="false">⚡ TURBO</button>
+      </div>
+      <p id="result" class="result" role="status" aria-live="polite">Toca em RODAR e observa os tambores em 3D</p>
+      <p class="disclaimer">Pré-visualização gráfica, sem apostas, saldo ou pagamentos.</p>
+    </section>
+  </main>
+  <div class="error" id="error" hidden>
+    <strong>Não foi possível iniciar o motor 3D.</strong>
+    <span>Verifica a ligação à Internet e abre no Safari ou Chrome atualizado.</span>
+    <a href="../index.html">Abrir a versão original</a>
+  </div>
+  <script type="module" src="./js/main.js?v=1"></script>
+</body>
+</html>
