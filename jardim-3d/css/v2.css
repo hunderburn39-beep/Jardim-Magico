@@ -1,0 +1,177 @@
+/* Jardim Mágico 3D V2 — direção de arte alinhada com a fotografia original.
+   Interface real por cima de geometrias PlayCanvas, sem capturas de ecrã coladas.
+   Transformações 3D no motor; estes painéis mantêm-se leves no Safari. */
+:root{
+ --rose:#fc74c6;--gold:#ffe19a;--gold-border:#ffb657;--velvet:#37084a;
+ --ink:#12061e;--soft-gold:#ffd286;
+}
+button{font:inherit}
+.overlay{overflow:hidden}
+.top{top:max(2px,env(safe-area-inset-top));left:3%;right:3%}
+.topline{height:31px;align-items:center;z-index:10}
+.toptools{display:flex;gap:clamp(4px,1.6vw,11px)}
+.toptools .roundSmall,.topline .back{
+ pointer-events:auto;display:grid;place-items:center;
+ width:clamp(29px,8vw,39px);height:clamp(29px,8vw,39px);
+ border:2px solid #ffdf8c;border-radius:50%;padding:0;
+ background:radial-gradient(circle at 34% 18%,#893284,#26083f 78%)!important;
+ box-shadow:inset 0 2px 2px #ffe9bf85,0 3px 0 #9a5827,0 0 8px #ff76d27f;
+ color:#fff0b2;font-size:19px;font-weight:900;text-decoration:none;
+ text-shadow:0 1px 1px #170d28;
+}
+.topline .back{width:auto;min-width:39px;padding:0 7px;border-radius:21px}
+.back span{font-size:9px;letter-spacing:.025em;line-height:1}
+.toptools .roundSmall:active,.topline .back:active{transform:translateY(2px)}
+.brand{margin:clamp(0px,.6dvh,5px) auto 0;max-width:100%;width:100%;pointer-events:none}
+.brand-art{
+ display:block;width:min(92vw,480px);height:auto;max-height:min(18dvh,170px);
+ object-fit:contain;margin:auto;filter:drop-shadow(0 5px 3px #130624c9)
+ drop-shadow(0 0 7px #ff9dde70);
+}
+.brand small{margin-top:-4px;letter-spacing:.15em;font-size:9px;text-shadow:0 2px 3px #1a0630}
+.jackpots{
+ top:23.8%!important;left:2.1%!important;right:2.1%!important;
+ display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px!important;
+ pointer-events:none;
+}
+.pot,.pot.hero{
+ min-height:clamp(41px,6.1dvh,58px);padding:2px 1px!important;
+ background:radial-gradient(ellipse at 50% 0,#f0a0d766,transparent 55%),
+ linear-gradient(172deg,#923180,#480b55 57%,#270a3a)!important;
+ border:1.8px solid #ffe4a3!important;border-radius:clamp(11px,3vw,18px)!important;
+ box-shadow:inset 0 2px 2px #fff6c2bc,0 3px 0 #8e441b,0 5px 8px #1d0a24b3,0 0 7px #ff8cdd69;
+}
+.pot.hero{background:linear-gradient(170deg,#b63578,#69113e 55%,#30102e)!important}
+.pot small{font:bold clamp(9px,2.1vw,14px)/1.1 Georgia,serif;color:#fff2bf}
+.pot strong{font:bold clamp(13px,3.15vw,20px)/1.15 Georgia,serif;color:#ffe9a8;letter-spacing:-.04em}
+.pot em{font:bold clamp(8px,1.9vw,12px)/1 Georgia,serif;color:#ffadf0;font-style:normal}
+.reelHead{
+ position:absolute;top:29.8%;left:3.2%;right:3.2%;height:clamp(34px,5.9dvh,48px);
+ display:flex;align-items:center;gap:5px;padding:4px 8px;
+ border:2px solid #f4bc6a;border-radius:14px 14px 5px 5px;
+ background:linear-gradient(180deg,#6a1f67ef,#310c46f5 40%,#260733f5);
+ box-shadow:inset 0 2px 2px #fce2b66c,0 0 8px #fdafcb89;
+ pointer-events:none;
+}
+.reelHeadLabel{color:#ffebaf;text-align:left;font:bold clamp(8px,2.1vw,12px)/1.04 Georgia,serif;flex:0 0 30%;text-shadow:0 1px 2px #2d0645}
+.orbBank{display:flex;gap:4px;align-items:center;flex:1;min-width:0}
+.orbBank b{
+ display:grid;place-items:center;flex:0 0 auto;
+ width:clamp(23px,5.5vw,35px);height:clamp(23px,5.5vw,35px);
+ border-radius:50%;border:2px solid #ffd47e;
+ background:radial-gradient(circle at 26% 20%,#ffd2f4,#e044ab 40%,#651080 80%);
+ box-shadow:inset 0 2px 3px #fff9cd94,0 2px 2px #1a082a,0 0 5px #fc95e9ab;
+ color:#ffe3a3;font:bold clamp(10px,2.8vw,17px) Georgia,serif;
+}
+.reelMultiplier{font:bold clamp(20px,5vw,28px)/1 Georgia,serif;color:#ffeba8;text-shadow:0 0 6px #ffbf5d}
+.reelMessage{position:absolute;top:67%;width:100%;margin:0;font:bold clamp(11px,2.6vw,15px) Georgia,serif;color:#ffe7b2;text-shadow:0 2px 3px #1e082c}
+.bonusBanner{position:absolute;top:55%;left:6%;right:6%;z-index:4;border:3px solid #ffdf96;border-radius:27px;padding:13px 8px;background:radial-gradient(ellipse at center,#b84baa,#570d71 58%,#220b38);box-shadow:0 0 30px #ff96cb99,inset 0 2px 5px #fff6d8;color:#fff5bf;font:900 clamp(18px,6.8vw,33px) Georgia,serif;text-shadow:0 2px 4px #380b48;pointer-events:none}
+.bonusBanner[hidden],#freeMeter[hidden],.totalWin[hidden],.dialogShade[hidden],.holdScreen[hidden]{display:none!important}
+.bigWin{position:absolute;z-index:5;top:48%;left:4%;right:4%;font:900 clamp(23px,7vw,44px) Georgia,serif;color:#ffe89c;text-shadow:0 0 11px #ff4f98,0 3px 3px #240828;pointer-events:none;opacity:0;transition:opacity .24s}
+.bigWin.visible{opacity:1}
+.bottom{left:3%;right:3%;bottom:max(6px,env(safe-area-inset-bottom));gap:clamp(3px,.7dvh,8px)}
+.status{display:flex;justify-content:center;align-items:center;gap:8px;min-height:17px}
+.status span{font:800 clamp(9px,2.45vw,13px)/1.1 Georgia,serif;color:#fff0ad;text-shadow:0 1px 3px #170823}
+#freeMeter{border-radius:14px;border:1px solid #ffdb99;padding:3px 6px;background:#570a66}
+.info{display:grid;grid-template-columns:1.06fr .92fr 1.09fr;align-items:stretch;gap:5px}
+.leftHud,.rightHud{display:flex;flex-direction:column;min-width:0;gap:4px}
+.hudPanel,.vaultBtn,.buyBonus{
+ min-width:0;border:2px solid #ffdf95!important;
+ border-radius:clamp(9px,2.7vw,17px)!important;
+ background:linear-gradient(180deg,#d96bbd57,transparent 14%),
+ linear-gradient(172deg,#942a84 0%,#4b0c58 43%,#28083c 86%,#50104d)!important;
+ box-shadow:inset 0 2px 2px #fff4c699,0 3px 0 #934f23,0 5px 6px #180627ad!important;
+ color:#fff2b1!important;text-shadow:0 1px 2px #22051c;
+}
+.hudPanel{display:flex;justify-content:center;align-items:center;flex-direction:column;gap:1px;min-height:44px;padding:4px 2px}
+.hudPanel small,.vaultBtn small{font:bold clamp(8px,2.1vw,12px)/1.1 Georgia,serif;white-space:nowrap}
+.hudPanel strong,.vaultBtn strong{font:900 clamp(14px,3.25vw,22px)/1.15 Georgia,serif}
+.betPanel{min-height:40px}
+.betControls{display:flex;align-items:center;justify-content:space-evenly;gap:1px;width:100%}
+.betControls button{
+ pointer-events:auto;min-width:25px;width:25px;height:25px;
+ display:grid;place-items:center;padding:0;border-radius:50%;border:2px solid #ffb963;
+ background:linear-gradient(165deg,#963479,#400b5e);box-shadow:inset 0 1px #fff4d6b0,0 2px 2px #1a0825;
+ color:#ffe9b2;font-size:17px;font-weight:900;
+}
+.betControls button:disabled{opacity:.35}
+.prizePanel{min-height:87px}
+.prizePanel strong{font-size:clamp(16px,3.8vw,24px)}
+.totalWin{color:#ffc2f5;font:800 9px/1.2 Georgia,serif;margin-top:4px}
+.vaultBtn{pointer-events:auto;flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0;min-height:55px;padding:1px 1px}
+.vaultBtn .pig{display:block;font-size:clamp(17px,5.8vw,28px);line-height:.9;filter:drop-shadow(0 1px 2px #e78f3380)}
+.vaultBtn small{font-size:clamp(7px,1.8vw,10px)}
+.vaultBtn strong{font-size:clamp(12px,2.85vw,19px)}
+.buyBonus{pointer-events:auto;min-height:30px;padding:5px 1px;font-size:clamp(8px,2.1vw,12px);font-weight:900;white-space:nowrap}
+.controls{grid-template-columns:1fr 1.35fr 1fr;gap:3px;min-height:88px;justify-content:center;align-items:center}
+.controls .spin{width:clamp(87px,24vw,128px);height:clamp(87px,24vw,128px);border-width:4px;font:900 clamp(17px,4.2vw,23px) Georgia,serif;background:
+ radial-gradient(circle at 28% 17%,#e9ffe1,#8ae95a 19%,#47c738 39%,#0c702e 71%,#063922 90%);
+ box-shadow:inset 0 3px 7px #fffbdcdb,inset 0 -9px 12px #063627,0 4px 0 #8c551e,0 6px 7px #160826,0 0 12px #efbd6488}
+.spin-icon{font-size:clamp(36px,10vw,55px)}
+.controls .secondary{border-width:2px;font-size:clamp(9px,2.5vw,13px);padding:8px 2px;max-width:130px}
+.controls .secondary.auto{background:linear-gradient(#f4d3f6,#ae6db9,#571170);color:#fff4bc;text-shadow:0 1px 1px #20052a}
+.auto span{font-size:15px}
+.controls .turbo{background:linear-gradient(170deg,#fffbd7,#f9ce72 50%,#af5526)}
+.result{min-height:16px;font-size:clamp(9px,2.4vw,12px)}
+.disclaimer{font-size:clamp(8px,1.9vw,10px);line-height:1.15;color:#fff0be91}
+.dialogShade,.holdScreen{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:15px;background:rgba(10,3,23,.86);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.dialogCard,.holdCard{
+ width:min(100%,440px);max-height:calc(100dvh - 40px);overflow:auto;padding:17px;
+ color:#ffecb9;text-align:center;border:3px solid #ffd184;border-radius:22px;
+ background:radial-gradient(ellipse at 50% 0,#8b217e,#3b0a57 51%,#1d092e);
+ box-shadow:inset 0 2px 3px #fff5b799,0 0 24px #f95ed599,0 13px 25px #04010ba8;
+}
+.dialogHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.dialogHead h2,.holdCard h2{font:900 23px Georgia,serif;color:#fff2c4;margin:0;text-shadow:0 2px 3px #220822}
+.dialogHead button{border:2px solid #ffda90;background:#61205e;color:#fff0c5;border-radius:50%;font-size:25px;width:35px;height:35px}
+.dialogBody{font-size:13px;line-height:1.5}
+.dialogBody p{margin:9px 0}
+.dialogBody .choice{width:100%;display:block;text-align:left;margin:8px 0;padding:12px;background:linear-gradient(#932e8b,#4a1059);border:2px solid #eec17a;border-radius:13px;color:#fff2be;font:bold 14px Georgia,serif}
+.dialogBody .choice strong{display:block;font-size:16px}
+.dialogBody .choice small{display:block;color:#ffe0cf;margin-top:4px;font:normal 12px system-ui}
+.dialogBody .choice:disabled{opacity:.45}
+.dialogBody .payList{width:100%;border-collapse:collapse;font-size:12px;text-align:left}
+.dialogBody .payList td{padding:7px 5px;border-bottom:1px solid #e0b56f55}
+.dialogBody .muted{opacity:.7}
+.holdCard p{font-size:13px;line-height:1.4}
+.holdCard small{display:block;font-size:10px;margin-top:11px;opacity:.8}
+.holdBoard{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:12px auto;max-width:340px}
+.holdBoard>div{display:grid;place-items:center;aspect-ratio:1;border:2px solid #a86444;border-radius:10px;background:radial-gradient(ellipse at 50% 40%,#7c3e6d,#250d37);font:bold clamp(14px,4vw,22px) Georgia,serif;color:#fff4be}
+.holdBoard>div.filled{background:radial-gradient(circle at 30% 20%,#fff3b5,#ffbd4d 34%,#b56d25 68%,#592911);border-color:#ffe59c;color:#4e1b30;box-shadow:0 0 8px #f8ba6f}
+#holdSpin{pointer-events:auto;width:min(100%,260px);padding:12px;border:2px solid #ffe9a6;border-radius:25px;background:linear-gradient(#efffbe,#99db55,#3a8336);color:#144029;font:900 16px Georgia,serif}
+#holdSpin:disabled{opacity:.4}
+@media(orientation:landscape){
+ .top{width:33%;right:auto;left:1%}
+ .brand-art{width:31vw;height:auto;max-height:32dvh}
+ .topline .back span{display:none}
+ .jackpots{top:5%!important;left:35%!important;right:1%!important}
+ .reelHead{top:19%;left:36%;right:2%;height:30px}
+ .reelHeadLabel{font-size:9px;flex-basis:25%}
+ .reelMessage{top:63%;left:36%;width:62%}
+ .bottom{left:36%;right:2%;bottom:1px;gap:2px}
+ .status{min-height:13px}
+ .info{gap:3px}
+ .hudPanel{min-height:31px;padding:1px}
+ .prizePanel{min-height:65px}
+ .vaultBtn{min-height:39px}
+ .buyBonus{min-height:24px;padding:2px}
+ .controls{min-height:50px}
+ .controls .spin{width:clamp(52px,15dvh,95px);height:clamp(52px,15dvh,95px)}
+ .spin-icon{font-size:29px;margin:0}
+ .controls .secondary{font-size:9px;padding:4px}
+ .disclaimer{display:none}
+}
+@media(max-height:700px) and (orientation:portrait){
+ .brand-art{max-height:17dvh}
+ .brand small{font-size:8px}
+ .jackpots{top:22.2%!important}
+ .pot{min-height:39px}
+ .reelHead{top:28.6%;height:34px}
+ .reelMessage{top:64.5%}
+ .bottom{gap:2px}
+ .hudPanel{min-height:37px}
+ .prizePanel{min-height:76px}
+ .vaultBtn{min-height:49px}
+ .controls{min-height:78px}
+ .controls .spin{width:clamp(78px,23vw,110px);height:clamp(78px,23vw,110px)}
+}
