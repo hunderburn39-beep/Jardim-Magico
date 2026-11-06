@@ -24,6 +24,11 @@ jobs:
       - name: Obter jogo
         uses: actions/checkout@v4
 
+      - name: Testar motor Phaser e cascatas verticais
+        shell: bash
+        run: |
+          node jardim-phaser/tests/smoke.mjs
+
       - name: Testar banco, cascatas, rolos e persistencia da versao 3D
         shell: bash
         run: |
@@ -39,6 +44,9 @@ jobs:
             cp -a css js assets public/
             if test -s jardim-3d/index.html; then
               cp -a jardim-3d public/
+            fi
+            if test -s jardim-phaser/index.html; then
+              cp -a jardim-phaser public/
             fi
             if test -s templo-do-trovao/index.html; then
               cp -a templo-do-trovao public/
