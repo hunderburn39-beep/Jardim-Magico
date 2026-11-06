@@ -232,7 +232,7 @@ export class DemoBank{
    this.hold=null;
    this.status='Pronto para rodar';
  }
- get snapshot(){return {balance:this.balance,reserve:this.reserve,stake:this.stake,spins:this.spins,lastWin:this.lastWin,freeSpins:this.freeSpins,freeTotal:this.freeTotal,freeMultiplier:this.freeMultiplier,mode:this.mode,hold:this.hold?{...this.hold,grid:[...this.hold.grid]}:null,status:this.status}}
+ get snapshot(){return {balance:this.balance,reserve:this.reserve,stake:this.stake,spins:this.spins,lastWin:this.lastWin,freeSpins:this.freeSpins,freeTotal:this.freeTotal,freeMultiplier:this.freeMultiplier,freePlayed:this.freePlayed,freeAwarded:this.freeAwarded,mode:this.mode,hold:this.hold?{...this.hold,grid:[...this.hold.grid]}:null,status:this.status}}
  get bonusPrice(){return round(this.stake*20)}
  get holdPrice(){return round(this.stake*30)}
  setStake(value){if(this.mode!=='base')return false;this.stake=clamp(round(value),.05,10);return true}
