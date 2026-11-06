@@ -241,3 +241,70 @@ body>.game,body>.game[data-layout="portrait"],body>.game[data-layout="wide"]{
 @media(prefers-reduced-motion:reduce){
  .game .logoLoop,.game .spinHalo{animation:none!important;}
 }
+
+/* V80.1 — afastar o logótipo da zona dos botões e da margem superior/esquerda.
+   A barra superior V78 é absoluta; z-index sozinho não evita sobreposições.
+   Dar espaço REAL ao logo e preservá-lo dentro do ecrã resolve o corte.
+   Não altera tambores, regras nem controlo touch. */
+.game .logoLoop,
+.game .logoLoop::before,
+.game .logoLoop::after {
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.game .logoLoop::before,
+.game .logoLoop::after {
+  content: none !important;
+  display: none !important;
+}
+.game .logoLoop {
+  isolation: isolate !important;
+  overflow: visible !important;
+}
+.game .titleArt {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+  background: transparent !important;
+  filter: drop-shadow(0 4px 5px rgba(25,5,37,.64))
+          drop-shadow(0 0 7px rgba(255,126,222,.25)) !important;
+}
+@media (orientation: portrait) {
+  /* Os ícones permanecem clicáveis, mas ocupam só a sua própria fila. */
+  .game[data-layout="portrait"] .topbar {
+    z-index: 50 !important;
+    right: max(5px,env(safe-area-inset-right)) !important;
+    top: calc(env(safe-area-inset-top) + 2px) !important;
+  }
+  .game[data-layout="portrait"] .logoLoop {
+    position: relative !important;
+    z-index: 35 !important;
+    width: min(91%, 420px) !important;
+    max-width: none !important;
+    margin: clamp(43px, 6dvh, 54px) auto 7px 11px !important;
+    padding-top: 2px !important;
+    overflow: visible !important;
+  }
+  .game[data-layout="portrait"] .titleArt {
+    aspect-ratio: 650 / 216 !important;
+    max-height: none !important;
+  }
+}
+@media (orientation: portrait) and (max-width: 430px) {
+  .game[data-layout="portrait"] .logoLoop {
+    width: calc(100% - 25px) !important;
+    margin: clamp(47px, 6.3dvh, 57px) auto 6px 12px !important;
+  }
+}
+/* A paisagem permanece em grelha de duas áreas no modo horizontal. */
+@media (orientation: landscape) {
+  .game[data-layout="wide"] .logoLoop {
+    z-index: 12 !important;
+    overflow: visible !important;
+  }
+}
