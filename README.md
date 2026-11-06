@@ -33,3 +33,13 @@ A partir de agora, **editar os ficheiros organizados**, não o ZIP.
 - Alvo: animação até 60 FPS em aparelhos compatíveis; o resultado real depende do dispositivo e do browser. A medição de FPS e a inspeção visual em equipamentos físicos continuam necessárias.
 - As regras, prémios, RTP, depósitos/levantamentos e cálculos da banca não foram alterados nesta versão.
 - Versão anterior preservada no branch `backup/jardim-v72-antes-grafico-v73`.
+
+## V74 — visual Jardim Encantado 3D (referência 9:16)
+
+A versão V74 aplica ao jogo funcional a direção de arte da imagem de referência: jardim encantado, acabamentos 2.5D, roxos luminosos, molduras de madeira com folhagens, dourado, cofre dourado, botão verde em relevo e controlos em painéis com brilho. O tema é construído com os recursos já existentes (bosque SVG, moldura de troncos, logótipo, símbolos originais com texturas PixiJS) mais o novo `assets/imagens/porquinho-ouro-v74.svg` e a folha `css/estilo-24.css`. Não é uma captura de ecrã estática: todos os textos, botões, símbolos e valores permanecem dinâmicos e funcionais.
+
+- `index.html`: liga o tema V74 e o cofre dourado mantendo os identificadores dos controlos.
+- `css/estilo-24.css`: interface vertical 9:16 semelhante à arte de referência e variante horizontal 16:9.
+- `js/jogo-2.js?v=73`: mantém o motor PixiJS GPU da versão anterior; pagamentos, RTP, fundos e reservas não foram alterados na migração gráfica.
+- Cópia de segurança da V73: branch `backup/jardim-v73-antes-arte-v74`.
+- A adaptação utiliza gráficos existentes e um novo elemento SVG; não inclui uma conversão literal da imagem ilustrativa completa em símbolos individuais. Validação visual nos dispositivos reais e testes de performance continuam recomendados.
