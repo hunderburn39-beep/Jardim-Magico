@@ -47,3 +47,24 @@ Alterações exclusivas à apresentação (sem tocar em `js/demo-engine.js`):
 - Backup prévio: `backup/jardim-3d-v2-1-antes-v2-2-graficos`.
 
 A V2.2 continua a ser uma **demonstração de créditos fictícios**, sem dinheiro real, nem RTP auditado ou motor financeiro de produção.
+
+## V2.3 — moldura fiel ao jardim e tambores de cima para baixo
+
+**Jogo:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-3d/?v=2.3
+
+- `js/frame-v23.js`: remove a moldura rígida do render ativo. Ramos curvos, madeira torcida, trepadeiras enroladas, flores, pequenas lanternas e fio dourado fino; centro das cinco colunas sem obstruções. Material e geometria 3D verdadeiros, não uma imagem inteira sobreposta.
+- `js/reels-v23.js`: cinco tiras verticais reais com quatro peças recicláveis por coluna (três linhas visíveis e uma peça acima). **Os símbolos passam de cima para baixo**, entram pelo topo, saem por baixo e as colunas param progressivamente com desaceleração final.
+- `js/demo-engine.js`: cascatas pré-calculadas após as linhas premiadas; remove as peças premiadas, mantém a ordem vertical das restantes, cria novas figuras por cima e limita cada giro a quatro etapas premiadas. Soma os valores de todas as combinações e de todas as quedas antes da animação, respeitando a reserva disponível.
+- `js/gameplay.js`: sincroniza explosões conjuntas, quedas com gravidade e mostra o total do giro. Giros automáticos e Free Spins só avançam depois da última queda.
+- `js/main.js`: integra os módulos 3D, retira do render ativo a moldura de barras da V2.2 e expõe a API de cascatas.
+- `index.html`: versão e cache V2.3.
+
+### Testes
+
+- 10 000 giros simulados, sem reserva/saldo negativo nem Free Spins acima do limite.
+- Teste com motor visual simulado: 15 posições corretas no fim da rotação vertical e no fim da queda.
+- A moldura é procedural: a correspondência exata com a fotografia e o desempenho no Safari devem ser avaliados no iPhone.
+
+**Atenção:** o jogo 3D mantém-se em modo de demonstração com créditos fictícios e matemática experimental. Não é uma slot auditada nem opera dinheiro real.
+
+Backup da V2.2: `backup/jardim-3d-v2-2-antes-moldura-e-rolos-v2-3`.
