@@ -1,0 +1,36 @@
+/* V81 — painel de administração simplificado, créditos fictícios */
+#adminPage .adminContent{display:none!important}
+#adminPage .adminRoot{overflow-y:auto;overscroll-behavior:contain}
+#adminPage .jm81Panel{box-sizing:border-box;width:min(100%,850px);margin:0 auto;padding:clamp(14px,3vw,28px) 16px 38px;color:#f6f1e9;font-family:inherit}
+#adminPage .jm81Intro{margin:0 0 19px;color:#d8d0db;font-size:13px;line-height:1.5}
+#adminPage .jm81Accounts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+#adminPage .jm81Account,#adminPage .jm81Section{border:1px solid rgba(232,194,110,.35);background:linear-gradient(145deg,rgba(45,36,70,.97),rgba(25,24,49,.97));border-radius:16px;padding:18px;box-shadow:0 8px 28px rgba(0,0,0,.18)}
+#adminPage .jm81Account h2,#adminPage .jm81Section h2{font-size:15px;letter-spacing:.04em;color:#f4d48f;margin:0 0 15px}
+#adminPage .jm81Cash{display:block;font-size:clamp(26px,3vw,37px);line-height:1.25;color:#fff;font-weight:800;font-variant-numeric:tabular-nums;margin-top:15px}
+#adminPage .jm81FieldLabel{display:block;font-size:12px;color:#ddd2ee;margin:0 0 6px}
+#adminPage .jm81Edit{display:flex;align-items:stretch;gap:8px}
+#adminPage .jm81Edit input{min-width:0;flex:1;width:65px;max-width:108px;min-height:42px;padding:8px 10px;color:#fff;background:#211b36;border:1px solid #8c77a9;border-radius:9px;font-size:17px;font-weight:750}
+#adminPage .jm81Panel button{border:1px solid rgba(249,218,135,.7);background:#e1b866;color:#271931;border-radius:9px;min-height:42px;padding:8px 13px;font-weight:800;font-size:12px;cursor:pointer}
+#adminPage .jm81Panel button:focus-visible,#adminPage .jm81Panel input:focus-visible{outline:3px solid #84d7fa;outline-offset:2px}
+#adminPage .jm81Section{margin-top:16px}
+#adminPage .jm81Modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:14px}
+#adminPage .jm81Mode{display:flex;align-items:flex-start;gap:7px;border:1px solid #78648a;padding:13px 9px;border-radius:10px;background:rgba(13,9,27,.3);cursor:pointer}
+#adminPage .jm81Mode:has(input:checked){border-color:#f5d18a;background:rgba(229,188,103,.15)}
+#adminPage .jm81Mode input{accent-color:#f4c570;margin-top:3px}
+#adminPage .jm81Mode strong{display:block;color:#f9e5b9;font-size:13px}
+#adminPage .jm81Mode small{display:block;color:#d9d0dd;line-height:1.45;font-size:11px;margin-top:5px}
+#adminPage .jm81Actions{display:flex;gap:9px;flex-wrap:wrap}
+#adminPage .jm81Actions button{flex:1;min-width:155px}
+#adminPage .jm81Status{font-size:12px;line-height:1.6;color:#ffe8ad;min-height:1.3em;margin-top:10px}
+#adminPage .jm81Note{color:#c8c0ce;font-size:12px;line-height:1.5;margin:12px 0 0}
+#adminPage .jm81History[hidden]{display:none!important}
+#adminPage .jm81History{margin-top:14px;border-top:1px solid rgba(244,213,156,.3);padding-top:12px}
+#adminPage .jm81HistoryTableWrap{overflow:auto;max-height:370px}
+#adminPage .jm81History table{width:100%;border-collapse:collapse;min-width:550px;font-size:12px}
+#adminPage .jm81History th,#adminPage .jm81History td{text-align:left;vertical-align:top;padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.12);color:#eee6f1}
+#adminPage .jm81History th{position:sticky;top:0;background:#302441;color:#ffe1a0}
+#adminPage .jm81History .jm81Amount{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+#adminPage .jm81History small{display:block;color:#bcb3c4;margin:8px 0}
+#adminPage .jm81History button{margin-top:9px}
+#adminPage .jm81History button[hidden]{display:none}
+@media(max-width:680px){#adminPage .jm81Accounts{grid-template-columns:1fr}#adminPage .jm81Modes{grid-template-columns:1fr}#adminPage .jm81Edit input{max-width:90px}#adminPage .jm81Section,#adminPage .jm81Account{padding:15px}}
