@@ -141,3 +141,18 @@ Backup: `backup/jardim-3d-v2-5-1-antes-correcao-v3`.
 - Cache dos módulos e do CSS atualizado para `?v=3.1` (evita reabrir a versão antiga no iPhone).
 - O cenário principal e a moldura são artísticos 2.5D para dar fidelidade à referência; as peças, cascatas e iluminação adicional continuam com geometria 3D.
 - **Não existe base de dados online sincronizada** nem validação de FPS num iPhone físico. Estes pontos permanecem fora do protótipo GitHub Pages.
+
+## V3.2 — símbolos direitos e cores fiéis à fotografia
+
+Link de teste: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-3d/?v=3.2
+
+- **Correção principal**: os símbolos deixaram de ser texturas repetidas nas seis faces de um cubo. Em `symbol-face-v32.js`, uma malha frontal quad utiliza UV [0,0]→[1,1], orientação constante para a câmara e material emissivo branco, de modo a evitar peças invertidas e sem cor.
+- **Símbolos originais**: `main.js` carrega os nove PNG HD existentes, retira grande parte do fundo violeta de cada recorte e reenquadra a figura. Em vez de sombrear a arte com luzes de cena, conserva os tons rosa, verde, dourado e violeta. São texturas transparentes de 512px.
+- **Carregamento**: o botão RODAR aguarda os PNG originais; não se mostram círculos vazios como resultados definitivos enquanto as imagens HD carregam.
+- **Moldura**: removidos os troncos grossos do modelo procedural. O cenário usa a moldura floral `jm75-moldura.webp` extraída da arte original, com centro transparente, bem mais próxima da referência do utilizador.
+- **Bosque**: retiradas árvores esféricas e barras turquesa de cascata que eram demasiado geométricas; mantém-se a imagem contínua de paisagem e efeitos ligeiros.
+- **Render**: tone mapping `TONEMAP_NEUTRAL` para reduzir perda de saturação.
+- **Validação de código**: testes automáticos do quad UV frontal, luz/material e 10 500 giros fictícios continuam a ser executados antes de publicar.
+- Os gráficos continuam parcialmente 2.5D com rolos PlayCanvas 3D. É necessária avaliação visual no Safari do iPhone para confirmar a proximidade com a imagem conceptual.
+
+Backup anterior: `backup/jardim-3d-v3-1-antes-simbolos-orientados-v3-2`.
