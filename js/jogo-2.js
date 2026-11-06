@@ -44,15 +44,15 @@ const RTP_REFERENCE=96;
  // Hold & Win comprado custa 100× a aposta, diferente de bónus oferecidos.
  // Valores fixos e públicos; nunca variam com o lucro real da banca.
 // V71: probabilidades fixas; coeficientes calibrados independentemente do fundo.
-const RTP_CALIBRATION={base:0.57,free:0.068,hold:0.25,holdPurchase:1.33};
-const FREQUENT_RTP_CALIBRATION={base:0.55,free:0.059};
+const RTP_CALIBRATION={base:0.58,free:0.069,hold:0.25,holdPurchase:1.33};
+const FREQUENT_RTP_CALIBRATION={base:0.60,free:0.065};
 // V66: coeficientes base/free calibrados em simulação com WILD fixo 1–5×;
 // constantes ao longo da sessão, sem depender do saldo ou histórico da banca.
 let autoSpinsTotal=0,rtpConfig=96,adminAudit=[],awardContext='base',adminUnlocked=false,adminTaps=0,adminTapDeadline=0,autoSpinsRemaining=0,freeStartPending=false,freeAutoRunning=false,freeAutoTimer=null,scatterNoteStep=0;
 const configuredRtp=()=>RTP_REFERENCE; // Fixo; sem alteração na interface de administração.
 let profitPercent=4, prizePool=0, operatorReserve=0, protectedReserve=0, ownerWithdrawn=0, protectedCarry=0, riskReserve=0, ownerCarry=0, poolCarry=0;
 let fundInvested=0,fundRecovered=0;
-const FUND_MIN_FACTOR=250,FUND_TARGET_FACTOR=1000;
+const FUND_MIN_FACTOR=500,FUND_TARGET_FACTOR=2500;
 // V59: a reserva livre é distribuída entre o proprietário e o estabelecimento.
 // A reserva protegida, o cofre de prémios e os jackpots não são repartidos.
 let ownerPercent=60,ownerShareReserve=0,merchantShareReserve=0,shareCarry=0;
@@ -921,11 +921,11 @@ function evaluate(g,betAmount=BETS[betIdx],paidWildOnly=null){
   if(wildSignature)paidWildOnly?.add(wildSignature);
   candidate.wildKeys.forEach(key=>usedWilds.add(key));
   const {raw,wildKeys,...pay}=candidate;
-  pay.value=Math.max(1,roundedPayout(raw));
+  pay.value=raw; // V72: somar todas as linhas antes de arredondar
   chosen.push(pay);
  }
  chosen.sort((a,b)=>a.line-b.line);
- return {won:chosen,amount:chosen.reduce((sum,win)=>sum+win.value,0)};
+ return {won:chosen,amount:roundedPayout(chosen.reduce((sum,win)=>sum+win.value,0))};
 }
 function mulIndices(g){const out=[];for(let x=0;x<5;x++)for(let y=0;y<3;y++)if(g[x][y].id==='mul')out.push({x,y,v:g[x][y].value||2});return out;}
 function scatterCount(g){return g.flat().filter(x=>x.id==='scatter').length;}
@@ -2022,7 +2022,7 @@ function updateAdminFund(){
  const advice=prizePool<f.target?'Faltam '+money(f.target-prizePool)+' para a referência.':'O cofre atingiu a referência.';
  const elem=$('adminFundAdvice');elem.dataset.level=level;
  elem.textContent='Fundo '+level+' · cobertura atual '+Math.floor(prizePool/f.stake)+'× aposta. '+advice+
-  ' Recomendação: 1000× aposta (não é garantia). Um prémio máximo 5000× exigiria '+money(f.full)+
+  ' Recomendação: 2500× aposta (não é garantia). Um prémio máximo 5000× exigiria '+money(f.full)+
   ' à aposta escolhida. À aposta máxima de 10,00 € seriam necessários 50 000,00 €. Os jackpots são separados.';
 }
 function manageAdminFund(type){
@@ -2043,7 +2043,7 @@ function manageAdminFund(type){
  if(type==='recover'){
   if($('adminFundPin').value!==CASH_PIN){status.textContent='Introduz o PIN do depósito para recuperar o fundo.';return;}
   const f=fundThresholds();
-  if(amount>f.available){status.textContent='Máximo recuperável '+money(f.available)+'. Mantém no cofre pelo menos '+money(f.minimum)+' (250× aposta).';return;}
+  if(amount>f.available){status.textContent='Máximo recuperável '+money(f.available)+'. Mantém no cofre pelo menos '+money(f.minimum)+' (500× aposta).';return;}
   if(!window.confirm('Recuperar '+money(amount)+' do fundo de prémios fictícios? O saldo passará para '+money(prizePool-amount)+'.'))return;
   prizePool-=amount;fundRecovered+=amount;
  }else if(type==='add'){
@@ -2080,7 +2080,7 @@ function updateAdmin(){
  $('adminVolatilityActive').textContent=volatilityMode==='frequentes'?'Prémios mais frequentes':'Equilibrado';
 
  $('adminReportSummary').innerHTML=`Proprietário: <strong>${money(ownerAvailable)}</strong> (${ownerPercent}%) · Comerciante: <strong>${money(merchantAvailable)}</strong> (${100-ownerPercent}%)<br>Apostas: <strong>${money(t.stakes)}</strong> · Prémios pagos: <strong>${money(t.prizes)}</strong> · Saldo dos jogadores: <strong>${money(t.balance)}</strong><br>Levantamentos do banqueiro: <strong>${money(bankTotal)}</strong> · Caixa livre contabilística: <strong>${money(reportFinancials().ownerAvailable)}</strong> · Rodadas: <strong>${t.spins}</strong> · RTP observado: <strong>${rtpObserved}</strong>`;
- $('adminMathInfo').textContent='V71 · RTP de referência ~96%, não certificado, para margem de 4%. Calibração Equilibrado: base 0,57 e free 0,068; Frequentes: base 0,55 e free 0,059; Hold grátis 0,25, Hold comprado 1,33. Preços: 15 Free Spins por 20× aposta e Hold por 100×. A Pedra bloqueia combinações em 6% das casas. O RTP observado é '+rtpObserved+'. O cofre de prémios e os fundos de jackpots limitam os pagamentos; não existe compensação de probabilidades pelo cofre. A margem atual é '+rtpLabel(configuredProfit())+'. O fundo do operador está separado dos depósitos de jogadores. Ver docs/auditoria-rtp-v71.md.';
+ $('adminMathInfo').textContent='V72 · RTP de referência ~96%, não certificado, para margem de 4%. Calibração Equilibrado: base 0,58 e free 0,069; Frequentes: base 0,60 e free 0,065; Hold grátis 0,25, Hold comprado 1,33. Preços: 15 Free Spins por 20× aposta e Hold por 100×. A Pedra bloqueia combinações em 6% das casas. O RTP observado é '+rtpObserved+'. O cofre de prémios e os fundos de jackpots limitam os pagamentos; não existe compensação de probabilidades pelo cofre. A margem atual é '+rtpLabel(configuredProfit())+'. O fundo do operador está separado dos depósitos de jogadores. Ver docs/auditoria-rtp-v72.md.';
 }
 function openAdmin(){adminUnlocked=true;modal('adminLoginModal',false);$('adminPassword').value='';$('adminPage').hidden=false;document.body.style.overflow='hidden';$('adminProfitInput').value=profitPercent.toFixed(2);$('adminProfitSlider').value=profitPercent;$('adminProfitPreview').textContent=rtpLabel(profitPercent);
  $('adminSplitSlider').value=ownerPercent;
