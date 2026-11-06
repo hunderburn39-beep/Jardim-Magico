@@ -1,0 +1,132 @@
+
+/* Jardim Mágico V79 — direção artística fiel à fotografia de referência.
+ * Um cenário fotográfico 2.5D com zonas de UI removidas substitui a floresta
+ * vetorial plana e as flores gigantes. A UI continua verdadeira e dinâmica.
+ * Sem alterações ao PixiJS, à banca ou às probabilidades de pagamento. */
+:root{--jm79-gold:#ffdf8e;--jm79-purple:#3a0b4b;--jm79-pink:#ed64cb;}
+html,body{
+ background:#251735 url('../assets/imagens/jm79-cenario-fotografico.svg') center center / cover no-repeat!important;
+}
+body::before,body::after{content:none!important;display:none!important;}
+body>.game,
+body>.game[data-layout="portrait"],
+body>.game[data-layout="wide"]{
+ background:none!important;
+ background-image:none!important;
+ box-shadow:none!important;
+ isolation:isolate;
+}
+/* Não voltar a usar fotografias inteiras que incluam outras UI. */
+.game>.jm75BackdropTop,.game>.jm75BackdropBottom{display:none!important;}
+.game .logoLoop{
+ background:none!important;
+ border:0!important;
+ box-shadow:none!important;
+}
+.game .logoLoop::before,.game .logoLoop::after{content:none!important;display:none!important;}
+.game .titleArt{
+ background:none!important;
+ filter:drop-shadow(0 5px 5px rgba(29,5,26,.63))
+        drop-shadow(0 0 7px rgba(253,116,223,.38))!important;
+}
+/* A parte de madeira sobre os rolos já não abafa tanto os objetos. */
+.game .reelFrame{
+ border-color:#e4af62!important;
+ background:linear-gradient(93deg,#40200d,#c78c42 2%,#532412 8%,#52221a 92%,#edc279 98%,#492008)!important;
+ box-shadow:inset 0 2px 3px #fff1c08c,0 3px 0 #a3612e,0 9px 22px #190721bd,0 0 13px #ffb1ea80!important;
+}
+.game .stageWrap{
+ background:
+   linear-gradient(180deg,rgba(15,4,34,.30),rgba(31,7,46,.10) 18%,rgba(28,6,39,.16) 83%,rgba(15,2,25,.35)),
+   repeating-linear-gradient(90deg,#310f4d 0%,#210a38 19.7%,#744a75 19.95%,#28103c 20.2%)!important;
+ box-shadow:inset 0 12px 23px rgba(10,3,20,.30),0 0 14px rgba(236,151,226,.10)!important;
+}
+.game .stageWrap .jm75PhotoFrame{
+ background-image:url('../assets/imagens/jm75-moldura.webp')!important;
+ filter:drop-shadow(0 1px 2px rgba(27,9,12,.38))!important;
+}
+/* Uma fileira de jackpots com brilho dourado, sem blocos de cor desligados. */
+.game .jackpot,.game .jackpot.max{
+ background:linear-gradient(180deg,#ad3085 0%,#52105f 14%,#290b48 78%,#5c1858 100%)!important;
+ border:2px solid #ffdf88!important;
+ box-shadow:inset 0 1px 2px #fff7d5,0 3px 0 #995321,0 0 9px #f8a0b284!important;
+ border-radius:16px!important;
+}
+.game .jackpot::before{opacity:.38;}
+.game .jackpot b{color:#ffedba!important;letter-spacing:.04em;}
+.game .jackpot strong{color:#ffedae!important;text-shadow:0 1px 2px #3d062f,0 0 8px #ffd48a9e!important;}
+/* Prateleira violeta com aro de ouro em relevo. */
+.game .shelf{
+ background:linear-gradient(180deg,#65165f,#2e0b47 25%,#260939 80%,#3f1244)!important;
+ border:2px solid #f4bc70!important;border-bottom:0!important;
+ box-shadow:inset 0 2px 2px #fcebc974,0 0 8px #f5adcd7b!important;
+}
+.game .shelfTag,.game .jm63DropLabel,.game .shelfTotal{
+ color:#fff0bd!important;
+ text-shadow:0 2px 2px #3a0938,0 0 7px #ffd37d88!important;
+}
+/* Painéis 3D contínuos: saldo/prémio/bónus seguem os mesmos materiais. */
+.game .controlStats .hudPanel,.game #vaultBtnMobile{
+ border:2px solid #ffdd8d!important;
+ background:
+   linear-gradient(180deg,#fff8d92e,transparent 19%),
+   linear-gradient(173deg,#a02f7c,#570e5c 25%,#2b0944 84%,#571253)!important;
+ box-shadow:inset 0 2px 2px #fff4c8a1,inset 0 -2px 5px #170723,0 3px 0 #99511e,0 6px 11px #15051ebb!important;
+}
+.game .controlStats .hudPanel strong{
+ color:#fff2bb!important;
+ text-shadow:0 1px 2px #3b0639,0 0 7px #ffc9796c!important;
+}
+.game #buyBonus{
+ background:linear-gradient(180deg,#bc4885,#762164 28%,#490b50 85%,#8b2c62)!important;
+ border:2px solid #ffdf92!important;
+ box-shadow:inset 0 1px 2px #fff7c9a8,0 3px 0 #91501f,0 0 8px #ff91d575!important;
+ color:#ffe9b4!important;
+}
+.game #turboBtn,.game #turboBtn[aria-pressed="true"]{
+ background:linear-gradient(180deg,#fff9d1,#ffdb83 38%,#f7b446 76%,#ad581a)!important;
+ border:2px solid #fff0ac!important;
+ box-shadow:inset 0 2px 3px #fffee3,0 4px 0 #8c481d,0 0 10px #ffd57883!important;
+}
+.game #turboBtn[aria-pressed="true"]{
+ background:linear-gradient(180deg,#f9ffca,#cfee72 45%,#6bb73d 95%)!important;
+}
+.game .spinHalo{
+ filter:drop-shadow(0 0 9px rgba(255,199,74,.68))
+        drop-shadow(0 7px 5px rgba(26,5,27,.45))!important;
+}
+.game .spinHalo .spinBtn{
+ background:url('../assets/imagens/jm76-rodar-luxo.svg') center/100% 100% no-repeat!important;
+}
+.game .spinBtn:disabled{opacity:1!important;filter:brightness(.96)!important;}
+/* Mensagem discreta e dourada. */
+.game .notice{
+ color:#ffedc2!important;
+ text-shadow:0 1px 2px #3b1237,0 0 6px rgba(253,188,113,.54)!important;
+}
+/* Não introduzir arte vetorial por cima do novo fundo. */
+.game .gardenWorld,
+.game .forestBackdrop{display:none!important;}
+@media(orientation:portrait){
+ .game[data-layout="portrait"] .logoLoop{margin-top:clamp(21px,3.2dvh,31px)!important;}
+ .game[data-layout="portrait"] .jackpots{
+   margin-top:-5px!important;
+   margin-bottom:6px!important;
+ }
+ .game[data-layout="portrait"] .jackpot{min-height:clamp(44px,6dvh,58px)!important;}
+ .game[data-layout="portrait"] .reelFrame{
+   width:100%!important;margin:0!important;
+   padding:1px!important;
+   border-width:3px!important;
+ }
+ .game[data-layout="portrait"] .stageWrap{
+   aspect-ratio:5/3.04!important;
+ }
+ .game[data-layout="portrait"] .underStage{margin-top:5px!important;margin-bottom:5px!important;}
+ .game[data-layout="portrait"] .controlStats{margin-top:2px!important;}
+ .game[data-layout="portrait"] .spinHalo{max-width: min(39vw,158px)!important;}
+}
+/* Respeita a preferência de redução de movimento e evita filtros animados. */
+@media(prefers-reduced-motion:reduce){
+ .game .titleArt,.game .spinHalo{animation:none!important;}
+}
