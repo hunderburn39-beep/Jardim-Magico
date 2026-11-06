@@ -54,7 +54,7 @@ A V2.2 continua a ser uma **demonstração de créditos fictícios**, sem dinhei
 
 - `js/frame-v23.js`: remove a moldura rígida do render ativo. Ramos curvos, madeira torcida, trepadeiras enroladas, flores, pequenas lanternas e fio dourado fino; centro das cinco colunas sem obstruções. Material e geometria 3D verdadeiros, não uma imagem inteira sobreposta.
 - `js/reels-v23.js`: cinco tiras verticais reais com quatro peças recicláveis por coluna (três linhas visíveis e uma peça acima). **Os símbolos passam de cima para baixo**, entram pelo topo, saem por baixo e as colunas param progressivamente com desaceleração final.
-- `js/demo-engine.js`: cascatas pré-calculadas após as linhas premiadas; remove as peças premiadas, mantém a ordem vertical das restantes, cria novas figuras por cima e limita cada giro a quatro etapas premiadas. Soma os valores de todas as combinações e de todas as quedas antes da animação, respeitando a reserva disponível.
+- `js/demo-engine.js`: cascatas pré-calculadas após as linhas premiadas; remove as peças premiadas, mantém a ordem vertical das restantes, cria novas figuras por cima e continua a gerar quedas até surgir uma grelha sem combinações premiadas, sem limite artificial por giro. Soma os valores de todas as combinações e de todas as quedas antes da animação, respeitando a reserva disponível.
 - `js/gameplay.js`: sincroniza explosões conjuntas, quedas com gravidade e mostra o total do giro. Giros automáticos e Free Spins só avançam depois da última queda.
 - `js/main.js`: integra os módulos 3D, retira do render ativo a moldura de barras da V2.2 e expõe a API de cascatas.
 - `index.html`: versão e cache V2.3.
@@ -68,3 +68,17 @@ A V2.2 continua a ser uma **demonstração de créditos fictícios**, sem dinhei
 **Atenção:** o jogo 3D mantém-se em modo de demonstração com créditos fictícios e matemática experimental. Não é uma slot auditada nem opera dinheiro real.
 
 Backup da V2.2: `backup/jardim-3d-v2-2-antes-moldura-e-rolos-v2-3`.
+
+## V2.4 — Sequências premiadas sem limite artificial
+
+Acesso: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-3d/?v=2.4
+
+- Cada queda é avaliada e, havendo novas linhas premiadas, as peças vencedoras explodem e outras descem de cima.
+- **Só termina quando a última grelha não tiver nenhuma combinação premiada**, sem máximo fixo de quatro ou outro número de quedas.
+- O cofre virtual limita **o prémio pago**, não a quantidade de animações ou de quedas.
+- Todos os resultados e valores são calculados antes de iniciar as animações, para não variar por FPS, TURBO ou interrupção.
+- Para sequências muito compridas, o painel resume os valores individuais mas mantém a soma integral e o total real.
+- As restrições das Free Spins e a matemática são específicas da simulação; o RTP não está auditado.
+
+Teste especial: foram produzidas 13 quedas premiadas consecutivas e uma 14.ª sem prémio; a sequência terminou naturalmente, mesmo com o cofre virtual esgotado. Teste aleatório de 15 000 giros sem erros de soma.
+Backup: `backup/jardim-3d-v2-3-antes-cascatas-sem-limite`.
