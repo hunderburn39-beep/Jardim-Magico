@@ -352,30 +352,30 @@ function loadOriginalSymbolArt(){
   const im=new Image();im.decoding='async';
   im.onload=()=>{
    try{
-    const cut=document.createElement('canvas');cut.width=cut.height=256;
+    const cut=document.createElement('canvas');cut.width=cut.height=512;
     const ctx=cut.getContext('2d',{willReadFrequently:true});
-    ctx.drawImage(im,0,0,256,256);
-    const a=ctx.getImageData(0,0,256,256);
-    let l=256,t=256,r=0,b=0;
-    for(let y=0;y<256;y++)for(let x=0;x<256;x++){
-     const k=4*(y*256+x);
+    ctx.drawImage(im,0,0,512,512);
+    const a=ctx.getImageData(0,0,512,512);
+    let l=512,t=512,r=0,b=0;
+    for(let y=0;y<512;y++)for(let x=0;x<512;x++){
+     const k=4*(y*512+x);
      if(a.data[k+3]<40)continue;
      l=Math.min(l,x);t=Math.min(t,y);r=Math.max(r,x);b=Math.max(b,y);
     }
     if(r-l<30||b-t<30)return;
     const normalized=document.createElement('canvas');
-    normalized.width=normalized.height=256;
+    normalized.width=normalized.height=512;
     const g=normalized.getContext('2d',{willReadFrequently:true});
-    const w=r-l+1,h=b-t+1,k=Math.min(228/w,228/h);
-    g.drawImage(cut,l,t,w,h,(256-w*k)/2,(256-h*k)/2,w*k,h*k);
-    const pixels=g.getImageData(0,0,256,256),p=pixels.data;
+    const w=r-l+1,h=b-t+1,k=Math.min(454/w,454/h);
+    g.drawImage(cut,l,t,w,h,(512-w*k)/2,(512-h*k)/2,w*k,h*k);
+    const pixels=g.getImageData(0,0,512,512),p=pixels.data;
     for(let j=0;j<p.length;j+=4){
      const hi=Math.max(p[j],p[j+1],p[j+2]);
      if(hi<47)p[j+3]=Math.round(p[j+3]*.1);
      else if(hi<96&&p[j+2]>p[j+1]*1.18)p[j+3]=Math.round(p[j+3]*.42);
     }
     g.putImageData(pixels,0,0);
-    const tex=new pc.Texture(app.graphicsDevice,{width:256,height:256,format:pc.PIXELFORMAT_RGBA8,mipmaps:true});
+    const tex=new pc.Texture(app.graphicsDevice,{width:512,height:512,format:pc.PIXELFORMAT_RGBA8,mipmaps:true});
     tex.setSource(normalized);
     const material=mat('#ffffff',{metal:.08,gloss:79});
     material.diffuseMap=tex;
@@ -438,7 +438,7 @@ function cancelBurst(){
  if(!burst)return;
  for(const cell of burst.cells){
   cell.face.enabled=true;
-  cell.face.setLocalScale(.947,.965,.16);
+  cell.face.setLocalScale(.947,.965,.075);
   cell.face.setLocalEulerAngles(0,0,0);
  }
  for(const part of burst.parts)part.entity.enabled=false;
@@ -449,7 +449,7 @@ function explodeWinners(coordinates,duration=1100){
  if(state.running||!Array.isArray(coordinates))return 0;
  cancelBurst();
  winPulseUntil=0;
- for(const cell of winPulseCells)cell.face.setLocalScale(.947,.965,.16);
+ for(const cell of winPulseCells)cell.face.setLocalScale(.947,.965,.075);
  winPulseCells=[];
  prepareBurstParticles();
  const seen=new Set(),cells=[],parts=[],waves=[];
@@ -490,7 +490,7 @@ function updateBurst(dt){
  else if(t<.82)scale=.006;
  else scale=.006+(1-.006)*Math.sin(((t-.82)/.18)*Math.PI/2);
  for(const cell of effect.cells){
-  cell.face.setLocalScale(.947*scale,.965*scale,.16*Math.max(scale,.006));
+  cell.face.setLocalScale(.947*scale,.965*scale,.075*Math.max(scale,.006));
   cell.face.setLocalEulerAngles(0,t>.25&&t<.82?120*(t-.25):0,0);
  }
  const phase=Math.min(1,Math.max(0,(t-.25)/.62));
@@ -523,7 +523,7 @@ function startSpin(matrix=null,whenDone=null){
  if(state.running||!reelMotion)return false;
  cancelBurst();
  winPulseUntil=0;
- for(const cell of winPulseCells)cell.face.setLocalScale(.947,.965,.16);
+ for(const cell of winPulseCells)cell.face.setLocalScale(.947,.965,.075);
  winPulseCells=[];
  const board=matrix||Array.from({length:5},
    ()=>Array.from({length:3},()=>Math.floor(Math.random()*symbols.length)));
@@ -627,7 +627,7 @@ function build(){
     const t=Date.now();
     const active=t<winPulseUntil;
     const v=active?1+.13*Math.sin((t-winPulseStart)*.019)**2:1;
-    for(const cell of winPulseCells)cell.face.setLocalScale(.947*v,.965*v,.16);
+    for(const cell of winPulseCells)cell.face.setLocalScale(.947*v,.965*v,.075);
     if(!active){winPulseUntil=0;winPulseCells=[]}
    }
    if(state.orbit){
