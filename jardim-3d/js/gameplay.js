@@ -189,6 +189,19 @@ function holdStep(){
   if(autoRemaining>0)nextTimer=setTimeout(runSpin,700);
  }else updateHold();
 }
+function winningCoordinates(board){
+ const out=new Set();
+ for(const path of PAYLINES){
+  const line=path.map((row,col)=>board[col][row]);
+  if(line[0]===4&&line[1]===4){out.add('0,'+path[0]);out.add('1,'+path[1])}
+  const target=line.find(id=>id!==4);
+  if(target===undefined||[9,10,11].includes(target))continue;
+  let count=0;
+  for(const x of line){if(x!==target&&x!==4)break;count++}
+  if(count>=3)for(let c=0;c<count;c++)out.add(c+','+path[c]);
+ }
+ return [...out].map(key=>{const [c,r]=key.split(',').map(Number);return {c,r}});
+}
 function runSpin(){
  clearTimeout(nextTimer);
  if(spinBusy||activeDialog||bank.mode==='hold'){if(bank.mode==='hold')showHold();return}
@@ -202,6 +215,9 @@ function runSpin(){
  const completed=()=>{
   setSpinning(false);
   render();
+  if(outcome.ev.lines&&window.JM3D?.highlight){
+   window.JM3D.highlight(winningCoordinates(outcome.board),1350);
+  }
   $('spinState').textContent=outcome.ev.lines?
    outcome.ev.lines+' LINHA(S) PREMIADA(S)':'TAMBORES A RODAR…';
   const win=outcome.free?outcome.potential:outcome.credited;
