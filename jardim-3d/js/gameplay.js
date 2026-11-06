@@ -219,108 +219,125 @@ function showLineBreakdown(lineWins,total,capped=null,multiplier=1){
 /* V2.3 — a animação percorre todas as quedas calculadas pelo motor.
    A banca já reservou e limitou o prémio antes dos movimentos: não se
    pode obter créditos extra ao interromper ou acelerar a animação. */
-function runSpin(){
+/* V3: reproduzir as etapas com proteção contra callbacks perdidos.
+   A banca decide resultados ANTES do visual. Se a renderização falhar,
+   mostra-se a grelha já calculada e o estado nunca fica bloqueado. */
+const framePause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function playMotion(start,board,timeoutMs=4500){
+ return new Promise(resolve=>{
+  let complete=false;
+  let timer=null;
+  const settle=(reason)=>{
+   if(complete)return;
+   complete=true;clearTimeout(timer);
+   window.removeEventListener('jm3d-motion-error',onError);
+   if(reason!=='ok'){
+    try{window.JM3D?.recover?.(board)}catch(err){console.error(err)}
+   }
+   resolve(reason);
+  };
+  const onError=()=>settle('render-error');
+  window.addEventListener('jm3d-motion-error',onError);
+  timer=setTimeout(()=>settle('timeout'),timeoutMs);
+  try{
+   if(start(()=>settle('ok'))!==true)settle('not-started');
+  }catch(err){
+   console.error('Animação recuperada:',err);
+   settle('exception');
+  }
+ });
+}
+async function runSpin(){
  clearTimeout(nextTimer);
  if(spinBusy||activeDialog||bank.mode==='hold'){
   if(bank.mode==='hold')showHold();
   return;
  }
  if(!window.JM3D){say('Motor 3D a iniciar…');return}
- const outcome=bank.spin();
+ let outcome;
+ try{outcome=bank.spin()}
+ catch(err){console.error('Falha de cálculo:',err);say('Não foi possível calcular o giro.');return}
  if(!outcome.ok){autoRemaining=0;render();say(outcome.message);return}
  const stages=outcome.stages||[{board:outcome.board,ev:outcome.ev,removed:[]}];
- setSpinning(true);
+ const finalBoard=stages.at(-1).board;
+ let recovered=false;
+ setSpinning(true);render();
  showLineBreakdown([],0);
  $('spinState').textContent='TAMBORES A DESCER ↓';
  say(outcome.free?'FREE SPIN · '+bank.freeSpins+' restantes':
   'Tambores a rodar de cima para baixo');
  if(!outcome.free&&autoRemaining>0)autoRemaining--;
- let stageTimer=null;
- function nextStage(i){
-  const stage=stages[i];
-  const wins=stage.ev.lineWins||[];
-  const cells=winningCoordinates(wins);
-  const isMultiple=wins.length>=2;
-  const hasDrop=i<stages.length-1;
-  const lineFactor=stage.ev.wilds?outcome.wildMultiplier:1;
-  const duration=wins.length?(isMultiple?1090:750):200;
-  if(wins.length&&hasDrop){
-   // Mesmo com uma linha, as peças precisam de desaparecer para cair.
-   window.JM3D.burstWinners?.(cells,duration);
-  }else if(isMultiple){
-   window.JM3D.burstWinners?.(cells,duration);
-  }else if(wins.length){
-   window.JM3D.highlight?.(cells,duration);
-  }
-  showLineBreakdown(wins,stage.ev.raw,null,lineFactor);
-  showMultiply(outcome.wildMultiplier,stage.ev.wilds);
-  if(wins.length){
-   const suffix=stages.length>1?' · QUEDA '+(i+1):'';
-   $('spinState').textContent=wins.length+' COMBINAÇÃO'+
-     (wins.length===1?'':'ÕES')+' PREMIADA'+(wins.length===1?'':'S')+suffix;
-   const value=Math.round(stage.ev.raw*lineFactor*100)/100;
-   say(wins.length+' combinação'+(wins.length===1?'':'ões')+
+ try{
+  if((await playMotion(done=>window.JM3D.spin(outcome.board,done),
+    outcome.board,6500))!=='ok')recovered=true;
+  for(let i=0;i<stages.length;i++){
+   const stage=stages[i];
+   const wins=stage.ev.lineWins||[];
+   const cells=winningCoordinates(wins);
+   const hasDrop=i<stages.length-1;
+   const factor=stage.ev.wilds?outcome.wildMultiplier:1;
+   const duration=wins.length?(wins.length>=2?1080:850):220;
+   if(wins.length){
+    // Estouro coletivo das peças premiadas, mesmo numa única linha
+    // quando o giro tem queda seguinte.
+    try{
+     if(hasDrop||wins.length>=2)
+      window.JM3D.burstWinners?.(cells,duration);
+     else window.JM3D.highlight?.(cells,duration);
+    }catch(err){console.error('Efeito de vitória:',err);recovered=true}
+    const value=Math.round(stage.ev.raw*factor*100)/100;
+    $('spinState').textContent=wins.length+
+     ' COMBINAÇ'+(wins.length===1?'ÃO':'ÕES')+
+     ' PREMIADA'+(wins.length===1?'':'S')+
+     ' · QUEDA '+(i+1);
+    showLineBreakdown(wins,stage.ev.raw,null,factor);
+    showMultiply(outcome.wildMultiplier,stage.ev.wilds);
+    say(wins.length+' combinação'+(wins.length===1?'':'ões')+
      ' · queda '+(i+1)+' · '+money(value)+' créditos');
-   if(isMultiple)bigWin('✨ +'+money(value)+' ✨');
-  }else{
-   $('spinState').textContent='QUEDA '+(i+1)+' · SEM NOVAS LINHAS';
-   say('Queda concluída');
-  }
-  if(hasDrop){
-   nextTimer=setTimeout(()=>{
+    if(wins.length>=2)bigWin('✨ +'+money(value)+' ✨');
+   }else{
+    $('spinState').textContent='QUEDA '+(i+1)+' · SEM NOVAS LINHAS';
+    say('Sem novas combinações — giro concluído');
+   }
+   await framePause(duration+70);
+   if(hasDrop){
     const next=stages[i+1];
     $('spinState').textContent='↓ PEÇAS A CAIR ↓';
     showLineBreakdown([],0);
-    if(!window.JM3D.cascade?.(next.board,next.removed,()=>nextStage(i+1))){
-     // Não alterar pagamentos ou resultados se o render falhar.
-     say('Não foi possível animar a queda');
-     finish();
-    }
-   },duration+80);
-  }else{
-   nextTimer=setTimeout(finish,Math.max(180,duration));
+    if((await playMotion(done=>window.JM3D.cascade(next.board,next.removed,done),
+      next.board,4000))!=='ok')recovered=true;
+   }
   }
- }
- function finish(){
+ }catch(err){console.error('Giro recuperado:',err);recovered=true}
+ finally{
+  // Este caminho executa sempre, mesmo quando um frame/callback falhou.
+  try{window.JM3D?.recover?.(finalBoard)}catch(err){console.error(err)}
   setSpinning(false);
   render();
   const allWins=stages.flatMap(stage=>stage.ev.lineWins||[]);
   if(allWins.length){
-   const total=outcome.free?outcome.rawTotal:outcome.potential;
    showLineBreakdown(allWins,outcome.rawTotal,
-     !outcome.free&&outcome.credited<outcome.potential?outcome.credited:null);
-   const suffix=stages.length>1?' · '+(stages.length-1)+' QUEDAS':'';
-   $('spinState').textContent=allWins.length+
-    ' COMBINAÇÕES SOMADAS'+suffix;
+    !outcome.free&&outcome.credited<outcome.potential?outcome.credited:null);
+   $('spinState').textContent=allWins.length+' COMBINAÇÕES SOMADAS · '+
+    (stages.length-1)+' QUEDAS';
    if(!outcome.free)bigWin('✨ TOTAL '+money(outcome.credited)+' ✨');
   }else{
    showLineBreakdown([],0);
    $('spinState').textContent='TAMBORES 3D PRONTOS';
   }
-  if(outcome.triggered){
-   say(outcome.triggered);
-   freeBanner('✨ '+outcome.triggered+' ✨');
-   if(outcome.triggered.includes('Free Spins'))bigWin('FREE SPINS!');
+  if(recovered){
+   say('Movimento 3D recuperado — resultado e prémio preservados');
+  }else if(outcome.triggered){
+   say(outcome.triggered);freeBanner('✨ '+outcome.triggered+' ✨');
   }else if(outcome.free){
    say('Valor acumulado: '+money(bank.freeTotal)+' ×'+bank.freeMultiplier);
   }else if(allWins.length){
    say(allWins.length+' combinações · prémio total: '+
      money(outcome.credited)+' créditos');
   }else say('Sem prémio neste giro');
-  if(bank.mode==='hold'){
-   nextTimer=setTimeout(showHold,950);return;
-  }
-  if(bank.mode==='free'){
-   nextTimer=setTimeout(runSpin,1100);return;
-  }
-  if(autoRemaining>0){
-   nextTimer=setTimeout(runSpin,bank.stake<.1?600:780);
-  }
- }
- if(!window.JM3D.spin(outcome.board,()=>nextStage(0))){
-  setSpinning(false);
-  say('Tambores ocupados');
-  render();
+  if(bank.mode==='hold')nextTimer=setTimeout(showHold,950);
+  else if(bank.mode==='free')nextTimer=setTimeout(runSpin,1100);
+  else if(autoRemaining>0)nextTimer=setTimeout(runSpin,780);
  }
 }
 function changeStake(delta){
