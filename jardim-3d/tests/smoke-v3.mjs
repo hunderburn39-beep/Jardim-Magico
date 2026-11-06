@@ -110,4 +110,30 @@ check((await local.load()).snapshot.balance===12,'restauração do saldo');
 check((await local.history()).length===1,'histórico de giro');
 await local.clear();
 check(await local.load()===null,'reinicialização dos dados locais');
+// Testar precisamente o problema do screenshot: callback do render perdido.
+const controllerSource=await read('../js/gameplay.js');
+const motionStart=controllerSource.indexOf('async function playMotion(');
+const motionEnd=controllerSource.indexOf('async function runSpin()',motionStart);
+check(motionStart>0&&motionEnd>motionStart,'controlador com watchdog');
+const sourceFn=controllerSource.slice(motionStart,motionEnd);
+let recovered=0;
+const eventHandlers=new Map();
+const fakeWindow={
+ JM3D:{recover:board=>{recovered++;return true}},
+ addEventListener:(k,f)=>eventHandlers.set(k,f),
+ removeEventListener:(k,f)=>{if(eventHandlers.get(k)===f)eventHandlers.delete(k)}
+};
+const motionFn=new Function('window','console',sourceFn+'\nreturn playMotion;')(fakeWindow,console);
+const stalled=await motionFn(()=>true,board,15);
+check(stalled==='timeout','watchdog recupera callback perdido');
+check(recovered===1,'o resultado visual foi recuperado');
+const thrown=await motionFn(()=>{throw Error('falha em PlayCanvas')},board,100);
+check(thrown==='exception','watchdog recupera exceção');
+check(recovered===2,'duas exceções, duas recuperações');
+const completed=await motionFn(done=>{done();return true},board,100);
+check(completed==='ok','movimento normal não recupera nem duplica');
+check(recovered===2,'sem recuperação indevida');
+check(controllerSource.includes('finally{')&&controllerSource.includes('setSpinning(false);'),
+ 'o controlador liberta o botão após qualquer saída');
+
 console.log('Jardim Mágico 3D V3: '+passed+' verificações aprovadas; '+totalSpins+' giros simulados.');
