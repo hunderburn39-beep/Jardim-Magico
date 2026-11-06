@@ -98,3 +98,36 @@ Abrir: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-3d/?v=2.5
 - O motor continua a ser apenas uma **demonstração de créditos fictícios**: a seleção condicionada pelo fundo não é uma matemática de apostas reais auditada.
 
 Cópia de segurança anterior: `backup/jardim-3d-v2-4-antes-gerador-solvente`.
+
+## V3 — Correção do bloqueio, gráficos mais próximos da referência e base de dados
+
+**Abrir:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-3d/?v=3
+
+### Bug da queda resolvido no controlador
+
+- `js/gameplay.js` reproduz as etapas com `async/await` e um temporizador de segurança por giro e por queda. Não depende de um callback que possa nunca chegar.
+- `js/main.js` captura erros de movimento e expõe `JM3D.recover(board)`.
+- `js/reels-v23.js` implementa `forceReset(board)`: cancela movimento incompleto, repõe as 15 peças no resultado calculado e desbloqueia os botões. Inclui recuperação de cena após interrupções.
+- O resultado e o prémio são calculados **antes** das animações; recuperar um erro gráfico não altera a soma nem o fundo. Uma falha de cálculo repõe o estado anterior.
+- A última grelha é sempre sem novas combinações; quedas continuam enquanto aparecem prémios. O cofre condiciona os resultados antes do giro, sem truncar o prémio mostrado.
+- Testes em `tests/smoke-v3.mjs`, executados pelo CI antes de publicar o GitHub Pages.
+
+### Gráficos
+
+- `css/v3.css`: cenário único `jm76-jardim-profundo.svg` de bosque, lago e cascata, sem recortes colados; a moldura `jm75-moldura.webp` da referência é mascarada para deixar o centro **transparente**, sem a área preta.
+- PlayCanvas com canvas transparente e câmara aproximada para tornar as cinco colunas maiores.
+- `js/reels-v23.js`: símbolos HD suspensos sobre um único painel de veludo violeta com separadores verticais finos, sem caixas metálicas em cada posição.
+- `js/main.js`: símbolos antigos de 256px passaram a texturas de 512px, com transparência; permanece a rotação vertical 3D e o efeito de estouro conjunto.
+- `js/audio-v3.js`: sons Web Audio originais para rotação, cascata, prémios, bónus e música ambiente ativada pelo utilizador.
+
+### Base de dados e gestão da demo
+
+- `js/database-v3.js`: **IndexedDB local do navegador**, com estado da máquina, fundo, saldo, Free Spins, Hold, último tabuleiro, histórico e registos de operações.
+- O giro é guardado antes da animação para não se perder a atribuição do prémio ao atualizar a página.
+- Botão ⚙: histórico de giros, apostas/compras e prémios fictícios, retorno observado **não auditado**, exportação JSON, reset e ajustes fictícios do fundo.
+- Se IndexedDB estiver bloqueada, tenta `localStorage`; a UI avisa se a persistência falhar.
+- Esta base **não é online**: não existe conta de jogador, autenticação, API, sincronização entre aparelhos, nem gestão monetária real. É necessário um servidor autenticado e uma base central para produção.
+
+**Limites da versão V3:** a arte está mais próxima da fotografia graças à moldura e ao cenário originais, mas não se pode afirmar que é idêntica à imagem conceptual. O jogo é uma versão demonstrativa de créditos fictícios, ainda não um serviço de jogos a dinheiro nem uma matemática/RTP auditada.
+
+Backup: `backup/jardim-3d-v2-5-1-antes-correcao-v3`.
