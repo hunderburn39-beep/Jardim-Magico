@@ -33,6 +33,11 @@ let burst=null;
 const burstPool=[];
 const fireflies=[];
 const glows=[];
+const lakeRipples=[];
+const falls=[];
+const mistPuffs=[];
+const borderCrystals=[];
+let sceneAge=0;
 
 function rgb(hex){
  return new pc.Color(parseInt(hex.slice(1,3),16)/255,parseInt(hex.slice(3,5),16)/255,parseInt(hex.slice(5,7),16)/255);
@@ -95,6 +100,11 @@ function lighting(){
  pink.addComponent('light',{type:'directional',color:new pc.Color(.76,.36,.94),intensity:.38,castShadows:false});
  pink.setLocalEulerAngles(-12,124,10);
  app.root.addChild(pink);
+ // Luz fria de contorno nos cristais, com sombras desativadas no iPhone.
+ const rim=new pc.Entity('Luz azul de recorte');
+ rim.addComponent('light',{type:'directional',color:new pc.Color(.40,.72,1),intensity:.26,castShadows:false});
+ rim.setLocalEulerAngles(-28,195,-15);
+ app.root.addChild(rim);
  const gemLight=new pc.Entity('Luz do lago');
  gemLight.addComponent('light',{type:'omni',color:new pc.Color(.31,.94,.96),intensity:1.1,range:10,castShadows:false});
  gemLight.setLocalPosition(0,-5,-2);
@@ -111,9 +121,12 @@ function background(){
  const water=mat('#17606d',{metal:.28,gloss:96,emissive:'#0a8994',emission:.55});
  const water2=mat('#338c9b',{metal:.45,gloss:92,emissive:'#077c91',emission:.35,opacity:.74});
  model('Lago oval','sphere',[0,-6.77,-3.6],[7.1,.27,2.3],water);
- for(let i=0;i<4;i++){
-   const xx=-2.6+i*1.7;
-   model('Reflexo no lago','sphere',[xx,-6.52,-3.1+i*.25],[.68,.026,.16],water2);
+ // Duas camadas líquidas contínuas; as ondas são geometrias reais.
+ for(let i=0;i<7;i++){
+   const xx=-3.1+i*1.04;
+   const zz=-3.1+(i%3)*.32;
+   const wave=model('Ondulação do lago','sphere',[xx,-6.50,zz],[.68,.026,.15],water2);
+   lakeRipples.push({e:wave,x:xx,z:zz,phase:i*.83});
  }
  const trunk=mat('#674126',{metal:.03,gloss:20});
  const trunk2=mat('#87552f',{metal:.05,gloss:24});
@@ -128,9 +141,20 @@ function background(){
  }
  const waterfall=mat('#5ac0e1',{gloss:80,metal:.18,emissive:'#168bad',emission:.65,opacity:.79});
  const rocks=mat('#53516b',{metal:.06,gloss:16});
+ const whiteWater=mat('#b6eefa',{metal:.04,gloss:92,emissive:'#93def8',emission:.47,opacity:.67});
+ for(let i=0;i<6;i++){
+   const x=2.73+i*.26;
+   model('Coluna da cascata','box',[x,1.55-(i%2)*.22,-8.02+i*.03],
+     [.19,2.85+(i%3)*.32,.14],waterfall);
+   sphere('Pedra da cascata',2.62+i*.46,.11,-8+i*.15,.48,rocks);
+   const strip=model('Fio de espuma cintilante','box',[x+.026,2.45,-7.82],
+      [.028,.41,.033],whiteWater);
+   falls.push({e:strip,x,phase:i*.35});
+ }
+ const foam=mat('#a1d9df',{metal:.03,gloss:40,emissive:'#61a5bf',emission:.24,opacity:.46});
  for(let i=0;i<5;i++){
-   model('Cascata 3D','box',[2.9+i*.22,1.8-(i%2)*.23,-8+i*.03],[.19,2.8+(i%3)*.4,.14],waterfall);
-   sphere('Pedra da cascata',2.7+i*.52,.14,-8+i*.2,.54,rocks);
+   const e=sphere('Névoa junto à cascata',2.72+i*.23,-.3+(i%2)*.12,-7.4,.17,foam);
+   mistPuffs.push({e,x:2.72+i*.23,y:-.3+(i%2)*.12,phase:i*1.41});
  }
  for(let i=0;i<12;i++){
    const side=i%2?-1:1;
@@ -156,6 +180,8 @@ function cabinet(){
  const gold=mat('#e8a93f',{metal:.88,gloss:90,emissive:'#694018',emission:.14});
  const goldBright=mat('#ffda80',{metal:.82,gloss:92,emissive:'#ad702d',emission:.2});
  const gems=mat('#8b33b1',{metal:.4,gloss:85,emissive:'#551b8c',emission:.6});
+ const gilded=mat('#fff0b2',{metal:.85,gloss:98,emissive:'#724817',emission:.12});
+ const carved=mat('#382419',{metal:.06,gloss:32});
  model('Parede da máquina','box',[0,.26,-.65],[5.85,4.12,.6],wood);
  model('Veludo por detrás dos símbolos','box',[0,.34,-.28],[5.46,3.54,.16],velvet);
  // Borda geométrica real, centro totalmente aberto
@@ -167,6 +193,26 @@ function cabinet(){
  model('Aro de ouro direita','box',[2.68,.21,.61],[.07,4.08,.12],gold);
  model('Aro de ouro topo','box',[0,2.14,.61],[5.46,.08,.14],goldBright);
  model('Aro de ouro baixo','box',[0,-1.67,.61],[5.46,.08,.14],goldBright);
+ // V2.2: três planos de espessura real, contorno, talha e brilho.
+ // Tudo se mantém FORA dos 5×3 rolos, sem moldura colada sobre símbolos.
+ for(const x of [-2.97,2.97]){
+   model('Talha lateral profunda','box',[x,.24,.16],[.10,4.34,.58],carved);
+   model('Vinco de ouro lateral','box',[x+(x<0?.08:-.08),.25,.72],[.035,3.78,.075],gilded);
+   for(let i=0;i<4;i++){
+     const y=-1.42+i*1.06;
+     const bead=sphere('Florão de latão',x,y,.75,.08,goldBright);
+     bead.setLocalScale(.12,.18,.07);
+   }
+ }
+ for(const y of [2.40,-1.93]){
+   model('Talha transversal','box',[0,y,.20],[5.95,.15,.56],carved);
+   model('Filete de ouro em alto relevo','box',[0,y+(y>0?-.06:.06),.68],[5.67,.035,.10],gilded);
+ }
+ for(const x of [-2.81,2.81])for(const y of [-1.81,2.28]){
+   const gem=model('Ametista facetada','cone',[x,y,.87],[.17,.28,.14],gems);
+   gem.setLocalEulerAngles(0,0,45);
+   borderCrystals.push(gem);
+ }
  // Moldura ganha volume lateral sem roubar o espaço dos símbolos
  for(const x of [-2.85,2.85]) for(const y of [-1.82,2.27]){
    sphere('Pérola dourada da moldura',x,y,.63,.16,goldBright);
@@ -194,6 +240,8 @@ function decorate3D(){
  const gold=mat('#db9b3b',{metal:.79,gloss:90});
  const lanternGlow=mat('#ffda6b',{metal:.12,gloss:94,emissive:'#ffbc56',emission:.78});
  const petals=mat('#ff64c1',{metal:.07,gloss:75,emissive:'#a92d6e',emission:.18});
+ const petalsLight=mat('#ffc0ea',{metal:.06,gloss:89,emissive:'#dc5597',emission:.22});
+ const twig=mat('#7e4926',{metal:.02,gloss:35});
  for(const side of [-1,1]){
   const x=side*3.08;
   // As trepadeiras acompanham a madeira sem tapar a janela de símbolos.
@@ -205,6 +253,14 @@ function decorate3D(){
   }
   for(const y of [-1.84,2.26]){
    plant(x-side*.14,y,.72,.43,side<0?'#ff64c0':'#f49bc9');
+  }
+  // Novas ramificações em profundidade — volume verdadeiro no contorno.
+  for(let i=0;i<3;i++){
+   const y=-1.10+i*1.11;
+   const branch=model('Ramo entrançado','cylinder',[x+side*.22,y,.59],[.043,.59,.043],twig);
+   branch.setLocalEulerAngles(0,0,-side*38);
+   const pet=model('Pétala alta','sphere',[x+side*.39,y+.19,.74],[.19,.12,.13],i%2?petals:petalsLight);
+   pet.setLocalEulerAngles(0,0,side*33);
   }
   // Lanternas ornamentais suspensas ao lado do emblema.
   const lx=side*3.42;
@@ -220,6 +276,12 @@ function decorate3D(){
   p.setLocalEulerAngles(0,0,(a*180/Math.PI)-90);
  }
  sphere('Lótus — centro',0,5.22,-.15,.21,lanternGlow);
+ // Lótus e pedras com contacto à estrutura — sem recortes fotográficos.
+ const jewel=mat('#4de0c3',{metal:.47,gloss:97,emissive:'#139f8c',emission:.48});
+ for(const x of [-2.66,2.66]){
+   const bead=model('Cristal da moldura','cone',[x,2.61,.35],[.19,.42,.21],jewel);
+   bead.setLocalEulerAngles(0,0,x<0?19:-19);
+ }
  const cherry=mat('#d24a7a',{metal:.10,gloss:87,emissive:'#81204a',emission:.13});
  for(let i=0;i<8;i++){
   const a=i*2.4;
