@@ -7,9 +7,9 @@ const $=s=>document.getElementById(s), W=900,H=535,CW=W/5,CH=H/3;
 // Apostas em CÊNTIMOS: 0,05 € a 10,00 € por spin.
 const BETS=[5,10,20,40,60,80,100,200,300,500,1000];
 const regular=['heart','rose','mushroom','hat','teapot','potion','gem','green'];
-const allSymbols=[...regular,'wild','scatter','mul'];
-const IMGFILES={heart:'heart.png',rose:'rose.png',mushroom:'mushroom.png',hat:'hat.png',teapot:'teapot.png',potion:'potion.png',gem:'gem.png',green:'green.png',wild:'wild.png',scatter:'scatter.png'};
-const NAME={heart:'CORAÇÃO',rose:'ROSA',mushroom:'COGUMELO',hat:'CHAPÉU',teapot:'BULE',potion:'POÇÃO',gem:'GEMA ROXA',green:'GEMA VERDE',wild:'WILD',scatter:'SCATTER',mul:'MULTIPLICADOR'};
+const allSymbols=[...regular,'wild','scatter','mul','stone'];
+const IMGFILES={heart:'heart.png',rose:'rose.png',mushroom:'mushroom.png',hat:'hat.png',teapot:'teapot.png',potion:'potion.png',gem:'gem.png',green:'green.png',wild:'wild.png',scatter:'scatter.png',stone:'pedra-bloqueadora-v70.svg'};
+const NAME={heart:'CORAÇÃO',rose:'ROSA',mushroom:'COGUMELO',hat:'CHAPÉU',teapot:'BULE',potion:'POÇÃO',gem:'GEMA ROXA',green:'GEMA VERDE',wild:'WILD',scatter:'SCATTER',mul:'MULTIPLICADOR',stone:'PEDRA'};
 const PAY={heart:[0,0,0,6,18,50],rose:[0,0,0,6,19,55],mushroom:[0,0,0,5,16,48],hat:[0,0,0,7,21,60],teapot:[0,0,0,8,23,75],potion:[0,0,0,10,30,85],gem:[0,0,0,12,38,100],green:[0,0,0,11,35,90],wild:[0,0,10,15,45,130]};
 const LINES=[
  [1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],
@@ -27,6 +27,8 @@ const FREE_SCATTER_PROBABILITY=.018; // Probabilidade FIXA por posição nas fre
 const FREE_MUL_PROBABILITY=.009; // V66: bola MULTI com 0,9% por posição nas free spins.
 const FREE_WILD_PROBABILITY=.034;
 const FREE_COIN_PROBABILITY=.030;
+// V70: símbolo sem valor, probabilidade fixa e independente dos saldos.
+const STONE_PROBABILITY=.06;
 const CASH_PIN='12345';
 const PROTECTED_SHARE=0.25; // Parte intocável da parcela reservada em cada aposta.
 
@@ -657,7 +659,15 @@ function sym(){const p=Math.random();if(freeSpins>0 || awardContext==='free'){
  if(p<.0335)return {id:'scatter'};
  if(p<.060)return {id:'wild',factor:chooseWildFactor()};
  if(p<.0855)return {id:'coin',uid:++symbolSeq,value:pick([10,20,50,100,200,500,1000,2000,5000])};
-}return {id:chooseRegularSymbol()};}
+}
+ // A pedra retira probabilidade apenas às figuras normais; símbolos especiais mantêm-se.
+ const free=freeSpins>0 || awardContext==='free';
+ const specialCap=free
+  ? FREE_MUL_PROBABILITY+FREE_SCATTER_PROBABILITY+FREE_WILD_PROBABILITY+FREE_COIN_PROBABILITY
+  : .0855;
+ if(p<specialCap+STONE_PROBABILITY)return {id:'stone'};
+ return {id:chooseRegularSymbol()};
+}
 
 function flyCoinToVault(x,y,delay=0,faceValue=0){
  return new Promise(resolve=>{
@@ -860,11 +870,13 @@ function evaluate(g,betAmount=BETS[betIdx],paidWildOnly=null){
  const coef=betAmount/LINES.length*rtpScaleFor(awardContext)*volatilityPayScale();
  for(let i=0;i<LINES.length;i++){
   const line=LINES[i],cells=line.map((row,x)=>g[x][row]),ids=cells.map(s=>s.id);
-  const firstNonWild=ids.find(id=>id!=='wild');
+  // PEDRA não ganha nem pode ser substituída pelo WILD.
+  const firstNonWild=ids.find(id=>id!=='wild'&&id!=='stone');
   const target=firstNonWild&&PAY[firstNonWild]?firstNonWild:'wild';
   let count=0;
   for(let x=0;x<5;x++){
    const id=ids[x];
+   if(id==='stone')break; // A pedra interrompe a linha sem pagar.
    if(id===target||(target!=='wild'&&id==='wild'))count++;
    else break;
   }
@@ -908,7 +920,7 @@ function mulIndices(g){const out=[];for(let x=0;x<5;x++)for(let y=0;y<3;y++)if(g
 function scatterCount(g){return g.flat().filter(x=>x.id==='scatter').length;}
 
 /* V46: assets recortados (RGBA/PNG), contorno e movimentos únicos. */
-const JM_COLORS={heart:'#ff618c',rose:'#ff91bd',mushroom:'#ffb65d',hat:'#b39bff',teapot:'#ffe4a2',potion:'#cb81ff',gem:'#de91ff',green:'#81ffbd',wild:'#ffe17b',scatter:'#bce9ff',coin:'#ffdb7e',mul:'#ff8778'};
+const JM_COLORS={heart:'#ff618c',rose:'#ff91bd',mushroom:'#ffb65d',hat:'#b39bff',teapot:'#ffe4a2',potion:'#cb81ff',gem:'#de91ff',green:'#81ffbd',wild:'#ffe17b',scatter:'#bce9ff',coin:'#ffdb7e',mul:'#ff8778',stone:'#929da0'};
 const JM_REDUCED=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches);
 /* V52: texto SCATTER recortado; a esfera é animada à parte. */
 function jmScatterTextArt(){
@@ -1045,7 +1057,7 @@ function artBg(ctx,t){ctx.save();ctx.clearRect(0,0,W,H);
  ctx.strokeStyle='rgba(255,212,148,.26)';ctx.lineWidth=2;ctx.strokeRect(1,1,W-2,H-2);ctx.restore()}
 
 const REEL_SYMBOL_ZOOM=1.27; // V52: peças normais mais pequenas, recortadas
-const SPECIAL_REEL_ZOOM={wild:1.10,scatter:1.20,coin:1.02,mul:1.06}; // especiais sobressaem
+const SPECIAL_REEL_ZOOM={wild:1.10,scatter:1.20,coin:1.02,mul:1.06,stone:1.08}; // especiais sobressaem
 function symbolZoom(s){return s&&SPECIAL_REEL_ZOOM[s.id]||REEL_SYMBOL_ZOOM;}
 function drawSymbol(ctx,s,x,y,w=CW,h=CH,time=0,zoom=REEL_SYMBOL_ZOOM){
  if(!s||s.id==='blank')return;
@@ -1053,7 +1065,14 @@ function drawSymbol(ctx,s,x,y,w=CW,h=CH,time=0,zoom=REEL_SYMBOL_ZOOM){
  ctx.translate(x+w/2+m.dx,y+h/2+m.dy);ctx.rotate(m.a);
  const z=zoom===REEL_SYMBOL_ZOOM?symbolZoom(s):zoom;ctx.scale(m.k*z,m.k*z);
  ctx.globalAlpha=Math.min(1,.90+(m.light-1)*.27);
- const img=nativeAssets[id];if(img){const ww=w*.985,hh=h*.992;ctx.drawImage(img,-ww/2,-hh/2,ww,hh)}else if(id==='mul'){
+ const img=nativeAssets[id];if(img){const ww=w*.985,hh=h*.992;ctx.drawImage(img,-ww/2,-hh/2,ww,hh)}else if(id==='stone'){
+   // Ícone de reserva, caso o SVG ainda não esteja pronto.
+   ctx.fillStyle='#87949b';ctx.strokeStyle='#424e56';ctx.lineWidth=5;
+   ctx.beginPath();ctx.moveTo(-w*.34,h*.17);ctx.lineTo(-w*.27,-h*.20);
+   ctx.lineTo(-w*.10,-h*.35);ctx.lineTo(w*.19,-h*.30);
+   ctx.lineTo(w*.33,-h*.03);ctx.lineTo(w*.27,h*.28);
+   ctx.lineTo(-w*.16,h*.31);ctx.closePath();ctx.fill();ctx.stroke();
+  }else if(id==='mul'){
   const rad=Math.min(w,h)*.34;
   const grad=ctx.createRadialGradient(-rad*.34,-rad*.52,2,0,0,rad);
   grad.addColorStop(0,'#fff0dd');
@@ -1961,13 +1980,13 @@ function drawWinLineMaps(){
 }
 function makePaytable(){
  const el=$('payGrid');el.replaceChildren();
- for(const id of [...regular,'wild','scatter']){
+ for(const id of [...regular,'wild','scatter','stone']){
   const div=document.createElement('div');div.className='payItem';
   const img=document.createElement('img');img.src=window.JM_INLINE_ASSETS[id];img.alt=NAME[id];div.appendChild(img);
   const t=document.createElement('span');
   t.innerHTML=`<strong>${NAME[id]}</strong><br>${id==='wild'?`WILD 1× a 5× · permanece fixo nas cascatas desta spin · cada símbolo conta uma única vez por queda · teto conjunto 5× por linha · 2 WILD adjacentes também podem pagar.<br>`:''}${PAY[id]?
    `3× ≈ ${money(Math.round(BETS[betIdx]*PAY[id][3]/LINES.length*rtpScaleFor('base')))}<br>4× ≈ ${money(Math.round(BETS[betIdx]*PAY[id][4]/LINES.length*rtpScaleFor('base')))}<br>5× ≈ ${money(Math.round(BETS[betIdx]*PAY[id][5]/LINES.length*rtpScaleFor('base')))}`
-   :'Na base: 3 SCATTER = 15 free spins. Durante o bónus: 2 SCATTER = +8, 3 SCATTER = +15; máximo 2 extensões por bónus.'}`;
+   :id==='stone'?'SEM PRÉMIO · A pedra não tem valor, não faz combinações e interrompe linhas de figuras ou WILDs. Desce normalmente nas cascatas.':'Na base: 3 SCATTER = 15 free spins. Durante o bónus: 2 SCATTER = +8, 3 SCATTER = +15; máximo 2 extensões por bónus.'}`;
   div.append(t);el.append(div);
  }
  drawWinLineMaps();

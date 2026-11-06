@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Pedra cinzenta com musgo">
+<defs>
+<linearGradient id="g" x1=".08" y1="0" x2=".89" y2="1"><stop stop-color="#d8e0db"/><stop offset=".28" stop-color="#899aa0"/><stop offset=".65" stop-color="#53646e"/><stop offset="1" stop-color="#293940"/></linearGradient>
+<linearGradient id="face" x1="0" y1="0" x2=".85" y2="1"><stop stop-color="#b5c6c3"/><stop offset=".63" stop-color="#78888d"/><stop offset="1" stop-color="#46545e"/></linearGradient>
+<linearGradient id="moss" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a3c16a"/><stop offset=".58" stop-color="#5d865b"/><stop offset="1" stop-color="#2b4c49"/></linearGradient>
+<filter id="shadow" x="-30%" y="-40%" width="160%" height="190%"><feGaussianBlur stdDeviation="6"/></filter>
+</defs>
+<ellipse cx="128" cy="213" rx="88" ry="16" fill="#0d2024" opacity=".35" filter="url(#shadow)"/>
+<path d="M31 166L47 102 87 66 142 55 193 78 224 126 213 177 177 207 90 213 52 196Z" fill="url(#g)" stroke="#2c393e" stroke-width="6" stroke-linejoin="round"/>
+<path d="M49 104 87 66 142 55 165 96 137 138 76 141Z" fill="#dae4dc" opacity=".52"/>
+<path d="M76 141 137 138 165 96 212 122 196 167 151 186 79 178Z" fill="url(#face)" opacity=".89"/>
+<path d="M31 166 76 141 79 178 90 213 52 196Z" fill="#526169"/>
+<path d="M151 186 196 167 212 122 224 126 213 177 177 207 90 213 79 178Z" fill="#394a52" opacity=".63"/>
+<path d="M48 104Q57 84 82 70L111 65 128 82 112 98 86 95 73 117 50 119Z" fill="url(#moss)" opacity=".97"/>
+<path d="M143 56Q170 57 191 77L202 98 179 103 165 92 149 97 135 81Z" fill="url(#moss)" opacity=".78"/>
+<path d="M47 106 57 88 84 71 M137 69 157 64 182 83" fill="none" stroke="#d7eca7" stroke-width="4" stroke-linecap="round" opacity=".67"/>
+<path d="M112 103 125 119 117 143 140 157 132 177 M171 118 186 141 175 158" fill="none" stroke="#354952" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".78"/>
+<path d="M113 103 124 120 M171 119 184 139" fill="none" stroke="#e0e8e3" stroke-width="2" stroke-linecap="round" opacity=".56"/>
+<path d="M79 151 96 160 108 157 M147 180 163 184 M64 193 88 201" fill="none" stroke="#c0cec9" stroke-width="3" stroke-linecap="round" opacity=".33"/>
+<g fill="#93b779" opacity=".8"><circle cx="71" cy="104" r="3"/><circle cx="79" cy="99" r="2"/><circle cx="169" cy="76" r="3"/><circle cx="184" cy="87" r="2"/></g>
+</svg>
