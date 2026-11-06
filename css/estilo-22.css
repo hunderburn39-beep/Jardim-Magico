@@ -1,0 +1,16 @@
+/* V71 — Fundo do operador no painel de administração */
+.jm71FundsPanel{border:1px solid #719e85;background:linear-gradient(140deg,rgba(33,73,58,.24),rgba(41,30,63,.26))}
+.jm71FundStats,.jm71FundTargets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:14px 0}
+.jm71FundStats>div,.jm71FundTargets>div{display:flex;flex-direction:column;gap:8px;padding:12px;min-width:0;border:1px solid rgba(250,250,220,.22);border-radius:11px;background:rgba(0,0,0,.15)}
+.jm71FundStats small,.jm71FundTargets small{font-size:11px;line-height:1.35;color:#cedad1}
+.jm71FundStats strong,.jm71FundTargets b{font-size:clamp(15px,2vw,24px);color:#ffe7b8;overflow-wrap:anywhere}
+.jm71FundAdvice{border:1px solid #82ad81;border-radius:11px;padding:12px;line-height:1.5;background:rgba(45,93,66,.22)}
+.jm71FundAdvice[data-level="baixo"]{border-color:#e1b87c;background:rgba(104,62,15,.2)}
+.jm71FundAdvice[data-level="critico"]{border-color:#dd828a;background:rgba(113,31,43,.2)}
+.jm71FundForm,.jm71FundButtons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+.jm71FundForm label{font-size:12px;display:flex;flex-direction:column;gap:7px}
+.jm71FundForm input{width:100%;min-width:0;box-sizing:border-box;font-size:16px;padding:12px;border-radius:9px;border:1px solid #b19a7b;color:white;background:#211d35}
+.jm71FundButtons button{min-height:46px;cursor:pointer;padding:11px 8px;border:1px solid #bfab81;border-radius:10px;font-weight:800;color:white;background:#286f52}
+#adminFundRecover{background:#664452}
+.jm71FundFoot{font-size:12px;line-height:1.55;color:#d4d8cd}
+@media(max-width:680px){.jm71FundStats,.jm71FundTargets{grid-template-columns:repeat(2,minmax(0,1fr))}.jm71FundButtons button{font-size:12px}}
