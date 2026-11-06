@@ -20,8 +20,8 @@ function board(...groups){
   for(let i=0;i<count;i++)items.push({id:id++,kind,...(value!==undefined?{value}:{})});
  }
  assert(items.length<=30);
- const fillers=R.KINDS.filter(kind=>!groups.some(([used])=>used===kind)).slice(0,4);
- assert(fillers.length>=4,"Precisamos de quatro símbolos diferentes para completar a grelha");
+ const fillers=R.KINDS.filter(kind=>!groups.some(([used])=>used===kind)).slice(0,5);
+ assert(fillers.length>=5,"Precisamos de cinco símbolos diferentes para completar a grelha");
  let fill=0;
  while(items.length<30)items.push({id:id++,kind:fillers[fill++%fillers.length]});
  return items;
