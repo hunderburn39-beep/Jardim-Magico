@@ -12,8 +12,8 @@
  const WILD_VALUES=[1,2,3,4,5];
  const WILD_WEIGHTS=[80,15,4,.8,.2];
  const CONFIG={
-   base:{scatter:.015,mult:.004,wild:.023},
-   bonus:{scatter:.021,mult:.006,wild:.058}
+   base:{scatter:.015,mult:.004,wild:.0225},
+   bonus:{scatter:.021,mult:.006,wild:.057}
  };
  function pick(values,weights,rng){
    let total=0;for(let i=0;i<weights.length;i++)total+=weights[i];
