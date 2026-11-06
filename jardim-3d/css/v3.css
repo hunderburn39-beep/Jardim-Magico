@@ -1,0 +1,136 @@
+/* Jardim Mágico 3D V3 — apresentação 2.5D premium com rolos 3D reais.
+ * Cenário ÚNICO, sem capturas coladas. Moldura original da fotografia
+ * recortada com máscara: nenhuma zona preta cobre o jogo.
+ * Teste obrigatório no Safari para ajustar performance e safe-areas. */
+:root{--gold:#ffe6ab;--rose:#ff94d8;--dark-purple:#260a3a}
+html,body{
+ background:#19132f url('../assets/imagens/jm76-jardim-profundo.svg') center center/cover no-repeat fixed!important;
+}
+#application{background:transparent!important}
+.vignette{
+ background:linear-gradient(180deg,rgba(9,2,23,.15) 0,transparent 18%,transparent 78%,rgba(3,13,24,.23) 100%)!important;
+}
+.top{top:max(2px,env(safe-area-inset-top))!important}
+.topline{position:relative;z-index:5;height:31px}
+.toptools{gap:clamp(3px,1.1vw,7px)}
+.toptools .roundSmall,.topline .back{
+ border-color:#ffdfa0!important;
+ background:radial-gradient(circle at 32% 10%,#9e428e,#380d56 72%,#18052f)!important;
+ box-shadow:inset 0 2px 3px #fff0caaa,0 3px 0 #905324,0 0 10px #ff70d788!important;
+}
+.toptools .roundSmall{width:clamp(27px,7.5vw,38px);height:clamp(27px,7.5vw,38px)}
+.brand{margin-top:clamp(0px,.35vh,5px)!important}
+.brand-art{width:min(96vw,510px)!important;max-height:min(19vh,172px)!important}
+.brand small{margin-top:-5px!important;font-size:clamp(7px,1.8vw,10px);letter-spacing:.23em}
+.jackpots{
+ top:21.9%!important;left:3%!important;right:3%!important;
+ gap:4px!important;
+}
+.pot,.pot.hero{
+ border:2px solid #ffe7a4!important;border-radius:15px!important;
+ min-height:clamp(42px,5.4dvh,61px)!important;
+ background:radial-gradient(ellipse at 32% 0,#e7acda80,transparent 58%),
+  linear-gradient(180deg,#9a4e95,#531661 45%,#260637)!important;
+}
+.pot small{font:900 clamp(10px,2.7vw,15px)/1 Georgia,serif!important}
+.pot strong{font:900 clamp(14px,3.45vw,22px)/1.12 Georgia,serif!important}
+.pot em{font:900 clamp(8px,1.95vw,12px)/1 Georgia,serif!important}
+.reelHead{
+ top:27.4%!important;
+ left:4%!important;right:4%!important;
+ height:clamp(36px,5.3dvh,49px)!important;
+ border-radius:13px 13px 8px 8px!important;
+ z-index:2;
+ background:linear-gradient(170deg,#852a88,#411057 45%,#27063c)!important;
+ box-shadow:inset 0 2px 4px #ffe6b46e,0 3px 4px #120521aa!important;
+}
+.orbBank b{min-width:23px;min-height:23px}
+.jmArtFrame{
+ position:absolute;z-index:1;
+ top:31.5%;left:1.8%;width:96.4%;height:35.3%;
+ pointer-events:none;
+ background:url('../assets/imagens/jm75-moldura.webp') center/100% 100% no-repeat;
+ -webkit-mask:
+  linear-gradient(#000,#000) top center/100% 12% no-repeat,
+  linear-gradient(#000,#000) bottom center/100% 13% no-repeat,
+  linear-gradient(#000,#000) left center/12% 100% no-repeat,
+  linear-gradient(#000,#000) right center/12% 100% no-repeat;
+ mask:
+  linear-gradient(#000,#000) top center/100% 12% no-repeat,
+  linear-gradient(#000,#000) bottom center/100% 13% no-repeat,
+  linear-gradient(#000,#000) left center/12% 100% no-repeat,
+  linear-gradient(#000,#000) right center/12% 100% no-repeat;
+ filter:drop-shadow(0 4px 4px rgba(10,3,23,.65));
+}
+.reelMessage{
+ top:66.2%!important;left:5%;right:5%;width:90%;
+ font-size:clamp(11px,2.7vw,16px)!important;
+ color:#fff0be!important;
+ text-shadow:0 2px 4px #210422,0 0 5px #ffcb79!important;
+}
+.winBreakdown{
+ top:68.3%!important;
+ left:4%;right:4%;max-width:92%;
+ padding:3px 6px!important;
+ background:linear-gradient(160deg,rgba(74,13,90,.94),rgba(28,7,43,.96))!important;
+ border:1.5px solid #ffdf9c!important;
+ font-size:clamp(9px,2.2vw,12px)!important;
+}
+.bottom{
+ bottom:max(4px,env(safe-area-inset-bottom))!important;
+ gap:clamp(2px,.45dvh,6px)!important;
+ left:3%;right:3%;
+}
+.status{
+ position:absolute;left:0;right:0;
+ bottom:calc(100% + 3px);
+ min-height:12px!important;
+}
+.status span{font-size:clamp(9px,2.2vw,12px)!important}
+.info{gap:5px!important}
+.hudPanel{min-height:clamp(32px,4.8dvh,47px)!important;padding:2px!important}
+.betPanel{min-height:clamp(28px,4.2dvh,39px)!important}
+.prizePanel{min-height:clamp(66px,9.3dvh,90px)!important}
+.vaultBtn{min-height:clamp(43px,6.4dvh,59px)!important}
+.buyBonus{min-height:27px!important}
+.hudPanel small,.vaultBtn small{font-size:clamp(7px,1.8vw,10px)!important}
+.hudPanel strong,.vaultBtn strong{font-size:clamp(13px,3.1vw,20px)!important}
+.hudPanel,.vaultBtn,.buyBonus{
+ border-radius:clamp(12px,3vw,19px)!important;
+ box-shadow:inset 0 2px 3px #fff1d4be,0 3px 0 #a3692e,0 5px 9px #160521aa!important;
+}
+.controls{min-height:72px!important}
+.controls .spin{
+ width:clamp(80px,21.5vw,123px)!important;
+ height:clamp(80px,21.5vw,123px)!important;
+ font-size:clamp(16px,4vw,23px)!important;
+}
+.spin-icon{font-size:clamp(30px,9vw,54px)!important;margin-bottom:3px!important}
+.controls .secondary{max-width:129px;padding:7px 2px!important;font-size:clamp(10px,2.3vw,14px)!important}
+.result{min-height:14px!important;font-size:clamp(9px,2.15vw,12px)!important}
+.disclaimer{font-size:clamp(7px,1.75vw,10px)!important;line-height:1.15!important;color:#fff4cebb!important}
+.dialogCard{max-height:88dvh!important}
+.holdScreen{z-index:30}
+@media(orientation:landscape){
+ .brand-art{max-height:27dvh!important;width:32vw!important}
+ .jackpots{top:5.8%!important;left:36%!important;right:2%!important}
+ .reelHead{top:19.8%!important;left:37%!important;right:2%!important}
+ .jmArtFrame{top:26%;left:35%;width:63%;height:45%}
+ .reelMessage{top:74%!important;left:36%;width:62%;right:2%}
+ .winBreakdown{top:67%!important;left:36%;right:2%;max-width:62%}
+ .bottom{left:36%;right:2%}
+ .status{display:none}
+ .info{gap:3px}
+ .controls{min-height:43px!important}
+ .controls .spin{width:clamp(49px,13dvh,88px)!important;height:clamp(49px,13dvh,88px)!important}
+}
+@media(max-height:700px) and (orientation:portrait){
+ .brand-art{max-height:18dvh!important}
+ .jackpots{top:20.4%!important}
+ .reelHead{top:26.3%!important}
+ .jmArtFrame{top:31%;height:35%}
+ .reelMessage{top:65.8%!important}
+ .winBreakdown{top:67.7%!important}
+ .bottom{gap:2px!important}
+ .controls .spin{width:clamp(74px,20vw,105px)!important;height:clamp(74px,20vw,105px)!important}
+}
