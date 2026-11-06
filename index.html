@@ -1,10 +1,10 @@
-<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#201534"><title>Jardim Mágico V76 — Floresta 3D e Interface Premium</title>
+<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#201534"><title>Jardim Mágico V77 — Cenário Sem Sobreposições</title>
 <link rel="stylesheet" href="css/estilo.css">
 <link rel="stylesheet" href="css/estilo-2.css?v=43">
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@8.11.0/dist/pixi.min.js" async></script>
 </head><body>
-<main class="game jm75"><div class="jm75BackdropTop" aria-hidden="true"></div><div class="jm75BackdropBottom" aria-hidden="true"></div><div class="topbar"><div class="toptools"><button class="roundSmall" id="btnHome" aria-label="Nova sessão">⌂</button><button class="roundSmall" id="btnMusic" aria-label="Desligar música de fundo" title="Música de fundo">♫</button><button class="roundSmall" id="btnSound" aria-label="Desligar efeitos sonoros" title="Efeitos sonoros">🔊</button><button class="roundSmall" id="depositBtn" aria-label="Depósito" title="Depósito">✚</button><button class="roundSmall" id="withdrawBtn" aria-label="Levantamento" title="Levantamento">⇩</button><button class="roundSmall" id="btnPay" aria-label="Tabela de pagamentos">ⓘ</button></div></div>
-<div class="logoLoop"><div class="logoSpinLetters" aria-hidden="true"><span>J</span><span>A</span><span>R</span></div><img class="titleArt" src="assets/imagens/jm75-logo-recortado.webp" alt="Jardim Mágico" id="adminHotspot" draggable="false" style="user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:default"></div>
+<main class="game jm75 jm77"><div class="topbar"><div class="toptools"><button class="roundSmall" id="btnHome" aria-label="Nova sessão">⌂</button><button class="roundSmall" id="btnMusic" aria-label="Desligar música de fundo" title="Música de fundo">♫</button><button class="roundSmall" id="btnSound" aria-label="Desligar efeitos sonoros" title="Efeitos sonoros">🔊</button><button class="roundSmall" id="depositBtn" aria-label="Depósito" title="Depósito">✚</button><button class="roundSmall" id="withdrawBtn" aria-label="Levantamento" title="Levantamento">⇩</button><button class="roundSmall" id="btnPay" aria-label="Tabela de pagamentos">ⓘ</button></div></div>
+<div class="logoLoop"><div class="logoSpinLetters" aria-hidden="true"><span>J</span><span>A</span><span>R</span></div><img class="titleArt" src="assets/imagens/jm77-logo-isolado.svg?v=77" alt="Jardim Mágico" id="adminHotspot" draggable="false" style="user-select:none;-webkit-user-select:none;touch-action:manipulation;cursor:default"></div>
 <div class="jackpots" aria-label="Jackpots progressivos, valores atualmente elegíveis para a aposta escolhida"><div class="jackpot max"><b>ULTRA</b><strong id="jpULTRA">0,00 €</strong></div><div class="jackpot"><b>MAX</b><strong id="jpMAX">0,00 €</strong></div><div class="jackpot"><b>MED</b><strong id="jpMED">0,00 €</strong></div><div class="jackpot"><b>MIN</b><strong id="jpMIN">0,00 €</strong></div></div>
 <div class="reelFrame"><div class="shelf"><div class="jm63DropCounter"><span class="jm63DropLabel">VALOR DA QUEDA</span><strong id="jm63DropValue" aria-live="polite">0,00 €</strong><small id="jm65FreeExposure" class="jm65FreeExposure" aria-live="polite"></small></div><div class="shelfTag">MULTI</div><div class="orbs" id="orbs"><span class="orbPill jm56RedBall"><strong class="jm62MultiDigits">1</strong><small class="jm62MultiX">×</small></span></div><div class="shelfTotal" id="shelfTotal">×1</div></div><div class="stageWrap" id="stageWrap"><div class="gardenWorld" aria-hidden="true">
 <svg class="forestBackdrop" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 535" preserveAspectRatio="xMidYMid slice">
@@ -87,7 +87,7 @@
 </div>
 <div class="orientationNote">Para o formato 16:9, roda o iPhone na horizontal.</div>
 <div class="foot">15 linhas • FREE SPINS: multiplicadores somam até ao fim • 3 SCATTER = 15 free spins • 6 moedas = Hold & Win 4×4 • WILD ×2 • Cofre mágico de moedas • Apostas fixas nos bónus • Prémios limitados pelo cofre • Só créditos virtuais</div></main>
-<span id="jmVersionBadge" aria-label="Versão do jogo 76">V76</span>
+<span id="jmVersionBadge" aria-label="Versão do jogo 77">V77</span>
 <div class="modal" id="startModal"><div class="dialog"><h2 id="depositTitle">✦ Bem-vindo ao Jardim Mágico ✦</h2><p id="depositInstructions">Escolhe os créditos fictícios com que queres começar esta sessão.</p><div class="choices" id="choices"><button data-value="10">10</button><button data-value="20">20</button><button class="selected" data-value="50">50</button><button data-value="100">100</button><button data-value="200">200</button><button data-value="500">500</button></div><input class="creditsInput" type="number" min="1" max="100000" value="50" id="openingCredits" inputmode="decimal"><p id="depositConfirmPreview" class="depositConfirmPreview"></p><div class="modalActions"><button id="cancelDeposit" type="button" class="modalBtn">CANCELAR</button><button id="startBtn" type="button" class="modalBtn">INICIAR JOGO</button></div><p style="font-size:11px">O valor representa apenas créditos virtuais para brincar.</p></div></div>
 <div class="modal" id="depositLoginModal"><div class="dialog" role="dialog" aria-label="Autorização do depósito">
  <h2>🔐 Depósito protegido</h2><p id="depositLoginInfo">Introduz a palavra-passe para escolher o valor do depósito em créditos fictícios.</p>
@@ -241,6 +241,7 @@
 <link rel="stylesheet" href="css/estilo-24.css?v=74">
 <link rel="stylesheet" href="css/estilo-25.css?v=75.1">
 <link rel="stylesheet" href="css/estilo-26.css?v=76">
+<link rel="stylesheet" href="css/estilo-27.css?v=77">
 <script id="v38-fit-script" src="js/jogo-3.js"></script>
 <script id="v39-bonus-script" src="js/jogo-4.js"></script>
 <script src="js/cenario-v47.js?v=47"></script></body></html>
