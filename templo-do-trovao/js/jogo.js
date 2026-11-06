@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V11.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V12.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -73,6 +73,8 @@
   };
   let ctx = null, holdTimer = null, longFired = false, modalOpen = false;
   let landingTimers = [];
+  // Reutilização de células evita recriar 30 imagens a cada queda.
+  const tileCache = new Map();
   const money = n => new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.max(0,n));
   const currentBet = () => BETS[state.betIndex];
   const pause = ms => new Promise(resolve=>setTimeout(resolve,ms));
@@ -130,15 +132,24 @@
   function render(grid,options={}){
     for(const timer of landingTimers)clearTimeout(timer);
     landingTimers=[];
-    el.board.textContent="";
     const fragment=document.createDocumentFragment();
+    const present=new Set();
     const landings=[];
     grid.forEach((symbol,index)=>{
-      const tile=document.createElement("div");
+      present.add(symbol.id);
+      let tile=tileCache.get(symbol.id);
+      if(!tile){
+        tile=document.createElement("div");
+        tile.appendChild(makeSprite(symbol.kind));
+        if(symbol.kind==="mult"){
+          const v=document.createElement("span");
+          v.className="orb-value";v.textContent=symbol.value+"×";
+          tile.appendChild(v);
+        }
+        tileCache.set(symbol.id,tile);
+      }
       tile.className="cell "+(symbol.kind==="scatter"?"scatter":symbol.kind==="mult"?"multiplier":"");
-      const col=index%COLS, row=Math.floor(index/COLS);
-      // Todos os símbolos novos caem de cima; os sobreviventes deslocam-se
-      // a partir da posição real anterior, em vez de saltarem instantaneamente.
+      const col=index%COLS,row=Math.floor(index/COLS);
       const was=options.fallFrom?.get(symbol.id);
       if(options.dropIds?.has(symbol.id)||options.fallFrom){
         const oldRow=was===undefined?-2-(index%4):Math.floor(was/COLS);
@@ -148,142 +159,77 @@
           const delay=index*(state.turbo?9:25);
           const duration=state.turbo?210:450;
           tile.style.setProperty("--fall-rows",String(-travel));
-          tile.style.setProperty("--fall-delay",(delay/1000)+"s");
-          tile.style.setProperty("--fall-duration",(duration/1000)+"s");
-          // A pedra toca na base aos 83% da animação: um impacto por peça.
+          tile.style.setProperty("--fall-delay",delay/1000+"s");
+          tile.style.setProperty("--fall-duration",duration/1000+"s");
           landings.push({column:col,row,kind:symbol.kind,when:Math.round(delay+duration*.83)});
         }
       }
       if(options.matchKinds?.has(symbol.kind))tile.classList.add("winner");
       if(options.scatterGlow&&symbol.kind==="scatter")tile.classList.add("scat-hit");
       tile.dataset.kind=symbol.kind;
-      tile.appendChild(makeSprite(symbol.kind));
-      if(symbol.kind==="mult"){
-        const v=document.createElement("span");v.className="orb-value";
-        v.textContent=symbol.value+"×";tile.appendChild(v);
-      }
       tile.setAttribute("aria-label",symbol.kind==="mult"?"Multiplicador "+symbol.value+" vezes":symbol.kind==="scatter"?"Scatter":LABELS[symbol.kind]);
       fragment.appendChild(tile);
     });
-    el.board.appendChild(fragment);
-    let lastLanding=0;
-    for(const landing of landings){
-      lastLanding=Math.max(lastLanding,landing.when);
-      landingTimers.push(window.setTimeout(()=>{
-        if(!state.sound)return;
-        window.TrovaoLeather?.play({
-          column:landing.column,row:landing.row,kind:landing.kind,
-          strength:.59+landing.row*.047
-        });
-        // O MP3 que antes tocava no GIRAR agora acompanha o SCATTER.
-        // O motor de áudio evita repetições consecutivas quando chegam
-        // vários SCATTER ou quando o bónus é ativado nesta mesma sequência.
-        if(landing.kind==="scatter")sfx("scatter");
-      },landing.when));
+    // Move as mesmas imagens sobreviventes em vez de reconstruí-las.
+    el.board.replaceChildren(fragment);
+    for(const id of tileCache.keys())if(!present.has(id))tileCache.delete(id);
+    if(landings.length&&state.sound){
+      // Web Audio agenda as peças sem 30 setTimeout simultâneos.
+      if(window.TrovaoLeather?.schedule){
+        window.TrovaoLeather.schedule(landings);
+      }else{
+        for(const landing of landings){
+          landingTimers.push(window.setTimeout(()=>{
+            window.TrovaoLeather?.play({
+              column:landing.column,row:landing.row,kind:landing.kind,
+              strength:.59+landing.row*.047
+            });
+          },landing.when));
+        }
+      }
+      // O áudio do SCATTER continua sincronizado com o pousar da peça.
+      const scat=landings.filter(landing=>landing.kind==="scatter");
+      if(scat.length)landingTimers.push(window.setTimeout(()=>sfx("scatter"),scat[0].when));
     }
+    const lastLanding=landings.reduce((max,landing)=>Math.max(max,landing.when),0);
     return landings.length?lastLanding+95:0;
   }
-    function explodeWinningSymbols(){
-    // Só as peças assinaladas como vencedoras (8+ iguais) explodem.
-    const tiles=Array.from(el.board.querySelectorAll(".cell.winner"));
+  function explodeWinningSymbols(){
+    const tiles=el.board.querySelectorAll(".cell.winner");
     if(!tiles.length)return 0;
-    const duration=state.turbo?460:880;
+    const duration=state.turbo?310:570;
     const reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches===true;
-    el.board.classList.remove("board-impact");
-    void el.board.offsetWidth;
-    if(!reduced)el.board.classList.add("board-impact");
-    const container=el.fx;
-    const frame=container?.getBoundingClientRect();
-    const fragment=document.createDocumentFragment();
+    const mobile=window.matchMedia?.("(max-width: 850px)")?.matches===true;
+    // Dois ou três fragmentos por peça, não dezenas. Sem medições
+    // de geometria por tile nem cópias WebP sobrepostas.
+    const shards=reduced?0:mobile?2:3;
     const palette={
       sapphire:"#69dafa",emerald:"#62fdb2",amber:"#ffcb63",
       amethyst:"#dc83ff",ruby:"#ff7394",goblet:"#aaa4ff",
       ring:"#f1c16e",hourglass:"#7fffe0",crown:"#ffeb99",
       scatter:"#a5efff",mult:"#ffcf93"
     };
-    // Menos partículas quando a grelha está cheia de vencedores;
-    // é mais leve no iPhone e não sacrifica o efeito de dissipação.
-    const sparks=reduced?0:tiles.length>20?5:9;
-    const dust=reduced?0:tiles.length>20?5:7;
-    tiles.forEach((tile,i)=>{
-      const kind=tile.dataset.kind;
+    el.fx?.replaceChildren();
+    for(let i=0;i<tiles.length;i++){
+      const tile=tiles[i];
       tile.classList.add("burst-out");
-      tile.style.setProperty("--burst-delay","0ms");
       tile.style.setProperty("--burst-lifetime",duration+"ms");
-      if(!container||!frame||reduced)return;
-      const rect=tile.getBoundingClientRect();
-      const anchor=document.createElement("span");
-      anchor.className="win-burst";
-      anchor.style.setProperty("--burst-color",palette[kind]||"#ffe6af");
-      anchor.style.setProperty("--burst-left",(rect.left-frame.left).toFixed(1)+"px");
-      anchor.style.setProperty("--burst-top",(rect.top-frame.top).toFixed(1)+"px");
-      anchor.style.setProperty("--burst-width",rect.width.toFixed(1)+"px");
-      anchor.style.setProperty("--burst-height",rect.height.toFixed(1)+"px");
-      anchor.style.setProperty("--burst-lifetime",duration+"ms");
-      const copy=makeSprite(kind);
-      copy.classList.add("win-copy");
-      anchor.appendChild(copy);
-      for(const cls of ["win-flare","win-ring"]){
-        const p=document.createElement("span");p.className=cls;anchor.appendChild(p);
+      tile.style.setProperty("--burst-color",palette[tile.dataset.kind]||"#ffe6af");
+      for(let n=0;n<shards;n++){
+        const shard=document.createElement("i");
+        shard.className="v12-fragment";
+        const degrees=(360/shards)*n+(i*37)%120;
+        const rad=degrees*Math.PI/180;
+        const distance=31+(i+n)%3*16;
+        shard.style.setProperty("--fx",Math.cos(rad)*distance+"px");
+        shard.style.setProperty("--fy",Math.sin(rad)*distance+"px");
+        shard.style.setProperty("--rz",(n%2?1:-1)*(180+n*80)+"deg");
+        tile.appendChild(shard);
       }
-      const extent=Math.max(27,Math.min(110,Math.min(rect.width,rect.height)*1.35));
-      const addParticle=(cls,n,total)=>{
-        const angle=(2*Math.PI*(n+.17*i)/total)+(cls==="win-dust"?.24:0);
-        const distance=extent*(.65+(n%5)*.16);
-        const p=document.createElement("i");
-        p.className=cls;
-        const dx=Math.cos(angle)*distance,dy=Math.sin(angle)*distance-6;
-        p.style.setProperty("--dx",dx.toFixed(1)+"px");
-        p.style.setProperty("--dy",dy.toFixed(1)+"px");
-        p.style.setProperty("--dx65",(dx*.65).toFixed(1)+"px");
-        p.style.setProperty("--dy65",(dy*.65).toFixed(1)+"px");
-        p.style.setProperty("--d",(n%4*13)+"ms");
-        if(cls==="win-crystal"){
-          p.style.setProperty("--rot",((n%2?1:-1)*(250+n*38))+"deg");
-          p.style.setProperty("--shard-width",Math.max(4,Math.min(11,rect.width*.095))+"px");
-          p.style.setProperty("--shard-height",Math.max(7,Math.min(19,rect.height*.18))+"px");
-        }
-        if(cls==="win-dust"){
-          p.style.setProperty("--dust-size",Math.max(4,Math.min(11,rect.width*.09))+"px");
-        }
-        anchor.appendChild(p);
-      };
-      for(let n=0;n<sparks;n++)addParticle("win-crystal",n,sparks);
-      for(let n=0;n<dust;n++)addParticle("win-dust",n,dust);
-      for(let n=0;n<2;n++){
-        const smoke=document.createElement("i");
-        smoke.className="win-smoke";
-        const vx=(n?1:-1)*extent*.32;
-        smoke.style.setProperty("--dx",vx.toFixed(1)+"px");
-        smoke.style.setProperty("--dy",(-extent*(.32+n*.12)).toFixed(1)+"px");
-        smoke.style.setProperty("--dx65",(vx*.65).toFixed(1)+"px");
-        smoke.style.setProperty("--dy65",(-extent*(.32+n*.12)*.65).toFixed(1)+"px");
-        smoke.style.setProperty("--d",(n*32)+"ms");
-        anchor.appendChild(smoke);
-      }
-      if(tiles.length<=19){
-        for(let n=0;n<2;n++){
-          const streak=document.createElement("i");
-          streak.className="win-streak";
-          streak.style.setProperty("--angle",((n*180+i*37)%360)+"deg");
-          streak.style.setProperty("--d",(n*22)+"ms");
-          anchor.appendChild(streak);
-        }
-      }
-      fragment.appendChild(anchor);
-    });
-    if(container){
-      // Um efeito anterior nunca pode apagar uma explosão mais recente.
-      const token=String((Number(container.dataset.fxToken)||0)+1);
-      container.dataset.fxToken=token;
-      container.replaceChildren(fragment);
-      window.setTimeout(()=>{
-        if(container.dataset.fxToken===token)container.replaceChildren();
-      },duration+140);
     }
-    sfx("burst",{level:Math.min(1.35,.72+tiles.length*.035)});
-    window.TrovaoScene?.reactToWin();
-    return reduced?100:duration;
+    sfx("burst",{level:Math.min(1.24,.72+tiles.length*.025)});
+    if(tiles.length>=10)window.TrovaoScene?.reactToWin();
+    return reduced?70:duration;
   }
   function showPrizeFloat(amount,prizes=[]){
     if(amount<=0)return;
