@@ -1,0 +1,157 @@
+/* PORTÕES DO TROVÃO V12 — MODO FLUIDO
+ * Mantém os cristais animados e as explosões premiadas.
+ * Limita filtros redesenhados a cada frame, sombras grandes e partículas.
+ * Prioriza Safari iPhone e dispositivos móveis sem mudar os prémios.
+ */
+
+/* As onze animações individuais continuam a mover os símbolos.
+   Mas brilho e sombra são constantes: NÃO recalcular filtro a cada frame. */
+.board .cell .symbol-bitmap{
+  filter:drop-shadow(0 2px 3px #1c102b) brightness(1.13) saturate(1.14)!important;
+  will-change:auto!important;
+  backface-visibility:hidden;
+}
+.board .cell[data-kind="scatter"] .symbol-bitmap,
+.board .cell[data-kind="mult"] .symbol-bitmap{
+  filter:drop-shadow(0 0 5px #b7f1ff) brightness(1.16)!important;
+}
+.board .cell.winner .symbol-bitmap{
+  filter:drop-shadow(0 0 7px #ffe7a0) brightness(1.33)!important;
+}
+.board .cell:not(.winner)::before,
+.board .cell:not(.winner)::after{
+  content:none!important;
+  animation:none!important;
+  display:none!important;
+}
+.board .cell.winner{
+  animation:none!important;
+  outline:2px solid #f3d68b;
+  outline-offset:-3px;
+}
+.board-shell .board-glow{opacity:.40}
+.board-shell .board{
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+.board-overlay .prize-float{
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+.board .cell:not(.winner):not(.drop-in):not(.burst-out) .symbol-bitmap{
+  transition:none!important;
+}
+
+/* Explosão V12: clarão e fumaça em pseudoelementos, 2-3 lascas por peça.
+   Evita dezenas de nós e filtros animados para cada símbolo vencedor. */
+.board .cell.winner.burst-out{
+  position:relative;
+  z-index:8;
+  outline:none!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  animation:none!important;
+  --burst-lifetime:570ms;
+}
+.board .cell.winner.burst-out .symbol-bitmap,
+.board .cell.winner.burst-out .orb-value{
+  animation:v12Dissolve var(--burst-lifetime) ease-out both!important;
+  filter:none!important;
+}
+.board .cell.winner.burst-out::before{
+  content:""!important;
+  display:block!important;
+  position:absolute;
+  z-index:6;
+  inset:-8%;
+  border-radius:50%;
+  border:1px solid var(--burst-color,#ffdf98);
+  background:radial-gradient(circle,#fffce9dc 0%,var(--burst-color,#ffe7ac) 25%,transparent 65%);
+  box-shadow:0 0 9px var(--burst-color,#ffdf98);
+  animation:v12Shock var(--burst-lifetime) ease-out both!important;
+  pointer-events:none;
+}
+.board .cell.winner.burst-out::after{
+  content:""!important;
+  display:block!important;
+  position:absolute;
+  z-index:4;
+  inset:12%;
+  width:auto;height:auto;
+  border-radius:50%;
+  background:radial-gradient(circle,var(--burst-color,#fff5bc) 0%,transparent 68%);
+  opacity:0;
+  filter:none!important;
+  box-shadow:none!important;
+  animation:v12Smoke var(--burst-lifetime) ease-out both!important;
+  pointer-events:none;
+}
+.board .cell.winner.burst-out .v12-fragment{
+  position:absolute;left:50%;top:50%;
+  z-index:10;pointer-events:none;
+  width:clamp(5px,.75vw,9px);
+  height:clamp(8px,1.45vw,17px);
+  clip-path:polygon(45% 0,100% 30%,62% 100%,0 64%);
+  background:linear-gradient(145deg,#fffde1 0%,var(--burst-color,#f9d68a) 56%,#725589 100%);
+  opacity:0;
+  animation:v12Fragment var(--burst-lifetime) ease-out both!important;
+}
+@keyframes v12Dissolve{
+  0%{opacity:1;transform:scale(1.08)}
+  18%{opacity:1;transform:scale(1.22)}
+  42%{opacity:.7;transform:scale(1.08) rotate(-5deg)}
+  75%{opacity:.22;transform:scale(.67) rotate(12deg)}
+  100%{opacity:0;transform:scale(.22) rotate(22deg)}
+}
+@keyframes v12Shock{
+  0%{opacity:.1;transform:scale(.42)}
+  20%{opacity:.95;transform:scale(1)}
+  70%{opacity:.27;transform:scale(1.6)}
+  100%{opacity:0;transform:scale(2)}
+}
+@keyframes v12Smoke{
+  0%,20%{opacity:0;transform:translateY(0) scale(.5)}
+  48%{opacity:.36;transform:translateY(-10%) scale(1)}
+  100%{opacity:0;transform:translateY(-40%) scale(1.65)}
+}
+@keyframes v12Fragment{
+  0%,12%{opacity:0;transform:translate(-50%,-50%) rotate(0) scale(.6)}
+  23%{opacity:1;transform:translate(-50%,-50%) rotate(0) scale(1)}
+  72%{opacity:.75}
+  100%{opacity:0;transform:translate(calc(-50% + var(--fx,0px)),calc(-50% + var(--fy,0px))) rotate(var(--rz,270deg)) scale(.35)}
+}
+/* Enquanto o motor gira, a paisagem continua visível sem competir por FPS. */
+.app.is-spinning .scene-image,
+.app.is-spinning .scene-cloud,
+.app.is-spinning .scene-halo,
+.app.is-spinning .scene-beam,
+.app.is-spinning .scene-motes,
+.app.is-spinning .god-art{
+  animation-play-state:paused!important;
+}
+.app.is-spinning .scene-mote{animation-play-state:paused!important}
+.scene-beam{filter:none!important;opacity:.17}
+.scene-cloud-front{filter:none!important;opacity:.38}
+.scene-cloud-back{filter:none!important;opacity:.55}
+.machine,.god-column{filter:none!important}
+@media(max-width:850px){
+  /* Reduz camadas desfocadas e luzes em movimento num ecrã pequeno. */
+  .scene-cloud-front,.scene-motes,.scene-beam-b{display:none!important}
+  .scene-halo{opacity:.35!important;animation:none!important}
+  .god-art{animation:none!important;filter:none!important}
+  .cell .symbol-bitmap{filter:brightness(1.12)!important}
+  .board .cell:not(.winner):not(.drop-in):not(.burst-out) .symbol-bitmap{
+    animation-duration:5.6s!important;
+  }
+  .board-shell .board-glow{opacity:.23}
+  .board .cell.winner.burst-out .v12-fragment{
+    width:5px;height:10px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+ .board .cell.winner.burst-out .symbol-bitmap,
+ .board .cell.winner.burst-out .orb-value{animation:none!important;opacity:0}
+ .board .cell.winner.burst-out::before,
+ .board .cell.winner.burst-out::after,
+ .board .cell.winner.burst-out .v12-fragment{display:none!important}
+}
