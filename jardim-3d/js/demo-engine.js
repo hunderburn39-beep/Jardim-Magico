@@ -116,13 +116,18 @@ function safeOpening(rng=Math.random,free=false){
  // A pedra bloqueia as linhas e não é apresentada como símbolo premiado.
  const board=newBoard(rng,free);
  for(let c=0;c<3;c++)for(let row=0;row<3;row++)board[c][row]=STONE;
+ // Evitar também três Scatter ou seis moedas numa grelha sem fundos.
+ for(let c=3;c<5;c++)for(let row=0;row<3;row++){
+   if(board[c][row]===SCATTER||board[c][row]===COIN)board[c][row]=STONE;
+ }
  return board;
 }
-function safeCollapse(previous,removed,rng,free){
+function safeCollapse(previous,removed,rng,free,afford){
  // Repetir APENAS as novas peças do topo: manter sempre as sobreviventes.
  for(let attempt=0;attempt<32;attempt++){
    const next=collapseBoard(previous,removed,rng,free);
-   if(evaluate(next,1).lines===0)return next;
+   const ev=evaluate(next,1);
+   if(ev.lines===0&&afford(ev))return next;
  }
  // Se o fundo não suporta novas linhas, preencher os espaços que caíram
  // com pedras; a coluna permanece coerente e acaba naturalmente.
@@ -134,8 +139,8 @@ function safeCollapse(previous,removed,rng,free){
    const number=removed.filter(p=>p.c===col).length;
    for(let row=0;row<number;row++)next[col][row]=STONE;
  }
- if(evaluate(next,1).lines!==0){
-   throw new Error('Não foi possível gerar uma queda sem prémios');
+ if(evaluate(next,1).lines!==0||!afford(evaluate(next,1))){
+   throw new Error('Não foi possível gerar uma queda sem prémios financiável');
  }
  return next;
 }
@@ -176,7 +181,7 @@ export function cascadeStages(board,bet,rng=Math.random,free=false,policy={}){
      }
      if(!accepted){
        currentBoard=stages.length?
-         safeCollapse(stages.at(-1).board,removed,rng,free):
+         safeCollapse(stages.at(-1).board,removed,rng,free,afford):
          safeOpening(rng,free);
        ev=evaluate(currentBoard,bet);
        if(!afford(ev))throw new Error('Grelha segura excedeu o cofre virtual');
@@ -253,8 +258,12 @@ export class DemoBank{
    }
    // Reserva suficiente para pagar TODAS as moedas já desenhadas,
    // sem reduzir o seu valor depois.
-   const positions=new Set();
-   while(positions.size<6)positions.add(Math.floor(rng()*16));
+   const positions=[];
+   const available=Array.from({length:16},(_,i)=>i);
+   for(let i=0;i<6;i++){
+     const n=Math.floor(rng()*available.length);
+     positions.push(available.splice(n,1)[0]);
+   }
    const grid=Array(16).fill(0);
    const multipliers=[1,2,3,5,10];
    let sum=0;
