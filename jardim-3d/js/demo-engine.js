@@ -3,7 +3,7 @@
    Matriz [coluna][linha], 5×3. 10 linhas da demo. */
 export const SYMBOLS=['potion','green','heart','teapot','wild','gem','mushroom','hat','rose','scatter','stone','coin'];
 export const LABELS=['Poção','Esmeralda','Coração','Bule','WILD','Cristal','Cogumelo','Chapéu','Rosa','SCATTER','Pedra','Moeda'];
-export const WEIGHTS=[10,13,11,10,4,11,10,9,10,5,12,7];
+export const WEIGHTS=[10,13,11,10,4,11,10,9,10,4,12,7];
 export const PAYLINES=[
  [1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],
  [0,1,2,1,0],[2,1,0,1,2],
@@ -38,7 +38,7 @@ export function evaluate(board,bet){
      n++;if(s===WILD)wm++;
    }
    if(n>=3){
-     const pay=[0,0,0,.65,2.1,6.6][n]*([3,4,8,5,10,7,4,4,7,0,0,0][first]||1);
+     const pay=[0,0,0,.07,.25,.8][n]*([3,4,8,5,10,7,4,4,7,0,0,0][first]||1);
      raw+=bet*pay*Math.min(5,1+wm);
      lines++;wilds+=wm;
    }
@@ -140,8 +140,8 @@ export class DemoBank{
    let credited=0;
    let triggered='';
    if(free){
-     this.freeTotal=round(this.freeTotal+potential);
-     this.freeMultiplier=clamp(this.freeMultiplier+(ev.wilds?wildMultiplier-1:0),1,80);
+     this.freeTotal=round(this.freeTotal+ev.raw);
+     this.freeMultiplier=clamp(this.freeMultiplier+(ev.wilds?wildMultiplier-1:0),1,5);
      this.freeSpins--;
      this.freePlayed++;
      const space=Math.max(0,60-this.freePlayed-this.freeSpins);
