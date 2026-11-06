@@ -8,6 +8,7 @@ const importSource=async path=>import('data:text/javascript;charset=utf-8,'+
 const core=await importSource('../js/demo-engine.js');
 const reel=await importSource('../js/reels-v23.js');
 const db=await importSource('../js/database-v3.js');
+const symbols=await importSource('../js/symbol-face-v32.js');
 const {DemoBank,winningCells}=core;
 let passed=0;
 const check=(condition,message)=>{
@@ -69,9 +70,15 @@ const model=(name,type,p,scale,material,parent)=>{
  const e=new Entity(name);e.type=type;e.render.material=material;
  e.setLocalPosition(...p);e.setLocalScale(...scale);(parent||app.root).addChild(e);return e;
 };
+const createFace=({node,material})=>{
+ const face=new Entity('frente UV');
+ face.render.material=material;
+ node.addChild(face);
+ return face;
+};
 const motion=reel.createVerticalReels({pc,model,app,
  mat:(color,opts)=>({color,opts}),symbols:Array.from({length:12},(_,i)=>i),
- textureFromSymbol:(s,i)=>({id:i})});
+ textureFromSymbol:(s,i)=>({id:i}),createSymbolFace:createFace});
 const board=Array.from({length:5},(_,c)=>Array.from({length:3},(_,r)=>(c+r*3)%12));
 let done=0;
 check(motion.startSpin(board,false,()=>done++),'giro visual iniciado');
@@ -94,6 +101,53 @@ check(!motion.isBusy(),'estado livre após falha de animação');
 check(motion.startSpin(board,true,()=>done++),'giro após recuperação');
 for(let i=0;i<300;i++)motion.update(.016);
 check(!motion.isBusy(),'nenhum bloqueio na rotação seguinte');
+// UV's explícitos em quad frontal, sem espelhar a arte HD original.
+check(JSON.stringify(symbols.FRONT_UVS)===JSON.stringify([0,0,1,0,1,1,0,1]),
+ 'frente do símbolo não está invertida');
+check(JSON.stringify(symbols.FRONT_INDICES)===JSON.stringify([0,1,2,0,2,3]),
+ 'face frontal aponta à câmara');
+class FakeMesh{
+ setPositions(a){this.positions=a}
+ setNormals(a){this.normals=a}
+ setUvs(i,a){this.uvs=a}
+ setIndices(a){this.indices=a}
+ update(t){this.triangles=t}
+}
+class FakeInstance{
+ constructor(mesh,material){this.mesh=mesh;this.material=material}
+}
+class FakeStandard{
+ constructor(){this.cull=1}
+ update(){this.updated=true}
+}
+class FakeColor{constructor(r,g,b){this.components=[r,g,b]}}
+const fakePC={
+ ...pc,Mesh:FakeMesh,MeshInstance:FakeInstance,
+ StandardMaterial:FakeStandard,Color:FakeColor,
+ Texture:class {
+  constructor(device,opts){this.opts=opts}
+  setSource(c){this.source=c}
+ },
+ PIXELFORMAT_RGBA8:7,BLEND_NORMAL:1,CULLFACE_NONE:0,PRIMITIVE_TRIANGLES:4
+};
+const face= symbols.createSymbolFace({
+ pc:fakePC,app:{root:app.root,graphicsDevice:{}},node:new Entity('parent'),
+ material:{id:'vibrant'}
+});
+check(face.render.meshInstances?.length===1,'quad de símbolo criado');
+check(face.render.meshInstances[0].mesh.normals.every((v,i)=>i%3!==2||v===1),
+ 'todas as normais apontam para a câmara');
+const vibrant=symbols.createVibrantMaterial({
+ pc:fakePC,app:{graphicsDevice:{}},
+ canvas:{width:512,height:512},opacity:true
+});
+check(vibrant.updated===true,'material colorido atualizado');
+check(vibrant.emissive.components.join(',')==='1,1,1',
+ 'material não tinge as cores com roxo');
+check(vibrant.emissiveMap===vibrant.opacityMap,
+ 'transparência e cor usam a mesma arte');
+check(vibrant.opacityMapChannel==='a','usar canal alfa do PNG');
+
 // IndexedDB quando não está disponível: a alternativa localStorage deve
 // conservar o saldo sem guardar credenciais nem permitir dinheiro real.
 const stored=new Map();
