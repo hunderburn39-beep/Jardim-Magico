@@ -23,7 +23,8 @@ function saveDemo(type,details={}){
  const eventId=(typeof crypto!=='undefined'&&crypto.randomUUID)?
   crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2);
  return demoDB.save(bank.snapshot,details.board||lastBoard,{
-  id:eventId,type,stake:bank.stake,paid:details.paid||0,
+  id:eventId,type,stake:bank.stake,wager:details.wager||0,
+  cost:details.cost||0,paid:details.paid||0,
   stages:details.stages||0
  }).then(ok=>{
   if(!ok){
@@ -152,10 +153,10 @@ function bonusModal(){
   'Bónus voluntários com créditos fictícios. Não existem pagamentos ou levantamento.',
   [
    ['✨ 15 Free Spins','Custo fictício: '+money(bank.bonusPrice)+' créditos',()=>{
-     const r=bank.buyFree();render();say(r.message);if(r.ok){saveDemo('buy-free');freeBanner('✨ 15 FREE SPINS ✨');nextTimer=setTimeout(runSpin,1150)}
+     const r=bank.buyFree();render();say(r.message);if(r.ok){saveDemo('buy-free',{cost:bank.bonusPrice});freeBanner('✨ 15 FREE SPINS ✨');nextTimer=setTimeout(runSpin,1150)}
    },bank.balance<bank.bonusPrice],
    ['🪙 Hold & Win 4×4','Custo fictício: '+money(bank.holdPrice)+' créditos',()=>{
-     const r=bank.buyHold();render();say(r.message);if(r.ok){saveDemo('buy-hold');showHold()}
+     const r=bank.buyHold();render();say(r.message);if(r.ok){saveDemo('buy-hold',{cost:bank.holdPrice});showHold()}
    },bank.balance<bank.holdPrice]
   ]);
 }
@@ -328,7 +329,7 @@ async function runSpin(){
  try{
   // Persistir o prémio integral e o resultado final ANTES de o animar.
   // Assim, recarregar a página durante uma queda não perde nem duplica créditos.
-  await saveDemo('spin',{board:finalBoard,paid:outcome.credited,stages:stages.length});
+  await saveDemo('spin',{board:finalBoard,paid:outcome.credited,stages:stages.length,wager:outcome.free?0:bank.stake});
   if((await playMotion(done=>window.JM3D.spin(outcome.board,done),
     outcome.board,6500))!=='ok')recovered=true;
   for(let i=0;i<stages.length;i++){
@@ -420,9 +421,13 @@ function databaseModal(){
  report.textContent='A carregar histórico…';wrap.appendChild(report);
  demoDB.history().then(rows=>{
   const spins=rows.filter(x=>x.type==='spin');
-  const wins=spins.reduce((sum,x)=>sum+x.paid,0);
+  const wagered=rows.reduce((sum,x)=>sum+Number(x.wager||0)+Number(x.cost||0),0);
+  const awarded=rows.reduce((sum,x)=>sum+Number(x.paid||0),0);
+  const observed=wagered>0?(awarded/wagered*100).toFixed(1)+'%':'—';
   report.textContent='Giros registados: '+spins.length+
-   ' · prémios fictícios: '+money(wins)+
+   ' · apostas e compras demo: '+money(wagered)+
+   ' · prémios fictícios: '+money(awarded)+
+   ' · retorno observado: '+observed+' (não auditado)'+
    ' · saldo: '+money(bank.balance)+' · fundo: '+money(bank.reserve);
  }).catch(()=>{report.textContent='Histórico indisponível'});
  wrap.append(choice('⬇ Exportar histórico e saldo','Guardar cópia JSON neste dispositivo.',async()=>{
@@ -435,6 +440,15 @@ function databaseModal(){
    document.body.append(a);a.click();a.remove();
    setTimeout(()=>URL.revokeObjectURL(url),2000);
   }catch(err){say('Erro ao exportar os dados')}
+ }));
+ wrap.append(choice('＋ Acrescentar 500 ao cofre','Fundo 100% fictício desta sessão.',()=>{
+  bank.reserve=Math.round((bank.reserve+500)*100)/100;
+  render();saveDemo('admin-fund-plus');say('Cofre demo aumentado em 500 créditos');
+ }));
+ wrap.append(choice('− Retirar 100 do cofre','Apenas se houver 100 créditos livres.',()=>{
+  if(bank.reserve<100){say('Cofre insuficiente');return}
+  bank.reserve=Math.round((bank.reserve-100)*100)/100;
+  render();saveDemo('admin-fund-minus');say('Cofre demo reduzido em 100 créditos');
  }));
  wrap.append(choice('♻ Reiniciar demonstração','Apaga o saldo e histórico locais.',async()=>{
   if(!confirm('Apagar o saldo fictício e histórico deste dispositivo?'))return;
