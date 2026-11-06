@@ -16,7 +16,9 @@
    if(game.dataset.layout!==orientation)game.dataset.layout=orientation;
   }
   const wide=game.dataset.layout==='wide';
-  const width=wide?Math.min(v.width,1360):Math.min(v.width,505,Math.max(320,v.height*9/16));
+  // V78: não reduzir a largura antes de medir o conteúdo.
+  // O CSS adapta a altura e o scale final garante que tudo cabe no VisualViewport.
+  const width=wide?Math.min(v.width,1360):Math.min(v.width,505);
   game.style.width=width+'px';
   game.style.transform='none';
   game.style.left='0px';game.style.top='0px';
