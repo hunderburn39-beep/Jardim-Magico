@@ -34,7 +34,7 @@ function mat(color, opts={}){
  m.diffuse=typeof color==='string'?rgb(color):color;
  m.useMetalness=true;
  m.metalness=opts.metal===undefined?0.08:opts.metal;
- m.gloss=opts.gloss===undefined?45:opts.gloss;
+ m.gloss=Math.min(1,Math.max(0,(opts.gloss===undefined?45:opts.gloss)/100));
  m.emissive=opts.emissive?rgb(opts.emissive):new pc.Color(0,0,0);
  m.emissiveIntensity=opts.emission||0;
  if(opts.opacity!==undefined && opts.opacity<1){
@@ -196,7 +196,7 @@ function textureFromSymbol(symbol,index){
  g.font='170px "Apple Color Emoji","Segoe UI Emoji",system-ui,sans-serif';
  g.fillText(symbol,128,136);
  g.shadowBlur=0;
- const t=new pc.Texture(app.graphicsDevice,{width:256,height:256,format:pc.PIXELFORMAT_R8_G8_B8_A8,mipmaps:true});
+ const t=new pc.Texture(app.graphicsDevice,{width:256,height:256,format:pc.PIXELFORMAT_RGBA8,mipmaps:true});
  t.setSource(c);
  const m=mat('#ffffff',{metal:.12,gloss:75});
  m.diffuseMap=t;
@@ -289,11 +289,11 @@ function build(){
  app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
  app.setCanvasResolution(pc.RESOLUTION_AUTO);
  app.graphicsDevice.maxPixelRatio=Math.min(1.5,window.devicePixelRatio||1);
- app.scene.gammaCorrection=pc.GAMMA_SRGB;
- app.scene.toneMapping=pc.TONEMAP_ACES;
  app.start();
  camera=new pc.Entity('Câmara 3D');
  camera.addComponent('camera',{clearColor:new pc.Color(.08,.045,.15),fov:47,nearClip:.1,farClip:120});
+ camera.camera.gammaCorrection=pc.GAMMA_SRGB;
+ camera.camera.toneMapping=pc.TONEMAP_ACES;
  app.root.addChild(camera);
  lighting();
  background();
