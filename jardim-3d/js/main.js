@@ -181,6 +181,47 @@ function cabinet(){
    }
  }
 }
+/* Ornamentos de volume real — flores, trepadeiras, lotus e lanternas.
+   Todos são geometria 3D com material próprio, nunca fatias de uma imagem. */
+function decorate3D(){
+ const vine=mat('#327346',{metal:.04,gloss:29});
+ const leaf=mat('#62a44e',{metal:.05,gloss:38});
+ const gold=mat('#db9b3b',{metal:.79,gloss:90});
+ const lanternGlow=mat('#ffda6b',{metal:.12,gloss:94,emissive:'#ffbc56',emission:.78});
+ const petals=mat('#ff64c1',{metal:.07,gloss:75,emissive:'#a92d6e',emission:.18});
+ for(const side of [-1,1]){
+  const x=side*3.08;
+  // As trepadeiras acompanham a madeira sem tapar a janela de símbolos.
+  model('Trepadeira vertical','cylinder',[x,.14,.49],[.06,3.80,.07],vine);
+  for(let i=0;i<6;i++){
+   const y=-1.51+i*.58;
+   const p=model('Folha 3D','sphere',[x-side*.12,y,.54],[.28,.11,.11],i%2?leaf:vine);
+   p.setLocalEulerAngles(0,0,i%2?38:-38);
+  }
+  for(const y of [-1.84,2.26]){
+   plant(x-side*.14,y,.72,.43,side<0?'#ff64c0':'#f49bc9');
+  }
+  // Lanternas ornamentais suspensas ao lado do emblema.
+  const lx=side*3.42;
+  model('Suspensão da lanterna','cylinder',[lx,4.6,-.8],[.032,.64,.032],gold);
+  model('Lanterna âmbar','sphere',[lx,4.12,-.8],[.31,.48,.24],lanternGlow);
+  model('Tampa superior','cone',[lx,4.47,-.8],[.35,.19,.34],gold);
+  model('Base da lanterna','cylinder',[lx,3.85,-.8],[.34,.11,.33],gold);
+ }
+ // Lótus 3D que remete para a flor central do logótipo fornecido.
+ for(let i=0;i<8;i++){
+  const a=i*Math.PI/4,x=Math.cos(a)*.38,y=5.22+Math.sin(a)*.22;
+  const p=model('Pétala lótus','sphere',[x,y,-.34],[.26,.48,.15],petals);
+  p.setLocalEulerAngles(0,0,(a*180/Math.PI)-90);
+ }
+ sphere('Lótus — centro',0,5.22,-.15,.21,lanternGlow);
+ const cherry=mat('#d24a7a',{metal:.10,gloss:87,emissive:'#81204a',emission:.13});
+ for(let i=0;i<8;i++){
+  const a=i*2.4;
+  sphere('Botão rosa 3D',Math.cos(a)*4.7,-5.85+(i%3)*.35,-2.4-(i%4)*.34,.11+(i%2)*.05,cherry);
+ }
+}
+
 function textureFromSymbol(symbol,index){
  const c=document.createElement('canvas');
  c.width=256;c.height=256;
@@ -364,6 +405,7 @@ function build(){
  lighting();
  background();
  cabinet();
+ decorate3D();
  reels();
  loadOriginalSymbolArt();
  setCamera();
