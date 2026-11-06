@@ -1,9 +1,9 @@
 /* Jardim Mágico 3D V2 — Controlador da demonstração visual.
    Toda a aposta, carteira e prémio neste módulo são valores FICTÍCIOS.
    O engine demonstrativo é separado do renderizador PlayCanvas. */
-import {DemoBank,SYMBOLS,LABELS,PAYLINES,money} from './demo-engine.js?v=3';
-import {demoDB} from './database-v3.js?v=3';
-import {audio} from './audio-v3.js?v=3';
+import {DemoBank,SYMBOLS,LABELS,PAYLINES,money} from './demo-engine.js?v=3.1';
+import {demoDB} from './database-v3.js?v=3.1';
+import {audio} from './audio-v3.js?v=3.1';
 
 const $=id=>document.getElementById(id);
 const bank=new DemoBank();
