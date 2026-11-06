@@ -32,3 +32,18 @@ Esta versão usa **geometria tridimensional real**, materiais, iluminação e te
 Antes de migrar para o motor 3D definitivo, faltam testar rigorosamente probabilidades, RTP, jackpots efetivos, validação de prémios, armazenamento, relatórios e integração administrativa. O [jogo original](../index.html) mantém-se intacto.
 
 Backup do protótipo PlayCanvas V1: `backup/jardim-3d-v1-antes-v2`.
+
+## V2.2 — Gráficos Premium 3D
+
+**Jogar:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-3d/?v=2.2
+
+Alterações exclusivas à apresentação (sem tocar em `js/demo-engine.js`):
+- `js/main.js`: nova luz direcional de recorte, água com sete reflexos móveis, seis fios de espuma animada e cinco nuvens de névoa volumétrica; talha de madeira, frisos dourados, pequenos cristais facetados e ramos 3D.
+- `js/visual-v22.js`: camada 3D adicional em cada uma das 15 peças, com bisel, esmalte, frisos e halo seletivo para WILD, cristais, SCATTER e moedas. Texturas HD existentes continuam no rosto das peças.
+- `js/main.js`: partículas do estouro conjunto diferenciadas por símbolo, até cinco estilhaços por peça, halo radial para cada peça, pequeno impacto da câmara; todos os símbolos vencedores explodem ao mesmo tempo, sem repetir os partilhados por linhas.
+- `css/v2-2.css`: materiais e reflexos coerentes em jackpots, multiplicadores, saldo, aposta, cofre, RODAR, AUTO e TURBO.
+- `index.html`: ativa nova folha e atualização de cache para V2.2.
+- **Desempenho**: sombras em tempo real desligadas, texturas HD de 256px e partículas mantidas num pool reutilizável. A validação visual e os FPS do Safari físico ainda exigem teste no dispositivo.
+- Backup prévio: `backup/jardim-3d-v2-1-antes-v2-2-graficos`.
+
+A V2.2 continua a ser uma **demonstração de créditos fictícios**, sem dinheiro real, nem RTP auditado ou motor financeiro de produção.
