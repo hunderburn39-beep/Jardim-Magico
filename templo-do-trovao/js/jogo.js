@@ -1,4 +1,4 @@
-/* PORTÕES DO TROVÃO V13.0 — motor original de demonstração.
+/* PORTÕES DO TROVÃO V14.0 — motor original de demonstração.
  * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
  * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
  */
@@ -296,14 +296,14 @@
       '<td class="pay-value">5× <small>5 símbolos</small></td>'+
       '<td class="pay-value">100× <small>6+ símbolos</small></td></tr>';
     const wildRow='<tr class="wild-payrow"><td class="pay-name">'+symSvg("wild")+'<b>WILD</b></td>'+
-      '<td colspan="3">Substitui as pedras normais e multiplica o prémio da combinação de 1× até 5×. Não é pago duas vezes na mesma queda.</td></tr>';
+      '<td colspan="3">Substitui qualquer uma das 9 peças pagantes (1×–5×). Nunca substitui SCATTER, esferas MULT ou outros WILDs. Só vale para a melhor combinação da queda.</td></tr>';
     openModal("TABELA DE PAGAMENTOS",
       '<div class="pay-head">⚡ OS SÍMBOLOS PAGAM EM QUALQUER POSIÇÃO ⚡</div>'+
       '<div class="pay-scroll"><table class="paytable-table"><thead><tr><th>SÍMBOLO</th><th>8–9</th><th>10–11</th><th>12+</th></tr></thead><tbody>'+rows+scat+wildRow+'</tbody></table></div>'+
       '<div class="pay-rules">'+
       '<p><b>Grelha 6×5:</b> 8 ou mais figuras iguais pagam sem precisar de estar na mesma linha. As peças premiadas desaparecem, as restantes descem e entram novas.</p>'+
       '<p><b>SCATTER:</b> 4, 5 ou 6+ pagam respetivamente 3×, 5× ou 100× a aposta. 4 ou mais ativam 15 rodadas grátis; durante o bónus, 3 ou mais oferecem +5.</p>'+
-      '<p><b>WILD (1×–5×):</b> substitui um símbolo normal para formar 8 ou mais. Participa numa única combinação por queda e usa o multiplicador WILD mais alto (até 5×), sem duplicar pagamentos. A imagem é a mesma do Jardim Mágico.</p>'+
+      '<p><b>WILD (1×–5×):</b> substitui todas as 9 peças pagantes para formar 8 ou mais; NUNCA substitui SCATTER, esferas multiplicadoras nem outros WILDs. Só participa na melhor combinação da queda, usando o maior multiplicador WILD (até 5×), sem duplicar pagamentos. A imagem é a mesma do Jardim Mágico.</p>'+
       '<p><b>Multiplicadores:</b> 2× a 500×, somados numa jogada vencedora; nas rodadas grátis são acumuláveis nas condições do jogo.</p>'+
       '<p><b>Comprar bónus:</b> 100× a aposta em créditos virtuais. Limite de 5 000× a aposta por ciclo.</p>'+
       '<p class="note">Pagamentos idênticos aos valores da tabela de referência que enviaste. Os gráficos e as probabilidades são próprios deste protótipo. RTP não certificado; não utiliza dinheiro real.</p></div>',
