@@ -305,6 +305,11 @@ async function runSpin(){
  }
  if(!gameReady){say('A carregar base de dados local…');return}
  if(!window.JM3D){say('Motor 3D a iniciar…');return}
+ if(!window.JM3D.assetsReady?.()){
+  say('A carregar símbolos HD originais…');
+  if(bank.mode==='free')nextTimer=setTimeout(runSpin,550);
+  return;
+ }
  let outcome;
  const beforeSpin=bank.snapshot;
  try{outcome=bank.spin()}
