@@ -12,7 +12,7 @@
  const WILD_VALUES=[1,2,3,4,5];
  const WILD_WEIGHTS=[80,15,4,.8,.2];
  const CONFIG={
-   base:{scatter:.015,mult:.004,wild:.027},
+   base:{scatter:.015,mult:.004,wild:.025},
    bonus:{scatter:.021,mult:.006,wild:.033}
  };
  function pick(values,weights,rng){
