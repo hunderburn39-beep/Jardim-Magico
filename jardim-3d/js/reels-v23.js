@@ -3,7 +3,7 @@
  * A arte HD permanece na face dos objetos 3D, com relevo e friso fino.
  * O movimento não decide os pagamentos. Recebe matrizes já calculadas.
  */
-export function createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol}){
+export function createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol,createSymbolFace}){
  const STEP=1.10, TOP=.26+STEP, MAX_Y=1.71, MIN_Y=-1.23;
  const rowY=r=>TOP-r*STEP;
  const reelTiles=[],extras=[],columns=[];
@@ -39,8 +39,11 @@ export function createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol}
   // A fotografia original não tem quadrados dourados por cada símbolo:
   // as figuras flutuam num painel violeta, entre separadores de coluna.
   const halo=model('Luminescência do símbolo','sphere',[0,0,.405],[.83,.83,.022],waveMaterials[0],node);
-  const face=model('Arte HD de alto relevo','box',[0,0,.507],[.947,.965,.075],
-   symbolMaterials[(col*3+Math.max(0,row))%symbols.length],node);
+  // A frente tem UV explícitos e aponta sempre para +Z, sem inverter
+  // as imagens em cada face de um cubo texturizado.
+  const face=createSymbolFace({pc,app,node,
+   material:symbolMaterials[(col*3+Math.max(0,row))%symbols.length],
+   name:'Símbolo original 3D (frente UV correta)'});
   const tile={node,face,halo,idx:0,materials:symbolMaterials,x,homeRow:row,slot,
    col,done:true};
   applySymbol(tile,(col*3+Math.max(0,row))%symbols.length);
@@ -201,7 +204,7 @@ export function createVerticalReels({pc,model,mat,app,symbols,textureFromSymbol}
     tile.slot=r;tile.homeRow=r;
     tile.node.enabled=true;tile.face.enabled=true;
     tile.face.setLocalEulerAngles(0,0,0);
-    tile.face.setLocalScale(.947,.965,.075);
+    tile.face.setLocalScale(.98,.98,1);
     applySymbol(tile,board[c][r]);
     setY(tile,rowY(r));
    }
