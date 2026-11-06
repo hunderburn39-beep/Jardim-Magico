@@ -131,3 +131,13 @@ Cópia de segurança anterior: `backup/jardim-3d-v2-4-antes-gerador-solvente`.
 **Limites da versão V3:** a arte está mais próxima da fotografia graças à moldura e ao cenário originais, mas não se pode afirmar que é idêntica à imagem conceptual. O jogo é uma versão demonstrativa de créditos fictícios, ainda não um serviço de jogos a dinheiro nem uma matemática/RTP auditada.
 
 Backup: `backup/jardim-3d-v2-5-1-antes-correcao-v3`.
+
+### V3.1 — acabamento dos símbolos e correção de cache no Safari
+
+- A versão oficial para testar passou a ser **https://hunderburn39-beep.github.io/Jardim-Magico/jardim-3d/?v=3.1**
+- `js/symbol-art-v3.js`: SCATTER floral, pedra sem valor e moeda 2× com materiais, reflexos e transparência próprios em vez de esferas amarelas de substituição.
+- `js/audio-v3.js`: controlos de música e efeitos sonoros com som original e volume suave.
+- `js/gameplay.js`: relatórios da base local com totais de apostas/compras e prémios; último prémio atualizado ao iniciar a animação; bloquear retirada do fundo durante Free Spins, Hold ou giro em curso; reativar as Free Spins quando o Safari regressa de segundo plano.
+- Cache dos módulos e do CSS atualizado para `?v=3.1` (evita reabrir a versão antiga no iPhone).
+- O cenário principal e a moldura são artísticos 2.5D para dar fidelidade à referência; as peças, cascatas e iluminação adicional continuam com geometria 3D.
+- **Não existe base de dados online sincronizada** nem validação de FPS num iPhone físico. Estes pontos permanecem fora do protótipo GitHub Pages.
