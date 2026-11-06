@@ -1,4 +1,4 @@
-# Portões do Trovão — V14.0
+# Portões do Trovão — V16.0
 
 Jogo independente de demonstração com créditos virtuais, inspirado no formato de slots de queda do Olimpo. **Não afiliado, licenciado ou certificado pela Pragmatic Play.** Sem depósitos, levantamentos ou prémios em dinheiro real.
 
@@ -149,3 +149,14 @@ node tools/testar-wild-v14.js
 ```
 
 **Sem alterações nas probabilidades, no RTP anteriormente estimado ou no teto de 5.000×.** Os valores de RTP anteriores continuam aproximados e não certificados. A demonstração utiliza exclusivamente créditos virtuais.
+
+## V16 — algarismos de prémio em relâmpago PNG
+
+O prémio **individual** de cada queda aparece no centro da grelha, sem caixas, sem descrição das peças e sem acumulação nessa etiqueta. **Os próprios algarismos são imagens PNG transparentes**, com forma angular de relâmpago dourado. A vírgula, o ponto e o símbolo € também vêm do mesmo atlas.
+
+- `assets/algarismos-relampago-v16.png`: atlas PNG leve (560×232, 7 colunas × 2 filas) com a ordem exata `0123456789,.€`.
+- `css/algarismos-relampago-v16.css`: apresentação de cada glifo, subida ligeira e dissipação, sem efeitos pesados.
+- `js/jogo.js`, `showPrizeFloat(amount)`: monta o valor a partir dos glifos PNG; texto acessível guardado em `aria-label`, sem alterar os prémios.
+- Tempo no ecrã: 2,35 s em giro normal e 1,25 s em Turbo.
+
+O histórico detalhado, RTP, tabela de pagamentos, máximo de 5.000× e regras WILD mantêm-se inalterados. Demo de créditos virtuais.
