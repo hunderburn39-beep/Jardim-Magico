@@ -117,15 +117,15 @@ function lighting(){
 }
 function background(){
  const dark=mat('#291b40',{gloss:2,emissive:'#251135',emission:.15});
- model('Céu azul violeta','box',[0,0,-13],[45,32,.3],dark);
+ // A paisagem é uma única imagem contínua por detrás do canvas transparente.
+ // Não criar outro céu em caixa: o fundo do bosque deixa de parecer colagens.
  const mist=mat('#53396c',{emissive:'#3f2a73',emission:.18});
- model('Montanha distante','sphere',[-4,-.65,-10],[8,5,1.8],mist);
- model('Montanha distante direita','sphere',[5,-1.0,-9],[8,5,2],mist);
+ // A profundidade vem das flores 3D laterais e do cenário, não de blocos.
  const ground=mat('#264b3c',{gloss:16});
- model('Solo do bosque','box',[0,-7.25,-5],[26,.9,13],ground);
+ // Solo artificial removido; a imagem do jardim inclui lago e vegetação.
  const water=mat('#17606d',{metal:.28,gloss:96,emissive:'#0a8994',emission:.55});
  const water2=mat('#338c9b',{metal:.45,gloss:92,emissive:'#077c91',emission:.35,opacity:.74});
- model('Lago oval','sphere',[0,-6.77,-3.6],[7.1,.27,2.3],water);
+ // Lago artificial removido para expor os reflexos naturais da paisagem.
  // Duas camadas líquidas contínuas; as ondas são geometrias reais.
  for(let i=0;i<7;i++){
    const xx=-3.1+i*1.04;
@@ -401,7 +401,7 @@ function loadOriginalSymbolArt(){
 function setCamera(){
  const wide=innerWidth>innerHeight*1.12;
  const x=wide?2.45:0;
- const z=wide?15.6:18.1;
+ const z=wide?15.6:12.5;
  const y=wide?.14:0;
  // Impacto de câmara subtil nas explosões sem movimento contínuo obrigatório.
  const shake=burst?.elapsed<burst?.duration*.45
@@ -599,13 +599,13 @@ function updateSpin(dt){
 }
 
 function build(){
- app=new pc.Application(canvas,{graphicsDeviceOptions:{antialias:true,alpha:false,powerPreference:'high-performance'}});
+ app=new pc.Application(canvas,{graphicsDeviceOptions:{antialias:true,alpha:true,powerPreference:'high-performance'}});
  app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
  app.setCanvasResolution(pc.RESOLUTION_AUTO);
  app.graphicsDevice.maxPixelRatio=Math.min(1.5,window.devicePixelRatio||1);
  app.start();
  camera=new pc.Entity('Câmara 3D');
- camera.addComponent('camera',{clearColor:new pc.Color(.08,.045,.15),fov:47,nearClip:.1,farClip:120});
+ camera.addComponent('camera',{clearColor:new pc.Color(0,0,0,0),fov:47,nearClip:.1,farClip:120});
  camera.camera.gammaCorrection=pc.GAMMA_SRGB;
  camera.camera.toneMapping=pc.TONEMAP_ACES;
  app.root.addChild(camera);
