@@ -1,7 +1,7 @@
 /* Jardim Mágico 3D V2 — Controlador da demonstração visual.
    Toda a aposta, carteira e prémio neste módulo são valores FICTÍCIOS.
    O engine demonstrativo é separado do renderizador PlayCanvas. */
-import {DemoBank,SYMBOLS,LABELS,PAYLINES,money} from './demo-engine.js?v=2';
+import {DemoBank,SYMBOLS,LABELS,PAYLINES,money} from './demo-engine.js?v=2.1';
 
 const $=id=>document.getElementById(id);
 const bank=new DemoBank();
@@ -199,13 +199,15 @@ function winningCoordinates(lineWins){
  }
  return [...unique.values()];
 }
-function showLineBreakdown(lineWins,total,capped){
+function showLineBreakdown(lineWins,total,capped=null,multiplier=1){
  const target=$('winBreakdown');
  if(!target)return;
  if(!lineWins?.length){target.hidden=true;target.textContent='';return}
  const individual=lineWins.map(win=>money(win.amount));
- target.textContent=lineWins.length+' COMBINAÇÕES · '+individual.join(' + ')+
-   ' = '+money(total)+(capped?' · pago '+money(capped):'');
+ const multiplied=multiplier>1?' ×'+multiplier+' = '+money(total*multiplier):'';
+ const cap=capped!==null?' · PAGO '+money(capped):'';
+ target.textContent=lineWins.length+' COMBINAÇÕES · '+
+   individual.join(' + ')+' = '+money(total)+multiplied+cap;
  target.hidden=false;
 }
 function runSpin(){
@@ -234,8 +236,11 @@ function runSpin(){
   $('spinState').textContent=simultaneous?
    wins.length+' COMBINAÇÕES PREMIADAS!':
    wins.length===1?'1 COMBINAÇÃO PREMIADA':'TAMBORES 3D PRONTOS';
+  const lineFactor=outcome.ev.wilds?outcome.wildMultiplier:1;
+  const effectiveTotal=Math.round(outcome.ev.raw*lineFactor*100)/100;
   showLineBreakdown(wins,outcome.ev.raw,
-    !outcome.free&&outcome.credited<outcome.ev.raw?outcome.credited:null);
+    !outcome.free&&outcome.credited<effectiveTotal?outcome.credited:null,
+    lineFactor);
   const win=outcome.free?outcome.potential:outcome.credited;
   showMultiply(outcome.wildMultiplier,outcome.ev.wilds);
   if(outcome.triggered){
