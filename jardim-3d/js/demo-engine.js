@@ -283,9 +283,13 @@ export class DemoBank{
    const grid=Array(16).fill(0);
    const multipliers=[1,2,3,5,10];
    let sum=0;
-   for(const p of positions){
+   for(let n=0;n<positions.length;n++){
+     const p=positions[n];
+     // Guardar pelo menos 1× para CADA uma das moedas que ainda falta
+     // colocar. Só permitir moedas maiores com o excedente do fundo.
+     const remainingMinimum=positions.length-n-1;
      const eligible=multipliers.filter(x=>
-       round((sum+x)*this.stake)<=this.reserve);
+       round((sum+x+remainingMinimum)*this.stake)<=this.reserve);
      if(!eligible.length)throw new Error('Moedas iniciais não financiadas');
      const pick=eligible[Math.floor(rng()*eligible.length)];
      grid[p]=pick;sum+=pick;
