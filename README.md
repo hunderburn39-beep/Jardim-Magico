@@ -53,3 +53,18 @@ O atlas fotográfico `jm75-simbolos.webp` tem 3 colunas × 3 linhas, com as segu
 A folha `css/estilo-25.css` acrescenta as camadas decorativas sobre o layout funcional, mantendo os elementos interativos reais e os seus identificadores. A fotografia do botão tem centro transparente para deixar visíveis os textos dinâmicos «RODAR», «PARAR AUTO» e a contagem de rodadas.
 
 Não foram modificadas as fórmulas de RTP, o cofre, os jackpots nem as probabilidades. Os gráficos importados somam aproximadamente 140 kB de WebP. Cópia de segurança antes da importação: `backup/jardim-v74-antes-foto-v75`.
+
+## V76 — melhoria gráfica após teste real no iPhone
+
+Ajustes visuais baseados numa captura de ecrã do utilizador:
+
+- Cenário novo de floresta encantada e lago/cascata em `assets/imagens/jm76-jardim-profundo.svg`, criado para tapar as antigas faixas de cores sólidas que apareciam sob o botão RODAR.
+- Mantidas as flores e a cascata fotográficas extraídas da referência, com transição suave para o novo fundo contínuo; os elementos decorativos não capturam toques.
+- Novo botão de ação `assets/imagens/jm76-rodar-luxo.svg`, com aro dourado, folhas, flores e superfície verde nítida, mas texto e contador interativos continuam HTML.
+- Removidos recortes WebP minúsculos dos painéis de jackpots, saldo, aposta e turbo; substituídos por gradientes CSS, rebordos luminosos e relevo adequados a qualquer tamanho.
+- Os símbolos fotográficos mantêm-se, com nitidez melhorada uma só vez no carregamento, sombra mais limpa e dimensão ajustada para impedir cortes nas bordas dos 5 rolos.
+- Botão de rodar durante as free spins mantém aparência nítida mesmo quando está desativado.
+- `css/estilo-26.css` contém as alterações de visual; `js/jogo-2.js?v=76` apenas muda o carregamento e apresentação das texturas, não o motor de pagamentos.
+- Cópia anterior: branch `backup/jardim-v75-antes-retoque-v76`.
+
+Validação: sintaxe JavaScript e publicação GitHub Pages; o resultado visual final ainda requer abrir e ver no iPhone, pois não foi executado um teste visual remoto na versão publicada.
