@@ -24,6 +24,18 @@ const ALT_COLORS={potion:'#ef499f',green:'#48ce8b',heart:'#f66898',
  hat:'#ba7cef',rose:'#fa658b',scatter:'#82c8ec',stone:'#777487',coin:'#ffcc6b'};
 const moneyUnit=x=>Number.isFinite(x)?x:0;
 function asKey(symbol){return 'art-'+symbol}
+/* O resultado final é colocado quando a peça REENTRA por cima.
+   Não pode haver alteração de símbolo no último frame após parar.
+   Cada coluna tem cinco imagens circulantes e pára após N passos,
+   sendo N divisível por cinco: as três peças visíveis já fizeram a
+   última entrada durante os três passos finais do movimento. */
+export function enteringSymbol(slot,wrapCount,finalWrap,targetColumn,rng=Math.random){
+ if(slot>=0&&slot<3&&wrapCount===finalWrap){
+  const id=targetColumn[slot];
+  return typeof id==='number'?SYMBOLS[id]:id;
+ }
+ return SYMBOLS[Math.min(SYMBOLS.length-1,Math.floor(rng()*SYMBOLS.length))];
+}
 function createFallbackCanvas(key,symbol){
  const canvas=document.createElement('canvas');canvas.width=canvas.height=512;
  const g=canvas.getContext('2d');
@@ -206,39 +218,52 @@ class ReelScene extends Phaser.Scene{
  spin(target,{turbo=false}={}){
   if(this.busy)return Promise.reject(Error('Tambores ocupados'));
   if(!this.ready)return Promise.reject(Error('Phaser ainda não carregado'));
+  if(!Array.isArray(target)||target.length!==5||
+    target.some(column=>!Array.isArray(column)||column.length!==3))
+   return Promise.reject(Error('Resultado de cinco colunas inválido'));
   this.busy=true;
   let finished=0;
   const total=this.columns.length;
-  const duration=turbo?600:1480;
+  const duration=turbo?640:1470;
   return new Promise(resolve=>{
    for(let c=0;c<5;c++){
     const items=this.columns[c].items;
-    const spins=15+5*c;
+    // Voltas inteiras para que cada peça acabe na mesma linha física.
+    // As imagens do resultado são introduzidas na última volta e
+    // viajam realmente do topo até às três posições definitivas.
+    const steps=15+5*c;
+    const finalWrap=steps/items.length; // 3,4,5,6,7
     const journey={distance:0};
     for(const item of items)item.wrapped=0;
     this.tweens.add({
-     targets:journey,distance:spins,
-     duration:duration+(turbo?40:185)*c,
+     targets:journey,distance:steps,
+     duration:duration+(turbo?52:180)*c,
      ease:'Cubic.easeOut',
      onUpdate:()=>{
       for(const item of items){
        const raw=item.slot+journey.distance+1;
-       const wrapped=Math.floor(raw/5);
-       if(wrapped!==item.wrapped){
-        item.wrapped=wrapped;
-        this.useSymbol(item,SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)]);
+       const wraps=Math.floor(raw/items.length);
+       if(wraps>item.wrapped){
+        // Este sprite acabou de sair totalmente por baixo do quadro.
+        // Reaparece fora do ecrã em cima já com a imagem certa.
+        // Nas três últimas entradas, atribuímos a combinação final.
+        const symbol=enteringSymbol(item.slot,wraps,finalWrap,target[c]);
+        item.wrapped=wraps;
+        this.useSymbol(item,symbol);
        }
-       const slot=((raw%5)+5)%5-1;
+       const slot=((raw%items.length)+items.length)%items.length-1;
        item.sprite.y=(slot+.5)*CH;
       }
      },
      onComplete:()=>{
-      // Cada tambor para alinhado, mostrando apenas o resultado
-      // calculado pelo motor lógico. Não há troca de linhas/pagamentos.
-      for(const item of items){
-       item.sprite.y=(item.slot+.5)*CH;
-       if(item.slot>=0&&item.slot<3)this.useSymbol(item,target[c][item.slot]);
-      }
+      // NÃO trocar imagens aqui. Têm de ter entrado pelo topo
+      // durante o movimento, antes de o tambor abrandar e parar.
+      for(const item of items)item.sprite.y=(item.slot+.5)*CH;
+      // Conferência invisível: se a animação foi suspensa pelo Safari,
+      // um watchdog externo pode recuperar a grelha, sem cobrar novo giro.
+      const wrong=items.some(item=>item.slot>=0&&item.slot<3&&
+       item.symbol!==SYMBOLS[target[c][item.slot]]);
+      if(wrong)console.warn('Phaser: tambor sem conclusão visual coerente',c);
       finished++;
       if(finished===total){
        this.board=target.map(col=>col.slice());
@@ -250,6 +275,7 @@ class ReelScene extends Phaser.Scene{
    }
   });
  }
+
  burst(cells,{destroy=true,duration=690}={}){
   if(!Array.isArray(cells)||!cells.length)return Promise.resolve();
   const positions=new Set(),targets=[];
