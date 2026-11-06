@@ -1,7 +1,7 @@
 /* Jardim Mágico 3D V2 — Controlador da demonstração visual.
    Toda a aposta, carteira e prémio neste módulo são valores FICTÍCIOS.
    O engine demonstrativo é separado do renderizador PlayCanvas. */
-import {DemoBank,SYMBOLS,LABELS,PAYLINES,money} from './demo-engine.js?v=2.4';
+import {DemoBank,SYMBOLS,LABELS,PAYLINES,money} from './demo-engine.js?v=2.5';
 
 const $=id=>document.getElementById(id);
 const bank=new DemoBank();
@@ -137,7 +137,8 @@ function payModal(){
   bank.addFree(15);render();freeBanner('✨ FREE SPINS DEMO ✨');nextTimer=setTimeout(runSpin,1200)
  },bank.mode!=='base'||spinBusy));
  b.append(choice('🪙 Experimentar Hold & Win','Grelha interativa 4×4 com moedas fictícias.',()=>{
-  bank.startHold();render();showHold()
+  if(bank.startHold()){render();showHold()}
+  else{render();say('Cofre virtual insuficiente para as moedas iniciais')}
  },bank.mode!=='base'||spinBusy));
  dialog('Regras da demonstração',b);
 }
@@ -146,7 +147,8 @@ function vaultModal(){
  'Fundo virtual disponível para pagar prémios simulados: '+money(bank.reserve)+' créditos. Este valor não representa dinheiro depositado ou disponível para levantamento.',
  [
  ['🪙 Testar Hold & Win','Ativar uma demonstração sem compra real.',()=>{
-  bank.startHold();render();showHold()
+  if(bank.startHold()){render();showHold()}
+  else{render();say('Cofre virtual insuficiente para as moedas iniciais')}
  },bank.mode!=='base'||spinBusy],
  ['＋ Adicionar créditos DEMO','Acrescenta 25 créditos fictícios ao saldo.',()=>{
   bank.creditDemo(25);render();say('Foram adicionados 25 créditos fictícios')
