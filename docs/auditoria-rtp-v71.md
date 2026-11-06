@@ -1,26 +1,40 @@
 # Jardim Mágico V71 — RTP, compras voluntárias e gestão do fundo
 
-Data: 6 de novembro de 2026. Jogo demonstrativo com créditos fictícios. Alvo de referência de RTP em jogo prolongado: aproximadamente 96% com margem de 4%; isto NÃO é um RTP certificado, não constitui pagamento garantido e requer análise de compras, jackpots e limites de cofre.
+6 de novembro de 2026. Jogo demonstrativo de créditos fictícios. **Alvo** de longo prazo: RTP aproximado de 96% quando a margem é 4%, com o conjunto de jogo base, Free Spins, Hold & Win e jackpots. **Não é RTP certificado nem garantido.**
 
-## Coeficientes de pagamento V71
+## Coeficientes efetivamente publicados
 
-| Componente | Modo equilibrado | Prémios mais frequentes |
+| Regra | Equilibrado | Prémios mais frequentes |
 |---|---:|---:|
-| Jogo base | 0,560 | 0,515 |
-| Free Spins, gratuitas e compradas | 0,076 | 0,060 |
-| Hold & Win gratuito | 0,250 | 0,250 |
-| Hold & Win comprado | 1,300 | 1,300 |
+| Base | 0,570 | 0,550 |
+| Free Spins gratuitas e compradas | 0,068 | 0,059 |
+| Hold & Win oferecido | 0,250 | 0,250 |
+| Hold & Win comprado | 1,330 | 1,330 |
 
-Preços das compras voluntárias mantidos: **15 Free Spins por 20× a aposta** e **Hold & Win por 100× a aposta**. Os coeficientes são fixos para cada estilo, não variam consoante a identidade do jogador, o saldo disponível ou o lucro da máquina. As probabilidades dos símbolos são fixas, incluindo PEDRA sem valor (6% por casa), WILD de 1× a 5× com máximo combinado 5× por linha, SCATTER, moedas e MULTI.
+Preços: compra das **15 Free Spins por 20× a aposta**, com até duas extensões, ou **Hold & Win por 100× a aposta**. A Pedra tem 6% por casa, valor zero e interrompe sequências. Permanecem 15 linhas, WILD de 1× a 5×, até 12 cascatas, teto de 5000× aposta por prémio e quatro jackpots progressivos alimentados com 3% das apostas.
 
-As apostas alimentam fundos independentes: cofre de prémios e quatro jackpots (3% das apostas). O limite máximo de prémio é 5000× a aposta. A margem de 4% determina como o dinheiro fictício é destinado aos fundos; um orçamento de 96% não comprova que o RTP observado seja 96%. Tanto o jackpot como o cofre principal podem limitar os prémios efetivamente pagos.
+## Compras: testes Monte Carlo ao motor, aposta de 0,20 €
 
-## Fundo do operador
+Foi reproduzida a geração do tabuleiro, a avaliação das linhas, as cascatas com WILD fixos, bolas multiplicadoras, redrop, extensões de free spins e a grelha Hold & Win. Amostras com sementes pseudoaleatórias fixas; os resultados são uma **estimativa de prémio potencial**, não RTP real com fundos limitados.
 
-Na administração, o operador pode colocar créditos fictícios diretamente no cofre principal, ou recuperar até ao montante disponível que preserve o mínimo de 250× a aposta atual. A recuperação pede o PIN de depósito e confirmação. A ação é bloqueada durante rodadas e bónus ativos. O painel mostra o fundo atual, total colocado, total recuperado, capital por recuperar, montante recuperado além do colocado, disponibilidade imediata e recomendação.
+| Compra voluntária | Amostras | Preço | Prémio médio potencial | Retorno potencial |
+|---|---:|---:|---:|---:|
+| Free Spins · Equilibrado | 18 000 | 4,00 € | 3,75 € | **93,63%** |
+| Free Spins · Frequentes | 18 000 | 4,00 € | 3,75 € | **93,79%** |
+| Hold & Win · dinheiro de moedas e multiplicadores | 45 000 | 20,00 € | 18,56 € | **92,79%** |
 
-Os movimentos são guardados em adminAudit, separadamente dos depósitos dos jogadores, sem mexer nas reservas da banca ou fundos progressivos. O fundo de referência recreativo é 1000× a aposta escolhida; para cobertura do teto de um único prémio de 5000× é preciso 5000× a aposta. Para 0,20€: referência 200€, cobertura máxima individual 1000€. Para 10€: referência 10 000€, cobertura máxima individual 50 000€. São meras referências de liquidez, sem garantia de prémios.
+**Importante:** na simulação Hold, o retorno indicado inclui somente moedas e multiplicadores, não os jackpots. O Hold pode atribuir jackpots, mas **só até ao montante efetivamente guardado no respetivo fundo progressivo**. Os jackpots recebem até 3% do preço da compra, de forma separada. Em compras exclusivamente de Free Spins, os prémios de jackpots não são garantidos nem se deve somar automaticamente 3% ao retorno das compras.
+
+Estas amostras não medem ainda um RTP global certificado da máquina com todos os perfis de aposta, compras, saldos iniciais, variação da reserva e eventos raros. O cofre limita os prémios efetivamente pagos e o retorno observado pode ser menor. Os coeficientes definidos não reagem ao histórico, à identidade do jogador ou aos saldos do operador. Margens diferentes de 4% afastam-se da calibração de referência.
+
+## Gestão do capital do operador
+
+O painel privado permite colocar ou recuperar créditos virtuais do **cofre de prémios**. Não são depósitos dos jogadores nem transferências monetárias reais. A recuperação pede o PIN de depósito e confirmação, é bloqueada durante rodadas e bónus e preserva pelo menos 250× a aposta selecionada. Não movimenta a reserva protegida, o saldo dos jogadores ou os quatro fundos de jackpots.
+
+O painel e o relatório mostram o cofre atual, capital colocado, capital recuperado, montante ainda por recuperar, eventual excesso recuperado e disponibilidade de retirada. O histórico inclui data, movimento, saldo anterior e posterior, guardados no navegador.
+
+**Referência para liquidez recreativa:** 1000× a aposta escolhida (200 € para 0,20 €, 10 000 € para 10 €). **Cobertura do limite de um prémio individual de 5000×:** 1000 € para 0,20 € e 50 000 € para 10 €. Estes valores não são garantias de RTP nem de prémios múltiplos. Uma aposta maior sem reforçar o cofre diminui a cobertura relativa.
 
 ## Limitações
 
-A aplicação usa localStorage, créditos virtuais e PIN guardado no código, sem segurança transacional de servidor. Resultados e rentabilidade dependem do período, aposta, frequência de compras, variância, fundo inicial e jackpots. A calibração é indicativa, não certificada; nunca se deve divulgar um RTP garantido ou usar a aplicação para pagamentos reais sem auditoria independente.
+O jogo usa JavaScript local, localStorage e palavras-passe visíveis no código. Não oferece segurança transacional, fiscalização ou auditoria independente. As probabilidades e o RTP não podem ser tratados como certificados para dinheiro real. A capacidade de pagamento está condicionada ao cofre e aos fundos individuais dos jackpots.
