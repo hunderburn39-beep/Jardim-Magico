@@ -322,3 +322,98 @@ footer{
  .side-btn{padding:6px 2px}
  .subtitle{bottom:0}
 }
+
+/* V1.3 — acabamento com os painéis efetivamente pintados para a foto.
+   Em vez de gradientes genéricos, usar a arte original do Jardim Mágico.
+   Só decoração: o canvas Phaser e a animação das peças não são tocados. */
+.jackpot{
+ border:0;
+ border-radius:15px;
+ background:transparent url('../../assets/imagens/jm75-jackpot-painel.webp') center/100% 100% no-repeat;
+ box-shadow:none;
+ padding:3px 2px 5px;
+}
+.jackpot.ultra{
+ background:transparent url('../../assets/imagens/jm75-jackpot-painel.webp') center/100% 100% no-repeat;
+ filter:drop-shadow(0 0 4px rgba(255,180,87,.37));
+}
+.jackpot span,.jackpot strong,.jackpot small{
+ text-shadow:0 1px 2px #330b3d,0 0 4px #fce6bc69;
+}
+.multiplier{
+ border:0;
+ padding:5px 13px 7px;
+ background:transparent url('../../assets/imagens/jm75-multi-painel.webp') center/100% 100% no-repeat;
+ box-shadow:none;
+}
+.multiplier .multi-name{color:#fff2c9}
+.multiplier #multiTotal{
+ color:#ffe9a8;
+ text-shadow:0 2px 2px #49183b,0 0 12px #ffd579c7;
+}
+.dashboard .panel{
+ border:0;
+ box-shadow:none;
+ background:transparent url('../../assets/imagens/jm75-hud-painel.webp') center/100% 100% no-repeat;
+ padding:4px 5px 7px;
+}
+.dashboard .panel small{color:#fff1cd}
+.dashboard .panel strong{text-shadow:0 2px 2px #48103f,0 0 6px #ffe3a95e}
+.dashboard .buy-bonus{
+ background:transparent url('../../assets/imagens/jm75-buy-painel.webp') center/100% 100% no-repeat;
+ padding:4px 3px;
+ color:#ffe5b2;
+ text-shadow:0 1px 2px #491344,0 0 5px #ffcca87a;
+}
+.side-btn.turbo{
+ border:0;
+ background:transparent url('../../assets/imagens/jm75-turbo-painel.webp') center/100% 100% no-repeat;
+ box-shadow:none;
+ color:#5c321d;
+ padding:11px 4px;
+ font-weight:900;
+ text-shadow:0 1px 1px #ffedbe;
+}
+.side-btn.turbo b{color:#754224}
+.spin-btn{
+ border:0;
+ border-radius:0;
+ box-shadow:none;
+ background:transparent url('../../assets/imagens/jm75-rodar.webp') center/contain no-repeat;
+ filter:drop-shadow(0 4px 4px #220e2499) drop-shadow(0 0 6px #f6ca7a69);
+}
+.spin-btn .spin-arrow,.spin-btn>b{visibility:hidden}
+.spin-btn:disabled{filter:grayscale(.33);opacity:.72}
+.spin-btn:not(:disabled):active{transform:scale(.96)}
+.frame-region .branch-frame{
+ /* As bordas de madeira têm 8–12% de espessura, não 17%.
+    Assim não aparece o retângulo preto que existia na captura. */
+ -webkit-mask:
+  linear-gradient(#000,#000) top center/100% 11% no-repeat,
+  linear-gradient(#000,#000) bottom center/100% 13% no-repeat,
+  linear-gradient(#000,#000) left center/8.5% 100% no-repeat,
+  linear-gradient(#000,#000) right center/8.5% 100% no-repeat;
+ mask:
+  linear-gradient(#000,#000) top center/100% 11% no-repeat,
+  linear-gradient(#000,#000) bottom center/100% 13% no-repeat,
+  linear-gradient(#000,#000) left center/8.5% 100% no-repeat,
+  linear-gradient(#000,#000) right center/8.5% 100% no-repeat;
+ filter:drop-shadow(0 4px 4px rgba(10,4,21,.48))
+  drop-shadow(0 0 4px rgba(255,198,100,.20));
+}
+.reel-window{
+ border-radius:7px;
+ box-shadow:inset 0 0 28px #190624a8,0 0 8px #db9c5a32;
+}
+.reel-velvet{
+ background:
+  repeating-linear-gradient(90deg,transparent 0,
+   transparent calc(20% - 1.7px),#deaf6561 calc(20% - 1px),
+   transparent 20%),
+  radial-gradient(ellipse at 47% 38%,#8549a245,transparent 73%),
+  linear-gradient(100deg,#2c0c4b,#4e1b64 46%,#280a43);
+}
+@media(orientation:landscape){
+ .multiplier{padding:2px 8px}
+ .dashboard .panel{padding:2px 4px}
+}
