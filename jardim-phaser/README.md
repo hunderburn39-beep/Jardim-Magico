@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.5
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.6
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -91,7 +91,7 @@ Cópia de segurança anterior: `backup/jardim-phaser-v1-3-antes-polimento-v1-4`.
 
 ## V1.5 — Free Spins e Hold & Win com apresentação premium
 
-**Jogar:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.5
+**Jogar:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.6
 
 - **Free Spins:** barra discreta por cima dos rolos com giros restantes, valor acumulado e multiplicador. Animação de abertura/reativação e anúncio distinto do prémio integral no final da série.
 - **Hold & Win:** novo painel dourado e violeta com grelha de 16 casas, moedas douradas com animação de queda, contador de moedas, indicadores visíveis para as três tentativas e valor total do bónus.
@@ -105,3 +105,16 @@ Cópia de segurança anterior: `backup/jardim-phaser-v1-3-antes-polimento-v1-4`.
 A máquina continua uma demonstração de **créditos fictícios**, com histórico IndexedDB apenas local e RTP não auditado. A publicação e os testes automáticos não substituem teste visual num iPhone físico.
 
 Cópia de segurança anterior: `backup/jardim-phaser-v1-4-antes-bonus-v1-5`.
+
+## V1.6 — Prémios reposicionados e multiplicadores na mesma barra
+
+- **Celebração mais acima:** o texto de vitória aparece em três linhas — `NICE`, `MEGA` ou `SENSACIONAL` (ou o nome do bónus), a palavra **TOTAL** e, por baixo, **o valor integral do prémio**.
+- **Barra dos multiplicadores:** o lado esquerdo apresenta o **valor desta queda**; na conclusão passa a mostrar **TOTAL DO GIRO**. Os orbs dos multiplicadores ficam imediatamente ao lado e à direita aparece o fator efetivo **×1 a ×5**.
+- Nas Free Spins os círculos obtidos vão-se acumulando visualmente (até três visíveis), mas o fator à direita reflete sempre o **multiplicador real do motor**. Um giro com várias quedas premiadas que contenham Wild incrementa o acumulado apenas uma vez, conforme a regra de Free Spins.
+- O valor da queda deixou de aparecer como um número gigante no centro das peças. Agora fica na barra dourada e mantém-se até à queda seguinte ou ao fecho do giro.
+- As animações `NICE/MEGA/SENSACIONAL` sobem um pouco e são apresentadas num conjunto vertical com **frase → TOTAL → valor**. No fim das Free Spins não são apresentadas duas janelas de celebração em simultâneo.
+- A apresentação está num novo ficheiro `css/premios-v16.css`, mantendo intactos os painéis e moldura artísticos da V1.4.
+- **Não foram alterados** `js/reels.js`, `js/engine.js`, `js/database.js` ou `js/audio.js`. A queda de peças aprovada, a banca fictícia, os bónus e o histórico permanecem intactos.
+- Os testes automáticos verificam a ordem visual dos componentes, o número de linhas da celebração, a legibilidade e o histórico dos multiplicadores.
+
+Backup da V1.5: `backup/jardim-phaser-v1-5-antes-layout-premios-v1-6`.
