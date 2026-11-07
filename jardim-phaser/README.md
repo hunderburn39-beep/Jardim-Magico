@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.3
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.4
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -75,3 +75,16 @@ Cópia de segurança anterior: `backup/jardim-phaser-v1-1-antes-premios-v1-2`.
 - **Testes:** o CI confirma a sequência 3×3 do atlas, recortes sem troca de posições, fallback quando faltar textura, estética dos painéis e os anteriores testes da animação e das regras.
 
 É ainda uma demonstração HTML5 com créditos fictícios e IndexedDB local. Não substitui uma validação visual no Safari físico nem auditoria de RTP.
+
+## V1.4 — Bosque mais imersivo e interface mais luxuosa
+
+- Fundo original reforçado com iluminação suave para preservar o ambiente mágico.
+- Flores, cristais e lago da fotografia `jm75-lago.webp` reaproveitados apenas nos extremos inferiores, evitando sobrepor as imagens do botão RODAR/TURBO que já estão nessa fotografia.
+- Oito pequenos pontos de luz animados lentamente por CSS, com `pointer-events:none` e desativação em modo `prefers-reduced-motion`.
+- Novo `assets/porquinho-dourado.svg` com gradientes originais, brilho e sombras no Cofre Mágico, substituindo o emoji do protótipo.
+- Melhor relevo, reflexos, brilho e legibilidade nos jackpots, multiplicadores, moldura, saldo, aposta e botões, sem introduzir novas caixas por cima das peças.
+- CSS em ficheiro independente `css/polimento-v14.css`, para facilitar alterações ou reverter rapidamente sem afetar a versão aprovada.
+- **Motor e animações de giro e cascata não foram modificados**: a queda e o efeito dos prémios permanecem exatamente como na V1.3. Não houve alteração ao motor de pagamentos, ao cofre virtual ou à base IndexedDB.
+- Testes automáticos confirmam os novos elementos e a ausência de bloqueio de toques; falta avaliação visual num iPhone físico.
+
+Cópia de segurança anterior: `backup/jardim-phaser-v1-3-antes-polimento-v1-4`.
