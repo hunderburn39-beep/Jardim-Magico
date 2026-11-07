@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.4
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.5
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -88,3 +88,20 @@ Cópia de segurança anterior: `backup/jardim-phaser-v1-1-antes-premios-v1-2`.
 - Testes automáticos confirmam os novos elementos e a ausência de bloqueio de toques; falta avaliação visual num iPhone físico.
 
 Cópia de segurança anterior: `backup/jardim-phaser-v1-3-antes-polimento-v1-4`.
+
+## V1.5 — Free Spins e Hold & Win com apresentação premium
+
+**Jogar:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.5
+
+- **Free Spins:** barra discreta por cima dos rolos com giros restantes, valor acumulado e multiplicador. Animação de abertura/reativação e anúncio distinto do prémio integral no final da série.
+- **Hold & Win:** novo painel dourado e violeta com grelha de 16 casas, moedas douradas com animação de queda, contador de moedas, indicadores visíveis para as três tentativas e valor total do bónus.
+- As moedas que já estavam na grelha **não reaparecem nem animam de novo** a cada tentativa: só são animadas as moedas novas indicadas pelo motor.
+- Os créditos fictícios e o estado final são **gravados antes da animação de prémio**, reduzindo o risco de duplicação após atualização da página.
+- O botão de jogar moedas fica bloqueado durante cada animação para evitar múltiplas tentativas acidentais.
+- No final do Hold é exibido o prémio integral do motor, incluindo o extra fictício da grelha completa, quando ocorrer.
+- Ficheiros novos `css/bonus-v15.css` e `js/bonus-presentation.js`, com testes próprios de moedas novas, contador de tentativas e valores. Acessibilidade: efeitos reduzidos quando o dispositivo pede menos movimento.
+- **Os arquivos `js/reels.js`, `js/engine.js`, `js/database.js` e `js/audio.js` permanecem intactos**, preservando integralmente a queda aprovada e a matemática da versão anterior.
+
+A máquina continua uma demonstração de **créditos fictícios**, com histórico IndexedDB apenas local e RTP não auditado. A publicação e os testes automáticos não substituem teste visual num iPhone físico.
+
+Cópia de segurança anterior: `backup/jardim-phaser-v1-4-antes-bonus-v1-5`.
