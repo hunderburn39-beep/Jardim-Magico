@@ -66,6 +66,50 @@ const Scene=factory(globalThis.Phaser,source.match(/SYMBOLS=\[.*?\]/)?.[0],()=>e
 // More predictable: parse exports and obtain original symbol labels.
 const SYMBOLS=['potion','green','heart','teapot','wild','gem','mushroom','hat','rose','scatter','stone','coin'];
 const Reel=factory(globalThis.Phaser,SYMBOLS,()=>exact);
+// V1.3: a folha artística tem os nove ícones na ordem original, sem
+// espelhamento e sem alterar as regras dos prémios ou a queda aprovada.
+const atlasTile=new Function('SYMBOLS',parseModule(reels)+'\nreturn atlasTileFor;')(SYMBOLS);
+for(let i=0;i<9;i++){
+ const tile=atlasTile(SYMBOLS[i]);
+ ok(tile.col===i%3&&tile.row===Math.floor(i/3),
+  'símbolo HD na posição certa da folha '+SYMBOLS[i]);
+}
+ok(atlasTile('scatter')===null&&atlasTile('stone')===null&&atlasTile('coin')===null,
+ 'símbolos especiais mantêm arte própria');
+const drawCalls=[];
+const originalDocument=globalThis.document;
+globalThis.document={
+ createElement:()=>({
+  width:0,height:0,getContext:()=>({
+   drawImage:(...args)=>drawCalls.push(args),
+   createRadialGradient:()=>({addColorStop(){}}),
+   fillRect(){},globalCompositeOperation:'source-over'
+  })
+ })
+};
+try{
+ const fakeAtlas={width:375,height:375};
+ for(let i=0;i<9;i++){
+  const symbol=SYMBOLS[i];
+  const tex=scene.cutPremiumAtlas(fakeAtlas,symbol);
+  ok(tex.width===512&&tex.height===512,'textura 512px '+symbol);
+ }
+}finally{
+ if(originalDocument===undefined)delete globalThis.document;
+ else globalThis.document=originalDocument;
+}
+ok(drawCalls.length===9,'nove recortes da mesma arte original');
+for(let i=0;i<9;i++){
+ const d=drawCalls[i];
+ const tile=atlasTile(SYMBOLS[i]);
+ ok(Math.abs(d[1]-(tile.col*125+1.2))<.001&&
+    Math.abs(d[2]-(tile.row*125+1.2))<.001,
+    'recorte de textura sem troca de símbolos '+SYMBOLS[i]);
+}
+ok(reels.includes("this.load.image('symbols-atlas','jm75-simbolos.webp')"),
+ 'o motor carrega a folha fotográfica premium');
+ok(reels.includes("if(!canvas)canvas=createFallbackCanvas"),
+ 'símbolos permanecem visíveis quando a arte não carrega');
 const scene=new Reel();
 scene.ready=true;
 scene.busy=false;
@@ -178,6 +222,10 @@ ok(main.includes('outcome.free&&outcome.credited>0'),
  'Free Spins anuncia prémio final creditado');
 ok(reels.includes('Math.floor(48/targets.length)'),
  'limitador de partículas protege fluidez em mobile');
+ok(css.includes('jm75-rodar.webp')&&css.includes('jm75-jackpot-painel.webp'),
+ 'botão e jackpots usam a arte ornamental original');
+ok(css.includes('jm75-hud-painel.webp')&&css.includes('jm75-multi-painel.webp'),
+ 'quadros e multiplicadores usam painéis pintados originais');
 ok(reels.includes("function enteringSymbol("),'motor tem injeção antecipada da figura');
 ok(!reels.slice(reels.indexOf('onComplete:()=>{',reels.indexOf(' spin(target,')),reels.indexOf(' burst(cells,')).includes('this.useSymbol(item,target'),
  'paragem não altera qualquer textura');
