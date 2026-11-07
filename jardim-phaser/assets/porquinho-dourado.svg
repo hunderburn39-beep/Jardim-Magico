@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="205" viewBox="0 0 260 205" role="img" aria-label="Cofre mágico, porquinho dourado">
+<defs>
+ <linearGradient id="gold" x1=".1" y1="0" x2=".9" y2="1">
+  <stop stop-color="#fffbe2"/><stop offset=".17" stop-color="#ffe8a4"/><stop offset=".44" stop-color="#f9bd43"/><stop offset=".72" stop-color="#c57b2e"/><stop offset="1" stop-color="#8b431d"/>
+ </linearGradient>
+ <radialGradient id="round" cx=".34" cy=".22" r=".83">
+  <stop stop-color="#fffbe7"/><stop offset=".19" stop-color="#ffe6ac"/><stop offset=".48" stop-color="#f7bb50"/><stop offset=".79" stop-color="#d28632"/><stop offset="1" stop-color="#8d4b21"/>
+ </radialGradient>
+ <linearGradient id="ear" x1="0" x2="1" y1="0" y2="1">
+  <stop stop-color="#fff3c8"/><stop offset=".65" stop-color="#c77e34"/><stop offset="1" stop-color="#8f4b24"/>
+ </linearGradient>
+ <radialGradient id="snout" cx=".35" cy=".3" r=".74">
+  <stop stop-color="#fff2bb"/><stop offset=".45" stop-color="#e9a549"/><stop offset="1" stop-color="#a45628"/>
+ </radialGradient>
+ <radialGradient id="shine" cx=".5" cy=".5" r=".5">
+  <stop stop-color="#fff9d8" stop-opacity=".8"/><stop offset="1" stop-color="#f7ae4d" stop-opacity="0"/>
+ </radialGradient>
+ <filter id="drop" x="-30%" y="-35%" width="160%" height="180%">
+  <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+  <feOffset dy="5"/>
+  <feComponentTransfer><feFuncA type="linear" slope=".42"/></feComponentTransfer>
+  <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+ </filter>
+</defs>
+<g opacity=".9">
+ <path d="M30 38l6 13 13 6-13 6-6 13-6-13-13-6 13-6z" fill="#fff0b1"/>
+ <path d="M224 39l5 11 11 5-11 5-5 11-5-11-11-5 11-5z" fill="#ffc774"/>
+ <circle cx="230" cy="106" r="3.2" fill="#ffeb9d"/>
+ <circle cx="21" cy="110" r="3" fill="#e7a9d9"/>
+ <circle cx="199" cy="23" r="2.5" fill="#ffecc2"/>
+</g>
+<g filter="url(#drop)">
+ <path d="M208 102c12-3 18-14 13-21-4-6-12-3-11 4 0 3 4 5 6 3" fill="none" stroke="#aa6229" stroke-width="8" stroke-linecap="round"/>
+ <path d="M78 139l-4 31q8 9 23 1l7-23" fill="url(#gold)" stroke="#a8672c" stroke-width="4" stroke-linejoin="round"/>
+ <path d="M177 143l1 28q11 6 22-4l-3-32" fill="url(#gold)" stroke="#925321" stroke-width="4" stroke-linejoin="round"/>
+ <path d="M74 81l3-37q2-9 13-4l25 24 15-7q66-5 87 55 13 46-18 61-57 30-120 2-45-21-40-63 2-23 35-31z" fill="url(#round)" stroke="#ae692a" stroke-width="5" stroke-linejoin="round"/>
+ <path d="M81 51l-4-31q0-8 8-6l38 35-24 15z" fill="url(#ear)" stroke="#ad692d" stroke-width="4"/>
+ <path d="M88 29l4 23-4 2z" fill="#d6787f" opacity=".8"/>
+ <path d="M65 83c-29-3-45 8-45 33s17 36 42 31c17-4 28-18 27-34s-9-26-24-30z" fill="url(#snout)" stroke="#b77632" stroke-width="4"/>
+ <ellipse cx="53" cy="106" rx="9" ry="13" fill="#9b512b" opacity=".77"/>
+ <ellipse cx="72" cy="112" rx="7" ry="11" fill="#a4572a" opacity=".7"/>
+ <path d="M90 83c16-16 40-19 58-8" fill="none" stroke="#fff6c9" stroke-width="6" stroke-linecap="round" opacity=".62"/>
+ <circle cx="110" cy="97" r="7" fill="#583127"/>
+ <circle cx="112" cy="95" r="2.7" fill="#fff6e8"/>
+ <path d="M188 94q-15-18-48-21" fill="none" stroke="#ffedb1" stroke-width="5" stroke-linecap="round" opacity=".54"/>
+ <path d="M132 68c-16-19-5-32 11-33 15-1 30 13 22 30" fill="url(#gold)" stroke="#a56728" stroke-width="4"/>
+ <path d="M130 51h37" stroke="#a9702a" stroke-width="4" stroke-linecap="round"/>
+ <ellipse cx="159" cy="118" rx="38" ry="33" fill="#f3b656" stroke="#dd8b37" stroke-width="3" opacity=".33"/>
+ <text x="158" y="137" text-anchor="middle" font-family="Georgia,serif" font-weight="bold" font-size="58" fill="#fff2bd" stroke="#ad6a2b" stroke-width="1.7">$</text>
+ <path d="M60 154q39 25 93 19" fill="none" stroke="#ffedba" stroke-width="4" opacity=".4"/>
+</g>
+<circle cx="141" cy="52" r="44" fill="url(#shine)" opacity=".4"/>
+<path d="M234 150l5 10 11 4-11 5-5 11-5-11-11-5 11-4z" fill="#ffe6a1" opacity=".9"/>
+</svg>
