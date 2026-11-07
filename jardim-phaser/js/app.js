@@ -50,7 +50,7 @@ function update(){
  $('jpMed').textContent=money(Math.min(s.reserve,s.stake*500));
  $('jpMax').textContent=money(Math.min(s.reserve,s.stake*1000));
  $('jpUltra').textContent=money(Math.min(s.reserve,s.stake*5000));
- $('multiTotal').textContent='×'+(s.mode==='free'?s.freeMultiplier:1);
+ if(!running)$('multiTotal').textContent='×'+(s.mode==='free'?s.freeMultiplier:1);
  $('freeMeter').hidden=s.mode!=='free';
  $('freeCount').textContent=s.freeSpins;
  const free=freeDisplay(s);
@@ -70,18 +70,29 @@ function update(){
  $('autoBtn').disabled=(!ready||s.mode==='hold'||(running&&autoLeft===0))&&autoLeft===0;
  $('autoBtn').classList.toggle('active',autoLeft>0);
 }
-function orbs(mult=1,count=0){
+function orbs(accumulated=[],effective=1){
  const orb=$('orbs');orb.replaceChildren();
- for(let i=0;i<Math.min(3,Math.max(2,count));i++){
+ for(const value of (accumulated.length?accumulated.slice(-3):[1])){
   const el=document.createElement('b');
-  el.textContent=i<count?'×'+mult:'×1';
+  el.textContent='×'+value;
   orb.appendChild(el);
  }
+ // Mostrar o fator real aplicado; a soma de orbs nunca inventa prémios.
+ $('multiTotal').textContent='×'+effective;
 }
-function popup(text){
- const el=$('bigWin');el.textContent=text;
+function celebrationTier(value,stake){
+ const ratio=stake>0?value/stake:0;
+ if(ratio>=100)return 'SENSACIONAL';
+ if(ratio>=20)return 'MEGA';
+ return 'NICE';
+}
+function celebrate(title,value){
+ if(!Number.isFinite(Number(value))||Number(value)<=0)return;
+ const el=$('bigWin');
+ $('bigWinTitle').textContent=title;
+ $('bigWinValue').textContent=money(value);
  el.classList.remove('active');void el.offsetWidth;el.classList.add('active');
- clearTimeout(bigTimer);bigTimer=setTimeout(()=>el.classList.remove('active'),1400);
+ clearTimeout(bigTimer);bigTimer=setTimeout(()=>el.classList.remove('active'),1700);
 }
 function bonusAnnouncement(title,value,duration=1600){
  const notice=$('bonusAnnouncement');
@@ -96,18 +107,12 @@ function bonusAnnouncement(title,value,duration=1600){
  bonusTimer=setTimeout(()=>{notice.hidden=true},duration);
 }
 function showDropAmount(value){
- // Um único número dourado e luminoso, sem caixa sobre o tabuleiro.
+ // Visível na barra, ao lado dos orbs; nunca esconde as peças.
  const el=$('dropAmount');
  clearTimeout(dropTimer);
  el.textContent=money(value);
- el.hidden=false;
- el.classList.remove('active');
- void el.offsetWidth;
- el.classList.add('active');
- dropTimer=setTimeout(()=>{
-  el.classList.remove('active');
-  el.hidden=true;
- },960);
+ el.classList.remove('pulse');void el.offsetWidth;el.classList.add('pulse');
+ dropTimer=setTimeout(()=>el.classList.remove('pulse'),620);
 }
 function showWinText(wins,value,total=false,factor=1){
  const notice=$('winNotice');
@@ -171,8 +176,10 @@ async function runSpin(){
  const finalBoard=stages.at(-1).board;
  running=true;update();
  clearTimeout(dropTimer);
- $('dropAmount').hidden=true;
- $('dropAmount').classList.remove('active');
+ $('dropAmount').textContent=money(0);
+ $('dropAmount').classList.remove('pulse');
+ $('dropLabel').textContent='VALOR DA QUEDA';
+ orbs([],outcome.free?bank.freeMultiplier:1);
  $('winNotice').hidden=true;
  status('TAMBORES A RODAR ↓');
  say('Os símbolos estão a descer…');
@@ -186,6 +193,7 @@ async function runSpin(){
  try{
   if(!(await visual(()=>scene.spin(outcome.board,{turbo}),
     outcome.board,turbo?3900:7000)))repaired=true;
+  const earnedMultis=[];
   for(let i=0;i<stages.length;i++){
    const stage=stages[i];
    const wins=stage.ev.lineWins||[];
@@ -194,7 +202,10 @@ async function runSpin(){
    // Nas Free Spins o multiplicador só é aplicado no fim da série.
    const fac=outcome.free?1:(stage.ev.wilds?outcome.wildMultiplier:1);
    const lineTotal=round(stage.ev.raw*fac);
-   orbs(outcome.wildMultiplier,stage.ev.wilds);
+   if(stage.ev.wilds&&wins.length)earnedMultis.push(outcome.wildMultiplier);
+   const effective=outcome.free?bank.freeMultiplier:
+    (stage.ev.wilds?outcome.wildMultiplier:1);
+   orbs(earnedMultis,effective);
    if(!wins.length){
     status('FIM DAS QUEDAS · SEM NOVAS COMBINAÇÕES');
     break;
@@ -202,11 +213,13 @@ async function runSpin(){
    status('QUEDA '+(i+1)+' · '+wins.length+' COMBINAÇÃO'+
     (wins.length>1?'ÕES':'')+' PREMIADA'+(wins.length>1?'S':''));
    showWinText(wins,lineTotal,false,fac);
+   $('dropLabel').textContent='QUEDA '+(i+1);
    showDropAmount(lineTotal);
    say(wins.length+' combinação'+(wins.length>1?'ões':'')+
     ' · queda '+(i+1)+' · '+money(lineTotal)+' créditos');
    const multiple=wins.length>1;
-   if(multiple&&lineTotal>=bank.stake*8)popup('✨ MEGA ✨');
+   if(multiple&&lineTotal>=bank.stake*8)
+    celebrate(celebrationTier(lineTotal,bank.stake),lineTotal);
    audio.play('win');
    if(!(await visual(()=>scene.burst(cells,{
     destroy:!!next,
@@ -235,6 +248,9 @@ async function runSpin(){
   // multiplicado e creditado quando a série terminar.
   const visibleTotal=outcome.free?outcome.rawTotal:outcome.potential;
   if(all.length)showWinText(all,visibleTotal,true);
+  $('dropLabel').textContent='TOTAL DO GIRO';
+  showDropAmount(all.length?visibleTotal:0);
+  if(outcome.free)orbs([],bank.freeMultiplier);
   status(all.length?all.length+' COMBINAÇÕES SOMADAS · '+
    Math.max(0,stages.length-1)+' QUEDAS':'TAMBORES PRONTOS');
   update();
@@ -246,7 +262,7 @@ async function runSpin(){
     ' créditos');
    bonusAnnouncement('✨ FREE SPINS CONCLUÍDAS ✨',
     'Total: '+money(outcome.credited)+' créditos',1550);
-   popup('✨ TOTAL '+money(outcome.credited)+' ✨');
+   celebrate('FREE SPINS',outcome.credited);
   }else if(outcome.triggered){
    say(outcome.triggered+(outcome.credited>0?
     ' · prémio '+money(outcome.credited):''));
@@ -256,14 +272,15 @@ async function runSpin(){
     bonusAnnouncement('✨ FREE SPINS CONCLUÍDAS ✨',
      'Total: '+money(outcome.credited)+' créditos',1450);
    }
-   popup('✨ '+outcome.triggered+' ✨');
+   if(outcome.credited>0)
+    celebrate(celebrationTier(outcome.credited,bank.stake),outcome.credited);
   }else if(outcome.free){
    say('Free Spins · acumulado '+money(bank.freeTotal)+
     ' ×'+bank.freeMultiplier);
   }else if(all.length){
    say(all.length+' combinações · prémio total '+
     money(outcome.credited)+' créditos');
-   popup('✨ TOTAL '+money(outcome.credited)+' ✨');
+   celebrate(celebrationTier(outcome.credited,bank.stake),outcome.credited);
   }else say('Sem prémio neste giro');
   // Jogadas seguintes só avançam quando as quedas atuais terminarem.
   if(bank.mode==='hold')setTimeout(showHold,650);
@@ -307,7 +324,6 @@ function bonusModal(){
      const r=bank.buyFree();update();say(r.message);
      if(r.ok){await persist('buy-free',{cost:bank.bonusPrice});
       bonusAnnouncement('✨ FREE SPINS ✨','15 giros de demonstração',1300);
-      popup('15 FREE SPINS');
       freeTimer=setTimeout(runSpin,1350)}
     }},
    {name:'🪙 Hold & Win 4×4',detail:'Custo: '+money(bank.holdPrice),
@@ -382,7 +398,7 @@ async function holdTurn(){
    audio.play('bonus');
    await wait(turbo?850:1450);
    $('holdOverlay').hidden=true;
-   popup('✨ '+money(result.prize)+' ✨');
+   celebrate('HOLD & WIN',result.prize);
    say('Hold & Win · prémio integral: '+money(result.prize));
    if(autoLeft>0)autoTimer=setTimeout(runSpin,700);
   }else if(newly){
