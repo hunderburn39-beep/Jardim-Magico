@@ -3,14 +3,18 @@
    Cada resultado e prémio são decididos ANTES da animação vertical Phaser.
  */
 import {DemoBank,newBoard,winningCells,money,DEMO_PROFILES} from './engine.js?v=2.0';
-import {demoDB} from './database.js?v=1';
+import {demoDB as localDB,validateBackup} from './database.js?v=2.1';
+import {createStorageGateway} from './storage-gateway-v21.js?v=2.1';
+import {createAdminPinLock} from './admin-pin-v21.js?v=2.1';
 import {audio} from './audio.js?v=1';
 import {createReelGame} from './reels.js?v=1.3';
 import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
 import {createPerformanceGuard} from './performance-v17.js?v=1.7';
 import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=1.8';
 import {filterHistory,historyPage} from './history-v19.js?v=1.9';
-import {validateBackup} from './database.js?v=1';
+const demoDB=createStorageGateway(localDB);
+const adminLock=createAdminPinLock();
+const requireAdminUnlocked=()=>adminLock.unlocked()&&adminLock.touch();
 const $=id=>document.getElementById(id);
 const BETS=[.05,.1,.2,.4,.6,.8,1,1.5,2,3,5,7.5,10];
 const bank=new DemoBank();
@@ -476,8 +480,56 @@ async function holdTurn(){
  }
 }
 
+
+function adminPinForm(next,changePin=false){
+ const configured=adminLock.isConfigured();
+ modal(changePin?'Alterar PIN local':configured?'PIN de administração DEMO':'Criar PIN de administração DEMO',
+  'Proteção local da demonstração. Não é autenticação segura de operador.',[]);
+ const area=$('modalContent');
+ const form=document.createElement('form');
+ form.className='admin-pin-form';
+ function addField(caption,id){
+  const label=document.createElement('label');label.textContent=caption;
+  const input=document.createElement('input');
+  input.type='password';input.inputMode='numeric';input.maxLength=6;
+  input.minLength=6;input.pattern='[0-9]{6}';input.autocomplete='off';
+  input.required=true;input.id=id;
+  label.append(input);form.append(label);return input;
+ }
+ const current=configured?addField('PIN atual','adminPinCurrent'):null;
+ const nextPin=(!configured||changePin)?addField(changePin?'Novo PIN':'Escolher PIN de 6 números','adminPinNew'):null;
+ const again=nextPin?addField('Confirmar novo PIN','adminPinConfirm'):null;
+ const submit=document.createElement('button');submit.type='submit';
+ submit.textContent=changePin?'GRAVAR NOVO PIN':configured?'DESBLOQUEAR':'CRIAR PIN';
+ const msg=document.createElement('p');msg.className='admin-pin-message';msg.setAttribute('role','status');
+ const note=document.createElement('p');note.className='admin-pin-note';
+ note.textContent='O PIN fica só neste navegador, não é enviado a servidores e não aparece no backup. Se o perderes, poderá ser necessário limpar os dados locais.';
+ form.append(submit,msg,note);area.append(form);
+ form.addEventListener('submit',async e=>{
+  e.preventDefault();submit.disabled=true;msg.textContent='A validar PIN…';
+  try{
+   if(nextPin&&nextPin.value!==again.value){msg.textContent='A confirmação não coincide.';return}
+   const result=changePin?await adminLock.change(current.value,nextPin.value):
+    configured?await adminLock.verify(current.value):await adminLock.create(nextPin.value);
+   if(!result.ok){msg.textContent=result.message;return}
+   if(changePin)await persist('admin-pin-change');
+   closeModal();
+   await next();
+  }catch(err){console.error('PIN DEMO:',err);msg.textContent=String(err.message||err)}
+  finally{submit.disabled=false}
+ });
+ (current||nextPin).focus();
+}
+async function requireAdmin(next){
+ try{
+  if(requireAdminUnlocked())return await next();
+  adminPinForm(next);
+ }catch(err){modal('PIN local indisponível',String(err.message||err),[])}
+}
+
 async function adminModal(){
  if(running||bank.mode!=='base'||!ready)return;
+ if(!requireAdminUnlocked())return requireAdmin(adminModal);
  modal('Administração DEMO','Controlo LOCAL de créditos fictícios; não existe autenticação segura.',[]);
  await persist('admin-access');
  if(!modalOpen||$('modalTitle').textContent!=='Administração DEMO')return;
@@ -508,6 +560,8 @@ async function adminModal(){
   '<p class="admin-message" id="adminMessage" role="status"></p>',
   '<button class="choice" id="adminHistory">☷ HISTÓRICO LOCAL</button>',
   '<button class="choice" id="adminReport">⬇ IMPRIMIR / GUARDAR PDF</button>',
+  '<button class="choice" id="adminPinChange">🔐 ALTERAR PIN LOCAL</button>',
+  '<button class="choice" id="adminLock">🔒 BLOQUEAR PAINEL</button>',
   '<p class="admin-footnote">No diálogo de impressão escolhe Guardar como PDF. Só simulação, sem dinheiro real.</p>'
  ].join('');
  $('modalContent').append(section);
@@ -526,6 +580,7 @@ async function adminModal(){
  refresh();
  async function saveShare(role){
   if(working)return;
+  if(!requireAdminUnlocked()){closeModal();return requireAdmin(adminModal)}
   const value=readPercent(find(role==='owner'?'ownerPct':'merchantPct').value);
   if(value===null){notice('Percentagem inválida: usa de 0 a 100.');return}
   working=true;
@@ -540,6 +595,7 @@ async function adminModal(){
  find('saveMerchant').addEventListener('click',()=>saveShare('merchant'));
  find('saveProfile').addEventListener('click',async()=>{
   if(working||running||bank.mode!=='base')return;
+  if(!requireAdminUnlocked()){closeModal();return requireAdmin(adminModal)}
   const desired=find('adminProfile').value,old=bank.profile;
   if(!bank.setProfile(desired)){notice('Modo inválido.');return}
   working=true;update();
@@ -552,6 +608,7 @@ async function adminModal(){
  });
  async function changeFund(kind){
   if(working)return;
+  if(!requireAdminUnlocked()){closeModal();return requireAdmin(adminModal)}
   const val=validateFundChange(kind,find('adminFundAmount').value,bank.reserve,bank.mode,running);
   if(!val.ok){notice(val.message);return}
   working=true;const before=bank.reserve;
@@ -563,8 +620,16 @@ async function adminModal(){
  }
  find('fundDeposit').addEventListener('click',()=>changeFund('deposit'));
  find('fundWithdraw').addEventListener('click',()=>changeFund('withdraw'));
- find('adminHistory').addEventListener('click',historyModal);
+ find('adminHistory').addEventListener('click',()=>requireAdmin(historyModal));
+ find('adminPinChange').addEventListener('click',()=>{
+  if(!requireAdminUnlocked()){closeModal();return requireAdmin(adminModal)}
+  adminPinForm(adminModal,true);
+ });
+ find('adminLock').addEventListener('click',()=>{
+  adminLock.lock();closeModal();say('Administração bloqueada neste dispositivo.');
+ });
  find('adminReport').addEventListener('click',async()=>{
+  if(!requireAdminUnlocked()){closeModal();return requireAdmin(adminModal)}
   const popup=window.open('','_blank');
   if(!popup){notice('Autoriza janelas emergentes para o relatório.');return}
   try{
@@ -582,11 +647,13 @@ async function adminModal(){
 }
 
 async function historyModal(){
+ if(!requireAdminUnlocked())return requireAdmin(historyModal);
  let records=[];
  try{records=await demoDB.history()}catch(err){console.error(err)}
  const actions=[
   {name:'⬇ Exportar cópia JSON',detail:'Estado do jogo e histórico desta instalação (até 2500 movimentos).',
    act:async()=>{
+    if(!requireAdminUnlocked())return requireAdmin(historyModal);
     const backup=await demoDB.exportData();
     const file=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(file);
@@ -598,6 +665,7 @@ async function historyModal(){
   {name:'↥ Restaurar cópia JSON',detail:'Valida e substitui a sessão e o histórico local. Não mistura dados.',
    disabled:running||holdBusy||bank.mode!=='base',
    act:()=>{
+    if(!requireAdminUnlocked())return requireAdmin(historyModal);
     if(running||holdBusy||bank.mode!=='base')return;
     const picker=document.createElement('input');
     picker.type='file';picker.accept='.json,application/json';picker.hidden=true;
@@ -620,6 +688,7 @@ async function historyModal(){
    }},
   {name:'♻ Reiniciar demonstração',detail:'Apaga esta sessão e o histórico do dispositivo.',
    act:async()=>{
+    if(!requireAdminUnlocked())return requireAdmin(historyModal);
     if(!confirm('Apagar todos os créditos fictícios e o histórico desta instalação?'))return;
     const success=await demoDB.clear();
     if(success)location.reload();
@@ -712,12 +781,8 @@ function vaultModal(){
  modal('Cofre Mágico',
  'Fundo de demonstração disponível: '+money(bank.reserve)+
  ' créditos fictícios. O motor verifica os resultados antes de os mostrar e não corta prémios atribuídos.',[
-  {name:'＋ Adicionar 500 ao fundo DEMO',detail:'Apenas para experimentar mais prémios.',
-   act:async()=>{
-    if(bank.mode!=='base'||running)return;
-    bank.reserve=round(bank.reserve+500);
-    update();await persist('fund-plus');say('Fundo virtual aumentado em 500 créditos');
-   }}
+  {name:'⚙ Administrar fundo DEMO',detail:'Acesso ao painel com PIN local.',
+   act:()=>requireAdmin(adminModal)}
  ]);
 }
 async function creditDemo(){
@@ -761,8 +826,8 @@ function bind(){
  $('bonusBtn').addEventListener('click',bonusModal);
  $('vaultBtn').addEventListener('click',vaultModal);
  $('creditBtn').addEventListener('click',creditDemo);
- $('historyBtn').addEventListener('click',historyModal);
- $('adminBtn').addEventListener('click',adminModal);
+ $('historyBtn').addEventListener('click',()=>requireAdmin(historyModal));
+ $('adminBtn').addEventListener('click',()=>requireAdmin(adminModal));
  $('infoBtn').addEventListener('click',infoModal);
  $('autoBtn').addEventListener('click',autoModal);
  $('holdBtn').addEventListener('click',holdTurn);
@@ -787,7 +852,13 @@ function bind(){
   if(e.key==='Escape'&&modalOpen)closeModal();
  });
  document.addEventListener('visibilitychange',()=>{
-  if(document.hidden){stopAuto();clearTimeout(freeTimer)}
+  if(document.hidden){
+   adminLock.lock();
+   if(modalOpen&&['Administração DEMO','Histórico e cópias locais',
+    'PIN de administração DEMO','Criar PIN de administração DEMO',
+    'Alterar PIN local'].includes($('modalTitle').textContent))closeModal();
+   stopAuto();clearTimeout(freeTimer);
+  }
   else if(ready&&!running&&bank.mode==='free')
    freeTimer=setTimeout(runSpin,650);
  });

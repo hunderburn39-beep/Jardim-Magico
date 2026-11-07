@@ -2,6 +2,7 @@
 // node jardim-phaser/tests/smoke.mjs
 import {readFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
+import {webcrypto} from 'node:crypto';
 const read=p=>readFile(new URL(p,import.meta.url),'utf8');
 const source=await read('../js/engine.js');
 const main=await read('../js/app.js');
@@ -22,6 +23,9 @@ const adminCss=await read('../css/admin-v18.css');
 const historySource=await read('../js/history-v19.js');
 const historyCss=await read('../css/history-v19.css');
 const profileCss=await read('../css/perfis-v20.css');
+const pinSource=await read('../js/admin-pin-v21.js');
+const gatewaySource=await read('../js/storage-gateway-v21.js');
+const pinCss=await read('../css/admin-pin-v21.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
 function parseModule(s){
@@ -372,7 +376,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.0'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.1'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -405,7 +409,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=2.0'),'botão e versão Phaser V2.0');
+ html.includes('app.js?v=2.1'),'botão e versão Phaser V2.1');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -503,4 +507,57 @@ ok(html.includes('id="profileStatus"')&&html.includes('perfis-v20.css?v=2.0')&&
 ok(dbsource.includes('profile:[\'premios\',\'normal\',\'entretenimento\']')&&
  dbsource.includes('O perfil guardado não é válido'),
  'histórico e cópia de segurança persistem/validam o modo');
-console.log('Phaser V2.0: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const LocalPin=new Function(parseModule(pinSource)+
+ '\nreturn {createAdminPinLock,PIN_KEY};')();
+const pinStorageMap=new Map();
+const pinStorage={getItem:k=>pinStorageMap.get(k)??null,
+ setItem:(k,v)=>pinStorageMap.set(k,String(v))};
+let clockTime=100000;
+const access=LocalPin.createAdminPinLock({
+ storage:pinStorage,cryptoProvider:webcrypto,now:()=>clockTime
+});
+ok(!access.isConfigured()&&!access.unlocked(),'PIN não existe por defeito');
+ok(!(await access.create('123')).ok,'PIN exige seis números');
+ok((await access.create('147258')).ok&&access.unlocked(),
+ 'primeiro acesso cria PIN sem código predefinido');
+ok(!pinStorageMap.get(LocalPin.PIN_KEY).includes('147258'),
+ 'PIN não fica gravado em claro');
+access.lock();
+ok(!access.unlocked()&&(await access.verify('147258')).ok,
+ 'bloqueio manual e verificação de PIN');
+clockTime+=480001;
+ok(!access.unlocked(),'sessão de administração expira após oito minutos');
+ok((await access.change('147258','258369')).ok,
+ 'alterar PIN com verificação do anterior');
+access.lock();
+ok(!(await access.verify('147258')).ok&&(await access.verify('258369')).ok,
+ 'PIN antigo rejeitado depois da alteração');
+const errorsLock=LocalPin.createAdminPinLock({
+ storage:{getItem:()=>null,setItem:()=>{}},
+ cryptoProvider:{},now:()=>clockTime});
+ok((()=>{try{errorsLock.isConfigured();return false}catch{return true}})(),
+ 'sem criptografia o painel falha fechado');
+const Gateway=new Function(parseModule(gatewaySource)+
+ '\nreturn {createStorageGateway,STORAGE_METHODS};')();
+ok((()=>{try{Gateway.createStorageGateway({});return false}catch{return true}})(),
+ 'porta de armazenamento rejeita driver incompleto');
+let calls=0;
+const dummy={mode:'indexedDB'};
+for(const method of Gateway.STORAGE_METHODS)
+ dummy[method]=async()=>{calls++;return method};
+const driver=Gateway.createStorageGateway(dummy);
+ok(driver.provider==='local-demo'&&!driver.isCentralized&&
+ driver.mode==='indexedDB'&&(await driver.history())==='history'&&calls===1,
+ 'a interface usa um driver local sem inventar servidor');
+ok(main.includes('const demoDB=createStorageGateway(localDB)')&&
+ main.includes('adminPinForm(')&&main.includes('requireAdminUnlocked()'),
+ 'PIN e gateway integrados em toda a interface');
+ok(!main.includes("name:'＋ Adicionar 500 ao fundo DEMO'")&&
+ main.includes("name:'⚙ Administrar fundo DEMO'"),
+ 'não é possível carregar o fundo diretamente pelo botão público');
+ok(main.includes("if(document.hidden){\n   adminLock.lock();")&&
+ main.includes("id=\"adminLock\""),
+ 'bloqueio automático ao ocultar a app e botão manual');
+ok(pinCss.includes('.admin-pin-form')&&html.includes('admin-pin-v21.css?v=2.1'),
+ 'interface do PIN adaptada ao telemóvel');
+console.log('Phaser V2.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

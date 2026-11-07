@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.0
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.1
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -161,3 +161,14 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.9
 - A animação de rotação/cascata e as texturas em `js/reels.js` permanecem intactas. A base continua local ao navegador, sem autenticação real nem sincronização central.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.0
+
+## V2.1 — PIN local e camada de armazenamento
+
+- Ao abrir ⚙ Administração ou Histórico pede um PIN de 6 algarismos. No primeiro acesso é criado e confirmado um PIN para esta instalação, nunca há PIN de fábrica.
+- Hash PBKDF2/SHA256 com sal aleatório e 180000 iterações; o PIN não é guardado em claro nem incluído no JSON. Quatro erros seguidos bloqueiam por 45 segundos. O acesso expira em oito minutos de inatividade, permite alterar PIN e fechar manualmente e é bloqueado ao ocultar o navegador.
+- O cofre deixou de acrescentar 500 créditos fictícios sem passar pela administração. Operações de fundo, percentagens, modo, relatório, histórico e restauro exigem sessão local desbloqueada.
+- **Limite importante:** este PIN é só uma barreira contra acesso casual à demonstração, não autenticação segura de operador. O utilizador com acesso ao código ou à base do navegador pode contorná-lo. Sem WebCrypto ou armazenamento local o painel não abre.
+- Criada `js/storage-gateway-v21.js`, porta da interface para o driver local IndexedDB/localStorage. A futura arquitetura de backend está descrita em `docs/ARQUITETURA_BACKEND_V21.md`; **não há base central nem servidor instalado**.
+- Sem alterações aos tambores de Phaser, às cascatas nem à matemática dos prémios. O jogo continua a trabalhar exclusivamente com créditos fictícios.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.1
