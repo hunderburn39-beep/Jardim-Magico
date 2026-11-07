@@ -5,14 +5,14 @@
 import {DemoBank,newBoard,winningCells,money} from './engine.js?v=1';
 import {demoDB} from './database.js?v=1';
 import {audio} from './audio.js?v=1';
-import {createReelGame} from './reels.js?v=1.1';
+import {createReelGame} from './reels.js?v=1.2';
 const $=id=>document.getElementById(id);
 const BETS=[.05,.1,.2,.4,.6,.8,1,1.5,2,3,5,7.5,10];
 const bank=new DemoBank();
 let scene=null,game=null;
 let board=newBoard(),running=false,ready=false,turbo=false;
 let autoLeft=0,autoTimer=null,freeTimer=null;
-let bigTimer=null,winTimer=null;
+let bigTimer=null,winTimer=null,dropTimer=null;
 let modalOpen=false,holdsLong=false,longTimer=null;
 let loopToken=0;
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -76,10 +76,25 @@ function popup(text){
  el.classList.remove('active');void el.offsetWidth;el.classList.add('active');
  clearTimeout(bigTimer);bigTimer=setTimeout(()=>el.classList.remove('active'),1400);
 }
-function showWinText(wins,value,total=false){
+function showDropAmount(value){
+ // Um único número dourado e luminoso, sem caixa sobre o tabuleiro.
+ const el=$('dropAmount');
+ clearTimeout(dropTimer);
+ el.textContent=money(value);
+ el.hidden=false;
+ el.classList.remove('active');
+ void el.offsetWidth;
+ el.classList.add('active');
+ dropTimer=setTimeout(()=>{
+  el.classList.remove('active');
+  el.hidden=true;
+ },960);
+}
+function showWinText(wins,value,total=false,factor=1){
  const notice=$('winNotice');
  if(!wins.length){notice.hidden=true;return}
- let parts=wins.map(w=>money(w.amount));
+ // Ajustar a apresentação dos valores ao multiplicador da queda.
+ let parts=wins.map(w=>money(round(w.amount*factor)));
  if(parts.length>5)parts=[...parts.slice(0,3),'… ('+(wins.length-3)+' outras)'];
  notice.textContent=(total?'TOTAL · ':'')+
   wins.length+' combinaç'+(wins.length===1?'ão':'ões')+
@@ -136,6 +151,9 @@ async function runSpin(){
  const stages=outcome.stages||[{board:outcome.board,ev:outcome.ev,removed:[]}];
  const finalBoard=stages.at(-1).board;
  running=true;update();
+ clearTimeout(dropTimer);
+ $('dropAmount').hidden=true;
+ $('dropAmount').classList.remove('active');
  $('winNotice').hidden=true;
  status('TAMBORES A RODAR ↓');
  say('Os símbolos estão a descer…');
@@ -154,7 +172,8 @@ async function runSpin(){
    const wins=stage.ev.lineWins||[];
    const cells=winningCells(stage.ev);
    const next=i<stages.length-1?stages[i+1]:null;
-   const fac=stage.ev.wilds?outcome.wildMultiplier:1;
+   // Nas Free Spins o multiplicador só é aplicado no fim da série.
+   const fac=outcome.free?1:(stage.ev.wilds?outcome.wildMultiplier:1);
    const lineTotal=round(stage.ev.raw*fac);
    orbs(outcome.wildMultiplier,stage.ev.wilds);
    if(!wins.length){
@@ -163,14 +182,15 @@ async function runSpin(){
    }
    status('QUEDA '+(i+1)+' · '+wins.length+' COMBINAÇÃO'+
     (wins.length>1?'ÕES':'')+' PREMIADA'+(wins.length>1?'S':''));
-   showWinText(wins,lineTotal);
+   showWinText(wins,lineTotal,false,fac);
+   showDropAmount(lineTotal);
    say(wins.length+' combinação'+(wins.length>1?'ões':'')+
     ' · queda '+(i+1)+' · '+money(lineTotal)+' créditos');
    const multiple=wins.length>1;
-   if(multiple)popup('✨ +'+money(lineTotal)+' ✨');
+   if(multiple&&lineTotal>=bank.stake*8)popup('✨ MEGA ✨');
    audio.play('win');
    if(!(await visual(()=>scene.burst(cells,{
-    destroy:!!next||multiple,
+    destroy:!!next,
     duration:turbo?390:780
    }),stage.board,turbo?1900:3000)))repaired=true;
    if(next){
@@ -186,9 +206,16 @@ async function runSpin(){
   // Nunca deixar preso o botão: corrigir malhas, limpar estado e continuar.
   try{scene.recover(finalBoard)}catch(err){console.warn(err)}
   running=false;
-  const all=stages.flatMap(s=>s.ev.lineWins||[]);
+  const all=stages.flatMap(stage=>(stage.ev.lineWins||[]).map(win=>({
+   ...win,
+   amount:round(win.amount*(outcome.free?1:
+    (stage.ev.wilds?outcome.wildMultiplier:1)))
+  })));
   $('winNotice').hidden=all.length===0;
-  if(all.length)showWinText(all,outcome.rawTotal,true);
+  // A soma do base inclui WILD. Nas Free Spins o total só é
+  // multiplicado e creditado quando a série terminar.
+  const visibleTotal=outcome.free?outcome.rawTotal:outcome.potential;
+  if(all.length)showWinText(all,visibleTotal,true);
   status(all.length?all.length+' COMBINAÇÕES SOMADAS · '+
    Math.max(0,stages.length-1)+' QUEDAS':'TAMBORES PRONTOS');
   update();
