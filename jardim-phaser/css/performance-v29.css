@@ -1,0 +1,19 @@
+/* Phaser V2.9 — conserva alta qualidade quando está fluido.
+ * O modo leve atua apenas em decoração e partículas, nunca nas peças. */
+.machine.is-spinning .ambient{filter:none;opacity:.25}
+.machine.is-spinning .magic-dust i{
+ animation-play-state:paused;
+ will-change:auto;
+}
+.machine.lite-effects .garden-flora{filter:none}
+.machine.lite-effects .jackpot.ultra{filter:none}
+.machine.lite-effects .frame-region .branch-frame{
+ filter:none;
+}
+.machine.lite-effects .frame-region .branch-frame::after{opacity:.3}
+.machine.lite-effects .reel-glow{opacity:.68}
+.machine.lite-effects .ambient{filter:none}
+@media(prefers-reduced-motion:reduce){
+ .machine .magic-dust i{animation:none;will-change:auto}
+ .machine .frame-region .branch-frame{filter:none}
+}

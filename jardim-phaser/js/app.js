@@ -7,9 +7,9 @@ import {demoDB as localDB,validateBackup} from './database.js?v=2.2';
 import {createStorageGateway} from './storage-gateway-v21.js?v=2.2';
 import {createAdminPinLock} from './admin-pin-v21.js?v=2.1';
 import {audio} from './audio.js?v=1';
-import {createReelGame} from './reels.js?v=1.3';
+import {createReelGame} from './reels.js?v=2.9';
 import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
-import {createPerformanceGuard} from './performance-v17.js?v=1.7';
+import {createPerformanceGuard} from './performance-v17.js?v=2.9';
 import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=1.8';
 import {filterHistory,historyPage} from './history-v19.js?v=1.9';
 import {spinRecoveryReceipt,holdRecoveryReceipt,recoveryMessage,createDiagnostics} from './recovery-v23.js?v=2.3';
@@ -25,8 +25,11 @@ const $=id=>document.getElementById(id);
 const BETS=[.05,.1,.2,.4,.6,.8,1,1.5,2,3,5,7.5,10];
 const bank=new DemoBank();
 let adminSettings=normalizeAdmin();
-const performanceGuard=createPerformanceGuard(document.getElementById('machine'));
 let scene=null,game=null;
+const performanceGuard=createPerformanceGuard(
+ document.getElementById('machine'),window,
+ low=>scene?.setLowEffects?.(low)
+);
 let board=newBoard(),running=false,ready=false,turbo=false;
 let autoLeft=0,autoTimer=null,freeTimer=null;
 let bigTimer=null,winTimer=null,dropTimer=null,bonusTimer=null;
@@ -458,7 +461,7 @@ function bonusModal(){
 
 function exportDiagnostics(){
  const state=diagnostics.snapshot();
- const report={...state,dbMode:demoDB.mode,
+ const report={...state,fxLowQuality:performanceGuard.isLite(),dbMode:demoDB.mode,
   writerActive:writerReady,
   gameMode:bank.mode,
   pendingRecovery:!!pendingVisual};
@@ -482,6 +485,7 @@ function diagnosticModal(){
   ['Estado de escrita',writerReady?'Aba ativa':'Só leitura'],
   ['Modo de jogo',bank.mode],
   ['Recuperação pendente',pendingVisual?'Sim':'Não'],
+  ['Efeitos automáticos',performanceGuard.isLite()?'Modo leve':'Alta qualidade'],
   ['Falhas a guardar',counts['save-failed']||0],
   ['Falhas de checkpoint',counts['checkpoint-failed']||0],
   ['Interrupções visuais',counts['spin-visual-error']||0],
@@ -1046,6 +1050,7 @@ function bind(){
  });
  document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
+   performanceGuard.pause();
    // Let another visible tab take over as soon as this one becomes inactive.
    if(writerReady&&!running&&!mutating&&!holdBusy){
     writerReady=false;diagnostics.record('writer-release');update();
@@ -1060,6 +1065,7 @@ function bind(){
    stopAuto();clearTimeout(freeTimer);
   }
   else{
+   performanceGuard.resume();
    refreshWriter();
   }
  });

@@ -35,6 +35,7 @@ const bonusStyle26=await read('../css/bonus-v26.css');
 const winUI27=await read('../js/win-ui-v27.js');
 const winStyle27=await read('../css/celebracoes-v27.css');
 const responsive28=await read('../css/responsive-v28.css');
+const perfCSS29=await read('../css/performance-v29.css');
 const pinCss=await read('../css/admin-pin-v21.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
@@ -392,7 +393,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.8'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.9'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -425,7 +426,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=2.8'),'botão e versão Phaser V2.8');
+ html.includes('app.js?v=2.9'),'botão e versão Phaser V2.9');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -777,4 +778,57 @@ ok(!html.includes('MULTIS ACUMULADOS')&&
  'barra da queda à esquerda e MULTI à direita mantêm-se sem duplicação');
 ok((responsive28.match(/{/g)||[]).length===(responsive28.match(/}/g)||[]).length,
  'CSS V2.8 tem blocos equilibrados');
-console.log('Phaser V2.8: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const lowParticles=perf.burstParticleBudget(15,true);
+ok(perf.burstParticleBudget(1,false)===6&&
+ perf.burstParticleBudget(15,false)===3&&lowParticles===1,
+ 'modo leve reduz sprites cosméticos e conserva a versão rica');
+ok(perf.burstParticleBudget(5,true)<=perf.burstParticleBudget(5,false)&&
+ perf.burstParticleBudget(15,true)<=2,
+ 'partículas cosméticas limitadas até com quinze figuras');
+const qualityChanges=[],slowClasses=new Set();
+let perfNext=null,perfCancels=0,perfRequests=0;
+const qualityRoot={classList:{
+ add:v=>slowClasses.add(v),remove:v=>slowClasses.delete(v),
+ contains:v=>slowClasses.has(v)
+}};
+const mockClock={
+ requestAnimationFrame:fn=>{perfNext=fn;return ++perfRequests},
+ cancelAnimationFrame:()=>{perfCancels++},
+ matchMedia:()=>({matches:false})
+};
+const adapt=perf.createPerformanceGuard(qualityRoot,mockClock,low=>qualityChanges.push(low));
+adapt.start();
+let clockMs=0;
+for(let i=0;i<72;i++){clockMs+=38;perfNext(clockMs)}
+ok(adapt.isLite()&&qualityChanges.includes(true)&&
+ slowClasses.has('lite-effects'),
+ 'fluidez baixa ativa qualidade reduzida sem tocar nos prémios');
+adapt.pause();
+const cancelledAtPause=perfCancels;
+adapt.resume();
+ok(cancelledAtPause===1&&perfRequests>72&&slowClasses.has('is-spinning'),
+ 'voltar do segundo plano retoma observação sem iniciar outra jogada');
+for(let i=0;i<220;i++){clockMs+=16.67;perfNext(clockMs)}
+ok(!adapt.isLite()&&!slowClasses.has('lite-effects')&&
+ qualityChanges.includes(false),
+ 'após recuperação sustentada volta automaticamente a alta qualidade');
+adapt.stop();
+ok(!slowClasses.has('is-spinning')&&perfCancels===2,
+ 'limpeza da observação em pausa e no fim da jogada');
+ok(reels.includes('setLowEffects(value)')&&
+ reels.includes('burstParticleBudget(targets.length,this.liteEffects)')&&
+ reels.includes('this.clearFx();')&&
+ reels.includes('this.disposeFx(halo)')&&
+ reels.includes('this.disposeFx(spark)'),
+ 'Phaser limpa halos e faíscas ao interromper um giro');
+ok(main.includes('performanceGuard.pause()')&&
+ main.includes('performanceGuard.resume()')&&
+ main.includes('scene?.setLowEffects?.(low)')&&
+ main.includes('performanceGuard.isLite()'),
+ 'Safari pausa medição de FPS e diagnóstico mostra qualidade');
+ok(html.includes('performance-v29.css?v=2.9')&&
+ perfCSS29.includes('.machine.is-spinning .ambient')&&
+ perfCSS29.includes('.machine.lite-effects .frame-region')&&
+ !html.includes('MULTIS ACUMULADOS'),
+ 'novos estilos leves preservam barra sem informação repetida');
+console.log('Phaser V2.9: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

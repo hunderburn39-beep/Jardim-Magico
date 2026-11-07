@@ -2,6 +2,7 @@
    O resultado é fornecido pelo motor lógico; Phaser apenas o apresenta.
    Eixo Y: baixo é positivo, nunca roda ou inverte UV das imagens. */
 import {SYMBOLS,newBoard} from './engine.js?v=1';
+import {burstParticleBudget} from './performance-v17.js?v=2.9';
 const DESIGN_W=900,DESIGN_H=540,CW=DESIGN_W/5,CH=DESIGN_H/3;
 const SOURCES={
  potion:'3f3213b7316d5cf176.png',
@@ -85,6 +86,8 @@ class ReelScene extends Phaser.Scene{
   this.items=[];
   this.spinTweens=[];
   this.particles=[];
+  this.fxObjects=new Set();
+  this.liteEffects=false;
   this.failedAssets=[];
  }
  preload(){
@@ -325,6 +328,16 @@ class ReelScene extends Phaser.Scene{
   });
  }
 
+ setLowEffects(value){this.liteEffects=!!value}
+ trackFx(shape){this.fxObjects.add(shape);return shape}
+ disposeFx(shape){
+  this.fxObjects.delete(shape);
+  if(shape?.active)shape.destroy();
+ }
+ clearFx(){
+  for(const shape of this.fxObjects)if(shape?.active)shape.destroy();
+  this.fxObjects.clear();
+ }
  burst(cells,{destroy=true,duration=690}={}){
   // Todas as peças pertencentes a linhas premiadas brilham no MESMO
   // instante. Uma figura partilhada por duas linhas só explode uma vez.
@@ -341,7 +354,7 @@ class ReelScene extends Phaser.Scene{
    if(sprite)targets.push({c,r,sprite});
   }
   if(!targets.length)return Promise.resolve();
-  const particleCount=Math.max(2,Math.min(6,Math.floor(48/targets.length)));
+  const particleCount=burstParticleBudget(targets.length,this.liteEffects);
   const hues=[0xffd77b,0xff98de,0xc5a1ff,0x91f1db];
   const time=Math.max(160,duration);
   return new Promise(resolve=>{
@@ -349,28 +362,30 @@ class ReelScene extends Phaser.Scene{
    for(const {c,r,sprite} of targets){
     const x=sprite.x,y=sprite.y;
     const baseX=sprite.scaleX,baseY=sprite.scaleY;
-    const halo=this.add.circle(x,y,Math.min(CW,CH)*.31,
-      0xffd887,.17).setDepth(11);
+    const halo=this.trackFx(this.add.circle(x,y,Math.min(CW,CH)*.31,
+      0xffd887,.17).setDepth(11));
     halo.setStrokeStyle?.(5,0xffefab,.95);
     halo.setMask?.(this.reelMask);
     this.tweens.add({
      targets:halo,scale:1.78,alpha:0,
      duration:time*.88,ease:'Cubic.easeOut',
-     onComplete:()=>halo.destroy()
+     onComplete:()=>this.disposeFx(halo)
     });
-    const inner=this.add.circle(x,y,Math.min(CW,CH)*.18,
-      0xffefff,.32).setDepth(12);
-    inner.setMask?.(this.reelMask);
-    this.tweens.add({
-     targets:inner,scale:2.15,alpha:0,
-     duration:time*.64,ease:'Sine.easeOut',
-     onComplete:()=>inner.destroy()
-    });
+    if(!this.liteEffects){
+     const inner=this.trackFx(this.add.circle(x,y,Math.min(CW,CH)*.18,
+       0xffefff,.32).setDepth(12));
+     inner.setMask?.(this.reelMask);
+     this.tweens.add({
+      targets:inner,scale:2.15,alpha:0,
+      duration:time*.64,ease:'Sine.easeOut',
+      onComplete:()=>this.disposeFx(inner)
+     });
+    }
     for(let i=0;i<particleCount;i++){
      const angle=(i/particleCount)*Math.PI*2+(c*3+r)*.35;
      const distance=46+(i%3)*12+Math.random()*26;
-     const spark=this.add.circle(x,y,3.2+(i%2)*2.2,
-       hues[(i+c+r)%hues.length],.98).setDepth(18);
+     const spark=this.trackFx(this.add.circle(x,y,3.2+(i%2)*2.2,
+       hues[(i+c+r)%hues.length],.98).setDepth(18));
      spark.setMask?.(this.reelMask);
      this.tweens.add({
       targets:spark,
@@ -378,7 +393,7 @@ class ReelScene extends Phaser.Scene{
       y:y+Math.sin(angle)*distance+20,
       alpha:0,scale:.25,duration:time*.93,
       ease:'Cubic.easeOut',
-      onComplete:()=>spark.destroy()
+      onComplete:()=>this.disposeFx(spark)
      });
     }
     // Dissipar apenas quando EXISTE uma nova queda: as restantes
@@ -463,6 +478,9 @@ class ReelScene extends Phaser.Scene{
  }
  recover(board){
   this.tweens.killAll();
+  // Se o Safari interromper os tweens, callbacks de destruição não correm.
+  // Libertar halos/sparkles temporários antes de reconstruir as peças.
+  this.clearFx();
   this.setBoard(board);
   this.busy=false;
  }

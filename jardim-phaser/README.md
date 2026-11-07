@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.8
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.9
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -248,3 +248,14 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.7
 - Os testes automáticos verificam os breakpoints e a proporção CSS, mas a geometria visual deve ser confirmada em Safari real e Android nos diversos tamanhos de ecrã.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.8
+
+## V2.9 — FPS adaptativo e limpeza dos efeitos temporários
+
+- O medidor de fluidez continua a observar frames reais durante as animações; **suspende a medição quando o navegador vai para segundo plano** e retoma sem interpretar a interrupção do Safari como FPS baixo. A medição não altera os resultados.
+- Quando a renderização apresenta lentidão sustentada, a máquina ativa automaticamente `lite-effects`: as faíscas e halos cosméticos ficam mais leves, enquanto símbolos, rolos, cascatas e prémios são preservados. Volta à qualidade original após três janelas de FPS estável.
+- O motor Phaser passa a registar **halos e faíscas temporários** e a destruí-los quando uma animação é interrompida e a grelha é recuperada. Assim evitam-se objetos gráficos esquecidos após timeouts.
+- Em modo leve, a quantidade de faíscas é reduzida proporcionalmente às peças premiadas, mantendo sempre o brilho e a animação base de cada símbolo.
+- Os efeitos decorativos do fundo deixam de usar filtros intensivos durante os giros. No diagnóstico local, o utilizador vê se estão ativos os efeitos de alta qualidade ou o modo leve, sem PIN e sem dados privados no relatório.
+- Os testes incluem recuperação de FPS, suspensão/retoma, orçamento de partículas e limpeza de efeitos. **Motor matemático, fundos fictícios, RTP não auditado, jogo original e aparência normal não foram alterados.**
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.9
