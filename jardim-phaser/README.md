@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.1
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.2
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -172,3 +172,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.0
 - Sem alterações aos tambores de Phaser, às cascatas nem à matemática dos prémios. O jogo continua a trabalhar exclusivamente com créditos fictícios.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.1
+
+## V2.2 — Exclusividade entre abas e recuperação após interrupção
+
+- Cada aba obtém uma **posse exclusiva de escrita (lease)**, com aquisição, renovação e verificação atómicas na base IndexedDB. Apenas a aba proprietária pode atualizar o saldo/histórico; todas as outras ficam em modo de leitura. Depois de fechar uma aba, outra pode assumir a sessão e carrega os saldos guardados, sem reutilizar um estado antigo. A lease expira após 22 segundos se a aba morrer, com verificação periódica a cada 5 segundos.
+- Se o browser não suportar IndexedDB ou abrir em ambiente em que não funciona, a interface fica **só de leitura**, em vez de permitir dois escritores em localStorage. É uma salvaguarda apenas desta instalação; não existe sincronização entre diferentes dispositivos nem autoridade de servidor.
+- Antes da animação, cada giro já era guardado com resultado e prémio. A V2.2 acrescenta um `pendingVisual` (recibo de animação), retirado por checkpoint silencioso no final do giro. Se o Safari fechar antes do fim, no regresso a máquina coloca o tabuleiro final já gravado, informa que a animação foi interrompida e **não volta a pagar nem a cobrar o giro**.
+- As operações de restauro e reset são bloqueadas para abas que não detêm o escritor. O reset preserva o registo da lease enquanto a aba estiver ativa.
+- A queda Phaser e as regras dos prémios não foram alteradas; a sessão continua com créditos fictícios. Testes automáticos cobrem as condições de concorrência do algoritmo e os checkpoints, mas um teste real com duas abas Safari deve confirmar o comportamento visual.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.2

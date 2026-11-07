@@ -376,7 +376,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.1'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.2'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -409,7 +409,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=2.1'),'botão e versão Phaser V2.1');
+ html.includes('app.js?v=2.2'),'botão e versão Phaser V2.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -560,4 +560,37 @@ ok(main.includes("if(document.hidden){\n   adminLock.lock();")&&
  'bloqueio automático ao ocultar a app e botão manual');
 ok(pinCss.includes('.admin-pin-form')&&html.includes('admin-pin-v21.css?v=2.1'),
  'interface do PIN adaptada ao telemóvel');
-console.log('Phaser V2.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const CheckDB=new Function(parseModule(dbsource)+
+ '\nreturn {leaseAvailable,validRecoveryMarker};')();
+ok(CheckDB.leaseAvailable(null,'tab-a',1000)&&
+ CheckDB.leaseAvailable({owner:'tab-a',expiresAt:2000},'tab-a',1000),
+ 'aba pode adquirir lease livre ou renovar o seu');
+ok(!CheckDB.leaseAvailable({owner:'tab-b',expiresAt:2000},'tab-a',1000),
+ 'outra aba ativa impede segundo escritor');
+ok(CheckDB.leaseAvailable({owner:'tab-b',expiresAt:999},'tab-a',1000),
+ 'lease expirada pode passar para outra aba');
+ok(CheckDB.validRecoveryMarker({id:'spin-123456',date:'2026-11-07',paid:2.5})&&
+ !CheckDB.validRecoveryMarker({id:'x',date:'2026',paid:-9}),
+ 'recibo de giro interrompido validado');
+ok(dbsource.includes("state.get(WRITER_ID)")&&
+ dbsource.includes("if(!this.writerToken||record?.owner!==this.writerToken"),
+ 'gravação verifica posse na mesma transação IndexedDB');
+ok(dbsource.includes('async checkpoint(snapshot,board)')&&
+ dbsource.includes('state.delete(STATE_ID)')&&
+ !dbsource.includes("state.clear();"),
+ 'checkpoint sem novo prémio e reset mantém lease ativa');
+ok(main.includes('writerReady=exclusive;')&&
+ main.includes('if(!writerReady||!ready||!scene')===false&&
+ main.includes('writerTimer=setInterval(refreshWriter,5000)'),
+ 'aquisição e renovação de writer integradas');
+ok(main.includes('pendingVisual={id:')&&
+ main.includes('demoDB.checkpoint(snapshot(),board)'),
+ 'resultado fica preservado e marca visual é retirada após animação');
+ok(main.includes('if(!writerReady||running)return;')&&
+ main.includes("PHASER · SÓ LEITURA"),
+ 'sem IndexedDB não permite alterar saldo com multi-abas');
+ok(gatewaySource.includes("'acquireLease'")&&
+ gatewaySource.includes("'renewLease'")&&
+ gatewaySource.includes("'releaseLease'"),
+ 'porta V2.1 encaminha operações novas de sessão exclusiva');
+console.log('Phaser V2.2: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

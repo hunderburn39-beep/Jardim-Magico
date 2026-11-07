@@ -3,8 +3,8 @@
    Cada resultado e prémio são decididos ANTES da animação vertical Phaser.
  */
 import {DemoBank,newBoard,winningCells,money,DEMO_PROFILES} from './engine.js?v=2.0';
-import {demoDB as localDB,validateBackup} from './database.js?v=2.1';
-import {createStorageGateway} from './storage-gateway-v21.js?v=2.1';
+import {demoDB as localDB,validateBackup} from './database.js?v=2.2';
+import {createStorageGateway} from './storage-gateway-v21.js?v=2.2';
 import {createAdminPinLock} from './admin-pin-v21.js?v=2.1';
 import {audio} from './audio.js?v=1';
 import {createReelGame} from './reels.js?v=1.3';
@@ -27,6 +27,9 @@ let bigTimer=null,winTimer=null,dropTimer=null,bonusTimer=null;
 let holdBusy=false;
 let freeOrbHistory=[];
 let modalOpen=false,holdsLong=false,longTimer=null;
+let writerReady=false,writerCheckBusy=false,writerTimer=null,pendingVisual=null,recoveredVisual=false;
+const tabToken=(typeof crypto!=='undefined'&&crypto.randomUUID)?
+ crypto.randomUUID():'tab-'+Date.now()+'-'+Math.random().toString(36).slice(2);
 let loopToken=0;
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function round(n){return Math.round((n+Number.EPSILON)*100)/100}
@@ -43,6 +46,8 @@ function copySnapshot(snapshot){
  if(['premios','normal','entretenimento'].includes(snapshot.profile))bank.profile=snapshot.profile;
  if(['base','free','hold'].includes(snapshot.mode))bank.mode=snapshot.mode;
  if(snapshot.admin)adminSettings=normalizeAdmin(snapshot.admin.ownerPct);
+ pendingVisual=snapshot.pendingVisual||null;
+ recoveredVisual=!!pendingVisual;
  if(typeof snapshot.status==='string')bank.status=snapshot.status.slice(0,180);
  if(bank.mode==='hold'&&Array.isArray(snapshot.hold?.grid)&&snapshot.hold.grid.length===16)
   bank.hold=structuredClone(snapshot.hold);
@@ -51,7 +56,7 @@ function copySnapshot(snapshot){
  bank.freeSpins=Math.max(0,Math.min(60,bank.freeSpins));
 }
 function snapshot(){
- return {...bank.snapshot,admin:{...adminSettings}};
+ return {...bank.snapshot,admin:{...adminSettings},pendingVisual};
 }
 function update(){
  const s=snapshot();
@@ -76,13 +81,15 @@ function update(){
  $('turboState').textContent=turbo?'ON':'OFF';
  $('turboBtn').setAttribute('aria-pressed',String(turbo));
  const current=BETS.findIndex(v=>Math.abs(v-s.stake)<1e-6);
- const blocked=running||s.mode!=='base'||!ready;
+ const blocked=running||s.mode!=='base'||!ready||!writerReady;
  $('betDown').disabled=blocked||current<=0;
  $('betUp').disabled=blocked||current>=BETS.length-1;
  $('bonusBtn').disabled=blocked;
  $('adminBtn').disabled=blocked;
- $('spinBtn').disabled=running||!ready||s.mode==='hold'||s.mode==='free';
- $('autoBtn').disabled=(!ready||s.mode==='hold'||(running&&autoLeft===0))&&autoLeft===0;
+ $('spinBtn').disabled=running||!ready||!writerReady||s.mode==='hold'||s.mode==='free';
+ $('creditBtn').disabled=!writerReady||running;
+ $('vaultBtn').disabled=!writerReady;
+ $('autoBtn').disabled=(!ready||!writerReady||s.mode==='hold'||(running&&autoLeft===0))&&autoLeft===0;
  $('autoBtn').classList.toggle('active',autoLeft>0);
 }
 function orbs(accumulated=[],effective=1){
@@ -143,6 +150,7 @@ function showWinText(wins,value,total=false,factor=1){
  if(total)winTimer=setTimeout(()=>notice.hidden=true,2300);
 }
 async function persist(type,details={}){
+ if(!writerReady)return false;
  const ok=await demoDB.save(snapshot(),details.board||board,{
   type,id:(typeof crypto!=='undefined'&&crypto.randomUUID)?
    crypto.randomUUID():'event-'+Date.now()+'-'+Math.random().toString(36).slice(2),
@@ -178,7 +186,7 @@ async function visual(promiseFactory,expected,deadline=7000){
 }
 async function runSpin(){
  clearTimeout(autoTimer);clearTimeout(freeTimer);
- if(document.hidden||!ready||!scene||running||modalOpen||bank.mode==='hold')return;
+ if(document.hidden||!writerReady||!ready||!scene||running||modalOpen||bank.mode==='hold')return;
  const before=snapshot();
  const previousBoard=board.map(col=>col.slice());
  let outcome;
@@ -208,6 +216,8 @@ async function runSpin(){
  if(!outcome.free&&autoLeft>0)autoLeft--;
  // Guardar o PRÉMIO antes de apresentar peças. A recarga não volta a pagar.
  board=finalBoard.map(col=>col.slice());
+ pendingVisual={id:'spin-'+Date.now()+'-'+Math.random().toString(36).slice(2),
+  date:new Date().toISOString(),paid:outcome.credited};
  let saved=false;
  try{
   saved=await persist('spin',{board:finalBoard,paid:outcome.credited,
@@ -276,6 +286,13 @@ async function runSpin(){
  }finally{
   // Nunca deixar preso o botão: corrigir malhas, limpar estado e continuar.
   try{scene.recover(finalBoard)}catch(err){console.warn(err)}
+  if(pendingVisual){
+   const receipt=pendingVisual;
+   pendingVisual=null;
+   let markedDone=false;
+   try{markedDone=await demoDB.checkpoint(snapshot(),board)}catch(err){console.warn(err)}
+   if(!markedDone)pendingVisual=receipt; // device will show recovery notice on re-open
+  }
   running=false;
   performanceGuard.stop();
   const all=stages.flatMap(stage=>(stage.ev.lineWins||[]).map(win=>({
@@ -362,7 +379,7 @@ function closeModal(){
  if(bank.mode==='free'&&!running)freeTimer=setTimeout(runSpin,500);
 }
 function bonusModal(){
- if(running||bank.mode!=='base')return;
+ if(!writerReady||running||bank.mode!=='base')return;
  modal('Comprar bónus DEMO',
   'Compras voluntárias apenas com créditos fictícios; sem dinheiro real.',[
    {name:'✨ 15 Free Spins',detail:'Custo: '+money(bank.bonusPrice),
@@ -425,7 +442,7 @@ function renderHold(previousGrid=null,hold=bank.hold){
  }
 }
 async function holdTurn(){
- if(bank.mode!=='hold'||holdBusy)return;
+ if(!writerReady||bank.mode!=='hold'||holdBusy)return;
  holdBusy=true;
  const button=$('holdBtn');
  button.disabled=true;
@@ -528,7 +545,7 @@ async function requireAdmin(next){
 }
 
 async function adminModal(){
- if(running||bank.mode!=='base'||!ready)return;
+ if(!writerReady||running||bank.mode!=='base'||!ready)return;
  if(!requireAdminUnlocked())return requireAdmin(adminModal);
  modal('Administração DEMO','Controlo LOCAL de créditos fictícios; não existe autenticação segura.',[]);
  await persist('admin-access');
@@ -778,6 +795,7 @@ function infoModal(){
  ]);
 }
 function vaultModal(){
+ if(!writerReady)return;
  modal('Cofre Mágico',
  'Fundo de demonstração disponível: '+money(bank.reserve)+
  ' créditos fictícios. O motor verifica os resultados antes de os mostrar e não corta prémios atribuídos.',[
@@ -786,12 +804,14 @@ function vaultModal(){
  ]);
 }
 async function creditDemo(){
+ if(!writerReady||running)return;
  const before=snapshot();
  bank.creditDemo(25);update();
  if(!(await persist('credit-demo',{amount:25}))){copySnapshot(before);update();say('Recarga cancelada: falha na gravação.');return}
  say('Adicionados 25 créditos fictícios');
 }
 function changeBet(dir){
+ if(!writerReady||running)return;
  const pos=BETS.findIndex(x=>Math.abs(x-bank.stake)<.00001);
  const next=BETS[Math.max(0,Math.min(BETS.length-1,(pos<0?2:pos)+dir))];
  if(bank.setStake(next)){
@@ -800,6 +820,7 @@ function changeBet(dir){
 }
 function autoModal(){
  if(autoLeft>0){stopAuto();return}
+ if(!writerReady)return
  if(running||bank.mode!=='base')return;
  modal('Giros automáticos',
  'Escolhe o número de giros de demonstração. Podes parar no botão AUTO.',[
@@ -859,10 +880,50 @@ function bind(){
     'Alterar PIN local'].includes($('modalTitle').textContent))closeModal();
    stopAuto();clearTimeout(freeTimer);
   }
-  else if(ready&&!running&&bank.mode==='free')
-   freeTimer=setTimeout(runSpin,650);
+  else{
+   refreshWriter();
+  }
  });
 }
+
+async function refreshWriter(){
+ if(writerCheckBusy||running)return;
+ writerCheckBusy=true;
+ try{
+  let granted=false;
+  if(writerReady)granted=await demoDB.renewLease(tabToken);
+  else granted=await demoDB.acquireLease(tabToken);
+  if(!granted){
+   if(writerReady){writerReady=false;stopAuto();adminLock.lock()}
+   writerReady=false;update();
+   $('dbStatus').textContent='PHASER · OUTRA ABA ATIVA / SEM INDEXEDDB';
+   if(!document.hidden)say('Modo de leitura: outra aba controla esta demonstração. Fecha-a para jogar aqui.');
+   return;
+  }
+  if(!writerReady){
+   // The previous writer may have changed the balances; never reuse stale state.
+   const saved=await demoDB.load();
+   if(saved?.snapshot)copySnapshot(saved.snapshot);
+   if(saved?.board?.length===5)board=saved.board;
+   if(scene?.ready)try{scene.recover(board)}catch(err){console.warn(err)}
+   writerReady=true;
+   update();
+   $('dbStatus').textContent='PHASER · BASE LOCAL EXCLUSIVA';
+   say(recoveredVisual?
+    'Giro interrompido recuperado do registo. Não foi cobrado nem pago novamente.':
+    'Sessão exclusiva obtida. Saldo sincronizado com a base local.');
+   if(recoveredVisual&&pendingVisual){
+    const old=pendingVisual;pendingVisual=null;
+    if(!(await demoDB.checkpoint(snapshot(),board)))pendingVisual=old;
+   }
+   if(ready&&!document.hidden&&bank.mode==='free')freeTimer=setTimeout(runSpin,1100);
+  }
+ }catch(err){
+  writerReady=false;console.error('Aba ativa:',err);
+  $('dbStatus').textContent='PHASER · SESSÃO BLOQUEADA';
+ }finally{writerCheckBusy=false;update()}
+}
+
 async function boot(){
  bind();update();
  if(typeof Phaser==='undefined'){
@@ -871,10 +932,13 @@ async function boot(){
  }
  try{
   const mode=await demoDB.connect();
+  // Atomic writer lease in IndexedDB; localStorage fallback stays read-only.
+  const exclusive=await demoDB.acquireLease(tabToken);
+  writerReady=exclusive;
   const saved=await demoDB.load();
   if(saved?.snapshot)copySnapshot(saved.snapshot);
   if(Array.isArray(saved?.board)&&saved.board.length===5)board=saved.board;
-  $('dbStatus').textContent=mode==='indexedDB'?'PHASER · DB LOCAL ✓':'PHASER · ARMAZENAMENTO LOCAL';
+  $('dbStatus').textContent=writerReady?'PHASER · BASE LOCAL EXCLUSIVA':'PHASER · SÓ LEITURA';
  }catch(err){
   console.error('Base local:',err);
   $('dbStatus').textContent='PHASER · SEM BASE LOCAL';
@@ -887,12 +951,21 @@ async function boot(){
   scene.setBoard(board);
   ready=true;update();
   status('TAMBORES VERTICAIS PRONTOS');
-  say('Jardim Mágico Phaser · símbolos originais HD');
-  if(bank.mode==='hold')showHold();
-  else if(bank.mode==='free')freeTimer=setTimeout(runSpin,1100);
+  say(writerReady?(recoveredVisual?
+   'Giro interrompido recuperado. O resultado já tinha sido contabilizado.':
+   'Jardim Mágico Phaser · símbolos originais HD'):
+   'Modo de leitura: outra aba usa o jogo ou não existe IndexedDB.');
+  if(writerReady&&recoveredVisual&&pendingVisual){
+   const old=pendingVisual;pendingVisual=null;
+   demoDB.checkpoint(snapshot(),board).then(ok=>{if(!ok)pendingVisual=old});
+  }
+  if(writerReady&&bank.mode==='hold')showHold();
+  else if(writerReady&&bank.mode==='free')freeTimer=setTimeout(runSpin,1100);
  };
  if(window.jardimPhaserScene?.ready)available();
  else window.addEventListener('jardim-phaser-ready',available,{once:true});
+ writerTimer=setInterval(refreshWriter,5000);
+ window.addEventListener('pagehide',()=>{clearInterval(writerTimer);demoDB.releaseLease(tabToken)});
  setTimeout(()=>{
   if(!ready){
    $('loadError').hidden=false;

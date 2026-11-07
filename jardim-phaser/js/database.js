@@ -9,6 +9,21 @@ const STATE_ID='machine';
 const FALLBACK='jardim-magico-phaser-v1-fallback';
 const MAX_HISTORY=2500;
 
+/* V2.2: only one browser tab owns the IndexedDB writer lease at a time.
+ * A single readwrite transaction checks or acquires the lease atomically.
+ * With no IndexedDB there is no safe multi-tab writer; enter read-only.
+ */
+const WRITER_ID='active-writer-v22',LEASE_MS=22000;
+export function leaseAvailable(record,token,now){
+ return !record||record.owner===token||record.expiresAt<=now;
+}
+export function validRecoveryMarker(marker){
+ return marker&&typeof marker==='object'&&
+  typeof marker.id==='string'&&marker.id.length>=8&&marker.id.length<=128&&
+  typeof marker.date==='string'&&marker.date.length<=40&&
+  typeof marker.paid==='number'&&Number.isFinite(marker.paid)&&marker.paid>=0;
+}
+
 /* V1.9: validar ficheiros antes de alterar a base local existente.
  * Nunca aceitar JSON arbitrário como estado do jogo.
  */
@@ -39,6 +54,8 @@ export function validateBackup(data){
      !finiteRange(h.total,0,1e12))
    throw Error('A grelha Hold da cópia é inválida.');
  }
+ if(s.pendingVisual!==undefined&&s.pendingVisual!==null&&!validRecoveryMarker(s.pendingVisual))
+  throw Error('Recibo de animação pendente inválido.');
  if(s.profile!==undefined&&!['premios','normal','entretenimento'].includes(s.profile))
   throw Error('O perfil guardado não é válido.');
  if(s.admin!==undefined){
@@ -72,7 +89,7 @@ function ordered(events){
 function copy(o){return JSON.parse(JSON.stringify(o))}
 const safeErr=e=>String(e?.message||e);
 export class DemoDatabase{
- constructor(){this.database=null;this.mode='opening';this.pending=Promise.resolve();this.lastError='';}
+ constructor(){this.database=null;this.mode='opening';this.pending=Promise.resolve();this.lastError='';this.writerToken=null;}
  async connect(){
   if(typeof indexedDB==='undefined'){this.mode='localStorage';return this.mode}
   try{
@@ -129,36 +146,110 @@ export class DemoDatabase{
  }
  async write(payload,log){
   if(!this.database){
-   try{
-    const old=this.readFallback()||{events:[]};
-    const events=(old.events||[]).slice(-(MAX_HISTORY-1));
-    if(!events.some(x=>x.eventId===log.eventId))events.push(log);
-    localStorage.setItem(FALLBACK,JSON.stringify({...payload,events}));
-    return true;
-   }catch(e){this.lastError=safeErr(e);return false}
+   this.lastError='IndexedDB necessário para impedir várias abas de gravar o mesmo saldo.';
+   return false;
   }
   try{
    return await new Promise((resolve,reject)=>{
     const tx=this.database.transaction(['state','events'],'readwrite');
-    tx.oncomplete=()=>resolve(true);
+    let authorized=false;
+    tx.oncomplete=()=>resolve(authorized);
     tx.onerror=()=>reject(tx.error);
     tx.onabort=()=>reject(tx.error||Error('Transação abortada'));
-    tx.objectStore('state').put({id:STATE_ID,payload});
-    const events=tx.objectStore('events');
-    events.put(log);
-    const count=events.count();
-    count.onsuccess=()=>{
-     if(count.result<=MAX_HISTORY+50)return;
-     let excess=count.result-MAX_HISTORY;
-     const cursor=events.index('timestamp').openCursor();
-     cursor.onsuccess=()=>{
-      const item=cursor.result;
-      if(item&&excess>0){item.delete();excess--;item.continue()}
+    const state=tx.objectStore('state');
+    const request=state.get(WRITER_ID);
+    request.onsuccess=()=>{
+     const record=request.result;
+     if(!this.writerToken||record?.owner!==this.writerToken||
+      record.expiresAt<=Date.now()){
+      this.lastError='Esta aba perdeu a autorização para escrever.';
+      return;
+     }
+     authorized=true;
+     state.put({id:STATE_ID,payload});
+     const events=tx.objectStore('events');
+     events.put(log);
+     const count=events.count();
+     count.onsuccess=()=>{
+      if(count.result<=MAX_HISTORY+50)return;
+      let excess=count.result-MAX_HISTORY;
+      const cursor=events.index('timestamp').openCursor();
+      cursor.onsuccess=()=>{
+       const item=cursor.result;
+       if(item&&excess>0){item.delete();excess--;item.continue()}
+      };
      };
     };
    });
   }catch(e){this.lastError=safeErr(e);return false}
  }
+
+ async acquireLease(token){
+  await this.pending.catch(()=>{});
+  if(!this.database||typeof token!=='string'||token.length<8)return false;
+  return new Promise(resolve=>{
+   const tx=this.database.transaction('state','readwrite');
+   const state=tx.objectStore('state');
+   const req=state.get(WRITER_ID);
+   let acquired=false;
+   tx.oncomplete=()=>{this.writerToken=acquired?token:null;resolve(acquired)};
+   tx.onerror=()=>resolve(false);tx.onabort=()=>resolve(false);
+   req.onsuccess=()=>{
+    const now=Date.now();
+    if(!leaseAvailable(req.result,token,now))return;
+    state.put({id:WRITER_ID,owner:token,expiresAt:now+LEASE_MS});
+    acquired=true;
+   };
+  });
+ }
+ async renewLease(token){
+  if(!this.database||this.writerToken!==token)return false;
+  return new Promise(resolve=>{
+   const tx=this.database.transaction('state','readwrite');
+   const state=tx.objectStore('state'),req=state.get(WRITER_ID);
+   let active=false;
+   tx.oncomplete=()=>{if(!active)this.writerToken=null;resolve(active)};
+   tx.onerror=()=>resolve(false);tx.onabort=()=>resolve(false);
+   req.onsuccess=()=>{
+    if(req.result?.owner!==token||req.result.expiresAt<=Date.now())return;
+    state.put({id:WRITER_ID,owner:token,expiresAt:Date.now()+LEASE_MS});
+    active=true;
+   };
+  });
+ }
+ async releaseLease(token){
+  await this.pending.catch(()=>{});
+  if(!this.database||!token)return false;
+  return new Promise(resolve=>{
+   const tx=this.database.transaction('state','readwrite');
+   const state=tx.objectStore('state'),req=state.get(WRITER_ID);
+   let released=false;
+   tx.oncomplete=()=>{if(this.writerToken===token)this.writerToken=null;resolve(released)};
+   tx.onerror=()=>resolve(false);tx.onabort=()=>resolve(false);
+   req.onsuccess=()=>{
+    if(req.result?.owner===token){state.delete(WRITER_ID);released=true}
+   };
+  });
+ }
+ async checkpoint(snapshot,board){
+  await this.pending.catch(()=>{});
+  if(!this.database||!this.writerToken)return false;
+  const payload={snapshot:copy(snapshot),board:copy(board),updatedAt:new Date().toISOString()};
+  try{
+   return await new Promise(resolve=>{
+    const tx=this.database.transaction('state','readwrite');
+    const state=tx.objectStore('state'),req=state.get(WRITER_ID);
+    let ok=false;
+    tx.oncomplete=()=>resolve(ok);
+    tx.onerror=()=>resolve(false);tx.onabort=()=>resolve(false);
+    req.onsuccess=()=>{
+     if(req.result?.owner!==this.writerToken||req.result.expiresAt<=Date.now())return;
+     state.put({id:STATE_ID,payload});ok=true;
+    };
+   });
+  }catch{return false}
+ }
+
  async history(){
   await this.pending.catch(()=>{});
   if(!this.database)return ordered(this.readFallback()?.events||[]).slice(0,MAX_HISTORY);
@@ -183,10 +274,7 @@ export class DemoDatabase{
   const payload={...checked.state,updatedAt:new Date().toISOString()};
   const logs=ordered(checked.history).reverse();
   if(!this.database){
-   try{
-    localStorage.setItem(FALLBACK,JSON.stringify({...payload,events:logs}));
-    return {ok:true,events:logs.length};
-   }catch(e){this.lastError=safeErr(e);return {ok:false,message:this.lastError}}
+   return {ok:false,message:'Só se pode restaurar com base IndexedDB e aba ativa.'};
   }
   try{
    await new Promise((resolve,reject)=>{
@@ -194,26 +282,37 @@ export class DemoDatabase{
     tx.oncomplete=()=>resolve();
     tx.onerror=()=>reject(tx.error);
     tx.onabort=()=>reject(tx.error||Error('Transação abortada'));
-    tx.objectStore('state').put({id:STATE_ID,payload});
-    const events=tx.objectStore('events');
-    events.clear();
-    for(const log of logs)events.put(log);
+    const state=tx.objectStore('state'),reader=state.get(WRITER_ID);
+    reader.onsuccess=()=>{
+     if(reader.result?.owner!==this.writerToken||
+      reader.result.expiresAt<=Date.now())return tx.abort();
+     state.put({id:STATE_ID,payload});
+     const events=tx.objectStore('events');
+     events.clear();
+     for(const log of logs)events.put(log);
+    };
    });
    return {ok:true,events:logs.length};
   }catch(e){this.lastError=safeErr(e);return {ok:false,message:this.lastError}}
  }
  async clear(){
   await this.pending.catch(()=>{});
-  if(!this.database){
-   try{localStorage.removeItem(FALLBACK);return true}catch{return false}
-  }
-  return new Promise((resolve,reject)=>{
-   const tx=this.database.transaction(['events','state'],'readwrite');
-   tx.objectStore('events').clear();
-   tx.objectStore('state').clear();
-   tx.oncomplete=()=>resolve(true);
-   tx.onerror=()=>reject(tx.error);
-  });
+  if(!this.database||!this.writerToken)return false;
+  try{
+   return await new Promise(resolve=>{
+    const tx=this.database.transaction(['events','state'],'readwrite');
+    const state=tx.objectStore('state'),req=state.get(WRITER_ID);
+    let cleared=false;
+    req.onsuccess=()=>{
+     if(req.result?.owner!==this.writerToken||req.result.expiresAt<=Date.now())return tx.abort();
+     tx.objectStore('events').clear();
+     state.delete(STATE_ID); // preserve writer lease while the tab remains active
+     cleared=true;
+    };
+    tx.oncomplete=()=>resolve(cleared);
+    tx.onerror=()=>resolve(false);tx.onabort=()=>resolve(false);
+   });
+  }catch{return false}
  }
 }
 export const demoDB=new DemoDatabase();
