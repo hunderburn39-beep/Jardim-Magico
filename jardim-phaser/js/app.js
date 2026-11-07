@@ -889,6 +889,11 @@ function bind(){
  });
  document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
+   // Let another visible tab take over as soon as this one becomes inactive.
+   if(writerReady&&!running){
+    writerReady=false;update();
+    demoDB.releaseLease(tabToken).catch(err=>console.warn('Libertar sessão:',err));
+   }
    adminLock.lock();
    if(modalOpen&&['Administração DEMO','Histórico e cópias locais',
     'PIN de administração DEMO','Criar PIN de administração DEMO',
@@ -902,7 +907,7 @@ function bind(){
 }
 
 async function refreshWriter(){
- if(writerCheckBusy||(running&&!writerReady))return;
+ if((document.hidden&&!running)||writerCheckBusy||(running&&!writerReady))return;
  writerCheckBusy=true;
  try{
   let granted=false;

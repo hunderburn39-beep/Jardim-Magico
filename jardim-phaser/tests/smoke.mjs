@@ -582,6 +582,9 @@ ok(main.includes('writerReady=exclusive;')&&
  main.includes('if(!writerReady||!ready||!scene')===false&&
  main.includes('writerTimer=setInterval(refreshWriter,5000)'),
  'aquisição e renovação de writer integradas');
+ok(main.includes('if((document.hidden&&!running)||writerCheckBusy')&&
+ main.includes('demoDB.releaseLease(tabToken).catch('),
+ 'a aba liberta a sessão ao ficar oculta e só a retoma quando visível');
 ok(main.includes('pendingVisual={id:')&&
  main.includes('demoDB.checkpoint(snapshot(),board)'),
  'resultado fica preservado e marca visual é retirada após animação');
