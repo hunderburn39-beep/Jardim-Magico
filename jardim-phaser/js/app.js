@@ -5,7 +5,7 @@
 import {DemoBank,newBoard,winningCells,money} from './engine.js?v=1';
 import {demoDB} from './database.js?v=1';
 import {audio} from './audio.js?v=1';
-import {createReelGame} from './reels.js?v=1.2';
+import {createReelGame} from './reels.js?v=1.3';
 const $=id=>document.getElementById(id);
 const BETS=[.05,.1,.2,.4,.6,.8,1,1.5,2,3,5,7.5,10];
 const bank=new DemoBank();
