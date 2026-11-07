@@ -280,8 +280,8 @@ async function runSpin(){
    // Nas Free Spins a soma só é paga após a última rodada.
    say('Free Spins concluídas · prémio final '+money(outcome.credited)+
     ' créditos');
-   bonusAnnouncement('✨ FREE SPINS CONCLUÍDAS ✨',
-    'Total: '+money(outcome.credited)+' créditos',1550);
+   // Usar apenas a celebração em três linhas, evitando dois painéis
+   // de vitória sobrepostos quando acaba o bónus.
    celebrate('FREE SPINS',outcome.credited);
   }else if(outcome.triggered){
    say(outcome.triggered+(outcome.credited>0?
