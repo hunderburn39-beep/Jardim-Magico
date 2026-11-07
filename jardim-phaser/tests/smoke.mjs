@@ -12,6 +12,8 @@ const html=await read('../index.html');
 const css=await read('../css/estilo.css');
 const polish=await read('../css/polimento-v14.css');
 const pigArt=await read('../assets/porquinho-dourado.svg');
+const bonusScript=await read('../js/bonus-presentation.js');
+const bonusCss=await read('../css/bonus-v15.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
 function parseModule(s){
@@ -19,11 +21,34 @@ function parseModule(s){
  new Function(c);
  return c;
 }
-for(const [n,s] of [['engine',source],['app',main],['reels',reels],['database',dbsource],['audio',audio]]){
+for(const [n,s] of [['engine',source],['app',main],['reels',reels],['database',dbsource],['audio',audio],['bonus',bonusScript]]){
  parseModule(s);ok(true,'sintaxe '+n);
 }
 const E=new Function(parseModule(source)+'\nreturn {DemoBank,winningCells,collapseBoard};')();
 const {DemoBank,winningCells,collapseBoard}=E;
+const bonus=new Function(parseModule(bonusScript)+
+ '\nreturn {holdLandingIndices,holdDisplay,freeDisplay};')();
+const beforeCoins=[0,2,0,0,3,0,0,0,0,0,1,0,0,0,0,0];
+const afterCoins=[0,2,0,1,3,0,0,0,0,0,1,0,2,0,0,0];
+ok(JSON.stringify(bonus.holdLandingIndices(beforeCoins,afterCoins))===
+ JSON.stringify([3,12]),'Somente as duas moedas novas recebem animação');
+ok(bonus.holdLandingIndices(afterCoins,afterCoins).length===0,
+ 'Nenhuma moeda antiga pode aterrar novamente');
+ok(bonus.holdLandingIndices(null,afterCoins).length===5,
+ 'As moedas de abertura podem aparecer com animação');
+const hDisplay=bonus.holdDisplay({grid:afterCoins,tries:2,total:3.6,rounds:4});
+ok(hDisplay.coins===5&&hDisplay.attempts===2&&hDisplay.total===3.6,
+ 'Moedas e total espelham o estado do Hold');
+ok(bonus.holdDisplay({grid:afterCoins,tries:7,total:3.6}).attempts===3,
+ 'Tentativas nunca excedem três');
+const fDisplay=bonus.freeDisplay({
+ freeSpins:12,freeTotal:4.25,freeMultiplier:4
+});
+ok(fDisplay.remaining===12&&fDisplay.total===4.25&&fDisplay.multiplier===4,
+ 'Free Spins mostra o acumulado e multiplicador do motor');
+ok(bonus.freeDisplay({freeSpins:0,freeTotal:0,freeMultiplier:9}).multiplier===5,
+ 'Multiplicador visual nunca excede o teto do motor');
+
 for(const stake of [.05,.2,1,5,10])for(const reserve of [0,.01,.2,2,10,100,2300]){
  const bank=new DemoBank();bank.balance=10000;bank.reserve=reserve;bank.stake=stake;
  for(let i=0;i<260;i++){
@@ -246,6 +271,22 @@ ok(main.includes('outcome.free&&outcome.credited>0'),
  'Free Spins anuncia prémio final creditado');
 ok(reels.includes('Math.floor(48/targets.length)'),
  'limitador de partículas protege fluidez em mobile');
+ok(html.includes('id="freeHud"')&&html.includes('id="holdResult"'),
+ 'Free Spins e Hold têm painéis próprios');
+ok(html.includes('id="holdAttempts"')&&html.includes('id="holdCoins"')&&html.includes('id="holdTotal"'),
+ 'Hold apresenta tentativas, moedas e acumulado');
+ok(bonusCss.includes('.hold-cell.new-coin')&&bonusCss.includes('@keyframes coinLand'),
+ 'Moedas novas aterraram com animação, sem afetar o motor');
+ok(bonusCss.includes('prefers-reduced-motion:reduce'),
+ 'Animações de bónus respeitam acessibilidade');
+ok(main.includes("await persist(result.done?'hold-paid':'hold-turn'"),
+ 'Prémio do Hold é guardado antes da celebração');
+ok(main.includes('renderHold(previous,result.hold);')&&
+   main.includes('if(bank.mode!==\'hold\'||holdBusy)return;'),
+ 'Hold usa grelha calculada e bloqueia duplo clique durante pagamento');
+ok(main.includes("bonusAnnouncement('✨ FREE SPINS CONCLUÍDAS ✨'"),
+ 'Free Spins anuncia prémio final integral');
+
 ok(css.includes('jm75-rodar.webp')&&css.includes('jm75-jackpot-painel.webp'),
  'botão e jackpots usam a arte ornamental original');
 ok(css.includes('jm75-hud-painel.webp')&&css.includes('jm75-multi-painel.webp'),
@@ -254,4 +295,4 @@ ok(reels.includes("function enteringSymbol("),'motor tem injeção antecipada da
 ok(!reels.slice(reels.indexOf('onComplete:()=>{',reels.indexOf(' spin(target,')),reels.indexOf(' burst(cells,')).includes('this.useSymbol(item,target'),
  'paragem não altera qualquer textura');
 
-console.log('Phaser V1.4: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+console.log('Phaser V1.5: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
