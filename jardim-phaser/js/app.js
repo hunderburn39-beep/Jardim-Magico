@@ -15,6 +15,7 @@ let board=newBoard(),running=false,ready=false,turbo=false;
 let autoLeft=0,autoTimer=null,freeTimer=null;
 let bigTimer=null,winTimer=null,dropTimer=null,bonusTimer=null;
 let holdBusy=false;
+let freeOrbHistory=[];
 let modalOpen=false,holdsLong=false,longTimer=null;
 let loopToken=0;
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -174,12 +175,16 @@ async function runSpin(){
  if(!outcome.ok){stopAuto();say(outcome.message);return}
  const stages=outcome.stages||[{board:outcome.board,ev:outcome.ev,removed:[]}];
  const finalBoard=stages.at(-1).board;
+ if(!outcome.free)freeOrbHistory=[];
+ const earnedMultis=[];
+ let freeMultiAdded=false;
  running=true;update();
  clearTimeout(dropTimer);
  $('dropAmount').textContent=money(0);
  $('dropAmount').classList.remove('pulse');
  $('dropLabel').textContent='VALOR DA QUEDA';
- orbs([],outcome.free?bank.freeMultiplier:1);
+ orbs(outcome.free?freeOrbHistory:earnedMultis,
+  outcome.free?bank.freeMultiplier:1);
  $('winNotice').hidden=true;
  status('TAMBORES A RODAR ↓');
  say('Os símbolos estão a descer…');
@@ -193,7 +198,6 @@ async function runSpin(){
  try{
   if(!(await visual(()=>scene.spin(outcome.board,{turbo}),
     outcome.board,turbo?3900:7000)))repaired=true;
-  const earnedMultis=[];
   for(let i=0;i<stages.length;i++){
    const stage=stages[i];
    const wins=stage.ev.lineWins||[];
@@ -202,10 +206,19 @@ async function runSpin(){
    // Nas Free Spins o multiplicador só é aplicado no fim da série.
    const fac=outcome.free?1:(stage.ev.wilds?outcome.wildMultiplier:1);
    const lineTotal=round(stage.ev.raw*fac);
-   if(stage.ev.wilds&&wins.length)earnedMultis.push(outcome.wildMultiplier);
+   if(stage.ev.wilds&&wins.length){
+    if(outcome.free){
+     // Na matemática das Free Spins o incremento acontece UMA vez
+     // por giro, mesmo que várias quedas tenham Wild.
+     if(!freeMultiAdded){
+      freeOrbHistory.push(outcome.wildMultiplier);
+      freeMultiAdded=true;
+     }
+    }else earnedMultis.push(outcome.wildMultiplier);
+   }
    const effective=outcome.free?bank.freeMultiplier:
     (stage.ev.wilds?outcome.wildMultiplier:1);
-   orbs(earnedMultis,effective);
+   orbs(outcome.free?freeOrbHistory:earnedMultis,effective);
    if(!wins.length){
     status('FIM DAS QUEDAS · SEM NOVAS COMBINAÇÕES');
     break;
@@ -250,10 +263,17 @@ async function runSpin(){
   if(all.length)showWinText(all,visibleTotal,true);
   $('dropLabel').textContent='TOTAL DO GIRO';
   showDropAmount(all.length?visibleTotal:0);
-  if(outcome.free)orbs([],bank.freeMultiplier);
+  orbs(outcome.free?freeOrbHistory:earnedMultis,
+   outcome.free?bank.freeMultiplier:
+    (earnedMultis.length?outcome.wildMultiplier:1));
   status(all.length?all.length+' COMBINAÇÕES SOMADAS · '+
    Math.max(0,stages.length-1)+' QUEDAS':'TAMBORES PRONTOS');
   update();
+  // update() atualiza o saldo e os modos; repor aqui a informação
+  // visual dos Wild que efetivamente saíram durante este giro.
+  orbs(outcome.free?freeOrbHistory:earnedMultis,
+   outcome.free?bank.freeMultiplier:
+    (earnedMultis.length?outcome.wildMultiplier:1));
   if(repaired){
    say('Movimento recuperado; resultado e saldo preservados');
   }else if(outcome.free&&outcome.credited>0){
