@@ -17,6 +17,7 @@ import {sessionState,canResumeFree} from './session-v24.js?v=2.4';
 import {freeProgress,holdProgress} from './bonus-progress-v26.js?v=2.6';
 import {celebrationView,winBreakdown} from './win-ui-v27.js?v=2.7';
 import {createVisualSupervisor} from './visual-supervisor-v30.js?v=3.0';
+import {createTurnQueue,nextTurn} from './turn-queue-v31.js?v=3.1';
 const demoDB=createStorageGateway(localDB);
 const adminLock=createAdminPinLock();
 const diagnostics=createDiagnostics();
@@ -33,7 +34,9 @@ const performanceGuard=createPerformanceGuard(
  low=>scene?.setLowEffects?.(low)
 );
 let board=newBoard(),running=false,ready=false,turbo=false;
-let autoLeft=0,autoTimer=null,freeTimer=null;
+let autoLeft=0;
+const turnQueue=createTurnQueue();
+let writerReleasePending=null;
 let bigTimer=null,winTimer=null,dropTimer=null,bonusTimer=null;
 let holdBusy=false;
 let freeOrbHistory=[];
@@ -197,11 +200,40 @@ function renderSessionBanner(){
  button.disabled=running||mutating||holdBusy||writerCheckBusy;
  if(state.action)button.textContent=state.action;
 }
+function continuationState(){
+ return {mode:bank.mode,autoLeft,freePaused,visible:!document.hidden,
+  writerReady,ready,modalOpen,running,mutating,holdBusy};
+}
+function scheduleNext(delay=650){
+ const kind=nextTurn(continuationState());
+ if(!kind)return false;
+ turnQueue.clearAll();
+ turnQueue.arm(kind,delay,()=>{
+  if(nextTurn(continuationState())!==kind)return;
+  if(kind==='hold')showHold();
+  else runSpin();
+ });
+ return true;
+}
+async function releaseIfHidden(){
+ if(!document.hidden||!writerReady||running||mutating||holdBusy)return false;
+ writerReady=false;diagnostics.record('writer-release');update();
+ const release=demoDB.releaseLease(tabToken).catch(err=>{
+  console.warn('Libertar sessão em segundo plano:',err);
+ });
+ writerReleasePending=release;
+ try{await release}finally{
+  if(writerReleasePending===release)writerReleasePending=null;
+ }
+ return true;
+}
 function resumeFree(){
  if(!canResumeFree({ready,writerReady,paused:freePaused,mode:bank.mode,
   hidden:document.hidden,running,mutating}))return false;
- freePaused=false;clearTimeout(freeTimer);
- update();freeTimer=setTimeout(runSpin,350);
+ freePaused=false;
+ turnQueue.clear('free');
+ update();
+ scheduleNext(350);
  return true;
 }
 async function withMutation(action){
@@ -212,16 +244,26 @@ async function withMutation(action){
   saveIssue=true;diagnostics.record('save-failed');
   console.error('Operação pendente:',e);
   say('Operação não concluída. Revê a sessão local.');return false;
- }finally{mutating=false;update()}
+ }finally{
+  mutating=false;update();
+  if(document.hidden)await releaseIfHidden();
+  else if(bank.mode==='free'&&!freePaused&&!turnQueue.pending('free'))
+   scheduleNext(1350);
+  else if(!writerReady)refreshWriter();
+ }
 }
 function retrySession(){
  if(mutating||running||holdBusy||writerCheckBusy)return;
  refreshWriter(true);
 }
 
-function stopAuto(){
- autoLeft=0;clearTimeout(autoTimer);autoTimer=null;
- update();say('Giros automáticos parados');
+function stopAuto(silent=false){
+ const wasActive=autoLeft>0;
+ autoLeft=0;turnQueue.clear('auto');
+ if(wasActive){
+  update();
+  if(!silent)say('Giros automáticos parados');
+ }
 }
 async function visual(promiseFactory,expected,deadline=7000){
  if(document.hidden)return false;
@@ -237,8 +279,9 @@ async function visual(promiseFactory,expected,deadline=7000){
  return outcome.ok;
 }
 async function runSpin(){
- clearTimeout(autoTimer);clearTimeout(freeTimer);
- if(document.hidden||!writerReady||!ready||!scene||running||mutating||freePaused||modalOpen||bank.mode==='hold')return;
+ if(document.hidden||!writerReady||!ready||!scene||running||mutating||holdBusy||
+    freePaused||modalOpen||bank.mode==='hold')return;
+ turnQueue.clearAll();
  const before=snapshot();
  const previousBoard=board.map(col=>col.slice());
  let outcome;
@@ -394,16 +437,16 @@ async function runSpin(){
    celebrate(celebrationTier(outcome.credited,bank.stake),outcome.credited);
   }else say('Sem prémio neste giro');
   // Jogadas seguintes só avançam quando as quedas atuais terminarem.
-  if(!document.hidden&&writerReady){
-   if(bank.mode==='hold')setTimeout(showHold,650);
-   else if(bank.mode==='free'&&!freePaused)
-    freeTimer=setTimeout(runSpin,turbo?350:780);
-   else if(autoLeft>0)autoTimer=setTimeout(runSpin,turbo?230:600);
+  if(document.hidden)await releaseIfHidden();
+  else{
+   if(!writerReady)refreshWriter();
+   else scheduleNext(bank.mode==='hold'?650:
+    bank.mode==='free'?(turbo?350:780):(turbo?230:600));
   }
  }
 }
 function modal(title,description,actions=[]){
- modalOpen=true;clearTimeout(autoTimer);autoLeft=0;
+ modalOpen=true;turnQueue.clearAll();autoLeft=0;
  $('modalTitle').textContent=title;
  const area=$('modalContent');area.replaceChildren();
  const p=document.createElement('p');p.textContent=description;area.append(p);
@@ -427,7 +470,7 @@ function modal(title,description,actions=[]){
 function closeModal(){
  modalOpen=false;$('overlay').hidden=true;update();
  if(bank.mode==='free'&&!running&&!freePaused&&writerReady&&!document.hidden)
-  freeTimer=setTimeout(runSpin,500);
+  scheduleNext(500);
 }
 function bonusModal(){
  if(!writerReady||running||mutating||bank.mode!=='base')return;
@@ -443,7 +486,7 @@ function bonusModal(){
        copySnapshot(before);update();say('Compra cancelada: não foi possível guardar.');return;
       }
       bonusAnnouncement('✨ FREE SPINS ✨','15 giros de demonstração',1300);
-      freeTimer=setTimeout(runSpin,1350);
+      // A continuação é armada após withMutation terminar a gravação.
      }
     })},
    {name:'🪙 Hold & Win 4×4',detail:'Custo: '+money(bank.holdPrice),
@@ -464,7 +507,9 @@ function bonusModal(){
 function exportDiagnostics(){
  const state=diagnostics.snapshot();
  const report={...state,fxLowQuality:performanceGuard.isLite(),
-  visualActive:visualSupervisor.active(),dbMode:demoDB.mode,
+  visualActive:visualSupervisor.active(),
+  pendingNext:['free','auto','hold'].filter(kind=>turnQueue.pending(kind)),
+  dbMode:demoDB.mode,
   writerActive:writerReady,
   gameMode:bank.mode,
   pendingRecovery:!!pendingVisual};
@@ -490,6 +535,7 @@ function diagnosticModal(){
   ['Recuperação pendente',pendingVisual?'Sim':'Não'],
   ['Efeitos automáticos',performanceGuard.isLite()?'Modo leve':'Alta qualidade'],
   ['Transição Phaser',visualSupervisor.active()?'Em execução':'Livre'],
+  ['Próximo giro', ['free','auto','hold'].filter(kind=>turnQueue.pending(kind)).join(', ')||'Nenhum'],
   ['Falhas a guardar',counts['save-failed']||0],
   ['Falhas de checkpoint',counts['checkpoint-failed']||0],
   ['Interrupções visuais',counts['spin-visual-error']||0],
@@ -515,7 +561,7 @@ function showRecoveryState(marker){
  }
  if(summary.kind==='free-active'){
   diagnostics.record('recovered-free');
-  clearTimeout(freeTimer);freeTimer=null;
+  turnQueue.clear('free');
   freePaused=true;update();
   modal(summary.title,summary.detail,[{
    name:'▶ RETOMAR FREE SPINS',detail:'Só retoma as jogadas ainda pendentes.',
@@ -629,7 +675,7 @@ async function holdTurn(){
    $('holdOverlay').hidden=true;
    celebrate('HOLD & WIN',result.prize);
    say('Hold & Win · prémio integral: '+money(result.prize));
-   if(autoLeft>0)autoTimer=setTimeout(runSpin,700);
+   // O próximo giro automático só começa depois de libertar holdBusy.
   }else if(newly){
    // Ver a aterragem das moedas antes da próxima tentativa.
    await wait(turbo?220:490);
@@ -648,6 +694,9 @@ async function holdTurn(){
   if(saved&&pendingVisual)await clearVisualReceipt();
   holdBusy=false;
   button.disabled=false;
+  if(document.hidden)await releaseIfHidden();
+  else if(!writerReady)refreshWriter();
+  else if(saved&&bank.mode==='base'&&autoLeft>0)scheduleNext(700);
  }
 }
 
@@ -944,7 +993,7 @@ function infoModal(){
     }
     update();
     bonusAnnouncement('✨ FREE SPINS ✨','15 giros gratuitos de demonstração',1200);
-    freeTimer=setTimeout(runSpin,1250);
+    scheduleNext(1250);
    }},
   {name:'🪙 Experimentar Hold & Win',detail:'Ativa grelha fictícia se o fundo permitir.',
    act:async()=>{
@@ -1057,17 +1106,19 @@ function bind(){
    visualSupervisor.cancel();
    performanceGuard.pause();
    // Let another visible tab take over as soon as this one becomes inactive.
-   if(writerReady&&!running&&!mutating&&!holdBusy){
-    writerReady=false;diagnostics.record('writer-release');update();
-    demoDB.releaseLease(tabToken).catch(err=>console.warn('Libertar sessão:',err));
-   }
+   // A libertação é feita uma única vez por releaseIfHidden(), com
+   // uma promessa que o regresso à aplicação aguarda antes de readquirir.
    adminLock.lock();
    if(modalOpen&&['Administração DEMO','Histórico e cópias locais',
     'PIN de administração DEMO','Criar PIN de administração DEMO',
     'Alterar PIN local'].includes($('modalTitle').textContent))closeModal();
    diagnostics.record('page-background');
    clearTimeout(longTimer);holdsLong=false;
-   stopAuto();clearTimeout(freeTimer);
+   turnQueue.clearAll();
+   if(bank.mode==='free')freePaused=true;
+   stopAuto(true);
+   update();
+   releaseIfHidden();
   }
   else{
    performanceGuard.resume();
@@ -1077,9 +1128,11 @@ function bind(){
 }
 
 async function refreshWriter(forceReload=false){
- if((document.hidden&&!running)||writerCheckBusy||(running&&!writerReady)||mutating||holdBusy)return;
+ if(document.hidden||writerCheckBusy||(running&&!writerReady)||mutating||holdBusy)return;
  writerCheckBusy=true;
  try{
+  if(writerReleasePending)await writerReleasePending;
+  if(document.hidden)return;
   let granted=false;
   if(writerReady)granted=await demoDB.renewLease(tabToken);
   else granted=await demoDB.acquireLease(tabToken);
@@ -1103,11 +1156,11 @@ async function refreshWriter(forceReload=false){
    if(recoveredVisual&&pendingVisual)await clearVisualReceipt();
    if(ready){
     const displayed=showRecoveryState(recoveredVisual?saved?.snapshot?.pendingVisual:null);
-    if(!displayed&&bank.mode==='free'&&!document.hidden&&!freePaused)freeTimer=setTimeout(runSpin,1100);
+    if(!displayed&&bank.mode==='free'&&!document.hidden&&!freePaused)scheduleNext(1100);
     else if(!displayed&&bank.mode==='hold')showHold();
    }else say('Sessão exclusiva obtida. Saldo sincronizado com a base local.');
   }else if(ready&&!document.hidden&&!running&&!modalOpen&&bank.mode==='free'&&
-    !freePaused&&!freeTimer)freeTimer=setTimeout(runSpin,650);
+    !freePaused&&!turnQueue.pending('free'))scheduleNext(650);
  }catch(err){
   writerReady=false;saveIssue=true;diagnostics.record('storage-error');console.error('Aba ativa:',err);
   $('dbStatus').textContent='PHASER · SESSÃO BLOQUEADA';
@@ -1151,7 +1204,7 @@ async function boot(){
   if(!showRecoveryState(savedMarker)){
    say('Jardim Mágico Phaser · símbolos originais HD');
    if(bank.mode==='hold')showHold();
-   else if(bank.mode==='free')freeTimer=setTimeout(runSpin,1100);
+   else if(bank.mode==='free')scheduleNext(1100);
   }
  };
  if(window.jardimPhaserScene?.ready)available();
@@ -1159,8 +1212,9 @@ async function boot(){
  writerTimer=setInterval(refreshWriter,5000);
  window.addEventListener('pagehide',()=>{
   visualSupervisor.cancel();
+  turnQueue.clearAll();
   clearInterval(writerTimer);
-  if(!running&&!mutating&&!holdBusy)demoDB.releaseLease(tabToken);
+  releaseIfHidden();
  });
  setTimeout(()=>{
   if(!ready){

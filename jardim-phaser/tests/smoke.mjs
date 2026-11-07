@@ -37,6 +37,7 @@ const winStyle27=await read('../css/celebracoes-v27.css');
 const responsive28=await read('../css/responsive-v28.css');
 const perfCSS29=await read('../css/performance-v29.css');
 const supervisorSource=await read('../js/visual-supervisor-v30.js');
+const turnQueue31Source=await read('../js/turn-queue-v31.js');
 const pinCss=await read('../css/admin-pin-v21.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
@@ -404,7 +405,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.0'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.1'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -437,7 +438,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=3.0'),'botão e versão Phaser V3.0');
+ html.includes('app.js?v=3.1'),'botão e versão Phaser V3.1');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -934,4 +935,53 @@ for(const profile30 of ['normal','premios','entretenimento']){
 }
 ok(scenarios30===660&&freeEnd30>=1&&holdEnd30>=1,
  '660 rondas determinísticas de todos os perfis incluem Free Spins e Hold');
-console.log('Phaser V3.0: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const Q31=new Function(parseModule(turnQueue31Source)+
+ '\nreturn {nextTurn,createTurnQueue};')();
+const baseTurn={ready:true,writerReady:true,visible:true,mode:'base',autoLeft:10};
+ok(Q31.nextTurn(baseTurn)==='auto'&&
+ Q31.nextTurn({...baseTurn,mode:'free',freePaused:false})==='free'&&
+ Q31.nextTurn({...baseTurn,mode:'hold'})==='hold',
+ 'fila escolhe giros automáticos, Free Spins ou Hold pelo modo');
+ok(Q31.nextTurn({...baseTurn,mode:'free',freePaused:true})===null&&
+ Q31.nextTurn({...baseTurn,visible:false})===null&&
+ Q31.nextTurn({...baseTurn,modalOpen:true})===null&&
+ Q31.nextTurn({...baseTurn,holdBusy:true})===null&&
+ Q31.nextTurn({...baseTurn,mutating:true})===null,
+ 'fila bloqueia retoma silenciosa e giros durante operações pendentes');
+let nextId31=0,executed31=0;const timers31=new Map();
+const queue31=Q31.createTurnQueue({
+ schedule:(fn,ms)=>{const id=++nextId31;timers31.set(id,{fn,ms});return id},
+ cancel:id=>timers31.delete(id)
+});
+queue31.arm('free',100,()=>executed31++);
+queue31.arm('free',200,()=>executed31+=10);
+ok(queue31.pending('free')&&timers31.size===1&&
+ [...timers31.values()][0].ms===200,
+ 'uma segunda marcação de Free Spins substitui a anterior');
+const fired31=[...timers31.values()][0].fn;fired31();
+ok(executed31===10&&!queue31.pending('free')&&
+ !queue31.pending('auto'),
+ 'temporizador executado deixa de bloquear a próxima marcação');
+queue31.arm('auto',130,()=>executed31++);
+queue31.arm('hold',170,()=>executed31++);
+queue31.clearAll();
+ok(!queue31.pending('auto')&&!queue31.pending('hold')&&
+ timers31.size===0,
+ 'quando Safari fica oculto não sobra nenhum giro agendado');
+ok(main.includes('const turnQueue=createTurnQueue();')&&
+ main.includes('turnQueue.clearAll();')&&
+ main.includes('scheduleNext(350);')&&
+ main.includes("if(bank.mode==='free')freePaused=true;")&&
+ main.includes('if(writerReleasePending)await writerReleasePending;'),
+ 'fila integrada, recuperação explícita e sem corrida ao liberar a base');
+ok(!main.includes('autoTimer=setTimeout(runSpin')&&
+ !main.includes('freeTimer=setTimeout(runSpin')&&
+ !main.includes('clearTimeout(freeTimer)')&&
+ main.includes("else if(saved&&bank.mode==='base'&&autoLeft>0)scheduleNext(700)"),
+ 'giros automáticos e Free Spins não deixam temporizadores paralelos');
+ok(main.includes('if(document.hidden)await releaseIfHidden();')&&
+ main.includes('releaseIfHidden();')&&
+ main.includes('turnQueue.clearAll();')&&
+ main.includes('if(!document.hidden&&writerReady)'),
+ 'sessão local protege saldo e interrompe automáticos em segundo plano');
+console.log('Phaser V3.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

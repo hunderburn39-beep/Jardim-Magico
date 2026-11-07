@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.0
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.1
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -269,3 +269,14 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.9
 - Mantidos os gráficos, a barra da V2.5 (queda à esquerda, MULTI à direita), o modelo matemático de demonstração, as cascatas 5×3 e os bónus. Sem dinheiro real e sem RTP certificado.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.0
+
+## V3.1 — fila de giros, pausa dos bónus e sessão no Safari
+
+- Uma única fila `turn-queue-v31.js` agenda o próximo giro base, Free Spin ou abertura do Hold & Win. Em cada categoria existe no máximo um temporizador, cancelado antes de uma nova marcação. O botão de rodar, o turbo e as compras continuam a usar o mesmo motor de demonstração.
+- Ao colocar o Safari em segundo plano, a fila é anulada. As Free Spins passam explicitamente para **pausadas**, com botão **RETOMAR FREE SPINS** no regresso; nunca avançam de forma silenciosa.
+- Um giro não começa enquanto o Hold & Win está a guardar/mostrar o resultado. A série automática depois do Hold só é marcada **após** terminar a escrita e libertar o bloqueio de bónus.
+- Corrigida a corrida entre libertar a posse IndexedDB e voltar à aplicação: a nova aquisição da sessão aguarda a libertação anterior. Se o navegador se ocultar durante uma operação, a aba liberta a posse ao terminar com segurança.
+- O diagnóstico local indica se existe próximo giro agendado; testes automáticos verificam o cancelamento/reativação e os modos de bónus, além das simulações anteriores.
+- Mantida a grelha Phaser 5×3, a barra com valor da queda à esquerda e MULTI à direita, todas as cascatas, os gráficos e os cálculos de créditos fictícios. Não é uma máquina com dinheiro real nem RTP auditado.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.1
