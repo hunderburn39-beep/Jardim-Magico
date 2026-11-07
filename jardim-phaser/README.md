@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.9
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.0
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -259,3 +259,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.8
 - Os testes incluem recuperação de FPS, suspensão/retoma, orçamento de partículas e limpeza de efeitos. **Motor matemático, fundos fictícios, RTP não auditado, jogo original e aparência normal não foram alterados.**
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.9
+
+## V3.0 — estabilidade e testes de regressão ampliados
+
+- Introduzido um supervisor de transições **apenas visuais**, que termina imediatamente a espera quando o Safari fica em segundo plano ou a página é fechada. A grelha guardada é reconstruída pelo Phaser sem recalcular a jogada ou atribuir novos prémios.
+- Quando o jogo está oculto, deixam de iniciar-se novas animações de eliminação, cascatas e giros automáticos. No regresso, a posse de escrita e os bónus são retomados através dos mecanismos exclusivos já existentes (V2.2–2.4).
+- Cada transição monitorizada é terminada com sucesso, erro, interrupção ou timeout; temporizadores são libertados, e resoluções tardias não voltam a executar recuperação. Os diagnósticos indicam se há transição Phaser pendente.
+- Testes de regressão forçam interrupções e timeouts com promessas simuladas e executam 660 rondas determinísticas mistas (3 perfis) com giros, Free Spins, Hold & Win e verificações de pagamentos únicos e reserva fictícia não negativa.
+- Mantidos os gráficos, a barra da V2.5 (queda à esquerda, MULTI à direita), o modelo matemático de demonstração, as cascatas 5×3 e os bónus. Sem dinheiro real e sem RTP certificado.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.0

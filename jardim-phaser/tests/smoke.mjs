@@ -36,6 +36,7 @@ const winUI27=await read('../js/win-ui-v27.js');
 const winStyle27=await read('../css/celebracoes-v27.css');
 const responsive28=await read('../css/responsive-v28.css');
 const perfCSS29=await read('../css/performance-v29.css');
+const supervisorSource=await read('../js/visual-supervisor-v30.js');
 const pinCss=await read('../css/admin-pin-v21.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
@@ -403,7 +404,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.9'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.0'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -436,7 +437,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=2.9'),'botão e versão Phaser V2.9');
+ html.includes('app.js?v=3.0'),'botão e versão Phaser V3.0');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -841,4 +842,96 @@ ok(html.includes('performance-v29.css?v=2.9')&&
  perfCSS29.includes('.machine.lite-effects .frame-region')&&
  !html.includes('MULTIS ACUMULADOS'),
  'novos estilos leves preservam barra sem informação repetida');
-console.log('Phaser V2.9: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const S30=new Function(parseModule(supervisorSource)+
+ '\nreturn {createVisualSupervisor};')();
+let finishVisual;
+let visualCancelCount=0;
+const clock30={callbacks:new Map(),next:0};
+const V30=S30.createVisualSupervisor({
+ schedule:(fn)=>{const id=++clock30.next;clock30.callbacks.set(id,fn);return id},
+ clear:(id)=>clock30.callbacks.delete(id)
+});
+const successful30=V30.run(()=>Promise.resolve('drawn'),()=>visualCancelCount++);
+ok(V30.active()&&(await successful30).ok&&!V30.active()&&
+ clock30.callbacks.size===0&&visualCancelCount===0,
+ 'supervisor visual termina com sucesso e limpa o temporizador');
+const blocked30=V30.run(()=>new Promise(resolve=>{finishVisual=resolve}),
+ ()=>visualCancelCount++);
+await Promise.resolve();
+V30.cancel();
+const aborted30=await blocked30;
+ok(aborted30.reason==='interrupted'&&!V30.active()&&
+ visualCancelCount===1&&clock30.callbacks.size===0,
+ 'Safari oculta: transição interrompida e efeito recuperado imediatamente');
+finishVisual('later');
+await Promise.resolve();
+ok(visualCancelCount===1,
+ 'conclusão tardia de tween cancelado não recupera duas vezes');
+const timed30=V30.run(()=>new Promise(()=>{}),()=>visualCancelCount++,50);
+await Promise.resolve();
+for(const cb of [...clock30.callbacks.values()])cb();
+const timedResult=await timed30;
+ok(timedResult.reason==='timeout'&&visualCancelCount===2&&!V30.active(),
+ 'timeout visual recupera o tabuleiro e liberta o botão');
+const rejected30=await V30.run(()=>Promise.reject(Error('renderer')),()=>visualCancelCount++);
+ok(rejected30.reason==='error'&&visualCancelCount===3&&
+ clock30.callbacks.size===0,
+ 'erro Phaser não deixa guardião ativo');
+ok(main.includes('visualSupervisor.cancel();')&&
+ main.includes('if(document.hidden){repaired=true;break}')&&
+ main.includes('visualSupervisor.run(')&&
+ main.includes('if(!document.hidden&&writerReady)'),
+ 'integração interrompe cascatas ocultas e agenda apenas quando visível');
+const random30=(()=>{let state=921125;
+ return ()=>{state=(Math.imul(1664525,state)+1013904223)>>>0;
+  return state/4294967296}
+})();
+let freeEnd30=0,holdEnd30=0,scenarios30=0;
+for(const profile30 of ['normal','premios','entretenimento']){
+ const demo30=new DemoBank();
+ demo30.profile=profile30;demo30.balance=20000;demo30.reserve=2300;
+ demo30.stake=.2;
+ // Rodadas de stress de sessão mista, sem dependência do DOM/navegador.
+ for(let i=0;i<220;i++){
+  if(demo30.mode==='base'&&i%40===0){
+   if(i%80===0)demo30.buyFree();
+   else demo30.buyHold();
+  }
+  const oldMode=demo30.mode;
+  if(oldMode==='hold'){
+   const beforeMoney=demo30.balance,beforeFund=demo30.reserve;
+   const h=demo30.holdTurn(random30);
+   ok(h.ok&&demo30.reserve>=0,'Hold suportado pelo cofre no stress');
+   if(h.done){
+    holdEnd30++;
+    ok(demo30.mode==='base'&&
+     Math.abs(demo30.balance-beforeMoney-h.prize)<.001&&
+     Math.abs(beforeFund-demo30.reserve-h.prize)<.001,
+     'Hold paga uma vez, quando termina');
+    ok(!demo30.holdTurn(random30).ok,
+     'Hold concluído não pode ser pago novamente');
+   }
+  }else{
+   const beforeMoney=demo30.balance,beforeFund=demo30.reserve;
+   const spin=demo30.spin(random30);
+   ok(spin.ok&&demo30.reserve>=0&&
+    spin.stages.at(-1).ev.lines===0,
+    'stress de giros: sequência termina e reserva não é negativa');
+   if(oldMode==='free'){
+    ok(spin.free&&demo30.freeMultiplier>=1&&demo30.freeMultiplier<=5&&
+     demo30.freePlayed>=1&&
+     (demo30.mode==='free'?spin.credited===0:
+      demo30.mode==='base'&&Math.abs(spin.credited-demo30.freeAwarded)<.001),
+     'Free Spins mantêm multiplicador e pagamento apenas no fim');
+    if(demo30.mode==='base')freeEnd30++;
+   }else{
+    ok(Math.abs(demo30.balance-beforeMoney+demo30.stake-spin.credited)<.001,
+     'base: débito de uma aposta e crédito de um prémio');
+   }
+  }
+  scenarios30++;
+ }
+}
+ok(scenarios30===660&&freeEnd30>=1&&holdEnd30>=1,
+ '660 rondas determinísticas de todos os perfis incluem Free Spins e Hold');
+console.log('Phaser V3.0: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

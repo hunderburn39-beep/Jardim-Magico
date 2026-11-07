@@ -16,9 +16,11 @@ import {spinRecoveryReceipt,holdRecoveryReceipt,recoveryMessage,createDiagnostic
 import {sessionState,canResumeFree} from './session-v24.js?v=2.4';
 import {freeProgress,holdProgress} from './bonus-progress-v26.js?v=2.6';
 import {celebrationView,winBreakdown} from './win-ui-v27.js?v=2.7';
+import {createVisualSupervisor} from './visual-supervisor-v30.js?v=3.0';
 const demoDB=createStorageGateway(localDB);
 const adminLock=createAdminPinLock();
 const diagnostics=createDiagnostics();
+const visualSupervisor=createVisualSupervisor();
 diagnostics.record('boot');
 const requireAdminUnlocked=()=>adminLock.unlocked()&&adminLock.touch();
 const $=id=>document.getElementById(id);
@@ -222,24 +224,17 @@ function stopAuto(){
  update();say('Giros automáticos parados');
 }
 async function visual(promiseFactory,expected,deadline=7000){
- let timeout;
- try{
-  const done=await Promise.race([
-   Promise.resolve().then(promiseFactory).then(()=>true),
-   new Promise(resolve=>{timeout=setTimeout(()=>resolve(false),deadline)})
-  ]);
-  if(!done){
-   diagnostics.record('visual-timeout');
-   console.warn('Recuperação de animação Phaser: timeout');
-   scene?.recover?.(expected);
-  }
-  return done;
- }catch(err){
-  diagnostics.record('spin-visual-error');
-  console.error('Recuperação de animação Phaser:',err);
-  try{scene?.recover?.(expected)}catch{}
-  return false;
- }finally{clearTimeout(timeout)}
+ if(document.hidden)return false;
+ const outcome=await visualSupervisor.run(
+  promiseFactory,
+  ()=>scene?.recover?.(expected),
+  deadline
+ );
+ if(!outcome.ok){
+  diagnostics.record(outcome.reason==='timeout'?'visual-timeout':'spin-visual-error');
+  console.warn('Transição visual recuperada:',outcome.reason);
+ }
+ return outcome.ok;
 }
 async function runSpin(){
  clearTimeout(autoTimer);clearTimeout(freeTimer);
@@ -291,6 +286,8 @@ async function runSpin(){
   if(!(await visual(()=>scene.spin(outcome.board,{turbo}),
     outcome.board,turbo?3900:7000)))repaired=true;
   for(let i=0;i<stages.length;i++){
+   // Uma aba oculta não deve iniciar bursts/cascatas adicionais.
+   if(document.hidden){repaired=true;break}
    const stage=stages[i];
    const wins=stage.ev.lineWins||[];
    const cells=winningCells(stage.ev);
@@ -328,11 +325,13 @@ async function runSpin(){
     destroy:!!next,
     duration:turbo?390:780
    }),stage.board,turbo?1900:3000)))repaired=true;
+   if(document.hidden){repaired=true;break}
    if(next){
     audio.play('cascade');
     status('↓ PEÇAS A CAIR DE CIMA ↓');
     if(!(await visual(()=>scene.cascade(next.board,next.removed,{turbo}),
       next.board,turbo?2500:3800)))repaired=true;
+    if(document.hidden){repaired=true;break}
    }
   }
  }catch(err){
@@ -395,9 +394,12 @@ async function runSpin(){
    celebrate(celebrationTier(outcome.credited,bank.stake),outcome.credited);
   }else say('Sem prémio neste giro');
   // Jogadas seguintes só avançam quando as quedas atuais terminarem.
-  if(bank.mode==='hold')setTimeout(showHold,650);
-  else if(bank.mode==='free')freeTimer=setTimeout(runSpin,turbo?350:780);
-  else if(autoLeft>0)autoTimer=setTimeout(runSpin,turbo?230:600);
+  if(!document.hidden&&writerReady){
+   if(bank.mode==='hold')setTimeout(showHold,650);
+   else if(bank.mode==='free'&&!freePaused)
+    freeTimer=setTimeout(runSpin,turbo?350:780);
+   else if(autoLeft>0)autoTimer=setTimeout(runSpin,turbo?230:600);
+  }
  }
 }
 function modal(title,description,actions=[]){
@@ -461,7 +463,8 @@ function bonusModal(){
 
 function exportDiagnostics(){
  const state=diagnostics.snapshot();
- const report={...state,fxLowQuality:performanceGuard.isLite(),dbMode:demoDB.mode,
+ const report={...state,fxLowQuality:performanceGuard.isLite(),
+  visualActive:visualSupervisor.active(),dbMode:demoDB.mode,
   writerActive:writerReady,
   gameMode:bank.mode,
   pendingRecovery:!!pendingVisual};
@@ -486,6 +489,7 @@ function diagnosticModal(){
   ['Modo de jogo',bank.mode],
   ['Recuperação pendente',pendingVisual?'Sim':'Não'],
   ['Efeitos automáticos',performanceGuard.isLite()?'Modo leve':'Alta qualidade'],
+  ['Transição Phaser',visualSupervisor.active()?'Em execução':'Livre'],
   ['Falhas a guardar',counts['save-failed']||0],
   ['Falhas de checkpoint',counts['checkpoint-failed']||0],
   ['Interrupções visuais',counts['spin-visual-error']||0],
@@ -1050,6 +1054,7 @@ function bind(){
  });
  document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
+   visualSupervisor.cancel();
    performanceGuard.pause();
    // Let another visible tab take over as soon as this one becomes inactive.
    if(writerReady&&!running&&!mutating&&!holdBusy){
@@ -1153,6 +1158,7 @@ async function boot(){
  else window.addEventListener('jardim-phaser-ready',available,{once:true});
  writerTimer=setInterval(refreshWriter,5000);
  window.addEventListener('pagehide',()=>{
+  visualSupervisor.cancel();
   clearInterval(writerTimer);
   if(!running&&!mutating&&!holdBusy)demoDB.releaseLease(tabToken);
  });
