@@ -781,16 +781,26 @@ function infoModal(){
   {name:'🪨 Pedra bloqueadora',detail:'Não atribui prémios; interrompe sequências.'},
   {name:'🎁 Experimentar Free Spins',detail:'Ativa apenas um teste visual gratuito.',
    act:async()=>{
-    if(bank.mode!=='base'||running)return;
-    bank.addFree(15);await persist('test-free');update();
+    if(!writerReady||bank.mode!=='base'||running)return;
+    const before=snapshot();
+    bank.addFree(15);
+    if(!(await persist('test-free'))){
+     copySnapshot(before);update();say('Teste cancelado: não foi possível guardar.');return;
+    }
+    update();
     bonusAnnouncement('✨ FREE SPINS ✨','15 giros gratuitos de demonstração',1200);
     freeTimer=setTimeout(runSpin,1250);
    }},
   {name:'🪙 Experimentar Hold & Win',detail:'Ativa grelha fictícia se o fundo permitir.',
    act:async()=>{
-    if(bank.mode!=='base'||running)return;
-    if(bank.startHold()){await persist('test-hold');update();showHold()}
-    else say('O cofre virtual não consegue pagar seis moedas iniciais');
+    if(!writerReady||bank.mode!=='base'||running)return;
+    const before=snapshot();
+    if(bank.startHold()){
+     if(!(await persist('test-hold'))){
+      copySnapshot(before);update();say('Teste cancelado: falha a guardar.');return;
+     }
+     update();showHold();
+    }else say('O cofre virtual não consegue pagar seis moedas iniciais');
    }}
  ]);
 }
@@ -815,7 +825,12 @@ function changeBet(dir){
  const pos=BETS.findIndex(x=>Math.abs(x-bank.stake)<.00001);
  const next=BETS[Math.max(0,Math.min(BETS.length-1,(pos<0?2:pos)+dir))];
  if(bank.setStake(next)){
-  update();persist('stake');say('Aposta virtual '+money(bank.stake));
+  const old=BETS[Math.max(0,pos)]??.2;
+  update();
+  persist('stake').then(ok=>{
+   if(!ok){bank.stake=old;update();say('Aposta anterior reposta: falha ao guardar.')}
+  });
+  say('Aposta virtual '+money(bank.stake));
  }
 }
 function autoModal(){
@@ -887,7 +902,7 @@ function bind(){
 }
 
 async function refreshWriter(){
- if(writerCheckBusy||running)return;
+ if(writerCheckBusy||(running&&!writerReady))return;
  writerCheckBusy=true;
  try{
   let granted=false;
@@ -945,7 +960,7 @@ async function boot(){
  }
  game=createReelGame();
  if(!game){status('Phaser indisponível');return}
- const available=()=>{
+ const available=async()=>{
   scene=window.jardimPhaserScene;
   if(!scene||!scene.ready)return;
   scene.setBoard(board);
@@ -957,7 +972,8 @@ async function boot(){
    'Modo de leitura: outra aba usa o jogo ou não existe IndexedDB.');
   if(writerReady&&recoveredVisual&&pendingVisual){
    const old=pendingVisual;pendingVisual=null;
-   demoDB.checkpoint(snapshot(),board).then(ok=>{if(!ok)pendingVisual=old});
+   const cleared=await demoDB.checkpoint(snapshot(),board);
+   if(!cleared)pendingVisual=old;
   }
   if(writerReady&&bank.mode==='hold')showHold();
   else if(writerReady&&bank.mode==='free')freeTimer=setTimeout(runSpin,1100);

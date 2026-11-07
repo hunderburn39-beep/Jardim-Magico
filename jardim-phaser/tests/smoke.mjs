@@ -237,13 +237,13 @@ globalThis.localStorage={
 const DB=new Function(parseModule(dbsource)+'\nreturn DemoDatabase;')();
 const db=new DB();
 await db.connect();
-await db.save({balance:12,reserve:40,spins:3},next,{type:'spin',paid:.5});
-ok((await db.load()).snapshot.balance===12,'saldo persistido');
-ok((await db.history()).length===1,'histórico persistido');
+const refused=await db.save({balance:12,reserve:40,spins:3},next,{type:'spin',paid:.5});
+ok(refused===false,'modo sem IndexedDB não permite escrever o mesmo saldo em várias abas');
+ok((await db.load())===null,'modo sem base fiável mantém sessão vazia');
+ok((await db.history()).length===0,'modo só leitura não inventa histórico');
 const backup=await db.exportData();
-ok(backup.state.snapshot.reserve===40,'exportação de fundo');
-await db.clear();
-ok((await db.load())===null,'limpeza de demo');
+ok(backup.state===null,'exportação local sem gravação não inventa saldo');
+ok((await db.clear())===false,'sem lease não é permitido apagar a sessão');
 ok(main.includes('finally{')&&main.includes('running=false;'),
  'giro desbloqueia após exceção');
 ok(reels.includes('this.tweens.add('),'Phaser usa tweens nativos');
@@ -444,24 +444,23 @@ ok((()=>{try{Backup.validateBackup({...validBackup,history:[rows[0],rows[0]]});r
  'restauro rejeita eventos duplicados');
 const historicalDb=new Backup.DemoDatabase();
 await historicalDb.connect();
-const mockEvents=[
- {eventId:'b',timestamp:'2026-11-01T12:00:00Z',type:'spin'},
- {eventId:'a',timestamp:'2026-11-07T12:00:00Z',type:'spin'}
-];
-const localStore=new Map();
+// No fake IndexedDB in this Node smoke test: fallback must be read-only.
+const fallbackStore=new Map();
 const oldStorage=globalThis.localStorage;
-globalThis.localStorage={getItem:k=>localStore.get(k)||null,setItem:(k,v)=>localStore.set(k,v),removeItem:k=>localStore.delete(k)};
+globalThis.localStorage={
+ getItem:k=>fallbackStore.get(k)||null,
+ setItem:(k,v)=>fallbackStore.set(k,v),
+ removeItem:k=>fallbackStore.delete(k)
+};
 try{
- const restored=await historicalDb.restoreData({...validBackup,history:mockEvents});
- ok(restored.ok&&restored.events===2,'restauro grava sessão e histórico local');
- ok((await historicalDb.history())[0].eventId==='a',
-  'histórico ordenado por data, não por identificador');
+ const restored=await historicalDb.restoreData(validBackup);
+ ok(!restored.ok,'sem IndexedDB restauro local é bloqueado para evitar conflitos');
+ ok((await historicalDb.history()).length===0,'modo sem IndexedDB não grava eventos');
  const dump=await historicalDb.exportData();
- ok(dump.state.snapshot.balance===originalState.snapshot.balance,
-  'exportação lê o estado restaurado');
+ ok(dump.state===null,'exportação não fabrica sessão inexistente');
  const declined=await historicalDb.restoreData({...validBackup,state:{snapshot:{},board:[]}});
- ok(!declined.ok&&(await historicalDb.load()).snapshot.balance===originalState.snapshot.balance,
-  'cópia inválida não destrói estado guardado');
+ ok(!declined.ok&&(await historicalDb.load())===null,
+  'cópia inválida não destrói o estado local');
 }finally{
  if(oldStorage===undefined)delete globalThis.localStorage;
  else globalThis.localStorage=oldStorage;
