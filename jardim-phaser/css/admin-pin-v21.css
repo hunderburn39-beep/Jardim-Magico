@@ -1,0 +1,7 @@
+.admin-pin-form{display:grid;gap:9px;max-width:400px;margin:12px auto;text-align:left}
+.admin-pin-form label{display:grid;gap:4px;font:600 12px system-ui;color:#ffeac5}
+.admin-pin-form input{min-height:42px;padding:9px;border:1px solid #ffdc9c;border-radius:9px;background:#2b143c;color:white;font:600 17px system-ui}
+.admin-pin-form button{padding:12px;border:1px solid #ffe2a2;border-radius:10px;background:#8a438d;color:white;font:700 13px system-ui}
+.admin-pin-form button:disabled{opacity:.5}
+.admin-pin-message{min-height:21px;color:#ffe0a0;font:12px system-ui}
+.admin-pin-note{font:11px/1.3 system-ui;color:#f7d6c0}
