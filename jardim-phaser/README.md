@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.4
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.5
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -207,3 +207,12 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.3
 - CSS adaptado ao Safari e aos controlos táteis. **O motor de prémios, rolos Phaser e gráficos originais não foram alterados.** Continua a ser uma demonstração sem dinheiro real ou RTP certificado.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.4
+
+## V2.5 — Barra de prémios simplificada
+
+- Retirado **todo o bloco central “MULTIS ACUMULADOS”** e as bolas de multiplicadores redundantes. A barra passa a mostrar exclusivamente **valor da queda à esquerda** e **MULTI com o fator efetivo à direita**.
+- Reorganizado o CSS responsivo para duas colunas com espaço confortável em 9:16 e 16:9.
+- O JavaScript atualiza só `#multiTotal`; não depende de `#orbs` nem desenha valores repetidos. As contagens internas e o cálculo do multiplicador são os mesmos da V2.4, sem mexer no motor Phaser, nas cascatas ou no cálculo dos prémios.
+- Atualizados os testes automatizados para verificar que a informação duplicada não regressa.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.5

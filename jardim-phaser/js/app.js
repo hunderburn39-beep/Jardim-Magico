@@ -98,14 +98,9 @@ function update(){
  $('autoBtn').disabled=(!ready||!writerReady||mutating||s.mode==='hold'||(running&&autoLeft===0))&&autoLeft===0;
  $('autoBtn').classList.toggle('active',autoLeft>0);
 }
-function orbs(accumulated=[],effective=1){
- const orb=$('orbs');orb.replaceChildren();
- for(const value of (accumulated.length?accumulated.slice(-3):[1])){
-  const el=document.createElement('b');
-  el.textContent='×'+value;
-  orb.appendChild(el);
- }
- // Mostrar o fator real aplicado; a soma de orbs nunca inventa prémios.
+function renderMultiplier(_history=[],effective=1){
+ // V2.5: multiplicador visível apenas à direita, sem bolas repetidas ao centro.
+ // _history continua disponível para o cálculo do fator já efetuado pelo motor.
  $('multiTotal').textContent='×'+effective;
 }
 function celebrationTier(value,stake){
@@ -253,7 +248,7 @@ async function runSpin(){
  $('dropAmount').textContent=money(0);
  $('dropAmount').classList.remove('pulse');
  $('dropLabel').textContent='VALOR DA QUEDA';
- orbs(outcome.free?freeOrbHistory:earnedMultis,
+ renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,
   outcome.free?bank.freeMultiplier:1);
  $('winNotice').hidden=true;
  status('TAMBORES A RODAR ↓');
@@ -298,7 +293,7 @@ async function runSpin(){
    }
    const effective=outcome.free?bank.freeMultiplier:
     (stage.ev.wilds?outcome.wildMultiplier:1);
-   orbs(outcome.free?freeOrbHistory:earnedMultis,effective);
+   renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,effective);
    if(!wins.length){
     status('FIM DAS QUEDAS · SEM NOVAS COMBINAÇÕES');
     break;
@@ -345,7 +340,7 @@ async function runSpin(){
   if(all.length)showWinText(all,visibleTotal,true);
   $('dropLabel').textContent='TOTAL DO GIRO';
   showDropAmount(all.length?visibleTotal:0);
-  orbs(outcome.free?freeOrbHistory:earnedMultis,
+  renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,
    outcome.free?bank.freeMultiplier:
     (earnedMultis.length?outcome.wildMultiplier:1));
   status(all.length?all.length+' COMBINAÇÕES SOMADAS · '+
@@ -353,7 +348,7 @@ async function runSpin(){
   update();
   // update() atualiza o saldo e os modos; repor aqui a informação
   // visual dos Wild que efetivamente saíram durante este giro.
-  orbs(outcome.free?freeOrbHistory:earnedMultis,
+  renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,
    outcome.free?bank.freeMultiplier:
     (earnedMultis.length?outcome.wildMultiplier:1));
   if(repaired){

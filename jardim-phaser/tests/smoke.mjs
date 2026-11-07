@@ -29,6 +29,7 @@ const recoverySource=await read('../js/recovery-v23.js');
 const recoveryCss=await read('../css/recovery-v23.css');
 const sessionSource=await read('../js/session-v24.js');
 const sessionCss=await read('../css/session-v24.css');
+const barV25Css=await read('../css/barra-v25.css');
 const pinCss=await read('../css/admin-pin-v21.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
@@ -257,9 +258,12 @@ ok(html.includes('premios-v16.css?v=1.6'),
  'novo CSS de prémios carregado na versão 1.6');
 const multiSection=html.slice(html.indexOf('<section class="multiplier"'),
  html.indexOf('<section class="frame-region"'));
-ok(multiSection.indexOf('id="dropAmount"')<multiSection.indexOf('id="orbs"')&&
-   multiSection.indexOf('id="orbs"')<multiSection.indexOf('id="multiTotal"'),
- 'barra: valor da queda à esquerda, orbs ao centro e total à direita');
+ok(multiSection.indexOf('id="dropAmount"')>=0&&
+ multiSection.indexOf('id="dropAmount"')<multiSection.indexOf('id="multiTotal"')&&
+ !multiSection.includes('id="orbs"')&&
+ !multiSection.includes('MULTIS ACUMULADOS')&&
+ !multiSection.includes('class="multi-stack"'),
+ 'barra: queda à esquerda, multiplicador único à direita, sem informação duplicada');
 ok(!html.includes('class="drop-amount"'),
  'valor deixou de estar sobreposto ao centro dos tambores');
 const bigSection=html.slice(html.indexOf('id="bigWin"'),
@@ -271,10 +275,11 @@ ok(bigSection.indexOf('id="bigWinTitle"')<
  'celebração apresenta frase, TOTAL e valor em três linhas');
 ok(prizeCss.includes('.big-win{')&&prizeCss.includes('top:23%'),
  'a frase de celebração subiu em relação à posição antiga');
-ok(prizeCss.includes('.multi-stack .orb-group')&&
-  prizeCss.includes('.drop-line-value')&&
-  prizeCss.includes('.celebration-value'),
- 'barra e celebração têm tipografia premium responsiva');
+ok(prizeCss.includes('.drop-line-value')&&
+  prizeCss.includes('.celebration-value')&&
+  barV25Css.includes('grid-template-columns:minmax(0,1fr) minmax(70px,auto)')&&
+  barV25Css.includes('justify-self:end'),
+ 'barra em duas colunas e celebração mantêm tipografia premium responsiva');
 ok((prizeCss.match(/{/g)||[]).length===(prizeCss.match(/}/g)||[]).length,
  'CSS prémios V1.6 com delimitadores equilibrados');
 ok(main.includes("$('dropLabel').textContent='QUEDA '+(i+1)")&&
@@ -291,8 +296,10 @@ ok(main.includes("celebrate('HOLD & WIN',result.prize)")&&
 ok(main.includes('if(!freeMultiAdded)')&&
    main.includes('freeOrbHistory.push(outcome.wildMultiplier)'),
  'nas Free Spins cada giro só pode acrescentar uma bola de multi');
-ok(main.includes('orbs(outcome.free?freeOrbHistory:earnedMultis,'),
- 'orbs refletem os multiplicadores realmente obtidos');
+ok(main.includes('renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,')&&
+ main.includes("$('multiTotal').textContent='×'+effective;")&&
+ !main.includes("$('orbs')"),
+ 'multiplicador efetivo do motor é atualizado só no indicador direito');
 // Phaser V1.4: melhorias apenas visuais, sem interferir com jogadas.
 // Testar recursos de arte e camadas sem bloqueio de toques no iPhone.
 ok(html.includes('polimento-v14.css?v=1.4'),
@@ -413,7 +420,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=2.4'),'botão e versão Phaser V2.4');
+ html.includes('app.js?v=2.5'),'botão e versão Phaser V2.5');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -662,4 +669,10 @@ ok(main.includes('async function withMutation(action)')&&
 ok(html.includes('id="sessionBanner"')&&html.includes('session-v24.css?v=2.4')&&
  sessionCss.includes('safe-area-inset-bottom')&&sessionCss.includes('pointer:coarse'),
  'aviso responsivo com toque e área segura no iPhone');
-console.log('Phaser V2.4: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+ok(html.includes('barra-v25.css?v=2.5')&&
+ !html.includes('MULTIS ACUMULADOS')&&
+ !html.includes('class="multi-stack"')&&
+ !main.includes("$('orbs')")&&
+ !main.includes('function orbs('),
+ 'nova barra elimina o bloco central sem deixar referências órfãs');
+console.log('Phaser V2.5: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

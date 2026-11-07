@@ -1,0 +1,30 @@
+/* V2.5 — barra sem informação duplicada: queda esquerda, multi direita.
+ * Apenas apresentação; a matemática, Phaser, cascatas e prémios não mudam.
+ */
+.multiplier{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) minmax(70px,auto);
+ align-items:center;
+ justify-content:space-between;
+ column-gap:clamp(10px,3vw,24px);
+ padding-inline:clamp(12px,3vw,18px);
+}
+.multiplier .multi-drop{
+ justify-self:start;
+ align-items:flex-start;
+ text-align:left;
+ min-width:0;
+}
+.multiplier .multi-final{
+ justify-self:end;
+ align-items:flex-end;
+ text-align:right;
+ min-width:70px;
+}
+.multiplier #multiTotal{
+ font-variant-numeric:tabular-nums;
+}
+@media(max-width:360px){
+ .multiplier{column-gap:8px;grid-template-columns:minmax(0,1fr) minmax(62px,auto)}
+ .multiplier .multi-final{min-width:62px}
+}
