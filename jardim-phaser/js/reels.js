@@ -277,44 +277,77 @@ class ReelScene extends Phaser.Scene{
  }
 
  burst(cells,{destroy=true,duration=690}={}){
+  // Todas as peças pertencentes a linhas premiadas brilham no MESMO
+  // instante. Uma figura partilhada por duas linhas só explode uma vez.
+  // Quando não há nova queda, apenas pulsa: não desaparece do tabuleiro.
   if(!Array.isArray(cells)||!cells.length)return Promise.resolve();
-  const positions=new Set(),targets=[];
-  for(const pos of cells){
-   if(pos.c<0||pos.c>=5||pos.r<0||pos.r>=3)continue;
-   const key=pos.c+','+pos.r;
-   if(positions.has(key))continue;
-   positions.add(key);
-   targets.push({c:pos.c,r:pos.r,s:this.getVisible(pos.c,pos.r)});
+  const seen=new Set(),targets=[];
+  for(const {c,r} of cells){
+   if(!Number.isInteger(c)||!Number.isInteger(r)||
+     c<0||c>=5||r<0||r>=3)continue;
+   const id=c+','+r;
+   if(seen.has(id))continue;
+   seen.add(id);
+   const sprite=this.getVisible(c,r);
+   if(sprite)targets.push({c,r,sprite});
   }
+  if(!targets.length)return Promise.resolve();
+  const particleCount=Math.max(2,Math.min(6,Math.floor(48/targets.length)));
+  const hues=[0xffd77b,0xff98de,0xc5a1ff,0x91f1db];
+  const time=Math.max(160,duration);
   return new Promise(resolve=>{
-   if(!targets.length){resolve();return}
-   let ended=0;
-   for(const obj of targets){
-    const s=obj.s,x=s.x,y=s.y;
-    const wave=this.add.circle(x,y,42,0xffd275,.30).setDepth(14);
-    this.tweens.add({targets:wave,scale:2.1,alpha:0,duration:duration,
-      onComplete:()=>wave.destroy()});
-    const palette=[0xffd277,0xff89d9,0xb284ff,0x7eead7];
-    for(let i=0;i<5;i++){
-     const angle=(i/5)*Math.PI*2+obj.c*.7+obj.r*.3;
-     const particle=this.add.circle(x,y,4+i%2,palette[(i+obj.c)%palette.length],.9);
-     particle.setDepth(18);
-     const travel=45+Math.random()*55;
-     this.tweens.add({targets:particle,x:x+Math.cos(angle)*travel,
-       y:y+Math.sin(angle)*travel+25,alpha:0,scale:.3,
-       duration:duration,ease:'Cubic.easeOut',
-       onComplete:()=>particle.destroy()});
-    }
+   let finished=0;
+   for(const {c,r,sprite} of targets){
+    const x=sprite.x,y=sprite.y;
+    const baseX=sprite.scaleX,baseY=sprite.scaleY;
+    const halo=this.add.circle(x,y,Math.min(CW,CH)*.31,
+      0xffd887,.17).setDepth(11);
+    halo.setStrokeStyle?.(5,0xffefab,.95);
+    halo.setMask?.(this.reelMask);
     this.tweens.add({
-     targets:s,
-     scaleX:s.scaleX*(destroy?.05:1.13),
-     scaleY:s.scaleY*(destroy?.05:1.13),
+     targets:halo,scale:1.78,alpha:0,
+     duration:time*.88,ease:'Cubic.easeOut',
+     onComplete:()=>halo.destroy()
+    });
+    const inner=this.add.circle(x,y,Math.min(CW,CH)*.18,
+      0xffefff,.32).setDepth(12);
+    inner.setMask?.(this.reelMask);
+    this.tweens.add({
+     targets:inner,scale:2.15,alpha:0,
+     duration:time*.64,ease:'Sine.easeOut',
+     onComplete:()=>inner.destroy()
+    });
+    for(let i=0;i<particleCount;i++){
+     const angle=(i/particleCount)*Math.PI*2+(c*3+r)*.35;
+     const distance=46+(i%3)*12+Math.random()*26;
+     const spark=this.add.circle(x,y,3.2+(i%2)*2.2,
+       hues[(i+c+r)%hues.length],.98).setDepth(18);
+     spark.setMask?.(this.reelMask);
+     this.tweens.add({
+      targets:spark,
+      x:x+Math.cos(angle)*distance,
+      y:y+Math.sin(angle)*distance+20,
+      alpha:0,scale:.25,duration:time*.93,
+      ease:'Cubic.easeOut',
+      onComplete:()=>spark.destroy()
+     });
+    }
+    // Dissipar apenas quando EXISTE uma nova queda: as restantes
+    // peças permanecem no sítio e os tambores continuam aprovados.
+    this.tweens.add({
+     targets:sprite,
+     scaleX:destroy?baseX*.06:baseX*1.11,
+     scaleY:destroy?baseY*.06:baseY*1.11,
      alpha:destroy?0:1,
-     duration:duration*.76,
+     duration:destroy?time*.77:time*.46,
      ease:destroy?'Back.easeIn':'Sine.easeInOut',
      yoyo:!destroy,
      onComplete:()=>{
-      ended++;if(ended===targets.length)resolve();
+      if(!destroy){
+       sprite.setScale?.(baseX,baseY);
+       sprite.setAlpha?.(1);
+      }
+      if(++finished===targets.length)resolve();
      }
     });
    }
