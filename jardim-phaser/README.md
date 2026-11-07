@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.2
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.3
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -64,3 +64,14 @@ A animação de rotação vertical e a entrada das imagens finais pelo topo perm
 - O teste automático verifica duplicados de peças premiadas, brilho sem desaparecimento, a apresentação do valor da queda e que os cinco tambores continuam a parar com as peças já visíveis **sem troca na paragem**.
 
 Cópia de segurança anterior: `backup/jardim-phaser-v1-1-antes-premios-v1-2`.
+
+## V1.3 — Acabamento visual fiel à arte original
+
+- **Símbolos fotográficos:** os nove símbolos normais são recortados da folha original `assets/imagens/jm75-simbolos.webp`, na ordem correta de três colunas e três linhas. Preservam diretamente as cores, a iluminação e os reflexos do ficheiro original, sem a dessaturação do recorte anterior.
+- **Bordas dos símbolos:** as células são convertidas uma única vez em texturas Phaser de 512×512, com um desvanecimento radial apenas na orla; não aparecem quadrados escuros à volta dos objetos. SCATTER, pedra e moeda mantêm as suas texturas próprias.
+- **Moldura:** a moldura de madeira e flores continua a utilizar `jm75-moldura.webp`, com o centro recortado para mostrar os tambores. A máscara foi ajustada à espessura das quatro bordas, de modo a reduzir as zonas pretas da captura.
+- **Painéis originais:** jackpots, barra de multiplicadores, saldo, prémio, compra de bónus, TURBO e botão central RODAR passam a reutilizar as imagens gráficas da referência (em vez de apenas gradientes genéricos).
+- **Proteção da animação:** as funções de rotação e cascata são rigorosamente iguais às da V1.2, que conservava a queda aprovada pelo utilizador. O prémio e a banca também não mudaram.
+- **Testes:** o CI confirma a sequência 3×3 do atlas, recortes sem troca de posições, fallback quando faltar textura, estética dos painéis e os anteriores testes da animação e das regras.
+
+É ainda uma demonstração HTML5 com créditos fictícios e IndexedDB local. Não substitui uma validação visual no Safari físico nem auditoria de RTP.
