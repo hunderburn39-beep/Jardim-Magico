@@ -334,7 +334,7 @@ ok(bonusCss.includes('prefers-reduced-motion:reduce'),
 ok(main.includes("await persist(result.done?'hold-paid':'hold-turn'"),
  'Prémio do Hold é guardado antes da celebração');
 ok(main.includes('renderHold(previous,result.hold);')&&
-   main.includes('if(bank.mode!==\'hold\'||holdBusy)return;'),
+   main.includes('if(!writerReady||bank.mode!==\'hold\'||holdBusy)return;'),
  'Hold usa grelha calculada e bloqueia duplo clique durante pagamento');
 ok(main.includes("bonusAnnouncement('✨ FREE SPINS CONCLUÍDAS ✨'"),
  'Free Spins anuncia prémio final integral');
