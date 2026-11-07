@@ -8,9 +8,11 @@ import {audio} from './audio.js?v=1';
 import {createReelGame} from './reels.js?v=1.3';
 import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
 import {createPerformanceGuard} from './performance-v17.js?v=1.7';
+import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=1.8';
 const $=id=>document.getElementById(id);
 const BETS=[.05,.1,.2,.4,.6,.8,1,1.5,2,3,5,7.5,10];
 const bank=new DemoBank();
+let adminSettings=normalizeAdmin();
 const performanceGuard=createPerformanceGuard(document.getElementById('machine'));
 let scene=null,game=null;
 let board=newBoard(),running=false,ready=false,turbo=false;
@@ -33,6 +35,7 @@ function copySnapshot(snapshot){
   if(Number.isFinite(n)&&n>=0)bank[k]=n;
  }
  if(['base','free','hold'].includes(snapshot.mode))bank.mode=snapshot.mode;
+ if(snapshot.admin)adminSettings=normalizeAdmin(snapshot.admin.ownerPct);
  if(typeof snapshot.status==='string')bank.status=snapshot.status.slice(0,180);
  if(bank.mode==='hold'&&Array.isArray(snapshot.hold?.grid)&&snapshot.hold.grid.length===16)
   bank.hold=structuredClone(snapshot.hold);
@@ -41,7 +44,7 @@ function copySnapshot(snapshot){
  bank.freeSpins=Math.max(0,Math.min(60,bank.freeSpins));
 }
 function snapshot(){
- return bank.snapshot;
+ return {...bank.snapshot,admin:{...adminSettings}};
 }
 function update(){
  const s=snapshot();
@@ -69,6 +72,7 @@ function update(){
  $('betDown').disabled=blocked||current<=0;
  $('betUp').disabled=blocked||current>=BETS.length-1;
  $('bonusBtn').disabled=blocked;
+ $('adminBtn').disabled=blocked;
  $('spinBtn').disabled=running||!ready||s.mode==='hold'||s.mode==='free';
  $('autoBtn').disabled=(!ready||s.mode==='hold'||(running&&autoLeft===0))&&autoLeft===0;
  $('autoBtn').classList.toggle('active',autoLeft>0);
@@ -135,7 +139,9 @@ async function persist(type,details={}){
   type,id:(typeof crypto!=='undefined'&&crypto.randomUUID)?
    crypto.randomUUID():'event-'+Date.now()+'-'+Math.random().toString(36).slice(2),
   stake:bank.stake,paid:details.paid||0,wager:details.wager||0,
-  cost:details.cost||0,stages:details.stages||0
+  cost:details.cost||0,stages:details.stages||0,
+  ownerPct:adminSettings.ownerPct,merchantPct:adminSettings.merchantPct,
+  amount:details.amount||0,note:details.note||''
  });
  if(!ok)$('dbStatus').textContent='PHASER · ERRO A GUARDAR';
  return ok;
@@ -440,10 +446,98 @@ async function holdTurn(){
   button.disabled=false;
  }
 }
+
+async function adminModal(){
+ if(running||bank.mode!=='base'||!ready)return;
+ modal('Administração DEMO','Controlo LOCAL de créditos fictícios; não existe autenticação segura.',[]);
+ await persist('admin-access');
+ if(!modalOpen||$('modalTitle').textContent!=='Administração DEMO')return;
+ let history=[];
+ try{history=await demoDB.history()}catch(err){console.warn(err)}
+ if(!modalOpen||$('modalTitle').textContent!=='Administração DEMO')return;
+ const totals=summarizeLedger(history);
+ const section=document.createElement('section');
+ section.className='admin-panel';
+ section.innerHTML=[
+  '<div class="admin-stats">',
+  '<div class="admin-stat"><small>DONO · DEMO</small><strong id="adminOwner"></strong></div>',
+  '<div class="admin-stat"><small>COMERCIANTE · DEMO</small><strong id="adminMerchant"></strong></div>',
+  '<div class="admin-stat"><small>RESULTADO OBSERVADO</small><strong id="adminNet"></strong></div>',
+  '<div class="admin-stat"><small>COFRE VIRTUAL</small><strong id="adminReserve"></strong></div></div>',
+  '<p>Percentagens para movimentos futuros:</p>',
+  '<div class="admin-row"><label for="ownerPct">Dono (%)</label><input id="ownerPct" type="number" inputmode="decimal" min="0" max="100" step="0.01"><button id="saveOwner">GRAVAR</button></div>',
+  '<div class="admin-row"><label for="merchantPct">Comerciante (%)</label><input id="merchantPct" type="number" inputmode="decimal" min="0" max="100" step="0.01"><button id="saveMerchant">GRAVAR</button></div>',
+  '<p class="admin-footnote">Somam sempre 100%. Alterações não modificam os movimentos antigos. Os resultados podem ser negativos.</p>',
+  '<p>Adicionar / retirar créditos do cofre:</p>',
+  '<div class="admin-fund"><input id="adminFundAmount" type="number" inputmode="decimal" min="0.01" step="0.01" value="100" aria-label="Valor fictício">',
+  '<button class="admin-action" id="fundDeposit">＋ FUNDO</button><button class="admin-action" id="fundWithdraw">− FUNDO</button></div>',
+  '<p class="admin-message" id="adminMessage" role="status"></p>',
+  '<button class="choice" id="adminHistory">☷ HISTÓRICO LOCAL</button>',
+  '<button class="choice" id="adminReport">⬇ IMPRIMIR / GUARDAR PDF</button>',
+  '<p class="admin-footnote">No diálogo de impressão escolhe Guardar como PDF. Só simulação, sem dinheiro real.</p>'
+ ].join('');
+ $('modalContent').append(section);
+ const find=id=>section.querySelector('#'+id);
+ function refresh(){
+  find('ownerPct').value=adminSettings.ownerPct;
+  find('merchantPct').value=adminSettings.merchantPct;
+  find('adminOwner').textContent=money(totals.owner);
+  find('adminMerchant').textContent=money(totals.merchant);
+  find('adminNet').textContent=money(totals.net);
+  find('adminReserve').textContent=money(bank.reserve);
+ }
+ let working=false;
+ const notice=text=>{find('adminMessage').textContent=text};
+ refresh();
+ async function saveShare(role){
+  if(working)return;
+  const value=readPercent(find(role==='owner'?'ownerPct':'merchantPct').value);
+  if(value===null){notice('Percentagem inválida: usa de 0 a 100.');return}
+  working=true;
+  const previous=adminSettings;
+  adminSettings=normalizeAdmin(role==='owner'?value:100-value);
+  const saved=await persist('admin-share',{note:role+' '+value+'%'});
+  if(!saved)adminSettings=previous;
+  working=false;refresh();
+  notice(saved?'Percentagens guardadas para movimentos futuros.':'Falha a guardar; valores anteriores repostos.');
+ }
+ find('saveOwner').addEventListener('click',()=>saveShare('owner'));
+ find('saveMerchant').addEventListener('click',()=>saveShare('merchant'));
+ async function changeFund(kind){
+  if(working)return;
+  const val=validateFundChange(kind,find('adminFundAmount').value,bank.reserve,bank.mode,running);
+  if(!val.ok){notice(val.message);return}
+  working=true;const before=bank.reserve;
+  bank.reserve=val.target;update();
+  const saved=await persist(kind==='deposit'?'fund-deposit':'fund-withdraw',{amount:val.amount});
+  if(!saved)bank.reserve=before;
+  working=false;refresh();update();
+  notice(saved?'Movimento fictício guardado.':'Não foi possível guardar; movimento desfeito.');
+ }
+ find('fundDeposit').addEventListener('click',()=>changeFund('deposit'));
+ find('fundWithdraw').addEventListener('click',()=>changeFund('withdraw'));
+ find('adminHistory').addEventListener('click',historyModal);
+ find('adminReport').addEventListener('click',async()=>{
+  const popup=window.open('','_blank');
+  if(!popup){notice('Autoriza janelas emergentes para o relatório.');return}
+  try{
+   const current=await demoDB.history();
+   popup.document.open();
+   popup.document.write(makePrintableReport({
+    summary:summarizeLedger(current),history:current,settings:adminSettings,
+    reserve:bank.reserve,dbMode:demoDB.mode
+   }));
+   popup.document.close();popup.focus();popup.print();
+  }catch(err){
+   popup.close();console.error(err);notice('Falha a preparar o relatório.');
+  }
+ });
+}
+
 async function historyModal(){
  let log=[];
  try{log=await demoDB.history()}catch(err){console.error(err)}
- const events=log.slice(0,50);
+ const events=log.slice(0,100);
  const wagers=log.reduce((a,x)=>a+Number(x.wager||0)+Number(x.cost||0),0);
  const paid=log.reduce((a,x)=>a+Number(x.paid||0),0);
  const observed=wagers>0?(paid/wagers*100).toFixed(1)+'%':'—';
@@ -471,10 +565,13 @@ async function historyModal(){
  const wrapper=$('modalContent');
  const listing=document.createElement('div');
  listing.style.cssText='max-height:25vh;overflow:auto;font:11px system-ui;text-align:left';
- for(const item of events.slice(0,12)){
+ for(const item of events){
   const p=document.createElement('p');
   p.textContent=(item.timestamp||'').slice(0,16).replace('T',' ')+' · '+
-   item.type+' · '+money(item.paid||0)+' créditos';
+   item.type+' · entrada '+money(Number(item.wager||0)+Number(item.cost||0))+
+   ' · prémio '+money(item.paid||0)+
+   (item.amount?' · fundo '+money(item.amount):'')+
+   (item.note?' · '+item.note:'');
   listing.append(p);
  }
  wrapper.append(listing);
@@ -514,7 +611,7 @@ function vaultModal(){
  ]);
 }
 async function creditDemo(){
- bank.creditDemo(25);update();await persist('credit-demo');
+ bank.creditDemo(25);update();await persist('credit-demo',{amount:25});
  say('Adicionados 25 créditos fictícios');
 }
 function changeBet(dir){
@@ -553,6 +650,7 @@ function bind(){
  $('vaultBtn').addEventListener('click',vaultModal);
  $('creditBtn').addEventListener('click',creditDemo);
  $('historyBtn').addEventListener('click',historyModal);
+ $('adminBtn').addEventListener('click',adminModal);
  $('infoBtn').addEventListener('click',infoModal);
  $('autoBtn').addEventListener('click',autoModal);
  $('holdBtn').addEventListener('click',holdTurn);

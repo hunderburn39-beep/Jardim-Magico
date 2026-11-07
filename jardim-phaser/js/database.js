@@ -56,7 +56,10 @@ export class DemoDatabase{
     stake:Number(event.stake||0),wager:Number(event.wager||0),
     cost:Number(event.cost||0),paid:Number(event.paid||0),
     spins:Number(snapshot.spins||0),balance:Number(snapshot.balance||0),
-    reserve:Number(snapshot.reserve||0),stages:Number(event.stages||0)};
+    reserve:Number(snapshot.reserve||0),stages:Number(event.stages||0),
+    amount:Number(event.amount||0),note:String(event.note||'').slice(0,160),
+    ownerPct:Number.isFinite(Number(event.ownerPct))?Number(event.ownerPct):50,
+    merchantPct:Number.isFinite(Number(event.merchantPct))?Number(event.merchantPct):50};
   this.pending=this.pending.catch(()=>{}).then(()=>this.write(payload,log));
   return this.pending;
  }

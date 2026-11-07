@@ -17,6 +17,8 @@ const bonusCss=await read('../css/bonus-v15.css');
 const prizeCss=await read('../css/premios-v16.css');
 const mobileCss=await read('../css/mobile-v17.css');
 const perfSource=await read('../js/performance-v17.js');
+const adminSource=await read('../js/admin-v18.js');
+const adminCss=await read('../css/admin-v18.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
 function parseModule(s){
@@ -374,4 +376,35 @@ ok(main.includes('performanceGuard.start();')&&
  'modo gráfico regressa ao normal e não inicia giros em segundo plano');
 ok((mobileCss.match(/{/g)||[]).length===(mobileCss.match(/}/g)||[]).length,
  'CSS V1.7 com delimitadores equilibrados');
-console.log('Phaser V1.7: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const Admin=new Function(parseModule(adminSource)+
+ '\nreturn {readPercent,normalizeAdmin,validateFundChange,summarizeLedger,makePrintableReport};')();
+ok(Admin.readPercent('20,5')===20.5&&Admin.readPercent(110)===null,
+ 'percentagem admin válida');
+ok(Admin.normalizeAdmin(65).merchantPct===35,
+ 'percentagens somam 100');
+ok(Admin.validateFundChange('deposit','100,50',25).target===125.5,
+ 'movimento de fundo simulado');
+ok(!Admin.validateFundChange('withdraw',40,25).ok&&
+ !Admin.validateFundChange('withdraw',10,25,'hold').ok,
+ 'não retirar fundo indisponível nem em bónus');
+const stats=Admin.summarizeLedger([
+ {type:'spin',wager:10,paid:2,ownerPct:60},
+ {type:'buy-free',cost:4,ownerPct:25},
+ {type:'hold-paid',paid:6,ownerPct:75},
+ {type:'fund-deposit',amount:500},
+ {type:'spin',wager:2,paid:0}
+]);
+ok(stats.net===8&&stats.owner===2.3&&stats.merchant===5.7,
+ 'resultados históricos preservam quotas por evento');
+ok(stats.wagers===12&&stats.costs===4&&stats.paid===8,
+ 'receitas e prémios virtuais apurados');
+ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeAdmin(),
+ reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
+ 'relatório imprimível deixa explícito ser demonstração');
+ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
+ html.includes('app.js?v=1.8'),'botão e versão Phaser V1.8');
+ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
+ main.includes('admin-share'),'histórico de ações admin');
+ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
+ 'base guarda quota e painel é responsivo');
+console.log('Phaser V1.8: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

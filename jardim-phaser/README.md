@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.6
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.8
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -129,3 +129,14 @@ Backup da V1.5: `backup/jardim-phaser-v1-5-antes-layout-premios-v1-6`.
 - Os testes `tests/smoke.mjs` verificam a deteção de frames lentos, paragem segura, tamanho compacto e que os scripts novos são carregados. **É necessário confirmar os FPS e o encaixe num iPhone físico**, pois os testes automatizados não substituem essa verificação.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.7
+
+## V1.8 — Administração local (créditos fictícios)
+
+- Botão ⚙ abre resumo do dono, comerciante, resultado virtual e cofre.
+- Dono e comerciante têm percentagens editáveis e botões GRAVAR; a soma é sempre 100%. Quotas históricas permanecem no evento, e as antigas usam 50/50.
+- Adição e retirada de fundo virtual ficam registadas; movimentação bloqueada durante bónus.
+- Histórico guarda acessos à administração, alterações, movimentos, giros e compras. O resumo separa apostas e compras dos prémios; movimentos de cofre não contam como receitas.
+- Relatório imprimível para guardar como PDF pelo navegador (até 250 linhas de eventos recentes; resumo de todo histórico local). Exportação JSON preservada.
+- Não há autenticação segura, backend central, dinheiro real ou RTP auditado. A rotação aprovada Phaser e a matemática não foram alteradas.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.8
