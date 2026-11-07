@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.2
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.3
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -184,3 +184,14 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.1
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.2
 
 Nota adicional V2.2: ao ocultar uma aba sem giro em curso, a posse de escrita é libertada, permitindo que outra aba a adquira. A renovação em segundo plano durante uma animação mantém-se para impedir que outra aba reescreva o mesmo resultado a meio do giro.
+
+## V2.3 — recuperação dos bónus e diagnóstico
+
+- Recibos visuais `pendingVisual` agora identificam quando a animação interrompida era um giro base, uma Free Spin ou uma tentativa de Hold & Win, incluindo estado, valor e, no Hold, grelha 4×4. **O pagamento continua a ser gravado ANTES dos efeitos**: recuperar só lê o valor já creditado e não paga novamente.
+- Ao reabrir uma Free Spin interrompida com giros pendentes, a interface mostra o total, multiplicador e contador guardados e apresenta botão **RETOMAR FREE SPINS**, em vez de avançar silenciosamente. O Hold em curso reabre a grelha e mostra moedas e tentativas restantes; o Hold já concluído apresenta o valor recebido numa mensagem de recuperação.
+- O recibo é retirado através de um checkpoint local independente da contagem de giros, depois da animação. Uma falha de checkpoint não altera valores já guardados.
+- Em **Regras → Diagnóstico local**, a demo mostra o modo da base, posse de escrita, estado de bónus, falhas e recuperações técnicas. É possível exportar JSON de diagnóstico sem PIN, sem saldos ou dados pessoais; contadores e últimos 70 eventos ficam só em memória nesta sessão.
+- Novos testes de regressão validam recibos e recuperação dos dois bónus, resumos e limites dos diagnósticos. O motor `engine.js`, os rolos `reels.js` e os assets continuam inalterados.
+- Continua a ser uma demo de créditos fictícios, sem base remota nem RTP auditado; a recuperação e o aspeto devem ser confirmados em Safari real.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.3

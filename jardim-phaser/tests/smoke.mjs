@@ -25,6 +25,8 @@ const historyCss=await read('../css/history-v19.css');
 const profileCss=await read('../css/perfis-v20.css');
 const pinSource=await read('../js/admin-pin-v21.js');
 const gatewaySource=await read('../js/storage-gateway-v21.js');
+const recoverySource=await read('../js/recovery-v23.js');
+const recoveryCss=await read('../css/recovery-v23.css');
 const pinCss=await read('../css/admin-pin-v21.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
@@ -376,7 +378,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.2'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.3'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -409,7 +411,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=2.2'),'botão e versão Phaser V2.2');
+ html.includes('app.js?v=2.3'),'botão e versão Phaser V2.3');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -596,4 +598,37 @@ ok(gatewaySource.includes("'acquireLease'")&&
  gatewaySource.includes("'renewLease'")&&
  gatewaySource.includes("'releaseLease'"),
  'porta V2.1 encaminha operações novas de sessão exclusiva');
-console.log('Phaser V2.2: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const Rec=new Function(parseModule(recoverySource)+
+ '\nreturn {spinRecoveryReceipt,holdRecoveryReceipt,recoveryMessage,createDiagnostics};')();
+const receipt=Rec.spinRecoveryReceipt({credited:12.4,free:true,
+ triggered:'Fim das Free Spins'},{mode:'base',freeSpins:0,freeTotal:4,
+ freeMultiplier:3},5);
+ok(receipt.kind==='spin'&&receipt.wasFree&&receipt.paid===12.4&&
+ receipt.stages===5&&receipt.modeAfter==='base',
+ 'recibo de Free Spins concluídas guarda o prémio já creditado');
+ok(Rec.recoveryMessage(receipt,{mode:'base'}).kind==='free-complete',
+ 'sessão concluída mostra celebração recuperada sem novo pagamento');
+const held={grid:Array(16).fill(0).map((_,i)=>i<8?1:0),tries:2,rounds:3,total:5};
+const holdReceipt=Rec.holdRecoveryReceipt({done:true,prize:5,hold:held},{mode:'base'});
+ok(holdReceipt.kind==='hold'&&holdReceipt.grid.length===16&&
+ Rec.recoveryMessage(holdReceipt,{mode:'base'}).kind==='hold-complete',
+ 'Hold terminado guarda uma grelha visual para recuperar o resultado');
+ok(Rec.recoveryMessage(null,{mode:'hold',hold:held}).kind==='hold-active'&&
+ Rec.recoveryMessage(null,{mode:'free',freeSpins:9,freeTotal:5.2,
+ freeMultiplier:2}).kind==='free-active',
+ 'bónus ativos reabrem sem repetir giros ou moedas');
+const meter=Rec.createDiagnostics(10);
+for(let i=0;i<22;i++)meter.record('save-failed');
+meter.record('writer-granted');
+ok(meter.snapshot().events.length===10&&meter.snapshot().counts['save-failed']===22,
+ 'diagnósticos limitam eventos mas mantêm contagens');
+ok(!meter.record('pin-attempt')&&!JSON.stringify(meter.snapshot()).includes('pin-attempt'),
+ 'diagnóstico não aceita dados de PIN nem categorias arbitrárias');
+ok(main.includes('pendingVisual=holdRecoveryReceipt(')&&
+ main.includes('clearVisualReceipt()')&&main.includes('showRecoveryState(savedMarker)'),
+ 'Hold e Free Spins guardam recibos e retomam interface visual');
+ok(main.includes("name:'🩺 Diagnóstico local'")&&
+ main.includes('function diagnosticModal()')&&recoveryCss.includes('.diag-panel')&&
+ html.includes('recovery-v23.css?v=2.3'),
+ 'painel de diagnósticos integrado e com estilos móveis');
+console.log('Phaser V2.3: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

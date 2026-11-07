@@ -12,8 +12,11 @@ import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.j
 import {createPerformanceGuard} from './performance-v17.js?v=1.7';
 import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=1.8';
 import {filterHistory,historyPage} from './history-v19.js?v=1.9';
+import {spinRecoveryReceipt,holdRecoveryReceipt,recoveryMessage,createDiagnostics} from './recovery-v23.js?v=2.3';
 const demoDB=createStorageGateway(localDB);
 const adminLock=createAdminPinLock();
+const diagnostics=createDiagnostics();
+diagnostics.record('boot');
 const requireAdminUnlocked=()=>adminLock.unlocked()&&adminLock.touch();
 const $=id=>document.getElementById(id);
 const BETS=[.05,.1,.2,.4,.6,.8,1,1.5,2,3,5,7.5,10];
@@ -150,7 +153,7 @@ function showWinText(wins,value,total=false,factor=1){
  if(total)winTimer=setTimeout(()=>notice.hidden=true,2300);
 }
 async function persist(type,details={}){
- if(!writerReady)return false;
+ if(!writerReady){diagnostics.record('save-failed');return false}
  const ok=await demoDB.save(snapshot(),details.board||board,{
   type,id:(typeof crypto!=='undefined'&&crypto.randomUUID)?
    crypto.randomUUID():'event-'+Date.now()+'-'+Math.random().toString(36).slice(2),
@@ -159,6 +162,7 @@ async function persist(type,details={}){
   ownerPct:adminSettings.ownerPct,merchantPct:adminSettings.merchantPct,
   amount:details.amount||0,note:details.note||'',profile:bank.profile
  });
+ diagnostics.record(ok?'save-ok':'save-failed');
  if(!ok)$('dbStatus').textContent='PHASER · ERRO A GUARDAR';
  return ok;
 }
@@ -174,11 +178,13 @@ async function visual(promiseFactory,expected,deadline=7000){
    new Promise(resolve=>{timeout=setTimeout(()=>resolve(false),deadline)})
   ]);
   if(!done){
+   diagnostics.record('visual-timeout');
    console.warn('Recuperação de animação Phaser: timeout');
    scene?.recover?.(expected);
   }
   return done;
  }catch(err){
+  diagnostics.record('spin-visual-error');
   console.error('Recuperação de animação Phaser:',err);
   try{scene?.recover?.(expected)}catch{}
   return false;
@@ -216,8 +222,7 @@ async function runSpin(){
  if(!outcome.free&&autoLeft>0)autoLeft--;
  // Guardar o PRÉMIO antes de apresentar peças. A recarga não volta a pagar.
  board=finalBoard.map(col=>col.slice());
- pendingVisual={id:'spin-'+Date.now()+'-'+Math.random().toString(36).slice(2),
-  date:new Date().toISOString(),paid:outcome.credited};
+ pendingVisual=spinRecoveryReceipt(outcome,bank.snapshot,stages.length);
  let saved=false;
  try{
   saved=await persist('spin',{board:finalBoard,paid:outcome.credited,
@@ -282,17 +287,11 @@ async function runSpin(){
    }
   }
  }catch(err){
-  repaired=true;console.error('Falha recuperada no giro:',err);
+  repaired=true;diagnostics.record('spin-visual-error');console.error('Falha recuperada no giro:',err);
  }finally{
   // Nunca deixar preso o botão: corrigir malhas, limpar estado e continuar.
   try{scene.recover(finalBoard)}catch(err){console.warn(err)}
-  if(pendingVisual){
-   const receipt=pendingVisual;
-   pendingVisual=null;
-   let markedDone=false;
-   try{markedDone=await demoDB.checkpoint(snapshot(),board)}catch(err){console.warn(err)}
-   if(!markedDone)pendingVisual=receipt; // device will show recovery notice on re-open
-  }
+  if(pendingVisual)await clearVisualReceipt();
   running=false;
   performanceGuard.stop();
   const all=stages.flatMap(stage=>(stage.ev.lineWins||[]).map(win=>({
@@ -409,6 +408,82 @@ function bonusModal(){
     }}
   ]);
 }
+
+function exportDiagnostics(){
+ const state=diagnostics.snapshot();
+ const report={...state,dbMode:demoDB.mode,
+  writerActive:writerReady,
+  gameMode:bank.mode,
+  pendingRecovery:!!pendingVisual};
+ const file=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});
+ const href=URL.createObjectURL(file);
+ const a=document.createElement('a');
+ a.href=href;a.download='jardim-phaser-diagnostico-'+new Date().toISOString().slice(0,10)+'.json';
+ document.body.append(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(href),2500);
+}
+function diagnosticModal(){
+ const counts=diagnostics.snapshot().counts;
+ modal('Diagnóstico da demonstração',
+  'Estado desta sessão. Só contém contagens técnicas locais, nunca PIN nem dados pessoais.',[
+  {name:'⬇ Guardar diagnóstico JSON',detail:'Inclui falhas de gravação, recuperação e estado da aba.',act:exportDiagnostics}
+ ]);
+ const el=document.createElement('section');
+ el.className='diag-panel';
+ const rows=[
+  ['Base de dados',demoDB.mode],
+  ['Estado de escrita',writerReady?'Aba ativa':'Só leitura'],
+  ['Modo de jogo',bank.mode],
+  ['Recuperação pendente',pendingVisual?'Sim':'Não'],
+  ['Falhas a guardar',counts['save-failed']||0],
+  ['Falhas de checkpoint',counts['checkpoint-failed']||0],
+  ['Interrupções visuais',counts['spin-visual-error']||0],
+  ['Retomas Free Spins',counts['recovered-free']||0],
+  ['Retomas Hold',counts['recovered-hold']||0]
+ ];
+ for(const [name,value] of rows){
+  const p=document.createElement('p');const strong=document.createElement('strong');
+  strong.textContent=name+': ';p.append(strong,document.createTextNode(String(value)));
+  el.append(p);
+ }
+ $('modalContent').append(el);
+}
+function showRecoveryState(marker){
+ if(!writerReady||!ready||document.hidden)return false;
+ const summary=recoveryMessage(marker,snapshot());
+ if(summary.kind==='hold-active'){
+  diagnostics.record('recovered-hold');
+  showHold();
+  $('holdInfo').textContent='↻ Recuperado · '+summary.detail;
+  say('Hold & Win retomado na grelha guardada.');
+  return true;
+ }
+ if(summary.kind==='free-active'){
+  diagnostics.record('recovered-free');
+  clearTimeout(freeTimer);freeTimer=null;
+  modal(summary.title,summary.detail,[{
+   name:'▶ RETOMAR FREE SPINS',detail:'Retoma as jogadas restantes; não repete o prémio guardado.',
+   act:()=>{if(writerReady&&bank.mode==='free')freeTimer=setTimeout(runSpin,300)}
+  }]);
+  return true;
+ }
+ if(!marker)return false;
+ diagnostics.record(marker.kind==='hold'?'recovered-hold':'recovered-spin');
+ modal(summary.title,summary.detail,[{name:'CONTINUAR',detail:'Os créditos fictícios já foram contabilizados.'}]);
+ return true;
+}
+async function clearVisualReceipt(){
+ if(!pendingVisual||!writerReady)return false;
+ const original=pendingVisual;pendingVisual=null;
+ try{
+  const ok=await demoDB.checkpoint(snapshot(),board);
+  if(ok){diagnostics.record('checkpoint-ok');return true}
+ }catch(err){console.error('Checkpoint visual:',err)}
+ pendingVisual=original;
+ diagnostics.record('checkpoint-failed');
+ return false;
+}
+
 function showHold(){
  if(bank.mode!=='hold'||!bank.hold)return;
  $('holdOverlay').hidden=false;
@@ -447,12 +522,15 @@ async function holdTurn(){
  const button=$('holdBtn');
  button.disabled=true;
  const previous=bank.hold?.grid?.slice()||Array(16).fill(0);
+ const before=snapshot();
+ let saved=false;
  try{
-  const before=snapshot();
   const result=bank.holdTurn();
   if(!result.ok){say(result.message);return}
   // Os prémios e o fundo são registados ANTES da animação visual.
-  if(!(await persist(result.done?'hold-paid':'hold-turn',{paid:result.prize||0}))){
+  pendingVisual=holdRecoveryReceipt(result,bank.snapshot);
+  saved=await persist(result.done?'hold-paid':'hold-turn',{paid:result.prize||0});
+  if(!saved){
    copySnapshot(before);renderHold(null,bank.hold);update();
    say('Tentativa do Hold cancelada: falha a guardar a sessão.');return;
   }
@@ -487,11 +565,15 @@ async function holdTurn(){
    await wait(turbo?110:230);
   }
  }catch(err){
+  diagnostics.record('hold-visual-error');
   console.error('Erro de animação Hold:',err);
-  say('Resultado do Hold preservado; efeito visual recuperado.');
+  if(!saved)copySnapshot(before);
+  say(saved?'Resultado Hold preservado; efeito visual recuperado.':
+   'Não foi possível concluir a tentativa. Saldo anterior reposto.');
   if(bank.mode!=='hold')$('holdOverlay').hidden=true;
   else renderHold(null,bank.hold);
  }finally{
+  if(saved&&pendingVisual)await clearVisualReceipt();
   holdBusy=false;
   button.disabled=false;
  }
@@ -779,6 +861,7 @@ function infoModal(){
   {name:'✨ SCATTER',detail:'3 na grelha: 15 Free Spins. Nas Free Spins, 2: +8 ou 3: +15.'},
   {name:'🪙 HOLD & WIN',detail:'Seis moedas ativam a grelha 4×4 com três tentativas.'},
   {name:'🪨 Pedra bloqueadora',detail:'Não atribui prémios; interrompe sequências.'},
+  {name:'🩺 Diagnóstico local',detail:'Consulta estado da base e falhas técnicas desta sessão.',act:diagnosticModal},
   {name:'🎁 Experimentar Free Spins',detail:'Ativa apenas um teste visual gratuito.',
    act:async()=>{
     if(!writerReady||bank.mode!=='base'||running)return;
@@ -891,13 +974,14 @@ function bind(){
   if(document.hidden){
    // Let another visible tab take over as soon as this one becomes inactive.
    if(writerReady&&!running){
-    writerReady=false;update();
+    writerReady=false;diagnostics.record('writer-release');update();
     demoDB.releaseLease(tabToken).catch(err=>console.warn('Libertar sessão:',err));
    }
    adminLock.lock();
    if(modalOpen&&['Administração DEMO','Histórico e cópias locais',
     'PIN de administração DEMO','Criar PIN de administração DEMO',
     'Alterar PIN local'].includes($('modalTitle').textContent))closeModal();
+   diagnostics.record('page-background');
    stopAuto();clearTimeout(freeTimer);
   }
   else{
@@ -914,6 +998,7 @@ async function refreshWriter(){
   if(writerReady)granted=await demoDB.renewLease(tabToken);
   else granted=await demoDB.acquireLease(tabToken);
   if(!granted){
+   diagnostics.record('writer-denied');
    if(writerReady){writerReady=false;stopAuto();adminLock.lock()}
    writerReady=false;update();
    $('dbStatus').textContent='PHASER · OUTRA ABA ATIVA / SEM INDEXEDDB';
@@ -926,20 +1011,18 @@ async function refreshWriter(){
    if(saved?.snapshot)copySnapshot(saved.snapshot);
    if(saved?.board?.length===5)board=saved.board;
    if(scene?.ready)try{scene.recover(board)}catch(err){console.warn(err)}
-   writerReady=true;
+   writerReady=true;diagnostics.record('writer-granted');
    update();
    $('dbStatus').textContent='PHASER · BASE LOCAL EXCLUSIVA';
-   say(recoveredVisual?
-    'Giro interrompido recuperado do registo. Não foi cobrado nem pago novamente.':
-    'Sessão exclusiva obtida. Saldo sincronizado com a base local.');
-   if(recoveredVisual&&pendingVisual){
-    const old=pendingVisual;pendingVisual=null;
-    if(!(await demoDB.checkpoint(snapshot(),board)))pendingVisual=old;
-   }
-   if(ready&&!document.hidden&&bank.mode==='free')freeTimer=setTimeout(runSpin,1100);
+   if(recoveredVisual&&pendingVisual)await clearVisualReceipt();
+   if(ready){
+    const displayed=showRecoveryState(recoveredVisual?saved?.snapshot?.pendingVisual:null);
+    if(!displayed&&bank.mode==='free'&&!document.hidden)freeTimer=setTimeout(runSpin,1100);
+    else if(!displayed&&bank.mode==='hold')showHold();
+   }else say('Sessão exclusiva obtida. Saldo sincronizado com a base local.');
   }
  }catch(err){
-  writerReady=false;console.error('Aba ativa:',err);
+  writerReady=false;diagnostics.record('storage-error');console.error('Aba ativa:',err);
   $('dbStatus').textContent='PHASER · SESSÃO BLOQUEADA';
  }finally{writerCheckBusy=false;update()}
 }
@@ -955,6 +1038,7 @@ async function boot(){
   // Atomic writer lease in IndexedDB; localStorage fallback stays read-only.
   const exclusive=await demoDB.acquireLease(tabToken);
   writerReady=exclusive;
+  diagnostics.record(exclusive?'writer-granted':'writer-denied');
   const saved=await demoDB.load();
   if(saved?.snapshot)copySnapshot(saved.snapshot);
   if(Array.isArray(saved?.board)&&saved.board.length===5)board=saved.board;
@@ -971,17 +1055,17 @@ async function boot(){
   scene.setBoard(board);
   ready=true;update();
   status('TAMBORES VERTICAIS PRONTOS');
-  say(writerReady?(recoveredVisual?
-   'Giro interrompido recuperado. O resultado já tinha sido contabilizado.':
-   'Jardim Mágico Phaser · símbolos originais HD'):
-   'Modo de leitura: outra aba usa o jogo ou não existe IndexedDB.');
-  if(writerReady&&recoveredVisual&&pendingVisual){
-   const old=pendingVisual;pendingVisual=null;
-   const cleared=await demoDB.checkpoint(snapshot(),board);
-   if(!cleared)pendingVisual=old;
+  if(!writerReady){
+   say('Modo de leitura: outra aba usa o jogo ou não existe IndexedDB.');
+   return;
   }
-  if(writerReady&&bank.mode==='hold')showHold();
-  else if(writerReady&&bank.mode==='free')freeTimer=setTimeout(runSpin,1100);
+  const savedMarker=pendingVisual;
+  if(savedMarker)await clearVisualReceipt();
+  if(!showRecoveryState(savedMarker)){
+   say('Jardim Mágico Phaser · símbolos originais HD');
+   if(bank.mode==='hold')showHold();
+   else if(bank.mode==='free')freeTimer=setTimeout(runSpin,1100);
+  }
  };
  if(window.jardimPhaserScene?.ready)available();
  else window.addEventListener('jardim-phaser-ready',available,{once:true});

@@ -1,0 +1,7 @@
+/* V2.3 — diagnóstico simples e legível em dispositivos móveis. */
+.diag-panel{margin:10px 0 0;padding:10px;border-radius:12px;
+ border:1px solid #e7be7f88;background:#1f0f2988;text-align:left}
+.diag-panel p{margin:5px 0;padding:5px 0;border-bottom:1px solid #ffd39024;
+ font:12px/1.4 system-ui,sans-serif;color:#ffedce;overflow-wrap:anywhere}
+.diag-panel strong{color:#ffd47f}
+@media(max-width:390px){.diag-panel p{font-size:11px}}
