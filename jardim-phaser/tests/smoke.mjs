@@ -8,6 +8,8 @@ const main=await read('../js/app.js');
 const reels=await read('../js/reels.js');
 const dbsource=await read('../js/database.js');
 const audio=await read('../js/audio.js');
+const html=await read('../index.html');
+const css=await read('../css/estilo.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
 function parseModule(s){
@@ -72,8 +74,11 @@ scene.textures={exists:()=>true};
 // aparece DURANTE a última descida, nunca trocado pelo onComplete.
 let preStopColumns=0;
 let swappedOnStop=0;
+let burstSpriteTweens=0;
 scene.tweens={
  add(cfg){
+  if(cfg.targets instanceof FakeSprite&&typeof cfg.alpha==='number')
+   burstSpriteTweens++;
   if('distance'in cfg){
    const frames=cfg.distance*8;
    for(let frame=0;frame<=frames;frame++){
@@ -120,8 +125,20 @@ for(let c=0;c<5;c++)for(let r=0;r<3;r++){
  ok(scene.columns[c].visible[r].sprite.y===(r+.5)*180,'tambores alinhados '+c+','+r);
  ok(!scene.columns[c].visible[r].sprite.flipY,'símbolo não invertido '+c+','+r);
 }
+// Duplicados de linhas vencedoras: apenas um efeito por posição.
+const beforeBurst=burstSpriteTweens;
+await scene.burst([
+ {c:1,r:1},{c:1,r:1},{c:3,r:2}
+],{destroy:false,duration:430});
+ok(burstSpriteTweens-beforeBurst===2,
+ 'apenas duas peças brilhantes apesar de haver uma posição repetida');
+ok(scene.getVisible(1,1).alpha===1,
+ 'uma vitória sem nova cascata não esconde a peça');
+const beforeCascadeBurst=burstSpriteTweens;
 const next=collapseBoard(after,removed,()=>.3);
 await scene.burst(removed,{destroy:true});
+ok(burstSpriteTweens-beforeCascadeBurst===removed.length,
+ 'todas as figuras removidas explode uma só vez');
 await scene.cascade(next,removed,{turbo:true});
 for(let c=0;c<5;c++)for(let r=0;r<3;r++){
  ok(scene.columns[c].visible[r].symbol===SYMBOLS[next[c][r]],'cascata '+c+','+r);
@@ -148,6 +165,19 @@ ok(main.includes('finally{')&&main.includes('running=false;'),
  'giro desbloqueia após exceção');
 ok(reels.includes('this.tweens.add('),'Phaser usa tweens nativos');
 ok(reels.includes('Phaser.Scale.FIT'),'canvas responsivo em dispositivos móveis');
+ok(html.includes('id="dropAmount"'),'valor dourado de cada queda presente no HTML');
+ok(css.includes('.drop-amount.active')&&css.includes('@keyframes dropValuePop'),
+ 'valor da queda aumenta e desaparece suavemente');
+ok(main.includes('showDropAmount(lineTotal);'),
+ 'cada queda premiada apresenta o seu valor');
+ok(main.includes('destroy:!!next,')&&!main.includes('destroy:!!next||multiple'),
+ 'sem novas quedas os prémios não desaparecem');
+ok(main.includes('const fac=outcome.free?1:'),
+ 'Free Spins preserva o valor base até ao fim da série');
+ok(main.includes('outcome.free&&outcome.credited>0'),
+ 'Free Spins anuncia prémio final creditado');
+ok(reels.includes('Math.floor(48/targets.length)'),
+ 'limitador de partículas protege fluidez em mobile');
 ok(reels.includes("function enteringSymbol("),'motor tem injeção antecipada da figura');
 ok(!reels.slice(reels.indexOf('onComplete:()=>{',reels.indexOf(' spin(target,')),reels.indexOf(' burst(cells,')).includes('this.useSymbol(item,target'),
  'paragem não altera qualquer textura');
