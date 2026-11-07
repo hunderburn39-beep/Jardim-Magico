@@ -10,6 +10,8 @@ const dbsource=await read('../js/database.js');
 const audio=await read('../js/audio.js');
 const html=await read('../index.html');
 const css=await read('../css/estilo.css');
+const polish=await read('../css/polimento-v14.css');
+const pigArt=await read('../assets/porquinho-dourado.svg');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
 function parseModule(s){
@@ -210,6 +212,28 @@ ok(main.includes('finally{')&&main.includes('running=false;'),
 ok(reels.includes('this.tweens.add('),'Phaser usa tweens nativos');
 ok(reels.includes('Phaser.Scale.FIT'),'canvas responsivo em dispositivos móveis');
 ok(html.includes('id="dropAmount"'),'valor dourado de cada queda presente no HTML');
+// Phaser V1.4: melhorias apenas visuais, sem interferir com jogadas.
+// Testar recursos de arte e camadas sem bloqueio de toques no iPhone.
+ok(html.includes('polimento-v14.css?v=1.4'),
+ 'novo acabamento visual importado por último');
+ok(html.includes('assets/porquinho-dourado.svg'),
+ 'cofre com porquinho dourado ilustrado, não emoji');
+ok(pigArt.startsWith('<svg')&&pigArt.includes('</svg>')&&
+   pigArt.includes('id="gold"')&&pigArt.includes('id="round"'),
+ 'cofre SVG com gradientes dourados e contornos');
+ok((html.match(/--x:/g)||[]).length===8,
+ 'oito pontos de luz discretos no jardim');
+ok(polish.includes('pointer-events:none')&&polish.includes('.magic-dust'),
+ 'luzes do cenário não impedem tocar nos controlos');
+ok(polish.includes('jm75-lago.webp')&&polish.includes('.garden-flora'),
+ 'vegetação fotográfica original só nas margens');
+ok(polish.includes('prefers-reduced-motion:reduce'),
+ 'acessibilidade: desativar movimentos decorativos');
+ok((polish.match(/{/g)||[]).length===(polish.match(/}/g)||[]).length,
+ 'CSS V1.4 com delimitadores equilibrados');
+ok(!html.includes('<span class="piggy-art">🐷</span>'),
+ 'emoji antigo do cofre removido');
+
 ok(css.includes('.drop-amount.active')&&css.includes('@keyframes dropValuePop'),
  'valor da queda aumenta e desaparece suavemente');
 ok(main.includes('showDropAmount(lineTotal);'),
@@ -230,4 +254,4 @@ ok(reels.includes("function enteringSymbol("),'motor tem injeção antecipada da
 ok(!reels.slice(reels.indexOf('onComplete:()=>{',reels.indexOf(' spin(target,')),reels.indexOf(' burst(cells,')).includes('this.useSymbol(item,target'),
  'paragem não altera qualquer textura');
 
-console.log('Phaser V1.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+console.log('Phaser V1.4: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
