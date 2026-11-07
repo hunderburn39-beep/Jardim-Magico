@@ -111,11 +111,13 @@ class FakeSprite{
  setAngle(a){this.angle=a;return this}
 }
 globalThis.Phaser={Scene:class{},Math:{Clamp:(x,a,b)=>Math.max(a,Math.min(b,x))}};
-const factory=new Function('Phaser','SYMBOLS','newBoard',parseModule(reels)+'\nreturn ReelScene;');
-const Scene=factory(globalThis.Phaser,source.match(/SYMBOLS=\[.*?\]/)?.[0],()=>exact);
+const testFxBudget=new Function(parseModule(perfSource)+'\nreturn burstParticleBudget;')();
+const factory=new Function('Phaser','SYMBOLS','newBoard','burstParticleBudget',
+ parseModule(reels)+'\nreturn ReelScene;');
+const Scene=factory(globalThis.Phaser,source.match(/SYMBOLS=\[.*?\]/)?.[0],()=>exact,testFxBudget);
 // More predictable: parse exports and obtain original symbol labels.
 const SYMBOLS=['potion','green','heart','teapot','wild','gem','mushroom','hat','rose','scatter','stone','coin'];
-const Reel=factory(globalThis.Phaser,SYMBOLS,()=>exact);
+const Reel=factory(globalThis.Phaser,SYMBOLS,()=>exact,testFxBudget);
 // V1.3: a folha artística tem os nove ícones na ordem original, sem
 // espelhamento e sem alterar as regras dos prémios ou a queda aprovada.
 const scene=new Reel();
@@ -239,6 +241,13 @@ for(let c=0;c<5;c++)for(let r=0;r<3;r++){
 }
 scene.recover(exact);
 ok(!scene.busy,'recuperação do bloqueio');
+const strandedFx={active:true,disposed:false,destroy(){
+ this.disposed=true;this.active=false
+}};
+scene.trackFx(strandedFx);
+scene.recover(exact);
+ok(strandedFx.disposed&&scene.fxObjects.size===0,
+ 'recuperação do Safari liberta efeitos transitórios esquecidos');
 for(let c=0;c<5;c++)for(let r=0;r<3;r++)
  ok(scene.columns[c].visible[r].sprite.y===(r+.5)*180,'grelha restaurada');
 const store=new Map();
@@ -365,7 +374,7 @@ ok(!reels.slice(reels.indexOf('onComplete:()=>{',reels.indexOf(' spin(target,'))
  'paragem não altera qualquer textura');
 
 const perf=new Function(parseModule(perfSource)+
- '\nreturn {slowFrameRatio,createPerformanceGuard};')();
+ '\nreturn {slowFrameRatio,createPerformanceGuard,burstParticleBudget};')();
 ok(perf.slowFrameRatio(Array(60).fill(16.67))===0,
  'desempenho normal não provoca corte de efeitos');
 ok(perf.slowFrameRatio(Array(60).fill(38))===1,
