@@ -14,6 +14,7 @@ const polish=await read('../css/polimento-v14.css');
 const pigArt=await read('../assets/porquinho-dourado.svg');
 const bonusScript=await read('../js/bonus-presentation.js');
 const bonusCss=await read('../css/bonus-v15.css');
+const prizeCss=await read('../css/premios-v16.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
 function parseModule(s){
@@ -237,6 +238,46 @@ ok(main.includes('finally{')&&main.includes('running=false;'),
 ok(reels.includes('this.tweens.add('),'Phaser usa tweens nativos');
 ok(reels.includes('Phaser.Scale.FIT'),'canvas responsivo em dispositivos móveis');
 ok(html.includes('id="dropAmount"'),'valor dourado de cada queda presente no HTML');
+ok(html.includes('premios-v16.css?v=1.6'),
+ 'novo CSS de prémios carregado na versão 1.6');
+const multiSection=html.slice(html.indexOf('<section class="multiplier"'),
+ html.indexOf('<section class="frame-region"'));
+ok(multiSection.indexOf('id="dropAmount"')<multiSection.indexOf('id="orbs"')&&
+   multiSection.indexOf('id="orbs"')<multiSection.indexOf('id="multiTotal"'),
+ 'barra: valor da queda à esquerda, orbs ao centro e total à direita');
+ok(!html.includes('class="drop-amount"'),
+ 'valor deixou de estar sobreposto ao centro dos tambores');
+const bigSection=html.slice(html.indexOf('id="bigWin"'),
+ html.indexOf('</section>',html.indexOf('id="bigWin"')));
+ok(bigSection.indexOf('id="bigWinTitle"')<
+   bigSection.indexOf('class="celebration-total"')&&
+   bigSection.indexOf('class="celebration-total"')<
+   bigSection.indexOf('id="bigWinValue"'),
+ 'celebração apresenta frase, TOTAL e valor em três linhas');
+ok(prizeCss.includes('.big-win{')&&prizeCss.includes('top:23%'),
+ 'a frase de celebração subiu em relação à posição antiga');
+ok(prizeCss.includes('.multi-stack .orb-group')&&
+  prizeCss.includes('.drop-line-value')&&
+  prizeCss.includes('.celebration-value'),
+ 'barra e celebração têm tipografia premium responsiva');
+ok((prizeCss.match(/{/g)||[]).length===(prizeCss.match(/}/g)||[]).length,
+ 'CSS prémios V1.6 com delimitadores equilibrados');
+ok(main.includes("$('dropLabel').textContent='QUEDA '+(i+1)")&&
+   main.includes("$('dropLabel').textContent='TOTAL DO GIRO'"),
+ 'à esquerda aparece cada queda e depois o total real do giro');
+ok(main.includes('function celebrationTier(')&&
+   main.includes("return 'SENSACIONAL'")&&
+   main.includes("return 'MEGA'")&&
+   main.includes("return 'NICE'"),
+ 'celebração escolhe título pelo prémio sem alterar a matemática');
+ok(main.includes("celebrate('HOLD & WIN',result.prize)")&&
+   main.includes("celebrate('FREE SPINS',outcome.credited)"),
+ 'bónus mostram frase e prémio separado em três linhas');
+ok(main.includes('if(!freeMultiAdded)')&&
+   main.includes('freeOrbHistory.push(outcome.wildMultiplier)'),
+ 'nas Free Spins cada giro só pode acrescentar uma bola de multi');
+ok(main.includes('orbs(outcome.free?freeOrbHistory:earnedMultis,'),
+ 'orbs refletem os multiplicadores realmente obtidos');
 // Phaser V1.4: melhorias apenas visuais, sem interferir com jogadas.
 // Testar recursos de arte e camadas sem bloqueio de toques no iPhone.
 ok(html.includes('polimento-v14.css?v=1.4'),
@@ -295,4 +336,4 @@ ok(reels.includes("function enteringSymbol("),'motor tem injeção antecipada da
 ok(!reels.slice(reels.indexOf('onComplete:()=>{',reels.indexOf(' spin(target,')),reels.indexOf(' burst(cells,')).includes('this.useSymbol(item,target'),
  'paragem não altera qualquer textura');
 
-console.log('Phaser V1.5: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+console.log('Phaser V1.6: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
