@@ -1,0 +1,59 @@
+/* V1.7 — Safari/mobile: menos sobreposição e efeitos decorativos adaptativos.
+   Os 5 tambores e os efeitos dos prémios Phaser continuam intactos. */
+.machine.is-spinning .magic-dust i{
+ animation-play-state:paused;
+ will-change:auto;
+}
+.machine.lite-effects .magic-dust i{
+ animation:none;opacity:.22;will-change:auto;
+}
+.machine.lite-effects .ambient{filter:none;opacity:.3}
+.machine.lite-effects .game-header .logo,
+.machine.lite-effects .jackpot,
+.machine.lite-effects .multiplier,
+.machine.lite-effects .frame-region .branch-frame,
+.machine.lite-effects .dashboard .panel,
+.machine.lite-effects .spin-btn{
+ filter:none;
+}
+.phaser-reels,.phaser-reels canvas{
+ -webkit-user-select:none;user-select:none;
+ -webkit-touch-callout:none;
+}
+@media (orientation:portrait) and (max-height:670px){
+ .machine{min-height:0;max-height:none;height:100dvh}
+ .game-header{height:19.5%;min-height:85px}
+ .game-header .logo{height:min(13dvh,105px);top:25px}
+ .jackpots{min-height:35px;height:6.4%}
+ .multiplier{min-height:39px}
+ .frame-region{padding-top:7px;padding-bottom:7px;min-height:0}
+ .dashboard{height:14%;min-height:78px}
+ .controls{height:12%;min-height:65px}
+ .spin-btn{width:min(21vw,88px)}
+ .result-text{min-height:15px}
+}
+@media (orientation:portrait) and (max-height:570px){
+ .game-header{height:17%;min-height:69px}
+ .game-header .logo{height:11dvh;top:19px}
+ .subtitle{bottom:0}
+ .jackpots{height:6%;min-height:31px}
+ .multiplier{min-height:36px;padding-top:2px;padding-bottom:2px}
+ .frame-region{padding-top:3px;padding-bottom:3px}
+ .dashboard{height:13%;min-height:66px}
+ .controls{height:11%;min-height:55px}
+ .spin-btn{width:min(19vw,70px)}
+ .side-btn{padding:3px 1px}
+ footer{min-height:11px}
+}
+@media (orientation:landscape) and (max-height:430px){
+ .machine{min-height:0;height:100dvh;padding-top:2px;padding-bottom:2px}
+ .game-header .logo{top:30px;height:25dvh}
+ .controls{min-height:0}
+ .dashboard{min-height:0}
+ .frame-region{padding-top:4px;padding-bottom:4px}
+ .big-win{top:9%}
+}
+@media (prefers-reduced-motion:reduce){
+ .machine .magic-dust i{animation:none;will-change:auto}
+ .machine .drop-line-value.pulse{animation:none}
+}

@@ -15,6 +15,8 @@ const pigArt=await read('../assets/porquinho-dourado.svg');
 const bonusScript=await read('../js/bonus-presentation.js');
 const bonusCss=await read('../css/bonus-v15.css');
 const prizeCss=await read('../css/premios-v16.css');
+const mobileCss=await read('../css/mobile-v17.css');
+const perfSource=await read('../js/performance-v17.js');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
 function parseModule(s){
@@ -336,4 +338,40 @@ ok(reels.includes("function enteringSymbol("),'motor tem injeção antecipada da
 ok(!reels.slice(reels.indexOf('onComplete:()=>{',reels.indexOf(' spin(target,')),reels.indexOf(' burst(cells,')).includes('this.useSymbol(item,target'),
  'paragem não altera qualquer textura');
 
-console.log('Phaser V1.6: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const perf=new Function(parseModule(perfSource)+
+ '\nreturn {slowFrameRatio,createPerformanceGuard};')();
+ok(perf.slowFrameRatio(Array(60).fill(16.67))===0,
+ 'desempenho normal não provoca corte de efeitos');
+ok(perf.slowFrameRatio(Array(60).fill(38))===1,
+ 'desempenho lento detetado sem interferir com o motor');
+const classes=new Set();
+const surface={classList:{
+ add:c=>classes.add(c),remove:c=>classes.delete(c)
+}};
+let frameTick=null,cancelled=0;
+const clock={
+ requestAnimationFrame:fn=>{frameTick=fn;return 1},
+ cancelAnimationFrame:()=>{cancelled++}
+};
+const guard=perf.createPerformanceGuard(surface,clock);
+guard.start();
+ok(classes.has('is-spinning'),'modo de giro desativa decorativos pesados');
+let now=0;
+for(let i=0;i<72;i++){now+=38;frameTick(now)}
+ok(classes.has('lite-effects'),'modo leve ativado após frames lentos');
+guard.stop();
+ok(!classes.has('is-spinning')&&cancelled===1,
+ 'modo de giro limpa animação mesmo após erro');
+ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
+ 'ecrãs pequenos mantêm os controlos visíveis');
+ok(mobileCss.includes('animation-play-state:paused')&&
+ mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
+ 'efeitos adaptativos respeitam movimento reduzido');
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=1.7'),
+ 'nova versão carregada com cache isolada');
+ok(main.includes('performanceGuard.start();')&&
+ main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
+ 'modo gráfico regressa ao normal e não inicia giros em segundo plano');
+ok((mobileCss.match(/{/g)||[]).length===(mobileCss.match(/}/g)||[]).length,
+ 'CSS V1.7 com delimitadores equilibrados');
+console.log('Phaser V1.7: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

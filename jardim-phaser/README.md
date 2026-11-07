@@ -118,3 +118,14 @@ Cópia de segurança anterior: `backup/jardim-phaser-v1-4-antes-bonus-v1-5`.
 - Os testes automáticos verificam a ordem visual dos componentes, o número de linhas da celebração, a legibilidade e o histórico dos multiplicadores.
 
 Backup da V1.5: `backup/jardim-phaser-v1-5-antes-layout-premios-v1-6`.
+
+## V1.7 — fluidez móvel, Safari e ecrãs compactos
+
+- Mantida **integralmente** a lógica do motor de resultados, cofre fictício, Free Spins, Hold & Win, atlas artístico e animação vertical/cascatas aprovada da V1.6.
+- Um observador leve de frames no ecrã deteta quedas persistentes de fluidez durante o giro e reduz **apenas** os filtros/efeitos decorativos do cenário (nunca a animação das peças nem o resultado). Após três janelas de frames estáveis recupera os efeitos completos.
+- As oito luzes decorativas de fundo ficam pausadas enquanto os tambores estão a girar, reduzindo trabalho de composição na GPU. O modo é sempre libertado em `finally`, mesmo após uma recuperação de animação.
+- O Safari não inicia novos giros enquanto o documento está oculto; mantém a retoma das Free Spins quando regressa ao ecrã.
+- Ajustes de CSS em `css/mobile-v17.css` para altura de ecrã inferior a 670px, incluindo retrato compacto e paisagem baixa, preservando o encaixe do botão RODAR e painéis.
+- Os testes `tests/smoke.mjs` verificam a deteção de frames lentos, paragem segura, tamanho compacto e que os scripts novos são carregados. **É necessário confirmar os FPS e o encaixe num iPhone físico**, pois os testes automatizados não substituem essa verificação.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.7

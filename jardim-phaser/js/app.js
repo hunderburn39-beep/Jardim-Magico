@@ -7,9 +7,11 @@ import {demoDB} from './database.js?v=1';
 import {audio} from './audio.js?v=1';
 import {createReelGame} from './reels.js?v=1.3';
 import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
+import {createPerformanceGuard} from './performance-v17.js?v=1.7';
 const $=id=>document.getElementById(id);
 const BETS=[.05,.1,.2,.4,.6,.8,1,1.5,2,3,5,7.5,10];
 const bank=new DemoBank();
+const performanceGuard=createPerformanceGuard(document.getElementById('machine'));
 let scene=null,game=null;
 let board=newBoard(),running=false,ready=false,turbo=false;
 let autoLeft=0,autoTimer=null,freeTimer=null;
@@ -162,7 +164,7 @@ async function visual(promiseFactory,expected,deadline=7000){
 }
 async function runSpin(){
  clearTimeout(autoTimer);clearTimeout(freeTimer);
- if(!ready||!scene||running||modalOpen||bank.mode==='hold')return;
+ if(document.hidden||!ready||!scene||running||modalOpen||bank.mode==='hold')return;
  const before=snapshot();
  let outcome;
  try{outcome=bank.spin()}
@@ -178,7 +180,7 @@ async function runSpin(){
  if(!outcome.free)freeOrbHistory=[];
  const earnedMultis=[];
  let freeMultiAdded=false;
- running=true;update();
+ running=true;update();performanceGuard.start();
  clearTimeout(dropTimer);
  $('dropAmount').textContent=money(0);
  $('dropAmount').classList.remove('pulse');
@@ -251,6 +253,7 @@ async function runSpin(){
   // Nunca deixar preso o botão: corrigir malhas, limpar estado e continuar.
   try{scene.recover(finalBoard)}catch(err){console.warn(err)}
   running=false;
+  performanceGuard.stop();
   const all=stages.flatMap(stage=>(stage.ev.lineWins||[]).map(win=>({
    ...win,
    amount:round(win.amount*(outcome.free?1:
