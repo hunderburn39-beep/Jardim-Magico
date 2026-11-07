@@ -22,6 +22,12 @@ const FALLBACK_EMOJI={
 const ALT_COLORS={potion:'#ef499f',green:'#48ce8b',heart:'#f66898',
  teapot:'#a792e0',wild:'#ffda84',gem:'#ce94f8',mushroom:'#f5bd8b',
  hat:'#ba7cef',rose:'#fa658b',scatter:'#82c8ec',stone:'#777487',coin:'#ffcc6b'};
+/** Nine premium source glyphs arranged 3 × 3 in the reference artwork. */
+export function atlasTileFor(symbol){
+ const index=SYMBOLS.indexOf(symbol);
+ if(index<0||index>8)return null;
+ return {col:index%3,row:Math.floor(index/3)};
+}
 const moneyUnit=x=>Number.isFinite(x)?x:0;
 function asKey(symbol){return 'art-'+symbol}
 /* O resultado final é colocado quando a peça REENTRA por cima.
@@ -83,6 +89,7 @@ class ReelScene extends Phaser.Scene{
  }
  preload(){
   this.load.setPath('../assets/imagens/');
+  this.load.image('symbols-atlas','jm75-simbolos.webp');
   for(const [key,file] of Object.entries(SOURCES))
    this.load.image('source-'+key,file);
   this.load.on('loaderror',file=>{
@@ -106,18 +113,60 @@ class ReelScene extends Phaser.Scene{
   window.dispatchEvent(new Event('jardim-phaser-ready'));
  }
  createTextures(){
+  const atlas=this.textures.exists('symbols-atlas')?
+   this.textures.get('symbols-atlas').getSourceImage():null;
+  this.premiumSymbols=0;
   for(const symbol of SYMBOLS){
    const orig='source-'+symbol;
    const art=asKey(symbol);
    let canvas=null;
-   if(this.textures.exists(orig)){
+   // A imagem inteira foi produzida originalmente para este jogo.
+   // Recortar os 9 ícones sem alterar saturação nem orientação.
+   if(atlas&&atlasTileFor(symbol)){
+    try{
+     canvas=this.cutPremiumAtlas(atlas,symbol);
+     this.premiumSymbols++;
+    }catch(err){
+     console.warn('Arte premium indisponível:',symbol,err);
+    }
+   }
+   // Fallback para a arte anterior; nunca deixar espaço vazio.
+   if(!canvas&&this.textures.exists(orig)){
     try{canvas=this.cleanOriginalArt(orig)}catch(err){
-      console.warn('Recorte original indisponível:',symbol,err);
+     console.warn('Recorte original indisponível:',symbol,err);
     }
    }
    if(!canvas)canvas=createFallbackCanvas(art,symbol);
    this.textures.addCanvas(art,canvas);
   }
+ }
+ cutPremiumAtlas(image,symbol){
+  const tile=atlasTileFor(symbol);
+  if(!tile)throw Error('Símbolo fora da folha artística');
+  if(image.width<120||image.height<120)
+   throw Error('Folha artística demasiado pequena');
+  const cellW=image.width/3,cellH=image.height/3;
+  const side=512;
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=side;
+  const g=canvas.getContext('2d');
+  // Recorte direto do original: preserva cor, luz e brilho da fotografia.
+  const inset=1.2;
+  g.drawImage(image,
+   tile.col*cellW+inset,tile.row*cellH+inset,
+   cellW-inset*2,cellH-inset*2,
+   12,12,side-24,side-24);
+  // Apenas suavizar a orla circular, sem remover cores da peça.
+  const vignette=g.createRadialGradient(
+   side/2,side/2,side*.32,side/2,side/2,side*.5);
+  vignette.addColorStop(0,'rgba(255,255,255,1)');
+  vignette.addColorStop(.76,'rgba(255,255,255,1)');
+  vignette.addColorStop(1,'rgba(255,255,255,0)');
+  g.globalCompositeOperation='destination-in';
+  g.fillStyle=vignette;
+  g.fillRect(0,0,side,side);
+  g.globalCompositeOperation='source-over';
+  return canvas;
  }
  cleanOriginalArt(sourceKey){
   // Reutiliza a IMAGEM ORIGINAL sem a inverter, espelhar ou tingir.
