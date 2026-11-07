@@ -27,6 +27,8 @@ const pinSource=await read('../js/admin-pin-v21.js');
 const gatewaySource=await read('../js/storage-gateway-v21.js');
 const recoverySource=await read('../js/recovery-v23.js');
 const recoveryCss=await read('../css/recovery-v23.css');
+const sessionSource=await read('../js/session-v24.js');
+const sessionCss=await read('../css/session-v24.css');
 const pinCss=await read('../css/admin-pin-v21.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
@@ -378,7 +380,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.3'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.4'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -411,7 +413,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=2.3'),'botão e versão Phaser V2.3');
+ html.includes('app.js?v=2.4'),'botão e versão Phaser V2.4');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -592,7 +594,7 @@ ok(main.includes('pendingVisual=spinRecoveryReceipt(')&&
  main.includes('pendingVisual=holdRecoveryReceipt(')&&
  main.includes('demoDB.checkpoint(snapshot(),board)'),
  'resultado fica preservado e marca visual é retirada após animação');
-ok(main.includes('if(!writerReady||running)return;')&&
+ok(main.includes('if(!writerReady||mutating||bank.mode!==\'hold\'||holdBusy)return;')&&
  main.includes("PHASER · SÓ LEITURA"),
  'sem IndexedDB não permite alterar saldo com multi-abas');
 ok(gatewaySource.includes("'acquireLease'")&&
@@ -635,4 +637,29 @@ ok(main.includes("name:'🩺 Diagnóstico local'")&&
  main.includes('function diagnosticModal()')&&recoveryCss.includes('.diag-panel')&&
  html.includes('recovery-v23.css?v=2.3'),
  'painel de diagnósticos integrado e com estilos móveis');
-console.log('Phaser V2.3: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const UI24=new Function(parseModule(sessionSource)+
+ '\nreturn {sessionState,canResumeFree};')();
+ok(UI24.sessionState({ready:true,writerReady:false}).kind==='blocked',
+ 'sem writer aviso de sessão bloqueada');
+ok(UI24.sessionState({ready:true,writerReady:true,saveIssue:true}).kind==='error',
+ 'falha persistente apresenta estado de erro');
+ok(UI24.sessionState({ready:true,writerReady:true,mutating:true}).kind==='saving',
+ 'feedback durante uma operação pendente');
+ok(UI24.sessionState({ready:true,writerReady:true,paused:true,mode:'free'}).kind==='paused'&&
+ UI24.sessionState({ready:true,writerReady:true}).kind==='ok',
+ 'Free Spins pausadas têm botão para retomar');
+ok(UI24.canResumeFree({ready:true,writerReady:true,paused:true,mode:'free',hidden:false,running:false,mutating:false})&&
+ !UI24.canResumeFree({ready:true,writerReady:true,paused:true,mode:'free',hidden:true,running:false,mutating:false}),
+ 'retomar apenas com aba visível');
+ok(main.includes('freePaused=true;update();')&&
+ main.includes('act:resumeFree')&&
+ main.includes("if(bank.mode==='free'&&!running&&!freePaused"),
+ 'fechar modal de recuperação não inicia Free Spins');
+ok(main.includes('async function withMutation(action)')&&
+ main.includes("if(!(await persist('stake')))")&&
+ main.includes('if(writerReady&&!running&&!mutating&&!holdBusy)'),
+ 'aposta e libertação de aba respeitam gravações em curso');
+ok(html.includes('id="sessionBanner"')&&html.includes('session-v24.css?v=2.4')&&
+ sessionCss.includes('safe-area-inset-bottom')&&sessionCss.includes('pointer:coarse'),
+ 'aviso responsivo com toque e área segura no iPhone');
+console.log('Phaser V2.4: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

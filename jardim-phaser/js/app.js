@@ -13,6 +13,7 @@ import {createPerformanceGuard} from './performance-v17.js?v=1.7';
 import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=1.8';
 import {filterHistory,historyPage} from './history-v19.js?v=1.9';
 import {spinRecoveryReceipt,holdRecoveryReceipt,recoveryMessage,createDiagnostics} from './recovery-v23.js?v=2.3';
+import {sessionState,canResumeFree} from './session-v24.js?v=2.4';
 const demoDB=createStorageGateway(localDB);
 const adminLock=createAdminPinLock();
 const diagnostics=createDiagnostics();
@@ -30,6 +31,7 @@ let bigTimer=null,winTimer=null,dropTimer=null,bonusTimer=null;
 let holdBusy=false;
 let freeOrbHistory=[];
 let modalOpen=false,holdsLong=false,longTimer=null;
+let mutating=false,saveIssue=false,freePaused=false;
 let writerReady=false,writerCheckBusy=false,writerTimer=null,pendingVisual=null,recoveredVisual=false;
 const tabToken=(typeof crypto!=='undefined'&&crypto.randomUUID)?
  crypto.randomUUID():'tab-'+Date.now()+'-'+Math.random().toString(36).slice(2);
@@ -63,6 +65,7 @@ function snapshot(){
 }
 function update(){
  const s=snapshot();
+ renderSessionBanner();
  $('profileStatus').textContent='MODO '+(DEMO_PROFILES[s.profile]||DEMO_PROFILES.normal).toLocaleUpperCase('pt-PT');
  $('balance').textContent=money(s.balance);
  $('reserve').textContent=money(s.reserve);
@@ -84,15 +87,15 @@ function update(){
  $('turboState').textContent=turbo?'ON':'OFF';
  $('turboBtn').setAttribute('aria-pressed',String(turbo));
  const current=BETS.findIndex(v=>Math.abs(v-s.stake)<1e-6);
- const blocked=running||s.mode!=='base'||!ready||!writerReady;
+ const blocked=running||mutating||s.mode!=='base'||!ready||!writerReady;
  $('betDown').disabled=blocked||current<=0;
  $('betUp').disabled=blocked||current>=BETS.length-1;
  $('bonusBtn').disabled=blocked;
  $('adminBtn').disabled=blocked;
- $('spinBtn').disabled=running||!ready||!writerReady||s.mode==='hold'||s.mode==='free';
- $('creditBtn').disabled=!writerReady||running;
- $('vaultBtn').disabled=!writerReady;
- $('autoBtn').disabled=(!ready||!writerReady||s.mode==='hold'||(running&&autoLeft===0))&&autoLeft===0;
+ $('spinBtn').disabled=running||mutating||!ready||!writerReady||s.mode==='hold'||s.mode==='free';
+ $('creditBtn').disabled=!writerReady||running||mutating;
+ $('vaultBtn').disabled=!writerReady||mutating;
+ $('autoBtn').disabled=(!ready||!writerReady||mutating||s.mode==='hold'||(running&&autoLeft===0))&&autoLeft===0;
  $('autoBtn').classList.toggle('active',autoLeft>0);
 }
 function orbs(accumulated=[],effective=1){
@@ -153,7 +156,7 @@ function showWinText(wins,value,total=false,factor=1){
  if(total)winTimer=setTimeout(()=>notice.hidden=true,2300);
 }
 async function persist(type,details={}){
- if(!writerReady){diagnostics.record('save-failed');return false}
+ if(!writerReady){diagnostics.record('save-failed');saveIssue=true;update();return false}
  const ok=await demoDB.save(snapshot(),details.board||board,{
   type,id:(typeof crypto!=='undefined'&&crypto.randomUUID)?
    crypto.randomUUID():'event-'+Date.now()+'-'+Math.random().toString(36).slice(2),
@@ -163,9 +166,45 @@ async function persist(type,details={}){
   amount:details.amount||0,note:details.note||'',profile:bank.profile
  });
  diagnostics.record(ok?'save-ok':'save-failed');
+ saveIssue=!ok;
  if(!ok)$('dbStatus').textContent='PHASER · ERRO A GUARDAR';
+ update();
  return ok;
 }
+function renderSessionBanner(){
+ const state=sessionState({ready,writerReady,mutating,saveIssue,
+  paused:freePaused,mode:bank.mode});
+ const panel=$('sessionBanner');
+ panel.hidden=state.kind==='ok'||state.kind==='boot';
+ panel.dataset.kind=state.kind;
+ $('sessionMessage').textContent=state.message;
+ const button=$('sessionAction');
+ button.hidden=!state.action;
+ button.disabled=running||mutating||holdBusy||writerCheckBusy;
+ if(state.action)button.textContent=state.action;
+}
+function resumeFree(){
+ if(!canResumeFree({ready,writerReady,paused:freePaused,mode:bank.mode,
+  hidden:document.hidden,running,mutating}))return false;
+ freePaused=false;clearTimeout(freeTimer);
+ update();freeTimer=setTimeout(runSpin,350);
+ return true;
+}
+async function withMutation(action){
+ if(mutating||running||holdBusy||!writerReady)return false;
+ mutating=true;update();
+ try{return await action()}
+ catch(e){
+  saveIssue=true;diagnostics.record('save-failed');
+  console.error('Operação pendente:',e);
+  say('Operação não concluída. Revê a sessão local.');return false;
+ }finally{mutating=false;update()}
+}
+function retrySession(){
+ if(mutating||running||holdBusy||writerCheckBusy)return;
+ refreshWriter(true);
+}
+
 function stopAuto(){
  autoLeft=0;clearTimeout(autoTimer);autoTimer=null;
  update();say('Giros automáticos parados');
@@ -192,7 +231,7 @@ async function visual(promiseFactory,expected,deadline=7000){
 }
 async function runSpin(){
  clearTimeout(autoTimer);clearTimeout(freeTimer);
- if(document.hidden||!writerReady||!ready||!scene||running||modalOpen||bank.mode==='hold')return;
+ if(document.hidden||!writerReady||!ready||!scene||running||mutating||freePaused||modalOpen||bank.mode==='hold')return;
  const before=snapshot();
  const previousBoard=board.map(col=>col.slice());
  let outcome;
@@ -375,15 +414,16 @@ function modal(title,description,actions=[]){
 }
 function closeModal(){
  modalOpen=false;$('overlay').hidden=true;update();
- if(bank.mode==='free'&&!running)freeTimer=setTimeout(runSpin,500);
+ if(bank.mode==='free'&&!running&&!freePaused&&writerReady&&!document.hidden)
+  freeTimer=setTimeout(runSpin,500);
 }
 function bonusModal(){
- if(!writerReady||running||bank.mode!=='base')return;
+ if(!writerReady||running||mutating||bank.mode!=='base')return;
  modal('Comprar bónus DEMO',
   'Compras voluntárias apenas com créditos fictícios; sem dinheiro real.',[
    {name:'✨ 15 Free Spins',detail:'Custo: '+money(bank.bonusPrice),
     disabled:bank.balance<bank.bonusPrice,
-    act:async()=>{
+    act:()=>withMutation(async()=>{
      const before=snapshot(),cost=bank.bonusPrice;
      const r=bank.buyFree();update();say(r.message);
      if(r.ok){
@@ -393,10 +433,10 @@ function bonusModal(){
       bonusAnnouncement('✨ FREE SPINS ✨','15 giros de demonstração',1300);
       freeTimer=setTimeout(runSpin,1350);
      }
-    }},
+    })},
    {name:'🪙 Hold & Win 4×4',detail:'Custo: '+money(bank.holdPrice),
     disabled:bank.balance<bank.holdPrice,
-    act:async()=>{
+    act:()=>withMutation(async()=>{
      const before=snapshot(),cost=bank.holdPrice;
      const r=bank.buyHold();update();say(r.message);
      if(r.ok){
@@ -405,7 +445,7 @@ function bonusModal(){
       }
       showHold();
      }
-    }}
+    })}
   ]);
 }
 
@@ -461,9 +501,10 @@ function showRecoveryState(marker){
  if(summary.kind==='free-active'){
   diagnostics.record('recovered-free');
   clearTimeout(freeTimer);freeTimer=null;
+  freePaused=true;update();
   modal(summary.title,summary.detail,[{
-   name:'▶ RETOMAR FREE SPINS',detail:'Retoma as jogadas restantes; não repete o prémio guardado.',
-   act:()=>{if(writerReady&&bank.mode==='free')freeTimer=setTimeout(runSpin,300)}
+   name:'▶ RETOMAR FREE SPINS',detail:'Só retoma as jogadas ainda pendentes.',
+   act:resumeFree
   }]);
   return true;
  }
@@ -530,7 +571,7 @@ function renderHold(previousGrid=null,hold=bank.hold){
  }
 }
 async function holdTurn(){
- if(!writerReady||bank.mode!=='hold'||holdBusy)return;
+ if(!writerReady||mutating||bank.mode!=='hold'||holdBusy)return;
  holdBusy=true;
  const button=$('holdBtn');
  button.disabled=true;
@@ -910,28 +951,32 @@ function vaultModal(){
  ]);
 }
 async function creditDemo(){
- if(!writerReady||running)return;
- const before=snapshot();
- bank.creditDemo(25);update();
- if(!(await persist('credit-demo',{amount:25}))){copySnapshot(before);update();say('Recarga cancelada: falha na gravação.');return}
- say('Adicionados 25 créditos fictícios');
+ return withMutation(async()=>{
+  const before=snapshot();
+  bank.creditDemo(25);update();
+  if(!(await persist('credit-demo',{amount:25}))){
+   copySnapshot(before);update();say('Recarga cancelada: falha na gravação.');return false;
+  }
+  say('Adicionados 25 créditos fictícios');return true;
+ });
 }
-function changeBet(dir){
- if(!writerReady||running)return;
- const pos=BETS.findIndex(x=>Math.abs(x-bank.stake)<.00001);
- const next=BETS[Math.max(0,Math.min(BETS.length-1,(pos<0?2:pos)+dir))];
- if(bank.setStake(next)){
-  const old=BETS[Math.max(0,pos)]??.2;
+async function changeBet(dir){
+ return withMutation(async()=>{
+  if(modalOpen||bank.mode!=='base')return false;
+  const before=snapshot();
+  const pos=BETS.findIndex(x=>Math.abs(x-bank.stake)<.00001);
+  const next=BETS[Math.max(0,Math.min(BETS.length-1,(pos<0?2:pos)+dir))];
+  if(!bank.setStake(next)||before.stake===next)return false;
   update();
-  persist('stake').then(ok=>{
-   if(!ok){bank.stake=old;update();say('Aposta anterior reposta: falha ao guardar.')}
-  });
-  say('Aposta virtual '+money(bank.stake));
- }
+  if(!(await persist('stake'))){
+   copySnapshot(before);update();say('Aposta anterior reposta: falha ao guardar.');return false;
+  }
+  say('Aposta virtual '+money(bank.stake));return true;
+ });
 }
 function autoModal(){
  if(autoLeft>0){stopAuto();return}
- if(!writerReady)return
+ if(!writerReady||mutating)return;
  if(running||bank.mode!=='base')return;
  modal('Giros automáticos',
  'Escolhe o número de giros de demonstração. Podes parar no botão AUTO.',[
@@ -947,12 +992,13 @@ function bind(){
   runSpin();
  });
  $('spinBtn').addEventListener('pointerdown',e=>{
-  if(e.button!==0||running)return;
+  if(e.button!==0||running||mutating||!writerReady)return;
   clearTimeout(longTimer);
   longTimer=setTimeout(()=>{holdsLong=true;autoModal()},3000);
  });
- for(const event of ['pointerup','pointerleave','pointercancel'])
-  $('spinBtn').addEventListener(event,()=>clearTimeout(longTimer));
+ $('spinBtn').addEventListener('pointerup',()=>clearTimeout(longTimer));
+ for(const event of ['pointerleave','pointercancel'])
+  $('spinBtn').addEventListener(event,()=>{clearTimeout(longTimer);holdsLong=false});
  $('betDown').addEventListener('click',()=>changeBet(-1));
  $('betUp').addEventListener('click',()=>changeBet(1));
  $('bonusBtn').addEventListener('click',bonusModal);
@@ -963,6 +1009,11 @@ function bind(){
  $('infoBtn').addEventListener('click',infoModal);
  $('autoBtn').addEventListener('click',autoModal);
  $('holdBtn').addEventListener('click',holdTurn);
+ $('sessionAction').addEventListener('click',()=>{
+  const state=sessionState({ready,writerReady,mutating,saveIssue,paused:freePaused,mode:bank.mode});
+  if(state.kind==='paused')resumeFree();
+  else if(state.kind==='blocked'||state.kind==='error')retrySession();
+ });
  $('closeModal').addEventListener('click',closeModal);
  $('overlay').addEventListener('click',e=>{
   if(e.target===$('overlay'))closeModal();
@@ -986,7 +1037,7 @@ function bind(){
  document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
    // Let another visible tab take over as soon as this one becomes inactive.
-   if(writerReady&&!running){
+   if(writerReady&&!running&&!mutating&&!holdBusy){
     writerReady=false;diagnostics.record('writer-release');update();
     demoDB.releaseLease(tabToken).catch(err=>console.warn('Libertar sessão:',err));
    }
@@ -995,6 +1046,7 @@ function bind(){
     'PIN de administração DEMO','Criar PIN de administração DEMO',
     'Alterar PIN local'].includes($('modalTitle').textContent))closeModal();
    diagnostics.record('page-background');
+   clearTimeout(longTimer);holdsLong=false;
    stopAuto();clearTimeout(freeTimer);
   }
   else{
@@ -1003,8 +1055,8 @@ function bind(){
  });
 }
 
-async function refreshWriter(){
- if((document.hidden&&!running)||writerCheckBusy||(running&&!writerReady))return;
+async function refreshWriter(forceReload=false){
+ if((document.hidden&&!running)||writerCheckBusy||(running&&!writerReady)||mutating||holdBusy)return;
  writerCheckBusy=true;
  try{
   let granted=false;
@@ -1018,24 +1070,25 @@ async function refreshWriter(){
    if(!document.hidden)say('Modo de leitura: outra aba controla esta demonstração. Fecha-a para jogar aqui.');
    return;
   }
-  if(!writerReady){
+  if(!writerReady||forceReload){
    // The previous writer may have changed the balances; never reuse stale state.
    const saved=await demoDB.load();
    if(saved?.snapshot)copySnapshot(saved.snapshot);
    if(saved?.board?.length===5)board=saved.board;
    if(scene?.ready)try{scene.recover(board)}catch(err){console.warn(err)}
-   writerReady=true;diagnostics.record('writer-granted');
+   writerReady=true;saveIssue=false;diagnostics.record('writer-granted');
    update();
    $('dbStatus').textContent='PHASER · BASE LOCAL EXCLUSIVA';
    if(recoveredVisual&&pendingVisual)await clearVisualReceipt();
    if(ready){
     const displayed=showRecoveryState(recoveredVisual?saved?.snapshot?.pendingVisual:null);
-    if(!displayed&&bank.mode==='free'&&!document.hidden)freeTimer=setTimeout(runSpin,1100);
+    if(!displayed&&bank.mode==='free'&&!document.hidden&&!freePaused)freeTimer=setTimeout(runSpin,1100);
     else if(!displayed&&bank.mode==='hold')showHold();
    }else say('Sessão exclusiva obtida. Saldo sincronizado com a base local.');
-  }
+  }else if(ready&&!document.hidden&&!running&&!modalOpen&&bank.mode==='free'&&
+    !freePaused&&!freeTimer)freeTimer=setTimeout(runSpin,650);
  }catch(err){
-  writerReady=false;diagnostics.record('storage-error');console.error('Aba ativa:',err);
+  writerReady=false;saveIssue=true;diagnostics.record('storage-error');console.error('Aba ativa:',err);
   $('dbStatus').textContent='PHASER · SESSÃO BLOQUEADA';
  }finally{writerCheckBusy=false;update()}
 }
@@ -1083,7 +1136,10 @@ async function boot(){
  if(window.jardimPhaserScene?.ready)available();
  else window.addEventListener('jardim-phaser-ready',available,{once:true});
  writerTimer=setInterval(refreshWriter,5000);
- window.addEventListener('pagehide',()=>{clearInterval(writerTimer);demoDB.releaseLease(tabToken)});
+ window.addEventListener('pagehide',()=>{
+  clearInterval(writerTimer);
+  if(!running&&!mutating&&!holdBusy)demoDB.releaseLease(tabToken);
+ });
  setTimeout(()=>{
   if(!ready){
    $('loadError').hidden=false;

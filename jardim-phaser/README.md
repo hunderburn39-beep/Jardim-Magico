@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.3
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.4
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -197,3 +197,13 @@ Nota adicional V2.2: ao ocultar uma aba sem giro em curso, a posse de escrita é
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.3
 
 **Recuperação visual do Hold concluído:** o painel apresenta também a grelha final de 16 posições com as moedas já registadas. Não inicia novamente o sorteio nem volta a pagar o valor.
+
+## V2.4 — continuidade dos bónus e ações mais seguras no telemóvel
+
+- Adicionado um aviso pequeno de estado de sessão, com botão para rever a gravação ou tentar recuperar acesso exclusivo se outra aba estiver ativa. O aviso respeita as margens seguras do ecrã e não altera os rolos do jogo.
+- **Free Spins recuperadas** exigem carregar explicitamente em RETOMAR FREE SPINS; fechar a janela por X ou fora não arranca novas jogadas. Continua disponível um botão de retomada.
+- Uma gravação de aposta, recarga ou compra de bónus bloqueia temporariamente giros e operações concorrentes até terminar. Se falhar, os dados voláteis são repostos e aparece um aviso de erro local.
+- O fecho da aba já não liberta prematuramente a posse de escrita durante uma operação pendente. Toques longos cancelados no botão RODAR deixam de bloquear o toque seguinte.
+- CSS adaptado ao Safari e aos controlos táteis. **O motor de prémios, rolos Phaser e gráficos originais não foram alterados.** Continua a ser uma demonstração sem dinheiro real ou RTP certificado.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.4
