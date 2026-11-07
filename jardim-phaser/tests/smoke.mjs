@@ -612,9 +612,11 @@ ok(main.includes('writerReady=exclusive;')&&
  main.includes('if(!writerReady||!ready||!scene')===false&&
  main.includes('writerTimer=setInterval(refreshWriter,5000)'),
  'aquisição e renovação de writer integradas');
-ok(main.includes('if((document.hidden&&!running)||writerCheckBusy')&&
- main.includes('demoDB.releaseLease(tabToken).catch('),
- 'a aba liberta a sessão ao ficar oculta e só a retoma quando visível');
+ok(main.includes('if(document.hidden||writerCheckBusy')&&
+ main.includes('writerReleasePending=release;')&&
+ main.includes('if(writerReleasePending)await writerReleasePending;')&&
+ main.includes('releaseIfHidden();'),
+ 'a aba liberta a sessão só quando não há operações pendentes e aguarda a libertação ao regressar');
 ok(main.includes('pendingVisual=spinRecoveryReceipt(')&&
  main.includes('pendingVisual=holdRecoveryReceipt(')&&
  main.includes('demoDB.checkpoint(snapshot(),board)'),
@@ -950,7 +952,11 @@ ok(Q31.nextTurn({...baseTurn,mode:'free',freePaused:true})===null&&
  'fila bloqueia retoma silenciosa e giros durante operações pendentes');
 let nextId31=0,executed31=0;const timers31=new Map();
 const queue31=Q31.createTurnQueue({
- schedule:(fn,ms)=>{const id=++nextId31;timers31.set(id,{fn,ms});return id},
+ schedule:(fn,ms)=>{
+  const id=++nextId31;
+  timers31.set(id,{fn:()=>{timers31.delete(id);fn()},ms});
+  return id
+ },
  cancel:id=>timers31.delete(id)
 });
 queue31.arm('free',100,()=>executed31++);
@@ -982,6 +988,6 @@ ok(!main.includes('autoTimer=setTimeout(runSpin')&&
 ok(main.includes('if(document.hidden)await releaseIfHidden();')&&
  main.includes('releaseIfHidden();')&&
  main.includes('turnQueue.clearAll();')&&
- main.includes('if(!document.hidden&&writerReady)'),
+ main.includes('if(document.hidden)await releaseIfHidden();'),
  'sessão local protege saldo e interrompe automáticos em segundo plano');
 console.log('Phaser V3.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
