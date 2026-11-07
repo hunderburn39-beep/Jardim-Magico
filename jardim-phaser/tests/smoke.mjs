@@ -21,6 +21,7 @@ const adminSource=await read('../js/admin-v18.js');
 const adminCss=await read('../css/admin-v18.css');
 const historySource=await read('../js/history-v19.js');
 const historyCss=await read('../css/history-v19.css');
+const profileCss=await read('../css/perfis-v20.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
 function parseModule(s){
@@ -371,7 +372,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=1.9'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.0'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -404,7 +405,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=1.9'),'botão e versão Phaser V1.9');
+ html.includes('app.js?v=2.0'),'botão e versão Phaser V2.0');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -465,4 +466,41 @@ ok(historyCss.includes('.history-list')&&html.includes('history-v19.css?v=1.9'),
  'estilos da pesquisa do histórico carregados');
 ok(main.includes('validateBackup(backup)')&&main.includes('historyPage(found,page)'),
  'interface valida cópias e pagina histórico');
-console.log('Phaser V1.9: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const Modes=new Function(parseModule(source)+
+ '\nreturn {DEMO_PROFILES,openingByProfile,DemoBank,evaluate};')();
+let rates={};
+for(const [name,seed] of [['premios',42],['normal',42],['entretenimento',42]]){
+ let x=seed,hits=0;
+ const rand=()=>{x=(Math.imul(x,1664525)+1013904223)>>>0;return x/4294967296};
+ for(let j=0;j<2000;j++){
+  const b=Modes.openingByProfile(rand,false,name,.2);
+  const ev=Modes.evaluate(b,.2);
+  if(ev.lines>0||ev.scatter>=3||ev.coins>=6)hits++;
+ }
+ rates[name]=hits/2000;
+}
+ok(rates.premios>rates.normal+.055&&rates.normal>rates.entretenimento+.035,
+ 'os três perfis alteram a frequência de eventos iniciais de forma ordenada');
+const checkProfile=new Modes.DemoBank();
+ok(checkProfile.profile==='normal'&&checkProfile.setProfile('premios')&&
+ checkProfile.snapshot.profile==='premios'&&!checkProfile.setProfile('invalid'),
+ 'perfil normal por defeito e alterações validadas');
+checkProfile.addFree(15);
+ok(!checkProfile.setProfile('entretenimento'),
+ 'não é possível alterar perfil durante Free Spins');
+const fixedBoard=Array.from({length:5},()=>[0,1,2]);
+ok(JSON.stringify(Modes.openingByProfile(()=>.1,true,'premios',.2))===
+ JSON.stringify(Modes.openingByProfile(()=>.1,true,'normal',.2)),
+ 'em Free Spins o modo não altera a distribuição das peças');
+ok(main.includes("if(!saved){\n  copySnapshot(before);board=previousBoard;")&&
+ main.includes("copySnapshot(before);renderHold(null,bank.hold)"),
+ 'falha na gravação cancela giro ou Hold antes de animar');
+ok(main.includes("persist('admin-profile'")&&main.includes("bank.setProfile(desired)"),
+ 'alterar o modo só depois de escolher um perfil válido');
+ok(html.includes('id="profileStatus"')&&html.includes('perfis-v20.css?v=2.0')&&
+ profileCss.includes('.admin-profile'),
+ 'modo visível ao jogador e interface responsiva');
+ok(dbsource.includes('profile:[\'premios\',\'normal\',\'entretenimento\']')&&
+ dbsource.includes('O perfil guardado não é válido'),
+ 'histórico e cópia de segurança persistem/validam o modo');
+console.log('Phaser V2.0: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

@@ -39,6 +39,8 @@ export function validateBackup(data){
      !finiteRange(h.total,0,1e12))
    throw Error('A grelha Hold da cópia é inválida.');
  }
+ if(s.profile!==undefined&&!['premios','normal','entretenimento'].includes(s.profile))
+  throw Error('O perfil guardado não é válido.');
  if(s.admin!==undefined){
   const p=s.admin?.ownerPct;
   if(!finiteRange(p,0,100))throw Error('As percentagens administrativas são inválidas.');
@@ -119,7 +121,9 @@ export class DemoDatabase{
     reserve:Number(snapshot.reserve||0),stages:Number(event.stages||0),
     amount:Number(event.amount||0),note:String(event.note||'').slice(0,160),
     ownerPct:Number.isFinite(Number(event.ownerPct))?Number(event.ownerPct):50,
-    merchantPct:Number.isFinite(Number(event.merchantPct))?Number(event.merchantPct):50};
+    merchantPct:Number.isFinite(Number(event.merchantPct))?Number(event.merchantPct):50,
+    profile:['premios','normal','entretenimento'].includes(event.profile)?
+      event.profile:'normal'};
   this.pending=this.pending.catch(()=>{}).then(()=>this.write(payload,log));
   return this.pending;
  }

@@ -1,0 +1,11 @@
+/* V2.0: perfil claramente identificado; selector local de créditos fictícios. */
+.admin-profile{display:grid;grid-template-columns:auto minmax(0,1fr) 76px;
+ gap:6px;align-items:center;margin:10px 0;color:#fff0cd}
+.admin-profile select{min-width:0;width:100%;padding:9px 4px;
+ border:1px solid #f5d899;border-radius:9px;color:#fff1c5;
+ background:#261136;font:600 13px system-ui,sans-serif}
+.admin-profile button{border:1px solid #ffe2a2;border-radius:10px;
+ background:#a04d98;color:#fff;padding:9px 5px;font:700 12px system-ui,sans-serif}
+#profileStatus{color:#ffdc8e;font-weight:800;text-shadow:0 0 6px #8f3e6d}
+@media(max-width:360px){.admin-profile{grid-template-columns:auto minmax(0,1fr) 64px}
+ #profileStatus{font-size:8px}}

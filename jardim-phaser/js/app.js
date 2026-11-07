@@ -2,7 +2,7 @@
    Sem pagamentos reais, sem RTP auditado e sem sincronização entre devices.
    Cada resultado e prémio são decididos ANTES da animação vertical Phaser.
  */
-import {DemoBank,newBoard,winningCells,money} from './engine.js?v=1';
+import {DemoBank,newBoard,winningCells,money,DEMO_PROFILES} from './engine.js?v=2.0';
 import {demoDB} from './database.js?v=1';
 import {audio} from './audio.js?v=1';
 import {createReelGame} from './reels.js?v=1.3';
@@ -36,12 +36,13 @@ function copySnapshot(snapshot){
   const n=Number(snapshot[k]);
   if(Number.isFinite(n)&&n>=0)bank[k]=n;
  }
+ if(['premios','normal','entretenimento'].includes(snapshot.profile))bank.profile=snapshot.profile;
  if(['base','free','hold'].includes(snapshot.mode))bank.mode=snapshot.mode;
  if(snapshot.admin)adminSettings=normalizeAdmin(snapshot.admin.ownerPct);
  if(typeof snapshot.status==='string')bank.status=snapshot.status.slice(0,180);
  if(bank.mode==='hold'&&Array.isArray(snapshot.hold?.grid)&&snapshot.hold.grid.length===16)
   bank.hold=structuredClone(snapshot.hold);
- else if(bank.mode==='hold'){bank.mode='base';bank.hold=null}
+ else {if(bank.mode==='hold')bank.mode='base';bank.hold=null}
  bank.freeMultiplier=Math.max(1,Math.min(5,bank.freeMultiplier));
  bank.freeSpins=Math.max(0,Math.min(60,bank.freeSpins));
 }
@@ -50,6 +51,7 @@ function snapshot(){
 }
 function update(){
  const s=snapshot();
+ $('profileStatus').textContent='MODO '+(DEMO_PROFILES[s.profile]||DEMO_PROFILES.normal).toLocaleUpperCase('pt-PT');
  $('balance').textContent=money(s.balance);
  $('reserve').textContent=money(s.reserve);
  $('stake').textContent=money(s.stake);
@@ -143,7 +145,7 @@ async function persist(type,details={}){
   stake:bank.stake,paid:details.paid||0,wager:details.wager||0,
   cost:details.cost||0,stages:details.stages||0,
   ownerPct:adminSettings.ownerPct,merchantPct:adminSettings.merchantPct,
-  amount:details.amount||0,note:details.note||''
+  amount:details.amount||0,note:details.note||'',profile:bank.profile
  });
  if(!ok)$('dbStatus').textContent='PHASER · ERRO A GUARDAR';
  return ok;
@@ -174,6 +176,7 @@ async function runSpin(){
  clearTimeout(autoTimer);clearTimeout(freeTimer);
  if(document.hidden||!ready||!scene||running||modalOpen||bank.mode==='hold')return;
  const before=snapshot();
+ const previousBoard=board.map(col=>col.slice());
  let outcome;
  try{outcome=bank.spin()}
  catch(err){
@@ -201,8 +204,17 @@ async function runSpin(){
  if(!outcome.free&&autoLeft>0)autoLeft--;
  // Guardar o PRÉMIO antes de apresentar peças. A recarga não volta a pagar.
  board=finalBoard.map(col=>col.slice());
- await persist('spin',{board:finalBoard,paid:outcome.credited,
-  wager:outcome.free?0:bank.stake,stages:stages.length});
+ let saved=false;
+ try{
+  saved=await persist('spin',{board:finalBoard,paid:outcome.credited,
+   wager:outcome.free?0:bank.stake,stages:stages.length});
+ }catch(err){console.error('Falha na gravação do giro:',err)}
+ if(!saved){
+  copySnapshot(before);board=previousBoard;
+  running=false;performanceGuard.stop();update();stopAuto();
+  say('Giro cancelado: falha a guardar a sessão local. Nenhum resultado foi apresentado.');
+  return;
+ }
  audio.play('spin');
  let repaired=false;
  try{
@@ -332,9 +344,9 @@ function modal(title,description,actions=[]){
    const small=document.createElement('small');small.textContent=action.detail;
    btn.append(small);
   }
-  btn.addEventListener('click',()=>{
+  btn.addEventListener('click',async()=>{
    closeModal();
-   try{action.act?.()}catch(err){console.error(err);say('Operação indisponível')}
+   try{await action.act?.()}catch(err){console.error(err);say('Operação indisponível')}
   });
   area.append(btn);
  }
@@ -352,16 +364,27 @@ function bonusModal(){
    {name:'✨ 15 Free Spins',detail:'Custo: '+money(bank.bonusPrice),
     disabled:bank.balance<bank.bonusPrice,
     act:async()=>{
+     const before=snapshot(),cost=bank.bonusPrice;
      const r=bank.buyFree();update();say(r.message);
-     if(r.ok){await persist('buy-free',{cost:bank.bonusPrice});
+     if(r.ok){
+      if(!(await persist('buy-free',{cost}))){
+       copySnapshot(before);update();say('Compra cancelada: não foi possível guardar.');return;
+      }
       bonusAnnouncement('✨ FREE SPINS ✨','15 giros de demonstração',1300);
-      freeTimer=setTimeout(runSpin,1350)}
+      freeTimer=setTimeout(runSpin,1350);
+     }
     }},
    {name:'🪙 Hold & Win 4×4',detail:'Custo: '+money(bank.holdPrice),
     disabled:bank.balance<bank.holdPrice,
     act:async()=>{
+     const before=snapshot(),cost=bank.holdPrice;
      const r=bank.buyHold();update();say(r.message);
-     if(r.ok){await persist('buy-hold',{cost:bank.holdPrice});showHold()}
+     if(r.ok){
+      if(!(await persist('buy-hold',{cost}))){
+       copySnapshot(before);update();say('Compra cancelada: não foi possível guardar.');return;
+      }
+      showHold();
+     }
     }}
   ]);
 }
@@ -404,10 +427,14 @@ async function holdTurn(){
  button.disabled=true;
  const previous=bank.hold?.grid?.slice()||Array(16).fill(0);
  try{
+  const before=snapshot();
   const result=bank.holdTurn();
   if(!result.ok){say(result.message);return}
   // Os prémios e o fundo são registados ANTES da animação visual.
-  await persist(result.done?'hold-paid':'hold-turn',{paid:result.prize||0});
+  if(!(await persist(result.done?'hold-paid':'hold-turn',{paid:result.prize||0}))){
+   copySnapshot(before);renderHold(null,bank.hold);update();
+   say('Tentativa do Hold cancelada: falha a guardar a sessão.');return;
+  }
   renderHold(previous,result.hold);
   update();
   const newly=holdLandingIndices(previous,result.hold.grid).length;
@@ -470,6 +497,11 @@ async function adminModal(){
   '<div class="admin-row"><label for="ownerPct">Dono (%)</label><input id="ownerPct" type="number" inputmode="decimal" min="0" max="100" step="0.01"><button id="saveOwner">GRAVAR</button></div>',
   '<div class="admin-row"><label for="merchantPct">Comerciante (%)</label><input id="merchantPct" type="number" inputmode="decimal" min="0" max="100" step="0.01"><button id="saveMerchant">GRAVAR</button></div>',
   '<p class="admin-footnote">Somam sempre 100%. Alterações não modificam os movimentos antigos. Os resultados podem ser negativos.</p>',
+  '<p><b>Perfil da máquina (apenas DEMO)</b></p>',
+  '<div class="admin-profile"><label for="adminProfile">Modo</label>',
+  '<select id="adminProfile"><option value="premios">Prémios</option><option value="normal">Normal</option><option value="entretenimento">Entretenimento</option></select>',
+  '<button type="button" id="saveProfile">GRAVAR</button></div>',
+  '<p class="admin-footnote">Prémios favorece mais combinações; Entretenimento favorece menos; Normal conserva a geração original. Não equivale a margens de 30%, 50% ou 70%, nem garante RTP.</p>',
   '<p>Adicionar / retirar créditos do cofre:</p>',
   '<div class="admin-fund"><input id="adminFundAmount" type="number" inputmode="decimal" min="0.01" step="0.01" value="100" aria-label="Valor fictício">',
   '<button class="admin-action" id="fundDeposit">＋ FUNDO</button><button class="admin-action" id="fundWithdraw">− FUNDO</button></div>',
@@ -481,6 +513,7 @@ async function adminModal(){
  $('modalContent').append(section);
  const find=id=>section.querySelector('#'+id);
  function refresh(){
+  find('adminProfile').value=bank.profile;
   find('ownerPct').value=adminSettings.ownerPct;
   find('merchantPct').value=adminSettings.merchantPct;
   find('adminOwner').textContent=money(totals.owner);
@@ -505,6 +538,18 @@ async function adminModal(){
  }
  find('saveOwner').addEventListener('click',()=>saveShare('owner'));
  find('saveMerchant').addEventListener('click',()=>saveShare('merchant'));
+ find('saveProfile').addEventListener('click',async()=>{
+  if(working||running||bank.mode!=='base')return;
+  const desired=find('adminProfile').value,old=bank.profile;
+  if(!bank.setProfile(desired)){notice('Modo inválido.');return}
+  working=true;update();
+  let saved=false;
+  try{saved=await persist('admin-profile',{note:DEMO_PROFILES[desired]})}
+  catch(err){console.error('Perfil de demonstração:',err)}
+  if(!saved)bank.profile=old;
+  working=false;refresh();update();
+  notice(saved?'Modo de demonstração guardado.':'Não foi possível gravar o modo anterior.');
+ });
  async function changeFund(kind){
   if(working)return;
   const val=validateFundChange(kind,find('adminFundAmount').value,bank.reserve,bank.mode,running);
@@ -676,7 +721,9 @@ function vaultModal(){
  ]);
 }
 async function creditDemo(){
- bank.creditDemo(25);update();await persist('credit-demo',{amount:25});
+ const before=snapshot();
+ bank.creditDemo(25);update();
+ if(!(await persist('credit-demo',{amount:25}))){copySnapshot(before);update();say('Recarga cancelada: falha na gravação.');return}
  say('Adicionados 25 créditos fictícios');
 }
 function changeBet(dir){

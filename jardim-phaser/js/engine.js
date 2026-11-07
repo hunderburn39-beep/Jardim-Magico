@@ -23,6 +23,33 @@ const weighted=(rng=Math.random,free=false)=>{
 export function newBoard(rng=Math.random,free=false){
  return Array.from({length:5},()=>Array.from({length:3},()=>weighted(rng,free)));
 }
+
+/* Perfil da demonstração: tendência de combinações iniciais, NÃO é RTP.
+   Nunca manipula símbolos depois da animação nem promete uma quota financeira.
+   No modo NORMAL a distribuição original permanece idêntica.
+*/
+export const DEMO_PROFILES=Object.freeze({
+ premios:'Prémios',normal:'Normal',entretenimento:'Entretenimento'
+});
+export function openingByProfile(rng=Math.random,free=false,profile='normal',bet=.2){
+ const original=newBoard(rng,free);
+ // Em Free Spins conservamos as regras e frequência originais.
+ if(free||profile==='normal'||!(profile in DEMO_PROFILES))return original;
+ if(rng()>=.42)return original;
+ const wantsHit=profile==='premios';
+ const matches=board=>{
+  const evalResult=evaluate(board,bet);
+  const hasEvent=evalResult.lines>0||evalResult.scatter>=3||evalResult.coins>=6;
+  return wantsHit?hasEvent:!hasEvent;
+ };
+ if(matches(original))return original;
+ for(let attempt=0;attempt<6;attempt++){
+  const candidate=newBoard(rng,free);
+  if(matches(candidate))return candidate;
+ }
+ return original;
+}
+
 export function count(board,id){return board.flat().filter(x=>x===id).length}
 export function evaluate(board,bet){
  // Uma combinação paga por linha; quaisquer várias linhas somam sempre.
@@ -229,13 +256,15 @@ export class DemoBank{
    this.freeAwarded=0;
    this.freePlayed=0;
    this.mode='base';
+   this.profile='normal';
    this.hold=null;
    this.status='Pronto para rodar';
  }
- get snapshot(){return {balance:this.balance,reserve:this.reserve,stake:this.stake,spins:this.spins,lastWin:this.lastWin,freeSpins:this.freeSpins,freeTotal:this.freeTotal,freeMultiplier:this.freeMultiplier,freePlayed:this.freePlayed,freeAwarded:this.freeAwarded,mode:this.mode,hold:this.hold?{...this.hold,grid:[...this.hold.grid]}:null,status:this.status}}
+ get snapshot(){return {balance:this.balance,reserve:this.reserve,stake:this.stake,spins:this.spins,lastWin:this.lastWin,freeSpins:this.freeSpins,freeTotal:this.freeTotal,freeMultiplier:this.freeMultiplier,freePlayed:this.freePlayed,freeAwarded:this.freeAwarded,mode:this.mode,profile:this.profile,hold:this.hold?{...this.hold,grid:[...this.hold.grid]}:null,status:this.status}}
  get bonusPrice(){return round(this.stake*20)}
  get holdPrice(){return round(this.stake*30)}
  setStake(value){if(this.mode!=='base')return false;this.stake=clamp(round(value),.05,10);return true}
+ setProfile(value){if(this.mode!=='base'||!(value in DEMO_PROFILES))return false;this.profile=value;return true}
  creditDemo(amount=25){this.balance=round(this.balance+clamp(amount,1,100));this.status='Créditos de demonstração adicionados';return this.snapshot}
  canSpin(){return this.mode==='free'||(this.mode==='base'&&this.balance>=this.stake)}
  addFree(count=15){
@@ -353,7 +382,7 @@ export class DemoBank{
    const wildMultiplier=clamp(1+Math.floor(rng()*5),1,5);
    // Selecionar apenas grelhas/cascatas inteiramente pagáveis pelo fundo.
    // Não há "prémio cortado": todas as linhas que saírem são pagas.
-   const stages=cascadeStages(newBoard(rng,free),this.stake,rng,free,{
+   const stages=cascadeStages(openingByProfile(rng,free,this.profile,this.stake),this.stake,rng,free,{
      reserve:this.reserve,freeTotal:this.freeTotal,
      freeMultiplier:this.freeMultiplier,wildMultiplier
    });

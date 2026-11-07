@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.9
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.0
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -150,3 +150,14 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.8
 - Sem dinheiro real, sem conta de operador, sem backend central ou proteção contra manipulação local. As verificações automatizadas não substituem testes num Safari físico.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.9
+
+## V2.0 — Três perfis de demonstração e gravação resistente
+
+- A administração ganha o seletor **Prémios / Normal / Entretenimento** com botão GRAVAR. O modo atual aparece sempre no rodapé e é guardado no histórico e nas cópias JSON; o normal é o perfil por defeito.
+- Os perfis afetam apenas a **preferência por combinações/ativação iniciais nos giros base**; as peças são selecionadas antes da animação, e a cadeia continua integralmente validada contra o fundo fictício. O perfil **Normal** conserva exatamente a distribuição original. As Free Spins continuam com a geração original sem diferenças por perfil.
+- Esta parametrização **não implementa nem garante margens de 30%, 50% ou 70%** nem quaisquer percentagens de RTP: são perfis lúdicos sem retorno auditado e sem dinheiro real.
+- Ao falhar uma gravação local, o giro é cancelado **antes** de animar, revertendo o estado volátil e parando o automático; a compra de bónus, a tentativa de Hold e a recarga fictícia também voltam ao estado anterior quando a gravação falha.
+- A validação de restauro aceita o novo perfil e rejeita nomes de modo inválidos. Foram adicionados testes estatísticos básicos da frequência dos eventos por perfil, além dos regressivos dos tambores.
+- A animação de rotação/cascata e as texturas em `js/reels.js` permanecem intactas. A base continua local ao navegador, sem autenticação real nem sincronização central.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.0
