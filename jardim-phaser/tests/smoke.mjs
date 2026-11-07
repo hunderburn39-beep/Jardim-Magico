@@ -68,6 +68,7 @@ const SYMBOLS=['potion','green','heart','teapot','wild','gem','mushroom','hat','
 const Reel=factory(globalThis.Phaser,SYMBOLS,()=>exact);
 // V1.3: a folha artística tem os nove ícones na ordem original, sem
 // espelhamento e sem alterar as regras dos prémios ou a queda aprovada.
+const scene=new Reel();
 const atlasTile=new Function('SYMBOLS',parseModule(reels)+'\nreturn atlasTileFor;')(SYMBOLS);
 for(let i=0;i<9;i++){
  const tile=atlasTile(SYMBOLS[i]);
@@ -110,7 +111,6 @@ ok(reels.includes("this.load.image('symbols-atlas','jm75-simbolos.webp')"),
  'o motor carrega a folha fotográfica premium');
 ok(reels.includes("if(!canvas)canvas=createFallbackCanvas"),
  'símbolos permanecem visíveis quando a arte não carrega');
-const scene=new Reel();
 scene.ready=true;
 scene.busy=false;
 scene.textures={exists:()=>true};
