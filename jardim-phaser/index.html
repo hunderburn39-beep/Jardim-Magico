@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1d1037">
 <meta name="description" content="Jardim Mágico em Phaser — tambores verticais, cascatas e gráficos originais. Demonstração em créditos fictícios.">
-<title>Jardim Mágico — Phaser V1.4</title>
+<title>Jardim Mágico — Phaser V1.5</title>
 <link rel="stylesheet" href="./css/estilo.css?v=1.3">
 <link rel="stylesheet" href="./css/polimento-v14.css?v=1.4">
+<link rel="stylesheet" href="./css/bonus-v15.css?v=1.5">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.90.0/phaser.min.js"></script>
 </head>
 <body>
@@ -58,6 +59,15 @@
       <div class="reel-glow" aria-hidden="true"></div>
     </div>
     <div class="branch-frame" aria-hidden="true"></div>
+    <div id="freeHud" class="free-hud" hidden aria-label="Progresso das Free Spins">
+      <span class="free-hud-title">✦ FREE SPINS <strong id="hudFreeCount">15</strong></span>
+      <span class="free-hud-total">ACUMULADO <strong id="hudFreeTotal">0,00</strong></span>
+      <span class="free-hud-multi">MULTI <strong id="hudFreeMulti">×1</strong></span>
+    </div>
+    <div id="bonusAnnouncement" class="bonus-announcement" hidden aria-live="polite">
+      <span id="bonusAnnouncementTitle">FREE SPINS!</span>
+      <strong id="bonusAnnouncementValue">15 giros</strong>
+    </div>
     <output id="dropAmount" class="drop-amount" aria-label="Valor da queda" hidden>0,00</output>
     <p class="spin-text" id="spinText">A carregar os símbolos HD…</p>
     <div class="win-notice" id="winNotice" hidden></div>
@@ -100,14 +110,23 @@
       <div id="modalContent" class="modal-content"></div>
     </div>
   </div>
-  <div id="holdOverlay" class="overlay" hidden>
+  <div id="holdOverlay" class="overlay hold-overlay" hidden>
     <div class="modal hold-dialog">
-      <h2>✨ HOLD &amp; WIN ✨</h2>
-      <p>Moedas em grelha 4×4. Cada moeda repõe as 3 tentativas.</p>
-      <div id="holdGrid" class="hold-grid"></div>
-      <p id="holdInfo">3 tentativas</p>
-      <button id="holdBtn" class="modal-action">RODAR MOEDAS</button>
-      <p class="small-note">Apenas créditos fictícios.</p>
+      <div class="hold-crown" aria-hidden="true">✦ ✨ ✦</div>
+      <h2>HOLD &amp; WIN</h2>
+      <p class="hold-subtitle">6 moedas iniciais · grelha 4×4 · 3 tentativas</p>
+      <div id="holdAttempts" class="hold-attempts" aria-label="Tentativas restantes">
+        <span class="attempt-dot"></span><span class="attempt-dot"></span><span class="attempt-dot"></span>
+      </div>
+      <div id="holdGrid" class="hold-grid" aria-label="Grelha de moedas de 4 por 4"></div>
+      <div class="hold-statistics">
+        <div><small>MOEDAS</small><strong id="holdCoins">6/16</strong></div>
+        <div><small>ACUMULADO</small><strong id="holdTotal">0,00</strong></div>
+      </div>
+      <p id="holdInfo" class="hold-info">3 tentativas</p>
+      <div id="holdResult" class="hold-result" hidden aria-live="polite"></div>
+      <button id="holdBtn" class="modal-action hold-action">RODAR MOEDAS</button>
+      <p class="small-note">Prémios e créditos exclusivamente fictícios</p>
     </div>
   </div>
   <div id="loadError" class="error-box" hidden>
@@ -116,6 +135,6 @@
     <a href="../index.html">Abrir o jogo original</a>
   </div>
 </main>
-<script type="module" src="./js/app.js?v=1.4"></script>
+<script type="module" src="./js/app.js?v=1.5"></script>
 </body>
 </html>
