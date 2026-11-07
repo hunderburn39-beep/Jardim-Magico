@@ -1,0 +1,207 @@
+/* Jardim Mágico Phaser V1.5 — bonificações com acabamento premium.
+   Só UI e apresentação: os cinco tambores e a matemática não são tocados. */
+.free-hud{
+ position:absolute;z-index:6;top:clamp(4px,.65vh,9px);
+ left:8%;right:8%;width:auto;max-width:none;
+ display:grid;grid-template-columns:1.15fr 1.55fr .85fr;gap:3px;
+ padding:3px 7px 5px;align-items:center;
+ border:1.5px solid #ffe5a7;border-radius:999px;
+ background:radial-gradient(ellipse at 30% -30%,rgba(255,234,173,.26),transparent 63%),
+  linear-gradient(155deg,rgba(129,46,139,.94),rgba(49,13,72,.96) 72%);
+ color:#fff2c3;box-shadow:inset 0 1px 2px #fff3c793,0 2px 6px #13051bcf,
+   0 0 7px #d774d267;
+ text-align:center;pointer-events:none;
+}
+.free-hud span{display:flex;align-items:center;justify-content:center;gap:3px;
+  flex-wrap:wrap;font:900 clamp(7px,1.9vw,10px)/1.05 Georgia,serif}
+.free-hud strong{font:900 clamp(11px,3vw,17px)/1.1 Georgia,serif;white-space:nowrap;
+ color:#ffe6a1;text-shadow:0 0 7px rgba(255,217,128,.57)}
+.free-hud-title{border-right:1px solid #f5c9a158}
+.free-hud-total{border-right:1px solid #f5c9a158}
+.free-hud-multi strong{color:#ffcfff}
+.bonus-announcement{
+ position:absolute;z-index:11;left:9%;right:9%;top:23%;
+ display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;
+ min-height:33%;padding:15px 10px;text-align:center;
+ border:2px solid rgba(255,228,150,.9);border-radius:25px;
+ background:radial-gradient(ellipse at 50% 20%,rgba(206,109,231,.74),
+   rgba(71,17,95,.88) 52%,rgba(26,6,47,.94) 100%);
+ box-shadow:inset 0 2px 4px #fff2b7a8,0 5px 16px #14051dcb,
+  0 0 19px rgba(237,122,232,.65);
+ color:#ffe9a7;pointer-events:none;
+ transform-origin:center;
+}
+.bonus-announcement:not([hidden]){
+ animation:bonusArrive 1.5s ease-in-out both;
+}
+#bonusAnnouncementTitle{
+ font:900 clamp(22px,6.1vw,42px)/1.04 Georgia,serif;
+ text-shadow:0 2px 4px #310837,0 0 12px #ffc9ed;
+}
+#bonusAnnouncementValue{
+ font:900 clamp(14px,3.6vw,21px)/1.05 Georgia,serif;
+ color:#fff6c9;text-shadow:0 0 11px #f5b869;
+}
+@keyframes bonusArrive{
+ 0%{opacity:0;transform:scale(.75) translateY(22px)}
+ 17%{opacity:1;transform:scale(1.05) translateY(0)}
+ 28%,66%{opacity:1;transform:scale(1)}
+ 90%{opacity:.38;transform:scale(1.01) translateY(-4px)}
+ 100%{opacity:0;transform:scale(1.03) translateY(-9px)}
+}
+/* Hold & Win tem uma sala própria com ouro, rosas e luzes, adaptada a
+   Safari pequeno e ecrãs curtos. As 16 casas são sempre clicáveis para
+   inspeção visual, mas só o botão faz avançar a jogada demo. */
+.hold-overlay{background:radial-gradient(ellipse at center,
+ rgba(90,27,107,.92),rgba(16,5,31,.97) 90%);
+ backdrop-filter:blur(5px);
+ padding:max(9px,env(safe-area-inset-top)) 11px max(9px,env(safe-area-inset-bottom))}
+.hold-dialog{
+ position:relative;
+ width:min(100%,465px);
+ max-height:min(96dvh,800px);
+ overflow-y:auto;overflow-x:hidden;
+ padding:clamp(11px,2.6vw,19px);
+ border:3px solid #ffe4a2;border-radius:29px;
+ background:
+   radial-gradient(ellipse at 50% 0,rgba(255,159,227,.35),transparent 52%),
+   linear-gradient(155deg,#652278 0%,#3c125c 40%,#1e0a3b 100%);
+ box-shadow:inset 0 2px 5px #fff5d2c9,inset 0 -4px 8px #190528,
+  0 0 24px #e985d5a0,0 9px 22px #090316;
+}
+.hold-dialog::before,.hold-dialog::after{
+ content:"";position:absolute;z-index:0;pointer-events:none;
+ width:34%;aspect-ratio:1;background-size:contain;background-repeat:no-repeat;
+ opacity:.75;
+}
+.hold-dialog::before{
+ left:-12%;top:-10%;
+ background-image:radial-gradient(ellipse at 40% 40%,#eaa5d680,transparent 60%);
+}
+.hold-dialog::after{
+ right:-12%;bottom:-8%;
+ background-image:radial-gradient(ellipse at 50% 50%,#ffd17a5a,transparent 62%);
+}
+.hold-dialog>*{position:relative;z-index:1}
+.hold-crown{letter-spacing:.3em;color:#fff0b8;filter:drop-shadow(0 0 6px #ff9bda);font-size:18px}
+.hold-dialog h2{
+ font:900 clamp(23px,6.2vw,35px)/1.08 Georgia,serif;
+ color:#ffe7a0;text-shadow:0 2px 3px #360f38,0 0 10px #f7afe2;
+ margin:1px 0 5px;
+}
+.hold-dialog .hold-subtitle{
+ margin:2px 0 11px;font:600 clamp(10px,2.5vw,13px)/1.3 system-ui,sans-serif;
+ color:#ffe9d8;
+}
+.hold-attempts{display:flex;align-items:center;justify-content:center;gap:13px;margin:6px auto 12px}
+.attempt-dot{
+ display:block;width:clamp(17px,5vw,26px);height:clamp(17px,5vw,26px);border-radius:50%;
+ border:2px solid #ffedae;background:radial-gradient(circle at 32% 20%,
+   #fffce2,#ffdb91 29%,#bb5dba 54%,#5b1671 90%);
+ box-shadow:inset 0 2px 2px #fff9ed92,0 0 10px #f6aedb;
+ transform:scale(1);transition:opacity .2s,filter .2s,transform .2s;
+}
+.attempt-dot.used{
+ opacity:.25;filter:grayscale(1);box-shadow:none;transform:scale(.78);
+}
+.hold-grid{
+ width:100%;max-width:min(76vw,370px);margin:10px auto 12px;
+ gap:clamp(5px,1.6vw,9px);
+ padding:clamp(7px,2.2vw,11px);
+ border:2px solid #d6a863;border-radius:18px;
+ background:linear-gradient(155deg,#1d0b31c9,#411357c9 50%,#200a36cf);
+ box-shadow:inset 0 4px 13px #0e031dc0,0 0 11px #db9f6b82;
+}
+.hold-cell{
+ overflow:hidden;position:relative;
+ border:1.5px solid rgba(253,214,142,.45);
+ border-radius:clamp(9px,2.6vw,17px);
+ background:radial-gradient(circle at 30% 28%,#64237d,#2b0b45 75%);
+ color:#d4acd9;font:900 clamp(14px,4.8vw,24px)/1 Georgia,serif;
+ box-shadow:inset 0 3px 6px rgba(16,4,29,.69);
+}
+.hold-cell.filled{
+ border:2px solid #ffe4a4;
+ border-radius:50%;
+ background:radial-gradient(circle at 32% 18%,#fffce7,#ffefb6 17%,
+   #fbc96d 39%,#d68b37 60%,#82431e 90%);
+ color:#5c2b31;text-shadow:0 1px #fffad9;
+ box-shadow:inset 0 2px 4px #fff4c8a8,inset 0 -3px 5px #683c23,
+  0 1px 3px #160623,0 0 7px rgba(255,204,107,.39);
+}
+.hold-cell.filled:before{
+ content:"";position:absolute;inset:7%;border-radius:50%;pointer-events:none;
+ border:1.5px solid rgba(255,249,198,.76);
+}
+.hold-cell.filled:after{
+ content:"✦";position:absolute;right:12%;top:9%;color:#fffcdd;
+ font:900 8px Georgia,serif;opacity:.85;
+}
+.hold-cell.new-coin{animation:coinLand .65s cubic-bezier(.13,.85,.21,1.17) both}
+@keyframes coinLand{
+ 0%{opacity:0;transform:translateY(-50%) scale(.35) rotate(-22deg);
+   filter:brightness(2.4)}
+ 45%{opacity:1;transform:translateY(5%) scale(1.16) rotate(8deg);
+   filter:brightness(1.65)}
+ 78%{transform:translateY(-3%) scale(.94) rotate(-3deg);filter:brightness(1.3)}
+ 100%{opacity:1;transform:translateY(0) scale(1);filter:brightness(1)}
+}
+.hold-statistics{
+ display:grid;grid-template-columns:1fr 1.2fr;gap:8px;
+ margin:4px auto 3px;max-width:370px;
+}
+.hold-statistics>div{
+ border:1.5px solid #eacb8e;border-radius:13px;padding:6px 4px;
+ background:linear-gradient(160deg,#9b419c,#421156 88%);
+ box-shadow:inset 0 2px 3px #ffe4c18a;text-align:center;
+}
+.hold-statistics small{display:block;font:800 clamp(9px,2.25vw,12px)/1.1 Georgia,serif}
+.hold-statistics strong{display:block;margin-top:3px;
+ font:900 clamp(17px,4.1vw,23px)/1.1 Georgia,serif;color:#ffe2a3}
+.hold-info{margin:9px 0;color:#fce4bd;font:700 clamp(12px,2.6vw,15px)/1.3 Georgia,serif}
+.hold-result{
+ margin:10px 0;padding:11px 4px;
+ border:2px solid #ffe5a8;border-radius:16px;
+ background:radial-gradient(ellipse at 50% 0,#f3b5df78,#65277fd8);
+ font:900 clamp(19px,5vw,29px)/1.25 Georgia,serif;
+ color:#fff3ba;text-shadow:0 0 11px #ffe391;
+ animation:finalHoldPrize .85s ease-out both;
+}
+@keyframes finalHoldPrize{
+ from{opacity:0;transform:scale(.74)}
+ 60%{opacity:1;transform:scale(1.1)}
+ to{opacity:1;transform:scale(1)}
+}
+.hold-action{
+ max-width:370px;margin:11px auto 6px;
+ padding:clamp(10px,3vw,14px);
+ border:3px solid #fff0b5;border-radius:999px;
+ background:radial-gradient(ellipse at 30% 0,#efffe0,#9ae15f 38%,#208f45 79%,#0b582d);
+ box-shadow:inset 0 2px 4px #fff7d8a6,0 4px 4px #1d0a22a8;
+ color:#194b2a;font:900 clamp(16px,4vw,21px)/1.15 Georgia,serif;
+ text-shadow:0 1px 1px #e5ffbb;
+}
+.hold-action:disabled{opacity:.72;filter:saturate(.65)}
+.hold-dialog .small-note{margin:8px 0 0;color:#f6d6e8}
+@media(max-height:720px) and (orientation:portrait){
+ .hold-dialog{padding:8px 11px;max-height:98dvh}
+ .hold-crown{font-size:13px}
+ .hold-dialog h2{font-size:23px}
+ .hold-dialog .hold-subtitle{margin:0 0 5px}
+ .hold-attempts{margin:3px auto 6px}
+ .hold-grid{max-width:min(67vw,290px);gap:5px;margin:5px auto;padding:6px}
+ .hold-statistics{margin:4px auto}
+ .hold-info{margin:5px}
+ .hold-action{margin:5px auto;padding:9px}
+}
+@media(orientation:landscape){
+ .hold-dialog{max-width:min(92vw,680px);max-height:94dvh;padding:9px}
+ .hold-grid{max-width:min(35vw,240px);margin:5px auto}
+ .hold-dialog .hold-subtitle{margin:1px 0}
+}
+@media(prefers-reduced-motion:reduce){
+ .bonus-announcement:not([hidden]),.hold-cell.new-coin,.hold-result{
+  animation:none;opacity:1;transform:none;filter:none
+ }
+ .attempt-dot{transition:none}
+}
