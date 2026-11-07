@@ -6,13 +6,15 @@ import {DemoBank,newBoard,winningCells,money} from './engine.js?v=1';
 import {demoDB} from './database.js?v=1';
 import {audio} from './audio.js?v=1';
 import {createReelGame} from './reels.js?v=1.3';
+import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
 const $=id=>document.getElementById(id);
 const BETS=[.05,.1,.2,.4,.6,.8,1,1.5,2,3,5,7.5,10];
 const bank=new DemoBank();
 let scene=null,game=null;
 let board=newBoard(),running=false,ready=false,turbo=false;
 let autoLeft=0,autoTimer=null,freeTimer=null;
-let bigTimer=null,winTimer=null,dropTimer=null;
+let bigTimer=null,winTimer=null,dropTimer=null,bonusTimer=null;
+let holdBusy=false;
 let modalOpen=false,holdsLong=false,longTimer=null;
 let loopToken=0;
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -51,6 +53,11 @@ function update(){
  $('multiTotal').textContent='×'+(s.mode==='free'?s.freeMultiplier:1);
  $('freeMeter').hidden=s.mode!=='free';
  $('freeCount').textContent=s.freeSpins;
+ const free=freeDisplay(s);
+ $('freeHud').hidden=s.mode!=='free';
+ $('hudFreeCount').textContent=free.remaining;
+ $('hudFreeTotal').textContent=money(free.total);
+ $('hudFreeMulti').textContent='×'+free.multiplier;
  $('autoRemaining').textContent=autoLeft?String(autoLeft):'∞';
  $('turboState').textContent=turbo?'ON':'OFF';
  $('turboBtn').setAttribute('aria-pressed',String(turbo));
@@ -75,6 +82,18 @@ function popup(text){
  const el=$('bigWin');el.textContent=text;
  el.classList.remove('active');void el.offsetWidth;el.classList.add('active');
  clearTimeout(bigTimer);bigTimer=setTimeout(()=>el.classList.remove('active'),1400);
+}
+function bonusAnnouncement(title,value,duration=1600){
+ const notice=$('bonusAnnouncement');
+ clearTimeout(bonusTimer);
+ $('bonusAnnouncementTitle').textContent=title;
+ $('bonusAnnouncementValue').textContent=value;
+ notice.hidden=false;
+ // Reiniciar a animação de entrada e saída a cada reativação.
+ notice.style.animation='none';
+ void notice.offsetWidth;
+ notice.style.animation='';
+ bonusTimer=setTimeout(()=>{notice.hidden=true},duration);
 }
 function showDropAmount(value){
  // Um único número dourado e luminoso, sem caixa sobre o tabuleiro.
@@ -225,10 +244,18 @@ async function runSpin(){
    // Nas Free Spins a soma só é paga após a última rodada.
    say('Free Spins concluídas · prémio final '+money(outcome.credited)+
     ' créditos');
+   bonusAnnouncement('✨ FREE SPINS CONCLUÍDAS ✨',
+    'Total: '+money(outcome.credited)+' créditos',1550);
    popup('✨ TOTAL '+money(outcome.credited)+' ✨');
   }else if(outcome.triggered){
    say(outcome.triggered+(outcome.credited>0?
     ' · prémio '+money(outcome.credited):''));
+   if(bank.mode==='free'||outcome.triggered.includes('Free Spins')){
+    bonusAnnouncement('✨ FREE SPINS ✨',outcome.triggered,1350);
+   }else if(outcome.free&&bank.mode==='base'){
+    bonusAnnouncement('✨ FREE SPINS CONCLUÍDAS ✨',
+     'Total: '+money(outcome.credited)+' créditos',1450);
+   }
    popup('✨ '+outcome.triggered+' ✨');
   }else if(outcome.free){
    say('Free Spins · acumulado '+money(bank.freeTotal)+
@@ -278,8 +305,10 @@ function bonusModal(){
     disabled:bank.balance<bank.bonusPrice,
     act:async()=>{
      const r=bank.buyFree();update();say(r.message);
-     if(r.ok){await persist('buy-free',{cost:bank.bonusPrice});popup('15 FREE SPINS');
-      freeTimer=setTimeout(runSpin,1100)}
+     if(r.ok){await persist('buy-free',{cost:bank.bonusPrice});
+      bonusAnnouncement('✨ FREE SPINS ✨','15 giros de demonstração',1300);
+      popup('15 FREE SPINS');
+      freeTimer=setTimeout(runSpin,1350)}
     }},
    {name:'🪙 Hold & Win 4×4',detail:'Custo: '+money(bank.holdPrice),
     disabled:bank.balance<bank.holdPrice,
@@ -290,37 +319,87 @@ function bonusModal(){
   ]);
 }
 function showHold(){
- if(bank.mode!=='hold')return;
+ if(bank.mode!=='hold'||!bank.hold)return;
  $('holdOverlay').hidden=false;
- renderHold();
+ $('holdResult').hidden=true;
+ $('holdBtn').hidden=false;
+ $('holdBtn').disabled=holdBusy;
+ renderHold(null,bank.hold);
 }
-function renderHold(){
- const h=bank.hold;
- if(!h)return;
+function renderHold(previousGrid=null,hold=bank.hold){
+ if(!hold)return;
+ const display=holdDisplay(hold);
+ const landing=new Set(holdLandingIndices(previousGrid,hold.grid));
  const grid=$('holdGrid');grid.replaceChildren();
- for(const value of h.grid){
-  const el=document.createElement('div');
-  el.className='hold-cell'+(value?' filled':'');
-  el.textContent=value?value+'×':'✦';grid.append(el);
+ for(let i=0;i<hold.grid.length;i++){
+  const value=hold.grid[i];
+  const cell=document.createElement('div');
+  cell.className='hold-cell'+(value?' filled':'')+
+   (landing.has(i)?' new-coin':'');
+  cell.textContent=value?value+'×':'✦';
+  cell.setAttribute('aria-label',value?'Moeda de '+value+' vezes':'Espaço vazio');
+  grid.append(cell);
  }
- $('holdInfo').textContent=h.tries+' tentativas · '+
-  money(h.total)+' créditos fictícios';
+ $('holdCoins').textContent=display.coins+'/16';
+ $('holdTotal').textContent=money(display.total);
+ $('holdInfo').textContent=display.attempts+' tentativa'+
+  (display.attempts===1?'':'s')+' restante'+
+  (display.attempts===1?'':'s')+' · giro '+display.rounds;
+ const dots=$('holdAttempts').querySelectorAll('.attempt-dot');
+ for(let i=0;i<dots.length;i++){
+  dots[i].classList.toggle('used',i>=display.attempts);
+ }
 }
 async function holdTurn(){
- if(bank.mode!=='hold')return;
- const button=$('holdBtn');button.disabled=true;
+ if(bank.mode!=='hold'||holdBusy)return;
+ holdBusy=true;
+ const button=$('holdBtn');
+ button.disabled=true;
+ const previous=bank.hold?.grid?.slice()||Array(16).fill(0);
  try{
   const result=bank.holdTurn();
   if(!result.ok){say(result.message);return}
-  renderHold();update();
+  // Os prémios e o fundo são registados ANTES da animação visual.
   await persist(result.done?'hold-paid':'hold-turn',{paid:result.prize||0});
+  renderHold(previous,result.hold);
+  update();
+  const newly=holdLandingIndices(previous,result.hold.grid).length;
+  if(newly){
+   audio.play('win');
+   $('holdInfo').textContent='✨ '+newly+' moeda'+(newly===1?'':'s')+
+    ' nova'+(newly===1?'':'s')+' · 3 tentativas!';
+  }else{
+   audio.play('cascade');
+  }
   if(result.done){
+   button.hidden=true;
+   if(newly)await wait(turbo?350:640);
+   const text=money(result.prize)+' créditos';
+   $('holdResult').textContent=result.hold.grid.every(Boolean)?
+    '✨ GRELHA COMPLETA · '+text+' ✨':
+    '✨ PRÉMIO TOTAL · '+text+' ✨';
+   $('holdResult').hidden=false;
+   audio.play('bonus');
+   await wait(turbo?850:1450);
    $('holdOverlay').hidden=true;
    popup('✨ '+money(result.prize)+' ✨');
    say('Hold & Win · prémio integral: '+money(result.prize));
    if(autoLeft>0)autoTimer=setTimeout(runSpin,700);
-  }else audio.play('cascade');
- }finally{button.disabled=false}
+  }else if(newly){
+   // Ver a aterragem das moedas antes da próxima tentativa.
+   await wait(turbo?220:490);
+  }else{
+   await wait(turbo?110:230);
+  }
+ }catch(err){
+  console.error('Erro de animação Hold:',err);
+  say('Resultado do Hold preservado; efeito visual recuperado.');
+  if(bank.mode!=='hold')$('holdOverlay').hidden=true;
+  else renderHold(null,bank.hold);
+ }finally{
+  holdBusy=false;
+  button.disabled=false;
+ }
 }
 async function historyModal(){
  let log=[];
@@ -372,7 +451,8 @@ function infoModal(){
    act:async()=>{
     if(bank.mode!=='base'||running)return;
     bank.addFree(15);await persist('test-free');update();
-    freeTimer=setTimeout(runSpin,450);
+    bonusAnnouncement('✨ FREE SPINS ✨','15 giros gratuitos de demonstração',1200);
+    freeTimer=setTimeout(runSpin,1250);
    }},
   {name:'🪙 Experimentar Hold & Win',detail:'Ativa grelha fictícia se o fundo permitir.',
    act:async()=>{
