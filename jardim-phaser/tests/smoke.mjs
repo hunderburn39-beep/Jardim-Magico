@@ -884,7 +884,8 @@ ok(rejected30.reason==='error'&&visualCancelCount===3&&
 ok(main.includes('visualSupervisor.cancel();')&&
  main.includes('if(document.hidden){repaired=true;break}')&&
  main.includes('visualSupervisor.run(')&&
- main.includes('if(!document.hidden&&writerReady)'),
+ main.includes('if(document.hidden)await releaseIfHidden();')&&
+ main.includes('else scheduleNext('),
  'integração interrompe cascatas ocultas e agenda apenas quando visível');
 const random30=(()=>{let state=921125;
  return ()=>{state=(Math.imul(1664525,state)+1013904223)>>>0;
