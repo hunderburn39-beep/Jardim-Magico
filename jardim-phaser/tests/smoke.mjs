@@ -30,6 +30,8 @@ const recoveryCss=await read('../css/recovery-v23.css');
 const sessionSource=await read('../js/session-v24.js');
 const sessionCss=await read('../css/session-v24.css');
 const barV25Css=await read('../css/barra-v25.css');
+const bonusModel26=await read('../js/bonus-progress-v26.js');
+const bonusStyle26=await read('../css/bonus-v26.css');
 const pinCss=await read('../css/admin-pin-v21.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
@@ -387,7 +389,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.5'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.6'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -420,7 +422,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=2.5'),'botão e versão Phaser V2.5');
+ html.includes('app.js?v=2.6'),'botão e versão Phaser V2.6');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -675,4 +677,29 @@ ok(html.includes('barra-v25.css?v=2.5')&&
  !main.includes("$('orbs')")&&
  !main.includes('function orbs('),
  'nova barra elimina o bloco central sem deixar referências órfãs');
-console.log('Phaser V2.5: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const Bonus26=new Function(parseModule(bonusModel26)+
+ '\nreturn {freeProgress,holdProgress};')();
+ok(Bonus26.freeProgress({mode:'free',freeSpins:11,freePlayed:4,freeTotal:12.5}).played===4&&
+ Bonus26.freeProgress({mode:'free',freeSpins:11,freePlayed:4,freeTotal:12.5}).remaining===11,
+ 'Free Spins apresentam realizadas e restantes reais');
+ok(Bonus26.freeProgress({mode:'free',freeSpins:-20,freePlayed:500}).remaining===0,
+ 'HUD Free Spins limita dados inválidos');
+const progress26=Bonus26.holdProgress({grid:Array.from({length:16},(_,i)=>i<9?1:0),tries:2});
+ok(progress26.filled===9&&progress26.left===7&&progress26.percentage===56.25&&
+ progress26.attemptsText==='2 tentativas restantes',
+ 'Hold mostra corretamente casas preenchidas e tentativas restantes');
+ok(Bonus26.holdProgress({grid:Array(16).fill(1),tries:1}).missingLabel==='GRELHA COMPLETA'&&
+ Bonus26.holdProgress({grid:Array(16).fill(1),tries:1}).attemptsText==='1 tentativa restante',
+ 'Hold lida com grelha completa e singular das tentativas');
+ok(html.includes('id="holdProgress"')&&html.includes('id="hudFreePlayed"')&&
+ !html.includes('id="hudFreeMulti"')&&!html.includes('MULTIS ACUMULADOS'),
+ 'HUD elimina MULTI duplicado e inclui progresso do Hold');
+ok(main.includes("holdProgress(result.hold).attemptsText")&&
+ main.includes("setAttribute('aria-valuetext'")&&
+ main.includes("freeProgress(s)")&&
+ !main.includes("$('hudFreeMulti')"),
+ 'os indicadores são calculados a partir dos estados originais');
+ok(bonusStyle26.includes('prefers-reduced-motion:reduce')&&
+ bonusStyle26.includes('landscape')&&bonusStyle26.includes('hold-fill-track'),
+ 'progressos adaptados a telemóveis e movimento reduzido');
+console.log('Phaser V2.6: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

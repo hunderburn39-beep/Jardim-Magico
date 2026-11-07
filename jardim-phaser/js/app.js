@@ -14,6 +14,7 @@ import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrinta
 import {filterHistory,historyPage} from './history-v19.js?v=1.9';
 import {spinRecoveryReceipt,holdRecoveryReceipt,recoveryMessage,createDiagnostics} from './recovery-v23.js?v=2.3';
 import {sessionState,canResumeFree} from './session-v24.js?v=2.4';
+import {freeProgress,holdProgress} from './bonus-progress-v26.js?v=2.6';
 const demoDB=createStorageGateway(localDB);
 const adminLock=createAdminPinLock();
 const diagnostics=createDiagnostics();
@@ -78,11 +79,11 @@ function update(){
  if(!running)$('multiTotal').textContent='×'+(s.mode==='free'?s.freeMultiplier:1);
  $('freeMeter').hidden=s.mode!=='free';
  $('freeCount').textContent=s.freeSpins;
- const free=freeDisplay(s);
- $('freeHud').hidden=s.mode!=='free';
+ const free=freeProgress(s);
+ $('freeHud').hidden=!free.active;
  $('hudFreeCount').textContent=free.remaining;
  $('hudFreeTotal').textContent=money(free.total);
- $('hudFreeMulti').textContent='×'+free.multiplier;
+ $('hudFreePlayed').textContent=free.played+' giros realizados · MULTI aplicado no final';
  $('autoRemaining').textContent=autoLeft?String(autoLeft):'∞';
  $('turboState').textContent=turbo?'ON':'OFF';
  $('turboBtn').setAttribute('aria-pressed',String(turbo));
@@ -130,7 +131,7 @@ function bonusAnnouncement(title,value,duration=1600){
  bonusTimer=setTimeout(()=>{notice.hidden=true},duration);
 }
 function showDropAmount(value){
- // Visível na barra, ao lado dos orbs; nunca esconde as peças.
+ // Visível à esquerda da barra, sem blocos de multiplicador duplicados.
  const el=$('dropAmount');
  clearTimeout(dropTimer);
  el.textContent=money(value);
@@ -557,9 +558,12 @@ function renderHold(previousGrid=null,hold=bank.hold){
  }
  $('holdCoins').textContent=display.coins+'/16';
  $('holdTotal').textContent=money(display.total);
- $('holdInfo').textContent=display.attempts+' tentativa'+
-  (display.attempts===1?'':'s')+' restante'+
-  (display.attempts===1?'':'s')+' · giro '+display.rounds;
+ const meter=holdProgress(hold);
+ $('holdMissing').textContent=meter.missingLabel;
+ $('holdProgress').setAttribute('aria-valuenow',String(meter.filled));
+ $('holdProgress').setAttribute('aria-valuetext',meter.progressText);
+ $('holdProgressFill').style.width=meter.percentage+'%';
+ $('holdInfo').textContent=meter.attemptsText+' · giro '+display.rounds;
  const dots=$('holdAttempts').querySelectorAll('.attempt-dot');
  for(let i=0;i<dots.length;i++){
   dots[i].classList.toggle('used',i>=display.attempts);
@@ -589,7 +593,7 @@ async function holdTurn(){
   if(newly){
    audio.play('win');
    $('holdInfo').textContent='✨ '+newly+' moeda'+(newly===1?'':'s')+
-    ' nova'+(newly===1?'':'s')+' · 3 tentativas!';
+    ' nova'+(newly===1?'':'s')+' · '+holdProgress(result.hold).attemptsText;
   }else{
    audio.play('cascade');
   }

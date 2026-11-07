@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.5
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.6
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -216,3 +216,12 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.4
 - Atualizados os testes automatizados para verificar que a informação duplicada não regressa.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.5
+
+## V2.6 — informações de Free Spins e Hold mais claras
+
+- O HUD Free Spins mostra **restantes**, **realizadas** e **acumulado sem MULTI**; o MULTI mantém-se no extremo direito da barra principal, sem o apresentar duas vezes.
+- O Hold 4×4 tem agora **barra visual das 16 casas** e contador de casas em falta. O texto das moedas novas mostra as tentativas restantes reais, não três fixas.
+- O progresso usa os dados já calculados pelo motor; inclui etiquetas para leitores de ecrã e CSS para ecrãs baixos e movimento reduzido.
+- Alteração apenas visual. Sem mudanças a prémios, RTP, cascatas, texturas ou pagamentos fictícios.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.6

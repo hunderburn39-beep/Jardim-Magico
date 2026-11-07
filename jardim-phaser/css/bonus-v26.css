@@ -1,0 +1,36 @@
+/* Jardim Mágico Phaser V2.6 — evolução do HUD sem repetir MULTI. */
+.free-hud{
+ grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);
+ left:5%;right:5%;padding:5px 9px;gap:4px 8px;border-radius:13px;
+}
+.free-hud .free-hud-title{border-right:0;justify-content:flex-start;text-align:left}
+.free-hud .free-hud-total{border-right:0;justify-content:flex-end;text-align:right}
+.free-hud .free-hud-title strong{font-size:clamp(15px,4vw,22px)}
+.free-hud .free-hud-total strong{font-size:clamp(13px,3.2vw,19px)}
+.free-hud .free-hud-played{
+ grid-column:1/-1;display:block;text-align:center;
+ font:700 clamp(9px,2vw,11px)/1.15 system-ui,sans-serif;
+ color:#ffe4be;letter-spacing:.01em;
+}
+.hold-fill-status{max-width:370px;margin:7px auto 3px;display:flex;
+ justify-content:space-between;align-items:center;gap:8px;
+ font:800 clamp(10px,2.4vw,12px)/1.1 Georgia,serif;color:#ffe9be}
+.hold-fill-track{display:block;width:min(100%,370px);height:10px;
+ margin:0 auto 7px;border:1px solid #f9d998;border-radius:99px;
+ background:#250e39;overflow:hidden}
+.hold-fill-track>span{display:block;height:100%;width:0%;
+ background:linear-gradient(90deg,#d48a36,#fff0b3);
+ border-radius:99px;transition:width .25s ease-out}
+@media (orientation:portrait) and (max-height:700px){
+ .free-hud{top:2px;padding:3px 7px;gap:2px}
+ .hold-fill-status{margin:3px auto 2px}
+ .hold-fill-track{height:7px;margin-bottom:4px}
+}
+@media (orientation:landscape) and (max-height:430px){
+ .free-hud{top:1px;padding:2px 6px}
+ .hold-fill-status{margin:2px auto 1px}
+ .hold-fill-track{height:6px;margin-bottom:2px}
+}
+@media (prefers-reduced-motion:reduce){
+ .hold-fill-track>span{transition:none}
+}
