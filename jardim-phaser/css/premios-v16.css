@@ -1,0 +1,158 @@
+/* Jardim Mágico Phaser V1.6 — barra de queda e celebrações 3 linhas.
+   Só apresentação: não altera rotação dos tambores, cascatas nem prémios. */
+.multiplier{
+ display:grid;
+ grid-template-columns:minmax(0,1.12fr) minmax(0,1.65fr) minmax(0,.66fr);
+ align-items:center;
+ column-gap:clamp(3px,.8vw,8px);
+ padding:clamp(5px,.85vh,9px) clamp(12px,3vw,17px);
+ min-height:clamp(43px,6.0dvh,58px);
+ height:auto;
+}
+.multi-drop,.multi-stack,.multi-final{
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ gap:3px;
+ min-width:0;
+ text-align:center;
+}
+.multi-drop{
+ align-items:flex-start;
+ padding-left:3px;
+}
+.multi-drop small,.multi-stack small,.multi-final small{
+ display:block;
+ color:#ffeac0;
+ font:800 clamp(8px,1.85vw,11px)/1.05 Georgia,serif;
+ text-shadow:0 1px 3px #2a0b38;
+ letter-spacing:.005em;
+ white-space:nowrap;
+}
+.drop-line-value{
+ display:block;
+ width:100%;
+ min-height:18px;
+ font:900 clamp(15px,4vw,24px)/1 Georgia,serif;
+ letter-spacing:.01em;
+ color:#ffe08c;
+ text-shadow:0 2px 2px #41102c,0 0 5px #fff5b2,
+  0 0 10px rgba(255,182,78,.65);
+ text-align:left;
+ white-space:nowrap;
+ font-variant-numeric:tabular-nums;
+}
+.drop-line-value.pulse{
+ animation:dropBarPulse .56s ease-out both;
+}
+@keyframes dropBarPulse{
+ 0%{filter:brightness(1.6);transform:scale(1.12);transform-origin:left center}
+ 35%{filter:brightness(1.25);transform:scale(1.04)}
+ 100%{filter:brightness(1);transform:scale(1)}
+}
+.multi-stack{gap:3px;justify-self:stretch}
+.multi-stack .orb-group{
+ display:flex;
+ justify-content:center;
+ align-items:center;
+ gap:clamp(2px,.9vw,6px);
+ flex:0 1 auto;
+ min-width:0;
+ width:100%;
+}
+.multi-stack .orb-group b{
+ flex-shrink:0;
+ width:clamp(22px,6.1vw,36px);
+ height:clamp(22px,6.1vw,36px);
+ font-size:clamp(11px,3vw,17px);
+}
+.multi-final{
+ align-items:flex-end;
+ padding-right:3px;
+ gap:0;
+}
+.multi-final strong{
+ color:#ffeda7;
+ font:900 clamp(19px,5.2vw,30px)/1.08 Georgia,serif;
+ text-shadow:0 1px 3px #280922,0 0 10px #ffc966b3;
+ white-space:nowrap;
+}
+.big-win{
+ top:23%;
+ bottom:auto;
+ left:5%;right:5%;
+ z-index:20;
+ display:flex;
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ gap:clamp(2px,.65vh,7px);
+ padding:0 6px;
+ line-height:1.1;
+ text-align:center;
+ opacity:0;
+ pointer-events:none;
+ transform:scale(.86);
+}
+.celebration-title{
+ display:block;
+ font:900 clamp(29px,7.8vw,51px)/1.02 Georgia,serif;
+ color:#ffe49c;
+ -webkit-text-stroke:.3px #73442a;
+ text-shadow:0 2px 3px #330525,0 0 10px #ffb5dd,
+  0 0 22px #eda9e5;
+ letter-spacing:.045em;
+}
+.celebration-total{
+ display:block;
+ font:900 clamp(13px,3.4vw,20px)/1.1 Georgia,serif;
+ color:#fff2c9;
+ text-shadow:0 2px 3px #3e0d39,0 0 8px rgba(255,225,138,.65);
+ letter-spacing:.12em;
+}
+.celebration-value{
+ display:block;
+ font:900 clamp(26px,6.9vw,44px)/1.1 Georgia,serif;
+ color:#fff1ad;
+ white-space:nowrap;
+ text-shadow:0 2px 3px #3c1129,0 0 9px #fcd87b,
+  0 0 20px rgba(255,170,74,.67);
+ font-variant-numeric:tabular-nums;
+}
+.big-win.active{
+ animation:celebrationV16 1.65s cubic-bezier(.2,.73,.34,1) both;
+}
+@keyframes celebrationV16{
+ 0%{opacity:0;transform:scale(.64) translateY(17px)}
+ 20%{opacity:1;transform:scale(1.15) translateY(0)}
+ 35%{opacity:1;transform:scale(1)}
+ 72%{opacity:1;transform:scale(1.03)}
+ 100%{opacity:0;transform:scale(1.03) translateY(-11px)}
+}
+.bonus-announcement{top:17%}
+@media(max-width:380px){
+ .multiplier{
+  grid-template-columns:minmax(0,1.14fr) minmax(0,1.6fr) minmax(0,.56fr);
+  column-gap:2px;padding-left:11px;padding-right:11px;
+ }
+ .multi-stack .orb-group b{width:clamp(21px,6vw,28px);height:clamp(21px,6vw,28px)}
+ .multi-drop small,.multi-stack small,.multi-final small{font-size:8px}
+ .drop-line-value{font-size:clamp(14px,4vw,18px)}
+ .celebration-title{font-size:clamp(27px,8vw,37px)}
+}
+@media(orientation:landscape){
+ .multiplier{height:90%;min-height:0;padding:2px 10px}
+ .multi-drop small,.multi-stack small,.multi-final small{font-size:clamp(7px,1.4vw,10px)}
+ .drop-line-value{font-size:clamp(13px,2vw,20px)}
+ .multi-final strong{font-size:clamp(16px,3vw,26px)}
+ .multi-stack .orb-group b{width:clamp(20px,4vh,31px);height:clamp(20px,4vh,31px)}
+ .big-win{top:14%}
+ .celebration-title{font-size:clamp(18px,4vw,31px)}
+ .celebration-value{font-size:clamp(18px,3.3vw,28px)}
+ .bonus-announcement{top:9%}
+}
+@media(prefers-reduced-motion:reduce){
+ .drop-line-value.pulse{animation:none}
+ .big-win.active{animation:none;opacity:1;transform:none}
+}
