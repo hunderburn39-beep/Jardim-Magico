@@ -34,6 +34,7 @@ const bonusModel26=await read('../js/bonus-progress-v26.js');
 const bonusStyle26=await read('../css/bonus-v26.css');
 const winUI27=await read('../js/win-ui-v27.js');
 const winStyle27=await read('../css/celebracoes-v27.css');
+const responsive28=await read('../css/responsive-v28.css');
 const pinCss=await read('../css/admin-pin-v21.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
@@ -391,7 +392,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.7'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.8'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -424,7 +425,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=2.7'),'botão e versão Phaser V2.7');
+ html.includes('app.js?v=2.8'),'botão e versão Phaser V2.8');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -741,4 +742,39 @@ ok(winStyle27.includes('.win-notice-values')&&
  winStyle27.includes('animation:celebrationV27')&&
  !winStyle27.includes('backdrop-filter'),
  'animações curtas e simples, sem filtros pesados por quadro');
-console.log('Phaser V2.7: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+ok(html.includes('responsive-v28.css?v=2.8')&&
+ html.indexOf('responsive-v28.css?v=2.8')>html.indexOf('celebracoes-v27.css?v=2.7'),
+ 'novas regras de geometria são as últimas a carregar');
+ok(html.includes('viewport-fit=cover')&&
+ !html.includes('maximum-scale=1'),
+ 'safe area iPhone mantém a possibilidade de ampliar texto');
+ok(responsive28.includes('(orientation:portrait) and (max-height:710px)')&&
+ responsive28.includes('min-height:0;max-height:none;height:100dvh')&&
+ responsive28.includes('footer{height:auto;min-height:12px'),
+ 'ecrãs de retrato baixos não ficam presos a altura mínima de 600px');
+ok(responsive28.includes('(orientation:portrait) and (max-height:500px)')&&
+ responsive28.includes('overflow-y:auto'),
+ 'em ecrãs extremos controlos continuam acessíveis por scroll');
+ok(responsive28.includes('(orientation:portrait) and (min-width:600px)')&&
+ responsive28.includes('grid-template-rows:')&&
+ responsive28.includes('width:100vw;max-width:100vw'),
+ 'tablets em retrato aproveitam a largura disponível');
+ok(responsive28.includes('grid-template-columns:minmax(0,30%) minmax(0,35%) minmax(0,35%)')&&
+ responsive28.includes('calc(80dvh - 8px)')&&
+ responsive28.includes('.frame-region .reel-window{'),
+ 'paisagem reserva colunas próprias e limita o reel à altura');
+const reelRules=responsive28.split('.frame-region .reel-window{').slice(1).map(x=>x.split('}')[0]);
+ok(reelRules.length>=3&&reelRules.every(x=>x.includes('aspect-ratio:5/3'))&&
+ !reelRules.some(x=>x.includes('aspect-ratio:auto')),
+ 'todos os ecrãs mantêm a proporção 5:3 sem deformar os símbolos');
+ok(responsive28.includes('safe-area-inset-left')&&
+ responsive28.includes('safe-area-inset-right')&&
+ responsive28.includes('safe-area-inset-bottom'),
+ 'margens móveis respeitam notch e zona de gestos');
+ok(!html.includes('MULTIS ACUMULADOS')&&
+ !html.includes('class="multi-stack"')&&
+ html.includes('id="dropAmount"')&&html.includes('id="multiTotal"'),
+ 'barra da queda à esquerda e MULTI à direita mantêm-se sem duplicação');
+ok((responsive28.match(/{/g)||[]).length===(responsive28.match(/}/g)||[]).length,
+ 'CSS V2.8 tem blocos equilibrados');
+console.log('Phaser V2.8: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

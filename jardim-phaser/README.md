@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.7
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.8
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -236,3 +236,15 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.6
 - Testes automáticos verificam as versões de cache, valores de exibição, resumos, duração Turbo e ausência da informação repetida.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.7
+
+## V2.8 — dimensionamento responsivo e Safari
+
+- Novo CSS responsivo final `responsive-v28.css` para retrato de telemóveis, retrato de tablets e paisagem. Os estilos antigos continuam intactos, mas as correções V2.8 prevalecem quando necessário.
+- **Em paisagem, o canvas dos tambores mantém sempre a proporção visual de 5:3**: deixou de ser forçado a `height:100%` com `aspect-ratio:auto`. O jogo mantém a grelha, a arte e as cascatas originais.
+- Ecrãs baixos já não obrigam a altura mínima de 600px que podia cortar os controlos. Em casos extremos (retrato com menos de 500px de altura), é permitido fazer scroll para alcançar os botões em vez de os esconder.
+- Tablets em retrato usam a largura do ecrã com zonas dimensionadas pela altura disponível, sem esticar o tabuleiro.
+- Margens seguras de iPhone/notch/gestos nos 4 lados; fontes e botões adaptados a larguras estreitas, valores grandes dos jackpots e orientação horizontal baixa. O viewport deixa de bloquear a ampliação manual do browser.
+- A barra de dois valores (queda à esquerda, MULTI à direita) e as celebrações V2.7 mantêm-se sem duplicação. A matemática dos prémios, motor Phaser, persistência e RTP não auditado não foram alterados.
+- Os testes automáticos verificam os breakpoints e a proporção CSS, mas a geometria visual deve ser confirmada em Safari real e Android nos diversos tamanhos de ecrã.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.8
