@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1d1037">
 <meta name="description" content="Jardim Mágico em Phaser — tambores verticais, cascatas e gráficos originais. Demonstração em créditos fictícios.">
-<title>Jardim Mágico — Phaser V2.6</title>
+<title>Jardim Mágico — Phaser V2.7</title>
 <link rel="stylesheet" href="./css/estilo.css?v=1.3">
 <link rel="stylesheet" href="./css/polimento-v14.css?v=1.4">
 <link rel="stylesheet" href="./css/bonus-v15.css?v=1.5">
@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="./css/session-v24.css?v=2.4">
 <link rel="stylesheet" href="./css/barra-v25.css?v=2.5">
 <link rel="stylesheet" href="./css/bonus-v26.css?v=2.6">
+<link rel="stylesheet" href="./css/celebracoes-v27.css?v=2.7">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.90.0/phaser.min.js"></script>
 </head>
 <body>
@@ -85,8 +86,8 @@
       <strong id="bonusAnnouncementValue">15 giros</strong>
     </div>
     <p class="spin-text" id="spinText">A carregar os símbolos HD…</p>
-    <div class="win-notice" id="winNotice" hidden></div>
-    <div id="bigWin" class="big-win" aria-hidden="true">
+    <div class="win-notice" id="winNotice" role="status" aria-live="off" hidden></div>
+    <div id="bigWin" class="big-win" data-tier="nice" data-width="normal" aria-hidden="true">
       <span id="bigWinTitle" class="celebration-title">NICE</span>
       <span class="celebration-total">TOTAL</span>
       <strong id="bigWinValue" class="celebration-value">0,00</strong>
@@ -160,6 +161,6 @@
     <a href="../index.html">Abrir o jogo original</a>
   </div>
 </main>
-<script type="module" src="./js/app.js?v=2.6"></script>
+<script type="module" src="./js/app.js?v=2.7"></script>
 </body>
 </html>

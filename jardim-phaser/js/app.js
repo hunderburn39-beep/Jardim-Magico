@@ -15,6 +15,7 @@ import {filterHistory,historyPage} from './history-v19.js?v=1.9';
 import {spinRecoveryReceipt,holdRecoveryReceipt,recoveryMessage,createDiagnostics} from './recovery-v23.js?v=2.3';
 import {sessionState,canResumeFree} from './session-v24.js?v=2.4';
 import {freeProgress,holdProgress} from './bonus-progress-v26.js?v=2.6';
+import {celebrationView,winBreakdown} from './win-ui-v27.js?v=2.7';
 const demoDB=createStorageGateway(localDB);
 const adminLock=createAdminPinLock();
 const diagnostics=createDiagnostics();
@@ -111,12 +112,20 @@ function celebrationTier(value,stake){
  return 'NICE';
 }
 function celebrate(title,value){
- if(!Number.isFinite(Number(value))||Number(value)<=0)return;
+ const view=celebrationView(title,value,turbo);
+ if(!view)return;
  const el=$('bigWin');
- $('bigWinTitle').textContent=title;
- $('bigWinValue').textContent=money(value);
- el.classList.remove('active');void el.offsetWidth;el.classList.add('active');
- clearTimeout(bigTimer);bigTimer=setTimeout(()=>el.classList.remove('active'),1700);
+ $('bigWinTitle').textContent=view.title;
+ $('bigWinValue').textContent=view.formatted;
+ el.dataset.tier=view.tier;
+ el.dataset.width=view.width;
+ el.style.setProperty('--celebration-duration',view.duration+'ms');
+ clearTimeout(bigTimer);
+ el.classList.remove('active');
+ // Uma única leitura do layout, apenas quando o resultado fica fechado.
+ void el.offsetWidth;
+ el.classList.add('active');
+ bigTimer=setTimeout(()=>el.classList.remove('active'),view.duration);
 }
 function bonusAnnouncement(title,value,duration=1600){
  const notice=$('bonusAnnouncement');
@@ -140,16 +149,20 @@ function showDropAmount(value){
 }
 function showWinText(wins,value,total=false,factor=1){
  const notice=$('winNotice');
- if(!wins.length){notice.hidden=true;return}
- // Ajustar a apresentação dos valores ao multiplicador da queda.
- let parts=wins.map(w=>money(round(w.amount*factor)));
- if(parts.length>5)parts=[...parts.slice(0,3),'… ('+(wins.length-3)+' outras)'];
- notice.textContent=(total?'TOTAL · ':'')+
-  wins.length+' combinaç'+(wins.length===1?'ão':'ões')+
-  ' · '+parts.join(' + ')+' = '+money(value);
- notice.hidden=false;
+ const summary=winBreakdown(wins,total,factor);
  clearTimeout(winTimer);
- if(total)winTimer=setTimeout(()=>notice.hidden=true,2300);
+ if(!summary.hasWins){notice.hidden=true;return}
+ const count=document.createElement('strong');
+ count.className='win-notice-count';count.textContent=summary.label;
+ const values=document.createElement('span');
+ values.className='win-notice-values';
+ values.textContent=summary.values.join(' + ')+
+  (summary.other?' + '+summary.other+' outras':'');
+ notice.replaceChildren(count,values);
+ // O valor TOTAL permanece na barra da queda, sem repetir a soma aqui.
+ notice.setAttribute('aria-label',summary.label+' · prémio '+money(value));
+ notice.hidden=false;
+ if(total)winTimer=setTimeout(()=>notice.hidden=true,turbo?1450:2150);
 }
 async function persist(type,details={}){
  if(!writerReady){diagnostics.record('save-failed');saveIssue=true;update();return false}
@@ -306,9 +319,7 @@ async function runSpin(){
    showDropAmount(lineTotal);
    say(wins.length+' combinação'+(wins.length>1?'ões':'')+
     ' · queda '+(i+1)+' · '+money(lineTotal)+' créditos');
-   const multiple=wins.length>1;
-   if(multiple&&lineTotal>=bank.stake*8)
-    celebrate(celebrationTier(lineTotal,bank.stake),lineTotal);
+   // Não repetir celebrações em cada cascata: um destaque no fim do giro.
    audio.play('win');
    if(!(await visual(()=>scene.burst(cells,{
     destroy:!!next,

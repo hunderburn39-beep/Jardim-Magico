@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.6
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.7
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -225,3 +225,14 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.5
 - Alteração apenas visual. Sem mudanças a prémios, RTP, cascatas, texturas ou pagamentos fictícios.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.6
+
+## V2.7 — celebrações finais mais limpas e fluídas
+
+- NICE, MEGA e SENSACIONAL apresentam o título, TOTAL e valor num formato maior e adaptado à largura do montante. Os bónus Free Spins e Hold & Win mantêm as próprias frases.
+- Evita disparar celebrações em cada cascata e voltar a dispará-las quando o giro fecha: o destaque principal aparece ao terminar a jogada, reduzindo repaints e animações repetidas.
+- Os valores individuais das combinações aparecem num pequeno resumo no rodapé dos tambores, limitado a três valores e um contador de restantes. O total exato continua na barra da queda, à esquerda. Não foi criado nenhum segundo indicador de MULTI.
+- Animações CSS só com opacidade e transformações, duração mais curta no Turbo, tipografia compacta em ecrãs pequenos e adaptação a preferência por movimento reduzido. Não acrescenta imagens pesadas, filtros animados ou temporizadores por frame.
+- Os cálculos, o motor de créditos, a grelha Phaser e as cascatas não foram alterados. Créditos apenas fictícios, sem RTP auditado.
+- Testes automáticos verificam as versões de cache, valores de exibição, resumos, duração Turbo e ausência da informação repetida.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.7

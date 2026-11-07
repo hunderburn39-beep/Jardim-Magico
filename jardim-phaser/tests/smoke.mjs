@@ -32,6 +32,8 @@ const sessionCss=await read('../css/session-v24.css');
 const barV25Css=await read('../css/barra-v25.css');
 const bonusModel26=await read('../js/bonus-progress-v26.js');
 const bonusStyle26=await read('../css/bonus-v26.css');
+const winUI27=await read('../js/win-ui-v27.js');
+const winStyle27=await read('../css/celebracoes-v27.css');
 const pinCss=await read('../css/admin-pin-v21.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
@@ -389,7 +391,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.6'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=2.7'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -422,7 +424,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=2.6'),'botão e versão Phaser V2.6');
+ html.includes('app.js?v=2.7'),'botão e versão Phaser V2.7');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -702,4 +704,41 @@ ok(main.includes("holdProgress(result.hold).attemptsText")&&
 ok(bonusStyle26.includes('prefers-reduced-motion:reduce')&&
  bonusStyle26.includes('landscape')&&bonusStyle26.includes('hold-fill-track'),
  'progressos adaptados a telemóveis e movimento reduzido');
-console.log('Phaser V2.6: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const Prize27=new Function(parseModule(winUI27)+
+ '\nreturn {celebrationView,winBreakdown};')();
+const nice27=Prize27.celebrationView('NICE',2.5,false);
+const huge27=Prize27.celebrationView('SENSACIONAL',12345678.9,true);
+ok(nice27.tier==='nice'&&nice27.duration===1750&&
+ huge27.tier==='sensacional'&&huge27.duration===1150&&
+ huge27.width==='dense',
+ 'celebrações adaptadas aos prémios e ao modo Turbo');
+ok(Prize27.celebrationView('NICE',0)===null&&
+ Prize27.celebrationView('MEGA',-1)===null&&
+ Prize27.celebrationView('MEGA',Infinity)===null,
+ 'efeitos não aparecem para valores inválidos ou nulos');
+const compact27=Prize27.winBreakdown(Array.from({length:8},(_,i)=>({amount:(i+1)/5})),false,2);
+ok(compact27.count===8&&compact27.values.length===3&&compact27.other===5&&
+ compact27.values[0].includes('0,40'),
+ 'resumo mantém valores reais sem encher o ecrã');
+ok(Prize27.winBreakdown([{amount:3}],true,1).label.includes('TOTAL')&&
+ !Prize27.winBreakdown([],true,1).hasWins,
+ 'resumo diferencia queda de total e oculta jogadas sem prémio');
+ok(main.includes('function showWinText(')&&
+ main.includes('winBreakdown(wins,total,factor)')&&
+ main.includes('celebrationView(title,value,turbo)'),
+ 'apresentação de prémios usa funções visuais puras');
+ok(!main.includes("if(multiple&&lineTotal>=bank.stake*8)")&&
+ main.includes("celebrate('FREE SPINS',outcome.credited)")&&
+ main.includes("celebrate('HOLD & WIN',result.prize)"),
+ 'celebrações de cascata redundantes removidas sem apagar os bónus');
+ok(html.includes('celebracoes-v27.css?v=2.7')&&
+ html.includes('data-tier="nice"')&&
+ !html.includes('MULTIS ACUMULADOS')&&
+ winStyle27.includes('prefers-reduced-motion:reduce')&&
+ winStyle27.includes('orientation:landscape'),
+ 'visual premium preserva a barra limpa e o Safari pequeno');
+ok(winStyle27.includes('.win-notice-values')&&
+ winStyle27.includes('animation:celebrationV27')&&
+ !winStyle27.includes('backdrop-filter'),
+ 'animações curtas e simples, sem filtros pesados por quadro');
+console.log('Phaser V2.7: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
