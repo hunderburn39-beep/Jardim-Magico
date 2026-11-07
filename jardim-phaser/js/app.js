@@ -470,6 +470,19 @@ function showRecoveryState(marker){
  if(!marker)return false;
  diagnostics.record(marker.kind==='hold'?'recovered-hold':'recovered-spin');
  modal(summary.title,summary.detail,[{name:'CONTINUAR',detail:'Os créditos fictícios já foram contabilizados.'}]);
+ if(summary.kind==='hold-complete'&&Array.isArray(marker.grid)&&marker.grid.length===16){
+  const grid=document.createElement('div');grid.className='recovered-hold-grid';
+  grid.setAttribute('aria-label','Grelha de moedas recuperada de quatro por quatro');
+  for(const value of marker.grid){
+   const cell=document.createElement('span');
+   cell.className='recovered-hold-coin'+(Number(value)>0?' with-coin':'');
+   cell.textContent=Number(value)>0?Number(value)+'×':'·';
+   grid.append(cell);
+  }
+  const caption=document.createElement('p');caption.className='recovered-hold-caption';
+  caption.textContent='Última grelha guardada · '+money(marker.total)+' créditos em moedas';
+  $('modalContent').append(grid,caption);
+ }
  return true;
 }
 async function clearVisualReceipt(){

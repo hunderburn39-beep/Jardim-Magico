@@ -588,7 +588,8 @@ ok(main.includes('writerReady=exclusive;')&&
 ok(main.includes('if((document.hidden&&!running)||writerCheckBusy')&&
  main.includes('demoDB.releaseLease(tabToken).catch('),
  'a aba liberta a sessão ao ficar oculta e só a retoma quando visível');
-ok(main.includes('pendingVisual={id:')&&
+ok(main.includes('pendingVisual=spinRecoveryReceipt(')&&
+ main.includes('pendingVisual=holdRecoveryReceipt(')&&
  main.includes('demoDB.checkpoint(snapshot(),board)'),
  'resultado fica preservado e marca visual é retirada após animação');
 ok(main.includes('if(!writerReady||running)return;')&&
@@ -627,6 +628,9 @@ ok(!meter.record('pin-attempt')&&!JSON.stringify(meter.snapshot()).includes('pin
 ok(main.includes('pendingVisual=holdRecoveryReceipt(')&&
  main.includes('clearVisualReceipt()')&&main.includes('showRecoveryState(savedMarker)'),
  'Hold e Free Spins guardam recibos e retomam interface visual');
+ok(main.includes("grid.className='recovered-hold-grid'")&&
+ recoveryCss.includes('.recovered-hold-coin.with-coin'),
+ 'grelha do Hold terminado é apresentada com moedas já guardadas');
 ok(main.includes("name:'🩺 Diagnóstico local'")&&
  main.includes('function diagnosticModal()')&&recoveryCss.includes('.diag-panel')&&
  html.includes('recovery-v23.css?v=2.3'),

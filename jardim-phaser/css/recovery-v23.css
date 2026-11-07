@@ -5,3 +5,12 @@
  font:12px/1.4 system-ui,sans-serif;color:#ffedce;overflow-wrap:anywhere}
 .diag-panel strong{color:#ffd47f}
 @media(max-width:390px){.diag-panel p{font-size:11px}}
+
+.recovered-hold-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:6px;max-width:270px;margin:13px auto}
+.recovered-hold-coin{aspect-ratio:1;display:grid;place-items:center;
+ border:1px solid #aa8150;border-radius:50%;
+ background:#372245;color:#8e779b;font:700 13px system-ui,sans-serif}
+.recovered-hold-coin.with-coin{background:radial-gradient(circle at 35% 30%,#fff6c9,#efc66f 52%,#935022 85%);
+ color:#572d18;text-shadow:0 1px 0 #ffefad;box-shadow:0 0 9px #ebbd654f}
+.recovered-hold-caption{font:12px/1.35 system-ui,sans-serif;color:#ffe6ba;text-align:center}

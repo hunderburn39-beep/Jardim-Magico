@@ -195,3 +195,5 @@ Nota adicional V2.2: ao ocultar uma aba sem giro em curso, a posse de escrita é
 - Continua a ser uma demo de créditos fictícios, sem base remota nem RTP auditado; a recuperação e o aspeto devem ser confirmados em Safari real.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=2.3
+
+**Recuperação visual do Hold concluído:** o painel apresenta também a grelha final de 16 posições com as moedas já registadas. Não inicia novamente o sorteio nem volta a pagar o valor.
