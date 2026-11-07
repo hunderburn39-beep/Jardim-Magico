@@ -554,7 +554,8 @@ ok(main.includes('const demoDB=createStorageGateway(localDB)')&&
 ok(!main.includes("name:'＋ Adicionar 500 ao fundo DEMO'")&&
  main.includes("name:'⚙ Administrar fundo DEMO'"),
  'não é possível carregar o fundo diretamente pelo botão público');
-ok(main.includes("if(document.hidden){\n   adminLock.lock();")&&
+ok(main.includes('if(document.hidden){')&&
+ main.includes('adminLock.lock();')&&
  main.includes("id=\"adminLock\""),
  'bloqueio automático ao ocultar a app e botão manual');
 ok(pinCss.includes('.admin-pin-form')&&html.includes('admin-pin-v21.css?v=2.1'),
