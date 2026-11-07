@@ -8,6 +8,65 @@ const DB_VERSION=1;
 const STATE_ID='machine';
 const FALLBACK='jardim-magico-phaser-v1-fallback';
 const MAX_HISTORY=2500;
+
+/* V1.9: validar ficheiros antes de alterar a base local existente.
+ * Nunca aceitar JSON arbitrário como estado do jogo.
+ */
+const MAX_BACKUP_EVENTS=2500;
+const finiteRange=(v,min,max)=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max;
+export function validateBackup(data){
+ if(!data||typeof data!=='object'||data.format!=='jardim-magico-demo-v3')
+  throw Error('Formato de cópia de segurança desconhecido.');
+ const state=data.state;
+ const s=state?.snapshot,b=state?.board;
+ if(!s||typeof s!=='object')throw Error('A cópia não contém uma sessão válida.');
+ if(!Array.isArray(b)||b.length!==5||b.some(col=>
+   !Array.isArray(col)||col.length!==3||col.some(x=>!Number.isInteger(x)||x<0||x>11)))
+  throw Error('O tabuleiro da cópia de segurança é inválido.');
+ for(const key of ['balance','reserve','lastWin','freeTotal','freeAwarded']){
+  if(!finiteRange(s[key],0,1e12))throw Error('Campo inválido: '+key);
+ }
+ if(!finiteRange(s.stake,.05,10)||!Number.isInteger(s.spins)||s.spins<0||
+    s.spins>1e9||!Number.isInteger(s.freeSpins)||s.freeSpins<0||s.freeSpins>60||
+    !Number.isInteger(s.freeMultiplier)||s.freeMultiplier<1||s.freeMultiplier>5||
+    !['base','free','hold'].includes(s.mode))
+  throw Error('Os contadores e o modo da cópia são inválidos.');
+ if(s.mode==='hold'){
+  const h=s.hold;
+  if(!h||!Array.isArray(h.grid)||h.grid.length!==16||
+     h.grid.some(v=>!finiteRange(v,0,1000))||
+     !Number.isInteger(h.tries)||h.tries<0||h.tries>3||
+     !finiteRange(h.total,0,1e12))
+   throw Error('A grelha Hold da cópia é inválida.');
+ }
+ if(s.admin!==undefined){
+  const p=s.admin?.ownerPct;
+  if(!finiteRange(p,0,100))throw Error('As percentagens administrativas são inválidas.');
+ }
+ if(!Array.isArray(data.history)||data.history.length>MAX_BACKUP_EVENTS)
+  throw Error('O histórico da cópia excede o limite permitido.');
+ const ids=new Set();
+ for(const e of data.history){
+  if(!e||typeof e!=='object'||typeof e.eventId!=='string'||
+     e.eventId.length<1||e.eventId.length>128||ids.has(e.eventId)||
+     typeof e.type!=='string'||e.type.length>80||
+     typeof e.timestamp!=='string'||e.timestamp.length>48)
+   throw Error('O histórico contém eventos malformados ou duplicados.');
+  ids.add(e.eventId);
+  for(const key of ['wager','cost','paid','balance','reserve','amount']){
+   if(e[key]!==undefined&&!finiteRange(e[key],0,1e12))
+    throw Error('Valor histórico inválido em '+key);
+  }
+ }
+ return {state:copy(state),history:copy(data.history)};
+}
+function ordered(events){
+ return events.slice().sort((a,b)=>{
+  const t=String(b.timestamp||'').localeCompare(String(a.timestamp||''));
+  return t||String(b.eventId||'').localeCompare(String(a.eventId||''));
+ });
+}
+
 function copy(o){return JSON.parse(JSON.stringify(o))}
 const safeErr=e=>String(e?.message||e);
 export class DemoDatabase{
@@ -40,6 +99,7 @@ export class DemoDatabase{
   try{return JSON.parse(localStorage.getItem(FALLBACK)||'null')}catch{return null}
  }
  async load(){
+  await this.pending.catch(()=>{});
   if(!this.database)return this.readFallback();
   return new Promise((resolve,reject)=>{
    const tx=this.database.transaction('state','readonly');
@@ -80,17 +140,28 @@ export class DemoDatabase{
     tx.onerror=()=>reject(tx.error);
     tx.onabort=()=>reject(tx.error||Error('Transação abortada'));
     tx.objectStore('state').put({id:STATE_ID,payload});
-    tx.objectStore('events').put(log);
+    const events=tx.objectStore('events');
+    events.put(log);
+    const count=events.count();
+    count.onsuccess=()=>{
+     if(count.result<=MAX_HISTORY+50)return;
+     let excess=count.result-MAX_HISTORY;
+     const cursor=events.index('timestamp').openCursor();
+     cursor.onsuccess=()=>{
+      const item=cursor.result;
+      if(item&&excess>0){item.delete();excess--;item.continue()}
+     };
+    };
    });
   }catch(e){this.lastError=safeErr(e);return false}
  }
  async history(){
   await this.pending.catch(()=>{});
-  if(!this.database)return (this.readFallback()?.events||[]).slice().reverse();
+  if(!this.database)return ordered(this.readFallback()?.events||[]).slice(0,MAX_HISTORY);
   return new Promise((resolve,reject)=>{
    const tx=this.database.transaction('events','readonly');
    const req=tx.objectStore('events').getAll();
-   req.onsuccess=()=>resolve(req.result.slice(-MAX_HISTORY).reverse());
+   req.onsuccess=()=>resolve(ordered(req.result).slice(0,MAX_HISTORY));
    req.onerror=()=>reject(req.error);
   });
  }
@@ -99,6 +170,33 @@ export class DemoDatabase{
   const history=await this.history();
   return {format:'jardim-magico-demo-v3',database:this.mode,
     exportedAt:new Date().toISOString(),state,history};
+ }
+ async restoreData(backup){
+  await this.pending.catch(()=>{});
+  let checked;
+  try{checked=validateBackup(backup)}
+  catch(e){this.lastError=safeErr(e);return {ok:false,message:this.lastError}}
+  const payload={...checked.state,updatedAt:new Date().toISOString()};
+  const logs=ordered(checked.history).reverse();
+  if(!this.database){
+   try{
+    localStorage.setItem(FALLBACK,JSON.stringify({...payload,events:logs}));
+    return {ok:true,events:logs.length};
+   }catch(e){this.lastError=safeErr(e);return {ok:false,message:this.lastError}}
+  }
+  try{
+   await new Promise((resolve,reject)=>{
+    const tx=this.database.transaction(['state','events'],'readwrite');
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error);
+    tx.onabort=()=>reject(tx.error||Error('Transação abortada'));
+    tx.objectStore('state').put({id:STATE_ID,payload});
+    const events=tx.objectStore('events');
+    events.clear();
+    for(const log of logs)events.put(log);
+   });
+   return {ok:true,events:logs.length};
+  }catch(e){this.lastError=safeErr(e);return {ok:false,message:this.lastError}}
  }
  async clear(){
   await this.pending.catch(()=>{});

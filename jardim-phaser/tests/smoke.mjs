@@ -19,6 +19,8 @@ const mobileCss=await read('../css/mobile-v17.css');
 const perfSource=await read('../js/performance-v17.js');
 const adminSource=await read('../js/admin-v18.js');
 const adminCss=await read('../css/admin-v18.css');
+const historySource=await read('../js/history-v19.js');
+const historyCss=await read('../css/history-v19.css');
 let checked=0,spins=0,free=0,hold=0,stages=0;
 const ok=(v,label)=>{assert.ok(v,label);checked++};
 function parseModule(s){
@@ -369,7 +371,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=1.8'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=1.9'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -402,9 +404,65 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=1.8'),'botão e versão Phaser V1.8');
+ html.includes('app.js?v=1.9'),'botão e versão Phaser V1.9');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
  'base guarda quota e painel é responsivo');
-console.log('Phaser V1.8: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const H=new Function(parseModule(historySource)+
+ '\nreturn {filterHistory,historyPage};')();
+const rows=[
+ {eventId:'1',type:'spin',timestamp:'2026-11-06T12:00:00Z',paid:1},
+ {eventId:'2',type:'fund-deposit',timestamp:'2026-11-07T12:00:00Z',amount:20},
+ {eventId:'3',type:'buy-hold',timestamp:'2026-11-07T13:00:00Z',cost:3,note:'Teste'}
+];
+ok(H.filterHistory(rows,{category:'fund'}).length===1,
+ 'histórico filtra entradas e saídas de fundo');
+ok(H.filterHistory(rows,{query:'tesTe'}).length===1&&
+ H.filterHistory(rows,{dateFrom:'2026-11-07'}).length===2,
+ 'histórico pesquisa e filtra datas');
+ok(H.historyPage(rows,8,2).items.length===1&&H.historyPage(rows,8,2).page===1,
+ 'histórico pagina sem sair dos limites');
+const Backup=new Function(parseModule(dbsource)+
+ '\nreturn {validateBackup,DemoDatabase};')();
+const originalBank=new DemoBank();
+const originalState={snapshot:{...originalBank.snapshot,admin:{ownerPct:60,merchantPct:40}},
+ board:exact};
+const validBackup={format:'jardim-magico-demo-v3',state:originalState,history:rows};
+ok(Backup.validateBackup(validBackup).history.length===3,
+ 'restauro aceita cópia de segurança válida');
+ok(Backup.validateBackup(validBackup).state.snapshot.admin.ownerPct===60,
+ 'restauro preserva quotas anteriores');
+ok((()=>{try{Backup.validateBackup({...validBackup,state:{...originalState,board:[[3]]}});return false}catch{return true}})(),
+ 'restauro rejeita tabuleiro inválido');
+ok((()=>{try{Backup.validateBackup({...validBackup,history:[rows[0],rows[0]]});return false}catch{return true}})(),
+ 'restauro rejeita eventos duplicados');
+const historicalDb=new Backup.DemoDatabase();
+await historicalDb.connect();
+const mockEvents=[
+ {eventId:'b',timestamp:'2026-11-01T12:00:00Z',type:'spin'},
+ {eventId:'a',timestamp:'2026-11-07T12:00:00Z',type:'spin'}
+];
+const localStore=new Map();
+const oldStorage=globalThis.localStorage;
+globalThis.localStorage={getItem:k=>localStore.get(k)||null,setItem:(k,v)=>localStore.set(k,v),removeItem:k=>localStore.delete(k)};
+try{
+ const restored=await historicalDb.restoreData({...validBackup,history:mockEvents});
+ ok(restored.ok&&restored.events===2,'restauro grava sessão e histórico local');
+ ok((await historicalDb.history())[0].eventId==='a',
+  'histórico ordenado por data, não por identificador');
+ const dump=await historicalDb.exportData();
+ ok(dump.state.snapshot.balance===originalState.snapshot.balance,
+  'exportação lê o estado restaurado');
+ const declined=await historicalDb.restoreData({...validBackup,state:{snapshot:{},board:[]}});
+ ok(!declined.ok&&(await historicalDb.load()).snapshot.balance===originalState.snapshot.balance,
+  'cópia inválida não destrói estado guardado');
+}finally{
+ if(oldStorage===undefined)delete globalThis.localStorage;
+ else globalThis.localStorage=oldStorage;
+}
+ok(historyCss.includes('.history-list')&&html.includes('history-v19.css?v=1.9'),
+ 'estilos da pesquisa do histórico carregados');
+ok(main.includes('validateBackup(backup)')&&main.includes('historyPage(found,page)'),
+ 'interface valida cópias e pagina histórico');
+console.log('Phaser V1.9: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

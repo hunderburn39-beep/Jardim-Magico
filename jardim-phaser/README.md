@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.8
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.9
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -140,3 +140,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.7
 - Não há autenticação segura, backend central, dinheiro real ou RTP auditado. A rotação aprovada Phaser e a matemática não foram alteradas.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.8
+
+## V1.9 — Histórico pesquisável e restauro local
+
+- Histórico de até 2500 eventos apresentados **por data**, agora com pesquisa, filtro por categoria e intervalo de datas e páginas de 20 movimentos. A base IndexedDB passa a eliminar as entradas mais antigas quando excede 2550 registos, preservando o limite dos 2500 mais recentes; a cópia JSON inclui todos os registos mantidos.
+- Exportação JSON inclui sessão, tabuleiro, percentagens e histórico da instalação, com espera pelas operações pendentes antes de exportar.
+- **Restaurar cópia JSON** valida modo, saldo fictício, tabuleiro 5×3, Hold 4×4, quotas administrativas e eventos antes de mostrar confirmação explícita. O restauro substitui o estado e o histórico de uma só vez, com transação IndexedDB (ou escrita única em armazenamento local). Cópias inválidas não substituem dados existentes. Não é sincronização entre dispositivos: o utilizador transporta o ficheiro manualmente.
+- Mantidos intactos `js/engine.js` e `js/reels.js`: regras, probabilidades, cofre e sequência visual das cascatas são os mesmos da V1.8.
+- Sem dinheiro real, sem conta de operador, sem backend central ou proteção contra manipulação local. As verificações automatizadas não substituem testes num Safari físico.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=1.9

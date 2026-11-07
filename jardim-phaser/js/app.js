@@ -9,6 +9,8 @@ import {createReelGame} from './reels.js?v=1.3';
 import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
 import {createPerformanceGuard} from './performance-v17.js?v=1.7';
 import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=1.8';
+import {filterHistory,historyPage} from './history-v19.js?v=1.9';
+import {validateBackup} from './database.js?v=1';
 const $=id=>document.getElementById(id);
 const BETS=[.05,.1,.2,.4,.6,.8,1,1.5,2,3,5,7.5,10];
 const bank=new DemoBank();
@@ -535,46 +537,109 @@ async function adminModal(){
 }
 
 async function historyModal(){
- let log=[];
- try{log=await demoDB.history()}catch(err){console.error(err)}
- const events=log.slice(0,100);
- const wagers=log.reduce((a,x)=>a+Number(x.wager||0)+Number(x.cost||0),0);
- const paid=log.reduce((a,x)=>a+Number(x.paid||0),0);
- const observed=wagers>0?(paid/wagers*100).toFixed(1)+'%':'—';
- const details='Base de dados no teu dispositivo ('+demoDB.mode+
-  '). Eventos: '+log.length+' · Apostas/compras: '+money(wagers)+
-  ' · Prémios: '+money(paid)+
-  ' · Retorno observado: '+observed+' (não é RTP auditado).';
- modal('Histórico e dados locais',details,[
-  {name:'⬇ Exportar histórico JSON',detail:'Inclui saldo e últimos giros desta instalação.',
+ let records=[];
+ try{records=await demoDB.history()}catch(err){console.error(err)}
+ const actions=[
+  {name:'⬇ Exportar cópia JSON',detail:'Estado do jogo e histórico desta instalação (até 2500 movimentos).',
    act:async()=>{
-    const obj=await demoDB.exportData();
-    const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});
-    const url=URL.createObjectURL(blob);
+    const backup=await demoDB.exportData();
+    const file=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(file);
     const link=document.createElement('a');
-    link.href=url;link.download='jardim-phaser-demo-'+new Date().toISOString().slice(0,10)+'.json';
+    link.href=url;link.download='jardim-phaser-backup-'+new Date().toISOString().slice(0,10)+'.json';
     document.body.append(link);link.click();link.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),2000);
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
    }},
-  {name:'♻ Reiniciar demonstração',detail:'Apaga saldo e histórico locais.',
+  {name:'↥ Restaurar cópia JSON',detail:'Valida e substitui a sessão e o histórico local. Não mistura dados.',
+   disabled:running||holdBusy||bank.mode!=='base',
+   act:()=>{
+    if(running||holdBusy||bank.mode!=='base')return;
+    const picker=document.createElement('input');
+    picker.type='file';picker.accept='.json,application/json';picker.hidden=true;
+    document.body.append(picker);
+    picker.addEventListener('change',async()=>{
+     try{
+      const file=picker.files?.[0];
+      if(!file)return;
+      if(file.size>5*1024*1024)throw Error('O ficheiro excede 5 MB.');
+      const backup=JSON.parse(await file.text());
+      validateBackup(backup);
+      if(!confirm('Substituir todo o saldo fictício e histórico local pela cópia selecionada? Esta operação não pode ser desfeita.'))return;
+      const outcome=await demoDB.restoreData(backup);
+      if(!outcome.ok)throw Error(outcome.message||'Erro ao restaurar.');
+      location.reload();
+     }catch(err){console.error('Restauro:',err);alert('Cópia não restaurada: '+String(err.message||err))}
+     finally{picker.remove()}
+    },{once:true});
+    picker.click();
+   }},
+  {name:'♻ Reiniciar demonstração',detail:'Apaga esta sessão e o histórico do dispositivo.',
    act:async()=>{
-    if(!confirm('Apagar todo o histórico e saldo fictício deste dispositivo?'))return;
-    await demoDB.clear();location.reload();
+    if(!confirm('Apagar todos os créditos fictícios e o histórico desta instalação?'))return;
+    const success=await demoDB.clear();
+    if(success)location.reload();
+    else alert('Não foi possível limpar a base de dados.');
    }}
- ]);
- const wrapper=$('modalContent');
- const listing=document.createElement('div');
- listing.style.cssText='max-height:25vh;overflow:auto;font:11px system-ui;text-align:left';
- for(const item of events){
-  const p=document.createElement('p');
-  p.textContent=(item.timestamp||'').slice(0,16).replace('T',' ')+' · '+
-   item.type+' · entrada '+money(Number(item.wager||0)+Number(item.cost||0))+
-   ' · prémio '+money(item.paid||0)+
-   (item.amount?' · fundo '+money(item.amount):'')+
-   (item.note?' · '+item.note:'');
-  listing.append(p);
+ ];
+ modal('Histórico e cópias locais',
+  'Dados desta instalação ('+demoDB.mode+'). Registos: '+records.length+
+  '. Este histórico não é um registo financeiro certificado.',actions);
+ const host=$('modalContent');
+ const controls=document.createElement('div');
+ controls.className='history-tools';
+ controls.innerHTML=[
+  '<label class="history-search">Pesquisar movimentos<input id="historyQuery" type="search" placeholder="Giro, bónus, acesso, valor…" autocomplete="off"></label>',
+  '<label>Categoria<select id="historyCategory"><option value="all">Tudo</option><option value="spins">Giros</option><option value="bonus">Bónus</option><option value="fund">Fundo</option><option value="admin">Administração</option></select></label>',
+  '<label>Desde<input id="historyFrom" type="date"></label>',
+  '<label>Até<input id="historyTo" type="date"></label>'
+ ].join('');
+ host.append(controls);
+ const summary=document.createElement('p');summary.className='history-summary';
+ const list=document.createElement('div');list.className='history-list';
+ const nav=document.createElement('div');nav.className='history-nav';
+ const prev=document.createElement('button');prev.textContent='◀ Anterior';
+ const count=document.createElement('span');
+ const next=document.createElement('button');next.textContent='Seguinte ▶';
+ nav.append(prev,count,next);
+ host.append(summary,list,nav);
+ let page=0;
+ function paint(){
+  const found=filterHistory(records,{
+   query:controls.querySelector('#historyQuery').value,
+   category:controls.querySelector('#historyCategory').value,
+   dateFrom:controls.querySelector('#historyFrom').value,
+   dateTo:controls.querySelector('#historyTo').value
+  });
+  const slice=historyPage(found,page);
+  page=slice.page;list.replaceChildren();
+  for(const event of slice.items){
+   const el=document.createElement('div');el.className='history-row';
+   const left=document.createElement('div');
+   const name=document.createElement('b');name.textContent=event.type||'evento';
+   const date=document.createElement('small');
+   date.textContent=String(event.timestamp||'').replace('T',' ').slice(0,19);
+   const note=document.createElement('small');
+   note.textContent=event.note||('Aposta '+money(event.wager||0)+' · compra '+
+    money(event.cost||0)+' · fundo '+money(event.amount||0));
+   left.append(name,date,note);
+   const value=document.createElement('strong');
+   value.textContent=money(event.paid||0);
+   value.title='Prémio fictício do movimento';
+   el.append(left,value);list.append(el);
+  }
+  if(!slice.items.length){
+   const empty=document.createElement('p');empty.textContent='Sem movimentos para estes filtros.';
+   list.append(empty);
+  }
+  summary.textContent='A mostrar '+slice.total+' de '+records.length+' registos locais. Prémio à direita.';
+  count.textContent=(slice.page+1)+' / '+slice.pages;
+  prev.disabled=slice.page===0;next.disabled=slice.page>=slice.pages-1;
  }
- wrapper.append(listing);
+ for(const input of controls.querySelectorAll('input,select'))
+  input.addEventListener('input',()=>{page=0;paint()});
+ prev.addEventListener('click',()=>{page--;paint()});
+ next.addEventListener('click',()=>{page++;paint()});
+ paint();
 }
 function infoModal(){
  modal('Regras do Jardim Mágico Phaser',
