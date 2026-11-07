@@ -347,8 +347,9 @@ ok(main.includes('const fac=outcome.free?1:'),
  'Free Spins preserva o valor base até ao fim da série');
 ok(main.includes('outcome.free&&outcome.credited>0'),
  'Free Spins anuncia prémio final creditado');
-ok(reels.includes('Math.floor(48/targets.length)'),
- 'limitador de partículas protege fluidez em mobile');
+ok(reels.includes('burstParticleBudget(targets.length,this.liteEffects)')&&
+ perfSource.includes('Math.floor(48/count)'),
+ 'limitador adaptativo de partículas protege fluidez em mobile');
 ok(html.includes('id="freeHud"')&&html.includes('id="holdResult"'),
  'Free Spins e Hold têm painéis próprios');
 ok(html.includes('id="holdAttempts"')&&html.includes('id="holdCoins"')&&html.includes('id="holdTotal"'),
