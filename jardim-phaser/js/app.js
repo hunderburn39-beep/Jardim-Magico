@@ -221,8 +221,15 @@ async function runSpin(){
   update();
   if(repaired){
    say('Movimento recuperado; resultado e saldo preservados');
+  }else if(outcome.free&&outcome.credited>0){
+   // Nas Free Spins a soma só é paga após a última rodada.
+   say('Free Spins concluídas · prémio final '+money(outcome.credited)+
+    ' créditos');
+   popup('✨ TOTAL '+money(outcome.credited)+' ✨');
   }else if(outcome.triggered){
-   say(outcome.triggered);popup('✨ '+outcome.triggered+' ✨');
+   say(outcome.triggered+(outcome.credited>0?
+    ' · prémio '+money(outcome.credited):''));
+   popup('✨ '+outcome.triggered+' ✨');
   }else if(outcome.free){
    say('Free Spins · acumulado '+money(bank.freeTotal)+
     ' ×'+bank.freeMultiplier);
