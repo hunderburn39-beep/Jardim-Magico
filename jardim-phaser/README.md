@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.4
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.5
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -430,3 +430,14 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.3
 - Não altera os símbolos, a queda aprovada, os tempos, os efeitos normais, o saldo, Free Spins, Hold & Win nem a matemática. Os testes automatizados não substituem um teste no iPhone real.
 
 **Jogar:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.4
+
+## V4.2.5 — prevenção de novas cascatas após falha visual
+
+- Se a animação do giro não concluir, nenhuma nova explosão ou queda visual é iniciada. O resultado já persistido é recuperado na grelha final.
+- Se a explosão ou uma cascata falhar, a sequência visual é interrompida nesse ponto, sem repetir peças nem pagamentos de demonstração.
+- Quando existe uma falha visual, os giros automáticos param e, se existirem Free Spins, ficam pausadas até o jogador retomar conscientemente pelo controlo de sessão.
+- A recuperação comunica o resultado preservado, em vez de continuar automaticamente a apostar num navegador possivelmente instável.
+- Intactos os movimentos, tempos e estilos originais dos tambores, das cascatas, do WILD e das moedas, assim como o RTP/resultado, Hold & Win, créditos e cofre fictício.
+- Testes automáticos de regressão atualizados; interrupções físicas no Safari requerem confirmação no aparelho.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.5

@@ -440,7 +440,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.2.4'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.2.5'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -473,7 +473,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=4.2.4'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=4.2.5'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1447,8 +1447,27 @@ ok(main.includes('pageSuspended||rendererUnavailable||s.mode')&&
 ok(main.includes('void refreshWriter(!writerReady);')&&
  main.includes('if(scene?.ready&&!running&&!rendererUnavailable&&!pageSuspended)'),
  'restauro WebGL revalida a sessao e nao repinta moedas a meio');
-ok(html.includes('app.js?v=4.2.4')&&html.includes('V4.2.4')&&
+ok(html.includes('app.js?v=4.2.5')&&html.includes('V4.2.4')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'timings e trajetorias dos rolos e cascatas mantidos');
-console.log('Phaser V4.2.4: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+// V4.2.5: uma falha da animacao nao pode iniciar outras quedas.
+ok(main.includes('if(!repaired)for(let i=0;i<stages.length;i++)')&&
+ main.includes('if(!(await visual(()=>scene.spin(outcome.board,{turbo})')&&
+ main.includes('}),stage.board,turbo?1900:3000))){repaired=true;break}')&&
+ main.includes('next.board,turbo?2500:3800))){repaired=true;break}'),
+ 'apresentacao para apos falha no spin, brilho ou cascata');
+ok(main.includes('if(repaired){\n   stopAuto(true);')&&
+ main.includes("if(bank.mode==='free')freePaused=true;")&&
+ main.includes("diagnostics.record('spin-auto-paused')")&&
+ main.includes("status('JOGADA RECUPERADA"),
+ 'recuperacao pausa automaticamente giros e Free Spins');
+ok(main.includes('else if(!repaired){\n   if(!writerReady)refreshWriter();')&&
+ main.includes('if(!rendererUnavailable)try{scene.recover(finalBoard)}')&&
+ main.includes("pendingVisual=spinRecoveryReceipt(outcome,bank.snapshot,stages.length)"),
+ 'o resultado previamente gravado permanece e nao ha agendamento novo');
+ok(html.includes('app.js?v=4.2.5')&&html.includes('V4.2.5')&&
+ reels.includes('const motion=spinMotionProfile(turbo,c)')&&
+ reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
+ 'mantem movimentos e duracoes de giros e cascatas aprovados');
+console.log('Phaser V4.2.5: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

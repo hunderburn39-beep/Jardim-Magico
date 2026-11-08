@@ -367,7 +367,8 @@ async function runSpin(){
  try{
   if(!(await visual(()=>scene.spin(outcome.board,{turbo}),
     outcome.board,turbo?3900:7000)))repaired=true;
-  for(let i=0;i<stages.length;i++){
+  // Nunca iniciar as quedas quando a própria rotação falhou.
+  if(!repaired)for(let i=0;i<stages.length;i++){
    // Uma aba oculta não deve iniciar bursts/cascatas adicionais.
    if(rendererUnavailable||pageSuspended||document.hidden){repaired=true;break}
    const stage=stages[i];
@@ -407,14 +408,14 @@ async function runSpin(){
    if(!(await visual(()=>scene.burst(cells,{
     destroy:!!next,
     duration:turbo?390:780
-   }),stage.board,turbo?1900:3000)))repaired=true;
+   }),stage.board,turbo?1900:3000))){repaired=true;break}
    if(rendererUnavailable||pageSuspended||document.hidden){repaired=true;break}
    if(next){
     scene.clearWildValues?.();
     audio.play('cascade');
     status('↓ PEÇAS A CAIR DE CIMA ↓');
     if(!(await visual(()=>scene.cascade(next.board,next.removed,{turbo}),
-      next.board,turbo?2500:3800)))repaired=true;
+      next.board,turbo?2500:3800))){repaired=true;break}
     if(rendererUnavailable||pageSuspended||document.hidden){repaired=true;break}
    }
   }
@@ -426,6 +427,13 @@ async function runSpin(){
   if(!rendererUnavailable)try{scene.recover(finalBoard)}catch(err){console.warn(err)}
   if(pendingVisual)await clearVisualReceipt();
   running=false;
+  // Em falha visível, parar o automático em vez de cobrar giros
+  // enquanto o renderizador continua instável.
+  if(repaired){
+   stopAuto(true);
+   if(bank.mode==='free')freePaused=true;
+   diagnostics.record('spin-auto-paused');
+  }
   showIdleCoinValues();
   performanceGuard.stop();
   const all=stages.flatMap(stage=>(stage.ev.lineWins||[]).map(win=>({
@@ -449,7 +457,8 @@ async function runSpin(){
   renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,
    outcome.free?bank.freeMultiplier:outcome.spinMultiplier);
   if(repaired){
-   say('Movimento recuperado; resultado e saldo preservados');
+   say('Movimento recuperado · resultado preservado · giros automáticos pausados');
+   status('JOGADA RECUPERADA · CONTINUA QUANDO QUISERES');
   }else if(outcome.free&&outcome.credited>0){
    // Nas Free Spins a soma só é paga após a última rodada.
    say('Free Spins concluídas · prémio final '+money(outcome.credited)+
@@ -478,7 +487,7 @@ async function runSpin(){
   }else say('Sem prémio neste giro');
   // Jogadas seguintes só avançam quando as quedas atuais terminarem.
   if(document.hidden||pageSuspended)await releaseIfHidden(pageSuspended);
-  else{
+  else if(!repaired){
    if(!writerReady)refreshWriter();
    else scheduleNext(bank.mode==='hold'?650:
     bank.mode==='free'?(turbo?350:780):(turbo?230:600));
