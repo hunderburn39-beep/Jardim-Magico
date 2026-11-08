@@ -1590,7 +1590,7 @@ ok(resume429()===false&&calls429.length===2,
 state429={...state429,writerReady:true,modalOpen:true};
 ok(resume429()===false&&calls429.length===2,
  'modal de recuperação aberta bloqueia a retomada automática');
-ok(main.includes('if(repaired){\n    stopAuto(true);')&&
+ok(main.includes('if(repaired){\n   stopAuto(true);')&&
  main.includes("if(bank.mode==='free')freePaused=true;")&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)')&&
