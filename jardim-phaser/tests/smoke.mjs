@@ -1163,8 +1163,8 @@ const Art37=new Function(parseModule(art37Code)+
  '\nreturn {symbolDisplay,wildBadgePlacement};')();
 ok(Art37.symbolDisplay('stone').width>180&&
  Art37.symbolDisplay('green').height>180&&
- Art37.symbolDisplay('teapot').width<180,
- 'símbolos naturais maiores sem alterar identificadores');
+ Art37.symbolDisplay('teapot').width>=180,
+ 'peças botânicas aprovadas mantêm escala e o bule HD fica proporcional');
 const badge37=Art37.wildBadgePlacement({c:3,r:1,value:5});
 ok(badge37.label==='×5'&&badge37.x<720&&badge37.x>540&&
  badge37.y>180&&badge37.y<360,
