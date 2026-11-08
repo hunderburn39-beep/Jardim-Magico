@@ -14,7 +14,7 @@ try{
   const page=await browser.newPage({viewport:{width:scenario.width,height:scenario.height},deviceScaleFactor:1});
   const errors=[];
   page.on('pageerror',err=>errors.push(err.message));
-  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.9',{waitUntil:'domcontentloaded'});
+  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.3.0',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.jardimPhaserScene?.ready===true,{timeout:30000});
   const metrics=await page.evaluate(()=>{
    const box=sel=>{
@@ -183,8 +183,11 @@ try{
     window.dispatchEvent(new Event('pagehide'));
     const disabled=['spinBtn','betUp','betDown','creditBtn','autoBtn','holdBtn']
      .every(id=>document.getElementById(id).disabled);
+    const banner=document.getElementById('sessionBanner');
+    const syncing=!banner.hidden&&
+      banner.textContent.includes('A confirmar os créditos fictícios guardados');
     window.dispatchEvent(new Event('pageshow'));
-    return {before,disabled};
+    return {before,disabled,syncing};
    });
    await page.waitForFunction(()=>!document.getElementById('spinBtn').disabled,
      null,{timeout:12000});
@@ -193,7 +196,8 @@ try{
     stake:document.getElementById('stake').textContent,
     last:document.getElementById('lastWin').textContent
    }));
-   assert(initial.disabled&&JSON.stringify(initial.before)===JSON.stringify(after),
+   assert(initial.disabled&&initial.syncing&&
+    JSON.stringify(initial.before)===JSON.stringify(after),
     'BFCache alterou saldo/aposta: '+JSON.stringify({initial,after}));
    console.log('PASS BFCache V4.2.6: '+JSON.stringify({initial,after}));
   }
@@ -210,7 +214,7 @@ try{
  }
  const landscape=await browser.newPage({viewport:{width:844,height:390}});
  try{
-  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.9',{waitUntil:'domcontentloaded'});
+  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.3.0',{waitUntil:'domcontentloaded'});
   const visibility=await landscape.evaluate(()=>{
    const e=document.querySelector('#portraitLock');
    const s=getComputedStyle(e);

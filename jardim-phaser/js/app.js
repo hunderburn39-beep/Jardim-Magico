@@ -51,6 +51,8 @@ let mutating=false,saveIssue=false,freePaused=false;
 let writerReady=false,writerCheckBusy=false,writerTimer=null,pendingVisual=null,recoveredVisual=false;
 // A recarga da sessão no Safari só acontece depois do giro terminar.
 let sessionNeedsRefresh=false;
+// Pedidos de revalidação recebidos durante uma transação IndexedDB ativa.
+let writerRefreshQueued=false;
 function sessionCanWrite(){
  return canWriteDemoSession({
   writerReady,pendingReload:sessionNeedsRefresh,releasing:!!writerReleasePending,
@@ -240,11 +242,13 @@ function renderSessionBanner(){
  const state=sessionState({ready,writerReady,mutating,saveIssue,
   paused:freePaused,mode:bank.mode});
  const panel=$('sessionBanner');
- panel.hidden=state.kind==='ok'||state.kind==='boot';
- panel.dataset.kind=state.kind;
- $('sessionMessage').textContent=state.message;
+ const syncing=writerReady&&(sessionNeedsRefresh||!!writerReleasePending);
+ panel.hidden=(state.kind==='ok'||state.kind==='boot')&&!syncing;
+ panel.dataset.kind=syncing?'saving':state.kind;
+ $('sessionMessage').textContent=syncing?
+  'A confirmar os créditos fictícios guardados…':state.message;
  const button=$('sessionAction');
- button.hidden=!state.action;
+ button.hidden=syncing||!state.action;
  button.disabled=running||mutating||holdBusy||writerCheckBusy||pageSuspended||rendererUnavailable||
   (state.kind==='paused'&&!sessionCanWrite());
  if(state.action)button.textContent=state.action;
@@ -1217,9 +1221,16 @@ function bind(){
 
 async function refreshWriter(forceReload=false){
  if(forceReload)sessionNeedsRefresh=true;
- if(document.hidden||pageSuspended||rendererUnavailable||writerCheckBusy||(running&&!writerReady)||mutating||holdBusy)return;
+ // Uma verificação em curso pode ter começado antes de pageshow.
+ // Guardar o novo pedido para o executar assim que terminar.
+ if(writerCheckBusy){
+  if(sessionNeedsRefresh)writerRefreshQueued=true;
+  return;
+ }
+ if(document.hidden||pageSuspended||rendererUnavailable||(running&&!writerReady)||mutating||holdBusy)return;
  // A lease expira ao fim de 22s: renovar durante spins longos e adiar load.
  const reloadRequested=forceReload||sessionNeedsRefresh;
+ writerRefreshQueued=false;
  writerCheckBusy=true;
  try{
   if(writerReleasePending)await writerReleasePending;
@@ -1272,7 +1283,16 @@ async function refreshWriter(forceReload=false){
   sessionNeedsRefresh=true;
   writerReady=false;saveIssue=true;diagnostics.record('storage-error');console.error('Aba ativa:',err);
   $('dbStatus').textContent='PHASER · SESSÃO BLOQUEADA';
- }finally{writerCheckBusy=false;update()}
+ }finally{
+  writerCheckBusy=false;update();
+  // O pedido mais recente não se perde, mesmo que tenha chegado a meio
+  // de uma renovação anterior. Repetir só uma vez, se estiver seguro.
+  if(writerRefreshQueued&&!document.hidden&&!pageSuspended&&!rendererUnavailable&&
+     !running&&!mutating&&!holdBusy){
+   writerRefreshQueued=false;
+   void refreshWriter(true);
+  }
+ }
 }
 
 async function boot(){

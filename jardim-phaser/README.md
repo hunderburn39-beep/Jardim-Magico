@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.9
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.3.0
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -481,3 +481,14 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.8
 - **Nenhuma alteração** ao motor de sorteio, prémios fictícios, reserva, WILD, SCATTER, Free Spins/ Hold & Win, moedas em € nem movimento aprovado dos rolos e cascatas.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.9
+
+## V4.3.0 — reconciliação de sessão sem perder pedidos concorrentes
+
+- Se o navegador Safari/iPhone regressar enquanto uma verificação do IndexedDB já está em curso, o novo pedido de validação fica assinalado e é executado de novo quando a primeira verificação terminar. Não depende de aguardar o próximo heartbeat periódico.
+- A verificação extra só arranca com a página visível, o motor disponível e nenhuma operação administrativa, Hold & Win ou giro em curso. Pedidos simultâneos não criam um ciclo de tentativas em caso de erro de base de dados.
+- O painel de sessão informa «A confirmar os créditos fictícios guardados…» durante a reconciliação e impede retomar Free Spins antes da confirmação.
+- A fila V4.2.9 continua a retomar apenas os giros restantes, sem duplicar resultados nem autorizar novas apostas enquanto o escritor não estiver validado.
+- Testes de regressão da fila de revalidação e da interface pagehide/pageshow em três formatos; adicionalmente, permanece recomendado o teste real num iPhone.
+- **Intactos** símbolos HD, grelha vertical 9:16, movimento de rolos e cascatas, ganhos, apostas, RTP, Free Spins, Hold & Win e cofre virtual.
+
+Jogar V4.3.0: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.3.0
