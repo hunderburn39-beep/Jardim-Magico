@@ -440,7 +440,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.2.2'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.2.3'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -473,7 +473,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=4.2.2'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=4.2.3'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1401,4 +1401,29 @@ ok(reels.includes("this.createTextures();\n  // Moeda com € criada ANTES")&&
  reels.includes("this.textures.addCanvas(key,canvas)")&&
  reels.includes(".filter(loc=>loc.kind==='wild')"),
  'reel desenha € desde o arranque e não duplica o valor ao parar');
-console.log('Phaser V4.2.2: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+// V4.2.3: memória da textura da moeda, Safari BFCache e WebGL.
+const coin423=new Set(['coin-euro-20-1','coin-euro-10-1']);
+let refreshed423=0,removed423=0;
+const coinScene423={
+ coinTextureKey:'coin-euro-20-1',coinFaceReady:true,
+ textures:{exists:key=>coin423.has(key),remove:key=>{coin423.delete(key);removed423++}},
+ columns:[{items:[{symbol:'coin'}]}],
+ useSymbol:()=>{refreshed423++}
+};
+ok(Reel.prototype.setCoinBet.call(coinScene423,.2)&&refreshed423===0,
+ 'repetir aposta nao repinta moeda');
+ok(Reel.prototype.setCoinBet.call(coinScene423,.1)&&
+ refreshed423===1&&removed423===1&&!coin423.has('coin-euro-20-1'),
+ 'troca de aposta descarta textura antiga apos actualizar sprites');
+ok(main.includes("window.addEventListener('pageshow'")&&
+ main.includes('void releaseIfHidden(true)')&&
+ main.includes('startWriterHeartbeat()'),
+ 'Safari BFCache reinicia lease heartbeat e liberta sessao ao sair');
+ok(main.includes('webglcontextlost')&&main.includes('webglcontextrestored')&&
+ main.includes('rendererUnavailable=true')&&
+ main.includes('if(rendererUnavailable)return false'),
+ 'WebGL interrompido nao permite girar com o renderizador perdido');
+ok(reels.includes('const motion=spinMotionProfile(turbo,c)')&&
+ reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
+ 'queda e giro aprovados mantidos integralmente');
+console.log('Phaser V4.2.3: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
