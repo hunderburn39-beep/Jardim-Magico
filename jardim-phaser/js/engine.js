@@ -57,7 +57,7 @@ export function evaluate(board,bet){
  // Um WILD partilhado por duas linhas pode contar nas DUAS linhas,
  // mas será animado uma única vez pelo renderizador 3D.
  const lineWins=[];
- let wilds=0;
+ const usedWilds=new Set();
  for(let index=0;index<PAYLINES.length;index++){
    const path=PAYLINES[index];
    const chain=path.map((row,c)=>board[c][row]);
@@ -65,40 +65,48 @@ export function evaluate(board,bet){
    const first=chain.find(s=>s!==WILD)??WILD;
    let amount=pairWild?bet*.55:0;
    let matched=pairWild?2:0;
-   let wm=0;
    if(![SCATTER,STONE,COIN].includes(first)){
      let n=0;
      for(const symbol of chain){
        if(symbol!==first&&symbol!==WILD)break;
-       n++;if(symbol===WILD)wm++;
+       n++;
      }
      if(n>=3){
        const pay=[0,0,0,.07,.25,.8][n]*([3,4,8,5,10,7,4,4,7,0,0,0][first]||1);
-       amount+=bet*pay*Math.min(5,1+wm);
+       amount+=bet*pay;
        matched=n;
-       wilds+=wm;
      }
    }
    if(amount>0){
-     lineWins.push({
-       line:index+1,
-       symbol:first,
-       count:matched,
-       amount:round(amount),
-       cells:path.slice(0,matched).map((r,c)=>({c,r}))
-     });
+     const cells=path.slice(0,matched).map((r,c)=>({c,r}));
+     for(const {c,r} of cells)if(board[c][r]===WILD)usedWilds.add(c+','+r);
+     lineWins.push({line:index+1,symbol:first,count:matched,
+       amount:round(amount),cells});
    }
  }
  // A soma visível de cada combinação tem de ser igual ao prémio das linhas.
  const raw=round(lineWins.reduce((sum,win)=>sum+win.amount,0));
+ const wildCells=[...usedWilds].map(key=>{
+  const [c,r]=key.split(',').map(Number);return {c,r};
+ });
  return {
    raw,
    lines:lineWins.length,
    lineWins,
-   wilds,
+   wilds:wildCells.length,
+   wildCells,
    scatter:count(board,SCATTER),
    coins:count(board,COIN)
  };
+}
+/* Conta os WILDs premiados sem os repetir nem os multiplicar entre si.
+   Primeira queda ×2 -> ×2; outra ×3 -> ×5; outra ×1 -> ×6. */
+export function addWildValues(previous,values=[]){
+ const initial=Number.isFinite(Number(previous))?Math.max(0,Number(previous)):0;
+ const gained=Array.isArray(values)?values.reduce((sum,v)=>
+  sum+(Number.isInteger(v)&&v>=1&&v<=5?v:0),0):0;
+ const total=initial+gained;
+ return {gained,total,multiplier:Math.max(1,total)};
 }
 /* Cascatas sem limite artificial: enquanto uma etapa tiver
    combinações premiadas, as peças vencedoras desaparecem, as restantes
@@ -176,16 +184,24 @@ function tryCascadeStages(board,bet,rng=Math.random,free=false,policy={}){
  const reserve=policy.reserve===undefined?Infinity:Math.max(0,policy.reserve);
  const freeCarry=policy.freeTotal||0;
  const freeMultiplier=policy.freeMultiplier||1;
- const wildMultiplier=policy.wildMultiplier||1;
  const stages=[];
- let currentBoard=board,removed=[],raw=0,potential=0,wildCount=0,maxCoins=0;
- // O fundo NÃO decide a duração, apenas que novos símbolos são possíveis.
+ let currentBoard=board,removed=[],raw=0,potential=0,wildPoints=0,maxCoins=0;
+ const score=board=>{
+  const ev=evaluate(board,bet);
+  ev.wildAwards=(ev.wildCells||[]).map(cell=>({
+   ...cell,value:clamp(1+Math.floor(rng()*5),1,5)
+  }));
+  ev.wildGain=addWildValues(0,ev.wildAwards.map(w=>w.value)).gained;
+  return ev;
+ };
+ // Todas as cascatas são calculadas antes da animação e conferidas
+ // contra o cofre com o acumulado de WILDs efetivo.
  const afford=(ev)=>{
    const nextRaw=round(raw+ev.raw);
-   const nextPotential=round(potential+ev.raw*(ev.wilds?wildMultiplier:1));
-   const nextWilds=wildCount+ev.wilds;
+   const nextSpin=addWildValues(wildPoints,(ev.wildAwards||[]).map(w=>w.value));
+   const nextPotential=round(potential+round(ev.raw*nextSpin.multiplier));
    const projectedMultiplier=clamp(freeMultiplier+
-     (nextWilds>0?wildMultiplier-1:0),1,5);
+    Math.max(0,nextSpin.multiplier-1),1,1000);
    const eventualFreePrize=round((freeCarry+nextRaw)*projectedMultiplier);
    const fullPrize=free?eventualFreePrize:nextPotential;
    // Se cair um Hold, as seis moedas iniciais têm de ser integralmente
@@ -195,14 +211,14 @@ function tryCascadeStages(board,bet,rng=Math.random,free=false,policy={}){
    return round(fullPrize+minHold)<=round(reserve);
  };
  for(;;){
-   let ev=evaluate(currentBoard,bet);
+   let ev=score(currentBoard);
    if(!afford(ev)){
      let accepted=false;
      for(let attempt=0;attempt<48;attempt++){
        const candidate=stages.length?
          collapseBoard(stages.at(-1).board,removed,rng,free):
          newBoard(rng,free);
-       const candidateEv=evaluate(candidate,bet);
+       const candidateEv=score(candidate);
        if(afford(candidateEv)){
          currentBoard=candidate;ev=candidateEv;accepted=true;break;
        }
@@ -212,14 +228,17 @@ function tryCascadeStages(board,bet,rng=Math.random,free=false,policy={}){
          safeCollapse(stages.at(-1).board,removed,rng,free,afford,bet):
          safeOpening(rng,free);
        if(!currentBoard)return null;
-       ev=evaluate(currentBoard,bet);
+       ev=score(currentBoard);
        if(!afford(ev))return null;
      }
    }
+   const multi=addWildValues(wildPoints,ev.wildAwards.map(w=>w.value));
+   ev.multiplier=multi.multiplier;
+   ev.paid=round(ev.raw*ev.multiplier);
    stages.push({board:currentBoard,ev,removed});
    raw=round(raw+ev.raw);
-   potential=round(potential+ev.raw*(ev.wilds?wildMultiplier:1));
-   wildCount+=ev.wilds;
+   potential=round(potential+ev.paid);
+   wildPoints=multi.total;
    maxCoins=Math.max(maxCoins,ev.coins);
    const winners=winningCells(ev);
    if(!winners.length)break;
@@ -379,12 +398,12 @@ export class DemoBank{
      this.reserve=round(this.reserve+this.stake*.48);
    }
    this.spins++;
-   const wildMultiplier=clamp(1+Math.floor(rng()*5),1,5);
+   // Cada WILD participante recebe um valor próprio de ×1 até ×5.
    // Selecionar apenas grelhas/cascatas inteiramente pagáveis pelo fundo.
    // Não há "prémio cortado": todas as linhas que saírem são pagas.
    const stages=cascadeStages(openingByProfile(rng,free,this.profile,this.stake),this.stake,rng,free,{
      reserve:this.reserve,freeTotal:this.freeTotal,
-     freeMultiplier:this.freeMultiplier,wildMultiplier
+     freeMultiplier:this.freeMultiplier
    });
    const board=stages[0].board;
    const ev=stages[0].ev;
@@ -392,12 +411,13 @@ export class DemoBank{
    const totalWilds=stages.reduce((sum,stage)=>sum+stage.ev.wilds,0);
    const scatterCount=Math.max(...stages.map(stage=>stage.ev.scatter));
    const coinCount=Math.max(...stages.map(stage=>stage.ev.coins));
-   const potential=round(stages.reduce((sum,stage)=>
-     sum+stage.ev.raw*(stage.ev.wilds?wildMultiplier:1),0));
+   const potential=round(stages.reduce((sum,stage)=>sum+stage.ev.paid,0));
+   const spinMultiplier=stages.at(-1).ev.multiplier;
    let credited=0,triggered='';
    if(free){
      this.freeTotal=round(this.freeTotal+rawTotal);
-     this.freeMultiplier=clamp(this.freeMultiplier+(totalWilds?wildMultiplier-1:0),1,5);
+     this.freeMultiplier=clamp(this.freeMultiplier+
+      (totalWilds?Math.max(0,spinMultiplier-1):0),1,1000);
      this.freeSpins--;
      this.freePlayed++;
      const space=Math.max(0,60-this.freePlayed-this.freeSpins);
@@ -428,7 +448,7 @@ export class DemoBank{
    }
    this.status=triggered||(credited?'Prémio: '+credited.toFixed(2):'Tenta novamente');
    return {ok:true,board,ev,stages,rawTotal,free,credited,potential,
-     wildMultiplier,triggered,state:this.snapshot};
+     wildMultiplier:spinMultiplier,spinMultiplier,triggered,state:this.snapshot};
  }
 }
 export const money=v=>Number(v).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2});
