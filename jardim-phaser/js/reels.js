@@ -7,7 +7,7 @@ import {symbolDisplay,wildBadgePlacement} from './art-presentation-v37.js?v=4.0'
 import {bakeMaterial} from './material-v39.js?v=4.0';
 import {spinMotionProfile} from './spin-motion-v391.js?v=3.9.1';
 import {burstMotionProfile,cascadeMotionProfile} from './cascade-fx-v41.js?v=4.1';
-import {valuedPositions} from './coin-values-v42.js?v=4.2';
+import {valuedPositions} from './coin-values-v42.js?v=4.2.1';
 const DESIGN_W=900,DESIGN_H=540,CW=DESIGN_W/5,CH=DESIGN_H/3;
 const SOURCES={
  potion:'3f3213b7316d5cf176.png',
@@ -406,8 +406,9 @@ class ReelScene extends Phaser.Scene{
  showWildValues(awards=[],board=[],bet=.2,multiplier=1){
   this.clearWildValues();
   if(!this.add?.image||!this.add?.text||!this.textures?.exists('coin-value-bg'))return;
-  // A mesma moeda de valores serve os WILDs premiados e as moedas
-  // especiais. O número é sempre aposta × MULTI da queda.
+  // A mesma moeda ilustra WILDs premiados e moedas especiais:
+  // cada uma apresenta aposta × fator da própria moeda, sempre em €.
+  // O MULTI total da queda permanece no indicador superior.
   const locations=valuedPositions(awards,board,bet,multiplier);
   for(const loc of locations){
    const large=loc.kind==='coin';

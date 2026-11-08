@@ -435,7 +435,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.2'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.2.1'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -468,7 +468,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=4.2'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=4.2.1'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1308,7 +1308,7 @@ ok(reels.includes('for(const c of arrivingColumns)')&&
  !main.includes('runSpin() // V4.1'),
  'luz de aterragem limitada e efeitos libertados na recuperação');
 ok(Coins42.coinValue(.20,2)===.40&&
- Coins42.coinLabel(.20,3)==='0,60'&&
+ Coins42.coinLabel(.20,3)==='0,60€'&&
  Coins42.coinValue(10,5)===50,
  'moedas recebem valor correto em função de aposta e MULTI');
 ok(Coins42.coinValue(-1,3)===0&&Coins42.coinValue(.2,NaN)===0,
@@ -1317,9 +1317,10 @@ const coinBoard42=Array.from({length:5},()=>[0,0,0]);
 coinBoard42[2][1]=11;
 const valueCells42=Coins42.valuedPositions([{c:1,r:2,value:3}],
  coinBoard42,.20,5);
-ok(valueCells42.length===2&&valueCells42.every(x=>x.label==='1,00')&&
- valueCells42.some(x=>x.kind==='coin')&&valueCells42.some(x=>x.kind==='wild'),
- 'WILDs e moeda especial apresentam aposta × MULTI atual');
+ok(valueCells42.length===2&&
+ valueCells42.find(x=>x.kind==='wild')?.label==='0,60€'&&
+ valueCells42.find(x=>x.kind==='coin')?.label==='0,20€',
+ 'WILD usa o seu ×3; moeda base tem valor mínimo da aposta ×1');
 ok(Coins42.pigGrowth(0).scale<Coins42.pigGrowth(19).scale&&
  Coins42.pigGrowth(20).round===1&&
  Coins42.pigGrowth(20).scale===Coins42.pigGrowth(0).scale,
@@ -1330,7 +1331,7 @@ ok(!html.includes('id="reserve"')&&
  main.includes('pig.classList.add(\'pig-pop\')')&&
  pig42Css.includes('@keyframes jm42-pig-pop'),
  'só porquinho visível, sem dinheiro e com animação de rebentamento');
-ok(main.includes('money(coinValue(bank.stake,value))')&&
+ok(main.includes('coinLabel(bank.stake,value)')&&
  !main.includes("cell.textContent=value?value+'×'")&&
  reels.includes("this.load.svg('coin-value-bg'")&&
  reels.includes("this.add.image(x,y,'coin-value-bg')"),
@@ -1339,4 +1340,24 @@ const blank42=await read('../../assets/imagens/jm42-moeda-sem-numero.svg');
 ok(blank42.includes('<svg')&&!blank42.includes('>2×</text>')&&
  blank42.includes('radialGradient'),
  'moeda sem número fixo aceita valores dinâmicos');
-console.log('Phaser V4.2: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+for(const bet of [.10,.20,1,5,10]){
+ const actual=[1,2,3,4,5].map(f=>Coins42.coinLabel(bet,f));
+ const expected=[1,2,3,4,5].map(f=>
+  Coins42.coinValue(bet,f).toFixed(2).replace('.',',')+'€');
+ ok(actual.every((val,i)=>val===expected[i])&&
+  actual[0]===bet.toFixed(2).replace('.',',')+'€',
+  'aposta '+bet+' gera moedas ×1, ×2, ×3, ×4, ×5 com €');
+}
+const two42=Coins42.valuedPositions(
+ [{c:0,r:0,value:2},{c:1,r:1,value:4}],
+ coinBoard42,.10,9);
+ok(two42.length===3&&
+ two42.find(x=>x.c===0)?.label==='0,20€'&&
+ two42.find(x=>x.c===1)?.label==='0,40€'&&
+ two42.find(x=>x.c===2)?.label==='0,10€',
+ 'multiplicador global não duplica o valor das moedas individuais');
+ok(main.includes('coinLabel(bank.stake,value)')&&
+ reels.includes('fator da própria moeda')&&
+ !main.includes("cell.textContent=value?money(coinValue"),
+ 'Hold e tabuleiro mostram explicitamente o símbolo €');
+console.log('Phaser V4.2.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

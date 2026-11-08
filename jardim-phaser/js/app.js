@@ -19,7 +19,7 @@ import {freeProgress,holdProgress} from './bonus-progress-v26.js?v=2.6';
 import {celebrationView,winBreakdown} from './win-ui-v27.js?v=2.7';
 import {createVisualSupervisor} from './visual-supervisor-v30.js?v=3.0';
 import {createTurnQueue,nextTurn} from './turn-queue-v31.js?v=3.1';
-import {coinValue,pigGrowth} from './coin-values-v42.js?v=4.2';
+import {coinValue,coinLabel,pigGrowth} from './coin-values-v42.js?v=4.2.1';
 const demoDB=createStorageGateway(localDB);
 const adminLock=createAdminPinLock();
 const diagnostics=createDiagnostics();
@@ -355,7 +355,8 @@ async function runSpin(){
    // Uma aba oculta não deve iniciar bursts/cascatas adicionais.
    if(document.hidden){repaired=true;break}
    const stage=stages[i];
-   // As moedas mostram aposta × MULTI atual (valores demonstrativos).
+   // Cada moeda apresenta aposta × fator individual (×1, ×2, ×3…).
+   // O MULTI acumulado continua visível em separado e não é pago duas vezes.
    // Hold & Win continua a pagar exatamente os multiplicadores guardados.
    scene.showWildValues?.(stage.ev.wildAwards||[],stage.board,
     bank.stake,stage.ev.multiplier);
@@ -599,7 +600,7 @@ function showRecoveryState(marker){
   for(const value of marker.grid){
    const cell=document.createElement('span');
    cell.className='recovered-hold-coin'+(Number(value)>0?' with-coin':'');
-   cell.textContent=Number(value)>0?money(coinValue(bank.stake,value)):'·';
+   cell.textContent=Number(value)>0?coinLabel(bank.stake,value):'·';
    grid.append(cell);
   }
   const caption=document.createElement('p');caption.className='recovered-hold-caption';
@@ -638,9 +639,9 @@ function renderHold(previousGrid=null,hold=bank.hold){
   const cell=document.createElement('div');
   cell.className='hold-cell'+(value?' filled':'')+
    (landing.has(i)?' new-coin':'');
-  cell.textContent=value?money(coinValue(bank.stake,value)):'✦';
+  cell.textContent=value?coinLabel(bank.stake,value):'✦';
   cell.setAttribute('aria-label',value?
-   'Moeda de '+money(coinValue(bank.stake,value))+' créditos fictícios':'Espaço vazio');
+   'Moeda de '+coinLabel(bank.stake,value)+' (créditos fictícios)':'Espaço vazio');
   grid.append(cell);
  }
  $('holdCoins').textContent=display.coins+'/16';

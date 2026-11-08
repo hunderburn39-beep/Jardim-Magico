@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.1
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -387,3 +387,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.1
 - CSS apenas vertical 9:16, animações reduzidas para quem prefere menos movimento. Testes asseguram a fórmula, limpeza de moedas ao continuar a cascata e ausência de alteração à matemática do motor.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2
+
+## V4.2.1 — moedas em euros, por cada multiplicador individual
+
+- As moedas passaram a mostrar sempre a forma **0,20€**, incluindo a vírgula e o símbolo € junto ao número.
+- O valor mínimo da moeda é **a aposta ativa ×1**: aposta 0,20€ → 0,20€; aposta 0,10€ → 0,10€.
+- Multiplicadores individuais geram valores **×2, ×3, ×4** e superiores: por exemplo, com aposta 0,20€, as moedas ×2, ×3 e ×4 apresentam 0,40€, 0,60€ e 0,80€; com aposta 0,10€, apresentam 0,20€, 0,30€ e 0,40€.
+- O WILD usa o **seu próprio fator ×1…×5**, sem aplicar o multiplicador acumulado outra vez a cada moeda. As moedas normais da grelha, que não têm fator atribuído pelo motor, mostram sempre ×1. No **Hold & Win**, os valores mostrados correspondem ao fator já atribuído a cada moeda e o cálculo do prémio é o mesmo.
+- Apenas formato visual: símbolo € indica o valor nominal dos créditos de demonstração e **não representa dinheiro levantável**. Sem alterações ao motor, aos resultados, ao cofre ou ao porquinho.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.1

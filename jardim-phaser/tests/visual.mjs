@@ -14,7 +14,7 @@ try{
   const page=await browser.newPage({viewport:{width:scenario.width,height:scenario.height},deviceScaleFactor:1});
   const errors=[];
   page.on('pageerror',err=>errors.push(err.message));
-  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2',{waitUntil:'domcontentloaded'});
+  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.1',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.jardimPhaserScene?.ready===true,{timeout:30000});
   const metrics=await page.evaluate(()=>{
    const box=sel=>{
@@ -135,9 +135,10 @@ try{
     pig.classList.remove('pig-pop');
     return {text,rendered,pop,clean:scene.wildBadges.length===0};
    });
-   assert(values.text.length===2&&values.text.every(x=>x==='1,00')&&
+   assert(values.text.length===2&&values.text.includes('0,60€')&&
+    values.text.includes('0,20€')&&
     values.rendered===4&&values.clean&&values.pop.includes('jm42-pig-pop'),
-    'moedas calculadas e porquinho anima no iPhone: '+JSON.stringify(values));
+    'moedas com € e porquinho anima no iPhone: '+JSON.stringify(values));
    console.log('PASS V4.2 moedas e porquinho: '+JSON.stringify(values));
    const checkFall=await page.evaluate(async()=>{
     const scene=window.jardimPhaserScene;
@@ -173,7 +174,7 @@ try{
  }
  const landscape=await browser.newPage({viewport:{width:844,height:390}});
  try{
-  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2',{waitUntil:'domcontentloaded'});
+  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.1',{waitUntil:'domcontentloaded'});
   const visibility=await landscape.evaluate(()=>{
    const e=document.querySelector('#portraitLock');
    const s=getComputedStyle(e);
