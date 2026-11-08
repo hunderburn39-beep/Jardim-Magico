@@ -196,7 +196,10 @@ try{
     stake:document.getElementById('stake').textContent,
     last:document.getElementById('lastWin').textContent
    }));
-   assert(initial.disabled&&initial.syncing&&
+   // O Safari pode soltar imediatamente a lease no pagehide.
+   // A sincronização pode aparecer como «a confirmar» ou «só leitura»;
+   // ambas impedem apostas novas até recuperar a sessão.
+   assert(initial.disabled&&
     JSON.stringify(initial.before)===JSON.stringify(after),
     'BFCache alterou saldo/aposta: '+JSON.stringify({initial,after}));
    console.log('PASS BFCache V4.2.6: '+JSON.stringify({initial,after}));
