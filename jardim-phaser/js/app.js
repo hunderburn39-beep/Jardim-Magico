@@ -8,6 +8,7 @@ import {createStorageGateway} from './storage-gateway-v21.js?v=2.2';
 import {createAdminPinLock} from './admin-pin-v21.js?v=2.1';
 import {audio} from './audio.js?v=1';
 import {createReelGame} from './reels.js?v=4.2.3';
+import {canWriteDemoSession} from './session-guard-v427.js?v=4.2.7';
 import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
 import {createPerformanceGuard} from './performance-v17.js?v=2.9';
 import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=1.8';
@@ -50,6 +51,12 @@ let mutating=false,saveIssue=false,freePaused=false;
 let writerReady=false,writerCheckBusy=false,writerTimer=null,pendingVisual=null,recoveredVisual=false;
 // A recarga da sessão no Safari só acontece depois do giro terminar.
 let sessionNeedsRefresh=false;
+function sessionCanWrite(){
+ return canWriteDemoSession({
+  writerReady,pendingReload:sessionNeedsRefresh,releasing:!!writerReleasePending,
+  suspended:pageSuspended,rendererUnavailable,hidden:document.hidden
+ });
+}
 const tabToken=(typeof crypto!=='undefined'&&crypto.randomUUID)?
  crypto.randomUUID():'tab-'+Date.now()+'-'+Math.random().toString(36).slice(2);
 let loopToken=0;
@@ -117,18 +124,19 @@ function update(){
  $('turboState').textContent=turbo?'ON':'OFF';
  $('turboBtn').setAttribute('aria-pressed',String(turbo));
  const current=BETS.findIndex(v=>Math.abs(v-s.stake)<1e-6);
- const blocked=running||mutating||s.mode!=='base'||!ready||!writerReady||
-  pageSuspended||rendererUnavailable;
+ const writable=sessionCanWrite();
+ const blocked=running||mutating||s.mode!=='base'||!ready||!writable;
  $('betDown').disabled=blocked||current<=0;
  $('betUp').disabled=blocked||current>=BETS.length-1;
  $('bonusBtn').disabled=blocked;
  $('adminBtn').disabled=blocked;
- $('spinBtn').disabled=running||mutating||!ready||!writerReady||
-  pageSuspended||rendererUnavailable||s.mode==='hold'||s.mode==='free';
- $('creditBtn').disabled=!writerReady||running||mutating;
- $('vaultBtn').disabled=!writerReady||mutating;
- $('autoBtn').disabled=pageSuspended||rendererUnavailable||
-  ((!ready||!writerReady||mutating||s.mode==='hold'||(running&&autoLeft===0))&&autoLeft===0);
+ $('spinBtn').disabled=running||mutating||!ready||!writable||
+  s.mode==='hold'||s.mode==='free';
+ $('creditBtn').disabled=!writable||running||mutating;
+ $('vaultBtn').disabled=!writable||mutating;
+ $('holdBtn').disabled=holdBusy||!writable;
+ $('autoBtn').disabled=!writable||
+  ((!ready||mutating||s.mode==='hold'||(running&&autoLeft===0))&&autoLeft===0);
  $('autoBtn').classList.toggle('active',autoLeft>0);
 }
 function showIdleCoinValues(){
@@ -237,7 +245,8 @@ function renderSessionBanner(){
  $('sessionMessage').textContent=state.message;
  const button=$('sessionAction');
  button.hidden=!state.action;
- button.disabled=running||mutating||holdBusy||writerCheckBusy||pageSuspended||rendererUnavailable;
+ button.disabled=running||mutating||holdBusy||writerCheckBusy||pageSuspended||rendererUnavailable||
+  (state.kind==='paused'&&!sessionCanWrite());
  if(state.action)button.textContent=state.action;
 }
 function continuationState(){
@@ -271,6 +280,7 @@ async function releaseIfHidden(force=false){
  return true;
 }
 function resumeFree(){
+ if(!sessionCanWrite())return false;
  if(!canResumeFree({ready,writerReady,paused:freePaused,mode:bank.mode,
   hidden:document.hidden,running,mutating}))return false;
  freePaused=false;
@@ -280,7 +290,7 @@ function resumeFree(){
  return true;
 }
 async function withMutation(action){
- if(mutating||running||holdBusy||!writerReady)return false;
+ if(mutating||running||holdBusy||!sessionCanWrite())return false;
  mutating=true;update();
  try{return await action()}
  catch(e){
@@ -322,7 +332,7 @@ async function visual(promiseFactory,expected,deadline=7000){
  return outcome.ok;
 }
 async function runSpin(){
- if(rendererUnavailable||pageSuspended||document.hidden||!writerReady||!ready||!scene||running||mutating||holdBusy||
+ if(!sessionCanWrite()||!ready||!scene||running||mutating||holdBusy||
     freePaused||modalOpen||bank.mode==='hold')return;
  turnQueue.clearAll();
  const before=snapshot();
@@ -524,7 +534,7 @@ function closeModal(){
   scheduleNext(500);
 }
 function bonusModal(){
- if(!writerReady||running||mutating||bank.mode!=='base')return;
+ if(!sessionCanWrite()||running||mutating||bank.mode!=='base')return;
  modal('Comprar bónus DEMO',
   'Compras voluntárias apenas com créditos fictícios; sem dinheiro real.',[
    {name:'✨ 15 Free Spins',detail:'Custo: '+money(bank.bonusPrice),
@@ -687,7 +697,7 @@ function renderHold(previousGrid=null,hold=bank.hold){
  }
 }
 async function holdTurn(){
- if(!writerReady||mutating||bank.mode!=='hold'||holdBusy)return;
+ if(!sessionCanWrite()||mutating||bank.mode!=='hold'||holdBusy)return;
  holdBusy=true;
  const button=$('holdBtn');
  button.disabled=true;
@@ -800,7 +810,7 @@ async function requireAdmin(next){
 }
 
 async function adminModal(){
- if(!writerReady||running||bank.mode!=='base'||!ready)return;
+ if(!sessionCanWrite()||running||bank.mode!=='base'||!ready)return;
  if(!requireAdminUnlocked())return requireAdmin(adminModal);
  modal('Administração DEMO','Controlo LOCAL de créditos fictícios; não existe autenticação segura.',[]);
  await persist('admin-access');
@@ -1048,7 +1058,7 @@ function infoModal(){
   {name:'🩺 Diagnóstico local',detail:'Consulta estado da base e falhas técnicas desta sessão.',act:diagnosticModal},
   {name:'🎁 Experimentar Free Spins',detail:'Ativa apenas um teste visual gratuito.',
    act:async()=>{
-    if(!writerReady||bank.mode!=='base'||running)return;
+    if(!sessionCanWrite()||bank.mode!=='base'||running)return;
     const before=snapshot();
     bank.addFree(15);
     if(!(await persist('test-free'))){
@@ -1060,7 +1070,7 @@ function infoModal(){
    }},
   {name:'🪙 Experimentar Hold & Win',detail:'Ativa grelha fictícia se o fundo permitir.',
    act:async()=>{
-    if(!writerReady||bank.mode!=='base'||running)return;
+    if(!sessionCanWrite()||bank.mode!=='base'||running)return;
     const before=snapshot();
     if(bank.startHold()){
      if(!(await persist('test-hold'))){
@@ -1072,7 +1082,7 @@ function infoModal(){
  ]);
 }
 function vaultModal(){
- if(!writerReady)return;
+ if(!sessionCanWrite())return;
  modal('Porquinho Mágico',
  'O porquinho cresce ao longo das jogadas e rebenta quando completa um ciclo visual. Não representa dinheiro nem atribui prémios adicionais. O fundo da demonstração continua disponível no painel administrativo.',[
   {name:'⚙ Administrar fundo DEMO',detail:'Acesso ao painel com PIN local.',
@@ -1108,7 +1118,7 @@ async function changeBet(dir){
 }
 function autoModal(){
  if(autoLeft>0){stopAuto();return}
- if(!writerReady||mutating)return;
+ if(!sessionCanWrite()||mutating)return;
  if(running||bank.mode!=='base')return;
  modal('Giros automáticos',
  'Escolhe o número de giros de demonstração. Podes parar no botão AUTO.',[
@@ -1124,7 +1134,7 @@ function bind(){
   runSpin();
  });
  $('spinBtn').addEventListener('pointerdown',e=>{
-  if(e.button!==0||running||mutating||!writerReady)return;
+  if(e.button!==0||running||mutating||!sessionCanWrite())return;
   clearTimeout(longTimer);
   longTimer=setTimeout(()=>{holdsLong=true;autoModal()},3000);
  });

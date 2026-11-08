@@ -14,7 +14,7 @@ try{
   const page=await browser.newPage({viewport:{width:scenario.width,height:scenario.height},deviceScaleFactor:1});
   const errors=[];
   page.on('pageerror',err=>errors.push(err.message));
-  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.6',{waitUntil:'domcontentloaded'});
+  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.7',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.jardimPhaserScene?.ready===true,{timeout:30000});
   const metrics=await page.evaluate(()=>{
    const box=sel=>{
@@ -181,7 +181,8 @@ try{
     });
     const before=snap();
     window.dispatchEvent(new Event('pagehide'));
-    const disabled=document.getElementById('spinBtn').disabled;
+    const disabled=['spinBtn','betUp','betDown','creditBtn','autoBtn','holdBtn']
+     .every(id=>document.getElementById(id).disabled);
     window.dispatchEvent(new Event('pageshow'));
     return {before,disabled};
    });
@@ -209,7 +210,7 @@ try{
  }
  const landscape=await browser.newPage({viewport:{width:844,height:390}});
  try{
-  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.6',{waitUntil:'domcontentloaded'});
+  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.7',{waitUntil:'domcontentloaded'});
   const visibility=await landscape.evaluate(()=>{
    const e=document.querySelector('#portraitLock');
    const s=getComputedStyle(e);

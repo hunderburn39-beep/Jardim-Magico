@@ -48,6 +48,7 @@ const timing391Code=await read('../js/spin-motion-v391.js');
 const cascade41Code=await read('../js/cascade-fx-v41.js');
 const coin42Code=await read('../js/coin-values-v42.js');
 const face422Code=await read('../js/coin-face-v422.js');
+const sessionGuard427Source=await read('../js/session-guard-v427.js');
 const pig42Css=await read('../css/moedas-porco-v42.css');
 const svg38=await Promise.all(['caracol','joaninha','flor-vermelha','flor-azul','pedra','wild'].map(name=>read('../../assets/imagens/jm38-'+name+'.svg')));
 const art37Code=await read('../js/art-presentation-v37.js');
@@ -398,7 +399,7 @@ ok(bonusCss.includes('prefers-reduced-motion:reduce'),
 ok(main.includes("await persist(result.done?'hold-paid':'hold-turn'"),
  'Prémio do Hold é guardado antes da celebração');
 ok(main.includes('renderHold(previous,result.hold);')&&
-   main.includes('if(!writerReady||mutating||bank.mode!==\'hold\'||holdBusy)return;'),
+   main.includes('if(!sessionCanWrite()||mutating||bank.mode!==\'hold\'||holdBusy)return;'),
  'Hold usa grelha calculada e bloqueia duplo clique durante pagamento');
 ok(main.includes("bonusAnnouncement('✨ FREE SPINS CONCLUÍDAS ✨'"),
  'Free Spins anuncia prémio final integral');
@@ -440,7 +441,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.2.6'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.2.7'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -473,7 +474,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=4.2.6'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=4.2.7'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -656,7 +657,7 @@ ok(main.includes('pendingVisual=spinRecoveryReceipt(')&&
  main.includes('pendingVisual=holdRecoveryReceipt(')&&
  main.includes('demoDB.checkpoint(snapshot(),board)'),
  'resultado fica preservado e marca visual é retirada após animação');
-ok(main.includes('if(!writerReady||mutating||bank.mode!==\'hold\'||holdBusy)return;')&&
+ok(main.includes('if(!sessionCanWrite()||mutating||bank.mode!==\'hold\'||holdBusy)return;')&&
  main.includes("PHASER · SÓ LEITURA"),
  'sem IndexedDB não permite alterar saldo com multi-abas');
 ok(gatewaySource.includes("'acquireLease'")&&
@@ -1440,14 +1441,14 @@ ok(main.includes('if(document.hidden||pageSuspended)await releaseIfHidden(pageSu
  main.includes('pageSuspended=false;startWriterHeartbeat();')&&
  main.includes('if(writerReleasePending)await writerReleasePending;'),
  'sessao liberta apos animacao e regressa sem operacoes duplicadas');
-ok(main.includes('pageSuspended||rendererUnavailable||s.mode')&&
- main.includes('pageSuspended||rendererUnavailable;')&&
+ok(main.includes("$('spinBtn').disabled=running||mutating||!ready||!writable")&&
+ main.includes("$('autoBtn').disabled=!writable")&&
  main.includes('rendererUnavailable=true;')&&main.includes('rendererUnavailable=false;'),
  'botoes de aposta e giro bloqueados quando os graficos suspendem');
 ok(main.includes('void refreshWriter(!writerReady);')&&
  main.includes('if(scene?.ready&&!running&&!rendererUnavailable&&!pageSuspended)'),
  'restauro WebGL revalida a sessao e nao repinta moedas a meio');
-ok(html.includes('app.js?v=4.2.6')&&html.includes('V4.2.6')&&
+ok(html.includes('app.js?v=4.2.7')&&html.includes('V4.2.7')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'timings e trajetorias dos rolos e cascatas mantidos');
@@ -1466,7 +1467,7 @@ ok(main.includes('else if(!repaired){\n   scheduleNext(')&&
  main.includes('if(!rendererUnavailable)try{scene.recover(finalBoard)}')&&
  main.includes("pendingVisual=spinRecoveryReceipt(outcome,bank.snapshot,stages.length)"),
  'o resultado previamente gravado permanece e nao ha agendamento novo');
-ok(html.includes('app.js?v=4.2.6')&&html.includes('V4.2.6')&&
+ok(html.includes('app.js?v=4.2.7')&&html.includes('V4.2.7')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'mantem movimentos e duracoes de giros e cascatas aprovados');
@@ -1488,8 +1489,38 @@ ok(main.includes('else if(sessionNeedsRefresh||!writerReady)void refreshWriter(s
  main.includes('else if(!repaired){\n   scheduleNext(')&&
  main.includes('if(writerReleasePending)await writerReleasePending;'),
  'próxima jogada só é agendada após uma sessão válida');
-ok(html.includes('V4.2.6')&&html.includes('app.js?v=4.2.6')&&
+ok(html.includes('V4.2.7')&&html.includes('app.js?v=4.2.7')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'tempos e trajectos anteriores intactos');
-console.log('Phaser V4.2.6: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+// V4.2.7: testes unitarios da política de sessão.
+const canWrite427=new Function(parseModule(sessionGuard427Source)+
+ '\nreturn canWriteDemoSession;')();
+ok(canWrite427({writerReady:true})===true,'writer validado aceita acao');
+for(const property of ['writerReady','pendingReload','releasing','suspended','rendererUnavailable','hidden']){
+ const state={writerReady:true};
+ if(property==='writerReady')state.writerReady=false;else state[property]=true;
+ ok(canWrite427(state)===false,'politica impede escrita durante '+property);
+}
+ok(canWrite427({writerReady:true,pendingReload:false,
+ releasing:false,suspended:false,rendererUnavailable:false,hidden:false}),
+ 'estado restaurado permite nova jogada');
+ok(main.includes('function sessionCanWrite()')&&
+ main.includes('pendingReload:sessionNeedsRefresh')&&
+ main.includes('releasing:!!writerReleasePending')&&
+ main.includes('hidden:document.hidden'),
+ 'nova politica de sessao integra suspensao e checkpoint IndexedDB');
+ok(main.includes('if(!sessionCanWrite()||!ready||!scene||running')&&
+ main.includes('if(mutating||running||holdBusy||!sessionCanWrite())return false;')&&
+ main.includes("if(!sessionCanWrite()||mutating||bank.mode!=='hold'")&&
+ main.includes('if(!sessionCanWrite())return false;'),
+ 'spin, mudancas de credito, Hold e Free Spins defendidos');
+ok(main.includes("$('creditBtn').disabled=!writable")&&
+ main.includes("$('holdBtn').disabled=holdBusy||!writable")&&
+ main.includes("if(!sessionCanWrite()||bank.mode!=='base'||running)return;"),
+ 'UI e bonus de teste aguardam sessao validada');
+ok(html.includes('V4.2.7')&&html.includes('app.js?v=4.2.7')&&
+ reels.includes('const motion=spinMotionProfile(turbo,c)')&&
+ reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
+ 'versao nova sem alteracoes aos movimentos da queda');
+console.log('Phaser V4.2.7: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
