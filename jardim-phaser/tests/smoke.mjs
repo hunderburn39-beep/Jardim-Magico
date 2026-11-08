@@ -921,7 +921,7 @@ ok(main.includes('visualSupervisor.cancel();')&&
  main.includes('if(rendererUnavailable||pageSuspended||document.hidden){repaired=true;break}')&&
  main.includes('visualSupervisor.run(')&&
  main.includes('if(document.hidden||pageSuspended)await releaseIfHidden(pageSuspended);')&&
- main.includes('else scheduleNext('),
+ main.includes('else if(!repaired){\n   scheduleNext('),
  'integração interrompe cascatas ocultas e agenda apenas quando visível');
 const random30=(()=>{let state=921125;
  return ()=>{state=(Math.imul(1664525,state)+1013904223)>>>0;
