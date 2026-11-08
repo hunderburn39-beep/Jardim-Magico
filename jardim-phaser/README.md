@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.2
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.3
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -409,3 +409,14 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.1
 - Formato 9:16, visual do porquinho, giro aprovado, cálculos, saldos e bónus mantidos. Testes verificam o texto pintado na textura 512×512, a troca de aposta e o uso do símbolo na animação.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.2
+
+## V4.2.3 — fluidez e estabilidade móvel
+
+- Evitada a recriação da moeda em euros quando a aposta não muda. A textura anterior é libertada depois de atualizar os símbolos, reduzindo consumo de memória.
+- Evitadas chamadas redundantes a setTexture e setScale. A queda vertical, símbolos HD e animações de cascata permanecem exatamente com os mesmos perfis.
+- As animações decorativas do fundo pausam durante o giro nos ecrãs táteis, sem alterar as peças.
+- Safari BFCache: a aplicação reinicia o controlo periódico de sessão ao regressar e liberta a exclusividade ao sair, mesmo se pagehide chegar antes de document.hidden.
+- O contexto WebGL perdido suspende novos giros. Depois de restaurado, o tabuleiro é reposto a partir do estado guardado. Sem alterações aos resultados e pagamentos fictícios.
+- Matemática, apostas, reserva, Free Spins, Hold & Win e históricos inalterados. CI e testes físicos do navegador continuam recomendados.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.3

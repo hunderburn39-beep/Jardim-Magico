@@ -299,6 +299,9 @@ class ReelScene extends Phaser.Scene{
   // Só trocar a denominação entre giros. Não altera o RNG nem a banca.
   const key=coinTextureId(stake,1);
   if(!key||this.busy)return false;
+  // Reutilizar a textura já pintada em €, sem reenviar ao GPU.
+  if(this.coinFaceReady&&this.coinTextureKey===key&&this.textures.exists(key))return true;
+  const previous=this.coinTextureKey;
   if(!this.textures.exists(key)){
    if(!this.textures.exists('coin-value-bg'))return false;
    try{
@@ -319,6 +322,9 @@ class ReelScene extends Phaser.Scene{
     if(item.symbol==='coin')this.useSymbol(item,'coin');
    }
   }
+  // Aposta anterior já não está nos sprites: libertar memória de vídeo.
+  if(previous!==key&&previous.startsWith('coin-euro-')&&
+    this.textures.exists(previous))this.textures.remove?.(previous);
   return true;
  }
  makeSprite(c,slot){
@@ -349,11 +355,13 @@ class ReelScene extends Phaser.Scene{
   const key=marked?this.coinTextureKey:asKey(name);
   item.symbol=name;
   if(!this.textures.exists(key))return;
-  item.sprite.setTexture(key);
+  const current=item.sprite.texture;
+  if((typeof current==='string'?current:current?.key)!==key)
+   item.sprite.setTexture(key);
   const display=symbolDisplay(name,CW,CH);
   item.sprite.setDisplaySize(display.width,display.height);
   item.sprite.setRotation(0);item.sprite.setFlip(false,false);
-  item.sprite.setAlpha(1);item.sprite.setScale(item.sprite.scaleX,item.sprite.scaleY);
+  item.sprite.setAlpha(1);
  }
  getVisible(c,r){return this.columns[c].visible[r].sprite}
  setBoard(board){

@@ -1,0 +1,19 @@
+/* V4.2.3: aliviar apenas camadas decorativas nos ecrãs táteis. */
+@media (hover:none) and (pointer:coarse) {
+ .machine.is-spinning .garden-flora,
+ .machine.is-spinning .garden-flora::before,
+ .machine.is-spinning .garden-flora::after,
+ .machine.is-spinning .magic-dust i {
+  animation-play-state:paused !important;
+ }
+ .machine.lite-effects.is-spinning .garden-flora,
+ .machine.lite-effects.is-spinning .garden-flora::before,
+ .machine.lite-effects.is-spinning .garden-flora::after {
+  filter:none !important;
+ }
+}
+@media (prefers-reduced-motion:reduce) {
+ .machine .garden-flora,
+ .machine .garden-flora::before,
+ .machine .garden-flora::after {animation:none !important}
+}

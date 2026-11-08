@@ -7,7 +7,7 @@ import {demoDB as localDB,validateBackup} from './database.js?v=2.2';
 import {createStorageGateway} from './storage-gateway-v21.js?v=2.2';
 import {createAdminPinLock} from './admin-pin-v21.js?v=2.1';
 import {audio} from './audio.js?v=1';
-import {createReelGame} from './reels.js?v=4.2.2';
+import {createReelGame} from './reels.js?v=4.2.3';
 import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
 import {createPerformanceGuard} from './performance-v17.js?v=2.9';
 import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=1.8';
@@ -35,7 +35,7 @@ const performanceGuard=createPerformanceGuard(
  document.getElementById('machine'),window,
  low=>scene?.setLowEffects?.(low)
 );
-let board=newBoard(),running=false,ready=false,turbo=false;
+let board=newBoard(),running=false,ready=false,turbo=false,rendererUnavailable=false;
 let autoLeft=0;
 const turnQueue=createTurnQueue();
 let writerReleasePending=null;
@@ -238,6 +238,7 @@ function continuationState(){
   writerReady,ready,modalOpen,running,mutating,holdBusy};
 }
 function scheduleNext(delay=650){
+ if(rendererUnavailable)return false;
  const kind=nextTurn(continuationState());
  if(!kind)return false;
  turnQueue.clearAll();
@@ -248,8 +249,8 @@ function scheduleNext(delay=650){
  });
  return true;
 }
-async function releaseIfHidden(){
- if(!document.hidden||!writerReady||running||mutating||holdBusy)return false;
+async function releaseIfHidden(force=false){
+ if((!document.hidden&&!force)||!writerReady||running||mutating||holdBusy)return false;
  writerReady=false;diagnostics.record('writer-release');update();
  const release=demoDB.releaseLease(tabToken).catch(err=>{
   console.warn('Libertar sessão em segundo plano:',err);
@@ -312,7 +313,7 @@ async function visual(promiseFactory,expected,deadline=7000){
  return outcome.ok;
 }
 async function runSpin(){
- if(document.hidden||!writerReady||!ready||!scene||running||mutating||holdBusy||
+ if(rendererUnavailable||document.hidden||!writerReady||!ready||!scene||running||mutating||holdBusy||
     freePaused||modalOpen||bank.mode==='hold')return;
  turnQueue.clearAll();
  const before=snapshot();
@@ -1235,6 +1236,31 @@ async function boot(){
  }
  game=createReelGame();
  if(!game){status('Phaser indisponível');return}
+ // Se o WebGL falhar em iOS/Android, interromper apenas a apresentação.
+ if(game.canvas?.addEventListener){
+  game.canvas.addEventListener('webglcontextlost',event=>{
+   event.preventDefault();
+   rendererUnavailable=true;
+   diagnostics.record('renderer-context-lost');
+   visualSupervisor.cancel();performanceGuard.pause();
+   stopAuto(true);turnQueue.clearAll();
+   status('GRÁFICOS SUSPENSOS · A RECUPERAR');
+  },{passive:false});
+  game.canvas.addEventListener('webglcontextrestored',()=>{
+   rendererUnavailable=false;
+   diagnostics.record('renderer-context-restored');
+   window.requestAnimationFrame(()=>{
+    if(!scene?.ready)return;
+    if(!running){
+     try{scene.recover(board);scene.setCoinBet(bank.stake);showIdleCoinValues()}
+     catch(err){console.warn('Restauro gráfico:',err)}
+     status('TAMBORES VERTICAIS PRONTOS');
+     if(bank.mode==='free'&&!freePaused&&!document.hidden)scheduleNext(850);
+    }
+    if(!document.hidden)performanceGuard.resume();
+   });
+  });
+ }
  const available=async()=>{
   scene=window.jardimPhaserScene;
   if(!scene||!scene.ready)return;
@@ -1257,12 +1283,27 @@ async function boot(){
  };
  if(window.jardimPhaserScene?.ready)available();
  else window.addEventListener('jardim-phaser-ready',available,{once:true});
- writerTimer=setInterval(refreshWriter,5000);
+ // Reativar a verificação de sessão depois de restaurar BFCache Safari.
+ let pageSuspended=false;
+ const startWriterHeartbeat=()=>{
+  if(writerTimer===null)writerTimer=setInterval(refreshWriter,5000);
+ };
+ startWriterHeartbeat();
  window.addEventListener('pagehide',()=>{
-  visualSupervisor.cancel();
-  turnQueue.clearAll();
-  clearInterval(writerTimer);
-  releaseIfHidden();
+  pageSuspended=true;
+  visualSupervisor.cancel();performanceGuard.pause();
+  turnQueue.clearAll();stopAuto(true);
+  if(bank.mode==='free')freePaused=true;
+  clearTimeout(longTimer);holdsLong=false;
+  clearInterval(writerTimer);writerTimer=null;
+  void releaseIfHidden(true);
+ });
+ window.addEventListener('pageshow',()=>{
+  if(!pageSuspended)return;
+  pageSuspended=false;startWriterHeartbeat();
+  if(document.hidden)return;
+  performanceGuard.resume();
+  if(!running&&!mutating&&!holdBusy)void refreshWriter(true);
  });
  setTimeout(()=>{
   if(!ready){
