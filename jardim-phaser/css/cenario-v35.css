@@ -396,7 +396,7 @@
   height:min(25dvh,132px);
  }
  .machine .frame-region .reel-window{
-  width:min(100%,76dvh);
+  width:min(100%,70dvh);
   height:auto;aspect-ratio:5/3;
  }
  .machine .frame-region .branch-frame{background-size:100% 100%}
