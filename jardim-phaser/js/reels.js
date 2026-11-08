@@ -3,8 +3,8 @@
    Eixo Y: baixo é positivo, nunca roda ou inverte UV das imagens. */
 import {SYMBOLS,newBoard} from './engine.js?v=3.3';
 import {burstParticleBudget} from './performance-v17.js?v=2.9';
-import {symbolDisplay,wildBadgePlacement} from './art-presentation-v37.js?v=3.7';
-import {bakeMaterial} from './material-v39.js?v=3.9';
+import {symbolDisplay,wildBadgePlacement} from './art-presentation-v37.js?v=4.0';
+import {bakeMaterial} from './material-v39.js?v=4.0';
 import {spinMotionProfile} from './spin-motion-v391.js?v=3.9.1';
 const DESIGN_W=900,DESIGN_H=540,CW=DESIGN_W/5,CH=DESIGN_H/3;
 const SOURCES={
@@ -30,6 +30,8 @@ const BOTANICAL_V38={
  wild:'jm38-wild.svg',
  stone:'jm38-pedra.svg'
 };
+/* Fontes HD individuais para as peças ainda não redesenhadas. */
+const PREMIUM_V40=new Set(['teapot','gem','mushroom','hat','scatter']);
 const FALLBACK_EMOJI={
  potion:'🧪',green:'💚',heart:'❤️',teapot:'🫖',wild:'🌺',
  gem:'💎',mushroom:'🍄',hat:'🎩',rose:'🌹',scatter:'✨',stone:'🪨',coin:'2×'
@@ -112,6 +114,7 @@ class ReelScene extends Phaser.Scene{
    this.load.image('source-'+key,file);
   for(const [symbol,file] of Object.entries(BOTANICAL_V38))
    this.load.svg('botanical-'+symbol,file,{width:512,height:512});
+  this.load.svg('premium-coin','jm40-moeda-magica.svg',{width:512,height:512});
   this.load.on('loaderror',file=>{
    this.failedAssets.push(file.key);
    console.warn('Símbolo original não carregou',file.key);
@@ -138,6 +141,8 @@ class ReelScene extends Phaser.Scene{
   this.premiumSymbols=0;
   this.photoWild=false;
   this.premiumMaterialCount=0;
+  this.remainingHD=0;
+  this.coinHD=false;
   for(const symbol of SYMBOLS){
    const orig='source-'+symbol;
    const art=asKey(symbol);
@@ -166,7 +171,24 @@ class ReelScene extends Phaser.Scene{
      this.premiumMaterialCount++;
     }catch(err){canvas=null;console.warn('Arte do bosque:',symbol,err)}
    }
-   // Manter os restantes ícones HD originais sem inverter ou tingir.
+   // Completar o conjunto com originais HD e material pré-rasterizado.
+   if(!canvas&&PREMIUM_V40.has(symbol)&&this.textures.exists(orig)){
+    try{
+     canvas=bakeMaterial(this.cleanOriginalArt(orig),symbol);
+     this.premiumSymbols++;
+     this.premiumMaterialCount++;
+     this.remainingHD++;
+    }catch(err){canvas=null;console.warn('Peça HD V4.0:',symbol,err)}
+   }
+   if(!canvas&&symbol==='coin'&&this.textures.exists('premium-coin')){
+    try{
+     canvas=bakeMaterial(this.textures.get('premium-coin').getSourceImage(),'coin');
+     this.premiumSymbols++;
+     this.premiumMaterialCount++;
+     this.coinHD=true;
+    }catch(err){canvas=null;console.warn('Moeda V4.0:',err)}
+   }
+   // Folha anterior de reserva se alguma textura nova não carregar.
    if(!canvas&&atlas&&atlasTileFor(symbol)){
     try{
      canvas=this.cutPremiumAtlas(atlas,symbol);

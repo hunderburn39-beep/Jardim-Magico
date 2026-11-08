@@ -425,7 +425,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.9.1'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.0'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -458,7 +458,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=3.9.1'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=4.0'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1253,4 +1253,22 @@ ok(reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('duration,\n     ease,')&&
  !reels.includes('duration:duration+(turbo?52:180)*c'),
  'animação usa novo perfil sem trocar peças no último frame');
-console.log('Phaser V3.9.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const Fin40=new Function(parseModule(material39Code)+'\nreturn materialSettings;')();
+const Display40=new Function(parseModule(art37Code)+'\nreturn symbolDisplay;')();
+ok(Fin40('gem').gloss>.2&&Fin40('scatter').shadow>20&&
+ Fin40('coin').gloss>.15&&Fin40('mushroom').shift>=10,
+ 'materiais com brilho e profundidade nas peças restantes');
+ok(Display40('gem').width>180&&Display40('coin').width>180&&
+ Display40('hat').width>180&&Display40('teapot').width>=180,
+ 'restantes peças harmonizadas à dimensão das aprovadas');
+ok(reels.includes("PREMIUM_V40=new Set(['teapot','gem','mushroom','hat','scatter'])")&&
+ reels.includes('canvas=bakeMaterial(this.cleanOriginalArt(orig),symbol)')&&
+ reels.includes('this.remainingHD++;'),
+ 'original HD para bule, gema, cogumelo, chapéu e SCATTER');
+const coinSvg40=await read('../../assets/imagens/jm40-moeda-magica.svg');
+ok(coinSvg40.includes('<svg')&&coinSvg40.includes('radialGradient')&&
+ coinSvg40.includes('>2×</text>')&&
+ reels.includes("this.load.svg('premium-coin'")&&
+ reels.includes('this.coinHD=true;'),
+ 'moeda 2× violeta e dourada com textura Phaser');
+console.log('Phaser V4.0: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

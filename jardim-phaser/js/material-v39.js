@@ -8,7 +8,13 @@ export const MATERIALS=Object.freeze({
  heart:{shadow:16,shift:10,gloss:.22},
  rose:{shadow:16,shift:10,gloss:.22},
  stone:{shadow:22,shift:15,gloss:.075},
- wild:{shadow:24,shift:11,gloss:.11}
+ wild:{shadow:24,shift:11,gloss:.11},
+ teapot:{shadow:19,shift:12,gloss:.16},
+ gem:{shadow:17,shift:11,gloss:.26},
+ mushroom:{shadow:19,shift:12,gloss:.14},
+ hat:{shadow:20,shift:12,gloss:.13},
+ scatter:{shadow:23,shift:13,gloss:.22},
+ coin:{shadow:22,shift:12,gloss:.20}
 });
 export function materialSettings(symbol){
  return MATERIALS[symbol]||{shadow:12,shift:8,gloss:.08};

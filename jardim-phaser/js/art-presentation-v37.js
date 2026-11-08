@@ -1,7 +1,9 @@
 /* Phaser V3.7 — apresentação visual. Sem efeito na matemática. */
 const BOTANICAL_SIZE=Object.freeze({
  potion:1.035,green:1.045,heart:1.035,
- rose:1.035,stone:1.055,wild:1.035
+ rose:1.035,stone:1.055,wild:1.035,
+ teapot:1.01,gem:1.025,mushroom:1.015,
+ hat:1.02,scatter:1.015,coin:1.02
 });
 export function symbolDisplay(symbol,cellW=180,cellH=180){
  const scale=BOTANICAL_SIZE[symbol]||.97;

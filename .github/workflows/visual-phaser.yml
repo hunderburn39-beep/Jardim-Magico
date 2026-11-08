@@ -11,6 +11,8 @@ on:
       - 'jardim-phaser/css/icones-v38.css'
       - 'jardim-phaser/css/materiais-v39.css'
       - 'jardim-phaser/js/material-v39.js'
+      - 'jardim-phaser/js/art-presentation-v37.js'
+      - 'assets/imagens/jm40-moeda-magica.svg'
       - 'jardim-phaser/js/reels.js'
       - 'jardim-phaser/js/spin-motion-v391.js'
       - 'assets/imagens/jm38-*.svg'

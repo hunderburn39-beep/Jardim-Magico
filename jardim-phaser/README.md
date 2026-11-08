@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.9.1
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.0
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -358,3 +358,12 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.9
 - Testes de regressão e de navegador verificam o tempo e a combinação final em 9:16. **Nenhum cálculo de RTP, reserva, aposta, Free Spins, Hold & Win, multiplicador ou prémios foi alterado.**
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.9.1
+
+## V4.0 — arte HD para os restantes símbolos (9:16)
+
+- O bule, o cristal, o cogumelo, o chapéu e o SCATTER passam a usar a respetiva fonte HD individual com sombras/reflexos pré-combinados. A folha 3×3 anterior continua como fallback caso algum ficheiro falhe.
+- Foi criada a **moeda roxa 2× com aro dourado**, em SVG 512×512, preparada uma vez pelo Phaser sem efeitos por frame.
+- Os seis símbolos aprovados mantêm-se inalterados. Os restantes ganharam ligeiramente mais dimensão e acabamentos próprios, sem tapar os prémios.
+- Testes acrescentados para os doze símbolos e para a seleção das cinco fontes HD. Motor matemático, giro aprovado da V3.9.1, 9:16, multiplicadores e bónus não alterados.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.0
