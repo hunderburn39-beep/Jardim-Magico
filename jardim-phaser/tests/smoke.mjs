@@ -768,8 +768,9 @@ ok(html.includes('responsive-v28.css?v=2.8')&&
  html.indexOf('responsive-v28.css?v=2.8')>html.indexOf('celebracoes-v27.css?v=2.7'),
  'novas regras de geometria são as últimas a carregar');
 ok(html.includes('viewport-fit=cover')&&
- !html.includes('maximum-scale=1'),
- 'safe area iPhone mantém a possibilidade de ampliar texto');
+ html.includes('maximum-scale=1, user-scalable=no')&&
+ html.includes('vertical-v36.css?v=3.6'),
+ 'safe area iPhone e zoom por duplo toque desativado no jogo vertical');
 ok(responsive28.includes('(orientation:portrait) and (max-height:710px)')&&
  responsive28.includes('min-height:0;max-height:none;height:100dvh')&&
  responsive28.includes('footer{height:auto;min-height:12px'),
