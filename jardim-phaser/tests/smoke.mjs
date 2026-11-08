@@ -1187,8 +1187,9 @@ ok(html.includes('icones-v38.css?v=3.8')&&
  'novos materiais e separadores da grelha são a última camada visual');
 ok(reels.includes('const BOTANICAL_V38={')&&
  reels.includes('Object.entries(BOTANICAL_V38)')&&
- reels.includes('if(BOTANICAL_V38[symbol]'),
- 'Phaser usa texturas novas e conserva fallback quando necessário');
+ reels.includes('if(!canvas&&BOTANICAL_V38[symbol]')&&
+ reels.includes("if(symbol==='wild'&&this.textures.exists(orig))"),
+ 'Phaser usa texturas botânicas e WILD dourado com fallback quando necessário');
 ok(svg38.length===6&&svg38.every(x=>x.includes('feTurbulence')&&
  x.includes('clipPath')&&x.includes('width="512"')&&
  x.includes('height="512"'))&&
