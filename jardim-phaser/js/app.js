@@ -354,11 +354,21 @@ function stopAuto(silent=false){
   if(!silent)say('Giros automáticos parados');
  }
 }
+function safeVisualRecovery(expected){
+ // Safari e WebGL podem interromper uma transição antes de terminar.
+ // As peças só regressam quando o contexto estiver ativo e o giro parado.
+ if(document.hidden||pageSuspended||rendererUnavailable||rendererRestorePending){
+  rendererRestorePending=true;
+  return false;
+ }
+ scene?.recover?.(expected);
+ return true;
+}
 async function visual(promiseFactory,expected,deadline=7000){
- if(document.hidden||pageSuspended||rendererUnavailable)return false;
+ if(document.hidden||pageSuspended||rendererUnavailable||rendererRestorePending)return false;
  const outcome=await visualSupervisor.run(
   promiseFactory,
-  ()=>scene?.recover?.(expected),
+  ()=>safeVisualRecovery(expected),
   deadline
  );
  if(!outcome.ok){
@@ -472,7 +482,9 @@ async function runSpin(){
  }finally{
   // Nunca deixar preso o botão: corrigir malhas, limpar estado e continuar.
   // A grelha é restaurada no contextrestored se faltar WebGL.
-  if(!rendererUnavailable&&!rendererRestorePending)try{scene.recover(finalBoard)}catch(err){console.warn(err)}
+  if(!rendererUnavailable&&!rendererRestorePending&&!document.hidden&&!pageSuspended)
+   try{scene.recover(finalBoard)}catch(err){console.warn(err)}
+  else if(document.hidden||pageSuspended)rendererRestorePending=true;
   if(pendingVisual)await clearVisualReceipt();
   running=false;
   // A recuperação gráfica pendente só se completa com o giro parado.
@@ -1219,6 +1231,7 @@ function bind(){
  document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
    sessionNeedsRefresh=true;
+   if(running||visualSupervisor.active())rendererRestorePending=true;
    visualSupervisor.cancel();
    performanceGuard.pause();
    // Let another visible tab take over as soon as this one becomes inactive.
@@ -1291,7 +1304,7 @@ async function refreshWriter(forceReload=false){
    }
    if(saved?.snapshot)copySnapshot(saved.snapshot);
    if(saved?.board?.length===5)board=saved.board;
-   if(scene?.ready)try{scene.recover(board)}catch(err){console.warn(err)}
+   if(scene?.ready&&!rendererRestorePending)try{scene.recover(board)}catch(err){console.warn(err)}
    writerReady=true;saveIssue=false;sessionNeedsRefresh=false;
    diagnostics.record('writer-granted');
    update();
@@ -1401,6 +1414,7 @@ async function boot(){
  window.addEventListener('pagehide',()=>{
   pageSuspended=true;
   sessionNeedsRefresh=true;
+  if(running||visualSupervisor.active())rendererRestorePending=true;
   update();
   visualSupervisor.cancel();performanceGuard.pause();
   turnQueue.clearAll();stopAuto(true);
