@@ -252,15 +252,17 @@ function renderSessionBanner(){
 function continuationState(){
  return {mode:bank.mode,autoLeft,freePaused,
   visible:!document.hidden&&!pageSuspended&&!rendererUnavailable,
-  writerReady,ready,modalOpen,running,mutating,holdBusy};
+  // Nenhum turno avança enquanto o saldo local ainda está a sincronizar.
+  writerReady:sessionCanWrite(),ready,modalOpen,running,mutating,holdBusy};
 }
 function scheduleNext(delay=650){
- if(rendererUnavailable||pageSuspended)return false;
+ if(rendererUnavailable||pageSuspended||!sessionCanWrite())return false;
  const kind=nextTurn(continuationState());
  if(!kind)return false;
  turnQueue.clearAll();
  turnQueue.arm(kind,delay,()=>{
-  if(rendererUnavailable||pageSuspended)return;
+  // A lease pode mudar entre a marcação e a execução do temporizador.
+  if(rendererUnavailable||pageSuspended||!sessionCanWrite())return;
   if(nextTurn(continuationState())!==kind)return;
   if(kind==='hold')showHold();
   else runSpin();
@@ -300,9 +302,10 @@ async function withMutation(action){
  }finally{
   mutating=false;update();
   if(document.hidden||pageSuspended)await releaseIfHidden(pageSuspended);
+  else if(sessionNeedsRefresh||!writerReady)
+   void refreshWriter(sessionNeedsRefresh);
   else if(bank.mode==='free'&&!freePaused&&!turnQueue.pending('free'))
    scheduleNext(1350);
-  else if(!writerReady)refreshWriter();
  }
 }
 function retrySession(){
@@ -755,9 +758,11 @@ async function holdTurn(){
  }finally{
   if(saved&&pendingVisual)await clearVisualReceipt();
   holdBusy=false;
-  button.disabled=false;
+  button.disabled=!sessionCanWrite();
+  update();
   if(document.hidden||pageSuspended)await releaseIfHidden(pageSuspended);
-  else if(!writerReady)refreshWriter();
+  else if(sessionNeedsRefresh||!writerReady)
+   void refreshWriter(sessionNeedsRefresh);
   else if(saved&&bank.mode==='base'&&autoLeft>0)scheduleNext(700);
  }
 }
