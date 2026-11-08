@@ -51,6 +51,9 @@ jobs:
             if test -s templo-do-trovao/index.html; then
               cp -a templo-do-trovao public/
             fi
+            if test -s Farao-Eterno/index.html; then
+              cp -a Farao-Eterno public/
+            fi
           else
             unzip -oq JardimMagicoAndroid.zip -d android-project
             cp -a android-project/app/src/main/assets/. public/
