@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.1
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.2
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -280,3 +280,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.0
 - Mantida a grelha Phaser 5×3, a barra com valor da queda à esquerda e MULTI à direita, todas as cascatas, os gráficos e os cálculos de créditos fictícios. Não é uma máquina com dinheiro real nem RTP auditado.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.1
+
+## V3.2 — recuperação e histórico consistentes
+
+- As cópias de segurança JSON passam a obter **saldo e eventos na mesma transação readonly IndexedDB**. Não se misturam leituras de giros diferentes. Mantém-se o formato de cópia `jardim-magico-demo-v3`.
+- Cada novo giro e tentativa Hold & Win guarda uma ligação `recoveryId` ao recibo de recuperação, na transação existente (não acrescenta qualquer crédito, pagamento nem movimento adicional).
+- O painel de histórico mostra as ligações ao recibo e uma **verificação informativa e não destrutiva** da coerência entre saldo, reserva e último movimento. Cópias antigas sem `recoveryId` continuam compatíveis.
+- Restauro validado com recibos opcionais; os testes cobrem leitura conjunta, ligação aos recibos, discrepâncias e duplicados.
+- Motor matemático, RTP não auditado, gráficos Phaser, cascatas e barra de dois valores mantêm-se intactos.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.2

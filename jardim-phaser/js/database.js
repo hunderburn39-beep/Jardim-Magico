@@ -76,6 +76,10 @@ export function validateBackup(data){
    if(e[key]!==undefined&&!finiteRange(e[key],0,1e12))
     throw Error('Valor histórico inválido em '+key);
   }
+  if(e.recoveryId!==undefined&&
+    (typeof e.recoveryId!=='string'||e.recoveryId.length<8||
+     e.recoveryId.length>128))
+   throw Error('Identificador do recibo de recuperação inválido.');
  }
  return {state:copy(state),history:copy(data.history)};
 }
@@ -140,7 +144,10 @@ export class DemoDatabase{
     ownerPct:Number.isFinite(Number(event.ownerPct))?Number(event.ownerPct):50,
     merchantPct:Number.isFinite(Number(event.merchantPct))?Number(event.merchantPct):50,
     profile:['premios','normal','entretenimento'].includes(event.profile)?
-      event.profile:'normal'};
+      event.profile:'normal',
+    ...(['spin','hold-turn','hold-paid'].includes(event.type)&&
+     typeof snapshot.pendingVisual?.id==='string'?
+      {recoveryId:snapshot.pendingVisual.id}:{})};
   this.pending=this.pending.catch(()=>{}).then(()=>this.write(payload,log));
   return this.pending;
  }
@@ -261,10 +268,28 @@ export class DemoDatabase{
   });
  }
  async exportData(){
-  const state=await this.load();
-  const history=await this.history();
+  await this.pending.catch(()=>{});
+  let state=null,history=[];
+  if(!this.database){
+   state=this.readFallback();
+   history=ordered(state?.events||[]).slice(0,MAX_HISTORY);
+  }else{
+   // A mesma transação readonly fixa o momento da leitura de saldo e eventos.
+   const result=await new Promise((resolve,reject)=>{
+    const tx=this.database.transaction(['state','events'],'readonly');
+    const balance=tx.objectStore('state').get(STATE_ID);
+    const moves=tx.objectStore('events').getAll();
+    tx.oncomplete=()=>resolve({
+     state:balance.result?.payload||null,
+     history:ordered(moves.result||[]).slice(0,MAX_HISTORY)
+    });
+    tx.onerror=()=>reject(tx.error);
+    tx.onabort=()=>reject(tx.error||Error('Leitura interrompida'));
+   });
+   state=result.state;history=result.history;
+  }
   return {format:'jardim-magico-demo-v3',database:this.mode,
-    exportedAt:new Date().toISOString(),state,history};
+   exportedAt:new Date().toISOString(),state,history};
  }
  async restoreData(backup){
   await this.pending.catch(()=>{});

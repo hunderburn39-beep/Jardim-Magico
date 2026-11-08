@@ -12,6 +12,7 @@ import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.j
 import {createPerformanceGuard} from './performance-v17.js?v=2.9';
 import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=1.8';
 import {filterHistory,historyPage} from './history-v19.js?v=1.9';
+import {auditSessionHistory} from './history-integrity-v32.js?v=3.2';
 import {spinRecoveryReceipt,holdRecoveryReceipt,recoveryMessage,createDiagnostics} from './recovery-v23.js?v=2.3';
 import {sessionState,canResumeFree} from './session-v24.js?v=2.4';
 import {freeProgress,holdProgress} from './bonus-progress-v26.js?v=2.6';
@@ -868,8 +869,12 @@ async function adminModal(){
 
 async function historyModal(){
  if(!requireAdminUnlocked())return requireAdmin(historyModal);
- let records=[];
- try{records=await demoDB.history()}catch(err){console.error(err)}
+ let records=[],consistency=null;
+ try{
+  const view=await demoDB.exportData();
+  records=view.history;
+  consistency=auditSessionHistory(view.state,records);
+ }catch(err){console.error('Leitura do histórico:',err)}
  const actions=[
   {name:'⬇ Exportar cópia JSON',detail:'Estado do jogo e histórico desta instalação (até 2500 movimentos).',
    act:async()=>{
@@ -956,6 +961,11 @@ async function historyModal(){
    note.textContent=event.note||('Aposta '+money(event.wager||0)+' · compra '+
     money(event.cost||0)+' · fundo '+money(event.amount||0));
    left.append(name,date,note);
+   if(event.recoveryId){
+    const receipt=document.createElement('small');
+    receipt.textContent='Recibo: '+String(event.recoveryId).slice(0,22);
+    left.append(receipt);
+   }
    const value=document.createElement('strong');
    value.textContent=money(event.paid||0);
    value.title='Prémio fictício do movimento';
@@ -965,7 +975,9 @@ async function historyModal(){
    const empty=document.createElement('p');empty.textContent='Sem movimentos para estes filtros.';
    list.append(empty);
   }
-  summary.textContent='A mostrar '+slice.total+' de '+records.length+' registos locais. Prémio à direita.';
+  summary.textContent='A mostrar '+slice.total+' de '+records.length+
+   ' registos locais. Prémio à direita. · '+
+   (consistency?.label||'Verificação indisponível');
   count.textContent=(slice.page+1)+' / '+slice.pages;
   prev.disabled=slice.page===0;next.disabled=slice.page>=slice.pages-1;
  }

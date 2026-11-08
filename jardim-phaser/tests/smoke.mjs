@@ -21,6 +21,7 @@ const perfSource=await read('../js/performance-v17.js');
 const adminSource=await read('../js/admin-v18.js');
 const adminCss=await read('../css/admin-v18.css');
 const historySource=await read('../js/history-v19.js');
+const integrity32=await read('../js/history-integrity-v32.js');
 const historyCss=await read('../css/history-v19.css');
 const profileCss=await read('../css/perfis-v20.css');
 const pinSource=await read('../js/admin-pin-v21.js');
@@ -405,7 +406,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.1'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.2'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -438,7 +439,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=3.1'),'botão e versão Phaser V3.1');
+ html.includes('app.js?v=3.2'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -992,4 +993,53 @@ ok(main.includes('if(document.hidden)await releaseIfHidden();')&&
  main.includes('turnQueue.clearAll();')&&
  main.includes('if(document.hidden)await releaseIfHidden();'),
  'sessão local protege saldo e interrompe automáticos em segundo plano');
-console.log('Phaser V3.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const Audit32=new Function(parseModule(integrity32)+
+ '\nreturn auditSessionHistory;')();
+const receipt32={id:'spin-2026-123456',date:'2026-11-08T15:00:00Z',
+ kind:'spin',paid:2};
+const snap32={snapshot:{balance:120,reserve:180,pendingVisual:receipt32}};
+const moves32=[
+ {eventId:'a32',timestamp:'2026-11-08T14:59:00Z',
+ type:'spin',balance:118,reserve:182},
+ {eventId:'b32',timestamp:'2026-11-08T15:00:00Z',
+ type:'spin',balance:120,reserve:180,recoveryId:receipt32.id}
+];
+ok(Audit32(snap32,moves32).status==='ok'&&
+ Audit32(snap32,moves32).linked,
+ 'auditoria compara o último saldo e o recibo de recuperação');
+ok(Audit32(snap32,[moves32[0]]).status==='review'&&
+ Audit32(snap32,[moves32[1],moves32[1]]).status==='review',
+ 'auditoria assinala saldos divergentes e eventos duplicados');
+ok(Audit32(snap32,[{...moves32[1],recoveryId:undefined}]).status==='legacy'&&
+ Audit32(null,[]).status==='empty',
+ 'histórico antigo aceite sem ligação a recibos');
+const D32=new Function(parseModule(dbsource)+'\nreturn DemoDatabase;')();
+const local32=new D32();
+local32.mode='indexedDB';
+let transactionCount32=0;
+local32.database={transaction:(names,mode)=>{
+ transactionCount32++;
+ ok(names.length===2&&names[0]==='state'&&names[1]==='events'&&
+  mode==='readonly','exportação abre transação conjunta');
+ const tx={oncomplete:null,onerror:null,onabort:null};
+ tx.objectStore=name=>name==='state'?
+  {get:()=>({result:{payload:snap32}})}:
+  {getAll:()=>({result:moves32})};
+ queueMicrotask(()=>tx.oncomplete?.());
+ return tx;
+}};
+const exported32=await local32.exportData();
+ok(transactionCount32===1&&exported32.state.snapshot.balance===120&&
+ exported32.history.length===2&&
+ exported32.history[0].eventId==='b32',
+ 'exportação reúne histórico e saldo de uma única fotografia da base');
+ok(dbsource.includes('recoveryId:snapshot.pendingVisual.id')&&
+ main.includes('auditSessionHistory(view.state,records)')&&
+ main.includes("receipt.textContent='Recibo: '"),
+ 'movimentos gravam ligação a recibos e o histórico apresenta-a');
+ok((()=>{try{Backup.validateBackup({...validBackup,history:[
+ {...rows[0],recoveryId:'x'}]});return false}catch{return true}})()&&
+ Backup.validateBackup({...validBackup,history:[
+ {...rows[0],recoveryId:'spin-12345678'}]}).history.length===1,
+ 'novos recibos validados e restauro antigo continua compatível');
+console.log('Phaser V3.2: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
