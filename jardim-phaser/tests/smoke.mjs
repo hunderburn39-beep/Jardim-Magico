@@ -317,9 +317,10 @@ ok(!main.includes('if(!freeMultiAdded)')&&
    main.includes('stage.ev.multiplier'),
  'WILD de cada queda soma ao multi acumulado e não é ignorado');
 ok(main.includes('renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,')&&
- main.includes("$('multiTotal').textContent='×'+effective;")&&
+ main.includes("output.textContent='×'+next;")&&
+ main.includes("output.dataset.value=String(next);")&&
  !main.includes("$('orbs')"),
- 'multiplicador efetivo do motor é atualizado só no indicador direito');
+ 'MULTI efetivo apresenta o valor acumulado só no indicador direito');
 // Phaser V1.4: melhorias apenas visuais, sem interferir com jogadas.
 // Testar recursos de arte e camadas sem bloqueio de toques no iPhone.
 ok(html.includes('polimento-v14.css?v=1.4'),
