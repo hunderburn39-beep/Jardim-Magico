@@ -2,7 +2,7 @@
    Não usa euros reais e não representa RTP auditado ou jackpot garantido.
    Matriz [coluna][linha], 5×3. 10 linhas da demo. */
 export const SYMBOLS=['potion','green','heart','teapot','wild','gem','mushroom','hat','rose','scatter','stone','coin'];
-export const LABELS=['Poção','Esmeralda','Coração','Bule','WILD','Cristal','Cogumelo','Chapéu','Rosa','SCATTER','Pedra','Moeda'];
+export const LABELS=['Caracol','Joaninha','Flor azul','Bule','WILD','Cristal','Cogumelo','Chapéu','Flor vermelha','SCATTER','Pedra','Moeda'];
 export const WEIGHTS=[10,13,11,10,4,11,10,9,10,4,12,7];
 export const PAYLINES=[
  [1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],

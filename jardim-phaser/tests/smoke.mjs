@@ -37,6 +37,7 @@ const winUI27=await read('../js/win-ui-v27.js');
 const winStyle27=await read('../css/celebracoes-v27.css');
 const responsive28=await read('../css/responsive-v28.css');
 const perfCSS29=await read('../css/performance-v29.css');
+const botanical34Css=await read('../css/bosque-v34.css');
 const supervisorSource=await read('../js/visual-supervisor-v30.js');
 const turnQueue31Source=await read('../js/turn-queue-v31.js');
 const pinCss=await read('../css/admin-pin-v21.css');
@@ -1079,4 +1080,29 @@ ok(dbsource.includes('s.freeMultiplier>1000')&&
  recoverySource.includes('Math.min(1000,')&&
  main.includes('outcome.spinMultiplier'),
  'recuperação, histórico e HUD aceitam novos multiplicadores');
+ok(reels.includes("potion:'jm34-caracol.svg'")&&
+ reels.includes("green:'jm34-joaninha.svg'")&&
+ reels.includes("heart:'jm34-flor-azul.svg'")&&
+ reels.includes("rose:'jm34-flor-vermelha.svg'")&&
+ reels.includes("wild:'jm34-wild.svg'")&&
+ reels.includes("stone:'jm34-pedra.svg'"),
+ 'caracol, joaninha, duas flores, WILD e pedra integrados no Phaser');
+ok(reels.includes("this.load.svg('botanical-'+symbol")&&
+ reels.includes("if(!canvas&&atlas&&atlasTileFor(symbol))")&&
+ reels.includes("this.textures.addCanvas(art,canvas)"),
+ 'texturas do bosque usam SVG e as restantes mantêm fallback HD');
+ok(reels.includes('showWildValues(awards=[])')&&
+ reels.includes('this.clearWildValues();')&&
+ main.includes('scene.showWildValues?.(stage.ev.wildAwards||[])')&&
+ main.includes('scene.clearWildValues?.();'),
+ 'multiplicador individual fica visível sobre o WILD e limpa entre cascatas');
+ok(main.includes("output.classList.add('multi-rise')")&&
+ botanical34Css.includes('@keyframes jm34-rise')&&
+ botanical34Css.includes('.branch-frame'),
+ 'MULTI ganha destaque leve sem tapar o tabuleiro');
+ok(html.includes('bosque-v34.css?v=3.4')&&
+ botanical34Css.includes('jm34-moldura.svg')&&
+ botanical34Css.includes('jm34-topo.svg')&&
+ botanical34Css.includes('pointer-events:none'),
+ 'nova moldura e topo integrados sem impedir os toques');
 console.log('Phaser V3.4: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

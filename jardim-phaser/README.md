@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.2
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.4
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -290,3 +290,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.1
 - Motor matemático, RTP não auditado, gráficos Phaser, cascatas e barra de dois valores mantêm-se intactos.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.2
+
+## V3.4 — símbolos botânicos e moldura ilustrada
+
+- O jogo usa **seis novas ilustrações SVG originais**: caracol (ID interno poção), joaninha (esmeralda), flor azul (coração), flor vermelha (rosa), WILD dourado mágico e pedra rochosa cinzenta. Os restantes símbolos mantêm a arte HD antiga; **índices, pesos, linhas, valores e todas as regras matemáticas permanecem inalterados**.
+- Novo aro dourado com ramos verdes e flores roxas na grelha 5×3 e novo painel decorativo de cabeçalho, ambos com centro transparente, sem roubar espaço ao Phaser e mantendo toques nos controlos.
+- O Phaser apresenta **×1…×5 sobre cada WILD premiado**, com os seus valores já calculados pelo motor antes de iniciar o giro. Os números desaparecem quando começa uma cascata, são mostrados novamente para as novas peças e são libertados em caso de interrupção.
+- O indicador MULTI à direita da barra ganha um brilho curto quando o acumulado sobe; o prémio mostrado por queda continua a corresponder ao multiplicador usado no cálculo. Estilos respeitam `prefers-reduced-motion` e modos de desempenho leve.
+- Os assets permanecem independentes em `assets/imagens/jm34-*.svg`, o código de renderização em `jardim-phaser/js/reels.js` e o estilo final em `jardim-phaser/css/bosque-v34.css`. Preparado para ajustes posteriores sem alterar a banca de demonstração.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.4

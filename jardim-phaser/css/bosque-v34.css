@@ -1,0 +1,59 @@
+/* V3.4 — linha de arte do bosque encantado. Última camada de apresentação.
+   Não altera o cálculo de qualquer prémio nem a grelha 5×3. */
+.machine .game-header{position:relative;isolation:isolate}
+.machine .game-header::before{
+ content:"";position:absolute;inset:5px 3px 0;z-index:-1;
+ background:url('../../assets/imagens/jm34-topo.svg') center 53%/100% 100% no-repeat;
+ opacity:.94;pointer-events:none
+}
+.machine .game-header .logo{
+ filter:drop-shadow(0 3px 4px #0d0a16) drop-shadow(0 0 5px #ffd78c94)
+}
+.machine .game-header .subtitle{text-shadow:0 2px 3px #1f0e25,0 0 9px #ffc979bf}
+.machine .frame-region .branch-frame{
+ background-image:url('../../assets/imagens/jm34-moldura.svg');
+ background-repeat:no-repeat;background-position:center;
+ background-size:100% 100%;
+ -webkit-mask:none;mask:none;
+ filter:drop-shadow(0 4px 4px #161515b5);
+ pointer-events:none;
+ opacity:.99
+}
+.machine .reel-window{
+ background:linear-gradient(90deg,#152719,#21152b 14%,#1b1b25 51%,#211229 86%,#172519);
+ box-shadow:inset 0 0 20px #0a0b12a8;
+ border-radius:10px
+}
+.machine .reel-velvet{
+ background:
+  repeating-linear-gradient(90deg,transparent 0,transparent calc(20% - 2px),
+  #cead6d38 calc(20% - 1px),transparent 20%),
+  radial-gradient(ellipse at center,#34294457,transparent 87%)
+}
+.machine .multiplier{
+ border-color:#e3bd73;background:linear-gradient(160deg,#57205e,#351641 52%,#261a30);
+ box-shadow:inset 0 2px 3px #ffeab08a,0 3px 0 #8f5a27,0 0 6px #ac7d4a6e
+}
+.machine #multiTotal{
+ color:#ffe8a0;text-shadow:0 1px 2px #442a2b,0 0 9px #ffa83c87;
+ font-variant-numeric:tabular-nums;display:inline-block;transform-origin:85% 50%
+}
+.machine #multiTotal.multi-rise{animation:jm34-rise 610ms ease-out both}
+@keyframes jm34-rise{
+ 0%{transform:scale(.92);color:#fff1ae;filter:brightness(1)}
+ 35%{transform:scale(1.18);color:#fffbe5;filter:brightness(1.35)}
+ 100%{transform:scale(1);color:#ffe8a0;filter:brightness(1)}
+}
+.machine .jackpot{
+ border-color:#f8ce84;box-shadow:inset 0 1px 2px #fff2c8a5,0 3px 0 #865723,0 2px 9px #11151391
+}
+@media (max-width:390px){
+ .machine .frame-region .branch-frame{background-size:100% 100%}
+ .machine .game-header::before{inset:8px 1px 0}
+}
+@media (orientation:landscape) and (max-height:430px){
+ .machine .game-header::before{inset:0 0 -2px;opacity:.85}
+}
+@media(prefers-reduced-motion:reduce){
+ .machine #multiTotal.multi-rise{animation:none}
+}

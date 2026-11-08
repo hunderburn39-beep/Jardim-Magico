@@ -16,6 +16,17 @@ const SOURCES={
  rose:'ae9c51465776decce9.png',
  scatter:'d95ddf1f53c88d01c4.png'
 };
+/* Conjunto botânico aprovado: mantém IDs numéricos e pesos do motor,
+   alterando apenas as texturas visíveis. Os símbolos restantes mantêm
+   a arte anterior. */
+const BOTANICAL_V34={
+ potion:'jm34-caracol.svg',
+ green:'jm34-joaninha.svg',
+ heart:'jm34-flor-azul.svg',
+ rose:'jm34-flor-vermelha.svg',
+ wild:'jm34-wild.svg',
+ stone:'jm34-pedra.svg'
+};
 const FALLBACK_EMOJI={
  potion:'🧪',green:'💚',heart:'❤️',teapot:'🫖',wild:'🌺',
  gem:'💎',mushroom:'🍄',hat:'🎩',rose:'🌹',scatter:'✨',stone:'🪨',coin:'2×'
@@ -87,6 +98,7 @@ class ReelScene extends Phaser.Scene{
   this.spinTweens=[];
   this.particles=[];
   this.fxObjects=new Set();
+  this.wildBadges=[];
   this.liteEffects=false;
   this.failedAssets=[];
  }
@@ -95,6 +107,8 @@ class ReelScene extends Phaser.Scene{
   this.load.image('symbols-atlas','jm75-simbolos.webp');
   for(const [key,file] of Object.entries(SOURCES))
    this.load.image('source-'+key,file);
+  for(const [symbol,file] of Object.entries(BOTANICAL_V34))
+   this.load.svg('botanical-'+symbol,file,{width:512,height:512});
   this.load.on('loaderror',file=>{
    this.failedAssets.push(file.key);
    console.warn('Símbolo original não carregou',file.key);
@@ -123,9 +137,20 @@ class ReelScene extends Phaser.Scene{
    const orig='source-'+symbol;
    const art=asKey(symbol);
    let canvas=null;
-   // A imagem inteira foi produzida originalmente para este jogo.
-   // Recortar os 9 ícones sem alterar saturação nem orientação.
-   if(atlas&&atlasTileFor(symbol)){
+   // V3.4: usar o símbolo botânico isolado, SEM fundos de screenshot.
+   // SVG rasterizado uma vez pelo Phaser, sem filtros pesados em cada frame.
+   const painted='botanical-'+symbol;
+   if(BOTANICAL_V34[symbol]&&this.textures.exists(painted)){
+    try{
+     const image=this.textures.get(painted).getSourceImage();
+     canvas=document.createElement('canvas');
+     canvas.width=canvas.height=512;
+     canvas.getContext('2d').drawImage(image,0,0,512,512);
+     this.premiumSymbols++;
+    }catch(err){canvas=null;console.warn('Arte do bosque:',symbol,err)}
+   }
+   // Manter os restantes ícones HD originais sem inverter ou tingir.
+   if(!canvas&&atlas&&atlasTileFor(symbol)){
     try{
      canvas=this.cutPremiumAtlas(atlas,symbol);
      this.premiumSymbols++;
@@ -328,6 +353,29 @@ class ReelScene extends Phaser.Scene{
   });
  }
 
+ clearWildValues(){
+  for(const badge of this.wildBadges){
+   if(badge?.active)badge.destroy();
+  }
+  this.wildBadges=[];
+ }
+ showWildValues(awards=[]){
+  this.clearWildValues();
+  if(!this.add?.text||!Array.isArray(awards))return;
+  for(const {c,r,value} of awards){
+   if(!Number.isInteger(c)||!Number.isInteger(r)||
+      c<0||c>=5||r<0||r>=3||!Number.isInteger(value))continue;
+   const label=this.add.text((c+.5)*CW+CW*.23,
+    (r+.5)*CH+CH*.28,'×'+value,{
+     fontFamily:'Georgia,serif',fontSize:'38px',fontStyle:'bold',
+     color:'#fff4b6',stroke:'#5a193c',strokeThickness:9,
+     shadow:{offsetX:1,offsetY:2,color:'#1d0d23',blur:5,fill:true}
+    });
+   label.setOrigin(.5).setDepth(23);
+   if(this.reelMask)label.setMask(this.reelMask);
+   this.wildBadges.push(label);
+  }
+ }
  setLowEffects(value){this.liteEffects=!!value}
  trackFx(shape){this.fxObjects.add(shape);return shape}
  disposeFx(shape){
@@ -477,6 +525,7 @@ class ReelScene extends Phaser.Scene{
   });
  }
  recover(board){
+  this.clearWildValues();
   this.tweens.killAll();
   // Se o Safari interromper os tweens, callbacks de destruição não correm.
   // Libertar halos/sparkles temporários antes de reconstruir as peças.

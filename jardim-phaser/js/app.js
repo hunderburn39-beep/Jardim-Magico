@@ -7,7 +7,7 @@ import {demoDB as localDB,validateBackup} from './database.js?v=2.2';
 import {createStorageGateway} from './storage-gateway-v21.js?v=2.2';
 import {createAdminPinLock} from './admin-pin-v21.js?v=2.1';
 import {audio} from './audio.js?v=1';
-import {createReelGame} from './reels.js?v=3.3';
+import {createReelGame} from './reels.js?v=3.4';
 import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
 import {createPerformanceGuard} from './performance-v17.js?v=2.9';
 import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=1.8';
@@ -110,9 +110,18 @@ function update(){
  $('autoBtn').classList.toggle('active',autoLeft>0);
 }
 function renderMultiplier(_history=[],effective=1){
- // V2.5: multiplicador visível apenas à direita, sem bolas repetidas ao centro.
- // _history continua disponível para o cálculo do fator já efetuado pelo motor.
- $('multiTotal').textContent='×'+effective;
+ // O valor usado no prémio da queda é o mesmo que fica no indicador.
+ const output=$('multiTotal');
+ const next=Math.max(1,Math.trunc(Number(effective)||1));
+ const before=Math.max(1,Number(output.dataset.value)||1);
+ output.textContent='×'+next;
+ output.dataset.value=String(next);
+ if(next>before){
+  output.classList.remove('multi-rise');
+  // Reinício único de animação quando entra um multiplicador novo.
+  void output.offsetWidth;
+  output.classList.add('multi-rise');
+ }else if(next<=1)output.classList.remove('multi-rise');
 }
 function celebrationTier(value,stake){
  const ratio=stake>0?value/stake:0;
@@ -331,6 +340,8 @@ async function runSpin(){
    // Uma aba oculta não deve iniciar bursts/cascatas adicionais.
    if(document.hidden){repaired=true;break}
    const stage=stages[i];
+   // Mostrar individualmente ×1…×5 no WILD que foi premiado.
+   scene.showWildValues?.(stage.ev.wildAwards||[]);
    const wins=stage.ev.lineWins||[];
    const cells=winningCells(stage.ev);
    const next=i<stages.length-1?stages[i+1]:null;
@@ -365,6 +376,7 @@ async function runSpin(){
    }),stage.board,turbo?1900:3000)))repaired=true;
    if(document.hidden){repaired=true;break}
    if(next){
+    scene.clearWildValues?.();
     audio.play('cascade');
     status('↓ PEÇAS A CAIR DE CIMA ↓');
     if(!(await visual(()=>scene.cascade(next.board,next.removed,{turbo}),
