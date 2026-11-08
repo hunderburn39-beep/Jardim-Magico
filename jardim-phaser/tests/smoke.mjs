@@ -47,6 +47,7 @@ const material39Code=await read('../js/material-v39.js');
 const timing391Code=await read('../js/spin-motion-v391.js');
 const cascade41Code=await read('../js/cascade-fx-v41.js');
 const coin42Code=await read('../js/coin-values-v42.js');
+const face422Code=await read('../js/coin-face-v422.js');
 const pig42Css=await read('../css/moedas-porco-v42.css');
 const svg38=await Promise.all(['caracol','joaninha','flor-vermelha','flor-azul','pedra','wild'].map(name=>read('../../assets/imagens/jm38-'+name+'.svg')));
 const art37Code=await read('../js/art-presentation-v37.js');
@@ -135,19 +136,23 @@ const Fx41=new Function(parseModule(cascade41Code)+
  '\nreturn {burstMotionProfile,cascadeMotionProfile};')();
 const Coins42=new Function(parseModule(coin42Code)+
  '\nreturn {coinValue,coinLabel,valuedPositions,pigGrowth};')();
+const Face422=new Function('coinLabel',parseModule(face422Code)+
+ '\nreturn {makeCoinFace,coinTextureId};')(Coins42.coinLabel);
 const factory=new Function('Phaser','SYMBOLS','newBoard','burstParticleBudget',
  'symbolDisplay','wildBadgePlacement','bakeMaterial','spinMotionProfile',
  'burstMotionProfile','cascadeMotionProfile','valuedPositions',
+ 'makeCoinFace','coinTextureId',
  parseModule(reels)+'\nreturn ReelScene;');
 const Scene=factory(globalThis.Phaser,source.match(/SYMBOLS=\[.*?\]/)?.[0],
  ()=>exact,testFxBudget,artMock37.symbolDisplay,artMock37.wildBadgePlacement,
  ()=>null,Spin391,Fx41.burstMotionProfile,Fx41.cascadeMotionProfile,
- Coins42.valuedPositions);
+ Coins42.valuedPositions,Face422.makeCoinFace,Face422.coinTextureId);
 // More predictable: parse exports and obtain original symbol labels.
 const SYMBOLS=['potion','green','heart','teapot','wild','gem','mushroom','hat','rose','scatter','stone','coin'];
 const Reel=factory(globalThis.Phaser,SYMBOLS,()=>exact,testFxBudget,
  artMock37.symbolDisplay,artMock37.wildBadgePlacement,()=>null,Spin391,
- Fx41.burstMotionProfile,Fx41.cascadeMotionProfile,Coins42.valuedPositions);
+ Fx41.burstMotionProfile,Fx41.cascadeMotionProfile,Coins42.valuedPositions,
+ Face422.makeCoinFace,Face422.coinTextureId);
 // V1.3: a folha artística tem os nove ícones na ordem original, sem
 // espelhamento e sem alterar as regras dos prémios ou a queda aprovada.
 const scene=new Reel();
@@ -435,7 +440,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.2.1'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.2.2'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -468,7 +473,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=4.2.1'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=4.2.2'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1365,6 +1370,35 @@ ok(reels.includes("this.load.svg('premium-coin','jm42-moeda-sem-numero.svg'")&&
  'o símbolo no tambor não mostra um ×2 antigo durante o giro');
 ok(main.includes('function showIdleCoinValues()')&&
  main.includes('showIdleCoinValues();')&&
- main.includes('scene.showWildValues?.([],board,bank.stake,1)'),
- 'moedas mantêm valor de aposta ao parar ou mudar a bet');
-console.log('Phaser V4.2.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+ main.includes('scene.showWildValues?.([],board,bank.stake,1)')&&
+ main.includes('scene.setCoinBet?.(bank.stake)'),
+ 'moedas mantêm valor de aposta durante a rotação e ao mudar a bet');
+const painted422=[];
+const fake422={width:0,height:0,getContext:()=>({
+ drawImage:()=>painted422.push('background'),
+ save:()=>{},restore:()=>{},
+ strokeText:text=>painted422.push('stroke:'+text),
+ fillText:text=>painted422.push('fill:'+text)
+})};
+const coinFace422=Face422.makeCoinFace({width:512,height:512},.2,1,()=>fake422);
+ok(coinFace422.width===512&&coinFace422.height===512&&
+ painted422.includes('stroke:0,20€')&&painted422.includes('fill:0,20€'),
+ 'o valor € é pintado no próprio símbolo e não num texto de paragem');
+painted422.length=0;
+Face422.makeCoinFace({width:512,height:512},.1,1,()=>fake422);
+ok(painted422.includes('fill:0,10€')&&
+ Face422.coinTextureId(.1)==='coin-euro-10-1'&&
+ Face422.coinTextureId(.2)==='coin-euro-20-1',
+ 'mudança de aposta cria uma textura com o novo valor em €');
+scene.coinFaceReady=true;scene.coinTextureKey='coin-euro-20-1';
+scene.useSymbol(scene.columns[0].visible[0],'coin');
+ok(scene.columns[0].visible[0].sprite.texture==='coin-euro-20-1'&&
+ reels.includes("const marked=name==='coin'&&this.coinFaceReady")&&
+ reels.includes("this.useSymbol(item,symbol);"),
+ 'moeda usa a textura de € na própria passagem pelo tambor');
+ok(reels.includes("this.createTextures();\n  // Moeda com € criada ANTES")&&
+ reels.includes("this.setCoinBet(this.coinStake)")&&
+ reels.includes("this.textures.addCanvas(key,canvas)")&&
+ reels.includes(".filter(loc=>loc.kind==='wild')"),
+ 'reel desenha € desde o arranque e não duplica o valor ao parar');
+console.log('Phaser V4.2.2: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

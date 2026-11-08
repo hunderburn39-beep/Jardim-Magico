@@ -7,7 +7,7 @@ import {demoDB as localDB,validateBackup} from './database.js?v=2.2';
 import {createStorageGateway} from './storage-gateway-v21.js?v=2.2';
 import {createAdminPinLock} from './admin-pin-v21.js?v=2.1';
 import {audio} from './audio.js?v=1';
-import {createReelGame} from './reels.js?v=4.2.1';
+import {createReelGame} from './reels.js?v=4.2.2';
 import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
 import {createPerformanceGuard} from './performance-v17.js?v=2.9';
 import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=1.8';
@@ -127,7 +127,10 @@ function update(){
 function showIdleCoinValues(){
  // Moedas ×1 visíveis quando a grelha está parada, mesmo depois da
  // recuperação visual e quando a aposta é alterada pelo jogador.
- if(scene?.ready&&!running)scene.showWildValues?.([],board,bank.stake,1);
+ if(scene?.ready&&!running){
+  scene.setCoinBet?.(bank.stake);
+  scene.showWildValues?.([],board,bank.stake,1);
+ }
 }
 function renderMultiplier(_history=[],effective=1){
  // O valor usado no prémio da queda é o mesmo que fica no indicador.
@@ -1073,6 +1076,7 @@ async function changeBet(dir){
   const pos=BETS.findIndex(x=>Math.abs(x-bank.stake)<.00001);
   const next=BETS[Math.max(0,Math.min(BETS.length-1,(pos<0?2:pos)+dir))];
   if(!bank.setStake(next)||before.stake===next)return false;
+  scene?.setCoinBet?.(bank.stake);
   update();
   showIdleCoinValues();
   if(!(await persist('stake'))){
@@ -1234,6 +1238,7 @@ async function boot(){
  const available=async()=>{
   scene=window.jardimPhaserScene;
   if(!scene||!scene.ready)return;
+  scene.setCoinBet?.(bank.stake);
   scene.setBoard(board);
   ready=true;update();
   showIdleCoinValues();

@@ -8,6 +8,7 @@ import {bakeMaterial} from './material-v39.js?v=4.0';
 import {spinMotionProfile} from './spin-motion-v391.js?v=3.9.1';
 import {burstMotionProfile,cascadeMotionProfile} from './cascade-fx-v41.js?v=4.1';
 import {valuedPositions} from './coin-values-v42.js?v=4.2.1';
+import {makeCoinFace,coinTextureId} from './coin-face-v422.js?v=4.2.2';
 const DESIGN_W=900,DESIGN_H=540,CW=DESIGN_W/5,CH=DESIGN_H/3;
 const SOURCES={
  potion:'3f3213b7316d5cf176.png',
@@ -106,6 +107,9 @@ class ReelScene extends Phaser.Scene{
   this.particles=[];
   this.fxObjects=new Set();
   this.wildBadges=[];
+  this.coinStake=.2;
+  this.coinTextureKey='art-coin';
+  this.coinFaceReady=false;
   this.liteEffects=false;
   this.failedAssets=[];
  }
@@ -131,6 +135,8 @@ class ReelScene extends Phaser.Scene{
   g.fillStyle(0xffffff,1);g.fillRect(0,0,DESIGN_W,DESIGN_H);
   this.reelMask=g.createGeometryMask();
   this.createTextures();
+  // Moeda com € criada ANTES de criar os sprites do tambor.
+  this.setCoinBet(this.coinStake);
   this.addColumns();
   this.board=newBoard();
   this.setBoard(this.board);
@@ -289,6 +295,32 @@ class ReelScene extends Phaser.Scene{
   ctx.putImageData(content,0,0);
   return output;
  }
+ setCoinBet(stake){
+  // Só trocar a denominação entre giros. Não altera o RNG nem a banca.
+  const key=coinTextureId(stake,1);
+  if(!key||this.busy)return false;
+  if(!this.textures.exists(key)){
+   if(!this.textures.exists('coin-value-bg'))return false;
+   try{
+    const source=this.textures.get('coin-value-bg').getSourceImage();
+    const canvas=makeCoinFace(source,stake,1);
+    this.textures.addCanvas(key,canvas);
+   }catch(err){
+    console.warn('Moeda em euros: não foi possível preparar a textura',err);
+    return false;
+   }
+  }
+  this.coinStake=Number(stake);
+  this.coinTextureKey=key;
+  this.coinFaceReady=true;
+  // Aposta alterada: refrescar moedas já visíveis, sem reconstruir a grelha.
+  for(const column of this.columns){
+   for(const item of column.items){
+    if(item.symbol==='coin')this.useSymbol(item,'coin');
+   }
+  }
+  return true;
+ }
  makeSprite(c,slot){
   const x=(c+.5)*CW;
   const y=(slot+.5)*CH;
@@ -312,7 +344,9 @@ class ReelScene extends Phaser.Scene{
   // O motor guarda IDs numéricos; Phaser usa nomes das texturas.
   // Converter aqui garante que uma vitória não cria sprites vazios.
   const name=typeof symbol==='number'?SYMBOLS[symbol]:symbol;
-  const key=asKey(name);
+  const marked=name==='coin'&&this.coinFaceReady&&
+   this.textures.exists(this.coinTextureKey);
+  const key=marked?this.coinTextureKey:asKey(name);
   item.symbol=name;
   if(!this.textures.exists(key))return;
   item.sprite.setTexture(key);
@@ -409,7 +443,10 @@ class ReelScene extends Phaser.Scene{
   // A mesma moeda ilustra WILDs premiados e moedas especiais:
   // cada uma apresenta aposta × fator da própria moeda, sempre em €.
   // O MULTI total da queda permanece no indicador superior.
-  const locations=valuedPositions(awards,board,bet,multiplier);
+  // As moedas normais JÁ levam o valor dentro da textura durante o giro:
+  // não desenhar outro valor por cima quando o tambor pára.
+  const locations=valuedPositions(awards,board,bet,multiplier)
+   .filter(loc=>loc.kind==='wild');
   for(const loc of locations){
    const large=loc.kind==='coin';
    const diameter=large?CW*.86:CW*.53;

@@ -14,7 +14,7 @@ try{
   const page=await browser.newPage({viewport:{width:scenario.width,height:scenario.height},deviceScaleFactor:1});
   const errors=[];
   page.on('pageerror',err=>errors.push(err.message));
-  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.1',{waitUntil:'domcontentloaded'});
+  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.2',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.jardimPhaserScene?.ready===true,{timeout:30000});
   const metrics=await page.evaluate(()=>{
    const box=sel=>{
@@ -50,6 +50,7 @@ try{
     materialBaked:scene.premiumMaterialCount,
     photoWild:scene.photoWild,
     numericCoinReady:scene.textures.exists('coin-value-bg'),
+    stampedCoinReady:scene.coinFaceReady&&scene.textures.exists(scene.coinTextureKey),
     pigLabel:document.querySelector('#vaultBtn')?.textContent.trim(),
     pigOnly:!document.querySelector('#reserve'),
     remainingHD:scene.remainingHD,
@@ -67,7 +68,8 @@ try{
   });
   const {viewport,machine,rows,reel,spin,assets}=metrics;
   assert(assets.every(Boolean),scenario.name+' missing botanical texture');
-  assert(metrics.numericCoinReady&&metrics.pigOnly&&metrics.pigLabel==='',
+  assert(metrics.numericCoinReady&&metrics.stampedCoinReady&&
+   metrics.pigOnly&&metrics.pigLabel==='',
    scenario.name+' moedas e porquinho sem montantes no painel');
   assert(metrics.artFailed.length===0&&metrics.premium>=12&&
    metrics.materialBaked>=12&&metrics.photoWild&&
@@ -124,6 +126,9 @@ try{
     const scene=window.jardimPhaserScene;
     const board=Array.from({length:5},()=>[0,0,0]);
     board[2][1]=11;
+    scene.setCoinBet(.20);
+    scene.setBoard(board);
+    const reelCoin=scene.columns[2].visible[1].sprite.texture.key;
     scene.showWildValues([{c:1,r:2,value:3}],board,.20,5);
     const text=scene.wildBadges.filter(x=>typeof x.text==='string').map(x=>x.text);
     const rendered=scene.wildBadges.length;
@@ -133,11 +138,16 @@ try{
     pig.classList.add('pig-pop');
     const pop=getComputedStyle(pig.querySelector('.piggy-art')).animationName;
     pig.classList.remove('pig-pop');
-    return {text,rendered,pop,clean:scene.wildBadges.length===0};
+    const changed=scene.setCoinBet(.10);
+    const afterBet=scene.columns[2].visible[1].sprite.texture.key;
+    return {text,rendered,pop,clean:scene.wildBadges.length===0,
+      reelCoin,afterBet,changed};
    });
-   assert(values.text.length===2&&values.text.includes('0,60€')&&
-    values.text.includes('0,20€')&&
-    values.rendered===4&&values.clean&&values.pop.includes('jm42-pig-pop'),
+   assert(values.text.length===1&&values.text[0]==='0,60€'&&
+    values.rendered===2&&values.clean&&
+    values.reelCoin==='coin-euro-20-1'&&
+    values.afterBet==='coin-euro-10-1'&&values.changed&&
+    values.pop.includes('jm42-pig-pop'),
     'moedas com € e porquinho anima no iPhone: '+JSON.stringify(values));
    console.log('PASS V4.2 moedas e porquinho: '+JSON.stringify(values));
    const checkFall=await page.evaluate(async()=>{
@@ -174,7 +184,7 @@ try{
  }
  const landscape=await browser.newPage({viewport:{width:844,height:390}});
  try{
-  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.1',{waitUntil:'domcontentloaded'});
+  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.2',{waitUntil:'domcontentloaded'});
   const visibility=await landscape.evaluate(()=>{
    const e=document.querySelector('#portraitLock');
    const s=getComputedStyle(e);

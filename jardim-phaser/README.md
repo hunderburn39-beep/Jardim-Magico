@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.1
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.2
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -399,3 +399,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.1
 
 **Correção visual complementar V4.2.1:** a moeda original do tambor passou a carregar a arte sem o “2×” impresso. Os valores em € são recolocados quando o jogo inicia, após uma jogada, na recuperação da sessão e imediatamente ao mudar a aposta. Nenhum fator é pago duas vezes.
+
+## V4.2.2 — moedas em € durante todo o giro
+
+- Corrigida a origem do problema da moeda: o desenho em **euros é integrado na própria textura do símbolo antes de o tambor começar a rodar**. A moeda entra pela parte de cima e atravessa a grelha já com **0,20€** (aposta 0,20€) ou **0,10€** (aposta 0,10€), sem revelação tardia.
+- Cada aposta gera uma textura de moeda transparente e cacheada em `jardim-phaser/js/coin-face-v422.js`; o próprio sprite do Phaser usa essa textura no giro e na cascata. O tamanho do número ajusta-se para apostas até 10€ e os textos mantêm vírgula e símbolo €.
+- O valor **×1** está associado à moeda comum, tal como a lógica atual; multiplicadores individuais **×2, ×3, ×4, ×5** continuam nos WILDs premiados e nas moedas do Hold & Win. Não são inventados multiplicadores adicionais para as moedas normais, nem criados pagamentos extra.
+- Quando a aposta muda, os símbolos de moeda já presentes na grelha mudam imediatamente de textura. Quando a jogada termina, **não aparece uma segunda moeda ou texto sobre a mesma peça**.
+- Formato 9:16, visual do porquinho, giro aprovado, cálculos, saldos e bónus mantidos. Testes verificam o texto pintado na textura 512×512, a troca de aposta e o uso do símbolo na animação.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.2
