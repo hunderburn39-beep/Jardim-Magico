@@ -1483,7 +1483,7 @@ ok(main.includes('if(document.hidden||pageSuspended||rendererUnavailable||runnin
  main.includes('if(!running&&granted){writerReady=true;await releaseIfHidden(true)}'),
  'recarga assincrona revalida o estado de página e gira');
 ok(main.includes('pageSuspended=true;\n  sessionNeedsRefresh=true;')&&
- main.includes('sessionNeedsRefresh=true;\n   visualSupervisor.cancel();')&&
+ main.includes('sessionNeedsRefresh=true;\n   if(running||visualSupervisor.active())rendererRestorePending=true;\n   visualSupervisor.cancel();')&&
  main.includes('void refreshWriter(true);'),
  'Safari regista que precisa de validar a sessao apos suspensão');
 ok(main.includes('else if(sessionNeedsRefresh||!writerReady)void refreshWriter(sessionNeedsRefresh);')&&
