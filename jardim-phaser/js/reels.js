@@ -116,7 +116,7 @@ class ReelScene extends Phaser.Scene{
    this.load.image('source-'+key,file);
   for(const [symbol,file] of Object.entries(BOTANICAL_V38))
    this.load.svg('botanical-'+symbol,file,{width:512,height:512});
-  this.load.svg('premium-coin','jm40-moeda-magica.svg',{width:512,height:512});
+  this.load.svg('premium-coin','jm42-moeda-sem-numero.svg',{width:512,height:512});
   this.load.svg('coin-value-bg','jm42-moeda-sem-numero.svg',{width:512,height:512});
   this.load.on('loaderror',file=>{
    this.failedAssets.push(file.key);

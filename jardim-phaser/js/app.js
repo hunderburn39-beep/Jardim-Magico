@@ -124,6 +124,11 @@ function update(){
  $('autoBtn').disabled=(!ready||!writerReady||mutating||s.mode==='hold'||(running&&autoLeft===0))&&autoLeft===0;
  $('autoBtn').classList.toggle('active',autoLeft>0);
 }
+function showIdleCoinValues(){
+ // Moedas ×1 visíveis quando a grelha está parada, mesmo depois da
+ // recuperação visual e quando a aposta é alterada pelo jogador.
+ if(scene?.ready&&!running)scene.showWildValues?.([],board,bank.stake,1);
+}
 function renderMultiplier(_history=[],effective=1){
  // O valor usado no prémio da queda é o mesmo que fica no indicador.
  const output=$('multiTotal');
@@ -409,6 +414,7 @@ async function runSpin(){
   try{scene.recover(finalBoard)}catch(err){console.warn(err)}
   if(pendingVisual)await clearVisualReceipt();
   running=false;
+  showIdleCoinValues();
   performanceGuard.stop();
   const all=stages.flatMap(stage=>(stage.ev.lineWins||[]).map(win=>({
    ...win,
@@ -1068,8 +1074,10 @@ async function changeBet(dir){
   const next=BETS[Math.max(0,Math.min(BETS.length-1,(pos<0?2:pos)+dir))];
   if(!bank.setStake(next)||before.stake===next)return false;
   update();
+  showIdleCoinValues();
   if(!(await persist('stake'))){
-   copySnapshot(before);update();say('Aposta anterior reposta: falha ao guardar.');return false;
+   copySnapshot(before);update();showIdleCoinValues();
+   say('Aposta anterior reposta: falha ao guardar.');return false;
   }
   say('Aposta virtual '+money(bank.stake));return true;
  });
@@ -1185,6 +1193,7 @@ async function refreshWriter(forceReload=false){
    if(scene?.ready)try{scene.recover(board)}catch(err){console.warn(err)}
    writerReady=true;saveIssue=false;diagnostics.record('writer-granted');
    update();
+   showIdleCoinValues();
    $('dbStatus').textContent='PHASER · BASE LOCAL EXCLUSIVA';
    if(recoveredVisual&&pendingVisual)await clearVisualReceipt();
    if(ready){
@@ -1227,6 +1236,7 @@ async function boot(){
   if(!scene||!scene.ready)return;
   scene.setBoard(board);
   ready=true;update();
+  showIdleCoinValues();
   status('TAMBORES VERTICAIS PRONTOS');
   if(!writerReady){
    say('Modo de leitura: outra aba usa o jogo ou não existe IndexedDB.');

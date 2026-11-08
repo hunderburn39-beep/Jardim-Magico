@@ -397,3 +397,5 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2
 - Apenas formato visual: símbolo € indica o valor nominal dos créditos de demonstração e **não representa dinheiro levantável**. Sem alterações ao motor, aos resultados, ao cofre ou ao porquinho.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.1
+
+**Correção visual complementar V4.2.1:** a moeda original do tambor passou a carregar a arte sem o “2×” impresso. Os valores em € são recolocados quando o jogo inicia, após uma jogada, na recuperação da sessão e imediatamente ao mudar a aposta. Nenhum fator é pago duas vezes.

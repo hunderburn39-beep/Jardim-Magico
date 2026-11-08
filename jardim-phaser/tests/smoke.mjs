@@ -1360,4 +1360,11 @@ ok(main.includes('coinLabel(bank.stake,value)')&&
  reels.includes('fator da própria moeda')&&
  !main.includes("cell.textContent=value?money(coinValue"),
  'Hold e tabuleiro mostram explicitamente o símbolo €');
+ok(reels.includes("this.load.svg('premium-coin','jm42-moeda-sem-numero.svg'")&&
+ !reels.includes("this.load.svg('premium-coin','jm40-moeda-magica.svg'"),
+ 'o símbolo no tambor não mostra um ×2 antigo durante o giro');
+ok(main.includes('function showIdleCoinValues()')&&
+ main.includes('showIdleCoinValues();')&&
+ main.includes('scene.showWildValues?.([],board,bank.stake,1)'),
+ 'moedas mantêm valor de aposta ao parar ou mudar a bet');
 console.log('Phaser V4.2.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
