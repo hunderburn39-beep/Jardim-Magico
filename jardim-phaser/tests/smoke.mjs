@@ -42,6 +42,8 @@ const scene35Css=await read('../css/cenario-v35.css');
 const vertical36Css=await read('../css/vertical-v36.css');
 const polish37Css=await read('../css/polimento-v37.css');
 const icon38Css=await read('../css/icones-v38.css');
+const material39Css=await read('../css/materiais-v39.css');
+const material39Code=await read('../js/material-v39.js');
 const svg38=await Promise.all(['caracol','joaninha','flor-vermelha','flor-azul','pedra','wild'].map(name=>read('../../assets/imagens/jm38-'+name+'.svg')));
 const art37Code=await read('../js/art-presentation-v37.js');
 const supervisorSource=await read('../js/visual-supervisor-v30.js');
@@ -125,14 +127,14 @@ const testFxBudget=new Function(parseModule(perfSource)+'\nreturn burstParticleB
 const artMock37=new Function(parseModule(art37Code)+
  '\nreturn {symbolDisplay,wildBadgePlacement};')();
 const factory=new Function('Phaser','SYMBOLS','newBoard','burstParticleBudget',
- 'symbolDisplay','wildBadgePlacement',
+ 'symbolDisplay','wildBadgePlacement','bakeMaterial',
  parseModule(reels)+'\nreturn ReelScene;');
 const Scene=factory(globalThis.Phaser,source.match(/SYMBOLS=\[.*?\]/)?.[0],
- ()=>exact,testFxBudget,artMock37.symbolDisplay,artMock37.wildBadgePlacement);
+ ()=>exact,testFxBudget,artMock37.symbolDisplay,artMock37.wildBadgePlacement,()=>null);
 // More predictable: parse exports and obtain original symbol labels.
 const SYMBOLS=['potion','green','heart','teapot','wild','gem','mushroom','hat','rose','scatter','stone','coin'];
 const Reel=factory(globalThis.Phaser,SYMBOLS,()=>exact,testFxBudget,
- artMock37.symbolDisplay,artMock37.wildBadgePlacement);
+ artMock37.symbolDisplay,artMock37.wildBadgePlacement,()=>null);
 // V1.3: a folha artística tem os nove ícones na ordem original, sem
 // espelhamento e sem alterar as regras dos prémios ou a queda aprovada.
 const scene=new Reel();
@@ -420,7 +422,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.8'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.9'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -453,7 +455,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=3.8'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=3.9'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1198,4 +1200,32 @@ ok(icon38Css.includes('orientation:portrait')&&
  icon38Css.includes('.reel-velvet')&&
  !icon38Css.includes('orientation:landscape'),
  'fundo de bosque e divisão de células apenas em 9:16');
-console.log('Phaser V3.8: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const Mat39=new Function(parseModule(material39Code)+
+ '\nreturn {materialSettings,bakeMaterial};')();
+ok(Mat39.materialSettings('stone').gloss<Mat39.materialSettings('heart').gloss&&
+ Mat39.materialSettings('wild').shadow>Mat39.materialSettings('green').shadow,
+ 'granito menos brilhante e WILD com volume próprio');
+let draw39=0,radial39=0,restore39=0,composition39=0;
+const stops39=[];
+const mockCanvas39={width:0,height:0,getContext:()=>({
+ save:()=>{},restore:()=>{restore39++},
+ drawImage:()=>{draw39++},
+ fillRect:()=>{},createRadialGradient:()=>{
+  radial39++;return {addColorStop:(a,b)=>stops39.push([a,b])};
+ },
+ set globalCompositeOperation(value){if(value==='source-atop')composition39++}
+})};
+const baked39=Mat39.bakeMaterial({width:512,height:512},'potion',()=>mockCanvas39);
+ok(baked39.width===512&&baked39.height===512&&
+ draw39===2&&radial39===1&&restore39===2&&composition39===1&&stops39.length===3,
+ 'sombra e brilho são processados uma vez, apenas nos pixels da peça');
+ok(reels.includes("if(symbol==='wild'&&this.textures.exists(orig))")&&
+ reels.includes('this.photoWild=true;')&&
+ reels.includes('canvas=bakeMaterial(image,symbol)')&&
+ reels.includes('this.premiumMaterialCount++'),
+ 'WILD dourado HD e cinco símbolos aprovados têm materiais próprios');
+ok(html.includes('materiais-v39.css?v=3.9')&&
+ material39Css.includes('orientation:portrait')&&
+ !material39Css.includes('orientation:landscape'),
+ 'materiais 3D integram-se apenas no jogo 9:16');
+console.log('Phaser V3.9: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

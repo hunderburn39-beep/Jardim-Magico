@@ -4,6 +4,7 @@
 import {SYMBOLS,newBoard} from './engine.js?v=3.3';
 import {burstParticleBudget} from './performance-v17.js?v=2.9';
 import {symbolDisplay,wildBadgePlacement} from './art-presentation-v37.js?v=3.7';
+import {bakeMaterial} from './material-v39.js?v=3.9';
 const DESIGN_W=900,DESIGN_H=540,CW=DESIGN_W/5,CH=DESIGN_H/3;
 const SOURCES={
  potion:'3f3213b7316d5cf176.png',
@@ -134,20 +135,34 @@ class ReelScene extends Phaser.Scene{
   const atlas=this.textures.exists('symbols-atlas')?
    this.textures.get('symbols-atlas').getSourceImage():null;
   this.premiumSymbols=0;
+  this.photoWild=false;
+  this.premiumMaterialCount=0;
   for(const symbol of SYMBOLS){
    const orig='source-'+symbol;
    const art=asKey(symbol);
    let canvas=null;
-   // V3.8: ícones com luz, granulado e profundidade, isolados e transparentes.
-   // Filtros SVG só são rasterizados ao iniciar, não são executados a cada frame.
+   // V3.9: o WILD fotográfico dourado já existia na biblioteca do jogo.
+   // Não tem multiplicador impresso: ×1–×5 continua dinâmico no Phaser.
+   // Pré-renderizá-lo uma única vez, preservando a arte botânica como fallback.
+   if(symbol==='wild'&&this.textures.exists(orig)){
+    try{
+     canvas=bakeMaterial(this.cleanOriginalArt(orig),'wild');
+     this.photoWild=true;
+     this.premiumSymbols++;
+     this.premiumMaterialCount++;
+    }catch(err){
+     canvas=null;console.warn('WILD HD indisponível:',err);
+    }
+   }
+   // Os outros cinco ícones aprovados continuam distintos e transparentes.
+   // A sombra e o reflexo também são incorporados UMA vez no atlas.
    const painted='botanical-'+symbol;
-   if(BOTANICAL_V38[symbol]&&this.textures.exists(painted)){
+   if(!canvas&&BOTANICAL_V38[symbol]&&this.textures.exists(painted)){
     try{
      const image=this.textures.get(painted).getSourceImage();
-     canvas=document.createElement('canvas');
-     canvas.width=canvas.height=512;
-     canvas.getContext('2d').drawImage(image,0,0,512,512);
+     canvas=bakeMaterial(image,symbol);
      this.premiumSymbols++;
+     this.premiumMaterialCount++;
     }catch(err){canvas=null;console.warn('Arte do bosque:',symbol,err)}
    }
    // Manter os restantes ícones HD originais sem inverter ou tingir.

@@ -14,7 +14,7 @@ try{
   const page=await browser.newPage({viewport:{width:scenario.width,height:scenario.height},deviceScaleFactor:1});
   const errors=[];
   page.on('pageerror',err=>errors.push(err.message));
-  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=3.8',{waitUntil:'domcontentloaded'});
+  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=3.9',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.jardimPhaserScene?.ready===true,{timeout:30000});
   const metrics=await page.evaluate(()=>{
    const box=sel=>{
@@ -45,6 +45,8 @@ try{
     assets:art,
     artFailed:scene.failedAssets.filter(key=>key.startsWith('botanical-')),
     premium:scene.premiumSymbols,
+    materialBaked:scene.premiumMaterialCount,
+    photoWild:scene.photoWild,
     visual:window.getComputedStyle(machine).backgroundImage,
     spinLabel:window.getComputedStyle(document.querySelector('#spinBtn>b')).visibility,
     spinArrow:window.getComputedStyle(document.querySelector('#spinBtn .spin-arrow')).visibility,
@@ -57,8 +59,10 @@ try{
   });
   const {viewport,machine,rows,reel,spin,assets}=metrics;
   assert(assets.every(Boolean),scenario.name+' missing botanical texture');
-  assert(metrics.artFailed.length===0&&metrics.premium>=6,
-   scenario.name+' falha a carregar SVG de 2026 V3.8: '+metrics.artFailed.join(', '));
+  assert(metrics.artFailed.length===0&&metrics.premium>=6&&
+   metrics.materialBaked>=6&&metrics.photoWild,
+   scenario.name+' texturas HD ausentes ou WILD fotográfico não aplicado: '+
+   JSON.stringify({failed:metrics.artFailed,baked:metrics.materialBaked,photoWild:metrics.photoWild}));
   assert(Math.abs(reel.w/reel.h-5/3)<.04,scenario.name+' reel aspect ratio wrong: '+JSON.stringify(reel));
   assert(metrics.visual.includes('jm80-cenario-imersivo.svg'),scenario.name+' scenic background missing');
   assert(metrics.overflow<=3,scenario.name+' horizontal overflow '+metrics.overflow);
@@ -97,7 +101,7 @@ try{
  }
  const landscape=await browser.newPage({viewport:{width:844,height:390}});
  try{
-  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=3.8',{waitUntil:'domcontentloaded'});
+  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=3.9',{waitUntil:'domcontentloaded'});
   const visibility=await landscape.evaluate(()=>{
    const e=document.querySelector('#portraitLock');
    const s=getComputedStyle(e);

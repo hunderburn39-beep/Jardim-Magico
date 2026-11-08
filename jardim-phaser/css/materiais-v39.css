@@ -1,0 +1,40 @@
+/* V3.9 — contraste 3D com composição de jardim 9:16.
+ * A luz e a sombra das próprias figuras são pré-rasterizadas no Phaser.
+ */
+@media (orientation:portrait){
+ .machine .frame-region .reel-window{
+  background:
+    radial-gradient(ellipse 55% 70% at 50% 18%,#426d4e35,transparent 89%),
+    linear-gradient(180deg,#172d20ed,#10241beb 60%,#0d1921f2);
+  box-shadow:
+    inset 0 0 18px #060c15dd,
+    inset 0 6px 10px #0b0c21ac,
+    0 0 10px #f9df9d59;
+ }
+ .machine .frame-region .reel-velvet{
+  background:
+    linear-gradient(180deg,
+      transparent 0%,transparent 33.1%,#ffe49a64 33.28%,
+      transparent 33.52%,transparent 66.41%,#ffe49a64 66.69%,
+      transparent 66.9%,transparent 100%),
+    repeating-linear-gradient(90deg,
+      transparent,transparent calc(20% - 1.5px),
+      #ecd08d78 calc(20% - 1px),transparent 20%),
+    radial-gradient(ellipse at 40% 20%,#6c885130,transparent);
+ }
+ .machine .frame-region .reel-glow{
+  opacity:.40;
+  pointer-events:none;
+ }
+ .machine .frame-region .branch-frame{
+  filter:
+   drop-shadow(0 3px 5px #0e1413bd)
+   drop-shadow(0 0 4px #f5d5a97d);
+ }
+ .machine #multiTotal{
+  text-shadow:0 2px 3px #39113a,0 0 8px #ffdc6db3;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .machine .frame-region .branch-frame{filter:none}
+}

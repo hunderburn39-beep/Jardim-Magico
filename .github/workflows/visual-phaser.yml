@@ -9,6 +9,9 @@ on:
       - 'jardim-phaser/css/cenario-v35.css'
       - 'jardim-phaser/css/polimento-v37.css'
       - 'jardim-phaser/css/icones-v38.css'
+      - 'jardim-phaser/css/materiais-v39.css'
+      - 'jardim-phaser/js/material-v39.js'
+      - 'jardim-phaser/js/reels.js'
       - 'assets/imagens/jm38-*.svg'
       - 'jardim-phaser/js/art-presentation-v37.js'
       - 'jardim-phaser/js/reels.js'
@@ -64,6 +67,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phaser-v38-visual
+          name: phaser-v39-visual
           path: visual-previews/
           if-no-files-found: ignore

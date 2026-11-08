@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.8
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.9
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -339,3 +339,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.7
 - A nova arte foi integrada por caminhos versionados e mantém o estilo vertical 9:16, os bónus, os giros e os valores matemáticos anteriores. Continuam a ser créditos fictícios sem RTP auditado.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.8
+
+## V3.9 — texturas com volume pré-rasterizado (apenas 9:16)
+
+- Caracol, joaninha, flor azul e vermelha e pedra continuam a ser os símbolos escolhidos. Foram acrescentadas **sombras em relevo e reflexos próprios** em texturas 512×512, incorporados **uma única vez** ao carregar o Phaser, sem sprites ou filtros extra nas cascatas.
+- O **WILD fotográfico dourado existente na biblioteca** substitui o WILD mais plano quando disponível; a arte anterior mantém-se como fallback. A imagem do WILD **não** inclui um × fixo, pelo que os valores ×1–×5 continuam individuais e animados sobre o símbolo quando há prémio.
+- Ajustes discretos de contraste para destacar a arte sobre o verde profundo, sem alterar posições nem linhas do tabuleiro. A moldura V3.7 e o bloqueio de zoom da V3.6 mantêm-se.
+- Os testes verificam que a composição de luz/sombra só acontece na fase de criação das texturas, os símbolos escolhidos existem, o WILD HD está carregado e os três ecrãs verticais continuam navegáveis.
+- Sem alterações ao motor de prémios, à reserva de demonstração, aos Free Spins, Hold & Win, RTP ou saldos. Créditos fictícios e RTP não auditado.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.9
