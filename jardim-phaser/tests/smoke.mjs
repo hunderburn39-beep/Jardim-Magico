@@ -120,12 +120,17 @@ class FakeSprite{
 }
 globalThis.Phaser={Scene:class{},Math:{Clamp:(x,a,b)=>Math.max(a,Math.min(b,x))}};
 const testFxBudget=new Function(parseModule(perfSource)+'\nreturn burstParticleBudget;')();
+const artMock37=new Function(parseModule(art37Code)+
+ '\nreturn {symbolDisplay,wildBadgePlacement};')();
 const factory=new Function('Phaser','SYMBOLS','newBoard','burstParticleBudget',
+ 'symbolDisplay','wildBadgePlacement',
  parseModule(reels)+'\nreturn ReelScene;');
-const Scene=factory(globalThis.Phaser,source.match(/SYMBOLS=\[.*?\]/)?.[0],()=>exact,testFxBudget);
+const Scene=factory(globalThis.Phaser,source.match(/SYMBOLS=\[.*?\]/)?.[0],
+ ()=>exact,testFxBudget,artMock37.symbolDisplay,artMock37.wildBadgePlacement);
 // More predictable: parse exports and obtain original symbol labels.
 const SYMBOLS=['potion','green','heart','teapot','wild','gem','mushroom','hat','rose','scatter','stone','coin'];
-const Reel=factory(globalThis.Phaser,SYMBOLS,()=>exact,testFxBudget);
+const Reel=factory(globalThis.Phaser,SYMBOLS,()=>exact,testFxBudget,
+ artMock37.symbolDisplay,artMock37.wildBadgePlacement);
 // V1.3: a folha artística tem os nove ícones na ordem original, sem
 // espelhamento e sem alterar as regras dos prémios ou a queda aprovada.
 const scene=new Reel();
