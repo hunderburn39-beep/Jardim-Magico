@@ -1430,7 +1430,7 @@ ok(reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  'queda e giro aprovados mantidos integralmente');
 // V4.2.4: regressões de suspensão entre pagehide, hidden e perda WebGL.
 ok(main.includes('let pageSuspended=false;')&&
- main.includes('if(document.hidden||pageSuspended||rendererUnavailable)return false;')&&
+ main.includes('if(document.hidden||pageSuspended||rendererUnavailable||rendererRestorePending)return false;')&&
  main.includes('visible:!document.hidden&&!pageSuspended&&!rendererUnavailable')&&
  main.includes('if(rendererUnavailable||pageSuspended||!sessionCanWrite())return;'),
  'suspensao impede novos giros e callbacks antigos');
