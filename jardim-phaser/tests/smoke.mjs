@@ -441,7 +441,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.2.8'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.2.9'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -474,7 +474,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=4.2.8'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=4.2.9'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1448,7 +1448,7 @@ ok(main.includes("$('spinBtn').disabled=running||mutating||!ready||!writable")&&
 ok(main.includes('void refreshWriter(!writerReady);')&&
  main.includes('if(scene?.ready&&!running&&!rendererUnavailable&&!pageSuspended)'),
  'restauro WebGL revalida a sessao e nao repinta moedas a meio');
-ok(html.includes('app.js?v=4.2.8')&&html.includes('V4.2.8')&&
+ok(html.includes('app.js?v=4.2.9')&&html.includes('V4.2.9')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'timings e trajetorias dos rolos e cascatas mantidos');
@@ -1467,7 +1467,7 @@ ok(main.includes('else if(!repaired){\n   scheduleNext(')&&
  main.includes('if(!rendererUnavailable)try{scene.recover(finalBoard)}')&&
  main.includes("pendingVisual=spinRecoveryReceipt(outcome,bank.snapshot,stages.length)"),
  'o resultado previamente gravado permanece e nao ha agendamento novo');
-ok(html.includes('app.js?v=4.2.8')&&html.includes('V4.2.8')&&
+ok(html.includes('app.js?v=4.2.9')&&html.includes('V4.2.9')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'mantem movimentos e duracoes de giros e cascatas aprovados');
@@ -1489,7 +1489,7 @@ ok(main.includes('else if(sessionNeedsRefresh||!writerReady)void refreshWriter(s
  main.includes('else if(!repaired){\n   scheduleNext(')&&
  main.includes('if(writerReleasePending)await writerReleasePending;'),
  'próxima jogada só é agendada após uma sessão válida');
-ok(html.includes('V4.2.8')&&html.includes('app.js?v=4.2.8')&&
+ok(html.includes('V4.2.9')&&html.includes('app.js?v=4.2.9')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'tempos e trajectos anteriores intactos');
@@ -1519,7 +1519,7 @@ ok(main.includes("$('creditBtn').disabled=!writable")&&
  main.includes("$('holdBtn').disabled=holdBusy||!writable")&&
  main.includes("if(!sessionCanWrite()||bank.mode!=='base'||running)return;"),
  'UI e bonus de teste aguardam sessao validada');
-ok(html.includes('V4.2.8')&&html.includes('app.js?v=4.2.8')&&
+ok(html.includes('V4.2.9')&&html.includes('app.js?v=4.2.9')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'versao nova sem alteracoes aos movimentos da queda');
@@ -1545,8 +1545,55 @@ ok(main.includes('button.disabled=!sessionCanWrite();')&&
  main.includes("$('holdBtn').disabled=holdBusy||!writable;")&&
  main.includes("if(!sessionCanWrite()||mutating||bank.mode!=='hold'"),
  'Hold & Win aguarda validação antes de nova tentativa');
-ok(html.includes('V4.2.8')&&html.includes('app.js?v=4.2.8')&&
+ok(html.includes('V4.2.9')&&html.includes('app.js?v=4.2.9')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'testes conservam o motor e a queda aprovados');
-console.log('Phaser V4.2.8: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+// V4.2.9: a reconciliação não pode deixar automáticos pendentes órfãos.
+const resume429Text=main.slice(
+ main.indexOf('function resumeQueuedTurnAfterSync('),
+ main.indexOf('\n}',main.indexOf('function resumeQueuedTurnAfterSync('))+2
+);
+ok(resume429Text.startsWith('function resumeQueuedTurnAfterSync(')&&
+ resume429Text.includes('turnQueue.pending(kind)')&&
+ main.includes('else if(!displayed)resumeQueuedTurnAfterSync(1100);')&&
+ main.includes('}else if(ready)resumeQueuedTurnAfterSync(650);'),
+ 'revalidação reativa a fila apenas quando não há aviso recuperado');
+let state429={...baseTurn,autoLeft:3},pending429=new Set(),calls429=[];
+const resume429=new Function('nextTurn','continuationState','turnQueue','scheduleNext',
+ resume429Text+'\nreturn resumeQueuedTurnAfterSync;')(
+ Q31.nextTurn,()=>state429,{pending:k=>pending429.has(k)},
+ ms=>{calls429.push(ms);return true}
+);
+ok(resume429(750)===true&&calls429.length===1&&calls429[0]===750,
+ 'automático com giros restantes recomeça após sincronização');
+pending429.add('auto');
+ok(resume429()===false&&calls429.length===1,
+ 'renovações repetidas não criam temporizadores duplicados');
+pending429.clear();
+state429={...state429,autoLeft:0};
+ok(resume429()===false&&calls429.length===1,
+ 'automático parado manualmente não volta a arrancar');
+state429={...state429,mode:'free',freePaused:true};
+ok(resume429()===false&&calls429.length===1,
+ 'Free Spins pausadas pelo Safari exigem retoma manual');
+state429={...state429,freePaused:false};
+ok(resume429(950)===true&&calls429.at(-1)===950&&calls429.length===2,
+ 'Free Spins não pausadas retomam após sincronização');
+pending429.add('free');
+ok(resume429()===false&&calls429.length===2,
+ 'a fila do bónus não agenda a mesma Free Spin duas vezes');
+pending429.clear();
+state429={...state429,writerReady:false};
+ok(resume429()===false&&calls429.length===2,
+ 'sem posse do IndexedDB nenhuma jogada entra na fila');
+state429={...state429,writerReady:true,modalOpen:true};
+ok(resume429()===false&&calls429.length===2,
+ 'modal de recuperação aberta bloqueia a retomada automática');
+ok(main.includes('if(repaired){\n    stopAuto(true);')&&
+ main.includes("if(bank.mode==='free')freePaused=true;")&&
+ reels.includes('const motion=spinMotionProfile(turbo,c)')&&
+ reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)')&&
+ html.includes('V4.2.9')&&html.includes('app.js?v=4.2.9'),
+ 'sem retoma após falha visual; arte, queda e cascata inalteradas');
+console.log('Phaser V4.2.9: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

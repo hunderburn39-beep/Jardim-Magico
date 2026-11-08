@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.8
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.9
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -471,3 +471,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.7
 - Sem alterações à queda, cascata, símbolos HD, moedas em euros, prémios, RTP ou saldo já registado. Continua recomendado confirmar suspensões reais no iPhone.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.8
+
+## V4.2.9 — retoma sem duplicação de giros automáticos
+
+- Depois de confirmar a posse do IndexedDB e sincronizar o saldo, a fila volta a agendar **uma única vez** o próximo giro automático base que faltava. Antes desta versão, esta rotina só retomava Free Spins.
+- A mesma regra cobre Free Spins não pausadas, e não duplica um temporizador já pendente. Se o jogador parou o automático, se a Free Spin foi pausada, ou se há aviso de recuperação aberto, não inicia nova aposta.
+- O bloqueio V4.2.7/V4.2.8 continua ativo: sem confirmação da sessão, nunca há novo giro.
+- Testes de regressão de estados base/free, pausa, modal, perda de lease, falta de giros e fila já agendada. Perfil 9:16, gráficos HD e física vertical mantidos.
+- **Nenhuma alteração** ao motor de sorteio, prémios fictícios, reserva, WILD, SCATTER, Free Spins/ Hold & Win, moedas em € nem movimento aprovado dos rolos e cascatas.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2.9

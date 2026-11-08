@@ -255,6 +255,13 @@ function continuationState(){
   // Nenhum turno avança enquanto o saldo local ainda está a sincronizar.
   writerReady:sessionCanWrite(),ready,modalOpen,running,mutating,holdBusy};
 }
+function resumeQueuedTurnAfterSync(delay=650){
+ // Não recriar um temporizador já marcado. nextTurn respeita os modos
+ // FREE, HOLD e BASE, bem como pausa, ecrã oculto e posse do IndexedDB.
+ const kind=nextTurn(continuationState());
+ if(!kind||turnQueue.pending(kind))return false;
+ return scheduleNext(delay);
+}
 function scheduleNext(delay=650){
  if(rendererUnavailable||pageSuspended||!sessionCanWrite())return false;
  const kind=nextTurn(continuationState());
@@ -1257,11 +1264,10 @@ async function refreshWriter(forceReload=false){
    if(recoveredVisual&&pendingVisual)await clearVisualReceipt();
    if(ready){
     const displayed=showRecoveryState(recoveredVisual?saved?.snapshot?.pendingVisual:null);
-    if(!displayed&&bank.mode==='free'&&!document.hidden&&!freePaused)scheduleNext(1100);
-    else if(!displayed&&bank.mode==='hold')showHold();
+    if(!displayed&&bank.mode==='hold')showHold();
+    else if(!displayed)resumeQueuedTurnAfterSync(1100);
    }else say('Sessão exclusiva obtida. Saldo sincronizado com a base local.');
-  }else if(ready&&!document.hidden&&!running&&!modalOpen&&bank.mode==='free'&&
-    !freePaused&&!turnQueue.pending('free'))scheduleNext(650);
+  }else if(ready)resumeQueuedTurnAfterSync(650);
  }catch(err){
   sessionNeedsRefresh=true;
   writerReady=false;saveIssue=true;diagnostics.record('storage-error');console.error('Aba ativa:',err);
