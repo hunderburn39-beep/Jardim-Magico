@@ -1447,7 +1447,7 @@ ok(main.includes('pageSuspended||rendererUnavailable||s.mode')&&
 ok(main.includes('void refreshWriter(!writerReady);')&&
  main.includes('if(scene?.ready&&!running&&!rendererUnavailable&&!pageSuspended)'),
  'restauro WebGL revalida a sessao e nao repinta moedas a meio');
-ok(html.includes('app.js?v=4.2.5')&&html.includes('V4.2.4')&&
+ok(html.includes('app.js?v=4.2.5')&&html.includes('V4.2.5')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'timings e trajetorias dos rolos e cascatas mantidos');
