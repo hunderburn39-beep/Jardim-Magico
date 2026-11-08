@@ -36,6 +36,30 @@ jobs:
           sleep 2
       - name: Validar e fotografar três ecrãs
         run: node jardim-phaser/tests/visual.mjs
+      - name: Montagem dos ficheiros antigos de arte
+        if: always()
+        run: |
+          python3 -m pip install -q pillow
+          python3 - <<'PY'
+          from PIL import Image,ImageDraw
+          from pathlib import Path
+          paths=list(Path('assets/imagens').glob('*.png'))+list(Path('assets/imagens').glob('*.webp'))
+          paths=sorted(paths,key=lambda p:p.name)
+          W,H=300,245
+          art=Image.new('RGB',(W*4,H*((len(paths)+3)//4)),'#182431')
+          d=ImageDraw.Draw(art)
+          for i,p in enumerate(paths):
+              try:
+                  im=Image.open(p).convert('RGBA');im.thumbnail((W-20,H-38))
+                  tile=Image.new('RGBA',im.size,(41,51,68,255))
+                  tile.alpha_composite(im)
+                  x=(i%4)*W+(W-im.width)//2;y=(i//4)*H+8
+                  art.paste(tile.convert('RGB'),(x,y))
+                  d.text(((i%4)*W+10,(i//4)*H+H-27),p.name[:38],fill='white')
+              except Exception as exc: print('skip',p,exc)
+          Path('visual-previews').mkdir(exist_ok=True)
+          art.save('visual-previews/art-library.png')
+          PY
       - name: Guardar comparações visuais
         if: always()
         uses: actions/upload-artifact@v4
