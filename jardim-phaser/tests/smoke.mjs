@@ -1183,10 +1183,11 @@ ok(Art37.wildBadgePlacement({c:5,r:1,value:2})===null&&
  Art37.wildBadgePlacement({c:2,r:1,value:6})===null,
  'etiquetas não excedem grelha nem valores de WILD');
 ok(reels.includes('symbolDisplay(name,CW,CH)')&&
- reels.includes('wildBadgePlacement(award,CW,CH)')&&
- reels.includes('label.setOrigin(1,0).setDepth(23)')&&
+ reels.includes('valuedPositions(awards,board,bet,multiplier)')&&
+ reels.includes('label.setOrigin(.5).setDepth(23)')&&
+ reels.includes("bg.setDepth(22);")&&
  reels.includes('this.clearWildValues();'),
- 'Phaser aplica escala, posição e limpeza das etiquetas');
+ 'Phaser aplica escala, moedas com valor e limpeza dos símbolos');
 ok(html.includes('polimento-v37.css?v=3.7')&&
  polish37Css.includes('aspect-ratio:1200/760')&&
  polish37Css.includes('transform:translate(-50%,-50%)')&&
