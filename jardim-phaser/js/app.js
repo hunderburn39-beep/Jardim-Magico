@@ -36,6 +36,8 @@ const performanceGuard=createPerformanceGuard(
  low=>scene?.setLowEffects?.(low)
 );
 let board=newBoard(),running=false,ready=false,turbo=false,rendererUnavailable=false;
+// O Safari pode enviar pagehide antes de document.hidden.
+let pageSuspended=false;
 let autoLeft=0;
 const turnQueue=createTurnQueue();
 let writerReleasePending=null;
@@ -113,21 +115,24 @@ function update(){
  $('turboState').textContent=turbo?'ON':'OFF';
  $('turboBtn').setAttribute('aria-pressed',String(turbo));
  const current=BETS.findIndex(v=>Math.abs(v-s.stake)<1e-6);
- const blocked=running||mutating||s.mode!=='base'||!ready||!writerReady;
+ const blocked=running||mutating||s.mode!=='base'||!ready||!writerReady||
+  pageSuspended||rendererUnavailable;
  $('betDown').disabled=blocked||current<=0;
  $('betUp').disabled=blocked||current>=BETS.length-1;
  $('bonusBtn').disabled=blocked;
  $('adminBtn').disabled=blocked;
- $('spinBtn').disabled=running||mutating||!ready||!writerReady||s.mode==='hold'||s.mode==='free';
+ $('spinBtn').disabled=running||mutating||!ready||!writerReady||
+  pageSuspended||rendererUnavailable||s.mode==='hold'||s.mode==='free';
  $('creditBtn').disabled=!writerReady||running||mutating;
  $('vaultBtn').disabled=!writerReady||mutating;
- $('autoBtn').disabled=(!ready||!writerReady||mutating||s.mode==='hold'||(running&&autoLeft===0))&&autoLeft===0;
+ $('autoBtn').disabled=pageSuspended||rendererUnavailable||
+  ((!ready||!writerReady||mutating||s.mode==='hold'||(running&&autoLeft===0))&&autoLeft===0);
  $('autoBtn').classList.toggle('active',autoLeft>0);
 }
 function showIdleCoinValues(){
  // Moedas ×1 visíveis quando a grelha está parada, mesmo depois da
  // recuperação visual e quando a aposta é alterada pelo jogador.
- if(scene?.ready&&!running){
+ if(scene?.ready&&!running&&!rendererUnavailable&&!pageSuspended){
   scene.setCoinBet?.(bank.stake);
   scene.showWildValues?.([],board,bank.stake,1);
  }
@@ -230,19 +235,21 @@ function renderSessionBanner(){
  $('sessionMessage').textContent=state.message;
  const button=$('sessionAction');
  button.hidden=!state.action;
- button.disabled=running||mutating||holdBusy||writerCheckBusy;
+ button.disabled=running||mutating||holdBusy||writerCheckBusy||pageSuspended||rendererUnavailable;
  if(state.action)button.textContent=state.action;
 }
 function continuationState(){
- return {mode:bank.mode,autoLeft,freePaused,visible:!document.hidden,
+ return {mode:bank.mode,autoLeft,freePaused,
+  visible:!document.hidden&&!pageSuspended&&!rendererUnavailable,
   writerReady,ready,modalOpen,running,mutating,holdBusy};
 }
 function scheduleNext(delay=650){
- if(rendererUnavailable)return false;
+ if(rendererUnavailable||pageSuspended)return false;
  const kind=nextTurn(continuationState());
  if(!kind)return false;
  turnQueue.clearAll();
  turnQueue.arm(kind,delay,()=>{
+  if(rendererUnavailable||pageSuspended)return;
   if(nextTurn(continuationState())!==kind)return;
   if(kind==='hold')showHold();
   else runSpin();
@@ -280,7 +287,7 @@ async function withMutation(action){
   say('Operação não concluída. Revê a sessão local.');return false;
  }finally{
   mutating=false;update();
-  if(document.hidden)await releaseIfHidden();
+  if(document.hidden||pageSuspended)await releaseIfHidden(pageSuspended);
   else if(bank.mode==='free'&&!freePaused&&!turnQueue.pending('free'))
    scheduleNext(1350);
   else if(!writerReady)refreshWriter();
@@ -300,7 +307,7 @@ function stopAuto(silent=false){
  }
 }
 async function visual(promiseFactory,expected,deadline=7000){
- if(document.hidden)return false;
+ if(document.hidden||pageSuspended||rendererUnavailable)return false;
  const outcome=await visualSupervisor.run(
   promiseFactory,
   ()=>scene?.recover?.(expected),
@@ -313,7 +320,7 @@ async function visual(promiseFactory,expected,deadline=7000){
  return outcome.ok;
 }
 async function runSpin(){
- if(rendererUnavailable||document.hidden||!writerReady||!ready||!scene||running||mutating||holdBusy||
+ if(rendererUnavailable||pageSuspended||document.hidden||!writerReady||!ready||!scene||running||mutating||holdBusy||
     freePaused||modalOpen||bank.mode==='hold')return;
  turnQueue.clearAll();
  const before=snapshot();
@@ -362,7 +369,7 @@ async function runSpin(){
     outcome.board,turbo?3900:7000)))repaired=true;
   for(let i=0;i<stages.length;i++){
    // Uma aba oculta não deve iniciar bursts/cascatas adicionais.
-   if(document.hidden){repaired=true;break}
+   if(rendererUnavailable||pageSuspended||document.hidden){repaired=true;break}
    const stage=stages[i];
    // Cada moeda apresenta aposta × fator individual (×1, ×2, ×3…).
    // O MULTI acumulado continua visível em separado e não é pago duas vezes.
@@ -401,21 +408,22 @@ async function runSpin(){
     destroy:!!next,
     duration:turbo?390:780
    }),stage.board,turbo?1900:3000)))repaired=true;
-   if(document.hidden){repaired=true;break}
+   if(rendererUnavailable||pageSuspended||document.hidden){repaired=true;break}
    if(next){
     scene.clearWildValues?.();
     audio.play('cascade');
     status('↓ PEÇAS A CAIR DE CIMA ↓');
     if(!(await visual(()=>scene.cascade(next.board,next.removed,{turbo}),
       next.board,turbo?2500:3800)))repaired=true;
-    if(document.hidden){repaired=true;break}
+    if(rendererUnavailable||pageSuspended||document.hidden){repaired=true;break}
    }
   }
  }catch(err){
   repaired=true;diagnostics.record('spin-visual-error');console.error('Falha recuperada no giro:',err);
  }finally{
   // Nunca deixar preso o botão: corrigir malhas, limpar estado e continuar.
-  try{scene.recover(finalBoard)}catch(err){console.warn(err)}
+  // A grelha é restaurada no contextrestored se faltar WebGL.
+  if(!rendererUnavailable)try{scene.recover(finalBoard)}catch(err){console.warn(err)}
   if(pendingVisual)await clearVisualReceipt();
   running=false;
   showIdleCoinValues();
@@ -469,7 +477,7 @@ async function runSpin(){
    celebrate(celebrationTier(outcome.credited,bank.stake),outcome.credited);
   }else say('Sem prémio neste giro');
   // Jogadas seguintes só avançam quando as quedas atuais terminarem.
-  if(document.hidden)await releaseIfHidden();
+  if(document.hidden||pageSuspended)await releaseIfHidden(pageSuspended);
   else{
    if(!writerReady)refreshWriter();
    else scheduleNext(bank.mode==='hold'?650:
@@ -727,7 +735,7 @@ async function holdTurn(){
   if(saved&&pendingVisual)await clearVisualReceipt();
   holdBusy=false;
   button.disabled=false;
-  if(document.hidden)await releaseIfHidden();
+  if(document.hidden||pageSuspended)await releaseIfHidden(pageSuspended);
   else if(!writerReady)refreshWriter();
   else if(saved&&bank.mode==='base'&&autoLeft>0)scheduleNext(700);
  }
@@ -1166,7 +1174,7 @@ function bind(){
    update();
    releaseIfHidden();
   }
-  else{
+  else if(!pageSuspended&&!rendererUnavailable){
    performanceGuard.resume();
    refreshWriter();
   }
@@ -1174,7 +1182,7 @@ function bind(){
 }
 
 async function refreshWriter(forceReload=false){
- if(document.hidden||writerCheckBusy||(running&&!writerReady)||mutating||holdBusy)return;
+ if(document.hidden||pageSuspended||rendererUnavailable||writerCheckBusy||(running&&!writerReady)||mutating||holdBusy)return;
  writerCheckBusy=true;
  try{
   if(writerReleasePending)await writerReleasePending;
@@ -1242,6 +1250,7 @@ async function boot(){
    event.preventDefault();
    rendererUnavailable=true;
    diagnostics.record('renderer-context-lost');
+   update();
    visualSupervisor.cancel();performanceGuard.pause();
    stopAuto(true);turnQueue.clearAll();
    status('GRÁFICOS SUSPENSOS · A RECUPERAR');
@@ -1249,6 +1258,7 @@ async function boot(){
   game.canvas.addEventListener('webglcontextrestored',()=>{
    rendererUnavailable=false;
    diagnostics.record('renderer-context-restored');
+   update();
    window.requestAnimationFrame(()=>{
     if(!scene?.ready)return;
     if(!running){
@@ -1257,7 +1267,10 @@ async function boot(){
      status('TAMBORES VERTICAIS PRONTOS');
      if(bank.mode==='free'&&!freePaused&&!document.hidden)scheduleNext(850);
     }
-    if(!document.hidden)performanceGuard.resume();
+    if(!document.hidden&&!pageSuspended){
+     performanceGuard.resume();
+     void refreshWriter(!writerReady);
+    }
    });
   });
  }
@@ -1284,13 +1297,13 @@ async function boot(){
  if(window.jardimPhaserScene?.ready)available();
  else window.addEventListener('jardim-phaser-ready',available,{once:true});
  // Reativar a verificação de sessão depois de restaurar BFCache Safari.
- let pageSuspended=false;
  const startWriterHeartbeat=()=>{
   if(writerTimer===null)writerTimer=setInterval(refreshWriter,5000);
  };
  startWriterHeartbeat();
  window.addEventListener('pagehide',()=>{
   pageSuspended=true;
+  update();
   visualSupervisor.cancel();performanceGuard.pause();
   turnQueue.clearAll();stopAuto(true);
   if(bank.mode==='free')freePaused=true;
@@ -1301,6 +1314,7 @@ async function boot(){
  window.addEventListener('pageshow',()=>{
   if(!pageSuspended)return;
   pageSuspended=false;startWriterHeartbeat();
+  update();
   if(document.hidden)return;
   performanceGuard.resume();
   if(!running&&!mutating&&!holdBusy)void refreshWriter(true);

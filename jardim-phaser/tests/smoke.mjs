@@ -647,7 +647,7 @@ ok(main.includes('writerReady=exclusive;')&&
  main.includes('if(!writerReady||!ready||!scene')===false&&
  main.includes('writerTimer=setInterval(refreshWriter,5000)'),
  'aquisição e renovação de writer integradas');
-ok(main.includes('if(document.hidden||writerCheckBusy')&&
+ok(main.includes('if(document.hidden||pageSuspended||rendererUnavailable||writerCheckBusy')&&
  main.includes('writerReleasePending=release;')&&
  main.includes('if(writerReleasePending)await writerReleasePending;')&&
  main.includes('releaseIfHidden();'),
@@ -720,7 +720,7 @@ ok(main.includes('freePaused=true;update();')&&
 ok(main.includes('async function withMutation(action)')&&
  main.includes("if(!(await persist('stake')))")&&
  main.includes('if((!document.hidden&&!force)||!writerReady||running||mutating||holdBusy)return false;')&&
- main.includes('if(document.hidden)await releaseIfHidden();'),
+ main.includes('if(document.hidden||pageSuspended)await releaseIfHidden(pageSuspended);'),
  'aposta e libertação de aba respeitam gravações em curso');
 ok(html.includes('id="sessionBanner"')&&html.includes('session-v24.css?v=2.4')&&
  sessionCss.includes('safe-area-inset-bottom')&&sessionCss.includes('pointer:coarse'),
@@ -918,9 +918,9 @@ ok(rejected30.reason==='error'&&visualCancelCount===3&&
  clock30.callbacks.size===0,
  'erro Phaser não deixa guardião ativo');
 ok(main.includes('visualSupervisor.cancel();')&&
- main.includes('if(document.hidden){repaired=true;break}')&&
+ main.includes('if(rendererUnavailable||pageSuspended||document.hidden){repaired=true;break}')&&
  main.includes('visualSupervisor.run(')&&
- main.includes('if(document.hidden)await releaseIfHidden();')&&
+ main.includes('if(document.hidden||pageSuspended)await releaseIfHidden(pageSuspended);')&&
  main.includes('else scheduleNext('),
  'integração interrompe cascatas ocultas e agenda apenas quando visível');
 const random30=(()=>{let state=921125;
@@ -1023,10 +1023,10 @@ ok(!main.includes('autoTimer=setTimeout(runSpin')&&
  !main.includes('clearTimeout(freeTimer)')&&
  main.includes("else if(saved&&bank.mode==='base'&&autoLeft>0)scheduleNext(700)"),
  'giros automáticos e Free Spins não deixam temporizadores paralelos');
-ok(main.includes('if(document.hidden)await releaseIfHidden();')&&
+ok(main.includes('if(document.hidden||pageSuspended)await releaseIfHidden(pageSuspended);')&&
  main.includes('releaseIfHidden();')&&
  main.includes('turnQueue.clearAll();')&&
- main.includes('if(document.hidden)await releaseIfHidden();'),
+ main.includes('if(document.hidden||pageSuspended)await releaseIfHidden(pageSuspended);'),
  'sessão local protege saldo e interrompe automáticos em segundo plano');
 const Audit32=new Function(parseModule(integrity32)+
  '\nreturn auditSessionHistory;')();
@@ -1421,9 +1421,34 @@ ok(main.includes("window.addEventListener('pageshow'")&&
  'Safari BFCache reinicia lease heartbeat e liberta sessao ao sair');
 ok(main.includes('webglcontextlost')&&main.includes('webglcontextrestored')&&
  main.includes('rendererUnavailable=true')&&
- main.includes('if(rendererUnavailable)return false'),
+ main.includes('if(rendererUnavailable||pageSuspended)return false'),
  'WebGL interrompido nao permite girar com o renderizador perdido');
 ok(reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'queda e giro aprovados mantidos integralmente');
-console.log('Phaser V4.2.3: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+// V4.2.4: regressões de suspensão entre pagehide, hidden e perda WebGL.
+ok(main.includes('let pageSuspended=false;')&&
+ main.includes('if(document.hidden||pageSuspended||rendererUnavailable)return false;')&&
+ main.includes('visible:!document.hidden&&!pageSuspended&&!rendererUnavailable')&&
+ main.includes('if(rendererUnavailable||pageSuspended)return;'),
+ 'suspensao impede novos giros e callbacks antigos');
+const stageAbort424='if(rendererUnavailable||pageSuspended||document.hidden){repaired=true;break}';
+ok(main.split(stageAbort424).length-1>=3&&
+ main.includes('if(!rendererUnavailable)try{scene.recover(finalBoard)}'),
+ 'cascatas param sem criar animacoes durante perda WebGL');
+ok(main.includes('if(document.hidden||pageSuspended)await releaseIfHidden(pageSuspended);')&&
+ main.includes('pageSuspended=false;startWriterHeartbeat();')&&
+ main.includes('if(writerReleasePending)await writerReleasePending;'),
+ 'sessao liberta apos animacao e regressa sem operacoes duplicadas');
+ok(main.includes('pageSuspended||rendererUnavailable||s.mode')&&
+ main.includes('pageSuspended||rendererUnavailable;')&&
+ main.includes('rendererUnavailable=true;')&&main.includes('rendererUnavailable=false;'),
+ 'botoes de aposta e giro bloqueados quando os graficos suspendem');
+ok(main.includes('void refreshWriter(!writerReady);')&&
+ main.includes('if(scene?.ready&&!running&&!rendererUnavailable&&!pageSuspended)'),
+ 'restauro WebGL revalida a sessao e nao repinta moedas a meio');
+ok(html.includes('app.js?v=4.2.4')&&html.includes('V4.2.4')&&
+ reels.includes('const motion=spinMotionProfile(turbo,c)')&&
+ reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
+ 'timings e trajetorias dos rolos e cascatas mantidos');
+console.log('Phaser V4.2.4: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
