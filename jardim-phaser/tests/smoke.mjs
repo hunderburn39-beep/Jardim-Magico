@@ -1608,9 +1608,9 @@ ok(main.includes('if(writerRefreshQueued&&!document.hidden&&!pageSuspended&&!ren
  main.includes('!running&&!mutating&&!holdBusy){')&&
  main.includes('writerRefreshQueued=false;\n   void refreshWriter(true);'),
  'revalidação concorrente repete uma vez quando o jogo está seguro');
-ok(main.includes('const syncing=writerReady&&(sessionNeedsRefresh||!!writerReleasePending);')&&
- main.includes("panel.dataset.kind=syncing?'saving':state.kind;")&&
- main.includes('button.hidden=syncing||!state.action;')&&
+ok(main.includes('const syncing=!graphicsPending&&writerReady&&(sessionNeedsRefresh||!!writerReleasePending);')&&
+ main.includes("panel.dataset.kind=graphicsPending?'blocked':syncing?'saving':state.kind;")&&
+ main.includes('button.hidden=graphicsPending||syncing||!state.action;')&&
  main.includes('A confirmar os créditos fictícios guardados'),
  'painel informa a confirmação de créditos e oculta retoma até terminar');
 ok(main.includes('if(forceReload)sessionNeedsRefresh=true;')&&
