@@ -37,6 +37,8 @@ const performanceGuard=createPerformanceGuard(
  low=>scene?.setLowEffects?.(low)
 );
 let board=newBoard(),running=false,ready=false,turbo=false,rendererUnavailable=false;
+// Aguarda fim do giro antes de reconstruir a grelha após perda WebGL.
+let rendererRestorePending=false;
 // O Safari pode enviar pagehide antes de document.hidden.
 let pageSuspended=false;
 let autoLeft=0;
@@ -56,7 +58,8 @@ let writerRefreshQueued=false;
 function sessionCanWrite(){
  return canWriteDemoSession({
   writerReady,pendingReload:sessionNeedsRefresh,releasing:!!writerReleasePending,
-  suspended:pageSuspended,rendererUnavailable,hidden:document.hidden
+  suspended:pageSuspended,
+   rendererUnavailable:rendererUnavailable||rendererRestorePending,hidden:document.hidden
  });
 }
 const tabToken=(typeof crypto!=='undefined'&&crypto.randomUUID)?
@@ -140,6 +143,25 @@ function update(){
  $('autoBtn').disabled=!writable||
   ((!ready||mutating||s.mode==='hold'||(running&&autoLeft===0))&&autoLeft===0);
  $('autoBtn').classList.toggle('active',autoLeft>0);
+}
+function finishRendererRestoration(){
+ if(!rendererRestorePending||rendererUnavailable||pageSuspended||
+    document.hidden||running||!scene?.ready)return false;
+ try{
+  scene.recover(board);scene.setCoinBet(bank.stake);
+  rendererRestorePending=false;
+  showIdleCoinValues();
+  status('TAMBORES VERTICAIS PRONTOS');
+  diagnostics.record('renderer-board-recovered');
+  update();
+  // Não recomeçar Free Spins suspensas por interrupção de WebGL.
+  if(bank.mode==='free'&&!freePaused)resumeQueuedTurnAfterSync(850);
+  return true;
+ }catch(err){
+  console.warn('Restauro gráfico pendente:',err);
+  diagnostics.record('renderer-restore-error');
+  return false;
+ }
 }
 function showIdleCoinValues(){
  // Moedas ×1 visíveis quando a grelha está parada, mesmo depois da
@@ -450,9 +472,11 @@ async function runSpin(){
  }finally{
   // Nunca deixar preso o botão: corrigir malhas, limpar estado e continuar.
   // A grelha é restaurada no contextrestored se faltar WebGL.
-  if(!rendererUnavailable)try{scene.recover(finalBoard)}catch(err){console.warn(err)}
+  if(!rendererUnavailable&&!rendererRestorePending)try{scene.recover(finalBoard)}catch(err){console.warn(err)}
   if(pendingVisual)await clearVisualReceipt();
   running=false;
+  // A recuperação gráfica pendente só se completa com o giro parado.
+  if(rendererRestorePending&&!rendererUnavailable)finishRendererRestoration();
   // Em falha visível, parar o automático em vez de cobrar giros
   // enquanto o renderizador continua instável.
   if(repaired){
@@ -1213,6 +1237,7 @@ function bind(){
    releaseIfHidden();
   }
   else if(!pageSuspended&&!rendererUnavailable){
+   finishRendererRestoration();
    performanceGuard.resume();
    refreshWriter();
   }
@@ -1322,10 +1347,13 @@ async function boot(){
   game.canvas.addEventListener('webglcontextlost',event=>{
    event.preventDefault();
    rendererUnavailable=true;
+   rendererRestorePending=true;
+   // No bónus interrompido, exigir retoma consciente pelo jogador.
+   if(bank.mode==='free')freePaused=true;
    diagnostics.record('renderer-context-lost');
-   update();
    visualSupervisor.cancel();performanceGuard.pause();
    stopAuto(true);turnQueue.clearAll();
+   update();
    status('GRÁFICOS SUSPENSOS · A RECUPERAR');
   },{passive:false});
   game.canvas.addEventListener('webglcontextrestored',()=>{
@@ -1333,13 +1361,8 @@ async function boot(){
    diagnostics.record('renderer-context-restored');
    update();
    window.requestAnimationFrame(()=>{
-    if(!scene?.ready)return;
-    if(!running){
-     try{scene.recover(board);scene.setCoinBet(bank.stake);showIdleCoinValues()}
-     catch(err){console.warn('Restauro gráfico:',err)}
-     status('TAMBORES VERTICAIS PRONTOS');
-     if(bank.mode==='free'&&!freePaused&&!document.hidden)scheduleNext(850);
-    }
+    // Evitar recriar sprites enquanto a queda ainda está ativa.
+    finishRendererRestoration();
     if(!document.hidden&&!pageSuspended){
      performanceGuard.resume();
      void refreshWriter(!writerReady);
@@ -1353,6 +1376,7 @@ async function boot(){
   scene.setCoinBet?.(bank.stake);
   scene.setBoard(board);
   ready=true;update();
+  finishRendererRestoration();
   showIdleCoinValues();
   status('TAMBORES VERTICAIS PRONTOS');
   if(!writerReady){
@@ -1390,6 +1414,7 @@ async function boot(){
   pageSuspended=false;startWriterHeartbeat();
   update();
   if(document.hidden)return;
+  finishRendererRestoration();
   performanceGuard.resume();
   // A lease pode ser renovada sem repor as peças em movimento.
   void refreshWriter(true);
