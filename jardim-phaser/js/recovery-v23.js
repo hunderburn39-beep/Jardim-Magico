@@ -14,7 +14,7 @@ export function spinRecoveryReceipt(result,state,stages=1){
   modeAfter:validMode(state?.mode),
   remaining:Math.max(0,Math.min(60,Math.trunc(Number(state?.freeSpins)||0))),
   accrued:safeAmount(state?.freeTotal),
-  multiplier:Math.max(1,Math.min(5,Math.trunc(Number(state?.freeMultiplier)||1)))
+  multiplier:Math.max(1,Math.min(1000,Math.trunc(Number(state?.freeMultiplier)||1)))
  };
 }
 export function holdRecoveryReceipt(result,state){
@@ -40,7 +40,7 @@ export function recoveryMessage(marker,state){
  if(mode==='free'){
   const remaining=Math.max(0,Math.trunc(Number(state?.freeSpins)||0));
   const total=safeAmount(state?.freeTotal);
-  const multi=Math.max(1,Math.min(5,Number(state?.freeMultiplier)||1));
+  const multi=Math.max(1,Math.min(1000,Number(state?.freeMultiplier)||1));
   return {kind:'free-active',title:'FREE SPINS RECUPERADAS',
    detail:remaining+' giros por jogar · acumulado '+total.toFixed(2)+
     ' ×'+multi+'. Continua do saldo já guardado, sem repetir o giro.'};

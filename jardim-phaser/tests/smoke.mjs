@@ -72,8 +72,8 @@ const fDisplay=bonus.freeDisplay({
 });
 ok(fDisplay.remaining===12&&fDisplay.total===4.25&&fDisplay.multiplier===4,
  'Free Spins mostra o acumulado e multiplicador do motor');
-ok(bonus.freeDisplay({freeSpins:0,freeTotal:0,freeMultiplier:9}).multiplier===5,
- 'Multiplicador visual nunca excede o teto do motor');
+ok(bonus.freeDisplay({freeSpins:0,freeTotal:0,freeMultiplier:1001}).multiplier===1000,
+ 'Multiplicador visual suporta as somas de WILD até ao limite de segurança');
 
 for(const stake of [.05,.2,1,5,10])for(const reserve of [0,.01,.2,2,10,100,2300]){
  const bank=new DemoBank();bank.balance=10000;bank.reserve=reserve;bank.stake=stake;
@@ -311,9 +311,10 @@ ok(main.includes('function celebrationTier(')&&
 ok(main.includes("celebrate('HOLD & WIN',result.prize)")&&
    main.includes("celebrate('FREE SPINS',outcome.credited)"),
  'bónus mostram frase e prémio separado em três linhas');
-ok(main.includes('if(!freeMultiAdded)')&&
-   main.includes('freeOrbHistory.push(outcome.wildMultiplier)'),
- 'nas Free Spins cada giro só pode acrescentar uma bola de multi');
+ok(!main.includes('if(!freeMultiAdded)')&&
+   main.includes('const wildAwards=stage.ev.wildAwards||[];')&&
+   main.includes('stage.ev.multiplier'),
+ 'WILD de cada queda soma ao multi acumulado e não é ignorado');
 ok(main.includes('renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,')&&
  main.includes("$('multiTotal').textContent='×'+effective;")&&
  !main.includes("$('orbs')"),
@@ -924,7 +925,7 @@ for(const profile30 of ['normal','premios','entretenimento']){
     spin.stages.at(-1).ev.lines===0,
     'stress de giros: sequência termina e reserva não é negativa');
    if(oldMode==='free'){
-    ok(spin.free&&demo30.freeMultiplier>=1&&demo30.freeMultiplier<=5&&
+    ok(spin.free&&demo30.freeMultiplier>=1&&demo30.freeMultiplier<=1000&&
      demo30.freePlayed>=1&&
      (demo30.mode==='free'?spin.credited===0:
       demo30.mode==='base'&&Math.abs(spin.credited-demo30.freeAwarded)<.001),
@@ -1042,4 +1043,40 @@ ok((()=>{try{Backup.validateBackup({...validBackup,history:[
  Backup.validateBackup({...validBackup,history:[
  {...rows[0],recoveryId:'spin-12345678'}]}).history.length===1,
  'novos recibos validados e restauro antigo continua compatível');
-console.log('Phaser V3.2: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const W33=new Function(parseModule(source)+'\nreturn {evaluate,addWildValues,cascadeStages};')();
+const pair33=Array.from({length:5},()=>[10,10,10]);
+pair33[0][1]=4;pair33[1][1]=4;
+const evaluation33=W33.evaluate(pair33,.2);
+ok(evaluation33.wildCells.length===2&&evaluation33.wilds===2,
+ 'WILDs contados por posição da grelha e não por linha paga');
+let cumulative33=W33.addWildValues(0,[2]);
+ok(cumulative33.multiplier===2,
+ 'primeira queda com WILD ×2 apresenta ×2');
+cumulative33=W33.addWildValues(cumulative33.total,[3]);
+ok(cumulative33.multiplier===5,
+ 'segunda queda com WILD ×3 junta ao ×2 anterior');
+cumulative33=W33.addWildValues(cumulative33.total,[1]);
+ok(cumulative33.multiplier===6&&
+ W33.addWildValues(0,[5,5]).multiplier===10,
+ 'terceira queda mantém acumulado e múltiplos WILDs somam-se');
+let checked33=0;
+let seed33=673933;
+const random33=()=>{seed33=(Math.imul(1664525,seed33)+1013904223)>>>0;return seed33/4294967296};
+for(let trial=0;trial<100;trial++){
+ const chain=W33.cascadeStages(pair33,.2,random33,false,{reserve:300});
+ let cum=0,pay=0;
+ for(const stage of chain){
+  cum+=stage.ev.wildAwards.reduce((a,w)=>a+w.value,0);
+  ok(stage.ev.multiplier===Math.max(1,cum)&&
+   Math.abs(stage.ev.paid-Math.round((stage.ev.raw*stage.ev.multiplier+Number.EPSILON)*100)/100)<.011,
+   'cada etapa mostra o multiplicador com que foi calculada');
+  pay=Math.round((pay+stage.ev.paid+Number.EPSILON)*100)/100;
+  checked33++;
+ }
+ ok(pay<=300&&checked33>0,'cadeia de cascatas permanece coberta pelo fundo');
+}
+ok(dbsource.includes('s.freeMultiplier>1000')&&
+ recoverySource.includes('Math.min(1000,')&&
+ main.includes('outcome.spinMultiplier'),
+ 'recuperação, histórico e HUD aceitam novos multiplicadores');
+console.log('Phaser V3.4: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

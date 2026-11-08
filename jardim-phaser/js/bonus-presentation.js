@@ -19,6 +19,6 @@ export function holdDisplay(hold){
 export function freeDisplay(snapshot){
  const remaining=Math.max(0,Math.trunc(Number(snapshot.freeSpins)||0));
  const total=Math.max(0,Number(snapshot.freeTotal)||0);
- const multiplier=Math.max(1,Math.min(5,Number(snapshot.freeMultiplier)||1));
+ const multiplier=Math.max(1,Math.min(1000,Number(snapshot.freeMultiplier)||1));
  return {remaining,total,multiplier};
 }

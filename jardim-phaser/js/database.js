@@ -43,7 +43,7 @@ export function validateBackup(data){
  }
  if(!finiteRange(s.stake,.05,10)||!Number.isInteger(s.spins)||s.spins<0||
     s.spins>1e9||!Number.isInteger(s.freeSpins)||s.freeSpins<0||s.freeSpins>60||
-    !Number.isInteger(s.freeMultiplier)||s.freeMultiplier<1||s.freeMultiplier>5||
+    !Number.isInteger(s.freeMultiplier)||s.freeMultiplier<1||s.freeMultiplier>1000||
     !['base','free','hold'].includes(s.mode))
   throw Error('Os contadores e o modo da cópia são inválidos.');
  if(s.mode==='hold'){
