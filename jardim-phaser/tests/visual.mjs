@@ -14,7 +14,7 @@ try{
   const page=await browser.newPage({viewport:{width:scenario.width,height:scenario.height},deviceScaleFactor:1});
   const errors=[];
   page.on('pageerror',err=>errors.push(err.message));
-  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.3.1',{waitUntil:'domcontentloaded'});
+  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.3.2',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.jardimPhaserScene?.ready===true,{timeout:30000});
   const metrics=await page.evaluate(()=>{
    const box=sel=>{
@@ -227,7 +227,7 @@ try{
    assert(graphics.blocked&&graphics.prevented&&
      JSON.stringify(graphics.before)===JSON.stringify(restored),
      'WebGL suspenso ou saldo alterado: '+JSON.stringify({graphics,restored}));
-   console.log('PASS restauro WebGL V4.3.1: '+JSON.stringify({graphics,restored}));
+   console.log('PASS restauro WebGL V4.3.2: '+JSON.stringify({graphics,restored}));
   }
   const zoomPrevented=await page.evaluate(()=>{
    const target=document.querySelector('#multiTotal');
@@ -242,7 +242,7 @@ try{
  }
  const landscape=await browser.newPage({viewport:{width:844,height:390}});
  try{
-  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.3.1',{waitUntil:'domcontentloaded'});
+  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.3.2',{waitUntil:'domcontentloaded'});
   const visibility=await landscape.evaluate(()=>{
    const e=document.querySelector('#portraitLock');
    const s=getComputedStyle(e);
