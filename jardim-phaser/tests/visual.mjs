@@ -14,7 +14,7 @@ try{
   const page=await browser.newPage({viewport:{width:scenario.width,height:scenario.height},deviceScaleFactor:1});
   const errors=[];
   page.on('pageerror',err=>errors.push(err.message));
-  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.0',{waitUntil:'domcontentloaded'});
+  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.1',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.jardimPhaserScene?.ready===true,{timeout:30000});
   const metrics=await page.evaluate(()=>{
    const box=sel=>{
@@ -114,6 +114,28 @@ try{
     'giro normal dura mais e pára na combinação original: '+JSON.stringify(timing));
    console.log('PASS giro normal V3.9.1: '+JSON.stringify(timing));
   }
+  if(scenario.name==='iphone-390x844'){
+   const checkFall=await page.evaluate(async()=>{
+    const scene=window.jardimPhaserScene;
+    const initial=[[0,1,8],[2,10,4],[8,0,1],[4,2,10],[1,8,4]];
+    const after=initial.map(col=>col.slice());
+    after[1]=[7,2,4];
+    scene.recover(initial);
+    await scene.burst([{c:1,r:1},{c:1,r:1}],{destroy:true,duration:420});
+    await scene.cascade(after,[{c:1,r:1}],{turbo:false});
+    const correct=after.every((col,c)=>col.every((id,r)=>
+      scene.columns[c].visible[r].symbol===
+      ['potion','green','heart','teapot','wild','gem','mushroom','hat','rose','scatter','stone','coin'][id]));
+    const result={correct,busy:scene.busy,
+      aligned:scene.columns.every(col=>col.visible.every((piece,r)=>
+       Math.abs(piece.sprite.y-(r+.5)*180)<.1))};
+    scene.recover(initial);
+    return result;
+   });
+   assert(checkFall.correct&&!checkFall.busy&&checkFall.aligned,
+    'cascata preserva combinações e a grelha: '+JSON.stringify(checkFall));
+   console.log('PASS brilho e cascata V4.1: '+JSON.stringify(checkFall));
+  }
   const zoomPrevented=await page.evaluate(()=>{
    const target=document.querySelector('#multiTotal');
    const event=new MouseEvent('dblclick',{bubbles:true,cancelable:true});
@@ -127,7 +149,7 @@ try{
  }
  const landscape=await browser.newPage({viewport:{width:844,height:390}});
  try{
-  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.0',{waitUntil:'domcontentloaded'});
+  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.1',{waitUntil:'domcontentloaded'});
   const visibility=await landscape.evaluate(()=>{
    const e=document.querySelector('#portraitLock');
    const s=getComputedStyle(e);

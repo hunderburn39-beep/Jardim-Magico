@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.0
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.1
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -367,3 +367,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.9.1
 - Testes acrescentados para os doze símbolos e para a seleção das cinco fontes HD. Motor matemático, giro aprovado da V3.9.1, 9:16, multiplicadores e bónus não alterados.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.0
+
+## V4.1 — brilho, dissipação e quedas mais fluidas
+
+- Quando há vitória com nova cascata, cada peça premiada ganha um **brilho breve**, dissolve-se suavemente para cima e libertam-se até **3 partículas por peça** (apenas uma no modo leve). Símbolos repetidos por várias linhas só desaparecem uma vez.
+- Quando é a última combinação da spin, os símbolos **apenas brilham e permanecem**; não desaparecem sem que haja novas peças para entrar.
+- A gravidade visual passou a ter um ligeiro desfasamento entre colunas e uma **aterragem elástica discreta** nas peças novas. Turbo e modo leve eliminam o ressalto, mantendo transições curtas. Um pequeno brilho no fundo identifica as colunas que receberam novas peças, no máximo cinco efeitos.
+- O Phaser continua a recuperar o tabuleiro após qualquer interrupção: halos e partículas transitórios são destruídos, sem repetir a aposta. Sem efeitos adicionais por frame, sem som novo e sem alterações ao RNG, prémios, multiplicadores, Free Spins, Hold & Win ou reserva da demonstração.
+- Testes Node e navegador confirmam a remoção única, combinações corretas, alinhamento das peças e manutenção do jogo vertical **9:16** e do giro normal V3.9.1.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.1

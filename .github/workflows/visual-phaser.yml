@@ -15,6 +15,7 @@ on:
       - 'assets/imagens/jm40-moeda-magica.svg'
       - 'jardim-phaser/js/reels.js'
       - 'jardim-phaser/js/spin-motion-v391.js'
+      - 'jardim-phaser/js/cascade-fx-v41.js'
       - 'assets/imagens/jm38-*.svg'
       - 'jardim-phaser/js/art-presentation-v37.js'
       - 'jardim-phaser/js/reels.js'
@@ -70,6 +71,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phaser-v39-visual
+          name: phaser-v41-visual
           path: visual-previews/
           if-no-files-found: ignore

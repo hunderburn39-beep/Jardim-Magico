@@ -45,6 +45,7 @@ const icon38Css=await read('../css/icones-v38.css');
 const material39Css=await read('../css/materiais-v39.css');
 const material39Code=await read('../js/material-v39.js');
 const timing391Code=await read('../js/spin-motion-v391.js');
+const cascade41Code=await read('../js/cascade-fx-v41.js');
 const svg38=await Promise.all(['caracol','joaninha','flor-vermelha','flor-azul','pedra','wild'].map(name=>read('../../assets/imagens/jm38-'+name+'.svg')));
 const art37Code=await read('../js/art-presentation-v37.js');
 const supervisorSource=await read('../js/visual-supervisor-v30.js');
@@ -128,16 +129,20 @@ const testFxBudget=new Function(parseModule(perfSource)+'\nreturn burstParticleB
 const artMock37=new Function(parseModule(art37Code)+
  '\nreturn {symbolDisplay,wildBadgePlacement};')();
 const Spin391=new Function(parseModule(timing391Code)+'\nreturn spinMotionProfile;')();
+const Fx41=new Function(parseModule(cascade41Code)+
+ '\nreturn {burstMotionProfile,cascadeMotionProfile};')();
 const factory=new Function('Phaser','SYMBOLS','newBoard','burstParticleBudget',
  'symbolDisplay','wildBadgePlacement','bakeMaterial','spinMotionProfile',
+ 'burstMotionProfile','cascadeMotionProfile',
  parseModule(reels)+'\nreturn ReelScene;');
 const Scene=factory(globalThis.Phaser,source.match(/SYMBOLS=\[.*?\]/)?.[0],
  ()=>exact,testFxBudget,artMock37.symbolDisplay,artMock37.wildBadgePlacement,
- ()=>null,Spin391);
+ ()=>null,Spin391,Fx41.burstMotionProfile,Fx41.cascadeMotionProfile);
 // More predictable: parse exports and obtain original symbol labels.
 const SYMBOLS=['potion','green','heart','teapot','wild','gem','mushroom','hat','rose','scatter','stone','coin'];
 const Reel=factory(globalThis.Phaser,SYMBOLS,()=>exact,testFxBudget,
- artMock37.symbolDisplay,artMock37.wildBadgePlacement,()=>null,Spin391);
+ artMock37.symbolDisplay,artMock37.wildBadgePlacement,()=>null,Spin391,
+ Fx41.burstMotionProfile,Fx41.cascadeMotionProfile);
 // V1.3: a folha artística tem os nove ícones na ordem original, sem
 // espelhamento e sem alterar as regras dos prémios ou a queda aprovada.
 const scene=new Reel();
@@ -425,7 +430,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.0'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.1'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -458,7 +463,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=4.0'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=4.1'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1271,4 +1276,29 @@ ok(coinSvg40.includes('<svg')&&coinSvg40.includes('radialGradient')&&
  reels.includes("this.load.svg('premium-coin'")&&
  reels.includes('this.coinHD=true;'),
  'moeda 2× violeta e dourada com textura Phaser');
-console.log('Phaser V4.0: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const b41=Fx41.burstMotionProfile(12,false,true,780);
+const lite41=Fx41.burstMotionProfile(12,true,true,780);
+const finale41=Fx41.burstMotionProfile(12,false,false,780);
+ok(b41.charge>0&&b41.particles<=3&&lite41.particles===1&&
+ lite41.highlight===false&&b41.fadeMs+b41.charge<780,
+ 'peças premiadas recebem brilho inicial e dissipação dentro do prazo');
+ok(finale41.charge===0&&finale41.lift===0,
+ 'na última queda a combinação brilha mas permanece na grelha');
+const fall41=Fx41.cascadeMotionProfile(false,4,true,false);
+const fastFall41=Fx41.cascadeMotionProfile(true,4,true,false);
+const liteFall41=Fx41.cascadeMotionProfile(false,4,true,true);
+ok(fall41.ease==='Back.easeOut'&&fastFall41.ease==='Cubic.easeOut'&&
+ liteFall41.ease==='Cubic.easeOut'&&
+ fall41.duration<700&&fastFall41.duration<400,
+ 'aterragem ligeiramente elástica no normal e sem ressalto no Turbo/modo leve');
+ok(Fx41.cascadeMotionProfile(false,0,false).delay===0&&
+ Fx41.cascadeMotionProfile(false,4,false).delay>0&&
+ reels.includes('const arrivingColumns=new Set(removed.map(p=>p.c))')&&
+ reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
+ 'colunas caem com pequeno desfasamento sem mudar as peças');
+ok(reels.includes('for(const c of arrivingColumns)')&&
+ reels.includes('if(!this.liteEffects&&!turbo)')&&
+ reels.includes('this.clearFx();')&&
+ !main.includes('runSpin() // V4.1'),
+ 'luz de aterragem limitada e efeitos libertados na recuperação');
+console.log('Phaser V4.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

@@ -6,6 +6,7 @@ import {burstParticleBudget} from './performance-v17.js?v=2.9';
 import {symbolDisplay,wildBadgePlacement} from './art-presentation-v37.js?v=4.0';
 import {bakeMaterial} from './material-v39.js?v=4.0';
 import {spinMotionProfile} from './spin-motion-v391.js?v=3.9.1';
+import {burstMotionProfile,cascadeMotionProfile} from './cascade-fx-v41.js?v=4.1';
 const DESIGN_W=900,DESIGN_H=540,CW=DESIGN_W/5,CH=DESIGN_H/3;
 const SOURCES={
  potion:'3f3213b7316d5cf176.png',
@@ -443,9 +444,12 @@ class ReelScene extends Phaser.Scene{
    if(sprite)targets.push({c,r,sprite});
   }
   if(!targets.length)return Promise.resolve();
-  const particleCount=burstParticleBudget(targets.length,this.liteEffects);
+  const fx=burstMotionProfile(targets.length,this.liteEffects,destroy,duration);
+  // Manter as partículas abaixo do orçamento adaptativo da V2.9.
+  const particleCount=Math.min(fx.particles,
+   burstParticleBudget(targets.length,this.liteEffects));
   const hues=[0xffd77b,0xff98de,0xc5a1ff,0x91f1db];
-  const time=Math.max(160,duration);
+  const time=fx.duration;
   return new Promise(resolve=>{
    let finished=0;
    for(const {c,r,sprite} of targets){
@@ -472,7 +476,7 @@ class ReelScene extends Phaser.Scene{
     }
     for(let i=0;i<particleCount;i++){
      const angle=(i/particleCount)*Math.PI*2+(c*3+r)*.35;
-     const distance=46+(i%3)*12+Math.random()*26;
+     const distance=fx.spread+(i%3)*8;
      const spark=this.trackFx(this.add.circle(x,y,3.2+(i%2)*2.2,
        hues[(i+c+r)%hues.length],.98).setDepth(18));
      spark.setMask?.(this.reelMask);
@@ -489,11 +493,13 @@ class ReelScene extends Phaser.Scene{
     // peças permanecem no sítio e os tambores continuam aprovados.
     this.tweens.add({
      targets:sprite,
-     scaleX:destroy?baseX*.06:baseX*1.11,
-     scaleY:destroy?baseY*.06:baseY*1.11,
+     scaleX:destroy?baseX*.11:baseX*1.10,
+     scaleY:destroy?baseY*.11:baseY*1.10,
      alpha:destroy?0:1,
-     duration:destroy?time*.77:time*.46,
-     ease:destroy?'Back.easeIn':'Sine.easeInOut',
+     ...(destroy?{y:y-fx.lift}:{}),
+     delay:fx.charge,
+     duration:fx.fadeMs,
+     ease:destroy?'Sine.easeIn':'Sine.easeInOut',
      yoyo:!destroy,
      onComplete:()=>{
       if(!destroy){
@@ -524,7 +530,7 @@ class ReelScene extends Phaser.Scene{
    for(const item of kept){
     arranged[bottom]=item;
     item.sprite.setAlpha(1);
-    tweens.push({item,to:(bottom+.5)*CH});
+    tweens.push({item,to:(bottom+.5)*CH,c,newPiece:false});
     bottom--;
    }
    let order=0;
@@ -535,21 +541,23 @@ class ReelScene extends Phaser.Scene{
     this.useSymbol(item,next[c][bottom]);
     item.sprite.y=-(order+.65)*CH;
     item.sprite.setAlpha(1);
-    tweens.push({item,to:(bottom+.5)*CH});
+    tweens.push({item,to:(bottom+.5)*CH,c,newPiece:true});
     order++;bottom--;
    }
    for(let r=0;r<3;r++)arranged[r].slot=r;
    col.visible=arranged;
    col.items=col.items.filter(item=>item.slot===-1||item.slot===3).concat(arranged);
   }
-  const duration=turbo?290:620;
+  const arrivingColumns=new Set(removed.map(p=>p.c));
   return new Promise(resolve=>{
    if(!tweens.length){
     this.setBoard(next);resolve(next);return;
    }
    let finished=0;
-   for(const {item,to} of tweens){
-    this.tweens.add({targets:item.sprite,y:to,duration,ease:'Cubic.easeIn',
+   for(const {item,to,c,newPiece} of tweens){
+    const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects);
+    this.tweens.add({targets:item.sprite,y:to,
+      duration:motion.duration,delay:motion.delay,ease:motion.ease,
       onComplete:()=>{
        finished++;
        if(finished===tweens.length){
@@ -558,6 +566,21 @@ class ReelScene extends Phaser.Scene{
          for(let r=0;r<3;r++)this.useSymbol(col.visible[r],next[c][r]);
         }
         this.board=next.map(x=>x.slice());
+        // Um brilho suave por coluna atingida, sem partículas em modo
+        // leve/Turbo. A transição termina mesmo que o brilho continue.
+        if(!this.liteEffects&&!turbo){
+         for(const c of arrivingColumns){
+          if(!Number.isInteger(c)||c<0||c>=5)continue;
+          const halo=this.trackFx(this.add.circle(
+           (c+.5)*CW,2.5*CH,CW*.23,0xffda8e,.22).setDepth(12));
+          halo.setMask?.(this.reelMask);
+          this.tweens.add({
+           targets:halo,scale:1.55,alpha:0,duration:210,
+           ease:'Sine.easeOut',
+           onComplete:()=>this.disposeFx(halo)
+          });
+         }
+        }
         this.busy=false;resolve(next);
        }
       }
