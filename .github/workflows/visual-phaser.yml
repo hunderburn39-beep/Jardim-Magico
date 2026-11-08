@@ -1,0 +1,40 @@
+name: Conferir apresentação Jardim Phaser
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/visual-phaser.yml'
+      - 'jardim-phaser/tests/visual.mjs'
+      - 'jardim-phaser/css/cenario-v35.css'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  comparar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar navegador de testes
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Servir jogo real
+        run: |
+          python3 -m http.server 8123 --bind 127.0.0.1 > /tmp/jardim-http.log 2>&1 &
+          sleep 2
+      - name: Validar e fotografar três ecrãs
+        run: node jardim-phaser/tests/visual.mjs
+      - name: Guardar comparações visuais
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phaser-v35-visual
+          path: visual-previews/
+          if-no-files-found: ignore
