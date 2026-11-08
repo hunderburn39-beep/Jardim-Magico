@@ -648,7 +648,8 @@ ok(main.includes('writerReady=exclusive;')&&
  main.includes('if(!writerReady||!ready||!scene')===false&&
  main.includes('writerTimer=setInterval(refreshWriter,5000)'),
  'aquisição e renovação de writer integradas');
-ok(main.includes('if(document.hidden||pageSuspended||rendererUnavailable||writerCheckBusy')&&
+ok(main.includes('if(writerCheckBusy){')&&
+ main.includes('if(document.hidden||pageSuspended||rendererUnavailable||(running&&!writerReady)||mutating||holdBusy)return;')&&
  main.includes('writerReleasePending=release;')&&
  main.includes('if(writerReleasePending)await writerReleasePending;')&&
  main.includes('releaseIfHidden();'),
