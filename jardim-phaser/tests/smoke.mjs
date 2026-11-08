@@ -719,7 +719,7 @@ ok(main.includes('freePaused=true;update();')&&
  'fechar modal de recuperação não inicia Free Spins');
 ok(main.includes('async function withMutation(action)')&&
  main.includes("if(!(await persist('stake')))")&&
- main.includes('if(!document.hidden||!writerReady||running||mutating||holdBusy)return false;')&&
+ main.includes('if((!document.hidden&&!force)||!writerReady||running||mutating||holdBusy)return false;')&&
  main.includes('if(document.hidden)await releaseIfHidden();'),
  'aposta e libertação de aba respeitam gravações em curso');
 ok(html.includes('id="sessionBanner"')&&html.includes('session-v24.css?v=2.4')&&
