@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" aria-label="Caracol castanho brilhante do Jardim Mágico"><title>Caracol castanho brilhante do Jardim Mágico</title><defs><filter id="shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="13"/></filter>
+<linearGradient id="leaf" x1=".12" y1="0" x2=".92" y2="1"><stop stop-color="#b9ed55"/><stop offset=".23" stop-color="#4ba94c"/><stop offset=".73" stop-color="#1c6539"/><stop offset="1" stop-color="#123e2c"/></linearGradient>
+<radialGradient id="light" cx=".28" cy=".13" r=".94"><stop stop-color="#fffadc" stop-opacity=".84"/><stop offset=".3" stop-color="#ffeeba" stop-opacity=".12"/><stop offset="1" stop-color="#1e190d" stop-opacity=".24"/></radialGradient><radialGradient id="shell" cx=".27" cy=".22" r=".82"><stop stop-color="#ffe7a7"/><stop offset=".22" stop-color="#d7a364"/><stop offset=".56" stop-color="#925524"/><stop offset=".88" stop-color="#613515"/><stop offset="1" stop-color="#422b1c"/></radialGradient>
+<linearGradient id="skin" x1=".19" y1="0" x2=".8" y2="1"><stop stop-color="#f6d396"/><stop offset=".5" stop-color="#c18b4e"/><stop offset="1" stop-color="#96633e"/></linearGradient></defs>
+<ellipse cx="255" cy="423" rx="167" ry="26" fill="#090f10" opacity=".3" filter="url(#shadow)"/>
+<g transform="translate(377 398) rotate(62) scale(1.2)"><path d="M0 0 C-26-40-20-85 21-111 C43-71 43-27 0 0Z" fill="url(#leaf)" stroke="#b1e66b" stroke-width="2"/><path d="M0 0 Q14-53 21-111 M7-25 L-12-47 M12-53 L31-71" fill="none" stroke="#b6df82" stroke-opacity=".7" stroke-width="3"/></g><g transform="translate(138 402) rotate(-70) scale(0.8)"><path d="M0 0 C-26-40-20-85 21-111 C43-71 43-27 0 0Z" fill="url(#leaf)" stroke="#b1e66b" stroke-width="2"/><path d="M0 0 Q14-53 21-111 M7-25 L-12-47 M12-53 L31-71" fill="none" stroke="#b6df82" stroke-opacity=".7" stroke-width="3"/></g>
+<path d="M78 398 C133 384 178 391 243 386 C300 378 353 380 405 391 C365 422 170 446 78 398Z" fill="#3c8f45" stroke="#b3e77c" stroke-width="5"/>
+<path d="M94 363 C131 343 194 354 236 351 C276 346 298 332 330 323 C352 285 368 264 389 280 C419 301 405 371 374 392 C294 410 180 411 104 391 Q80 386 94 363Z" fill="url(#skin)" stroke="#7e562e" stroke-width="5"/>
+<path d="M354 301 C359 249 352 201 368 182 M385 288 C402 248 410 224 430 208" stroke="#aa7948" stroke-linecap="round" stroke-width="15" fill="none"/>
+<circle cx="368" cy="175" r="24" fill="#d3ab70" stroke="#7b4e2c" stroke-width="4"/>
+<circle cx="433" cy="200" r="24" fill="#d3ab70" stroke="#7b4e2c" stroke-width="4"/>
+<circle cx="372" cy="171" r="10" fill="#191b15"/><circle cx="435" cy="194" r="10" fill="#191b15"/>
+<circle cx="375" cy="167" r="4" fill="#fff8d4"/><circle cx="438" cy="189" r="4" fill="#fff8d4"/>
+<path d="M366 346 Q384 358 395 347" stroke="#714529" stroke-width="5" fill="none" stroke-linecap="round"/>
+<circle cx="220" cy="264" r="139" fill="#3b241b" opacity=".36" filter="url(#shadow)"/>
+<path d="M114 283 C91 221 118 154 174 133 C237 103 303 119 330 171 C363 226 334 319 284 363 C238 400 165 380 132 339 Z" fill="url(#shell)" stroke="#72431e" stroke-width="9"/>
+<path d="M167 198 C193 152 253 146 291 186 C334 234 300 310 254 323 C212 339 175 308 174 276 C169 249 191 217 219 212 C253 205 278 231 274 257 C274 281 246 289 232 273 C221 260 229 245 242 246" fill="none" stroke="#633714" stroke-width="23" stroke-linecap="round"/>
+<path d="M167 198 C193 152 253 146 291 186 C334 234 300 310 254 323 C212 339 175 308 174 276 C169 249 191 217 219 212 C253 205 278 231 274 257" fill="none" stroke="#f5c989" stroke-width="7" stroke-linecap="round" opacity=".83"/>
+<path d="M129 260 Q132 185 178 161 M122 294 Q150 358 197 368" stroke="#fff0c1" opacity=".55" stroke-width="10" fill="none" stroke-linecap="round"/>
+</svg>

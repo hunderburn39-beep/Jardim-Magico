@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" aria-label="Pedra bloqueadora de granito cinzento realista"><title>Pedra bloqueadora de granito cinzento realista</title><defs><filter id="shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="13"/></filter>
+<linearGradient id="leaf" x1=".12" y1="0" x2=".92" y2="1"><stop stop-color="#b9ed55"/><stop offset=".23" stop-color="#4ba94c"/><stop offset=".73" stop-color="#1c6539"/><stop offset="1" stop-color="#123e2c"/></linearGradient>
+<radialGradient id="light" cx=".28" cy=".13" r=".94"><stop stop-color="#fffadc" stop-opacity=".84"/><stop offset=".3" stop-color="#ffeeba" stop-opacity=".12"/><stop offset="1" stop-color="#1e190d" stop-opacity=".24"/></radialGradient><linearGradient id="stone" x1=".2" y1=".1" x2=".87" y2=".9"><stop stop-color="#c2c0b6"/><stop offset=".22" stop-color="#91928d"/><stop offset=".56" stop-color="#626361"/><stop offset="1" stop-color="#282b2d"/></linearGradient>
+<linearGradient id="rockLit" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e3dbcb"/><stop offset=".45" stop-color="#a8a79c"/><stop offset="1" stop-color="#6a6c6a"/></linearGradient>
+<clipPath id="rockClip"><path d="M63 306 L87 237 L127 173 L187 119 L251 90 L311 104 L363 151 L427 253 L446 320 L413 393 L332 436 L217 440 L135 407 L86 360Z"/></clipPath>
+<filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".28" numOctaves="3" seed="8" result="noise"/><feColorMatrix in="noise" type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".22"/></feComponentTransfer></filter></defs>
+<ellipse cx="253" cy="449" rx="166" ry="25" fill="#000" opacity=".30" filter="url(#shadow)"/>
+<path d="M63 306 L87 237 L127 173 L187 119 L251 90 L311 104 L363 151 L427 253 L446 320 L413 393 L332 436 L217 440 L135 407 L86 360Z" fill="url(#stone)" stroke="#2a2d2d" stroke-width="5"/>
+<g clip-path="url(#rockClip)">
+<path d="M127 173 L187 119 L251 90 L311 104 L300 192 L234 224 L157 228 Z" fill="url(#rockLit)"/>
+<path d="M63 306 L87 237 L127 173 L157 228 L201 306 L168 392 L86 360Z" fill="#656a68"/>
+<path d="M157 228 L234 224 L300 192 L363 151 L427 253 L358 299 L267 319 L201 306Z" fill="#97968c"/>
+<path d="M168 392 L201 306 L267 319 L332 436 L217 440 L135 407 Z" fill="#555654"/>
+<path d="M267 319 L358 299 L427 253 L446 320 L413 393 L332 436Z" fill="#353738"/>
+<path d="M251 90 L311 104 L363 151 L300 192 L234 224Z" fill="#c3bfb2" opacity=".35"/>
+<path d="M157 228 L234 224 L300 192 L363 151 M201 306 L267 319 L358 299 M332 436 L267 319L234 224" stroke="#1b2122" stroke-width="4" opacity=".30" fill="none"/>
+<path d="M142 175 L201 132 L245 113 M124 268 L106 320 M380 223 L416 283 M221 405 L288 416" fill="none" stroke="#f0e5cc" stroke-opacity=".38" stroke-width="5"/>
+<rect x="51" y="83" width="418" height="369" fill="#939a9a" filter="url(#grain)" opacity=".55"/>
+<g fill="#e0dacf" opacity=".54"><circle cx="192" cy="160" r="3"/><circle cx="256" cy="192" r="2"/><circle cx="310" cy="247" r="2.2"/><circle cx="153" cy="318" r="2.4"/><circle cx="341" cy="351" r="2.2"/><circle cx="285" cy="390" r="2.3"/></g>
+</g></svg>
