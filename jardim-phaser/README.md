@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.4
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.5
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -300,3 +300,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.2
 - Os assets permanecem independentes em `assets/imagens/jm34-*.svg`, o código de renderização em `jardim-phaser/js/reels.js` e o estilo final em `jardim-phaser/css/bosque-v34.css`. Preparado para ajustes posteriores sem alterar a banca de demonstração.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.4
+
+## V3.5 — cenário premium ajustado às duas referências fornecidas
+
+- O cenário visível passa a usar o fundo imersivo já incluído no projeto `jm80-cenario-imersivo.svg`, com a profundidade do bosque e o lago até ao fundo. Não é uma captura estática: os tambores e todos os botões continuam reais e animados.
+- No retrato normal, o ecrã distribui-se entre **logótipo maior**, quatro jackpots, barra de queda/MULTI, tabuleiro 5×3 com moldura florida, linha de estado, painéis de saldo e aposta, grande botão RODAR verde e TURBO dourado. Os tamanhos são proporcionais à janela; em ecrãs muito baixos e paisagem mantém-se um layout compacto acessível.
+- Foram reforçados acabamentos de madeira/dourado, púrpura profundo, letras legíveis e brilhos subtis. O botão de rodar ganhou pequenas flores ornamentais e mantém o foco/touch nativo; as bordas são decorativas e nunca capturam toques.
+- Continuam os símbolos selecionados: **caracol, joaninha, pedra realista, flor vermelha, flor azul e WILD**. Sem alterar os IDs de símbolos, pesos, linhas ou resultados. Os WILD premiados mostram os seus valores individuais e o MULTI soma entre quedas, tal como V3.4.
+- Preservados IndexedDB, Free Spins, Hold & Win, RTP não auditado, os créditos virtuais e todos os mecanismos de recuperação; os testes de regressão verificam os recursos e as regiões responsivas.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.5

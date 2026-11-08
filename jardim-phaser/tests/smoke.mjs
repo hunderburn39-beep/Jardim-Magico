@@ -38,6 +38,7 @@ const winStyle27=await read('../css/celebracoes-v27.css');
 const responsive28=await read('../css/responsive-v28.css');
 const perfCSS29=await read('../css/performance-v29.css');
 const botanical34Css=await read('../css/bosque-v34.css');
+const scene35Css=await read('../css/cenario-v35.css');
 const supervisorSource=await read('../js/visual-supervisor-v30.js');
 const turnQueue31Source=await read('../js/turn-queue-v31.js');
 const pinCss=await read('../css/admin-pin-v21.css');
@@ -409,7 +410,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.4'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.5'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -442,7 +443,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=3.4'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=3.5'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1106,4 +1107,27 @@ ok(html.includes('bosque-v34.css?v=3.4')&&
  botanical34Css.includes('jm34-topo.svg')&&
  botanical34Css.includes('pointer-events:none'),
  'nova moldura e topo integrados sem impedir os toques');
-console.log('Phaser V3.4: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+ok(html.includes('cenario-v35.css?v=3.5')&&
+ html.indexOf('cenario-v35.css')>html.indexOf('bosque-v34.css'),
+ 'o cenário de referência é a última camada CSS');
+ok(scene35Css.includes('jm80-cenario-imersivo.svg')&&
+ scene35Css.includes('jm34-moldura.svg')&&
+ scene35Css.includes('.machine .game-header .logo'),
+ 'bosque imersivo, aro botânico e logótipo grande integrados');
+ok(scene35Css.includes('grid-template-rows:')&&
+ scene35Css.includes('.machine .frame-region{grid-column:1;grid-row:4}')&&
+ scene35Css.includes('.machine .dashboard{grid-column:1;grid-row:6}')&&
+ scene35Css.includes('.machine .controls{grid-column:1;grid-row:7}'),
+ 'topo, jackpots, tambores, painel e botões na sequência da referência');
+ok(scene35Css.includes('aspect-ratio:5/3')&&
+ scene35Css.includes('width:min(100%,58dvh)')&&
+ scene35Css.includes('@media (orientation:landscape)'),
+ 'tambores preservam 5:3 sem esticar a imagem em paisagem');
+ok(scene35Css.includes('jm34-flor-vermelha.svg')&&
+ scene35Css.includes('pointer-events:none')&&
+ scene35Css.includes('prefers-reduced-motion'),
+ 'controlos ornamentados não bloqueiam os toques');
+ok(scene35Css.includes('.machine .dashboard .panel')&&
+ scene35Css.includes('.machine .side-btn.turbo[aria-pressed=true]'),
+ 'painéis e turbo conservam interação e contraste');
+console.log('Phaser V3.5: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
