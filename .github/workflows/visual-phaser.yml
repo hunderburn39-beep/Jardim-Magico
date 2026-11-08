@@ -16,6 +16,9 @@ on:
       - 'jardim-phaser/js/reels.js'
       - 'jardim-phaser/js/spin-motion-v391.js'
       - 'jardim-phaser/js/cascade-fx-v41.js'
+      - 'jardim-phaser/js/coin-values-v42.js'
+      - 'jardim-phaser/css/moedas-porco-v42.css'
+      - 'assets/imagens/jm42-moeda-sem-numero.svg'
       - 'assets/imagens/jm38-*.svg'
       - 'jardim-phaser/js/art-presentation-v37.js'
       - 'jardim-phaser/js/reels.js'
@@ -71,6 +74,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phaser-v41-visual
+          name: phaser-v42-visual
           path: visual-previews/
           if-no-files-found: ignore

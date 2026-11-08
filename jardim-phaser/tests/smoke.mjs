@@ -46,6 +46,8 @@ const material39Css=await read('../css/materiais-v39.css');
 const material39Code=await read('../js/material-v39.js');
 const timing391Code=await read('../js/spin-motion-v391.js');
 const cascade41Code=await read('../js/cascade-fx-v41.js');
+const coin42Code=await read('../js/coin-values-v42.js');
+const pig42Css=await read('../css/moedas-porco-v42.css');
 const svg38=await Promise.all(['caracol','joaninha','flor-vermelha','flor-azul','pedra','wild'].map(name=>read('../../assets/imagens/jm38-'+name+'.svg')));
 const art37Code=await read('../js/art-presentation-v37.js');
 const supervisorSource=await read('../js/visual-supervisor-v30.js');
@@ -131,18 +133,21 @@ const artMock37=new Function(parseModule(art37Code)+
 const Spin391=new Function(parseModule(timing391Code)+'\nreturn spinMotionProfile;')();
 const Fx41=new Function(parseModule(cascade41Code)+
  '\nreturn {burstMotionProfile,cascadeMotionProfile};')();
+const Coins42=new Function(parseModule(coin42Code)+
+ '\nreturn {coinValue,coinLabel,valuedPositions,pigGrowth};')();
 const factory=new Function('Phaser','SYMBOLS','newBoard','burstParticleBudget',
  'symbolDisplay','wildBadgePlacement','bakeMaterial','spinMotionProfile',
- 'burstMotionProfile','cascadeMotionProfile',
+ 'burstMotionProfile','cascadeMotionProfile','valuedPositions',
  parseModule(reels)+'\nreturn ReelScene;');
 const Scene=factory(globalThis.Phaser,source.match(/SYMBOLS=\[.*?\]/)?.[0],
  ()=>exact,testFxBudget,artMock37.symbolDisplay,artMock37.wildBadgePlacement,
- ()=>null,Spin391,Fx41.burstMotionProfile,Fx41.cascadeMotionProfile);
+ ()=>null,Spin391,Fx41.burstMotionProfile,Fx41.cascadeMotionProfile,
+ Coins42.valuedPositions);
 // More predictable: parse exports and obtain original symbol labels.
 const SYMBOLS=['potion','green','heart','teapot','wild','gem','mushroom','hat','rose','scatter','stone','coin'];
 const Reel=factory(globalThis.Phaser,SYMBOLS,()=>exact,testFxBudget,
  artMock37.symbolDisplay,artMock37.wildBadgePlacement,()=>null,Spin391,
- Fx41.burstMotionProfile,Fx41.cascadeMotionProfile);
+ Fx41.burstMotionProfile,Fx41.cascadeMotionProfile,Coins42.valuedPositions);
 // V1.3: a folha artística tem os nove ícones na ordem original, sem
 // espelhamento e sem alterar as regras dos prémios ou a queda aprovada.
 const scene=new Reel();
@@ -430,7 +435,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.1'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.2'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -463,7 +468,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=4.1'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=4.2'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1114,11 +1119,11 @@ ok(reels.includes("this.load.svg('botanical-'+symbol")&&
  reels.includes("if(!canvas&&atlas&&atlasTileFor(symbol))")&&
  reels.includes("this.textures.addCanvas(art,canvas)"),
  'texturas do bosque usam SVG e as restantes mantêm fallback HD');
-ok(reels.includes('showWildValues(awards=[])')&&
- reels.includes('this.clearWildValues();')&&
- main.includes('scene.showWildValues?.(stage.ev.wildAwards||[])')&&
+ok(reels.includes('showWildValues(awards=[],board=[],bet=.2,multiplier=1)')&&
+ reels.includes('valuedPositions(awards,board,bet,multiplier)')&&
+ main.includes('scene.showWildValues?.(stage.ev.wildAwards||[],stage.board,')&&
  main.includes('scene.clearWildValues?.();'),
- 'multiplicador individual fica visível sobre o WILD e limpa entre cascatas');
+ 'multiplicadores substituídos por moedas com valores e limpeza entre quedas');
 ok(main.includes("output.classList.add('multi-rise')")&&
  botanical34Css.includes('@keyframes jm34-rise')&&
  botanical34Css.includes('.branch-frame'),
@@ -1301,4 +1306,36 @@ ok(reels.includes('for(const c of arrivingColumns)')&&
  reels.includes('this.clearFx();')&&
  !main.includes('runSpin() // V4.1'),
  'luz de aterragem limitada e efeitos libertados na recuperação');
-console.log('Phaser V4.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+ok(Coins42.coinValue(.20,2)===.40&&
+ Coins42.coinLabel(.20,3)==='0,60'&&
+ Coins42.coinValue(10,5)===50,
+ 'moedas recebem valor correto em função de aposta e MULTI');
+ok(Coins42.coinValue(-1,3)===0&&Coins42.coinValue(.2,NaN)===0,
+ 'valores inválidos nunca desenham pagamentos inventados');
+const coinBoard42=Array.from({length:5},()=>[0,0,0]);
+coinBoard42[2][1]=11;
+const valueCells42=Coins42.valuedPositions([{c:1,r:2,value:3}],
+ coinBoard42,.20,5);
+ok(valueCells42.length===2&&valueCells42.every(x=>x.label==='1,00')&&
+ valueCells42.some(x=>x.kind==='coin')&&valueCells42.some(x=>x.kind==='wild'),
+ 'WILDs e moeda especial apresentam aposta × MULTI atual');
+ok(Coins42.pigGrowth(0).scale<Coins42.pigGrowth(19).scale&&
+ Coins42.pigGrowth(20).round===1&&
+ Coins42.pigGrowth(20).scale===Coins42.pigGrowth(0).scale,
+ 'porquinho cresce progressivamente e reinicia ao rebentar');
+ok(!html.includes('id="reserve"')&&
+ !html.includes('COFRE MÁGICO</small>')&&
+ html.includes('class="piggy-art"')&&
+ main.includes('pig.classList.add(\'pig-pop\')')&&
+ pig42Css.includes('@keyframes jm42-pig-pop'),
+ 'só porquinho visível, sem dinheiro e com animação de rebentamento');
+ok(main.includes('money(coinValue(bank.stake,value))')&&
+ !main.includes("cell.textContent=value?value+'×'")&&
+ reels.includes("this.load.svg('coin-value-bg'")&&
+ reels.includes("this.add.image(x,y,'coin-value-bg')"),
+ 'Hold e tabuleiro apresentam valores reais em moedas');
+const blank42=await read('../../assets/imagens/jm42-moeda-sem-numero.svg');
+ok(blank42.includes('<svg')&&!blank42.includes('>2×</text>')&&
+ blank42.includes('radialGradient'),
+ 'moeda sem número fixo aceita valores dinâmicos');
+console.log('Phaser V4.2: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

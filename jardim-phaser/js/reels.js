@@ -7,6 +7,7 @@ import {symbolDisplay,wildBadgePlacement} from './art-presentation-v37.js?v=4.0'
 import {bakeMaterial} from './material-v39.js?v=4.0';
 import {spinMotionProfile} from './spin-motion-v391.js?v=3.9.1';
 import {burstMotionProfile,cascadeMotionProfile} from './cascade-fx-v41.js?v=4.1';
+import {valuedPositions} from './coin-values-v42.js?v=4.2';
 const DESIGN_W=900,DESIGN_H=540,CW=DESIGN_W/5,CH=DESIGN_H/3;
 const SOURCES={
  potion:'3f3213b7316d5cf176.png',
@@ -116,6 +117,7 @@ class ReelScene extends Phaser.Scene{
   for(const [symbol,file] of Object.entries(BOTANICAL_V38))
    this.load.svg('botanical-'+symbol,file,{width:512,height:512});
   this.load.svg('premium-coin','jm40-moeda-magica.svg',{width:512,height:512});
+  this.load.svg('coin-value-bg','jm42-moeda-sem-numero.svg',{width:512,height:512});
   this.load.on('loaderror',file=>{
    this.failedAssets.push(file.key);
    console.warn('Símbolo original não carregou',file.key);
@@ -340,6 +342,7 @@ class ReelScene extends Phaser.Scene{
   if(!Array.isArray(target)||target.length!==5||
     target.some(column=>!Array.isArray(column)||column.length!==3))
    return Promise.reject(Error('Resultado de cinco colunas inválido'));
+  this.clearWildValues();
   this.busy=true;
   let finished=0;
   const total=this.columns.length;
@@ -400,20 +403,30 @@ class ReelScene extends Phaser.Scene{
   }
   this.wildBadges=[];
  }
- showWildValues(awards=[]){
+ showWildValues(awards=[],board=[],bet=.2,multiplier=1){
   this.clearWildValues();
-  if(!this.add?.text||!Array.isArray(awards))return;
-  for(const award of awards){
-   const badge=wildBadgePlacement(award,CW,CH);
-   if(!badge)continue;
-   const label=this.add.text(badge.x,badge.y,badge.label,{
-     fontFamily:'Georgia,serif',fontSize:badge.fontSize+'px',
-     fontStyle:'bold',color:'#fff3bd',backgroundColor:'#521253',
-     padding:{left:9,right:9,top:2,bottom:2},
-     stroke:'#74315f',strokeThickness:4,
-     shadow:{offsetX:1,offsetY:2,color:'#17091c',blur:5,fill:true}
+  if(!this.add?.image||!this.add?.text||!this.textures?.exists('coin-value-bg'))return;
+  // A mesma moeda de valores serve os WILDs premiados e as moedas
+  // especiais. O número é sempre aposta × MULTI da queda.
+  const locations=valuedPositions(awards,board,bet,multiplier);
+  for(const loc of locations){
+   const large=loc.kind==='coin';
+   const diameter=large?CW*.86:CW*.53;
+   const x=(loc.c+(large?.5:.80))*CW;
+   const y=(loc.r+(large?.5:.25))*CH;
+   const bg=this.add.image(x,y,'coin-value-bg');
+   bg.setDisplaySize(diameter,diameter);
+   bg.setDepth(22);
+   if(this.reelMask)bg.setMask(this.reelMask);
+   this.wildBadges.push(bg);
+   const fontSize=Math.max(12,Math.round((large?28:20)-
+    Math.max(0,loc.label.length-4)*(large?2.25:1.7)));
+   const label=this.add.text(x,y,loc.label,{
+    fontFamily:'Georgia,serif',fontSize:fontSize+'px',fontStyle:'bold',
+    color:'#fff1bc',stroke:'#441a36',strokeThickness:3,
+    shadow:{offsetX:1,offsetY:2,color:'#150b21',blur:3,fill:true}
    });
-   label.setOrigin(1,0).setDepth(23);
+   label.setOrigin(.5).setDepth(23);
    if(this.reelMask)label.setMask(this.reelMask);
    this.wildBadges.push(label);
   }

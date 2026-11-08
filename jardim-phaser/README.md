@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.1
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -377,3 +377,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.0
 - Testes Node e navegador confirmam a remoção única, combinações corretas, alinhamento das peças e manutenção do jogo vertical **9:16** e do giro normal V3.9.1.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.1
+
+## V4.2 — moedas com valores e porquinho que cresce e rebenta
+
+- Os WILD premiados e moedas especiais do tabuleiro passam a mostrar **moedas roxas/douradas com montantes** calculados a partir de `aposta × MULTI corrente` (por exemplo, aposta 0,20 × 3 = 0,60 créditos fictícios). O desenho antigo da moeda de valores não contém ×2 nem outro valor fixo: o Phaser apresenta o valor certo dinamicamente a cada queda. Estes montantes são representação visual, não pagamentos base extra.
+- No Hold & Win 4×4, cada moeda apresenta o seu **valor efetivo** (aposta × multiplicador da moeda), em vez de ×1, ×2, ×3. O total continua a ser a soma integral das moedas guardadas e só é atribuído no final; recuperação de sessão mostra os mesmos valores.
+- O porquinho deixa de mostrar dinheiro e texto de cofre: só a figura dourada aparece no painel, aumenta de tamanho à medida que os giros de demonstração avançam e **rebenta visualmente a cada 20 giros**, voltando ao tamanho inicial para começar outro ciclo. Não paga prémios ao rebentar, não altera saldo/reserva nem promete valores de prémio.
+- O botão do porquinho mantém acesso à administração com PIN, mas o ecrã público nunca apresenta o valor interno da reserva no porquinho. Mantidas as funções de administração e cópias de segurança.
+- CSS apenas vertical 9:16, animações reduzidas para quem prefere menos movimento. Testes asseguram a fórmula, limpeza de moedas ao continuar a cascata e ausência de alteração à matemática do motor.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.2

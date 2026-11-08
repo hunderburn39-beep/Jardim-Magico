@@ -19,6 +19,7 @@ import {freeProgress,holdProgress} from './bonus-progress-v26.js?v=2.6';
 import {celebrationView,winBreakdown} from './win-ui-v27.js?v=2.7';
 import {createVisualSupervisor} from './visual-supervisor-v30.js?v=3.0';
 import {createTurnQueue,nextTurn} from './turn-queue-v31.js?v=3.1';
+import {coinValue,pigGrowth} from './coin-values-v42.js?v=4.2';
 const demoDB=createStorageGateway(localDB);
 const adminLock=createAdminPinLock();
 const diagnostics=createDiagnostics();
@@ -39,6 +40,7 @@ let autoLeft=0;
 const turnQueue=createTurnQueue();
 let writerReleasePending=null;
 let bigTimer=null,winTimer=null,dropTimer=null,bonusTimer=null;
+let lastPigSpins=null,pigPopTimer=null;
 let holdBusy=false;
 let freeOrbHistory=[];
 let modalOpen=false,holdsLong=false,longTimer=null;
@@ -79,7 +81,20 @@ function update(){
  renderSessionBanner();
  $('profileStatus').textContent='MODO '+(DEMO_PROFILES[s.profile]||DEMO_PROFILES.normal).toLocaleUpperCase('pt-PT');
  $('balance').textContent=money(s.balance);
- $('reserve').textContent=money(s.reserve);
+ // O valor interno do cofre permanece na base, mas nunca no porquinho.
+ const pig=$('vaultBtn');
+ const growth=pigGrowth(s.spins);
+ pig.style.setProperty('--pig-scale',String(growth.scale));
+ pig.setAttribute('aria-label','Porquinho mágico a crescer (efeito visual)');
+ if(lastPigSpins!==null&&s.spins>lastPigSpins&&
+    growth.round>pigGrowth(lastPigSpins).round){
+  clearTimeout(pigPopTimer);
+  pig.classList.remove('pig-pop');
+  void pig.offsetWidth;
+  pig.classList.add('pig-pop');
+  pigPopTimer=setTimeout(()=>pig.classList.remove('pig-pop'),950);
+ }
+ lastPigSpins=s.spins;
  $('stake').textContent=money(s.stake);
  $('lastWin').textContent=money(s.lastWin);
  $('jpMin').textContent=money(Math.min(s.reserve,s.stake*250));
@@ -340,8 +355,10 @@ async function runSpin(){
    // Uma aba oculta não deve iniciar bursts/cascatas adicionais.
    if(document.hidden){repaired=true;break}
    const stage=stages[i];
-   // Mostrar individualmente ×1…×5 no WILD que foi premiado.
-   scene.showWildValues?.(stage.ev.wildAwards||[]);
+   // As moedas mostram aposta × MULTI atual (valores demonstrativos).
+   // Hold & Win continua a pagar exatamente os multiplicadores guardados.
+   scene.showWildValues?.(stage.ev.wildAwards||[],stage.board,
+    bank.stake,stage.ev.multiplier);
    const wins=stage.ev.lineWins||[];
    const cells=winningCells(stage.ev);
    const next=i<stages.length-1?stages[i+1]:null;
@@ -582,7 +599,7 @@ function showRecoveryState(marker){
   for(const value of marker.grid){
    const cell=document.createElement('span');
    cell.className='recovered-hold-coin'+(Number(value)>0?' with-coin':'');
-   cell.textContent=Number(value)>0?Number(value)+'×':'·';
+   cell.textContent=Number(value)>0?money(coinValue(bank.stake,value)):'·';
    grid.append(cell);
   }
   const caption=document.createElement('p');caption.className='recovered-hold-caption';
@@ -621,8 +638,9 @@ function renderHold(previousGrid=null,hold=bank.hold){
   const cell=document.createElement('div');
   cell.className='hold-cell'+(value?' filled':'')+
    (landing.has(i)?' new-coin':'');
-  cell.textContent=value?value+'×':'✦';
-  cell.setAttribute('aria-label',value?'Moeda de '+value+' vezes':'Espaço vazio');
+  cell.textContent=value?money(coinValue(bank.stake,value)):'✦';
+  cell.setAttribute('aria-label',value?
+   'Moeda de '+money(coinValue(bank.stake,value))+' créditos fictícios':'Espaço vazio');
   grid.append(cell);
  }
  $('holdCoins').textContent=display.coins+'/16';
@@ -1025,9 +1043,8 @@ function infoModal(){
 }
 function vaultModal(){
  if(!writerReady)return;
- modal('Cofre Mágico',
- 'Fundo de demonstração disponível: '+money(bank.reserve)+
- ' créditos fictícios. O motor verifica os resultados antes de os mostrar e não corta prémios atribuídos.',[
+ modal('Porquinho Mágico',
+ 'O porquinho cresce ao longo das jogadas e rebenta quando completa um ciclo visual. Não representa dinheiro nem atribui prémios adicionais. O fundo da demonstração continua disponível no painel administrativo.',[
   {name:'⚙ Administrar fundo DEMO',detail:'Acesso ao painel com PIN local.',
    act:()=>requireAdmin(adminModal)}
  ]);
