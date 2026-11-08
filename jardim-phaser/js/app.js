@@ -264,14 +264,17 @@ function renderSessionBanner(){
  const state=sessionState({ready,writerReady,mutating,saveIssue,
   paused:freePaused,mode:bank.mode});
  const panel=$('sessionBanner');
- const syncing=writerReady&&(sessionNeedsRefresh||!!writerReleasePending);
- panel.hidden=(state.kind==='ok'||state.kind==='boot')&&!syncing;
- panel.dataset.kind=syncing?'saving':state.kind;
- $('sessionMessage').textContent=syncing?
+ // A sessão pode estar válida, mas o Phaser continuar sem gráficos utilizáveis.
+ const graphicsPending=rendererUnavailable||rendererRestorePending;
+ const syncing=!graphicsPending&&writerReady&&(sessionNeedsRefresh||!!writerReleasePending);
+ panel.hidden=(state.kind==='ok'||state.kind==='boot')&&!syncing&&!graphicsPending;
+ panel.dataset.kind=graphicsPending?'blocked':syncing?'saving':state.kind;
+ $('sessionMessage').textContent=graphicsPending?
+  'A recuperar os gráficos do Jardim Mágico…':syncing?
   'A confirmar os créditos fictícios guardados…':state.message;
  const button=$('sessionAction');
- button.hidden=syncing||!state.action;
- button.disabled=running||mutating||holdBusy||writerCheckBusy||pageSuspended||rendererUnavailable||
+ button.hidden=graphicsPending||syncing||!state.action;
+ button.disabled=running||mutating||holdBusy||writerCheckBusy||pageSuspended||rendererUnavailable||rendererRestorePending||
   (state.kind==='paused'&&!sessionCanWrite());
  if(state.action)button.textContent=state.action;
 }
@@ -1333,6 +1336,15 @@ async function refreshWriter(forceReload=false){
  }
 }
 
+function sessionHeartbeat(){
+ // Se um restauro falhou uma vez, voltar a tentar na próxima verificação.
+ // Sem novos sorteios e sem executar trabalho gráfico com a aba oculta.
+ if(rendererRestorePending&&!rendererUnavailable&&!pageSuspended&&
+    !document.hidden&&!running&&!holdBusy)
+  finishRendererRestoration();
+ void refreshWriter();
+}
+
 async function boot(){
  bind();update();
  if(typeof Phaser==='undefined'){
@@ -1408,7 +1420,7 @@ async function boot(){
  else window.addEventListener('jardim-phaser-ready',available,{once:true});
  // Reativar a verificação de sessão depois de restaurar BFCache Safari.
  const startWriterHeartbeat=()=>{
-  if(writerTimer===null)writerTimer=setInterval(refreshWriter,5000);
+  if(writerTimer===null)writerTimer=setInterval(sessionHeartbeat,5000);
  };
  startWriterHeartbeat();
  window.addEventListener('pagehide',()=>{
