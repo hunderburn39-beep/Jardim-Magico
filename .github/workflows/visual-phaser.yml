@@ -7,6 +7,9 @@ on:
       - '.github/workflows/visual-phaser.yml'
       - 'jardim-phaser/tests/visual.mjs'
       - 'jardim-phaser/css/cenario-v35.css'
+      - 'jardim-phaser/css/polimento-v37.css'
+      - 'jardim-phaser/js/art-presentation-v37.js'
+      - 'jardim-phaser/js/reels.js'
   workflow_dispatch:
 
 permissions:
@@ -35,6 +38,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phaser-v35-visual
+          name: phaser-v37-visual
           path: visual-previews/
           if-no-files-found: ignore

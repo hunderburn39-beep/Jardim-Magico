@@ -1,0 +1,43 @@
+/* Jardim Mágico V3.7 — acabamento do tabuleiro, só 9:16. */
+@media (orientation:portrait){
+ .machine .frame-region{isolation:isolate}
+ .machine .frame-region .branch-frame{
+  position:absolute;inset:auto;top:50%;left:50%;
+  width:min(100%,calc(58dvh + 25px));
+  height:auto;aspect-ratio:1200/760;max-height:100%;
+  transform:translate(-50%,-50%);
+  background-size:100% 100%;background-position:center;
+  pointer-events:none;z-index:7;
+  filter:drop-shadow(0 4px 5px #170a20a8) drop-shadow(0 0 3px #f3d39b8c);
+ }
+ .machine .frame-region .branch-frame::after{opacity:.22}
+ .machine .frame-region .reel-window{
+  outline:1.5px solid #e7bd6cba;outline-offset:-2px;
+  box-shadow:inset 0 0 16px #0c0c1bd9,0 0 14px #ffc77860
+ }
+ .machine .frame-region .reel-glow{opacity:.69;pointer-events:none}
+ .machine .jackpot strong{font-size:clamp(13px,3.9vw,31px);line-height:1.07}
+ .machine .dashboard .panel strong{font-size:clamp(13px,3.65vw,31px)}
+ .machine #multiTotal{font-variant-numeric:tabular-nums;letter-spacing:.01em}
+ .machine .result-text{
+  text-shadow:0 2px 4px #2c1028,0 0 6px #f3c86d7a
+ }
+ .machine .frame-region .spin-text{
+  bottom:clamp(1px,.3dvh,4px);
+  text-shadow:0 2px 4px #190e27,0 0 7px #f8be8875
+ }
+}
+@media (orientation:portrait) and (max-width:390px){
+ .machine .frame-region .branch-frame{width:100%}
+ .machine .jackpots{gap:3px}
+ .machine .jackpot small{font-size:clamp(8px,2vw,11px)}
+}
+@media (orientation:portrait) and (max-height:640px){
+ .machine .frame-region .branch-frame{
+  max-height:100%;width:min(100%,calc(55dvh + 24px))
+ }
+ .machine .frame-region .spin-text{font-size:10px}
+}
+@media (prefers-reduced-motion:reduce){
+ .machine .frame-region .branch-frame{filter:none}
+}

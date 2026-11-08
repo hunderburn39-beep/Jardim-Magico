@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.6
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.7
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -319,3 +319,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.5
 - Os testes automatizados cobrem 390×844, 864×1536 e 360×640 em retrato, o duplo clique e a mensagem de rotação quando o telefone está na horizontal. Nenhuma otimização ou suporte de interface 16:9 será feito nas etapas seguintes.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.6
+
+## V3.7 — moldura bem encaixada e símbolos em destaque (apenas 9:16)
+
+- A moldura botânica deixa de ser esticada por toda a área disponível: fica centrada sobre o tabuleiro, conservando a proporção original 1200:760 e a grelha Phaser 5×3.
+- Caracol, joaninha, flores azul e vermelha, pedra e WILD ocupam mais espaço na respetiva célula; não há alteração dos IDs, taxas, resultados nem sequências dos prémios.
+- O valor individual de cada WILD é agora uma etiqueta violeta/dourada no canto superior direito da sua própria célula; as etiquetas desaparecem no início da cascata e na recuperação após interrupção.
+- Melhor legibilidade dos jackpots, do valor da queda, da barra MULTI e da moldura, com luzes menos intrusivas. O jogo continua exclusivamente vertical e sem zoom por duplo toque.
+- Testes de navegador em 390×844, 864×1536 e 360×640 verificam a proporção da moldura, símbolos, botões e ausência de sobreposição.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.7

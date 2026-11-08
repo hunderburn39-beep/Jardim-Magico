@@ -40,6 +40,8 @@ const perfCSS29=await read('../css/performance-v29.css');
 const botanical34Css=await read('../css/bosque-v34.css');
 const scene35Css=await read('../css/cenario-v35.css');
 const vertical36Css=await read('../css/vertical-v36.css');
+const polish37Css=await read('../css/polimento-v37.css');
+const art37Code=await read('../js/art-presentation-v37.js');
 const supervisorSource=await read('../js/visual-supervisor-v30.js');
 const turnQueue31Source=await read('../js/turn-queue-v31.js');
 const pinCss=await read('../css/admin-pin-v21.css');
@@ -411,7 +413,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.6'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.7'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -444,7 +446,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=3.6'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=3.7'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1145,4 +1147,30 @@ ok(vertical36Css.includes('@media (orientation:landscape)')&&
  html.includes('id="portraitLock"')&&
  !scene35Css.includes('@media (orientation:landscape)'),
  'horizontal mostra apenas aviso para voltar à vertical');
-console.log('Phaser V3.6: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const Art37=new Function(parseModule(art37Code)+
+ '\nreturn {symbolDisplay,wildBadgePlacement};')();
+ok(Art37.symbolDisplay('stone').width>180&&
+ Art37.symbolDisplay('green').height>180&&
+ Art37.symbolDisplay('teapot').width<180,
+ 'símbolos naturais maiores sem alterar identificadores');
+const badge37=Art37.wildBadgePlacement({c:3,r:1,value:5});
+ok(badge37.label==='×5'&&badge37.x<720&&badge37.x>540&&
+ badge37.y>180&&badge37.y<360,
+ 'etiqueta do WILD fica dentro da sua célula');
+ok(Art37.wildBadgePlacement({c:5,r:1,value:2})===null&&
+ Art37.wildBadgePlacement({c:2,r:1,value:6})===null,
+ 'etiquetas não excedem grelha nem valores de WILD');
+ok(reels.includes('symbolDisplay(name,CW,CH)')&&
+ reels.includes('wildBadgePlacement(award,CW,CH)')&&
+ reels.includes('label.setOrigin(1,0).setDepth(23)')&&
+ reels.includes('this.clearWildValues();'),
+ 'Phaser aplica escala, posição e limpeza das etiquetas');
+ok(html.includes('polimento-v37.css?v=3.7')&&
+ polish37Css.includes('aspect-ratio:1200/760')&&
+ polish37Css.includes('transform:translate(-50%,-50%)')&&
+ polish37Css.includes('pointer-events:none'),
+ 'moldura proporcional não impede os toques nos tambores');
+ok(!polish37Css.includes('orientation:landscape')&&
+ html.includes('vertical-v36.css?v=3.6'),
+ 'mantida a orientação exclusiva 9:16');
+console.log('Phaser V3.7: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

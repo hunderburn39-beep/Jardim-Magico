@@ -1,8 +1,9 @@
 /* Jardim Mágico Phaser V1 — animação 2D/2.5D dos tambores e cascatas.
    O resultado é fornecido pelo motor lógico; Phaser apenas o apresenta.
    Eixo Y: baixo é positivo, nunca roda ou inverte UV das imagens. */
-import {SYMBOLS,newBoard} from './engine.js?v=1';
+import {SYMBOLS,newBoard} from './engine.js?v=3.3';
 import {burstParticleBudget} from './performance-v17.js?v=2.9';
+import {symbolDisplay,wildBadgePlacement} from './art-presentation-v37.js?v=3.7';
 const DESIGN_W=900,DESIGN_H=540,CW=DESIGN_W/5,CH=DESIGN_H/3;
 const SOURCES={
  potion:'3f3213b7316d5cf176.png',
@@ -251,7 +252,8 @@ class ReelScene extends Phaser.Scene{
   const x=(c+.5)*CW;
   const y=(slot+.5)*CH;
   const sprite=this.add.image(x,y,asKey('potion'));
-  sprite.setDisplaySize(CW*.93,CH*.94);
+  const initial=symbolDisplay('potion',CW,CH);
+  sprite.setDisplaySize(initial.width,initial.height);
   sprite.setMask(this.reelMask);
   sprite.setDepth(10);
   return {sprite,slot,wrapped:0,symbol:'potion'};
@@ -273,7 +275,8 @@ class ReelScene extends Phaser.Scene{
   item.symbol=name;
   if(!this.textures.exists(key))return;
   item.sprite.setTexture(key);
-  item.sprite.setDisplaySize(CW*.93,CH*.94);
+  const display=symbolDisplay(name,CW,CH);
+  item.sprite.setDisplaySize(display.width,display.height);
   item.sprite.setRotation(0);item.sprite.setFlip(false,false);
   item.sprite.setAlpha(1);item.sprite.setScale(item.sprite.scaleX,item.sprite.scaleY);
  }
@@ -362,16 +365,17 @@ class ReelScene extends Phaser.Scene{
  showWildValues(awards=[]){
   this.clearWildValues();
   if(!this.add?.text||!Array.isArray(awards))return;
-  for(const {c,r,value} of awards){
-   if(!Number.isInteger(c)||!Number.isInteger(r)||
-      c<0||c>=5||r<0||r>=3||!Number.isInteger(value))continue;
-   const label=this.add.text((c+.5)*CW+CW*.23,
-    (r+.5)*CH+CH*.28,'×'+value,{
-     fontFamily:'Georgia,serif',fontSize:'38px',fontStyle:'bold',
-     color:'#fff4b6',stroke:'#5a193c',strokeThickness:9,
-     shadow:{offsetX:1,offsetY:2,color:'#1d0d23',blur:5,fill:true}
-    });
-   label.setOrigin(.5).setDepth(23);
+  for(const award of awards){
+   const badge=wildBadgePlacement(award,CW,CH);
+   if(!badge)continue;
+   const label=this.add.text(badge.x,badge.y,badge.label,{
+     fontFamily:'Georgia,serif',fontSize:badge.fontSize+'px',
+     fontStyle:'bold',color:'#fff3bd',backgroundColor:'#521253',
+     padding:{left:9,right:9,top:2,bottom:2},
+     stroke:'#74315f',strokeThickness:4,
+     shadow:{offsetX:1,offsetY:2,color:'#17091c',blur:5,fill:true}
+   });
+   label.setOrigin(1,0).setDepth(23);
    if(this.reelMask)label.setMask(this.reelMask);
    this.wildBadges.push(label);
   }

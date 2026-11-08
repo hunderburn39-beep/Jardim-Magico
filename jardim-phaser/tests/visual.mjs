@@ -14,7 +14,7 @@ try{
   const page=await browser.newPage({viewport:{width:scenario.width,height:scenario.height},deviceScaleFactor:1});
   const errors=[];
   page.on('pageerror',err=>errors.push(err.message));
-  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=3.6',{waitUntil:'domcontentloaded'});
+  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=3.7',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.jardimPhaserScene?.ready===true,{timeout:30000});
   const metrics=await page.evaluate(()=>{
    const box=sel=>{
@@ -40,6 +40,8 @@ try{
     rows:Object.fromEntries(['.game-header','.jackpots','.multiplier','.frame-region','.result-text','.dashboard','.controls','footer'].map(x=>[x,box(x)])),
     reel:initial,
     spin:box('#spinBtn'),
+    frame:box('.frame-region .branch-frame'),
+    botanicalScale:scene.getVisible(1,0)?.displayWidth,
     assets:art,
     premium:scene.premiumSymbols,
     visual:window.getComputedStyle(machine).backgroundImage,
@@ -57,6 +59,11 @@ try{
   assert(Math.abs(reel.w/reel.h-5/3)<.04,scenario.name+' reel aspect ratio wrong: '+JSON.stringify(reel));
   assert(metrics.visual.includes('jm80-cenario-imersivo.svg'),scenario.name+' scenic background missing');
   assert(metrics.overflow<=3,scenario.name+' horizontal overflow '+metrics.overflow);
+  assert(metrics.frame&&Math.abs(metrics.frame.w/metrics.frame.h-1200/760)<.055,
+   scenario.name+' moldura não deve ficar esticada '+JSON.stringify(metrics.frame));
+  assert(metrics.frame.w>=reel.w+10&&metrics.frame.w<=machine.w+2,
+   scenario.name+' moldura deve encaixar no tambor '+JSON.stringify(metrics.frame));
+  assert(metrics.botanicalScale>180,scenario.name+' símbolos devem ser maiores');
   assert(spin.w>=40&&spin.h>=40,scenario.name+' spin inaccessible');
   assert(metrics.spinLabel==='visible'&&metrics.spinArrow==='visible',
    scenario.name+' label RODAR deve aparecer');
@@ -87,7 +94,7 @@ try{
  }
  const landscape=await browser.newPage({viewport:{width:844,height:390}});
  try{
-  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=3.6',{waitUntil:'domcontentloaded'});
+  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=3.7',{waitUntil:'domcontentloaded'});
   const visibility=await landscape.evaluate(()=>{
    const e=document.querySelector('#portraitLock');
    const s=getComputedStyle(e);
