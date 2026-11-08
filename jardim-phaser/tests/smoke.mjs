@@ -1123,8 +1123,8 @@ ok(scene35Css.includes('grid-template-rows:')&&
  'topo, jackpots, tambores, painel e botões na sequência da referência');
 ok(scene35Css.includes('aspect-ratio:5/3')&&
  scene35Css.includes('width:min(100%,58dvh)')&&
- scene35Css.includes('@media (orientation:landscape)'),
- 'tambores preservam 5:3 sem esticar a imagem em paisagem');
+ !scene35Css.includes('@media (orientation:landscape)'),
+ 'tambores preservam proporção 5:3 no retrato; o modo 16:9 foi retirado');
 ok(scene35Css.includes('jm34-flor-vermelha.svg')&&
  scene35Css.includes('pointer-events:none')&&
  scene35Css.includes('prefers-reduced-motion'),
