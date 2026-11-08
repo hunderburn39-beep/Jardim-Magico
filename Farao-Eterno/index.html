@@ -233,7 +233,9 @@ class Game {
   mod.addEventListener('click',ev=>{if(ev.target===mod)this.closeModal();});
  }
  resize(){
-  const w=innerWidth,h=innerHeight;dpr=clamp(devicePixelRatio||1,1,2.25);
+  const w=innerWidth,h=innerHeight;// Limit render pixel count on mobile Retina screens for steadier frame times.
+  const mobileScreen = Math.min(w,h) <= 520;
+  dpr=clamp(devicePixelRatio||1,1,mobileScreen?1.75:2.2);
   canvas.width=Math.ceil(w*dpr);canvas.height=Math.ceil(h*dpr);
   canvas.style.width=w+'px';canvas.style.height=h+'px';
   if(w/h<.56){sc=w/W;scY=h/H;ox=0;oy=0;}
@@ -390,7 +392,7 @@ class Game {
    const item=this.spinObject;
    for(let c=0;c<5;c++) if(!item.stopped[c] && t>=item.start+item.duration+c*item.reelGap){item.stopped[c]=true;this.landings[c]=t;this.audio.tick(c);}
    if(item.stopped.every(Boolean))this.finishSpin();
-  }else if(t>this.nextActionAt && mod.classList.contains('hidden')){
+  }else if(!document.hidden && t>this.nextActionAt && mod.classList.contains('hidden')){
    if(this.feature || this.auto>0)this.autoSpin();
   }
   this.render(t,dt);
@@ -498,20 +500,37 @@ class Game {
    }
    cx.save();cx.beginPath();cx.rect(rx,top,cw,gh*3);cx.clip();
    const item=this.spinObject;
-   if(this.spinning && item && !item.stopped[c]){
-    const elapsed=Math.max(0,t-item.start)*((this.turbo?1.55:1.04)+c*.07);
-    const shift=(elapsed*1.35)%gh;
-    for(let r=-2;r<6;r++){
-     const idx=(Math.floor(elapsed*1.35/gh)+r+98)%item.show[c].length;
-     const symbol=item.show[c][idx];
-     this.drawIcon(symbol,rx,top+(r-1)*gh+shift,cw,gh,false,t);
-    }
-    // Motion smear, only while a reel is rolling.
-    cx.save();cx.globalAlpha=.20;
-    rect(rx,top,cw,gh*3,grad(rx,top,rx,top+gh*3,[[0,'#c39a6b55'],[.20,'#273a4300'],[.55,'#78beca1e'],[1,'#00000066']]));
-    cx.restore();
-   } else {
-    const reelGrid=item&&item.stopped[c]?item.grid:this.grid;
+    if(this.spinning && item && !item.stopped[c]){
+     const stopAt=item.start+item.duration+c*item.reelGap;
+     const settleWindow=this.turbo?120:245;
+     const remaining=stopAt-t;
+     if(remaining < settleWindow){
+      // Final three results slide UP into view with a cubic ease-out.
+      // The mathematics was evaluated before the spin started; this is visual only.
+      const p=clamp(1-Math.max(0,remaining)/settleWindow,0,1);
+      const ease=1-Math.pow(1-p,3);
+      const slide=(1-ease)*gh*1.12;
+      for(let r=-2;r<5;r++){
+       const symbol=(r>=0 && r<3)?item.grid[c][r]:item.show[c][(r+item.show[c].length)%item.show[c].length];
+       this.drawIcon(symbol,rx,top+r*gh+slide,cw,gh,false,t);
+      }
+      cx.save();cx.globalAlpha=.18*(1-ease);
+      rect(rx,top,cw,gh*3,grad(rx,top,rx,top+gh*3,[[0,'#d9b88035'],[.45,'#68b5c41a'],[1,'#03040977']]));
+      cx.restore();
+     }else{
+      const elapsed=Math.max(0,t-item.start)*((this.turbo?1.55:1.04)+c*.07);
+      const shift=(elapsed*1.35)%gh;
+      for(let r=-2;r<6;r++){
+       const idx=(Math.floor(elapsed*1.35/gh)+r+98)%item.show[c].length;
+       const symbol=item.show[c][idx];
+       this.drawIcon(symbol,rx,top+(r-1)*gh+shift,cw,gh,false,t);
+      }
+      // Motion smear only while the reel is still travelling at full speed.
+      cx.save();cx.globalAlpha=.20;
+      rect(rx,top,cw,gh*3,grad(rx,top,rx,top+gh*3,[[0,'#c39a6b55'],[.20,'#273a4300'],[.55,'#78beca1e'],[1,'#00000066']]));
+      cx.restore();
+     }
+    } else {    const reelGrid=item&&item.stopped[c]?item.grid:this.grid;
     const landMs=t-this.landings[c];
     const landing=this.landings[c]&&landMs>=0&&landMs<300;
     const bounce=landing?-10*Math.pow(1-landMs/300,2)*Math.cos(landMs*.033):0;
@@ -704,7 +723,7 @@ class Game {
   }
   this.drawControl(26,946,92,27,'REPOR',()=>this.openReset(),{size:11,disabled:this.spinning||!!this.feature});
   text('CRÉDITOS FICTÍCIOS  •  SEM DINHEIRO REAL',280,960,10,'#9c8a78','center','Arial',700);
-  text('V0.3',29,987,9,'#84715c','left','Arial',700);
+  text('V0.5',29,987,10,'#d2aa72','left','Arial',800);
   this.drawControl(455,946,80,27,'AJUDA',()=>this.openInfo(),{size:11,disabled:this.spinning});
  }
  overlay(t){
@@ -965,12 +984,99 @@ window.__faraoGame = new Game();
     ctx.save();
     ctx.fillStyle = '#0d101c'; ctx.fillRect(11, 975, 58, 22);
     ctx.font = '700 10px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#d6b176'; ctx.fillText('V0.4', 28, 986);
+    ctx.fillStyle = '#d6b176'; ctx.fillText('V0.5', 28, 986);
     ctx.restore();
   };
   document.documentElement.dataset.faraoVersion = '0.4';
 })();
 
+</script>
+
+<script>
+/* Faraó Eterno V0.5 — iPhone, fluidez e feedback de prémios.
+   Efeitos e otimizações exclusivamente visuais. Motor de prémios intacto. */
+(() => {
+ 'use strict';
+ const game = window.__faraoGame;
+ const canvas = document.getElementById('canvas');
+ if (!game || !canvas) return;
+ const ctx = canvas.getContext('2d');
+ const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+ const onPhone = Math.min(window.innerWidth, window.innerHeight) <= 520;
+ const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+ game.v05Events = { gentleStops:0, winHighlights:0, visibleRenders:0, skippedRenders:0 };
+ game._v05QuickStop = false;
+
+ // A second tap stops the actual reels in order; no replay of a reel that stopped.
+ const oldStart = game.startSpin.bind(game);
+ game.startSpin = function () {
+   if (this.spinning && this.spinObject) {
+     if (this._v05QuickStop) return;
+     this._v05QuickStop = true;
+     const spin = this.spinObject, now = performance.now();
+     const stopped = spin.stopped.filter(Boolean).length;
+     // Avoid touching the generated grid or the settled win.
+     // Reels not yet landed have 65 ms separation for a readable landing.
+     spin.start = now - spin.duration - Math.max(0, stopped-1) * 65;
+     spin.reelGap = 65;
+     this.v04Scatter = null;
+     this.v05Events.gentleStops++;
+     return;
+   }
+   oldStart();
+   if (this.spinning) this._v05QuickStop = false;
+ };
+
+ // Light shimmer only on symbols that really won, without moving their hitboxes.
+ const oldIcon = game.drawIcon.bind(game);
+ game.drawIcon = function(symbol,x,y,w,h,isWinner,t) {
+   if (!isWinner || this.spinning || reduceMotion) return oldIcon(symbol,x,y,w,h,isWinner,t);
+   const wave = .5+.5*Math.sin(t*.006+x*.017+y*.006);
+   const zoom = 1 + wave*.028;
+   ctx.save();
+   ctx.translate(x+w/2,y+h/2);ctx.scale(zoom,zoom);ctx.translate(-x-w/2,-y-h/2);
+   oldIcon(symbol,x,y,w,h,isWinner,t);
+   ctx.restore();
+   if(wave>.94 && this.v05Events) this.v05Events.winHighlights++;
+ };
+
+ // Correct Safari viewport changes after showing/hiding the browser bar.
+ if(window.visualViewport){
+   let lastH=window.visualViewport.height;
+   window.visualViewport.addEventListener('resize',()=>{
+     const h=window.visualViewport.height;
+     if(Math.abs(h-lastH)>24){lastH=h;game.resize();}
+   },{passive:true});
+ }
+ document.addEventListener('visibilitychange',()=>{
+   // Never start autoplay in a background tab. WebAudio is resumed by next tap.
+   if(document.hidden && game.audio.ctx && game.audio.ctx.state==='running'){
+     game.audio.ctx.suspend().catch(()=>{});
+   }
+ });
+
+ // Mobile: draw faster during spinning and celebrations; slow idle frames down.
+ // Reels, timers and the RNG still execute on every requestAnimationFrame.
+ const oldRender = game.render.bind(game);
+ game.render = function(t) {
+   if(document.hidden){this.v05Events.skippedRenders++;return;}
+   const active = this.spinning ||
+     (this.v04Celebration && t<=this.v04Celebration.end) ||
+     (this.reveal && t<=this.reveal.end) ||
+     (this.featureIntro && t<=this.featureIntro.end) ||
+     (this.winCount && t<this.winCount.start+this.winCount.duration) ||
+     (this.v04Scatter && t<this.v04Scatter.end) ||
+     t<this.messageUntil;
+   const minStep = onPhone ? (active ? 1000/48 : 1000/30) : (active?1000/60:1000/42);
+   if(this._v05LastRender && t-this._v05LastRender<minStep){this.v05Events.skippedRenders++;return;}
+   this._v05LastRender=t;
+   this.v05Events.visibleRenders++;
+   oldRender(t);
+ };
+
+ window.addEventListener('resize',()=>{game._v05LastRender=0;},{passive:true});
+ document.documentElement.dataset.faraoVersion='0.5';
+})();
 </script>
 </body>
 </html>
