@@ -5,6 +5,7 @@ import {SYMBOLS,newBoard} from './engine.js?v=3.3';
 import {burstParticleBudget} from './performance-v17.js?v=2.9';
 import {symbolDisplay,wildBadgePlacement} from './art-presentation-v37.js?v=3.7';
 import {bakeMaterial} from './material-v39.js?v=3.9';
+import {spinMotionProfile} from './spin-motion-v391.js?v=3.9.1';
 const DESIGN_W=900,DESIGN_H=540,CW=DESIGN_W/5,CH=DESIGN_H/3;
 const SOURCES={
  potion:'3f3213b7316d5cf176.png',
@@ -319,21 +320,20 @@ class ReelScene extends Phaser.Scene{
   this.busy=true;
   let finished=0;
   const total=this.columns.length;
-  const duration=turbo?640:1470;
   return new Promise(resolve=>{
    for(let c=0;c<5;c++){
     const items=this.columns[c].items;
-    // Voltas inteiras para que cada peça acabe na mesma linha física.
-    // As imagens do resultado são introduzidas na última volta e
-    // viajam realmente do topo até às três posições definitivas.
-    const steps=15+5*c;
-    const finalWrap=steps/items.length; // 3,4,5,6,7
+    // Giro normal: uma volta adicional e abrandamento mais suave.
+    // Turbo: ritmo anterior, sem mexer na combinação sorteada.
+    const motion=spinMotionProfile(turbo,c);
+    const {steps,duration,ease}=motion;
+    const finalWrap=steps/items.length; // normal 4–8; turbo 3–7
     const journey={distance:0};
     for(const item of items)item.wrapped=0;
     this.tweens.add({
      targets:journey,distance:steps,
-     duration:duration+(turbo?52:180)*c,
-     ease:'Cubic.easeOut',
+     duration,
+     ease,
      onUpdate:()=>{
       for(const item of items){
        const raw=item.slot+journey.distance+1;

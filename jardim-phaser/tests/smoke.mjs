@@ -44,6 +44,7 @@ const polish37Css=await read('../css/polimento-v37.css');
 const icon38Css=await read('../css/icones-v38.css');
 const material39Css=await read('../css/materiais-v39.css');
 const material39Code=await read('../js/material-v39.js');
+const timing391Code=await read('../js/spin-motion-v391.js');
 const svg38=await Promise.all(['caracol','joaninha','flor-vermelha','flor-azul','pedra','wild'].map(name=>read('../../assets/imagens/jm38-'+name+'.svg')));
 const art37Code=await read('../js/art-presentation-v37.js');
 const supervisorSource=await read('../js/visual-supervisor-v30.js');
@@ -126,15 +127,17 @@ globalThis.Phaser={Scene:class{},Math:{Clamp:(x,a,b)=>Math.max(a,Math.min(b,x))}
 const testFxBudget=new Function(parseModule(perfSource)+'\nreturn burstParticleBudget;')();
 const artMock37=new Function(parseModule(art37Code)+
  '\nreturn {symbolDisplay,wildBadgePlacement};')();
+const Spin391=new Function(parseModule(timing391Code)+'\nreturn spinMotionProfile;')();
 const factory=new Function('Phaser','SYMBOLS','newBoard','burstParticleBudget',
- 'symbolDisplay','wildBadgePlacement','bakeMaterial',
+ 'symbolDisplay','wildBadgePlacement','bakeMaterial','spinMotionProfile',
  parseModule(reels)+'\nreturn ReelScene;');
 const Scene=factory(globalThis.Phaser,source.match(/SYMBOLS=\[.*?\]/)?.[0],
- ()=>exact,testFxBudget,artMock37.symbolDisplay,artMock37.wildBadgePlacement,()=>null);
+ ()=>exact,testFxBudget,artMock37.symbolDisplay,artMock37.wildBadgePlacement,
+ ()=>null,Spin391);
 // More predictable: parse exports and obtain original symbol labels.
 const SYMBOLS=['potion','green','heart','teapot','wild','gem','mushroom','hat','rose','scatter','stone','coin'];
 const Reel=factory(globalThis.Phaser,SYMBOLS,()=>exact,testFxBudget,
- artMock37.symbolDisplay,artMock37.wildBadgePlacement,()=>null);
+ artMock37.symbolDisplay,artMock37.wildBadgePlacement,()=>null,Spin391);
 // V1.3: a folha artística tem os nove ícones na ordem original, sem
 // espelhamento e sem alterar as regras dos prémios ou a queda aprovada.
 const scene=new Reel();
@@ -422,7 +425,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.9'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.9.1'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -455,7 +458,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=3.9'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=3.9.1'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1229,4 +1232,25 @@ ok(html.includes('materiais-v39.css?v=3.9')&&
  material39Css.includes('orientation:portrait')&&
  !material39Css.includes('orientation:landscape'),
  'materiais 3D integram-se apenas no jogo 9:16');
-console.log('Phaser V3.9: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+const slowFirst391=Spin391(false,0),slowLast391=Spin391(false,4);
+const fastFirst391=Spin391(true,0),fastLast391=Spin391(true,4);
+ok(slowFirst391.steps===20&&slowLast391.steps===40&&
+ slowFirst391.duration===1780&&slowLast391.duration===2540,
+ 'giro normal dá uma volta extra e dura ligeiramente mais');
+ok(slowFirst391.ease==='Sine.easeOut'&&
+ fastFirst391.ease==='Cubic.easeOut'&&
+ fastFirst391.steps===15&&fastLast391.steps===35&&
+ fastFirst391.duration===640&&fastLast391.duration===848,
+ 'o abrandamento normal é mais suave e o Turbo conserva ritmo');
+ok(Array.from({length:5},(_,c)=>Spin391(false,c).steps)
+ .every(steps=>steps%5===0)&&
+ Array.from({length:5},(_,c)=>Spin391(true,c).steps)
+ .every(steps=>steps%5===0)&&
+ slowLast391.duration<7000,
+ 'todos os tambores completam voltas inteiras antes do watchdog');
+ok(reels.includes('const motion=spinMotionProfile(turbo,c)')&&
+ reels.includes('const finalWrap=steps/items.length;')&&
+ reels.includes('duration,\n     ease,')&&
+ !reels.includes('duration:duration+(turbo?52:180)*c'),
+ 'animação usa novo perfil sem trocar peças no último frame');
+console.log('Phaser V3.9.1: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

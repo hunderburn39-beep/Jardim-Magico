@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.9
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.9.1
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -349,3 +349,12 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.8
 - Sem alterações ao motor de prémios, à reserva de demonstração, aos Free Spins, Hold & Win, RTP ou saldos. Créditos fictícios e RTP não auditado.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.9
+
+## V3.9.1 — giro normal ligeiramente mais demorado
+
+- No giro normal, cada tambor percorre **mais uma volta completa** dos cinco símbolos circulantes, com 20, 25, 30, 35 e 40 posições sucessivas em vez de 15, 20, 25, 30 e 35.
+- O primeiro tambor gira aproximadamente **1,78 segundos** e o último termina em cerca de **2,54 segundos** (antes 1,47 a 2,19 segundos); o abrandamento usa `Sine.easeOut` para a rotação continuar perceptível durante mais tempo.
+- O **Turbo não muda**: mantém as durações e a aceleração anteriores. Os símbolos do resultado continuam a entrar fisicamente no topo na última volta, sem serem trocados quando o tambor pára.
+- Testes de regressão e de navegador verificam o tempo e a combinação final em 9:16. **Nenhum cálculo de RTP, reserva, aposta, Free Spins, Hold & Win, multiplicador ou prémios foi alterado.**
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.9.1

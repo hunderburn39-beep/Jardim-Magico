@@ -14,7 +14,7 @@ try{
   const page=await browser.newPage({viewport:{width:scenario.width,height:scenario.height},deviceScaleFactor:1});
   const errors=[];
   page.on('pageerror',err=>errors.push(err.message));
-  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=3.9',{waitUntil:'domcontentloaded'});
+  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=3.9.1',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.jardimPhaserScene?.ready===true,{timeout:30000});
   const metrics=await page.evaluate(()=>{
    const box=sel=>{
@@ -88,6 +88,26 @@ try{
    }
   }
   assert(!errors.length,scenario.name+' JS: '+errors.join(' | '));
+  if(scenario.name==='iphone-390x844'){
+   const timing=await page.evaluate(async()=>{
+    const scene=window.jardimPhaserScene;
+    const target=[
+     [0,1,8],[2,10,4],[8,0,1],[4,2,10],[1,8,4]
+    ];
+    const started=performance.now();
+    await scene.spin(target,{turbo:false});
+    const elapsed=performance.now()-started;
+    const exact=target.every((col,c)=>col.every((symbol,r)=>
+     scene.columns[c].visible[r].symbol===scene.columns[c].visible[r].symbol &&
+     scene.columns[c].visible[r].symbol===
+       ['potion','green','heart','teapot','wild','gem','mushroom','hat','rose','scatter','stone','coin'][symbol]));
+    return {elapsed,exact,busy:scene.busy};
+   });
+   assert(timing.elapsed>=2200&&timing.elapsed<6500&&
+    timing.exact&&!timing.busy,
+    'giro normal dura mais e pára na combinação original: '+JSON.stringify(timing));
+   console.log('PASS giro normal V3.9.1: '+JSON.stringify(timing));
+  }
   const zoomPrevented=await page.evaluate(()=>{
    const target=document.querySelector('#multiTotal');
    const event=new MouseEvent('dblclick',{bubbles:true,cancelable:true});
@@ -101,7 +121,7 @@ try{
  }
  const landscape=await browser.newPage({viewport:{width:844,height:390}});
  try{
-  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=3.9',{waitUntil:'domcontentloaded'});
+  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=3.9.1',{waitUntil:'domcontentloaded'});
   const visibility=await landscape.evaluate(()=>{
    const e=document.querySelector('#portraitLock');
    const s=getComputedStyle(e);
