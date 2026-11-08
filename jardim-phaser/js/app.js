@@ -2,12 +2,12 @@
    Sem pagamentos reais, sem RTP auditado e sem sincronização entre devices.
    Cada resultado e prémio são decididos ANTES da animação vertical Phaser.
  */
-import {DemoBank,newBoard,winningCells,money,DEMO_PROFILES} from './engine.js?v=2.0';
+import {DemoBank,newBoard,winningCells,money,DEMO_PROFILES} from './engine.js?v=3.3';
 import {demoDB as localDB,validateBackup} from './database.js?v=2.2';
 import {createStorageGateway} from './storage-gateway-v21.js?v=2.2';
 import {createAdminPinLock} from './admin-pin-v21.js?v=2.1';
 import {audio} from './audio.js?v=1';
-import {createReelGame} from './reels.js?v=2.9';
+import {createReelGame} from './reels.js?v=3.3';
 import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
 import {createPerformanceGuard} from './performance-v17.js?v=2.9';
 import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=1.8';
@@ -68,7 +68,7 @@ function copySnapshot(snapshot){
  if(bank.mode==='hold'&&Array.isArray(snapshot.hold?.grid)&&snapshot.hold.grid.length===16)
   bank.hold=structuredClone(snapshot.hold);
  else {if(bank.mode==='hold')bank.mode='base';bank.hold=null}
- bank.freeMultiplier=Math.max(1,Math.min(5,bank.freeMultiplier));
+ bank.freeMultiplier=Math.max(1,Math.min(1000,bank.freeMultiplier));
  bank.freeSpins=Math.max(0,Math.min(60,bank.freeSpins));
 }
 function snapshot(){
@@ -298,14 +298,12 @@ async function runSpin(){
  const finalBoard=stages.at(-1).board;
  if(!outcome.free)freeOrbHistory=[];
  const earnedMultis=[];
- let freeMultiAdded=false;
  running=true;update();performanceGuard.start();
  clearTimeout(dropTimer);
  $('dropAmount').textContent=money(0);
  $('dropAmount').classList.remove('pulse');
  $('dropLabel').textContent='VALOR DA QUEDA';
- renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,
-  outcome.free?bank.freeMultiplier:1);
+ renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,1);
  $('winNotice').hidden=true;
  status('TAMBORES A RODAR ↓');
  say('Os símbolos estão a descer…');
@@ -337,21 +335,17 @@ async function runSpin(){
    const cells=winningCells(stage.ev);
    const next=i<stages.length-1?stages[i+1]:null;
    // Nas Free Spins o multiplicador só é aplicado no fim da série.
-   const fac=outcome.free?1:(stage.ev.wilds?outcome.wildMultiplier:1);
+   const fac=outcome.free?1:stage.ev.multiplier;
    const lineTotal=round(stage.ev.raw*fac);
-   if(stage.ev.wilds&&wins.length){
-    if(outcome.free){
-     // Na matemática das Free Spins o incremento acontece UMA vez
-     // por giro, mesmo que várias quedas tenham Wild.
-     if(!freeMultiAdded){
-      freeOrbHistory.push(outcome.wildMultiplier);
-      freeMultiAdded=true;
-     }
-    }else earnedMultis.push(outcome.wildMultiplier);
+   const wildAwards=stage.ev.wildAwards||[];
+   if(wildAwards.length){
+    (outcome.free?freeOrbHistory:earnedMultis)
+     .push(...wildAwards.map(w=>w.value));
    }
-   const effective=outcome.free?bank.freeMultiplier:
-    (stage.ev.wilds?outcome.wildMultiplier:1);
-   renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,effective);
+   // MULTI mostra a soma dos WILD desta spin, incluindo cascatas.
+   // No bónus, o prémio bruto continua fixo até ao pagamento final.
+   renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,
+    stage.ev.multiplier);
    if(!wins.length){
     status('FIM DAS QUEDAS · SEM NOVAS COMBINAÇÕES');
     break;
@@ -388,8 +382,7 @@ async function runSpin(){
   performanceGuard.stop();
   const all=stages.flatMap(stage=>(stage.ev.lineWins||[]).map(win=>({
    ...win,
-   amount:round(win.amount*(outcome.free?1:
-    (stage.ev.wilds?outcome.wildMultiplier:1)))
+   amount:round(win.amount*(outcome.free?1:stage.ev.multiplier))
   })));
   $('winNotice').hidden=all.length===0;
   // A soma do base inclui WILD. Nas Free Spins o total só é
@@ -399,16 +392,14 @@ async function runSpin(){
   $('dropLabel').textContent='TOTAL DO GIRO';
   showDropAmount(all.length?visibleTotal:0);
   renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,
-   outcome.free?bank.freeMultiplier:
-    (earnedMultis.length?outcome.wildMultiplier:1));
+   outcome.free?bank.freeMultiplier:outcome.spinMultiplier);
   status(all.length?all.length+' COMBINAÇÕES SOMADAS · '+
    Math.max(0,stages.length-1)+' QUEDAS':'TAMBORES PRONTOS');
   update();
   // update() atualiza o saldo e os modos; repor aqui a informação
   // visual dos Wild que efetivamente saíram durante este giro.
   renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,
-   outcome.free?bank.freeMultiplier:
-    (earnedMultis.length?outcome.wildMultiplier:1));
+   outcome.free?bank.freeMultiplier:outcome.spinMultiplier);
   if(repaired){
    say('Movimento recuperado; resultado e saldo preservados');
   }else if(outcome.free&&outcome.credited>0){
