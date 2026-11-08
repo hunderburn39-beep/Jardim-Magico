@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.5
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.6
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -310,3 +310,12 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.4
 - Preservados IndexedDB, Free Spins, Hold & Win, RTP não auditado, os créditos virtuais e todos os mecanismos de recuperação; os testes de regressão verificam os recursos e as regiões responsivas.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.5
+
+## V3.6 — apenas na vertical (9:16) e zoom por duplo toque desativado
+
+- A aplicação Phaser só apresenta o jogo vertical. A antiga regra de dimensionamento horizontal foi retirada do tema premium; se o telemóvel rodar, é mostrado um aviso de orientação e o toque nos controlos fica bloqueado até regressar ao retrato.
+- Em Safari e outros navegadores, a viewport da **página do jogo** define `maximum-scale=1,user-scalable=no`, com `touch-action:manipulation` no painel e botões e um bloqueio `dblclick` para impedir zoom por duplo toque. O canvas Phaser conserva `touch-action:none` para captar as interações do jogo.
+- Corrigida uma regra antiga que escondia a seta e o texto **RODAR** no botão verde. A interface continua com os ícones aprovados, valores e lógica de créditos demonstrativos.
+- Os testes automatizados cobrem 390×844, 864×1536 e 360×640 em retrato, o duplo clique e a mensagem de rotação quando o telefone está na horizontal. Nenhuma otimização ou suporte de interface 16:9 será feito nas etapas seguintes.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.6

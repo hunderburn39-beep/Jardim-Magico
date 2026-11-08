@@ -383,26 +383,7 @@
  .machine .controls{height:14%;min-height:70px}
  .machine footer{min-height:12px;height:auto}
 }
-@media (orientation:landscape){
- .machine{
-  max-width:none;
-  width:100vw;height:100dvh;
-  grid-template-columns:minmax(0,30%) minmax(0,35%) minmax(0,35%);
- }
- .machine .game-header{min-width:0}
- .machine .game-header .logo{
-  top:clamp(19px,6dvh,45px);
-  left:0;width:100%;
-  height:min(25dvh,132px);
- }
- .machine .frame-region .reel-window{
-  width:min(100%,70dvh);
-  height:auto;aspect-ratio:5/3;
- }
- .machine .frame-region .branch-frame{background-size:100% 100%}
- .machine .side-btn{min-height:23px;padding:2px}
- .machine .spin-btn{width:min(14dvh,13vw,104px)}
-}
+/* Exclusivo 9:16; o jogo não utiliza layout horizontal. */
 @media(prefers-reduced-motion:reduce){
  .machine .spin-btn::before,.machine .spin-btn::after{filter:none}
  .machine #multiTotal.multi-rise{animation:none}

@@ -39,6 +39,7 @@ const responsive28=await read('../css/responsive-v28.css');
 const perfCSS29=await read('../css/performance-v29.css');
 const botanical34Css=await read('../css/bosque-v34.css');
 const scene35Css=await read('../css/cenario-v35.css');
+const vertical36Css=await read('../css/vertical-v36.css');
 const supervisorSource=await read('../js/visual-supervisor-v30.js');
 const turnQueue31Source=await read('../js/turn-queue-v31.js');
 const pinCss=await read('../css/admin-pin-v21.css');
@@ -410,7 +411,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.5'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.6'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -443,7 +444,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=3.5'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=3.6'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1130,4 +1131,17 @@ ok(scene35Css.includes('jm34-flor-vermelha.svg')&&
 ok(scene35Css.includes('.machine .dashboard .panel')&&
  scene35Css.includes('.machine .side-btn.turbo[aria-pressed=true]'),
  'painéis e turbo conservam interação e contraste');
-console.log('Phaser V3.5: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+ok(html.includes('vertical-v36.css?v=3.6')&&
+ html.includes('maximum-scale=1, user-scalable=no')&&
+ html.includes("document.addEventListener('dblclick'"),
+ 'viewport e duplo toque impedem zoom no navegador');
+ok(vertical36Css.includes('touch-action:manipulation')&&
+ vertical36Css.includes('.machine .phaser-reels canvas')&&
+ vertical36Css.includes('visibility:visible'),
+ 'toque simples continua a clicar e palavra RODAR fica visível');
+ok(vertical36Css.includes('@media (orientation:landscape)')&&
+ vertical36Css.includes('.machine .portrait-lock')&&
+ html.includes('id="portraitLock"')&&
+ !scene35Css.includes('@media (orientation:landscape)'),
+ 'horizontal mostra apenas aviso para voltar à vertical');
+console.log('Phaser V3.6: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
