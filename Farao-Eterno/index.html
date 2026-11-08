@@ -543,20 +543,33 @@ class Game {
     for(let r=0;r<3;r++){
      const yy=top+r*gh;
      const win=readyToGlow&&this.winCells.includes(c+'-'+r);
-     this.drawIcon(reelGrid[c][r],rx,yy+bounce,cw,gh,win&&!expanding,t);
-     if(expanding){
-      cx.save();cx.globalAlpha=expandProgress;
-      const pulse=1+.10*Math.sin(Math.PI*expandProgress);
+     // One row at a time: transformation travels from the top to the bottom.
+     const rowScan=expanding?clamp(expandProgress*3.18-r*.93,0,1):0;
+     const rowEase=rowScan*rowScan*(3-2*rowScan);
+     if(rowEase<1){cx.save();cx.globalAlpha=1-rowEase;
+      this.drawIcon(reelGrid[c][r],rx,yy+bounce,cw,gh,win&&!expanding,t);cx.restore();}
+     if(expanding && rowEase>0){
+      cx.save();cx.globalAlpha=rowEase;
+      const pulse=1+.055*Math.sin(Math.PI*rowEase);
       this.drawIcon(this.expanded[c].symbol,rx-(pulse-1)*cw/2,yy-(pulse-1)*gh/2,cw*pulse,gh*pulse,win,t);
       cx.restore();
-      rect(rx+4,yy+4,cw-8,gh-8,null,`rgba(93,246,222,${.25+.5*expandProgress})`,4,1.6);
+      cx.save();
+      cx.strokeStyle=`rgba(111,255,226,${.20+.55*rowEase})`;
+      cx.shadowColor='#62ffe1';cx.shadowBlur=9;
+      cx.lineWidth=2;cx.strokeRect(rx+5,yy+7,cw-10,gh-14);
+      if(rowScan<.99){
+       const scanY=yy+gh*rowScan;
+       cx.fillStyle=`rgba(207,255,237,${.85-rowEase*.38})`;
+       cx.fillRect(rx+7,scanY-2,cw-14,4);
+      }
+      cx.restore();
      }
     }
     if(expanding){
      const vertical=grad(rx,top,rx+cw,top,[[0,'#e3fff000'],[.42,'#bfffea2a'],[.50,'#8cffe599'],[.59,'#9cffdf22'],[1,'#e3fff000']]);
      cx.save();cx.globalAlpha=.8*(1-expandProgress)+.1;rect(rx+2,top+2,cw-4,gh*3-3,vertical);cx.restore();
      if(this.reveal&&expandProgress<1){
-      const beamY=top+gh*3*(1-expandProgress);
+      const beamY=top+gh*3*expandProgress;
       cx.save();cx.shadowColor='#8bffef';cx.shadowBlur=18;
       rect(rx+4,beamY-5,cw-8,11,'#90fff0b8');cx.restore();
      }
@@ -592,16 +605,59 @@ class Game {
   drawActivePayline(t,left,top,cw,gh,interval){
   if(this.spinning || !this.lastResult?.lineWins?.length || this.featureIntro&&t<this.featureIntro.end)return;
   if(this.reveal&&t<this.reveal.end)return;
-  const eligible=this.lastResult.lineWins.filter(w=>!w.expanded);
-  if(!eligible.length)return;
-  const chosen=eligible[Math.floor(t/1550)%eligible.length];
+  // Follow the exact same 1.6 second rotation as the information under the reels.
+  const wins=this.lastResult.lineWins;
+  const chosen=wins[Math.floor(t/1600)%wins.length];
+  const alpha=.60+.24*Math.sin(t*.006);
+  const hue=chosen.expanded?'#7affeb':'#ffe2a0';
+  const soften=Boolean(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   cx.save();cx.beginPath();cx.rect(left,top,5*interval-2,3*gh);cx.clip();
-  cx.beginPath();for(let c=0;c<chosen.count;c++){
-    const x=left+c*interval+cw/2,y=top+chosen.rows[c]*gh+gh/2;
-    if(c===0)cx.moveTo(x,y);else cx.lineTo(x,y);
+  cx.lineJoin='round';cx.lineCap='round';
+  if(chosen.expanded){
+   // Expansion pays from a set of reels, even if they are not consecutive.
+   const found=this.lastResult.expanders.find(e=>e.symbol===chosen.symbol);
+   const reels=found?found.reels:[];
+   cx.strokeStyle=hue;cx.shadowColor='#64ffe5';cx.shadowBlur=soften?0:11;
+   cx.lineWidth=3;cx.globalAlpha=alpha;
+   for(const c of reels){
+    const xx=left+c*interval;
+    cx.strokeRect(xx+5,top+5,cw-10,3*gh-10);
+    // Three discreet guides show that the entire reel is active.
+    for(let r=0;r<3;r++){
+     const yy=top+(r+.86)*gh;
+     cx.beginPath();cx.moveTo(xx+19,yy);cx.lineTo(xx+cw-19,yy);cx.stroke();
+    }
+   }
+   // Dotted bridge denotes non-consecutive winning reels, not an extra payline.
+   if(reels.length>=2){
+    cx.globalAlpha=.37;cx.lineWidth=2;cx.setLineDash([5,8]);
+    cx.lineDashOffset=soften?0:-t*.014;
+    const yy=top+gh*3-12;
+    cx.beginPath();cx.moveTo(left+reels[0]*interval+cw/2,yy);
+    cx.lineTo(left+reels[reels.length-1]*interval+cw/2,yy);cx.stroke();
+    cx.setLineDash([]);
+   }
+  } else {
+   const coords=Array.from({length:chosen.count},(_,c)=>({
+     x:left+c*interval+cw/2,
+     y:top+chosen.rows[c]*gh+gh*.81,
+     bx:left+c*interval,
+     by:top+chosen.rows[c]*gh
+   }));
+   if(coords.length){
+    cx.strokeStyle=hue;cx.lineWidth=3.3;cx.shadowColor='#ffca63';
+    cx.shadowBlur=soften?0:12;cx.globalAlpha=alpha;
+    cx.beginPath();coords.forEach((p,i)=>i?cx.lineTo(p.x,p.y):cx.moveTo(p.x,p.y));cx.stroke();
+    coords.forEach(p=>{
+     cx.globalAlpha=.25+.12*Math.sin(t*.005);
+     cx.lineWidth=1.7;cx.strokeRect(p.bx+5,p.by+6,cw-10,gh-12);
+     cx.globalAlpha=.92;
+     cx.beginPath();cx.arc(p.x,p.y,3.5,0,Math.PI*2);
+     cx.fillStyle='#fff5c9';cx.fill();
+    });
+   }
   }
-  cx.strokeStyle='#ffefa8';cx.lineWidth=3;cx.shadowColor='#ffe275';cx.shadowBlur=14;
-  cx.globalAlpha=.25+.12*Math.sin(t*.005);cx.stroke();cx.restore();
+  cx.restore();
  }
  drawIcon(sym,x,y,w,h,win=false,t=performance.now()){
   cx.save();
@@ -664,7 +720,7 @@ class Game {
   }else text(this.feature?'OS SÍMBOLOS REVELAM O TESOURO':'O PRÓXIMO SEGREDO ESPERA POR TI',280,by+35,16,'#f6d99d','center','Georgia',800,3);
   if(this.lastResult?.lineWins?.length&&!this.spinning){
    const picked=this.lastResult.lineWins[Math.floor(t/1600)%this.lastResult.lineWins.length];
-   text(`${picked.expanded?'EXPANSÃO':'LINHA '+(picked.line+1)}  ·  ${picked.count} SÍMBOLOS  ·  ${money(picked.amount)}`,280,by+77,10,'#a4d9cc','center','Arial',800);
+   text(`${picked.expanded?'EXPANSÃO · '+(picked.line+1):'LINHA '+(picked.line+1)}  ·  ${picked.count} SÍMBOLOS  ·  ${money(picked.amount)}`,280,by+77,11,picked.expanded?'#84fff0':'#f6d9a0','center','Arial',850);
   }
   const u=this.winCount?clamp((t-this.winCount.start)/this.winCount.duration,0,1):1;
   const win=this.winCount?this.winCount.amount*(1-Math.pow(1-u,3)):this.lastWin;
@@ -723,7 +779,7 @@ class Game {
   }
   this.drawControl(26,946,92,27,'REPOR',()=>this.openReset(),{size:11,disabled:this.spinning||!!this.feature});
   text('CRÉDITOS FICTÍCIOS  •  SEM DINHEIRO REAL',280,960,10,'#9c8a78','center','Arial',700);
-  text('V0.5',29,987,10,'#d2aa72','left','Arial',800);
+  text('V0.6',29,987,10,'#d2aa72','left','Arial',800);
   this.drawControl(455,946,80,27,'AJUDA',()=>this.openInfo(),{size:11,disabled:this.spinning});
  }
  overlay(t){
@@ -984,7 +1040,7 @@ window.__faraoGame = new Game();
     ctx.save();
     ctx.fillStyle = '#0d101c'; ctx.fillRect(11, 975, 58, 22);
     ctx.font = '700 10px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#d6b176'; ctx.fillText('V0.5', 28, 986);
+    ctx.fillStyle = '#d6b176'; ctx.fillText('V0.6', 28, 986);
     ctx.restore();
   };
   document.documentElement.dataset.faraoVersion = '0.4';
@@ -1075,7 +1131,7 @@ window.__faraoGame = new Game();
  };
 
  window.addEventListener('resize',()=>{game._v05LastRender=0;},{passive:true});
- document.documentElement.dataset.faraoVersion='0.5';
+ document.documentElement.dataset.faraoVersion='0.6';
 })();
 </script>
 </body>
