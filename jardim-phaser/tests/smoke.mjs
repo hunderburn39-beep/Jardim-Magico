@@ -41,6 +41,8 @@ const botanical34Css=await read('../css/bosque-v34.css');
 const scene35Css=await read('../css/cenario-v35.css');
 const vertical36Css=await read('../css/vertical-v36.css');
 const polish37Css=await read('../css/polimento-v37.css');
+const icon38Css=await read('../css/icones-v38.css');
+const svg38=await Promise.all(['caracol','joaninha','flor-vermelha','flor-azul','pedra','wild'].map(name=>read('../../assets/imagens/jm38-'+name+'.svg')));
 const art37Code=await read('../js/art-presentation-v37.js');
 const supervisorSource=await read('../js/visual-supervisor-v30.js');
 const turnQueue31Source=await read('../js/turn-queue-v31.js');
@@ -418,7 +420,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.7'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=3.8'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -451,7 +453,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=3.7'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=3.8'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1091,12 +1093,12 @@ ok(dbsource.includes('s.freeMultiplier>1000')&&
  recoverySource.includes('Math.min(1000,')&&
  main.includes('outcome.spinMultiplier'),
  'recuperação, histórico e HUD aceitam novos multiplicadores');
-ok(reels.includes("potion:'jm34-caracol.svg'")&&
- reels.includes("green:'jm34-joaninha.svg'")&&
- reels.includes("heart:'jm34-flor-azul.svg'")&&
- reels.includes("rose:'jm34-flor-vermelha.svg'")&&
- reels.includes("wild:'jm34-wild.svg'")&&
- reels.includes("stone:'jm34-pedra.svg'"),
+ok(reels.includes("potion:'jm38-caracol.svg'")&&
+ reels.includes("green:'jm38-joaninha.svg'")&&
+ reels.includes("heart:'jm38-flor-azul.svg'")&&
+ reels.includes("rose:'jm38-flor-vermelha.svg'")&&
+ reels.includes("wild:'jm38-wild.svg'")&&
+ reels.includes("stone:'jm38-pedra.svg'"),
  'caracol, joaninha, duas flores, WILD e pedra integrados no Phaser');
 ok(reels.includes("this.load.svg('botanical-'+symbol")&&
  reels.includes("if(!canvas&&atlas&&atlasTileFor(symbol))")&&
@@ -1178,4 +1180,22 @@ ok(html.includes('polimento-v37.css?v=3.7')&&
 ok(!polish37Css.includes('orientation:landscape')&&
  html.includes('vertical-v36.css?v=3.6'),
  'mantida a orientação exclusiva 9:16');
-console.log('Phaser V3.7: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+ok(html.includes('icones-v38.css?v=3.8')&&
+ html.indexOf('icones-v38.css')>html.indexOf('polimento-v37.css'),
+ 'novos materiais e separadores da grelha são a última camada visual');
+ok(reels.includes('const BOTANICAL_V38={')&&
+ reels.includes('Object.entries(BOTANICAL_V38)')&&
+ reels.includes('if(BOTANICAL_V38[symbol]'),
+ 'Phaser usa texturas novas e conserva fallback quando necessário');
+ok(svg38.length===6&&svg38.every(x=>x.includes('feTurbulence')&&
+ x.includes('clipPath')&&x.includes('width="512"')&&
+ x.includes('height="512"'))&&
+ svg38.some(x=>x.includes('granite38'))&&
+ svg38.some(x=>x.includes('dewdrop38')),
+ 'seis peças novas têm dimensão consistente, grão e reflexos localizados');
+ok(icon38Css.includes('orientation:portrait')&&
+ icon38Css.includes('repeating-linear-gradient')&&
+ icon38Css.includes('.reel-velvet')&&
+ !icon38Css.includes('orientation:landscape'),
+ 'fundo de bosque e divisão de células apenas em 9:16');
+console.log('Phaser V3.8: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

@@ -20,13 +20,13 @@ const SOURCES={
 /* Conjunto botânico aprovado: mantém IDs numéricos e pesos do motor,
    alterando apenas as texturas visíveis. Os símbolos restantes mantêm
    a arte anterior. */
-const BOTANICAL_V34={
- potion:'jm34-caracol.svg',
- green:'jm34-joaninha.svg',
- heart:'jm34-flor-azul.svg',
- rose:'jm34-flor-vermelha.svg',
- wild:'jm34-wild.svg',
- stone:'jm34-pedra.svg'
+const BOTANICAL_V38={
+ potion:'jm38-caracol.svg',
+ green:'jm38-joaninha.svg',
+ heart:'jm38-flor-azul.svg',
+ rose:'jm38-flor-vermelha.svg',
+ wild:'jm38-wild.svg',
+ stone:'jm38-pedra.svg'
 };
 const FALLBACK_EMOJI={
  potion:'🧪',green:'💚',heart:'❤️',teapot:'🫖',wild:'🌺',
@@ -108,7 +108,7 @@ class ReelScene extends Phaser.Scene{
   this.load.image('symbols-atlas','jm75-simbolos.webp');
   for(const [key,file] of Object.entries(SOURCES))
    this.load.image('source-'+key,file);
-  for(const [symbol,file] of Object.entries(BOTANICAL_V34))
+  for(const [symbol,file] of Object.entries(BOTANICAL_V38))
    this.load.svg('botanical-'+symbol,file,{width:512,height:512});
   this.load.on('loaderror',file=>{
    this.failedAssets.push(file.key);
@@ -138,10 +138,10 @@ class ReelScene extends Phaser.Scene{
    const orig='source-'+symbol;
    const art=asKey(symbol);
    let canvas=null;
-   // V3.4: usar o símbolo botânico isolado, SEM fundos de screenshot.
-   // SVG rasterizado uma vez pelo Phaser, sem filtros pesados em cada frame.
+   // V3.8: ícones com luz, granulado e profundidade, isolados e transparentes.
+   // Filtros SVG só são rasterizados ao iniciar, não são executados a cada frame.
    const painted='botanical-'+symbol;
-   if(BOTANICAL_V34[symbol]&&this.textures.exists(painted)){
+   if(BOTANICAL_V38[symbol]&&this.textures.exists(painted)){
     try{
      const image=this.textures.get(painted).getSourceImage();
      canvas=document.createElement('canvas');

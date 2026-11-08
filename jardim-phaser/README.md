@@ -1,6 +1,6 @@
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.7
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.8
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -329,3 +329,13 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.6
 - Testes de navegador em 390×844, 864×1536 e 360×640 verificam a proporção da moldura, símbolos, botões e ausência de sobreposição.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.7
+
+## V3.8 — textura natural, cor e profundidade nas peças escolhidas
+
+- Novos SVGs independentes `assets/imagens/jm38-*.svg` para os seis símbolos aprovados. A concha do **caracol** ganhou estrias, grão, reflexos e detalhes na pele; a **joaninha** ganhou brilho de carapaça, patas definidas e superfície pontilhada.
+- As duas **flores (vermelha e azul)** ganharam nervuras finas, gotículas, pólen e estames; a **pedra** ganhou textura de granito, fissuras e desgaste; o **WILD** ganhou veludo/púrpura texturado, brilho dourado e pontos mágicos.
+- O fundo dos tambores ganhou profundidade verde-escura e linhas separadoras douradas, aproximando a leitura das peças do estilo de bosque da referência. A moldura continua proporcional e os multiplicadores individuais mantêm-se no canto de cada WILD.
+- Os filtros dos SVGs são processados apenas na **rasterização inicial Phaser**, não em cada quadro de animação, para preservar a fluidez no iPhone.
+- A nova arte foi integrada por caminhos versionados e mantém o estilo vertical 9:16, os bónus, os giros e os valores matemáticos anteriores. Continuam a ser créditos fictícios sem RTP auditado.
+
+Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=3.8
