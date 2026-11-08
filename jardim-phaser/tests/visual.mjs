@@ -14,7 +14,7 @@ try{
   const page=await browser.newPage({viewport:{width:scenario.width,height:scenario.height},deviceScaleFactor:1});
   const errors=[];
   page.on('pageerror',err=>errors.push(err.message));
-  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.5',{waitUntil:'domcontentloaded'});
+  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.6',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.jardimPhaserScene?.ready===true,{timeout:30000});
   const metrics=await page.evaluate(()=>{
    const box=sel=>{
@@ -171,6 +171,31 @@ try{
     'cascata preserva combinações e a grelha: '+JSON.stringify(checkFall));
    console.log('PASS brilho e cascata V4.1: '+JSON.stringify(checkFall));
   }
+  if(scenario.name==='iphone-390x844'){
+   // Regressão de regresso a página no Safari: mesmo saldo e mesma aposta.
+   const initial=await page.evaluate(()=>{
+    const snap=()=>({
+     balance:document.getElementById('balance').textContent,
+     stake:document.getElementById('stake').textContent,
+     last:document.getElementById('lastWin').textContent
+    });
+    const before=snap();
+    window.dispatchEvent(new Event('pagehide'));
+    const disabled=document.getElementById('spinBtn').disabled;
+    window.dispatchEvent(new Event('pageshow'));
+    return {before,disabled};
+   });
+   await page.waitForFunction(()=>!document.getElementById('spinBtn').disabled,
+     null,{timeout:12000});
+   const after=await page.evaluate(()=>({
+    balance:document.getElementById('balance').textContent,
+    stake:document.getElementById('stake').textContent,
+    last:document.getElementById('lastWin').textContent
+   }));
+   assert(initial.disabled&&JSON.stringify(initial.before)===JSON.stringify(after),
+    'BFCache alterou saldo/aposta: '+JSON.stringify({initial,after}));
+   console.log('PASS BFCache V4.2.6: '+JSON.stringify({initial,after}));
+  }
   const zoomPrevented=await page.evaluate(()=>{
    const target=document.querySelector('#multiTotal');
    const event=new MouseEvent('dblclick',{bubbles:true,cancelable:true});
@@ -184,7 +209,7 @@ try{
  }
  const landscape=await browser.newPage({viewport:{width:844,height:390}});
  try{
-  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.5',{waitUntil:'domcontentloaded'});
+  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=4.2.6',{waitUntil:'domcontentloaded'});
   const visibility=await landscape.evaluate(()=>{
    const e=document.querySelector('#portraitLock');
    const s=getComputedStyle(e);

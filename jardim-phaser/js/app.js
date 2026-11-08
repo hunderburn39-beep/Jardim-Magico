@@ -48,6 +48,8 @@ let freeOrbHistory=[];
 let modalOpen=false,holdsLong=false,longTimer=null;
 let mutating=false,saveIssue=false,freePaused=false;
 let writerReady=false,writerCheckBusy=false,writerTimer=null,pendingVisual=null,recoveredVisual=false;
+// A recarga da sessão no Safari só acontece depois do giro terminar.
+let sessionNeedsRefresh=false;
 const tabToken=(typeof crypto!=='undefined'&&crypto.randomUUID)?
  crypto.randomUUID():'tab-'+Date.now()+'-'+Math.random().toString(36).slice(2);
 let loopToken=0;
@@ -487,9 +489,9 @@ async function runSpin(){
   }else say('Sem prémio neste giro');
   // Jogadas seguintes só avançam quando as quedas atuais terminarem.
   if(document.hidden||pageSuspended)await releaseIfHidden(pageSuspended);
+  else if(sessionNeedsRefresh||!writerReady)void refreshWriter(sessionNeedsRefresh);
   else if(!repaired){
-   if(!writerReady)refreshWriter();
-   else scheduleNext(bank.mode==='hold'?650:
+   scheduleNext(bank.mode==='hold'?650:
     bank.mode==='free'?(turbo?350:780):(turbo?230:600));
   }
  }
@@ -1166,6 +1168,7 @@ function bind(){
  });
  document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
+   sessionNeedsRefresh=true;
    visualSupervisor.cancel();
    performanceGuard.pause();
    // Let another visible tab take over as soon as this one becomes inactive.
@@ -1191,11 +1194,14 @@ function bind(){
 }
 
 async function refreshWriter(forceReload=false){
+ if(forceReload)sessionNeedsRefresh=true;
  if(document.hidden||pageSuspended||rendererUnavailable||writerCheckBusy||(running&&!writerReady)||mutating||holdBusy)return;
+ // A lease expira ao fim de 22s: renovar durante spins longos e adiar load.
+ const reloadRequested=forceReload||sessionNeedsRefresh;
  writerCheckBusy=true;
  try{
   if(writerReleasePending)await writerReleasePending;
-  if(document.hidden)return;
+  if(document.hidden||pageSuspended||rendererUnavailable)return;
   let granted=false;
   if(writerReady)granted=await demoDB.renewLease(tabToken);
   else granted=await demoDB.acquireLease(tabToken);
@@ -1207,13 +1213,29 @@ async function refreshWriter(forceReload=false){
    if(!document.hidden)say('Modo de leitura: outra aba controla esta demonstração. Fecha-a para jogar aqui.');
    return;
   }
-  if(!writerReady||forceReload){
+  if(running){
+   if(reloadRequested)sessionNeedsRefresh=true;
+   return;
+  }
+  if(document.hidden||pageSuspended||rendererUnavailable){
+   sessionNeedsRefresh=true;
+   if(granted){writerReady=true;await releaseIfHidden(true)}
+   return;
+  }
+  if(!writerReady||reloadRequested){
    // The previous writer may have changed the balances; never reuse stale state.
    const saved=await demoDB.load();
+   // Evitar aplicar leituras cuja espera coincidiu com um giro ou suspensão.
+   if(document.hidden||pageSuspended||rendererUnavailable||running){
+    sessionNeedsRefresh=true;
+    if(!running&&granted){writerReady=true;await releaseIfHidden(true)}
+    return;
+   }
    if(saved?.snapshot)copySnapshot(saved.snapshot);
    if(saved?.board?.length===5)board=saved.board;
    if(scene?.ready)try{scene.recover(board)}catch(err){console.warn(err)}
-   writerReady=true;saveIssue=false;diagnostics.record('writer-granted');
+   writerReady=true;saveIssue=false;sessionNeedsRefresh=false;
+   diagnostics.record('writer-granted');
    update();
    showIdleCoinValues();
    $('dbStatus').textContent='PHASER · BASE LOCAL EXCLUSIVA';
@@ -1226,6 +1248,7 @@ async function refreshWriter(forceReload=false){
   }else if(ready&&!document.hidden&&!running&&!modalOpen&&bank.mode==='free'&&
     !freePaused&&!turnQueue.pending('free'))scheduleNext(650);
  }catch(err){
+  sessionNeedsRefresh=true;
   writerReady=false;saveIssue=true;diagnostics.record('storage-error');console.error('Aba ativa:',err);
   $('dbStatus').textContent='PHASER · SESSÃO BLOQUEADA';
  }finally{writerCheckBusy=false;update()}
@@ -1312,6 +1335,7 @@ async function boot(){
  startWriterHeartbeat();
  window.addEventListener('pagehide',()=>{
   pageSuspended=true;
+  sessionNeedsRefresh=true;
   update();
   visualSupervisor.cancel();performanceGuard.pause();
   turnQueue.clearAll();stopAuto(true);
@@ -1326,7 +1350,8 @@ async function boot(){
   update();
   if(document.hidden)return;
   performanceGuard.resume();
-  if(!running&&!mutating&&!holdBusy)void refreshWriter(true);
+  // A lease pode ser renovada sem repor as peças em movimento.
+  void refreshWriter(true);
  });
  setTimeout(()=>{
   if(!ready){
