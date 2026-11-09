@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 228" width="240" height="228"><defs>
+<linearGradient id="gold" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#ffeaa6"/><stop offset=".25" stop-color="#e6b75c"/><stop offset=".56" stop-color="#a25f25"/><stop offset=".82" stop-color="#ffe5a1"/><stop offset="1" stop-color="#9f5621"/></linearGradient>
+<linearGradient id="lapis" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#66e8ed"/><stop offset=".37" stop-color="#1479a7"/><stop offset="1" stop-color="#122359"/></linearGradient>
+<linearGradient id="ruby" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffaea1"/><stop offset=".4" stop-color="#b92248"/><stop offset="1" stop-color="#5d062f"/></linearGradient>
+<radialGradient id="halo"><stop stop-color="#ffc15d" stop-opacity=".3"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+<linearGradient id="stone" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#54362c"/><stop offset=".4" stop-color="#251b29"/><stop offset="1" stop-color="#120f19"/></linearGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<ellipse cx="120" cy="114" rx="108" ry="104" fill="url(#halo)"/>
+<path d="M28 19L45 19M195 19L212 19M28 209L45 209M195 209L212 209" stroke="#e1bd75" opacity=".45" stroke-width="2"/>
+<path d="M120 12l6 9-6 9-6-9zM120 200l6 9-6 9-6-9z" fill="#d2a263" opacity=".6"/>
+<g>
+<circle cx="121" cy="83" r="45" fill="url(#ruby)" opacity=".45"/>
+<path d="M52 183Q79 143 94 131L100 60 130 34 152 54 149 86 181 100 202 120 177 131 155 127Q171 163 182 194Z" fill="url(#gold)" stroke="#7b4727" stroke-width="4"/>
+<path d="M106 62Q146 75 149 86L132 107 100 102Z" fill="#f9e7a5"/>
+<path d="M146 100L194 116 174 123 146 121" fill="#bf8f43" stroke="#614b36" stroke-width="2"/>
+<path d="M113 119Q131 107 147 119" stroke="#13263c" stroke-width="6" fill="none"/>
+<circle cx="136" cy="118" r="4" fill="#151c32"/>
+<path d="M80 165Q119 140 167 163M71 184Q120 160 183 184" fill="none" stroke="url(#lapis)" stroke-width="14"/>
+<path d="M79 59L121 27 151 43 128 57" fill="url(#lapis)" stroke="url(#gold)" stroke-width="4"/>
+<path d="M124 36L124 19" stroke="#f7cc6f" stroke-width="6"/>
+</g></svg>

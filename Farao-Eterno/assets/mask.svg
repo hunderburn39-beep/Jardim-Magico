@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 228" width="240" height="228"><defs>
+<linearGradient id="gold" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#ffeaa6"/><stop offset=".25" stop-color="#e6b75c"/><stop offset=".56" stop-color="#a25f25"/><stop offset=".82" stop-color="#ffe5a1"/><stop offset="1" stop-color="#9f5621"/></linearGradient>
+<linearGradient id="lapis" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#66e8ed"/><stop offset=".37" stop-color="#1479a7"/><stop offset="1" stop-color="#122359"/></linearGradient>
+<linearGradient id="ruby" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffaea1"/><stop offset=".4" stop-color="#b92248"/><stop offset="1" stop-color="#5d062f"/></linearGradient>
+<radialGradient id="halo"><stop stop-color="#ffc15d" stop-opacity=".3"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+<linearGradient id="stone" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#54362c"/><stop offset=".4" stop-color="#251b29"/><stop offset="1" stop-color="#120f19"/></linearGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<ellipse cx="120" cy="114" rx="108" ry="104" fill="url(#halo)"/>
+<path d="M28 19L45 19M195 19L212 19M28 209L45 209M195 209L212 209" stroke="#e1bd75" opacity=".45" stroke-width="2"/>
+<path d="M120 12l6 9-6 9-6-9zM120 200l6 9-6 9-6-9z" fill="#d2a263" opacity=".6"/>
+<g>
+<path d="M68 48Q118 15 173 48L203 200 163 206 148 167 95 167 80 206 39 200Z" fill="url(#lapis)" stroke="url(#gold)" stroke-width="6"/>
+<path d="M70 54L169 54M60 83L180 83M52 111L189 111M49 146L79 146M163 146L195 146" stroke="url(#gold)" stroke-width="12"/>
+<path d="M88 78Q120 61 151 78L153 144Q145 183 120 199Q96 182 87 144Z" fill="url(#gold)" stroke="#8d5627" stroke-width="3"/>
+<path d="M85 98Q120 81 154 98" fill="none" stroke="#6a4228" stroke-width="6"/>
+<path d="M98 118L112 121M129 121L143 118" stroke="#1b253c" stroke-width="6" stroke-linecap="round"/>
+<path d="M120 116L113 151 128 155" stroke="#aa622c" stroke-width="4" fill="none"/>
+<path d="M109 172Q121 175 134 172" stroke="#712c34" stroke-width="4" fill="none"/>
+<path d="M103 186H137L126 217H115Z" fill="url(#gold)" stroke="#8f5521" stroke-width="2"/>
+<circle cx="120" cy="66" r="13" fill="url(#ruby)" stroke="#ffe8ae" stroke-width="3"/>
+</g></svg>

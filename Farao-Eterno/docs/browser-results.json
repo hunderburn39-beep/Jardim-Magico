@@ -1,0 +1,22 @@
+{
+  "date": "2026-11-09",
+  "browser": "Chromium remoto",
+  "tests": [
+    "PASSOU · Arte HD carregada e versão 1.0",
+    "PASSOU · Formato 9:16 e alvos táteis ≥44 px em 320×568",
+    "PASSOU · Formato 9:16 e alvos táteis ≥44 px em 375×667",
+    "PASSOU · Formato 9:16 e alvos táteis ≥44 px em 390×844",
+    "PASSOU · Formato 9:16 e alvos táteis ≥44 px em 430×932",
+    "PASSOU · Formato 9:16 e alvos táteis ≥44 px em 768×1024",
+    "PASSOU · Menu, regras, tabela, dez linhas e histórico",
+    "PASSOU · Aposta e linhas através dos controlos",
+    "PASSOU · Giro real e paragem rápida sem duplicar prémio",
+    "PASSOU · 3 Scatter ativam 8 Free Spins e bloqueiam a aposta",
+    "PASSOU · Expansão em tambores separados e varrimento sequencial",
+    "PASSOU · Nova ativação soma 8 e outro expansivo",
+    "PASSOU · Oito Free Spins automáticas até ao resumo final",
+    "PASSOU · Repor créditos elimina prémios antigos arriscáveis",
+    "PASSOU · Recarga recupera exatamente o resultado pendente",
+    "PASSOU · Conflito de sessão pausa a janela antiga"
+  ]
+}

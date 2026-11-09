@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 228" width="240" height="228"><defs>
+<linearGradient id="gold" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#ffeaa6"/><stop offset=".25" stop-color="#e6b75c"/><stop offset=".56" stop-color="#a25f25"/><stop offset=".82" stop-color="#ffe5a1"/><stop offset="1" stop-color="#9f5621"/></linearGradient>
+<linearGradient id="lapis" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#66e8ed"/><stop offset=".37" stop-color="#1479a7"/><stop offset="1" stop-color="#122359"/></linearGradient>
+<linearGradient id="ruby" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffaea1"/><stop offset=".4" stop-color="#b92248"/><stop offset="1" stop-color="#5d062f"/></linearGradient>
+<radialGradient id="halo"><stop stop-color="#ffc15d" stop-opacity=".3"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+<linearGradient id="stone" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#54362c"/><stop offset=".4" stop-color="#251b29"/><stop offset="1" stop-color="#120f19"/></linearGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<ellipse cx="120" cy="114" rx="108" ry="104" fill="url(#halo)"/>
+<path d="M28 19L45 19M195 19L212 19M28 209L45 209M195 209L212 209" stroke="#e1bd75" opacity=".45" stroke-width="2"/>
+<path d="M120 12l6 9-6 9-6-9zM120 200l6 9-6 9-6-9z" fill="#d2a263" opacity=".6"/>
+<g>
+<path d="M41 170L78 52H165L199 170 120 205Z" fill="#124b5e" opacity=".37"/>
+<path d="M46 177Q120 209 194 177" fill="none" stroke="url(#gold)" stroke-width="5" opacity=".7"/>
+<text x="120" y="164" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-weight="bold" font-size="143" paint-order="stroke" stroke="#64381d" stroke-width="12" fill="#5fc9da">K</text>
+<text x="120" y="164" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-weight="bold" font-size="143" paint-order="stroke" stroke="url(#gold)" stroke-width="6" fill="#5fc9da">K</text>
+<circle cx="120" cy="188" r="7" fill="url(#ruby)" stroke="#f8d88a" stroke-width="3"/>
+</g></svg>

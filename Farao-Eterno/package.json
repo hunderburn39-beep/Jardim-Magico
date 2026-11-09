@@ -1,0 +1,1 @@
+{"name":"farao-eterno","version":"1.0.0","private":true,"description":"Jogo original de créditos fictícios — matemática V0.6 preservada","scripts":{"test":"node --test tests/engine-session.cjs","simulate":"node tests/simulate.cjs 1000000 20261109 docs/simulation-1000000.json"}}

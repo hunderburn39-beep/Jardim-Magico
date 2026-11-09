@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 228" width="240" height="228"><defs>
+<linearGradient id="gold" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#ffeaa6"/><stop offset=".25" stop-color="#e6b75c"/><stop offset=".56" stop-color="#a25f25"/><stop offset=".82" stop-color="#ffe5a1"/><stop offset="1" stop-color="#9f5621"/></linearGradient>
+<linearGradient id="lapis" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#66e8ed"/><stop offset=".37" stop-color="#1479a7"/><stop offset="1" stop-color="#122359"/></linearGradient>
+<linearGradient id="ruby" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffaea1"/><stop offset=".4" stop-color="#b92248"/><stop offset="1" stop-color="#5d062f"/></linearGradient>
+<radialGradient id="halo"><stop stop-color="#ffc15d" stop-opacity=".3"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+<linearGradient id="stone" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#54362c"/><stop offset=".4" stop-color="#251b29"/><stop offset="1" stop-color="#120f19"/></linearGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<ellipse cx="120" cy="114" rx="108" ry="104" fill="url(#halo)"/>
+<path d="M28 19L45 19M195 19L212 19M28 209L45 209M195 209L212 209" stroke="#e1bd75" opacity=".45" stroke-width="2"/>
+<path d="M120 12l6 9-6 9-6-9zM120 200l6 9-6 9-6-9z" fill="#d2a263" opacity=".6"/>
+<g filter="url(#glow)">
+<path d="M37 198L46 77 81 38 160 38 195 77 205 198Z" fill="url(#gold)" stroke="#6e3f20" stroke-width="6"/>
+<path d="M58 187L66 87 93 60 145 60 173 87 181 187Z" fill="#1e3543" stroke="#c9a35e" stroke-width="5"/>
+<path d="M84 182V95Q119 63 155 95V182Z" fill="#0a293d" stroke="#21e9d5" stroke-width="4"/>
+<ellipse cx="120" cy="130" rx="29" ry="48" fill="url(#gold)" stroke="#7c4d22" stroke-width="3"/>
+<path d="M102 117Q119 101 137 117M107 138Q120 148 133 138M115 144L119 161 124 144" fill="none" stroke="#63462a" stroke-width="5"/>
+<circle cx="120" cy="85" r="12" fill="url(#ruby)" stroke="#f5d67e" stroke-width="3"/>
+<path d="M31 66L209 66M26 193L213 193" stroke="#ffefaa" stroke-width="9"/>
+<path d="M50 71L61 198M188 71L178 198" stroke="#835021" stroke-width="4"/>
+<rect x="64" y="189" width="110" height="26" rx="9" fill="#492923" stroke="#e9c674" stroke-width="2"/>
+<text x="120" y="208" text-anchor="middle" font-family="Georgia,serif" font-size="18" font-weight="bold" fill="#ffdfa2">WILD</text>
+</g></svg>

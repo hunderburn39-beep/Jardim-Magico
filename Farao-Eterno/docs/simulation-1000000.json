@@ -1,0 +1,26 @@
+{
+  "model": "Faraó Eterno V1.0 — pagamentos V0.6",
+  "seed": 20261109,
+  "paidRounds": 1000000,
+  "lines": 10,
+  "bet": 1,
+  "rtpPercent": 96.0005,
+  "approx95CI": [
+    94.67853360118322,
+    97.32246639881677
+  ],
+  "baseRtpPercent": 66.0035,
+  "bonusRtpPercent": 29.997,
+  "paidRoundHitPercent": 35.5252,
+  "features": 9425,
+  "featureFrequency": 106.10079575596816,
+  "exactTriggerProbability": 0.009631424776602065,
+  "expectedFreeSpinsWithoutCap": 8.667871628505555,
+  "freeSpins": 81504,
+  "retriggers": 763,
+  "featureCapHits": 0,
+  "largestObservedRound": 1610.5,
+  "longestObservedFeature": 40,
+  "elapsedSeconds": 23.692,
+  "notes": "Estimativa de amostra de rondas completas, sem arriscar. IC normal aproximado, distribuição com caudas pesadas; não é certificação ou garantia de retorno."
+}

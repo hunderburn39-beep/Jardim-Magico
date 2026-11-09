@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 228" width="240" height="228"><defs>
+<linearGradient id="gold" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#ffeaa6"/><stop offset=".25" stop-color="#e6b75c"/><stop offset=".56" stop-color="#a25f25"/><stop offset=".82" stop-color="#ffe5a1"/><stop offset="1" stop-color="#9f5621"/></linearGradient>
+<linearGradient id="lapis" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#66e8ed"/><stop offset=".37" stop-color="#1479a7"/><stop offset="1" stop-color="#122359"/></linearGradient>
+<linearGradient id="ruby" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffaea1"/><stop offset=".4" stop-color="#b92248"/><stop offset="1" stop-color="#5d062f"/></linearGradient>
+<radialGradient id="halo"><stop stop-color="#ffc15d" stop-opacity=".3"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+<linearGradient id="stone" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#54362c"/><stop offset=".4" stop-color="#251b29"/><stop offset="1" stop-color="#120f19"/></linearGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<ellipse cx="120" cy="114" rx="108" ry="104" fill="url(#halo)"/>
+<path d="M28 19L45 19M195 19L212 19M28 209L45 209M195 209L212 209" stroke="#e1bd75" opacity=".45" stroke-width="2"/>
+<path d="M120 12l6 9-6 9-6-9zM120 200l6 9-6 9-6-9z" fill="#d2a263" opacity=".6"/>
+<g>
+<path d="M40 179Q20 105 51 67L69 37 93 59 120 27 147 59 172 37 191 67Q220 109 200 179L165 204H75Z" fill="url(#gold)" stroke="#68431e" stroke-width="5"/>
+<path d="M53 79Q84 49 120 71Q160 49 188 79L185 125Q153 91 120 115Q85 91 55 125Z" fill="url(#lapis)" stroke="#e6c37c" stroke-width="3"/>
+<path d="M90 48Q120 33 149 48L140 81H99Z" fill="url(#ruby)" stroke="#efcb7e" stroke-width="3"/>
+<circle cx="120" cy="40" r="14" fill="url(#gold)" stroke="#77451d" stroke-width="2"/>
+<path d="M83 105Q76 180 120 196Q165 179 158 105Q124 91 83 105" fill="url(#gold)" stroke="#9c5c27" stroke-width="3"/>
+<path d="M90 132L107 136M132 136L150 132" stroke="#24202a" stroke-width="6" stroke-linecap="round"/>
+<path d="M113 133L107 155 121 161 135 155 129 133" fill="#ab7535"/>
+<path d="M105 174Q120 181 135 174L132 187Q120 194 107 187Z" fill="#5d3d35"/>
+<path d="M66 134L88 111M174 134L152 111" stroke="#ffe89b" stroke-width="7"/>
+<path d="M82 203Q120 177 159 203" fill="none" stroke="#17c1d4" stroke-width="12"/>
+</g></svg>
