@@ -69,7 +69,7 @@
       if(s.feature.left===0){bonusDone=clone(s.feature);s.feature=null;}
     }else if(result.trigger){s.feature={left:8,played:0,totalU:0,symbols:[p.nextSymbol],retriggers:0};s.stats.features++;}
     const outcome={id:p.id,free:p.free,result,prizeU,bonusDone,nextSymbol:p.nextSymbol,bet:p.bet};
-    s.last=clone(outcome);s.history.unshift({t:now,kind:p.free?'free':'spin',bet:p.free?0:p.bet,win:credits(prizeU),scatters:result.scatterCount,bonus:p.free});s.history=s.history.slice(0,100);
+    s.last=clone(outcome);s.history.unshift({id:p.id,t:now,kind:p.free?'free':'spin',bet:p.free?0:p.bet,win:credits(prizeU),scatters:result.scatterCount,bonus:p.free,grid:clone(p.grid),lines:p.lines,lineWins:clone(result.lineWins),scatterWin:result.scatterWin});s.history=s.history.slice(0,100);
     s.pending=null;return outcome;
   }
   function gamble(s,guess,rng=E.randomFloat,now=new Date().toISOString()){
