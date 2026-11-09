@@ -193,7 +193,7 @@
    if(lowSymbol){
     // Preencher quase toda a casa sem cortar letras nem deformar a imagem.
     const b=visibleBounds(img),zoom=(sym==='J'||sym==='Q')?.51:.62;
-    const factor=Math.min((w-14)/b.w,(h-26)/b.h)*zoom*.98*1.01*1.01;
+    const factor=Math.min((w-14)/b.w,(h-26)/b.h)*zoom*.98*1.01*1.01*1.01;
     const iw=b.w*factor,ih=b.h*factor;
     ctx.save();
     ctx.beginPath();ctx.rect(x+5,y+(h-96)/2+5,w-10,86);ctx.clip();
