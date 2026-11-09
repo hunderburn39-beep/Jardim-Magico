@@ -185,13 +185,28 @@
     // Motion blur vertical apenas nos tambores em movimento.
     // O fundo e a moldura ficam nítidos; o blur desaparece em cada paragem.
     const velocity=Math.min(1,Math.max(0,(p<.12?p/.12:p>.82?(1-p)/.18:1)));
-    ctx.save();
-    if('filter' in ctx)ctx.filter='blur('+(2.2+velocity*4.0).toFixed(1)+'px)';
-    for(let r=-1;r<4;r++){
-     const sym=item.show[c][item.steps[c]+3+r-step]||item.grid[c][clamp(r,0,2)];
-     tileAt(sym,rx,top+(r+fraction)*gh,t,false);
+    // Fast vertical streaks simulate the reels spinning at high speed,
+    // without accelerating the actual outcome or changing the game maths.
+    for(const [offset,alpha] of [[-24,.19],[0,.62],[24,.19]]){
+     ctx.save();
+     ctx.globalAlpha=alpha;
+     if('filter' in ctx)ctx.filter='blur('+(1.5+velocity*4.5).toFixed(1)+'px)';
+     for(let r=-1;r<4;r++){
+      const sym=item.show[c][item.steps[c]+3+r-step]||item.grid[c][clamp(r,0,2)];
+      tileAt(sym,rx,top+(r+fraction)*gh+offset*velocity,t,false);
+     }
+     ctx.restore();
     }
-    ctx.restore();
+    // Vertical speed lines stay inside each reel, never over the frame.
+    if(velocity>.25){
+     ctx.save();ctx.globalAlpha=.09*velocity;ctx.strokeStyle='#ffe3a3';
+     ctx.lineWidth=1.5;
+     for(let k=0;k<7;k++){
+      const sx=rx+9+k*13,sy=top+((t*(.75+velocity)+k*83+c*27)%(gh*3+90))-45;
+      ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx,sy+30+velocity*45);ctx.stroke();
+     }
+     ctx.restore();
+    }
    }else{
     const grid=item&&item.stopped[c]?item.grid:this.grid;
     const ms=t-this.landings[c];
@@ -272,7 +287,7 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  txt('V1.1.7',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.1.8',38,985,10,'#e5c68d',850,'Arial');
   if(!this.storageOK)txt('SESSÃO SEM GRAVAÇÃO',280,833,11,'#ffbc83',800,'Arial');
  };
  document.documentElement.dataset.faraoVisual='1.1';
