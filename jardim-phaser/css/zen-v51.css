@@ -136,3 +136,59 @@
  .machine #dropHud .multi-drop output{font-size:19px}
  .machine #dropHud #multiTotal{font-size:22px}
 }
+
+/* V5.1.5 — fundo transparente, HUD compacto e mensagens sem duplicações.
+   Preserva a transparência do canvas Phaser, as linhas entre tambores
+   e todos os elementos de jogo, prémios e animações. */
+@media (orientation:portrait){
+ /* Remover o painel superior das Free Spins: as restantes continuam no painel inferior. */
+ .machine #freeHud{display:none!important}
+
+ /* A mensagem junto à base da moldura fica ilegível.
+    O estado continua legível na zona #resultText, sem duplicação. */
+ .machine .frame-region #spinText{display:none!important}
+
+ /* Mostrar o cenário original através das cinco colunas. */
+ .machine .frame-region .reel-window{
+  background:none;
+  background-color:transparent;
+  box-shadow:0 0 10px #ffe29742;
+ }
+ .machine .frame-region .reel-velvet{
+  background:repeating-linear-gradient(90deg,
+   transparent 0,
+   transparent calc(20% - 1.4px),
+   #e7c68d75 calc(20% - 1px),
+   transparent 20%);
+ }
+ .machine .frame-region .reel-glow{
+  background:none;
+  box-shadow:none;
+ }
+
+ /* Informação da queda e MULTI compacta, centrada e acima da moldura. */
+ .machine .frame-region > #dropHud{
+  left:50%;right:auto;
+  width:min(70%,300px);
+  max-width:300px;
+  padding:3px 8px;
+  gap:6px;
+  grid-template-columns:minmax(0,1fr) auto;
+  border-radius:10px;
+  transform:translateX(-50%);
+ }
+ .machine #dropHud .multi-drop small,
+ .machine #dropHud .multi-final small{
+  font-size:clamp(8px,2.25vw,12px);
+  line-height:1;
+ }
+ .machine #dropHud .multi-drop output{font-size:clamp(17px,4.9vw,25px)}
+ .machine #dropHud #multiTotal{font-size:clamp(19px,5.2vw,28px)}
+}
+@media (orientation:portrait) and (max-height:640px){
+ .machine .frame-region > #dropHud{
+  width:min(76%,270px);
+  padding:2px 6px;
+  gap:4px;
+ }
+}

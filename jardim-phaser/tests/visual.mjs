@@ -45,6 +45,12 @@ try{
     spin:box('#spinBtn'),
     frame:box('.frame-region .branch-frame'),
     frameBackground:getComputedStyle(document.querySelector('.branch-frame')).backgroundImage,
+    freePanelDisplay:getComputedStyle(document.querySelector('#freeHud')).display,
+    spinnerStatusDisplay:getComputedStyle(document.querySelector('#spinText')).display,
+    reelBackground:getComputedStyle(document.querySelector('.reel-window')).backgroundImage,
+    reelBackgroundColor:getComputedStyle(document.querySelector('.reel-window')).backgroundColor,
+    velvetBackground:getComputedStyle(document.querySelector('.reel-velvet')).backgroundImage,
+    reelGlowBackground:getComputedStyle(document.querySelector('.reel-glow')).backgroundImage,
     playedVisibility:getComputedStyle(document.querySelector('#hudFreePlayed')).display,
     winNoticeVisibility:getComputedStyle(document.querySelector('#winNotice')).display,
     botanicalScale:scene.getVisible(1,0)?.displayWidth,
@@ -89,6 +95,13 @@ try{
    scenario.name+' moldura deve encaixar no tambor '+JSON.stringify(metrics.frame));
   assert(metrics.frameBackground.includes('jm51-moldura-limpa.svg'),
    scenario.name+' a moldura de cantos livres não carregou');
+  assert(metrics.freePanelDisplay==='none'&&metrics.spinnerStatusDisplay==='none',
+   scenario.name+' informação redundante das Free Spins ou mensagem sob moldura visível');
+  assert(metrics.reelBackground==='none'&&
+    (metrics.reelBackgroundColor==='rgba(0, 0, 0, 0)'||metrics.reelBackgroundColor==='transparent')&&
+    metrics.reelGlowBackground==='none'&&
+    metrics.velvetBackground.includes('repeating-linear-gradient'),
+    scenario.name+' tambores devem ser transparentes, com separadores verticais');
   assert(metrics.playedVisibility==='none'&&metrics.winNoticeVisibility==='none',
    scenario.name+' as faixas extra tapam os símbolos');
   // Moldura e grelha sobem em conjunto sem perder o enquadramento.

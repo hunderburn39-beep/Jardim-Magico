@@ -159,12 +159,31 @@ for(const [name,type] of [['chromium',chromium],['webkit',webkit]]){
      const frameBackground=getComputedStyle(frameArt).backgroundImage;
      const played=getComputedStyle(document.querySelector('#hudFreePlayed')).display;
      const winBand=getComputedStyle(document.querySelector('#winNotice')).display;
+     const freePanel=getComputedStyle(document.querySelector('#freeHud')).display;
+     const spinMessage=getComputedStyle(document.querySelector('#spinText')).display;
+     const reel=getComputedStyle(document.querySelector('.reel-window'));
+     const glow=getComputedStyle(document.querySelector('.reel-glow'));
+     const velvet=getComputedStyle(document.querySelector('.reel-velvet'));
      return {above:!!frame&&r.top>=0&&r.bottom<=f.top+10,
-      frameBackground,played,winBand,value:el.querySelector('#multiTotal').textContent};
+      centerOffset:Math.abs((r.left+r.right)/2-(f.left+f.right)/2),
+      hudWidthRatio:r.width/f.width,
+      frameBackground,played,winBand,freePanel,spinMessage,
+      reelBackground:reel.backgroundImage,reelColor:reel.backgroundColor,
+      glowBackground:glow.backgroundImage,velvetBackground:velvet.backgroundImage,
+      value:el.querySelector('#multiTotal').textContent};
     });
     check(floating.above&&Number(floating.value.replace('×',''))>1,name+' valor da queda e MULTI acima da moldura');
     check(floating.frameBackground.includes('jm51-moldura-limpa.svg')&&floating.played==='none'&&floating.winBand==='none',
      name+' cantos livres e informações redundantes ocultas');
+    check(floating.centerOffset<=4&&floating.hudWidthRatio<=.77,
+     name+' retângulo MULTI compacto e centrado acima da moldura');
+    check(floating.freePanel==='none'&&floating.spinMessage==='none',
+     name+' Free Spins sem faixa superior nem texto ilegível no aro');
+    check(floating.reelBackground==='none'&&
+     floating.reelColor==='rgba(0, 0, 0, 0)'&&
+     floating.glowBackground==='none'&&
+     floating.velvetBackground.includes('repeating-linear-gradient'),
+     name+' fundo transparente com divisórias entre tambores');
     await ready(page);await page.locator('#dropHud').waitFor({state:'hidden',timeout:6000});
     await page.evaluate(()=>{Math.random=()=>.9});
     const spinCount=data.state.snapshot.spins;
