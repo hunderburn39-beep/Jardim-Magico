@@ -144,8 +144,8 @@
   if(['10','J','Q','K','A'].includes(sym)){
    const bx=x+(R.cw-96)/2,by=y+(R.gh-96)/2;
    ctx.save();ctx.shadowColor='#eab95b';ctx.shadowBlur=3;
-   rounded(ctx,bx,by,96,96,10,null,'#f1bf6b',2.8);
-   rounded(ctx,bx+3,by+3,90,90,7,null,'#ffe4a3aa',1.2);
+   rounded(ctx,bx,by,96,96,10,null,'#f1bf6b',1.4);
+   rounded(ctx,bx+3,by+3,90,90,7,null,'#ffe4a3aa',0.6);
    ctx.restore();
   }
  }
