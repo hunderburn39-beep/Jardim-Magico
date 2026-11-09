@@ -1,4 +1,4 @@
-# Halloween III — Clássica (V0.6, reconstrução independente)
+# Halloween III — Clássica (V0.7, reconstrução independente)
 
 Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-níqueis Halloween III dos anos 2000.
 
@@ -10,14 +10,15 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 - Descrição de versões e mecânicas (20/25/30 linhas, travar tambores, bónus): https://www.casinobillionaire.com/portuguese/jogo-caca-niquel-halloween/
 - Manual histórico de configuração das máquinas: https://pt.scribd.com/document/696584543/Manual-Completo-Halloween
 
-## Implementado nesta V0.6
+## Implementado nesta V0.7
 
 - Ecrã retro com **5 tambores × 3 linhas** de fundo claro, nome Halloween III, marcadores de linhas coloridos, indicadores de crédito/prémio/aposta e quatro acumulados virtuais.
 - Ilustrações **SVG originais** para os **10 tipos encontrados no XAPK**: abóbora Halloween, bruxa verde, WITCH, vampiro, fantasma, bruxa na lua, monstro, diabinho, MAGIC e caldeirão. Não são extraídas de ficheiros comerciais.
 - Possibilidade de escolher **20, 25 ou 30 linhas** de pagamento e apostas de 1, 2, 5 ou 10 créditos.
 - Giros com tiras de 5 sprites por tambor, máscaras de recorte e desaceleração progressiva, paragem por ordem, linhas vencedoras **desenhadas sobre os símbolos e exibidas uma de cada vez**, sons arcade sintetizados em WebAudio (com melodia própria de celebração) e botão automático.
+- **Novo bónus dos 12 morangos**, em grelha 4×3, com seleção por toque e prémio guardado antes da animação. A documentação do APK confirma 12 elementos gráficos, mas os valores e a forma de o ativar nesta versão são experimentais.
 - **Travar até quatro tambores após uma jogada sem prémio**, tocando nos próprios tambores. Todos os giros seguintes debitam normalmente a aposta.
-- Motor experimental com Wild (Magic), 30 linhas e deteção de combinações. Três ou mais caldeirões ativam Free Spins e uma escolha de três potes.
+- Motor experimental com Wild (Magic), 30 linhas e deteção de combinações. Três ou mais caldeirões ativam Free Spins e um bónus experimental de caldeirões **ou morangos**. A escolha dos 12 morangos não reproduz ainda as probabilidades do APK.
 - Uma abóbora é recolhida em rondas pagas com **quatro ou mais abóboras visíveis** (máximo de uma por ronda). Ao reunir cinco, atribui **cinco Free Spins**. Durante estas não se recolhem novas abóboras.
 - A **roleta da sorte, com 30 números**, só abre quando aparecem **cinco abóboras exatamente alinhadas numa linha ativa**. Isto substitui o gatilho antigo, que abria demasiadas roletas. Os prémios são demonstrativos: multiplicadores da aposta ou um de quatro acumulados virtuais.
 - As duas funções de bónus guardam os resultados antes das animações; a sessão recupera mesmo se o navegador for fechado. Todas estas regras continuam a ser **reconstruções experimentais, não as fórmulas originais do APK**.
@@ -26,7 +27,7 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 ## Tabela de pagamentos de referência
 
 - Botão `?` junto ao título abre uma tabela com valores visualmente observados em `01_tabela1.webp` e `01_tabela2.webp`: Halloween, MAGIC, WITCH e caldeirões.
-- A tabela é **documental**: a V0.6 não utiliza esses valores como coeficientes do motor e não afirma que a conversão para créditos esteja recuperada.
+- A tabela é **documental**: a V0.7 não utiliza esses valores como coeficientes do motor e não afirma que a conversão para créditos esteja recuperada.
 - Os prémios efetivamente atribuídos ainda derivam da tabela matemática demonstrativa de `js/engine.js`, que **não está validada como RTP ou matemática da aplicação Android**.
 - `GameHalloween30L.NumRoleta` lê campos associados a prémio, crédito e dificuldade e chama `calcbonusRoleta`; isso não revela os pesos das casas nem autoriza uma replicação fiel de probabilidades.
 
@@ -34,8 +35,10 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 
 - [Auditoria estática detalhada](docs/analise-xapk-original-6-68.md): imagens, áudio, binário LNH1 e classe Java/Dalvik `GameHalloween30L` (231 métodos).
 - [Transcrição parcial da tabela de prémios](docs/valores-visiveis-tabelas-original.json): valores visíveis do APK, **não usados ainda como matemática de jogo**.
-- [Auditoria dos créditos virtuais V0.6](docs/auditoria-creditos-v06.md): correção da roleta excessivamente frequente e simulações determinísticas. Não é certificado de RTP.
+- [Auditoria dos créditos virtuais V0.7](docs/auditoria-creditos-v06.md): correção da roleta excessivamente frequente e simulações determinísticas. Não é certificado de RTP.
 - O modo inicial é agora de **30 linhas**. A reprodução 9:16 mantém símbolos próprios e não reutiliza os recursos comerciais do APK no repositório público.
+
+- [Mapa dos bónus da versão Android](docs/bonus-android-v07.md): evidências Dalvik para morangos, caldeirões, roleta e dados.
 
 ## Estrutura
 
@@ -44,7 +47,7 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 - `js/art.js` — biblioteca SVG original.
 - `js/game.js` — cena Phaser, som e interface.
 - `tests/engine.test.cjs` — testes do motor e regressão económica.
-- `tests/ui-smoke.test.cjs` — testes de cena Phaser sem navegador.
+- `tests/ui-smoke.test.cjs` — testes de cena Phaser sem navegador, incluindo seleção e recuperação dos morangos.
 - `tests/browser.cjs` — Chromium/WebKit, incluindo tabela e recuperação de sessão.
 - `.github/workflows/testar-halloween.yml` — workflow de testes.
 - `.github/workflows/publicar-3-jogos.yml` — publicação comum dos 4 jogos, num único GitHub Pages.
@@ -56,7 +59,7 @@ O Phaser é importado localmente de `../jardim-phaser/vendor/phaser-3.90.0.min.j
 - `node --test Halloween/tests/engine.test.cjs` — testes de regras, prémios, salvaguardas, 20.000 giros simulados e regressão económica.
 - `node --test Halloween/tests/ui-smoke.test.cjs` — verifica carregamento da cena, tabela, giros e restauração de sessão.
 - `node Halloween/tests/browser.cjs` — testes de renderização e interação em Chromium e Safari/WebKit no servidor de testes (requer Playwright instalado).
-- O workflow independente cria primeiro o ZIP V0.6 após os testes locais e só depois tenta os testes pesados em Chromium/WebKit. Assim, uma falha na instalação dos browsers não impede a criação do ZIP.
+- O workflow independente cria primeiro o ZIP V0.7 após os testes locais e só depois tenta os testes pesados em Chromium/WebKit. Assim, uma falha na instalação dos browsers não impede a criação do ZIP.
 
 ## Próximos passos
 
