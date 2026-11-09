@@ -50,6 +50,9 @@ jobs:
       - name: Testar matemática e bónus
         run: node --test Halloween/tests/engine.test.cjs
 
+      - name: Testar interface Phaser sem dependências externas
+        run: node --test Halloween/tests/ui-smoke.test.cjs
+
       - name: Instalar Playwright para Chromium e Safari/WebKit
         run: |
           npm install --no-save --package-lock=false playwright@1.56.1
