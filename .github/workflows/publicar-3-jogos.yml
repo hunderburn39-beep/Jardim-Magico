@@ -1,7 +1,7 @@
-name: "Publicar no GitHub Pages | 3 jogos"
+name: "Publicar no GitHub Pages | 4 jogos"
 
 # O GitHub Pages oferece um unico site por repositorio.
-# Por isso publicamos os tres jogos juntos, em pastas separadas,
+# Por isso publicamos os quatro jogos juntos, em pastas separadas,
 # sem deixar que a publicacao de um substitua os outros.
 on:
   push:
@@ -15,6 +15,7 @@ on:
       - 'jardim-3d/**'
       - 'templo-do-trovao/**'
       - 'Farao-Eterno/**'
+      - 'Halloween/**'
       - '.github/workflows/publicar-3-jogos.yml'
   workflow_dispatch:
 
@@ -24,12 +25,12 @@ permissions:
   id-token: write
 
 concurrency:
-  group: publicar-tres-jogos-pages
+  group: publicar-quatro-jogos-pages
   cancel-in-progress: false
 
 jobs:
   preparar:
-    name: Verificar e preparar os três jogos
+    name: Verificar e preparar os quatro jogos
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -37,7 +38,7 @@ jobs:
       - name: Obter todas as pastas
         uses: actions/checkout@v4
 
-      - name: Garantir que os três jogos estão presentes
+      - name: Garantir que os quatro jogos estão presentes
         shell: bash
         run: |
           set -euo pipefail
@@ -46,10 +47,13 @@ jobs:
           test -s jardim-phaser/vendor/phaser-3.90.0.min.js
           test -s templo-do-trovao/index.html
           test -s Farao-Eterno/index.html
+          test -s Halloween/index.html
+          test -s Halloween/js/engine.js
+          test -s Halloween/js/game.js
           test -d css
           test -d js
           test -d assets
-          echo "Todos os três jogos existem."
+          echo "Todos os quatro jogos existem."
 
       - name: Criar único site, com pastas independentes
         shell: bash
@@ -59,20 +63,22 @@ jobs:
           cp index.html public/index.html
           cp -a css js assets public/
           cp -a jardim-phaser jardim-3d public/
-          cp -a templo-do-trovao Farao-Eterno public/
+          cp -a templo-do-trovao Farao-Eterno Halloween public/
           touch public/.nojekyll
           test -s public/index.html
           test -s public/jardim-phaser/index.html
           test -s public/templo-do-trovao/index.html
           test -s public/Farao-Eterno/index.html
+          test -s public/Halloween/index.html
           echo "Jardim Mágico: /jardim-phaser/"
           echo "Portões do Trovão: /templo-do-trovao/"
           echo "Faraó Eterno: /Farao-Eterno/"
+          echo "Halloween: /Halloween/"
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Guardar os três jogos num só artefacto
+      - name: Guardar os quatro jogos num só artefacto
         uses: actions/upload-pages-artifact@v4
         with:
           path: public
@@ -86,6 +92,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Publicar o site com os três jogos
+      - name: Publicar o site com os quatro jogos
         id: deployment
         uses: actions/deploy-pages@v4
