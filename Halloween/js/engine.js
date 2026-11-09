@@ -59,7 +59,7 @@
     return SYMBOLS[SYMBOLS.length - 1].id;
   }
   function createState() {
-    return { balance: 1000, bet: 2, lines: 20, jackpots: [350,750,1500,3000], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null };
+    return { balance: 1000, bet: 2, lines: 30, jackpots: [350,750,1500,3000], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null };
   }
   function sanitize(s) {
     const d = createState();
