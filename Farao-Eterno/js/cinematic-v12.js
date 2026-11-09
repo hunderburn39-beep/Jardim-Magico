@@ -57,7 +57,22 @@
     spin.duration = this.turbo ? 520 : 1040;
     const showTwo = spin.grid.slice(0, 4)
       .reduce((count, col) => count + col.filter(s => s === 'TOMB').length, 0) >= 2;
-    spin.reelGap = this.turbo ? 72 : showTwo ? 210 : 170;
+    spin.reelGap = this.turbo ? 72 : 170;
+    // Suspense progressivo: depois de duas torres WILD, abrandar todos os
+    // tambores seguintes, incluindo o quinto se o terceiro e quarto falharem.
+    // A terceira torre termina a procura; nunca alterar os símbolos sorteados.
+    const baseStop = spin.grid.map((_, c) => spin.start + spin.duration + c * spin.reelGap);
+    let seen = 0, suspenseEnd = false;
+    spin.stopAt = baseStop.map((stop, c) => {
+      const slow = seen >= 2 && !suspenseEnd;
+      const adjusted = stop + (slow ? (this.turbo ? 340 : 1050) : 0);
+      if (spin.grid[c].includes('TOMB')) {
+        seen++;
+        if (seen >= 3) suspenseEnd = true;
+      }
+      return adjusted;
+    });
+    spin.cinematicSuspense = spin.stopAt.some((stop, c) => stop > baseStop[c]);
     spin.steps = Array.from({length: 5}, (_, c) => 27 + 4 * c);
     spin.show = spin.steps.map((steps, c) => stripFor(c, steps, prior[c], spin.grid[c], round));
     spin.cinematicPrior = prior;
