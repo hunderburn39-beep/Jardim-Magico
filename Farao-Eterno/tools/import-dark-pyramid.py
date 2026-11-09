@@ -75,7 +75,14 @@ def main():
     options = []
     for page in SOURCES:
         try:
-            options.extend(direct_audio_urls(request(page)))
+            page_bytes=request(page)
+            if "freesound.org/people/" in page:
+                sample=page_bytes.decode("utf-8",errors="replace")
+                print("Freesound HTML bytes",len(page_bytes))
+                for token in ("534876", "previews", "mp3", "audio", "sound-data"):
+                    idx=sample.lower().find(token.lower())
+                    print("DEBUG",token,idx,repr(sample[max(0,idx-100):idx+220]) if idx>=0 else "",flush=True)
+            options.extend(direct_audio_urls(page_bytes))
         except Exception as exc:
             print("Página indisponível:", exc, flush=True)
     options = list(dict.fromkeys(options))
