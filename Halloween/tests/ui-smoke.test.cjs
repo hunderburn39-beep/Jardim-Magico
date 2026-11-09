@@ -16,6 +16,8 @@ function sceneFixture(){
     window:{location:{search:"?smoke=1"}},
     document:{getElementById:()=>({textContent:""})},
     URLSearchParams,
+    TextEncoder:require("node:util").TextEncoder,
+    btoa:binary=>Buffer.from(binary,"binary").toString("base64"),
     localStorage:{
       getItem:key=>storage.get(key)??null,
       setItem:(key,value)=>storage.set(key,String(value))
@@ -51,7 +53,12 @@ function sceneFixture(){
       graphics:()=>node(),text:()=>node(),zone:()=>node(),
       image:(x,y,key)=>node(key),rectangle:()=>node(),container:()=>node()
     };
-    scene.load={svg:()=>{}};
+    scene.load={svg:(key,uri)=>{
+      assert.ok(uri.startsWith("data:image/svg+xml;base64,"),"SVG não está em base64");
+      const raw=Buffer.from(uri.split(",")[1],"base64").toString("utf8");
+      assert.ok(raw.startsWith("<svg xmlns="),"XML SVG inválido");
+      assert.ok(key.startsWith("h-"));
+    }};
     scene.input={keyboard:{on:()=>{}}};
     scene.cameras={main:{flash:()=>{}}};
     scene.tweens={add:({onComplete})=>{if(onComplete)onComplete()}};
