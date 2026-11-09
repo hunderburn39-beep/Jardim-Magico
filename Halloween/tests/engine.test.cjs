@@ -221,3 +221,14 @@ test("Caldeirão e roleta na mesma ronda são resolvidos sem duplicar créditos"
     Math.round((spun.state.balance+afterPot.awarded+afterWheel.awarded)*100)/100);
   assert.equal(E.resolveWheel(afterWheel.state).ok,false);
 });
+
+test("O motor guarda a grelha e a recupera sem partilhar referências",()=>{
+  const result=E.spin(E.createState(),()=>.4);
+  assert.deepEqual(result.state.lastGrid,result.grid);
+  const copy=E.sanitize(JSON.parse(JSON.stringify(result.state)));
+  assert.deepEqual(copy.lastGrid,result.grid);
+  copy.lastGrid[0][0]="pumpkin";
+  assert.deepEqual(result.state.lastGrid,result.grid);
+  const invalid=E.sanitize({...E.createState(),lastGrid:[["bad"]]});
+  assert.equal(invalid.lastGrid,null);
+});
