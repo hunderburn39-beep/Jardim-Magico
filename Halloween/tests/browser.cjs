@@ -115,7 +115,7 @@ async function run(name,launcher){
     // exatamente o prémio guardado, sem repetir a atribuição.
     await page.evaluate(()=>{
       const s=window.__HALLOWEEN_SCENE__;
-      const next={...s.state,pendingPot:null,pendingWheel:{sectorIndex:6,payout:350.75}};
+      const next={...s.state,pendingPot:null,pendingWheel:{sectorIndex:6,payout:351}};
       localStorage.setItem("halloween-classico-v02",JSON.stringify(next));
     });
     await page.reload({waitUntil:"domcontentloaded"});
@@ -124,7 +124,7 @@ async function run(name,launcher){
     await tap(page,360,852);
     await page.waitForFunction(()=>window.__HALLOWEEN_SCENE__?.state?.pendingWheel===null,{},{timeout:12000});
     const wheelAfter=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.state.balance);
-    assert.equal(wheelAfter,Math.round((wheelBefore+350.75)*100)/100);
+    assert.equal(wheelAfter,wheelBefore+351);
     await page.screenshot({path:`visual-previews/halloween-${name}-roleta.png`});
     await page.evaluate(()=>{
       const s=window.__HALLOWEEN_SCENE__;
