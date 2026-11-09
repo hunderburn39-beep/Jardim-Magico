@@ -15,10 +15,10 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 - Ecrã retro com **5 tambores × 3 linhas** de fundo claro, nome Halloween III, marcadores de linhas coloridos, indicadores de crédito/prémio/aposta e dois acumulados virtuais.
 - Ilustrações **SVG originais**: abóbora, fantasma, morcego, gato, monstro, bruxa, Magic e caldeirão. Não são extraídas de ficheiros comerciais.
 - Possibilidade de escolher **20, 25 ou 30 linhas** de pagamento e apostas de 1, 2, 5 ou 10 créditos.
-- Giros com tiras de 5 sprites por tambor, máscaras de recorte e desaceleração progressiva, paragem por ordem, prémios realçados, sons arcade sintetizados e botão automático.
+- Giros com tiras de 5 sprites por tambor, máscaras de recorte e desaceleração progressiva, paragem por ordem, prémios realçados, sons arcade sintetizados em WebAudio (com melodia própria de celebração) e botão automático.
 - **Travar até quatro tambores após uma jogada sem prémio**, tocando nos próprios tambores. Todos os giros seguintes debitam normalmente a aposta.
 - Motor experimental com Wild (Magic) corrigido, inclusive para grupos Wild terminados por Scatter. Três ou mais caldeirões ativam Free Spins e uma janela para escolher um de três potes. A escolha é guardada antes de ser mostrada, para recuperar o bónus ao reabrir o navegador. Cinco abóboras recolhidas em giros pagos (no máximo uma por giro, quando há três ou mais na grelha) dão cinco Free Spins **e uma roleta virtual de oito setores**, com prémios de aposta × multiplicador ou um dos dois acumulados. A roleta fica guardada durante interrupções e atribui o prémio apenas uma vez. As rodadas gratuitas não recolhem novas abóboras. Estas são regras recriadas, ainda diferentes das mecânicas e tabelas históricas documentadas.
-- Guardar saldo, linhas, aposta, acumulados, giros, caldeirão e roleta pendentes no armazenamento local, quando disponível. Aposta e linhas são bloqueadas durante Free Spins, e a seleção de aposta/linhas limpa travas de rolos.
+- Guardar saldo, linhas, aposta, acumulados, giros, grelha final e bónus de caldeirão ou roleta pendente no armazenamento local, quando disponível. O resultado do giro é guardado antes de começar a animação: ao reabrir o jogo, a combinação e os créditos são recuperados. Aposta e linhas são bloqueadas durante Free Spins, e a seleção de aposta/linhas limpa travas de rolos.
 
 ## Estrutura
 
