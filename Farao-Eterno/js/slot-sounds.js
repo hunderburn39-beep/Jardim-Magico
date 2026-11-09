@@ -156,7 +156,8 @@
   function wildPaam(count){
     if(!ready())return;
     const ac=audio.ctx,t=ac.currentTime;
-    const force=count<=1 ? 1 : count===2 ? 1.12 : 1.22;
+    // +50% de ganho apenas no PAAAAMMMM do Wild, face à V1.3.4.
+    const force=1.5*(count<=1 ? 1 : count===2 ? 1.12 : 1.22);
     const duration=count>=3 ? 1.75 : 1.55;
     audio._wildSoundAtMs=performance.now();
 
@@ -227,5 +228,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.3.4',original:true,procedural:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.3.5',original:true,procedural:true,dynamicReelSpeed:true};
 })();
