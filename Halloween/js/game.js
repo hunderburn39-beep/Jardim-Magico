@@ -449,19 +449,38 @@ class Classica extends Phaser.Scene{
      this.winGlow.strokeRoundedRect(X+c*CW+5,Y+r*CH+5,CW-10,CH-10,8);
    }
  }
- flash(){this.cameras.main.flash(230,255,212,127,false);this.tone(900,.19);}
+ flash(){
+   this.cameras.main.flash(230,255,212,127,false);
+   // Pequena melodia original de celebração, sem amostras proprietárias.
+   for(const [index,note] of [659,784,988,1318].entries())
+     this.time.delayedCall(115*index,()=>this.tone(note,.17));
+ }
  tone(freq,len){
    if(this.silence)return;
-   try{const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;
+   try{
+     const Audio=window.AudioContext||window.webkitAudioContext;
+     if(!Audio)return;
      if(!this.audio)this.audio=new Audio();
      if(this.audio.state==="suspended")this.audio.resume().catch(()=>{});
-     const t=this.audio.currentTime,osc=this.audio.createOscillator(),gain=this.audio.createGain();
-     osc.type="square";osc.frequency.setValueAtTime(freq,t);
-     gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.025,t+.018);
-     gain.gain.exponentialRampToValueAtTime(.0001,t+len);
-     osc.connect(gain);gain.connect(this.audio.destination);osc.start(t);osc.stop(t+len+.02);
-   }catch{/* Áudio opcional */}
+     const ctx=this.audio,t=ctx.currentTime;
+     const filter=ctx.createBiquadFilter();
+     filter.type="lowpass";filter.frequency.value=Math.min(2800,Math.max(680,freq*3));
+     const master=ctx.createGain();
+     master.gain.setValueAtTime(.0001,t);
+     master.gain.exponentialRampToValueAtTime(.045,t+.012);
+     master.gain.exponentialRampToValueAtTime(.0001,t+len);
+     filter.connect(master);master.connect(ctx.destination);
+     for(const [wave,pitch,level] of [["square",freq,.64],["triangle",freq*.5,.36]]){
+       const osc=ctx.createOscillator(),gain=ctx.createGain();
+       osc.type=wave;gain.gain.value=level;
+       osc.frequency.setValueAtTime(pitch,t);
+       osc.frequency.exponentialRampToValueAtTime(Math.max(50,pitch*.87),t+len);
+       osc.connect(gain);gain.connect(filter);
+       osc.start(t);osc.stop(t+len+.02);
+     }
+   }catch{/* O áudio não bloqueia o jogo em browsers sem WebAudio. */}
  }
+
 }
 new Phaser.Game({type:Phaser.AUTO,parent:"game",width:W,height:H,backgroundColor:"#160d28",
   scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
