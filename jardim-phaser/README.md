@@ -14,6 +14,8 @@ Edição final demonstrativa, baseada na V4.3.3. Mantém os símbolos HD, a qued
 
 A matemática e as imagens aprovadas são verificadas por checksum em `release.json`. Os testes de regressão, testes adicionais e testes em Chromium/WebKit antecedem a publicação automática no GitHub Pages.
 
+[Resultado, testes e limitações](docs/RELATORIO_FINAL_V5.md) · [Mecânicas e matemática conservadas](docs/MECANICAS_V5.md) · [Pré-visualização](docs/jardim-v5-preview.jpg)
+
 ## Verificar
 
 ```sh

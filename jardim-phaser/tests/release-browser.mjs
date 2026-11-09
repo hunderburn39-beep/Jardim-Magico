@@ -32,10 +32,16 @@ for(const [name,type] of [['chromium',chromium],['webkit',webkit]]){
  const browser=await type.launch({headless:true,...(name==='chromium'?{args:['--no-sandbox','--disable-gpu-sandbox']}:{} )});
  try{
   for(const viewport of [{width:320,height:568},{width:390,height:844},{width:430,height:932}]){
+   console.log('START',name,viewport.width+'x'+viewport.height);
    const context=await browser.newContext({viewport,locale:'pt-PT',timezoneId:'Europe/Lisbon',acceptDownloads:true});
+   context.setDefaultTimeout(20000);context.setDefaultNavigationTimeout(20000);
    // A fixed non-winning fixture makes UI costs, Free Spins and Hold finishes reproducible.
    // Random awards and full grids are exercised separately by final.mjs and smoke.mjs.
-   await context.addInitScript(()=>{Math.random=()=>.9});
+   await context.addInitScript(()=>{
+    Math.random=()=>.9;
+    // Inspect the printable HTML and invocation without an operating-system print dialog.
+    window.print=()=>{window.testPrintInvoked=true};
+   });
    const page=await context.newPage(),errors=[],requests=[];
    page.on('pageerror',error=>errors.push(error.message));
    page.on('request',request=>requests.push(request.url()));
@@ -92,14 +98,37 @@ for(const [name,type] of [['chromium',chromium],['webkit',webkit]]){
     await saved(page,d=>d.state.snapshot.balance===137.3);
     await page.locator('#adminCreditAmount').fill('2,50');await page.locator('#playerDebit').click();
     await saved(page,d=>d.state.snapshot.balance===134.8);
+    // A failed IndexedDB write must leave both stored and displayed credits unchanged.
+    await page.evaluate(()=>{
+     window.testOriginalTransaction=IDBDatabase.prototype.transaction;
+     IDBDatabase.prototype.transaction=function(names,mode,...args){
+      if(mode==='readwrite'&&Array.isArray(names)&&names.includes('events'))throw Error('Injected storage failure');
+      return window.testOriginalTransaction.call(this,names,mode,...args);
+     };
+    });
+    await page.locator('#adminCreditAmount').fill('5');await page.locator('#playerCredit').click();
+    await page.waitForFunction(()=>document.querySelector('#adminMessage').textContent.includes('Falha'));
+    check((await stored(page)).state.snapshot.balance===134.8&&
+     (await page.locator('#adminBalance').innerText()).includes('134,80'),name+' rollback após falha real de escrita');
+    await page.evaluate(()=>{IDBDatabase.prototype.transaction=window.testOriginalTransaction;delete window.testOriginalTransaction});
     const popupPromise=page.waitForEvent('popup');await page.locator('#adminReport').click();
     const popup=await popupPromise;await popup.waitForLoadState();
-    check((await popup.locator('body').innerText()).includes('movimentos guardados'),name+' relatório completo imprimível');await popup.close();
+    check((await popup.locator('body').innerText()).includes('movimentos guardados'),name+' relatório completo imprimível');
+    check(await popup.evaluate(()=>window.testPrintInvoked===true),name+' impressão invocada');await popup.close();
     await page.locator('#adminHistory').click();await page.locator('#historyQuery').fill('adicionar créditos');
     check(await page.locator('.history-row').count()===1,name+' histórico pesquisável em português');
     const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:/Exportar cópia JSON/}).click();
     const file=await downloadPromise,backup=JSON.parse(await readFile(await file.path(),'utf8'));
     check(backup.state.snapshot.balance===134.8&&!JSON.stringify(backup).includes('246810'),name+' exporta saldo sem PIN');
+    await page.locator('#historyBtn').click();
+    const chooserPromise=page.waitForEvent('filechooser');
+    await page.getByRole('button',{name:/Restaurar cópia JSON/}).click();
+    const chooser=await chooserPromise;
+    page.once('dialog',dialog=>dialog.accept());
+    const navigation=page.waitForNavigation({waitUntil:'load'});
+    await chooser.setFiles(await file.path());await navigation;await ready(page);
+    check((await stored(page)).state.snapshot.balance===134.8,name+' restauro JSON transacional');
+    await page.locator('#turboBtn').click();
     await page.locator('#infoBtn').click();
     await page.getByRole('button',{name:/Experimentar Hold & Win/}).click();
     await page.locator('#holdOverlay').waitFor({state:'visible'});
@@ -125,6 +154,7 @@ for(const [name,type] of [['chromium',chromium],['webkit',webkit]]){
    }
    check(errors.length===0,name+' erros JavaScript: '+errors.join(' | '));
    await page.screenshot({path:'visual-previews/final-'+name+'-'+viewport.width+'x'+viewport.height+'.png'});
+   console.log('PASS',name,viewport.width+'x'+viewport.height);
    await context.close();
   }
  }finally{await browser.close()}
