@@ -138,6 +138,15 @@
  function tileAt(sym,x,y,t,win){
   ctx.drawImage(tile,x,y,R.cw,R.gh);
   game.drawIcon(sym,x,y,R.cw,R.gh,win,t);
+  // Nas cartas baixas, desenhar a moldura POR CIMA da letra ampliada,
+  // para o quadrado continuar visível mesmo quando a letra ocupa toda a casa.
+  if(['10','J','Q','K','A'].includes(sym)){
+   const bx=x+(R.cw-96)/2,by=y+(R.gh-96)/2;
+   ctx.save();ctx.shadowColor='#eab95b';ctx.shadowBlur=3;
+   rounded(ctx,bx,by,96,96,10,null,'#f1bf6b',2.8);
+   rounded(ctx,bx+3,by+3,90,90,7,null,'#ffe4a3aa',1.2);
+   ctx.restore();
+  }
  }
  game.visualV11={layout:R,tile,medallion,version:'1.1'};
  game.drawReelSeparators=function(left,top,interval,gh){
