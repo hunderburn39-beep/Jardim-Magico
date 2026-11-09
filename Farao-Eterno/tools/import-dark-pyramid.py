@@ -39,7 +39,7 @@ def direct_audio_urls(page):
         raw = raw.replace("\\/", "/").replace("\\u002F", "/")
         raw = raw.replace("\\u0026", "&").replace("\\u003D", "=")
         raw = html.unescape(raw)
-    urls = re.findall(r"https?://[^\\s\\\"'<>]+", raw)
+    urls = re.findall(r'https?://[^\s"\'<>]+', raw)
     urls += [("https:" + u) for u in re.findall(
         r"(?<!:)//(?:cdn\\.pixabay\\.com|cdn\\.freesound\\.org|freesound\\.org)/[^\\s\\\"'<>]+", raw
     )]
