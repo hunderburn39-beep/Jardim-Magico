@@ -180,7 +180,7 @@
  }
  // Larger icons, strictly preserving their source aspect ratio.
  game.drawIcon=function(sym,x,y,w,h,win=false,t=performance.now()){
-  const img=this.images[sym],size=Math.min(w-14,h-26)*.98*(sym==='TOMB'?1.05:1.01)*1.10;
+  const img=this.images[sym],size=Math.min(w-4,h-4)*(sym==='TOMB'?1.05:1);
   ctx.save();
   if(win){
    const alpha=.20+.14*Math.sin(t*.009);
@@ -192,8 +192,8 @@
    const lowSymbol=['10','J','Q','K','A'].includes(sym);
    if(lowSymbol){
     // Preencher quase toda a casa sem cortar letras nem deformar a imagem.
-    const b=visibleBounds(img),zoom=(sym==='J'||sym==='Q')?.51:.62;
-    const factor=Math.min((w-14)/b.w,(h-26)/b.h)*zoom*.98*1.01*1.01*1.01*1.03*1.10;
+    const b=visibleBounds(img),zoom=1;
+    const factor=Math.min((w-10)/b.w,(h-10)/b.h)*zoom;
     const iw=b.w*factor,ih=b.h*factor;
     ctx.save();
     ctx.beginPath();ctx.rect(x+5,y+(h-96)/2+5,w-10,86);ctx.clip();
