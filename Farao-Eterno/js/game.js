@@ -560,13 +560,33 @@ class Game {
    aura.addColorStop(1,'rgba(247,194,89,0)');
    rect(bx,by,box,box,aura);
   }
+  // The TOMB (tower/sanctuary) symbol has its own continuously breathing gold light.
+  // Keep the effect inside the cell, with no effect on reel outcomes or payouts.
+  if(sym==='TOMB'){
+   const beat=.5+.5*Math.sin(t*.0037+x*.009+y*.005);
+   const strength=win?.54:.25;
+   cx.save();
+   const radial=cx.createRadialGradient(x+w/2,y+h/2,box*.08,x+w/2,y+h/2,box*.53);
+   radial.addColorStop(0,`rgba(255,242,173,${strength+.17*beat})`);
+   radial.addColorStop(.52,`rgba(255,191,66,${.12+.17*beat})`);
+   radial.addColorStop(1,'rgba(255,171,42,0)');
+   cx.fillStyle=radial;cx.fillRect(bx,by,box,box);
+   cx.restore();
+  }
   const img=this.images[sym];
   if(img?.complete&&img?.naturalWidth&&img.naturalHeight){
    const premium=E.NORMAL.slice(5).includes(sym)||sym==='TOMB';
    const maxSide=box*(premium?.97:.92);
    const scale=Math.min(maxSide/img.naturalWidth,maxSide/img.naturalHeight);
    const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
-   cx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
+   if(sym==='TOMB'){
+    const beat=.5+.5*Math.sin(t*.0037+x*.009+y*.005);
+    cx.save();cx.shadowColor='#ffd36b';cx.shadowBlur=9+19*beat+(win?9:0);
+    cx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
+    cx.restore();
+    cx.save();cx.globalCompositeOperation='screen';cx.globalAlpha=.055+.18*beat+(win?.08:0);
+    cx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);cx.restore();
+   }else cx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
   }else{text(sym,x+w/2,y+h/2,26,'#fce8b4');}
   cx.restore();
   if(win){
