@@ -20,7 +20,7 @@ export const BET_PRESETS = [
 ];
 
 export default {
-  money: 100000,
+  money: 2000,
   moneyWin: 0,
   win: 0,
 
