@@ -136,7 +136,7 @@
   line(ctx,xx+11,bot+14,xx+R.cw-11,bot+14,'#bb8f49',1.1);
  }
  function tileAt(sym,x,y,t,win){
-  if(!['10','J','Q','K','A'].includes(sym))ctx.drawImage(tile,x,y,R.cw,R.gh);
+  ctx.drawImage(tile,x,y,R.cw,R.gh);
   game.drawIcon(sym,x,y,R.cw,R.gh,win,t);
  }
  game.visualV11={layout:R,tile,medallion,version:'1.1'};
