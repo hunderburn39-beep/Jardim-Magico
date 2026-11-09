@@ -203,9 +203,13 @@
    }else if(sym==='TOMB'){
     // Torre maior, sem moldura individual; pode atravessar as divisões horizontais.
     const bounds=visibleBounds(img);
-    const scale=Math.min((w-2)/bounds.w,(h*1.32)/bounds.h);
+    const scale=Math.min((w*1.22)/bounds.w,(h*1.62)/bounds.h);
     const iw=bounds.w*scale,ih=bounds.h*scale;
-    ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
+    const centerX=x+w/2,centerY=y+h/2;
+    ctx.save();
+    ctx.shadowColor='#f9d778';ctx.shadowBlur=17;
+    ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,centerX-iw/2,centerY-ih/2,iw,ih);
+    ctx.restore();
    }else{
     const scale=Math.min(size/img.naturalWidth,size/img.naturalHeight);
     const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
