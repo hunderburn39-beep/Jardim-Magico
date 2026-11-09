@@ -53,6 +53,23 @@ jobs:
       - name: Testar interface Phaser sem dependências externas
         run: node --test Halloween/tests/ui-smoke.test.cjs
 
+      - name: Preparar pacote autónomo de execução
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/Halloween dist/jardim-phaser/vendor
+          cp -a Halloween/. dist/Halloween/
+          cp jardim-phaser/vendor/phaser-3.90.0.min.js dist/jardim-phaser/vendor/
+          (cd dist && zip -q -r ../Halloween-V0.6.zip Halloween jardim-phaser)
+          test -s Halloween-V0.6.zip
+
+      - name: Guardar pacote para testes
+        uses: actions/upload-artifact@v4
+        with:
+          name: Halloween-V0.6
+          path: Halloween-V0.6.zip
+          if-no-files-found: error
+
       - name: Instalar Playwright para Chromium e Safari/WebKit
         run: |
           npm install --no-save --package-lock=false playwright@1.56.1
@@ -79,20 +96,3 @@ jobs:
           name: halloween-testes-visuais
           path: visual-previews/
           if-no-files-found: ignore
-
-      - name: Preparar pacote autónomo de execução
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p dist/Halloween dist/jardim-phaser/vendor
-          cp -a Halloween/. dist/Halloween/
-          cp jardim-phaser/vendor/phaser-3.90.0.min.js dist/jardim-phaser/vendor/
-          (cd dist && zip -q -r ../Halloween-V0.6.zip Halloween jardim-phaser)
-          test -s Halloween-V0.6.zip
-
-      - name: Guardar pacote para testes
-        uses: actions/upload-artifact@v4
-        with:
-          name: Halloween-V0.6
-          path: Halloween-V0.6.zip
-          if-no-files-found: error
