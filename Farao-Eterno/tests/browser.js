@@ -20,15 +20,15 @@ document.getElementById('run').onclick=async()=>{
   const g=reset(),d=frame.contentDocument,ctx=d.getElementById('canvas').getContext('2d');
   const pixel=(x,y)=>{const v=g.viewport;return [...ctx.getImageData(Math.floor((v.ox+x*v.scale)*v.dpr),Math.floor((v.oy+y*v.scale)*v.dpr),1,1).data];};
   const draw=g.reelBoard;let expected;
-  try{g.reelBoard=()=>{};g.render(4000);expected=Array.from({length:5},(_,c)=>pixel(83+c*101,270));}
+  try{g.reelBoard=()=>{};g._v05LastRender=0;g.render(performance.now());expected=Array.from({length:5},(_,c)=>pixel(83+c*101,270));}
   finally{g.reelBoard=draw;}
-  g.render(4000);
+  g._v05LastRender=0;g.render(performance.now());
   for(let c=0;c<5;c++){const actual=pixel(83+c*101,270),delta=actual.slice(0,3).reduce((n,v,i)=>n+Math.abs(v-expected[c][i]),0);assert(delta<42,'Fundo opaco no tambor '+(c+1)+': '+delta);}
  });
  await check('Quatro separadores fixos e zoom duplo bloqueado',()=>{
   const g=reset();assert(typeof g.drawReelSeparators==='function');
   let count=0;const draw=g.drawReelSeparators;
-  try{g.drawReelSeparators=function(l,t,i,h){count++;assert(l===33&&t===258&&i===101&&h===132);return draw.call(this,l,t,i,h);};g.render(4000);}
+  try{g.drawReelSeparators=function(l,t,i,h){count++;assert(l===33&&t===258&&i===101&&h===132);return draw.call(this,l,t,i,h);};g._v05LastRender=0;g.render(performance.now());}
   finally{g.drawReelSeparators=draw;}
   assert(count>=1,'Separadores não foram desenhados (chamadas: '+count+')');
   const stage=frame.contentDocument.getElementById('stage'),ev=new frame.contentWindow.MouseEvent('dblclick',{cancelable:true,bubbles:true});
