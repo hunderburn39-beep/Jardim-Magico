@@ -250,6 +250,47 @@
   }
   ctx.restore();
  };
+ // Inscrição 3D em metal dourado, SOBRE a barra superior dos tambores.
+ // Só usa Canvas 2D: sem uma imagem grande nem atraso no Safari.
+ function drawTitle3D(t){
+  const y=256,center=280;
+  ctx.save();
+  // Sombra do emblema projetada sobre a moldura superior.
+  ctx.shadowColor='#000f';ctx.shadowBlur=15;ctx.shadowOffsetY=9;
+  rounded(ctx,86,229,388,55,15,
+   grad(ctx,0,229,0,284,[[0,'#170f1288'],[.3,'#30211dcb'],[.72,'#100f17e6'],[1,'#53351bc9']]),
+   '#cb9550',2.3);
+  ctx.restore();
+  rounded(ctx,91,234,378,45,12,null,'#ffe1a57a',1);
+  ctx.save();ctx.translate(center,y);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font='900 41px Georgia,serif';
+  ctx.lineJoin='round';ctx.miterLimit=2;
+  // Extrusão real por múltiplas camadas, com arestas escuras e douradas.
+  for(let depth=9;depth>=1;depth--){
+   ctx.strokeStyle=depth>5?'#271516':'#87501c';
+   ctx.lineWidth=5.6;
+   ctx.strokeText('FARAÓ ETERNO',depth*.24,depth*.63);
+   ctx.fillStyle=depth>4?'#593116':'#a56927';
+   ctx.fillText('FARAÓ ETERNO',depth*.24,depth*.63);
+  }
+  ctx.shadowColor='#ffcd68';ctx.shadowBlur=12;ctx.shadowOffsetY=0;
+  ctx.strokeStyle='#fff1b8';ctx.lineWidth=2.8;
+  ctx.strokeText('FARAÓ ETERNO',0,0);
+  const gold=grad(ctx,0,-25,0,25,
+   [[0,'#fff9d6'],[.2,'#ffe29e'],[.38,'#d69c42'],[.48,'#fff2ad'],[.68,'#ac6a22'],[.88,'#66390f'],[1,'#e9b95b']]);
+  ctx.fillStyle=gold;
+  ctx.fillText('FARAÓ ETERNO',0,0);
+  ctx.restore();
+  // Pequenos relevos laterais, a unir visualmente o emblema à moldura.
+  ctx.save();ctx.shadowColor='#ffc568';ctx.shadowBlur=7;
+  for(const x of [75,485]){
+   disk(ctx,x,254,10,radial(ctx,x-4,250,14,
+    [[0,'#fff6ba'],[.4,'#c18c3b'],[.9,'#57351b'],[1,'#2e1b17']]),'#e5b767',2.2);
+   disk(ctx,x,254,3.5,'#65d5c6','#fce7a2',1);
+  }
+  ctx.restore();
+ }
  game.reelBoard=function(t){
   // Só pulsam os símbolos da linha apresentada, alternada de 1,6 em 1,6 s.
   const pulseCells=new Set();
@@ -354,6 +395,7 @@
   for(let c=0;c<5;c++)drawReelShell(c);
   this.drawReelSeparators(R.left,R.top,R.step,R.gh);
   this.drawActivePayline(t,R.left,R.top,R.cw,R.gh,R.step);
+  drawTitle3D(t); // Sempre à frente da moldura e atrás dos ícones de prémio.
   ctx.save();ctx.shadowColor='#ffdd84';ctx.shadowBlur=7;
   rounded(ctx,23,R.top+R.gh*3+8,514,9,4,
    grad(ctx,0,R.top+R.gh*3+8,0,R.top+R.gh*3+17,
@@ -386,7 +428,7 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  txt('V1.3.12',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.13',38,985,10,'#e5c68d',850,'Arial');
   if(!this.storageOK)txt('SESSÃO SEM GRAVAÇÃO',280,833,11,'#ffbc83',800,'Arial');
  };
  document.documentElement.dataset.faraoVisual='1.1';
