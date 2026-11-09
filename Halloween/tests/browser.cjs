@@ -109,8 +109,24 @@ async function run(name,launcher){
     const berryAfter=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.state.balance);
     assert.equal(berryAfter,Math.round((berryBefore+1)*100)/100);
     await page.screenshot({path:`visual-previews/halloween-${name}-morangos.png`});
+    await page.evaluate(()=>{
+      const s=window.__HALLOWEEN_SCENE__;
+      const next={...s.state,pendingPot:null,pendingStrawberry:null,pendingWheel:null,
+        pendingDice:{faces:[1,2,3,4,6]}};
+      localStorage.setItem("halloween-classico-v02",JSON.stringify(next));
+    });
+    await page.reload({waitUntil:"domcontentloaded"});
+    await page.waitForFunction(()=>window.__HALLOWEEN_SCENE__?.diceOpen===true,{},{timeout:25000});
+    assert.equal(await page.evaluate(()=>window.__HALLOWEEN_SCENE__.diceHits.length),5);
+    const diceBefore=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.state.balance);
+    await tap(page,620,638);
+    await page.waitForFunction(()=>window.__HALLOWEEN_SCENE__?.state?.pendingDice===null,{},{timeout:5000});
+    const diceAfter=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.state.balance);
+    const diceBet=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.state.bet);
+    assert.equal(diceAfter,Math.round((diceBefore+6*diceBet)*100)/100);
+    await page.screenshot({path:`visual-previews/halloween-${name}-dados.png`});
     assert.deepEqual(errors,[],`${name}: erros no browser: ${errors.join("; ")}`);
-    console.log(`${name}: carregamento, 15 símbolos, giro, potes, morangos, roleta, recuperação e screenshots OK`);
+    console.log(`${name}: carregamento, 15 símbolos, giro, potes, morangos, dados, roleta, recuperação e screenshots OK`);
     await context.close();
   }finally{await browser.close();}
 }
