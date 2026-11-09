@@ -209,74 +209,50 @@ export class Grid {
   public drawCellBackgrounds() {
     this.cellBackgrounds.clear();
     const size = options.gridSize;
-    const totalW = this.cellW * size; const totalH = this.cellH * size;
+    const cs = this.cellW;
     const gx = this.offsetX;
     const gy = this.offsetY;
-    const cs = this.cellW;
+    const full = cs * size;
 
-    // Update mask geometry to match new layout
+    // Matriz de vidro escuro com profundidade, sem quadrados opacos
+    // nem linhas grossas a roubar protagonismo aos símbolos HD.
     if (this.gridMask) {
       this.gridMask.clear();
       this.gridMask.fillStyle(0x000000, 1);
-      this.gridMask.fillRect(gx - 5, gy - 5, totalW + 10, totalH + 10);
+      this.gridMask.fillRect(gx - 4, gy - 4, full + 8, full + 8);
     }
+    this.cellBackgrounds.fillGradientStyle(
+      0x240b4d, 0x240b4d, 0x11062e, 0x11062e, 0.96, 0.96, 0.98, 0.98
+    );
+    this.cellBackgrounds.fillRect(gx, gy, full, full);
 
-    // ═══ Layer 1: Solid vivid dark-purple base ═══
-    this.cellBackgrounds.fillStyle(0x1a0033, 1);
-    this.cellBackgrounds.fillRect(gx, gy, totalW, totalH);
-
-    // ═══ Layer 2: Checkerboard candy cells (alternating saturated tones) ═══
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        const isAlt = (r + c) % 2 === 0;
-        const cellColor = isAlt ? 0x220044 : 0x2a0055;
-        this.cellBackgrounds.fillStyle(cellColor, 1);
-        this.cellBackgrounds.fillRect(gx + c * cs, gy + r * cs, cs, cs);
-      }
-    }
-
-    // ═══ Layer 3: Thick rigid grid lines (cartoon style) ═══
-    const lineThick = Math.max(2, cs * 0.035);
-
-    // Horizontal lines
-    for (let r = 0; r <= size; r++) {
-      const y = gy + r * cs;
-      this.cellBackgrounds.fillStyle(0x5522aa, 0.8);
-      this.cellBackgrounds.fillRect(gx, y - lineThick / 2, totalW, lineThick);
-    }
-
-    // Vertical lines
-    for (let c = 0; c <= size; c++) {
+    // Sete tubos de doces, subtilmente iluminados. O fundo permanece visível.
+    for (let c = 0; c < size; c++) {
       const x = gx + c * cs;
-      this.cellBackgrounds.fillStyle(0x5522aa, 0.8);
-      this.cellBackgrounds.fillRect(x - lineThick / 2, gy, lineThick, totalH);
+      this.cellBackgrounds.fillGradientStyle(
+        0x8b4ad0, 0x14042e, 0x7041b5, 0x13062e, 0.14, 0.05, 0.08, 0.02
+      );
+      this.cellBackgrounds.fillRoundedRect(
+        x + cs * 0.06, gy + cs * 0.03,
+        cs * 0.88, full - cs * 0.06, Math.max(3, cs * 0.12)
+      );
+      this.cellBackgrounds.fillStyle(0xf8dcff, 0.045);
+      this.cellBackgrounds.fillRect(x + cs * 0.12, gy + 2, Math.max(1, cs * 0.065), full - 4);
     }
 
-    // ═══ Layer 4: Recessed 3D Inner Shadow per cell ═══
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        const cx = gx + c * cs;
-        const cy = gy + r * cs;
-        // Inner shadow top-left
-        this.cellBackgrounds.fillStyle(0x000000, 0.35);
-        this.cellBackgrounds.fillRect(cx, cy, cs, 6);
-        this.cellBackgrounds.fillRect(cx, cy, 6, cs);
-        // Inner shadow blend
-        this.cellBackgrounds.fillStyle(0x000000, 0.15);
-        this.cellBackgrounds.fillRect(cx + 6, cy + 6, cs - 12, 4);
-        this.cellBackgrounds.fillRect(cx + 6, cy + 6, 4, cs - 12);
-
-        // Bottom-right rim highlight
-        this.cellBackgrounds.fillStyle(0xffffff, 0.1);
-        this.cellBackgrounds.fillRect(cx, cy + cs - 4, cs, 4);
-        this.cellBackgrounds.fillRect(cx + cs - 4, cy, 4, cs);
-      }
+    // Separadores discretos, 1px: as peças deixam de parecer encaixadas em caixotes.
+    this.cellBackgrounds.lineStyle(Math.max(1, cs * 0.014), 0xe7c4ff, 0.16);
+    for (let c = 1; c < size; c++) {
+      const x = gx + c * cs;
+      this.cellBackgrounds.lineBetween(x, gy + 2, x, gy + full - 2);
     }
-
-    // ═══ Layer 5: Outer thick border (rigid frame) ═══
-    const borderW = Math.max(3, cs * 0.05);
-    this.cellBackgrounds.lineStyle(borderW, 0x8844ee, 0.6);
-    this.cellBackgrounds.strokeRect(gx, gy, totalW, totalH);
+    this.cellBackgrounds.lineStyle(Math.max(1, cs * 0.012), 0xc693ff, 0.09);
+    for (let r = 1; r < size; r++) {
+      const y = gy + r * cs;
+      this.cellBackgrounds.lineBetween(gx + 2, y, gx + full - 2, y);
+    }
+    this.cellBackgrounds.lineStyle(Math.max(1, cs * 0.026), 0xa567f8, 0.34);
+    this.cellBackgrounds.strokeRect(gx, gy, full, full);
   }
 
   /**
@@ -466,22 +442,14 @@ export class Grid {
           const sprite = this.scene.add.sprite(this.getX(c), startY, this.symbolKeys[symId]);
           sprite.setData('symId', symId);
 
-          const scale = (this.cellW * 0.95) / Math.max(sprite.width, sprite.height);
+          const scale = (this.cellW * 0.985) / Math.max(sprite.width, sprite.height);
           sprite.setScale(Math.min(scale, 1.2));
           sprite.setDepth(10);
           sprite.setAlpha(0);
 
-          // 3D FX Overrides (Simulate 3D Depth & Gloss on 2D Sprites)
-          if (sprite.preFX) {
-            sprite.preFX.addShadow(0, 5, 0.05, 1, 0x000000, 6, 1);
-            (sprite.preFX as any).addShine?.(1, 0.2, 5);
-            sprite.preFX.addColorMatrix().brightness(1.1);
-          }
-
-          // Apply SCREEN blend mode to cut out the pure black background from 3D AI renders
-          if (symId >= 0 && symId <= 6) {
-            sprite.setBlendMode(Phaser.BlendModes.SCREEN);
-          }
+          // Arte convertida para PNG RGBA na build. Mistura NORMAL para
+          // preservar contrastes, cores e contornos em vez de SCREEN lavado.
+          sprite.setBlendMode(Phaser.BlendModes.NORMAL);
 
           if (symId === 7) {
             const cropRadius = Math.min(sprite.width, sprite.height) / 2;
@@ -681,7 +649,7 @@ export class Grid {
         const sprite = this.sprites[r][c];
         if (sprite) {
           sprite.setPosition(this.getX(c), this.getY(r));
-          const scale = (this.cellW * 0.85) / Math.max(sprite.width, sprite.height);
+          const scale = (this.cellW * 0.965) / Math.max(sprite.width, sprite.height);
           sprite.setScale(Math.min(scale, 1));
         }
         // Redraw multiplier UI
@@ -1331,22 +1299,14 @@ export class Grid {
           const startY = this.getY(r) - (dropCounts[c] + 1) * this.cellW;
           const sprite = this.scene.add.sprite(this.getX(c), startY, this.symbolKeys[symId]);
           sprite.setData('symId', symId);
-          const scale = (this.cellW * 0.95) / Math.max(sprite.width, sprite.height);
+          const scale = (this.cellW * 0.985) / Math.max(sprite.width, sprite.height);
           sprite.setScale(Math.min(scale, 1.2));
           sprite.setDepth(10);
           sprite.setAlpha(0);
 
-          // 3D FX Overrides (Simulate 3D Depth & Gloss on 2D Sprites)
-          if (sprite.preFX) {
-            sprite.preFX.addShadow(0, 5, 0.05, 1, 0x000000, 6, 1);
-            (sprite.preFX as any).addShine?.(1, 0.2, 5);
-            sprite.preFX.addColorMatrix().brightness(1.1);
-          }
-
-          // Apply SCREEN blend mode to cut out the pure black background from 3D AI renders
-          if (symId >= 0 && symId <= 6) {
-            sprite.setBlendMode(Phaser.BlendModes.SCREEN);
-          }
+          // Arte convertida para PNG RGBA na build. Mistura NORMAL para
+          // preservar contrastes, cores e contornos em vez de SCREEN lavado.
+          sprite.setBlendMode(Phaser.BlendModes.NORMAL);
 
           if (symId === 7) {
             const cropRadius = Math.min(sprite.width, sprite.height) / 2;
