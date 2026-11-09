@@ -136,7 +136,7 @@
   line(ctx,xx+11,bot+14,xx+R.cw-11,bot+14,'#bb8f49',1.1);
  }
  function tileAt(sym,x,y,t,win){
-  if(sym==='TOMB')return; // A torre não tem quadrado dourado; é desenhada por cima das casas.
+  if(!['10','J','Q','K','A'].includes(sym)) { game.drawIcon(sym,x,y,R.cw,R.gh,win,t); return; } // Figuras altas e WILD sem quadrado.
   ctx.drawImage(tile,x,y,R.cw,R.gh);
   game.drawIcon(sym,x,y,R.cw,R.gh,win,t);
   // Nas cartas baixas, desenhar a moldura POR CIMA da letra ampliada,
