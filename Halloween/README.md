@@ -1,4 +1,4 @@
-# Halloween III — Clássica (V0.5, reconstrução independente)
+# Halloween III — Clássica (V0.6, reconstrução independente)
 
 Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-níqueis Halloween III dos anos 2000.
 
@@ -10,15 +10,22 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 - Descrição de versões e mecânicas (20/25/30 linhas, travar tambores, bónus): https://www.casinobillionaire.com/portuguese/jogo-caca-niquel-halloween/
 - Manual histórico de configuração das máquinas: https://pt.scribd.com/document/696584543/Manual-Completo-Halloween
 
-## Implementado nesta V0.5
+## Implementado nesta V0.6
 
 - Ecrã retro com **5 tambores × 3 linhas** de fundo claro, nome Halloween III, marcadores de linhas coloridos, indicadores de crédito/prémio/aposta e dois acumulados virtuais.
 - Ilustrações **SVG originais** para os **10 tipos encontrados no XAPK**: abóbora Halloween, bruxa verde, WITCH, vampiro, fantasma, bruxa na lua, monstro, diabinho, MAGIC e caldeirão. Não são extraídas de ficheiros comerciais.
 - Possibilidade de escolher **20, 25 ou 30 linhas** de pagamento e apostas de 1, 2, 5 ou 10 créditos.
-- Giros com tiras de 5 sprites por tambor, máscaras de recorte e desaceleração progressiva, paragem por ordem, prémios realçados, sons arcade sintetizados em WebAudio (com melodia própria de celebração) e botão automático.
+- Giros com tiras de 5 sprites por tambor, máscaras de recorte e desaceleração progressiva, paragem por ordem, linhas vencedoras **desenhadas sobre os símbolos e exibidas uma de cada vez**, sons arcade sintetizados em WebAudio (com melodia própria de celebração) e botão automático.
 - **Travar até quatro tambores após uma jogada sem prémio**, tocando nos próprios tambores. Todos os giros seguintes debitam normalmente a aposta.
 - Motor experimental com Wild (Magic) corrigido, inclusive para grupos Wild terminados por Scatter. Três ou mais caldeirões ativam Free Spins e uma janela para escolher um de três potes. A escolha é guardada antes de ser mostrada, para recuperar o bónus ao reabrir o navegador. Cinco abóboras recolhidas em giros pagos (no máximo uma por giro, quando há três ou mais na grelha) dão cinco Free Spins **e uma roleta virtual de **30 posições numeradas**, inspirada no atlas original**, com prémios experimentais de aposta × multiplicador ou um dos **quatro acumulados virtuais**. A roleta fica guardada durante interrupções e atribui o prémio apenas uma vez. As rodadas gratuitas não recolhem novas abóboras. Estas são regras recriadas, ainda diferentes das mecânicas e tabelas históricas documentadas.
 - Guardar saldo, linhas, aposta, acumulados, giros, grelha final e bónus de caldeirão ou roleta pendente no armazenamento local, quando disponível. O resultado do giro é guardado antes de começar a animação: ao reabrir o jogo, a combinação e os créditos são recuperados. Aposta e linhas são bloqueadas durante Free Spins, e a seleção de aposta/linhas limpa travas de rolos.
+
+## Tabela de pagamentos de referência
+
+- Botão `?` junto ao título abre uma tabela com valores visualmente observados em `01_tabela1.webp` e `01_tabela2.webp`: Halloween, MAGIC, WITCH e caldeirões.
+- A tabela é **documental**: a V0.6 não utiliza esses valores como coeficientes do motor e não afirma que a conversão para créditos esteja recuperada.
+- Os prémios efetivamente atribuídos ainda derivam da tabela matemática demonstrativa de `js/engine.js`, que **não está validada como RTP ou matemática da aplicação Android**.
+- `GameHalloween30L.NumRoleta` lê campos associados a prémio, crédito e dificuldade e chama `calcbonusRoleta`; isso não revela os pesos das casas nem autoriza uma replicação fiel de probabilidades.
 
 ## Referência técnica do XAPK
 
