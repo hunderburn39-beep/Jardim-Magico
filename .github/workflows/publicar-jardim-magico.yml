@@ -35,7 +35,7 @@ jobs:
           npx playwright install --with-deps chromium webkit
       - name: Servir ficheiros locais
         run: |
-          python3 -m http.server 8123 --bind 127.0.0.1 > /tmp/jardim-http.log 2>&1 &
+          node jardim-phaser/tests/server.mjs > /tmp/jardim-http.log 2>&1 &
       - name: Testar graficos, rolos e cascatas reais
         run: node jardim-phaser/tests/visual.mjs
       - name: Testar interface, administracao, bonus e persistencia
