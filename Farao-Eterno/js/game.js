@@ -92,14 +92,15 @@ class Game {
  notice(s,time=1750,kind='gold'){this.message=s;this.messageUntil=performance.now()+time;this.flashUntil=this.messageUntil;this.flashKind=kind;this.announce(s);}
  initInputs(){
   // Capture touches before the transparent button overlay: the active visual
-  // extension uses reel coordinates top=268, height=116 (not the legacy 258/132).
+  // extension supplies the active reel layout, keeping touch and visual geometry aligned.
 
   canvas.addEventListener('pointerdown',e=>{e.preventDefault();this.audio.init();let b=canvas.getBoundingClientRect();const x=(e.clientX-b.left-ox)/sc,y=(e.clientY-b.top-oy)/scY;
    if(mod.classList.contains('hidden')===false)return;
    // Direct canvas hit-testing keeps symbols tappable on iPhone Safari,
    // independently of the transparent accessibility control layer.
-   if(!this.spinning&&!this.superseded&&x>=33&&x<33+5*101&&y>=258&&y<258+3*132){
-    const col=Math.floor((x-33)/101),row=Math.floor((y-258)/132);
+   const reel=this.visualV11?.layout||{left:33,top:284,cw:99,gh:129,step:101};
+   if(!this.spinning&&!this.superseded&&x>=reel.left&&x<reel.left+5*reel.step&&y>=reel.top&&y<reel.top+3*reel.gh){
+    const col=Math.floor((x-reel.left)/reel.step),row=Math.floor((y-reel.top)/reel.gh);
     if(col>=0&&col<5&&row>=0&&row<3){
      this.audio.click();this.showSymbolPay(this.grid[col][row]);return;
     }
@@ -193,10 +194,11 @@ class Game {
   }
   const canInspect=!this.spinning&&!this.superseded&&mod.classList.contains('hidden');
   this._symbolOverlay.style.pointerEvents=canInspect?'auto':'none';
+  const reel=this.visualV11?.layout||{left:33,top:284,cw:99,gh:129,step:101};
   for(const {button,col,row} of this._symbolButtons){
-   button.style.left=(ox+(33+col*101+49.5)*sc)+'px';
-   button.style.top=(oy+(268+row*116+58)*scY)+'px';
-   button.style.width=(99*sc)+'px';button.style.height=(116*scY)+'px';
+   button.style.left=(ox+(reel.left+col*reel.step+reel.cw/2)*sc)+'px';
+   button.style.top=(oy+(reel.top+row*reel.gh+reel.gh/2)*scY)+'px';
+   button.style.width=(reel.cw*sc)+'px';button.style.height=(reel.gh*scY)+'px';
    button.style.pointerEvents=canInspect?'auto':'none';
    button.setAttribute('aria-label','Consultar prémio de '+(iconNames[this.grid[col]?.[row]]||'símbolo'));
   }
