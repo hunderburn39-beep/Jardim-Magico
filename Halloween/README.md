@@ -1,31 +1,37 @@
-# Halloween — Noite das Bruxas (V0.1)
+# Halloween III — Clássica (V0.2, reconstrução independente)
 
-Jogo original para navegador, em **Phaser 3**, inspirado no ambiente dos caça-níqueis Halloween clássicos. **Não é o código original** de uma máquina comercial nem reproduz matemática ou sons proprietários.
+Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-níqueis Halloween III dos anos 2000.
 
-## Como jogar
-- Abrir `Halloween/` a partir de um servidor HTTP na raiz do repositório (por exemplo: `python3 -m http.server 8000` e navegar para `http://localhost:8000/Halloween/`).
-- Formato vertical **9:16**; interface tátil, sem zoom ao duplo toque no canvas.
-- 5 tambores × 3 linhas visíveis; **25 linhas de pagamento** fixas.
-- Alterar aposta com **−** e **+** (1, 2, 5 ou 10 créditos).
-- Girar no botão central; o Wild substitui símbolos normais, mas não o Scatter.
-- **3 ou mais Scatter** atribuem 10 rodadas gratuitas.
-- **10 abóboras recolhidas** (ao longo dos giros) dão 5 rodadas gratuitas; o excedente acumula.
-- Linhas durante rodadas gratuitas valem 2× a premiação da linha.
-- Saldo, abóboras e rodadas gratuitas são guardados localmente no dispositivo.
+**Importante:** esta é uma reconstrução experimental, com ilustrações próprias. Não é o executável original nem um port 1:1, e os pagamentos, probabilidades, RTP e bónus **não são certificados nem representam a matemática original**. Só utiliza **créditos virtuais**; não tem dinheiro real, depósitos nem levantamentos.
 
-Os créditos são **apenas pontos de entretenimento**, sem depósito, levantamento ou valor monetário. O motor é experimental e não tem RTP certificado. Não deve ser usado para apostas reais.
+## Referências de visual e jogabilidade
 
-## Organização
-- `index.html`: página e escala 9:16.
-- `js/engine.js`: motor, símbolos, prémios, RNG e bónus.
-- `js/game.js`: cena Phaser, visual, interface e animações.
-- `tests/engine.test.cjs`: testes automáticos determinísticos.
+- Fotografia da máquina Halloween III num artigo do Ministério Público do Rio Grande do Sul, 05-04-2013: https://www.mprs.mp.br/noticias/31486/
+- Descrição de versões e mecânicas (20/25/30 linhas, travar tambores, bónus): https://www.casinobillionaire.com/portuguese/jogo-caca-niquel-halloween/
+- Manual histórico de configuração das máquinas: https://pt.scribd.com/document/696584543/Manual-Completo-Halloween
 
-A dependência Phaser é utilizada localmente do caminho `../jardim-phaser/vendor/phaser-3.90.0.min.js`; não há dependência de serviços externos ou pagos.
+## Implementado nesta V0.2
 
-## GitHub Actions
-`.github/workflows/testar-halloween.yml` verifica apenas alterações em `Halloween/`, testa o motor e gera um pacote de execução com a dependência Phaser.
-A publicação GitHub Pages do repositório é única: o workflow partilhado de publicação junta os quatro jogos para que publicar um não apague os restantes.
+- Ecrã retro com **5 tambores × 3 linhas** de fundo claro, nome Halloween III, marcadores de linhas coloridos, indicadores de crédito/prémio/aposta e dois acumulados virtuais.
+- Ilustrações **SVG originais**: abóbora, fantasma, morcego, gato, monstro, bruxa, Magic e caldeirão. Não são extraídas de ficheiros comerciais.
+- Possibilidade de escolher **20, 25 ou 30 linhas** de pagamento e apostas de 1, 2, 5 ou 10 créditos.
+- Giros em sequência de paragens, prémios realçados, sons arcade e botão automático.
+- **Travar um ou mais tambores após uma jogada sem prémio**, tocando nos próprios tambores. Todos os giros seguintes debitam normalmente a aposta.
+- Motor de pagamentos e bónus demonstrativo da V0.1, com Wild (Magic), Scatter (caldeirão) e bónus de abóboras; ainda não reproduz os bónus de roleta, potes e acumulados reais do jogo clássico.
+- Guardar saldo, linhas, aposta, acumulados e número de giros no armazenamento local, quando disponível.
 
-## Evolução
-Esta é uma V0.1 jogável e separada. A iconografia, animações e matemática são originais e simplificadas; nenhum detalhe foi confirmado como réplica exata de uma máquina Halloween física.
+## Estrutura
+
+- `index.html` — viewport e carregamento do jogo.
+- `js/engine.js` — cálculos e simulação.
+- `js/art.js` — biblioteca SVG original.
+- `js/game.js` — cena Phaser, som e interface.
+- `tests/engine.test.cjs` — testes do motor.
+- `.github/workflows/testar-halloween.yml` — workflow de testes.
+- `.github/workflows/publicar-3-jogos.yml` — publicação comum dos 4 jogos, num único GitHub Pages.
+
+O Phaser é importado localmente de `../jardim-phaser/vendor/phaser-3.90.0.min.js`; não é necessário pagar serviços externos.
+
+## Próximos passos
+
+Substituir as restantes aproximações pelas regras que conseguirmos verificar da versão original; acrescentar bónus da roleta e caldeirões, testar de forma automatizada em Safari/WebKit e Chromium, e verificar a publicação no Pages. O visual original serve apenas de referência, sem reutilização de recursos protegidos.
