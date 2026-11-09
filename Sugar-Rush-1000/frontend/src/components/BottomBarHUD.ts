@@ -82,7 +82,7 @@ export class BottomBarHUD {
 
     this.txtLastWinLabel = this.scene.add.text(0, 0, 'ÚLTIMO PRÉMIO', tLabel).setOrigin(0, 0.5).setDepth(50);
     this.txtLastWin = this.scene.add.text(0, 0, '', { ...tVal, color: this.COL_WIN }).setOrigin(1, 0.5).setDepth(50);
-    this.txtLastWin.setText(DisplayBalance({ amount: 0, currency: 'USD' }));
+    this.txtLastWin.setText(DisplayBalance({ amount: 0, currency: 'CRD' }));
 
     this.winSymbolIcon = this.scene.add.sprite(0, 0, 'candy_0').setDepth(50).setVisible(false);
 
@@ -333,8 +333,46 @@ export class BottomBarHUD {
     
     const isSmall = w < 600;
     const isSocial = getStakeEngine().isSocialMode();
-    this.txtMoneyLabel.setText(isSmall ? 'BAL' : T('BALANCE', isSocial));
-    this.txtLastWinLabel.setText(isSmall ? 'WIN' : T('LAST WIN', isSocial));
+    this.txtMoneyLabel.setText('SALDO');
+    this.txtBetLabel.setText('APOSTA');
+    this.txtLastWinLabel.setText('PRÉMIO');
+
+    // iPhone 9:16: tres placas compactas com titulo acima do valor,
+    // em vez de BAL / APOSTA / WIN amontoados na mesma linha.
+    if (isSmall) {
+      const gap = 6;
+      const panelW = (w - gap * 4) / 3;
+      const panelH = Math.max(37, barH * 0.77);
+      const top = h - barH + (barH - panelH) / 2;
+      const centerY = top + panelH / 2;
+      const labels = [this.txtMoneyLabel, this.txtBetLabel, this.txtLastWinLabel];
+      const values = [this.txtMoney, this.txtBet, this.txtLastWin];
+      this.pillsGfx.clear();
+      for (let i = 0; i < 3; i++) {
+        const left = gap + i * (panelW + gap);
+        const x = left + panelW / 2;
+        this.pillsGfx.fillGradientStyle(
+          0x33105c, 0x2a0c50, 0x170632, 0x170632, 0.96, 0.96, 0.98, 0.98
+        );
+        this.pillsGfx.fillRoundedRect(left, top, panelW, panelH, 9);
+        this.pillsGfx.lineStyle(1.4, i === 2 ? 0xf3c475 : 0x9e65d8, 0.74);
+        this.pillsGfx.strokeRoundedRect(left, top, panelW, panelH, 9);
+        const label = labels[i], value = values[i];
+        label.setVisible(true).setScale(1).setFontSize(10)
+          .setOrigin(0.5).setPosition(x, centerY - panelH * 0.22);
+        value.setVisible(true).setScale(1).setFontSize(17)
+          .setOrigin(0.5).setPosition(x, centerY + panelH * 0.16);
+        const allowed = panelW - 13;
+        if (label.width > allowed) label.setScale(allowed / label.width);
+        if (value.width > allowed) value.setScale(allowed / value.width);
+      }
+      this.winSymbolIcon.setVisible(false);
+      this.betPillHit.setPosition(w / 2, centerY).setSize(panelW, panelH);
+      this._winPillBounds = {
+        x: w - gap - panelW, w: panelW, y: top, h: panelH
+      };
+      return;
+    }
 
     // Reset scales in case they were shrunken previously
     this.txtMoneyLabel.setScale(1);
