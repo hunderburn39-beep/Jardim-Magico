@@ -40,6 +40,7 @@ test("Abóboras acumulam uma por giro pago e dão bónus à quinta", () => {
   assert.equal(fifth.pumpkinBonuses, 1);
   assert.equal(fifth.state.pumpkins, 0);
   assert.equal(fifth.state.freeSpins, 5);
+  assert.ok(fifth.state.pendingWheel);
   const free = E.spin({ ...E.createState(), pumpkins: 4, freeSpins: 1 }, fixed(0));
   assert.equal(free.result.collectedPumpkin, 0);
   assert.equal(free.state.pumpkins, 4);
@@ -84,6 +85,11 @@ test("20 000 jogadas reprodutíveis sem NaN nem créditos negativos", () => {
     assert.ok(s.pumpkins >= 0 && s.pumpkins < 5);
     if(s.pendingPot){
       const resolved = E.choosePot(s, i%3);
+      assert.equal(resolved.ok,true);
+      s=resolved.state;
+    }
+    if(s.pendingWheel){
+      const resolved=E.resolveWheel(s);
       assert.equal(resolved.ok,true);
       s=resolved.state;
     }
@@ -147,4 +153,42 @@ test("Escolha inválida do pote não altera créditos nem elimina bónus", () =>
   assert.equal(E.choosePot(state,-1).ok,false);
   assert.equal(E.choosePot(state,3).ok,false);
   assert.ok(state.pendingPot);
+});
+
+test("A quinta abóbora prepara roleta recuperável e impede outro giro",()=>{
+  const previous={...E.createState(),pumpkins:4};
+  const outcome=E.spin(previous,fixed(0));
+  assert.equal(outcome.ok,true);
+  assert.equal(outcome.wheelTriggered,true);
+  assert.equal(outcome.state.pendingWheel.sectorIndex,0);
+  assert.equal(E.spin(outcome.state,fixed(.3)).reason,"bonus-pendente");
+  const copy=E.sanitize(JSON.parse(JSON.stringify(outcome.state)));
+  assert.deepEqual(copy.pendingWheel,outcome.state.pendingWheel);
+  const done=E.resolveWheel(copy);
+  assert.equal(done.ok,true);
+  assert.equal(done.awarded,copy.pendingWheel.payout);
+  assert.equal(done.state.pendingWheel,null);
+  assert.equal(E.resolveWheel(done.state).ok,false);
+  assert.equal(E.spin(done.state,fixed(.3)).ok,true);
+});
+test("Roleta atribui um acumulado e repõe apenas esse acumulado",()=>{
+  let times=0;
+  const rng=()=>++times<=15?0:.78; // 15 abóboras, depois setor 6 = acumulado 1
+  const state={...E.createState(),pumpkins:4,jackpots:[444,888],bet:2};
+  const spun=E.spin(state,rng);
+  assert.equal(spun.state.pendingWheel.sectorIndex,6);
+  const expected=spun.state.jackpots[0];
+  assert.equal(spun.state.pendingWheel.payout,expected);
+  const credited=E.resolveWheel(spun.state);
+  assert.equal(credited.awarded,expected);
+  assert.equal(credited.state.jackpots[0],350);
+  assert.equal(credited.state.jackpots[1],spun.state.jackpots[1]);
+});
+test("Acumulados só crescem em giros pagos",()=>{
+  const original=E.createState();
+  const base=E.spin(original,fixed(.45));
+  assert.ok(base.state.jackpots[0]>original.jackpots[0]);
+  assert.ok(base.state.jackpots[1]>original.jackpots[1]);
+  const free=E.spin({...E.createState(),freeSpins:1},fixed(.45));
+  assert.deepEqual(free.state.jackpots,[350,750]);
 });
