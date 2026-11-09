@@ -144,7 +144,11 @@
   // Os tambores normais mantêm o "clac" curto. Ao revelar um Wild,
   // ignorar o clac para deixar ouvir um só PAAAMMM, sem duas pancadas.
   audio.tick=function(reel){
-    if(game.spinObject?.grid?.[reel]?.includes('TOMB'))return;
+    // Quando os Wilds só surgem nos tambores 4/5, não há gong, mas
+    // mantém-se o "clac" mecânico normal da paragem.
+    const spin=game.spinObject;
+    if(spin?.grid?.[reel]?.includes('TOMB') &&
+       (game.shouldSoundWildLanding?.(reel,spin) ?? true))return;
     friction(.042,.016,1360);
     note(152-reel*4,79-reel*2,.13,.016);
     friction(.020,.004,640,.015);
@@ -276,5 +280,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.3.8',original:true,procedural:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.3.9',original:true,procedural:true,dynamicReelSpeed:true};
 })();
