@@ -8,8 +8,8 @@ function seeded(seed) {
   let state = seed >>> 0;
   return () => { state = (1664525 * state + 1013904223) >>> 0; return state / 4294967296; };
 }
-test("25 linhas fixas e todas as posições válidas", () => {
-  assert.equal(E.LINES.length, 25);
+test("30 trajetos possíveis e todas as posições válidas", () => {
+  assert.equal(E.LINES.length, 30);
   for (const line of E.LINES) {
     assert.equal(line.length, 5);
     for (const row of line) assert.ok(Number.isInteger(row) && row >= 0 && row <= 2);
@@ -76,4 +76,29 @@ test("20 000 jogadas reprodutíveis sem NaN nem créditos negativos", () => {
     assert.equal(result.grid.length, 5);
     assert.ok(result.grid.every(col => col.length === 3));
   }
+});
+
+test("20, 25 e 30 linhas selecionam contagens diferentes", () => {
+  const grid = Array.from({length:5}, () => ["wild","wild","wild"]);
+  const p20 = E.evaluateGrid(grid,2,false,20);
+  const p25 = E.evaluateGrid(grid,2,false,25);
+  const p30 = E.evaluateGrid(grid,2,false,30);
+  assert.equal(p20.hits.length,20);
+  assert.equal(p25.hits.length,25);
+  assert.equal(p30.hits.length,30);
+});
+test("Tambores travados conservam ícones entre jogadas", () => {
+  const previous = Array.from({length:5},()=>["pumpkin","ghost","bat"]);
+  const s = { ...E.createState(), balance:100, lines:20 };
+  const result = E.spin(s, fixed(.999999), previous, new Set([0,2,4]));
+  assert.equal(result.ok,true);
+  assert.deepEqual(result.heldReels,[0,2,4]);
+  for(const col of [0,2,4])assert.deepEqual(result.grid[col],previous[col]);
+  assert.equal(result.state.lines,20);
+});
+test("Acumulados e seleção de linhas persistem na alteração de aposta", () => {
+  const s = { ...E.createState(),lines:30,jackpots:[440,880] };
+  const next = E.setBet(s,5);
+  assert.equal(next.lines,30);
+  assert.deepEqual(next.jackpots,[440,880]);
 });
