@@ -183,14 +183,15 @@
           }).setOrigin(.5));
         }
         if(frame.kind!=="win"){
-          item.setY(y-(fast?30:180+25*r));
+          item.setY(y-(fast?25:100+8*r));
           item.setAlpha(fast?.9:0);
-          this.tweens.add({targets:item,y,alpha:1,duration:fast?110:350+32*r+22*c,
+          // As animacoes terminam antes de o proximo quadro ser mostrado.
+          this.tweens.add({targets:item,y,alpha:1,duration:fast?85:195+8*r+8*c,
             ease:"Back.easeOut"});
         }
         if(frame.kind==="win"&&frame.positions?.some(p=>p[0]===r&&p[1]===c)){
-          this.tweens.add({targets:item,scale:1.16,alpha:.68,yoyo:true,repeat:1,
-            duration:fast?60:135,ease:"Sine.easeInOut"});
+          this.tweens.add({targets:item,scale:1.12,alpha:.72,yoyo:true,repeat:0,
+            duration:fast?45:125,ease:"Sine.easeInOut"});
         }
         this.pieces.push(item);
       }
