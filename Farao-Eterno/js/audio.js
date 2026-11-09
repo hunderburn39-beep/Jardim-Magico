@@ -5,6 +5,7 @@
  a.init=function(){
   try{const enabled=this.on;this.on=true;init();this.on=enabled;
    if(this.ctx&&!this.compressor){this.compressor=this.ctx.createDynamicsCompressor();this.compressor.threshold.value=-18;this.compressor.ratio.value=5;this.compressor.connect(this.ctx.destination);this.out=this.compressor;}
+   if(this.ctx&&!this.musicBus){this.musicBus=this.ctx.createGain();this.musicBus.gain.value=2.5;this.musicBus.connect(this.out||this.ctx.destination);}
    if(!document.hidden&&!g.paused&&g.ledger.settings.music)this.startMusic();
   }catch(_){/* Blocked audio never blocks play. */}
  };
@@ -21,11 +22,11 @@
     if(n%4!==3){
      const notes=[0,4,3,1,0,6,4,2,0,3,7,4,2,1,4,0],freq=scale[notes[n%notes.length]],o=ctx.createOscillator(),env=ctx.createGain();o.type='sine';o.frequency.value=freq;
      env.gain.setValueAtTime(.0001,when);env.gain.exponentialRampToValueAtTime(.022,when+.035);env.gain.exponentialRampToValueAtTime(.0001,when+1.3);
-     o.connect(env);env.connect(this.out||ctx.destination);o.start(when);o.stop(when+1.35);this.musicNodes.add(o);o.onended=()=>{this.musicNodes.delete(o);env.disconnect();};
+     o.connect(env);env.connect(this.musicBus||this.out||ctx.destination);o.start(when);o.stop(when+1.35);this.musicNodes.add(o);o.onended=()=>{this.musicNodes.delete(o);env.disconnect();};
     }
     if(n%8===0){
      const o=ctx.createOscillator(),env=ctx.createGain();o.type='sine';o.frequency.value=n%16?73.42:55;env.gain.setValueAtTime(.0001,when);env.gain.linearRampToValueAtTime(.037,when+.7);env.gain.exponentialRampToValueAtTime(.0001,when+5.8);
-     o.connect(env);env.connect(this.out||ctx.destination);o.start(when);o.stop(when+6);this.musicNodes.add(o);o.onended=()=>{this.musicNodes.delete(o);env.disconnect();};
+     o.connect(env);env.connect(this.musicBus||this.out||ctx.destination);o.start(when);o.stop(when+6);this.musicNodes.add(o);o.onended=()=>{this.musicNodes.delete(o);env.disconnect();};
     }
    }
   };
