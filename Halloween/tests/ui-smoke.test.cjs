@@ -74,11 +74,13 @@ function sceneFixture(){
   }
   return {ctx,storage,mount};
 }
-test("Carrega 10 símbolos, 30 linhas, roleta com 30 números e 4 acumulados",()=>{
+test("Carrega 10 símbolos, 30 trajetos, roleta com 30 números e 4 acumulados",()=>{
   const f=sceneFixture(),{scene:s}=f.mount();
   assert.equal(Object.keys(f.ctx.HalloweenArt).length,10);
   assert.equal(f.ctx.HalloweenEngine.SYMBOLS.length,10);
   assert.equal(f.ctx.HalloweenEngine.LINES.length,30);
+  assert.equal(s.state.lines,1);
+  assert.equal(s.state.bet,1);
   assert.equal(s.symbols.reduce((n,c)=>n+c.length,0),15);
   assert.equal(s.lineMarkers.length,30);
   assert.equal(s.jackpotsText.length,4);
@@ -140,4 +142,22 @@ test("Cinco dados vermelhos abrem, recuperam e não pagam duas vezes",()=>{
   assert.equal(s.state.balance,old+12);
   second.drain();
   assert.equal(s.diceOpen,false);
+});
+
+test("Botões − e + percorrem os cinco escalões sem separar aposta e linhas",()=>{
+  const f=sceneFixture(),s=f.mount().scene;
+  const tiers=[[1,1],[5,5],[10,15],[15,25],[20,30]];
+  assert.deepEqual([s.state.bet,s.state.lines],tiers[0]);
+  for(let i=1;i<tiers.length;i++){
+    s.changeBet();
+    assert.deepEqual([s.state.bet,s.state.lines],tiers[i]);
+    assert.ok(s.linesText.text.includes(String(tiers[i][1])));
+  }
+  s.changeBet();
+  assert.deepEqual([s.state.bet,s.state.lines],tiers[0]);
+  s.changeLines();
+  assert.deepEqual([s.state.bet,s.state.lines],tiers[4]);
+  s.renderState();
+  assert.ok(s.stake.text.includes("0,20"));
+  assert.ok(s.stake.text.includes("€"));
 });
