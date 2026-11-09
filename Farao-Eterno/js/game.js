@@ -146,10 +146,41 @@ class Game {
  }
 
  loadArt(){
-  let loaded=0;for(const key of E.ALL){const im=new Image();
-   im.onload=()=>{loaded++;if(loaded===E.ALL.length)this.ready=true;};
-   im.onerror=()=>{if(!im.fallback){im.fallback=true;im.src='assets/'+key.toLowerCase()+'.svg';}else{loaded++;if(loaded===E.ALL.length)this.ready=true;}};
-   im.src='assets/'+(E.NORMAL.slice(0,5).includes(key)?key+'.png?v=novas-letras-1':key.toLowerCase()+(E.NORMAL.slice(5).includes(key)||key==='TOMB'?'.webp':'.svg'));this.images[key]=im;
+  // Garantir que o ecrã de loading só termina depois de os 10 símbolos
+  // estarem realmente descodificados. Uma transferência bloqueada no Safari
+  // passa para o SVG de reserva, sem deixar uma espera infinita.
+  this.artLoaded=0;this.artTotal=E.ALL.length;this.artFailed=[];
+  this.ready=false;
+  const finished=new Set(),timers=new Map();
+  const done=(key,ok)=>{
+   if(finished.has(key))return;
+   finished.add(key);clearTimeout(timers.get(key));
+   this.artLoaded=finished.size;
+   if(!ok)this.artFailed.push(key);
+   if(finished.size===E.ALL.length)this.ready=this.artFailed.length===0;
+  };
+  const arm=(key,im)=>{
+   clearTimeout(timers.get(key));
+   timers.set(key,setTimeout(()=>{
+    if(finished.has(key))return;
+    if(im.fallback)done(key,false);
+    else fallback(key,im);
+   },9000));
+  };
+  const fallback=(key,im)=>{
+   if(finished.has(key))return;
+   if(im.fallback){done(key,false);return;}
+   im.fallback=true;
+   im.src='assets/'+key.toLowerCase()+'.svg?v=loading-fallback-1';
+   arm(key,im);
+  };
+  for(const key of E.ALL){
+   const im=new Image();
+   im.onload=()=>{if(im.naturalWidth>0)done(key,true);else fallback(key,im);};
+   im.onerror=()=>fallback(key,im);
+   this.images[key]=im;
+   im.src='assets/'+(E.NORMAL.slice(0,5).includes(key)?key+'.png?v=novas-letras-1':key.toLowerCase()+(E.NORMAL.slice(5).includes(key)||key==='TOMB'?'.webp':'.svg'));
+   arm(key,im);
   }
   const img=new Image();
   img.onload=()=>{
@@ -491,13 +522,33 @@ class Game {
   this.targets=[];
   this.background(t);
   this.header(t);
+  if(!this.ready){
+   // Só mostrar o ecrã de carregamento — nunca os nomes das peças em vez
+   // da arte HD. A grelha e o botão GIRAR só aparecem com as imagens prontas.
+   rect(43,337,474,269,'#061221ed','#e6ba68',18,2);
+   text('A ABRIR O TEMPLO',280,398,27,'#ffe7a5','center','Georgia',900,6);
+   const total=this.artTotal||E.ALL.length,loaded=this.artLoaded||0;
+   if(this.artFailed?.length){
+    text('Falha ao carregar os símbolos.',280,459,17,'#ffd69a','center','Arial',800);
+    text('Verifica a ligação e tenta novamente.',280,494,14,'#f3dbaa','center','Arial',600);
+    rect(157,532,246,52,'#a66a25','#ffdf9b',10,2);
+    text('RECARREGAR',280,558,19,'#fff2c5','center','Arial',900);
+    this.action(157,532,246,52,()=>location.reload(),'Recarregar imagens');
+   }else{
+    text('A CARREGAR SÍMBOLOS HD',280,451,15,'#e9cc9a','center','Arial',700);
+    rect(95,483,370,18,'#151c2b','#b88e4b',9,1.5);
+    rect(99,487,Math.max(0,362*loaded/total),10,'#e8bf68',null,5);
+    text(loaded+' / '+total,280,536,14,'#f5dfb6','center','Arial',700);
+   }
+   this.syncTargets();
+   return;
+  }
   this.reelBoard(t);
   this.drawFx(t);
   this.statusBar(t);
   this.controls(t);
   this.overlay(t);
   this.introOverlay(t);
-  if(!this.ready){rect(70,425,420,85,'#081829ed','#dbbd7c',10,2);text('A ABRIR O TEMPLO…',280,468,23);}
   if(this.paused){rect(100,685,360,30,'#071525d9');text('EM PAUSA · TOCA EM RETOMAR',280,700,13,'#8dffec','center','Arial');}
   this.syncTargets();
  }
