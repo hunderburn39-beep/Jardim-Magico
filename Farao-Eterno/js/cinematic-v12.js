@@ -15,7 +15,7 @@
   const format = n => (Math.round((n + Number.EPSILON) * 100) / 100)
     .toLocaleString('pt-PT', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' cr';
   const events = { spins: 0, landings: 0, sanctuaries: 0, paylineChimes: 0 };
-  game.cinematicV12 = { version: '1.3', events, mathUnchanged: true };
+  game.cinematicV12 = { version: '1.4', events, mathUnchanged: true };
 
   // A fita gráfica é determinística e NÃO consome o RNG dos prémios.
   function stripFor(reel, stepCount, prior, final, round) {
@@ -124,11 +124,56 @@
       // O nó é libertado depois de um fade curto, sem clicks digitais.
     } catch (_) {}
   };
+  // Impactos naturais e discretos: corpo grave com um toque abafado, sem
+  // sinos metálicos ou notas agudas. Áudio apenas; não altera os giros.
+  audio.tick = function (reel) {
+    if (!this.on || !this.ctx || document.hidden) return;
+    const ac = this.ctx, now = ac.currentTime, bus = this.out || ac.destination;
+    try {
+      // Corpo curto, semelhante ao fecho pesado de um tambor.
+      const body = ac.createOscillator(), bodyGain = ac.createGain();
+      body.type = 'sine';
+      body.frequency.setValueAtTime(120 - reel * 3, now);
+      body.frequency.exponentialRampToValueAtTime(67 - reel * 2, now + .125);
+      bodyGain.gain.setValueAtTime(.0001, now);
+      bodyGain.gain.exponentialRampToValueAtTime(.032, now + .007);
+      bodyGain.gain.exponentialRampToValueAtTime(.0001, now + .145);
+      body.connect(bodyGain); bodyGain.connect(bus);
+      body.start(now); body.stop(now + .155);
+      body.onended = () => { body.disconnect(); bodyGain.disconnect(); };
+
+      // Pequena textura de madeira, filtrada; reutilizar buffer no Safari.
+      if (!this._softImpactNoise || this._softImpactNoise.sampleRate !== ac.sampleRate) {
+        const length = Math.max(1, Math.round(ac.sampleRate * .028));
+        const buffer = ac.createBuffer(1, length, ac.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let j = 0; j < length; j++) data[j] = Math.random() * 2 - 1;
+        this._softImpactNoise = buffer;
+      }
+      const tap = ac.createBufferSource(), lowpass = ac.createBiquadFilter(),
+        highpass = ac.createBiquadFilter(), tapGain = ac.createGain();
+      tap.buffer = this._softImpactNoise;
+      lowpass.type = 'lowpass'; lowpass.frequency.value = 820;
+      highpass.type = 'highpass'; highpass.frequency.value = 160;
+      tapGain.gain.setValueAtTime(.016, now);
+      tapGain.gain.exponentialRampToValueAtTime(.0001, now + .027);
+      tap.connect(lowpass); lowpass.connect(highpass);
+      highpass.connect(tapGain); tapGain.connect(bus);
+      tap.start(now); tap.stop(now + .03);
+      tap.onended = () => {
+        tap.disconnect(); lowpass.disconnect(); highpass.disconnect(); tapGain.disconnect();
+      };
+    } catch (_) {
+      this.tone(105, .10, 'sine', .018);
+    }
+  };
+
   audio.sanctuaryLanding = function (reel, count) {
-    if (!this.on || !this.ctx) return;
-    this.tone(680 + reel * 35, .22, 'sine', .040);
-    this.tone(1020 + reel * 48, .28, 'triangle', .020, .06);
-    if (count >= 2) this.shimmer?.(.72);
+    if (!this.on || !this.ctx || document.hidden) return;
+    // As torres distinguem-se pela ressonância baixa, não por pancadas fortes.
+    this.tone(360 + reel * 12, .18, 'sine', .017);
+    if (count === 2) this.tone(490, .26, 'sine', .022, .045);
+    if (count >= 3) this.tone(570, .30, 'sine', .027, .045);
   };
   audio.paylineChime = function (index) {
     if (!this.on || !this.ctx) return;
