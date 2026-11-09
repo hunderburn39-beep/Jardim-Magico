@@ -1,0 +1,62 @@
+name: "Portões do Trovão | Testes independentes"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'templo-do-trovao/**'
+      - '.github/workflows/testar-portoes-do-trovao.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'templo-do-trovao/**'
+      - '.github/workflows/testar-portoes-do-trovao.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portoes-testes-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verificar-portoes:
+    name: Verificar Portões do Trovão
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Obter o jogo
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validar ficheiros do jogo
+        shell: bash
+        run: |
+          test -s templo-do-trovao/index.html
+          test -s templo-do-trovao/js/jogo.js
+          test -s templo-do-trovao/js/regras-wild-v13.js
+          test -d templo-do-trovao/assets
+          for file in templo-do-trovao/js/*.js; do
+            node --check "$file"
+          done
+
+      - name: Testar pagamentos e regras WILD
+        run: node templo-do-trovao/tools/testar-wild-v14.js
+
+      - name: Simular rondas de forma reprodutível
+        run: |
+          node templo-do-trovao/tools/simular-rtp-v13.js 5000 50 681925 > portoes-simulacao-ci.json
+          node -e "const r=require('./portoes-simulacao-ci.json'); if(r.spins!==5000 || !Number.isFinite(r.RTP_total_pct)) process.exit(1)"
+
+      - name: Guardar resultado da simulação
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portoes-trovao-testes
+          path: portoes-simulacao-ci.json
+          if-no-files-found: ignore
