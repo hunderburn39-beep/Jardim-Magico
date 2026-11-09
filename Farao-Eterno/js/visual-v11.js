@@ -142,10 +142,10 @@
   // Nas cartas baixas, desenhar a moldura POR CIMA da letra ampliada,
   // para o quadrado continuar visível mesmo quando a letra ocupa toda a casa.
   if(['10','J','Q','K','A'].includes(sym)){
-   const bx=x+(R.cw-96)/2,by=y+(R.gh-108)/2;
+   const bx=x+(R.cw-92)/2,by=y+(R.gh-116)/2;
    ctx.save();ctx.shadowColor='#eab95b';ctx.shadowBlur=3;
-   rounded(ctx,bx,by,96,108,10,null,'#f1bf6b',1.4);
-   rounded(ctx,bx+3,by+3,90,102,7,null,'#ffe4a3aa',0.6);
+   rounded(ctx,bx,by,92,116,10,null,'#f1bf6b',1.4);
+   rounded(ctx,bx+3,by+3,86,110,7,null,'#ffe4a3aa',0.6);
    ctx.restore();
   }
  }
