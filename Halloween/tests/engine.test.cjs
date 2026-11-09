@@ -299,3 +299,13 @@ test("Regressão económica: 20 mil giros não regressam ao retorno extremo inic
     "Retorno simulado fora de limites de segurança de regressão: "+sampleReturn);
   assert.ok(wheels<150,"Roleta excessivamente frequente: "+wheels);
 });
+
+test("O motor nunca permite travar os cinco tambores",()=>{
+  const old=Array.from({length:5},()=>["pumpkin","ghost","bat"]);
+  const state={...E.createState(),balance:100};
+  const result=E.spin(state,fixed(.5),old,new Set([0,1,2,3,4]));
+  assert.equal(result.ok,true);
+  assert.equal(result.heldReels.length,4);
+  assert.deepEqual(result.heldReels,[0,1,2,3]);
+  assert.equal(result.state.spins,1);
+});
