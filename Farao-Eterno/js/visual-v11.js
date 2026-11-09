@@ -180,7 +180,7 @@
  }
  // Larger icons, strictly preserving their source aspect ratio.
  game.drawIcon=function(sym,x,y,w,h,win=false,t=performance.now()){
-  const img=this.images[sym],size=Math.min(w-1,h-8)*.985;
+  const img=this.images[sym],size=Math.min(w-14,h-26);
   ctx.save();
   if(win){
    const alpha=.20+.14*Math.sin(t*.009);
@@ -193,16 +193,16 @@
    if(lowSymbol){
     // Preencher quase toda a casa sem cortar letras nem deformar a imagem.
     const b=visibleBounds(img),zoom=(sym==='J'||sym==='Q')?.51:.62;
-    const factor=Math.min(w/b.w,h/b.h)*zoom;
+    const factor=Math.min((w-14)/b.w,(h-26)/b.h)*zoom;
     const iw=b.w*factor,ih=b.h*factor;
     ctx.save();
-    ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
-    ctx.drawImage(img,b.x,b.y,b.w,b.h,x+(w-iw)/2,y+(h-ih)/2-9,iw,ih);
+    ctx.beginPath();ctx.rect(x+5,y+(h-96)/2+5,w-10,86);ctx.clip();
+    ctx.drawImage(img,b.x,b.y,b.w,b.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
     ctx.restore();
    }else{
     const scale=Math.min(size/img.naturalWidth,size/img.naturalHeight);
     const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
-    ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2-9,iw,ih);
+    ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
    }
   }else txt(sym,x+w/2,y+h/2,29,color.bright);
   ctx.restore();
