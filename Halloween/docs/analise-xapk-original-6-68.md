@@ -64,6 +64,19 @@ Cada linha possui cinco aparências/estados do mesmo símbolo; não são cinco s
 | Regras e tabela de pagamento estimadas | As tabelas visuais originais estão presentes em `01_tabela*.webp` e precisam de ser transcritas/validadas |
 | Sons WebAudio originais | Nove ficheiros identificados no pacote, de fidelidade e duração diferentes |
 
+## Pistas de código compilado (DEX)
+
+A análise estática das strings de `classes.dex` encontrou nomes de métodos e estados do jogo como:
+
+- `InitCaldeirao`, `EscolheCaldeirao`, `ExitCaldeirao`
+- `InitMorango`, `EscolheMorango`, `SetMorango`, `MorangoSaida`
+- `InitRoleta`, `ParaRoleta`, `SetRoletaPremio`, `calcbonusRoleta`
+- Modos `Halloween 25L`, `Halloween 30L` e `Halloween Classica`
+
+Isto demonstra que o APK inclui rotinas compiladas relacionadas com **caldeirões, morangos e roleta**, não apenas gráficos. Ainda não se identificou o código-fonte original nem se confirmou a matemática exata das rotinas. Extração de strings não é uma descompilação.
+
+**Nota importante:** imagens e sons foram mantidos apenas no ficheiro extraído para análise privada, fora do GitHub público. Estes nomes servem para elaborar uma especificação e reconstrução original.
+
 ## Decisões técnicas
 
 - **Não importar automaticamente os gráficos, música ou binários proprietários para este repositório público**, sem autorização/licença apropriada. O ficheiro fornecido permite análise privada, não comprova titularidade dos direitos.
