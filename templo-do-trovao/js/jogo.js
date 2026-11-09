@@ -357,127 +357,130 @@
   }
   async function playSpin(){
     if(state.busy)return false;
-    const bonusSpin=state.bonus;
-    const bet=currentBet();
+    const bonusSpin=state.bonus,bet=currentBet();
     if(!bonusSpin&&state.balance+1e-9<bet){
-      openModal("SALDO INSUFICIENTE","<p>Reponha créditos virtuais para continuar. Esta versão não aceita depósitos.</p>",[{text:"REPOR 1 000 €",action:refill},{text:"FECHAR",secondary:true}]);
+      openModal("SALDO INSUFICIENTE",
+        "<p>Repor créditos virtuais para continuar. Este jogo não aceita depósitos.</p>",
+        [{text:"REPOR CRÉDITOS",action:refill},{text:"FECHAR",secondary:true}]);
       return false;
     }
-    state.busy=true;
-    el.fx?.replaceChildren();
-    if(!bonusSpin){state.balance=Math.round((state.balance-bet)*100)/100;state.currentWin=0}
-    else state.freeLeft--;
+    state.busy=true;el.fx?.replaceChildren();
+    if(!bonusSpin){
+      state.balance=Math.round((state.balance-bet)*100)/100;
+      state.spots=RULES.emptySpots();state.currentWin=0;
+    }else{
+      state.freeLeft=Math.max(0,state.freeLeft-1);
+      state.bonusSpinsUsed++;
+    }
     state.cascade=0;state.visibleMult=1;
-    setMsg(bonusSpin?"RODADA GRÁTIS • PODER ACUMULADO":"OS DEUSES ESTÃO A GIRAR...");
+    setMsg(bonusSpin?"FREE SPIN • SPOTS ACUMULADOS":"ZEUS ESTÁ A GIRAR...");
     refresh();
-    // Primeira ação audível, ainda no gesto do utilizador. O MP3 salta
-    // o silêncio inicial; só depois começa a animação das peças.
     sfx("spin");
     await pause(state.turbo?65:150);
     state.grid=makeGrid();
     window.TrovaoHistory?.startSpin({bet,bonus:bonusSpin,grid:state.grid});
-    const previousIds=new Set();
-    state.grid.forEach(s=>previousIds.add(s.id));
-    const fallFinished=render(state.grid,{dropIds:previousIds});
+    const incoming=new Set(state.grid.map(x=>x.id));
+    const fallFinished=render(state.grid,{dropIds:incoming});
     await pause(fallFinished+(state.turbo?75:130));
-    let totalBase=0,spinMult=0,steps=0,scatterTriggered=false,retrigger=false,scatterAward=0,maxScatterPaid=0;
-    const countedMultipliers=new Set();
+
+    let paid=0,steps=0,freeAward=0;
+    const cap=Math.max(0,MAX_WIN_X*bet-(bonusSpin?state.bonusWon:0));
     for(;;){
-      const scatterCount=countScatter(state.grid);
-      if(scatterCount>=(bonusSpin?3:4)){
-        if(bonusSpin)retrigger=true;else scatterTriggered=true;
-      }
-      if(scatterCount>=4 && scatterCount>maxScatterPaid){
-        scatterAward+=bet*(scatterMultiplier(scatterCount)-scatterMultiplier(maxScatterPaid));
-        maxScatterPaid=scatterCount;
-      }
-      for(const s of state.grid){
-        if(s.kind==="mult"&&!countedMultipliers.has(s.id)){
-          countedMultipliers.add(s.id);spinMult+=s.value;
-        }
-      }
-      const wins=getWins(state.grid);
-      if(!wins.result.length||steps>=36)break; // limite de proteção contra ciclos excessivos
+      const scatters=countScatter(state.grid);
+      freeAward=Math.max(freeAward,RULES.freeSpinAward(scatters));
+      const left=Math.max(0,cap-paid);
+      if(left<.009||steps>=45)break;
+      const wins=getWins(state.grid,left);
+      if(!wins.result.length)break;
       steps++;state.cascade=steps;
-      totalBase+=wins.pay;
+      paid=Math.round((paid+wins.pay)*100)/100;
       window.TrovaoHistory?.recordWin(wins);
-      render(state.grid,{matchKinds:wins.matched});
-      // O painel de histórico conserva as peças e prémios discriminados,
-      // mas durante a jogada só se vê o valor desta queda, em dourado.
-      setMsg(money(wins.pay));
+
+      // Atualizar os spots APÓS calcular o valor do grupo vencedor:
+      // primeira vitória marca, segunda ×2, depois ×4... até ×1024.
+      state.spots=RULES.upgradeSpots(state.spots,wins.matchedPositions);
+      render(state.grid,{matchPositions:wins.matchedPositions});
+      setMsg("QUEDA "+steps+" • "+money(wins.pay));
       showPrizeFloat(wins.pay);
-      if(spinMult>0&&steps===1)sfx("mult");
+      if(RULES.maxActiveSpot(state.spots)>1)sfx("mult");
       refresh();
-      await pause(state.turbo?105:280);
-      const explosionTime=explodeWinningSymbols();
-      // Esperar que os cristais se partam e se dissipem antes da queda.
-      await pause(explosionTime+(state.turbo?35:40));
-      const oldPositions=new Map(state.grid.map((s,index)=>[s.id,index]));
-      state.grid=tumble(state.grid,wins.matched);
-      const bornIds=new Set(state.grid.filter(s=>!oldPositions.has(s.id)).map(s=>s.id));
+      await pause(state.turbo?110:300);
+      const blast=explodeWinningSymbols();
+      await pause(blast+(state.turbo?35:40));
+      if(paid>=cap-.009)break;
+
+      const oldPositions=new Map(state.grid.map((cell,index)=>[cell.id,index]));
+      state.grid=tumble(state.grid,wins.matchedPositions);
+      const bornIds=new Set(state.grid.filter(cell=>!oldPositions.has(cell.id)).map(cell=>cell.id));
       window.TrovaoHistory?.recordFall(state.grid,bornIds);
       sfx("tumble");
       const tumbleFinished=render(state.grid,{fallFrom:oldPositions});
       await pause(tumbleFinished+(state.turbo?70:105));
     }
-    let total=totalBase;
-    if(totalBase>0||scatterAward>0){
-      if(bonusSpin){
-        if(totalBase>0&&spinMult>0)state.bonusMult+=spinMult;
-        // O acumulado só potencia rodadas com novo multiplicador vencedor.
-        total=totalBase*(totalBase>0&&spinMult>0?Math.max(1,state.bonusMult):1)+scatterAward;
-        const remaining=Math.max(0,MAX_WIN_X*bet-state.bonusWon);
-        total=Math.min(total,remaining);
-        state.bonusWon=Math.round((state.bonusWon+total)*100)/100;
-      }else{
-        state.visibleMult=totalBase>0&&spinMult>0?spinMult:1;
-        total=totalBase*state.visibleMult+scatterAward;
-        total=Math.min(MAX_WIN_X*bet,total);
-        state.currentWin=Math.round(total*100)/100;
-        state.balance=Math.round((state.balance+state.currentWin)*100)/100;
-      }
-      setMsg(steps+" QUEDA"+(steps!==1?"S":"")+" • "+money(total)+" GANHOS");
+
+    const total=Math.min(cap,Math.round(paid*100)/100);
+    if(bonusSpin){
+      state.bonusWon=Math.round((state.bonusWon+total)*100)/100;
+    }else{
+      state.currentWin=total;
+      state.balance=Math.round((state.balance+total)*100)/100;
+    }
+    if(total>0){
+      setMsg(steps+" QUEDA"+(steps===1?"":"S")+" • "+money(total));
       sfx("reward");
     }else{
-      state.visibleMult=1;
-      setMsg(bonusSpin?"A TROVOADA CONTINUA...":"SEM PRÉMIO • TENTA DE NOVO");
+      setMsg(bonusSpin?"ZEUS CONTINUA...":"SEM PRÉMIO • TENTA DE NOVO");
     }
     window.TrovaoHistory?.endSpin({
-      total,scatterAward,mult:bonusSpin?(state.bonusMult||1):(state.visibleMult||1)
+      total,scatterAward:0,mult:RULES.maxActiveSpot(state.spots)
     });
-    if(bonusSpin&&retrigger){
-      state.freeLeft+=5;setOverlay("+5 RODADAS GRÁTIS");
-      sfx("scatter");await pause(state.turbo?250:900);setOverlay("");
+
+    // Mesmo que apareçam scatters em várias cascatas, há apenas um
+    // prémio de giros por spin (o maior observado).
+    if(bonusSpin&&freeAward>0){
+      const room=Math.max(0,200-state.bonusSpinsUsed);
+      const old=state.freeLeft;
+      state.freeLeft=Math.min(room,old+freeAward);
+      const added=state.freeLeft-old;
+      if(added>0){
+        setOverlay("⚡ +"+added+" FREE SPINS ⚡");
+        sfx("scatter");await pause(state.turbo?250:900);setOverlay("");
+      }
     }
-    if(!bonusSpin&&scatterTriggered){
+    if(!bonusSpin&&freeAward>0){
       render(state.grid,{scatterGlow:true});
-      setOverlay("⚡ 15 RODADAS GRÁTIS ⚡");
+      setOverlay("⚡ "+freeAward+" FREE SPINS ⚡");
       window.TrovaoScene?.burst();
       sfx("scatter");await pause(state.turbo?350:1150);setOverlay("");
     }
+    if(bonusSpin&&(state.bonusWon>=MAX_WIN_X*bet-.001||state.bonusSpinsUsed>=200)){
+      state.freeLeft=0;
+    }
     refresh();state.busy=false;refresh();
-    if(bonusSpin&&state.bonusWon>=MAX_WIN_X*bet-0.001){state.freeLeft=0}
     if(bonusSpin&&state.freeLeft<=0){
       await finishBonus();
-    }else if(!bonusSpin&&scatterTriggered){
-      await startBonus();
+    }else if(!bonusSpin&&freeAward>0){
+      await startBonus(freeAward);
     }else if(!bonusSpin){
       await showBig(state.currentWin);
     }
     return true;
   }
-  async function startBonus(){
-    state.bonus=true;state.freeLeft=15;state.bonusWon=0;state.bonusMult=0;
+  async function startBonus(count=10){
+    state.bonus=true;
+    state.freeLeft=Math.min(200,Math.max(1,count));
+    state.bonusWon=0;state.bonusMult=0;state.bonusSpinsUsed=0;
+    state.spots=RULES.emptySpots();
     el.free.parentElement.classList.add("bonus-active");
-    setMsg("BÓNUS ATIVO • 15 RODADAS GRÁTIS");refresh();
+    setMsg("BÓNUS ATIVO • "+state.freeLeft+" FREE SPINS");refresh();
     window.TrovaoScene?.burst();
     await pause(state.turbo?180:400);
-    // Executado automaticamente; o utilizador pode terminar a automatização.
-    while(state.bonus&&state.freeLeft>0){
+    while(state.bonus&&state.freeLeft>0&&state.bonusSpinsUsed<200){
       const ok=await playSpin();
       if(!ok)break;
       await pause(state.turbo?120:340);
     }
+    if(state.bonus)await finishBonus();
   }
   async function finishBonus(){
     if(!state.bonus)return;
@@ -485,8 +488,9 @@
     state.balance=Math.round((state.balance+state.bonusWon)*100)/100;
     state.currentWin=Math.round(state.bonusWon*100)/100;
     const win=state.currentWin;
-    state.bonusWon=0;state.visibleMult=1;
+    state.bonusWon=0;state.visibleMult=1;state.spots=RULES.emptySpots();
     el.free.parentElement.classList.remove("bonus-active");
+    render(state.grid);
     setMsg("BÓNUS TERMINADO • GANHASTE "+money(win));refresh();
     setOverlay("BÓNUS: "+money(win));sfx("reward");
     await showBig(win,"PRÉMIO DO BÓNUS");
