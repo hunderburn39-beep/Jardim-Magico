@@ -15,7 +15,7 @@
   const format = n => (Math.round((n + Number.EPSILON) * 100) / 100)
     .toLocaleString('pt-PT', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' cr';
   const events = { spins: 0, landings: 0, sanctuaries: 0, paylineChimes: 0 };
-  game.cinematicV12 = { version: '1.2', events, mathUnchanged: true };
+  game.cinematicV12 = { version: '1.3', events, mathUnchanged: true };
 
   // A fita gráfica é determinística e NÃO consome o RNG dos prémios.
   function stripFor(reel, stepCount, prior, final, round) {
@@ -52,6 +52,8 @@
     previousStart();
     const spin = this.spinObject;
     if (!this.spinning || !spin || spin === old) return;
+    spin.wildFadeAt = null;
+    spin.wildRestoreAt = null;
     const round = (this._cinemaRound || 0) + 1;
     this._cinemaRound = round;
     spin.duration = this.turbo ? 520 : 1040;
@@ -133,6 +135,16 @@
     this.tone(540 + (index % 5) * 55, .12, 'sine', .022);
   };
 
+  // O fade começa apenas quando o segundo TOMB/WILD PAROU de verdade.
+  // A grelha futura nunca é consultada para acionar o efeito antecipadamente.
+  function wildFadeStrength(spin, now) {
+    if (!spin || spin.wildFadeAt === null || spin.wildFadeAt === undefined) return 0;
+    const entering = reduced ? 1 : ease((now - spin.wildFadeAt) / 300);
+    const leaving = spin.wildRestoreAt === null || spin.wildRestoreAt === undefined
+      ? 0 : reduced ? 1 : ease((now - spin.wildRestoreAt) / 260);
+    return .62 * entering * (1 - leaving);
+  }
+
   // Atravessar a animação dos símbolos sem deformar os ícones HD.
   const baseIcon = game.drawIcon.bind(game);
   game.drawIcon = function (symbol, x, y, w, h, win, t) {
@@ -141,6 +153,14 @@
     const onReel = reel >= 0 && reel < 5 && y >= R.top - R.gh * 1.1 && y < R.top + R.gh * 4.2;
     const moving = onReel && this.spinning && spin && !spin.stopped[reel];
     const visibleTomb = symbol === 'TOMB' && onReel && !moving;
+    // Os símbolos dos tambores já parados desvanecem; as torres WILD e
+    // os tambores ainda em movimento mantêm-se bem visíveis.
+    const fade = onReel && !moving && symbol !== 'TOMB' && spin?.stopped?.[reel]
+      ? wildFadeStrength(spin, t || performance.now()) : 0;
+    if (fade > 0) {
+      ctx.save();
+      ctx.globalAlpha *= 1 - fade;
+    }
     if (visibleTomb && !reduced) {
       const wave = .55 + .45 * Math.sin((t || 0) * .007 + reel);
       const halo = ctx.createRadialGradient(x+w/2, y+h/2, 8, x+w/2, y+h/2, w * .63);
@@ -165,6 +185,7 @@
       ctx.ellipse(x+w/2, y+h/2, w*.42, h*.39, 0, 0, Math.PI*2);
       ctx.stroke(); ctx.restore();
     }
+    if (fade > 0) ctx.restore();
   };
 
   const baseReelBoard = game.reelBoard.bind(game);
@@ -219,10 +240,20 @@
         events.landings++;
         const hadTomb = spin.grid[c].includes('TOMB');
         if (hadTomb) {
-          const count = spin.grid.slice(0,c+1).reduce((n, col) =>
-            n + col.filter(s => s === 'TOMB').length, 0);
+          const count = spin.grid.reduce((n, col, index) =>
+            n + (spin.stopped[index] ? col.filter(s => s === 'TOMB').length : 0), 0);
           this.audio.sanctuaryLanding?.(c, count);
           events.sanctuaries++;
+          // Se houver mais tambores por parar, desvanecer os já resolvidos.
+          if (count === 2 && spin.wildFadeAt === null &&
+              this.spinning && this.spinObject === spin &&
+              spin.stopped.some(stopped => !stopped)) {
+            spin.wildFadeAt = t;
+          }
+          // A terceira torre revela o desfecho e devolve a imagem ao normal.
+          if (count >= 3 && spin.wildFadeAt !== null && spin.wildRestoreAt === null) {
+            spin.wildRestoreAt = t;
+          }
         }
       }
     }
