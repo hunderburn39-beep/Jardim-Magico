@@ -51,8 +51,23 @@ async function run(name,launcher){
     const after=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.state.balance);
     assert.equal(after,Math.round((before+4)*100)/100);
     await page.screenshot({path:`visual-previews/halloween-${name}-bonus.png`});
+    // A roleta deve recuperar depois de fechar a página e pagar
+    // exatamente o prémio guardado, sem repetir a atribuição.
+    await page.evaluate(()=>{
+      const s=window.__HALLOWEEN_SCENE__;
+      const next={...s.state,pendingPot:null,pendingWheel:{sectorIndex:6,payout:350.75}};
+      localStorage.setItem("halloween-classico-v02",JSON.stringify(next));
+    });
+    await page.reload({waitUntil:"domcontentloaded"});
+    await page.waitForFunction(()=>window.__HALLOWEEN_SCENE__?.wheelOpen===true,{},{timeout:25000});
+    const wheelBefore=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.state.balance);
+    await tap(page,360,852);
+    await page.waitForFunction(()=>window.__HALLOWEEN_SCENE__?.state?.pendingWheel===null,{},{timeout:12000});
+    const wheelAfter=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.state.balance);
+    assert.equal(wheelAfter,Math.round((wheelBefore+350.75)*100)/100);
+    await page.screenshot({path:`visual-previews/halloween-${name}-roleta.png`});
     assert.deepEqual(errors,[],`${name}: erros no browser: ${errors.join("; ")}`);
-    console.log(`${name}: carregamento, 15 símbolos, giro, recuperação, escolha e screenshots OK`);
+    console.log(`${name}: carregamento, 15 símbolos, giro, potes, roleta, recuperação e screenshots OK`);
     await context.close();
   }finally{await browser.close();}
 }
