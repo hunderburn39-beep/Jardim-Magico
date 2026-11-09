@@ -8,6 +8,10 @@
   // e os multiplicadores abaixo são originais do protótipo, não do APK.
   const STRAWBERRY_CHOICES=12;
   const STRAWBERRY_VALUES=Object.freeze([0,1,2,3,5,8]);
+  // InitDados na app Android prepara cinco elementos animados.
+  // Os valores das faces 1-6 e o prémio da aposta × face são uma
+  // regra de demonstração; não são a fórmula compilada do APK.
+  const DICE_CHOICES=5;
   // Roleta de entretenimento, não reproduz distribuições históricas.
   // O atlas original confirma roleta numerada de 1 a 30. Os prémios
   // abaixo continuam experimentais: ainda não foi validado o algoritmo do APK.
@@ -63,7 +67,7 @@
     return SYMBOLS[SYMBOLS.length - 1].id;
   }
   function createState() {
-    return { balance: 1000, bet: 2, lines: 30, jackpots: [350,750,1500,3000], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null, pendingStrawberry: null };
+    return { balance: 1000, bet: 2, lines: 30, jackpots: [350,750,1500,3000], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null, pendingStrawberry: null, pendingDice: null };
   }
   function sanitize(s) {
     const d = createState();
@@ -88,6 +92,10 @@
       pendingPot: s.pendingPot && Array.isArray(s.pendingPot.choices) && s.pendingPot.choices.length === 3 &&
         s.pendingPot.choices.every(n => Number.isFinite(n) && n >= 0 && n <= 100000) ?
           { choices: s.pendingPot.choices.map(round) } : null,
+      pendingDice: s.pendingDice && Array.isArray(s.pendingDice.faces) &&
+        s.pendingDice.faces.length===DICE_CHOICES &&
+        s.pendingDice.faces.every(v=>Number.isInteger(v) && v>=1 && v<=6) ?
+        {faces:[...s.pendingDice.faces]} : null,
       pendingStrawberry: s.pendingStrawberry && Array.isArray(s.pendingStrawberry.choices) &&
         s.pendingStrawberry.choices.length===STRAWBERRY_CHOICES &&
         s.pendingStrawberry.choices.every(n=>Number.isFinite(n)&&n>=0&&n<=100000) ?
@@ -147,7 +155,7 @@
   function spin(input, rng = Math.random, previousGrid = null, heldColumns = null) {
     const state = sanitize(input);
     const free = state.freeSpins > 0;
-    if (state.pendingPot || state.pendingWheel || state.pendingStrawberry)
+    if (state.pendingPot || state.pendingWheel || state.pendingStrawberry || state.pendingDice)
       return { ok: false, reason: "bonus-pendente", state };
     if (!free && state.balance < state.bet) return { ok: false, reason: "saldo", state };
     const holds = !free && Array.isArray(previousGrid) && previousGrid.length === REELS &&
@@ -184,8 +192,12 @@
     if (result.scatter >= 3) {
       // No APK existem rotinas distintas para caldeirões e morangos.
       // A seleção de qual bónus surge permanece experimental.
-      const isStrawberry=validRng(rng)<.30;
-      if(isStrawberry){
+      const bonusPick=validRng(rng);
+      if(bonusPick<.15){
+        state.pendingDice={
+          faces:Array.from({length:DICE_CHOICES},()=>1+Math.floor(validRng(rng)*6))
+        };
+      }else if(bonusPick<.40){
         state.pendingStrawberry={
           choices:Array.from({length:STRAWBERRY_CHOICES},()=>
             round(state.bet*STRAWBERRY_VALUES[Math.floor(validRng(rng)*STRAWBERRY_VALUES.length)]))
@@ -212,6 +224,7 @@
     return { ok: true, state, grid, result, free, earnedSpins, pumpkinBonuses,
       heldReels: holds, potTriggered: Boolean(state.pendingPot),
       strawberryTriggered:Boolean(state.pendingStrawberry),
+      diceTriggered:Boolean(state.pendingDice),
       wheelTriggered:Boolean(state.pendingWheel), wheelEligible };
   }
   function choosePot(input, index) {
@@ -238,6 +251,18 @@
     state.pendingStrawberry=null;
     return {ok:true,state,awarded,reveal};
   }
+  function chooseDice(input,index){
+    const state=sanitize(input);
+    if(!state.pendingDice)return {ok:false,reason:"sem-dados",state};
+    if(!Number.isInteger(index) || index<0 || index>=DICE_CHOICES)
+      return {ok:false,reason:"selecao-invalida",state};
+    const reveal=[...state.pendingDice.faces];
+    const face=reveal[index],awarded=round(state.bet*face);
+    state.balance=Math.min(MAX_BALANCE,round(state.balance+awarded));
+    state.lastWin=round(state.lastWin+awarded);
+    state.pendingDice=null;
+    return {ok:true,state,awarded,face,reveal};
+  }
   function resolveWheel(input) {
     const state=sanitize(input);
     if(!state.pendingWheel)return {ok:false,reason:"sem-roleta",state};
@@ -251,8 +276,8 @@
     return {ok:true,state,awarded:payout,sectorIndex,label:sector.label};
   }
   const api = Object.freeze({ SYMBOLS, LINES, PAY, PUMPKINS_FOR_BONUS,
-    WHEEL_SECTORS, STRAWBERRY_CHOICES, createState, sanitize, setBet, pick, evaluateGrid,
-    spin, choosePot, chooseStrawberry, resolveWheel });
+    WHEEL_SECTORS, STRAWBERRY_CHOICES, DICE_CHOICES, createState, sanitize, setBet, pick, evaluateGrid,
+    spin, choosePot, chooseStrawberry, chooseDice, resolveWheel });
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.HalloweenEngine = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
