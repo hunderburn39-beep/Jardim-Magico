@@ -457,7 +457,7 @@ class Game {
   const dt=Math.min(60,t-lastFrame||16);lastFrame=t;
   if(this.spinning&&!this.paused&&!document.hidden){
    const item=this.spinObject;
-   for(let c=0;c<5;c++) if(!item.stopped[c] && t>=item.start+item.duration+c*item.reelGap){item.stopped[c]=true;this.landings[c]=t;this.audio.tick(c);}
+   for(let c=0;c<5;c++) if(!item.stopped[c] && t>=(item.stopAt?.[c]??(item.start+item.duration+c*item.reelGap))){item.stopped[c]=true;this.landings[c]=t;this.audio.tick(c);}
    if(item.stopped.every(Boolean))this.finishSpin();
   }else if(!this.spinning&&!this.paused&&!this.superseded&&!document.hidden&&t>this.nextActionAt&&mod.classList.contains('hidden')){
    if(this.pendingSummary)this.showSummary();else if(this.feature||this.auto>0)this.autoSpin();
