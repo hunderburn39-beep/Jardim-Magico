@@ -203,7 +203,7 @@
      ctx.beginPath();ctx.rect(rx+2,top,cw-4,gh*3);ctx.clip();
      ctx.lineWidth=3.4;
      for(let k=0;k<12;k++){
-      const sx=rx+5+k*8,sy=top+((t*(9.6+velocity*10.4)+k*83+c*27)%(gh*3+2080))-1840;
+      const sx=rx+5+k*8,sy=top+((t*(7.2+velocity*7.8)+k*83+c*27)%(gh*3+2080))-1840;
       const length=(1360+velocity*960);
       const streak=ctx.createLinearGradient(sx,sy,sx,sy+length);
       streak.addColorStop(0,'rgba(255,227,163,0)');
@@ -294,7 +294,7 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  txt('V1.2.3',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.2.4',38,985,10,'#e5c68d',850,'Arial');
   if(!this.storageOK)txt('SESSÃO SEM GRAVAÇÃO',280,833,11,'#ffbc83',800,'Arial');
  };
  document.documentElement.dataset.faraoVisual='1.1';
