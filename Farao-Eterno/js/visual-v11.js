@@ -183,10 +183,13 @@
    const lowSymbol=['10','J','Q','K','A'].includes(sym);
    if(lowSymbol){
     // Preencher quase toda a casa sem cortar letras nem deformar a imagem.
-    const b=visibleBounds(img),margin=2;
-    const factor=Math.min((w-margin*2)/b.w,(h-margin*2)/b.h);
+    const b=visibleBounds(img),zoom=1.12;
+    const factor=Math.min(w/b.w,h/b.h)*zoom;
     const iw=b.w*factor,ih=b.h*factor;
+    ctx.save();
+    ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
     ctx.drawImage(img,b.x,b.y,b.w,b.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
+    ctx.restore();
    }else{
     const scale=Math.min(size/img.naturalWidth,size/img.naturalHeight);
     const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
