@@ -1,0 +1,71 @@
+name: "Faraó Eterno | Testes independentes"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Farao-Eterno/**'
+      - '.github/workflows/testar-farao-eterno.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Farao-Eterno/**'
+      - '.github/workflows/testar-farao-eterno.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: farao-testes-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verificar-farao:
+    name: Verificar Faraó Eterno
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: Farao-Eterno
+    steps:
+      - name: Obter o jogo
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verificar ficheiros e sintaxe
+        shell: bash
+        run: |
+          test -s index.html
+          test -s js/engine.js
+          test -s js/session.js
+          test -s js/game.js
+          for file in js/*.js; do
+            node --check "$file"
+          done
+
+      - name: Testar matemática e recuperação de sessão
+        run: npm test
+
+      - name: Instalar motor de testes do navegador
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+
+      - name: Testar Chrome e Safari (WebKit)
+        shell: bash
+        run: |
+          python3 -m http.server 8123 --bind 127.0.0.1 > /tmp/farao-http.log 2>&1 &
+          node tests/playwright-ci.cjs
+
+      - name: Guardar imagens dos testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: farao-eterno-testes
+          path: Farao-Eterno/visual-previews/
+          if-no-files-found: ignore
