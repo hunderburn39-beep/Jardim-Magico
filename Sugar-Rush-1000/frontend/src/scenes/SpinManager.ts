@@ -32,36 +32,8 @@ import options from '../options';
       const pulseIntensity = Math.min(actualWin / this.getEffectiveBet(), 3);
       this.backgroundManager.triggerWinPulse(pulseIntensity);
 
-      // Floating win text
-      const cx = this.grid.offsetX + this.grid.cellH * 3.5;
-      const cy = this.grid.offsetY + this.grid.cellH * 3.5;
-      const winFS = Math.max(28, this.grid.cellH * 0.7);
-      const winStroke = Math.max(3, winFS * 0.18);
-      const winText = this.add
-        .text(
-          cx,
-          cy,
-          `+${DisplayBalance({ amount: actualWin, currency: this.currency })}`,
-          {
-            
-            fontSize: `${winFS}px`,
-            color: '#ffe600',
-            fontStyle: 'bold',
-            stroke: '#000',
-            strokeThickness: winStroke,
-          },
-        )
-        .setOrigin(0.5)
-        .setDepth(25);
-
-      this.tweens.add({
-        targets: winText,
-        y: cy - this.grid.cellH * 1.2,
-        alpha: 0,
-        duration: 1200,
-        ease: 'Power1',
-        onComplete: () => winText.destroy(),
-      });
+      // O valor sai apenas no respetivo grupo premiado (Grid.ts).
+      // Evita um segundo texto enorme no centro que escondia os doces.
     };
 
     this.grid.onFreeSpinsTriggered = (count, resume) => {
