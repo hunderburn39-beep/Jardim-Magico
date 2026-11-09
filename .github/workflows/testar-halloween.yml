@@ -84,12 +84,12 @@ jobs:
           mkdir -p dist/Halloween dist/jardim-phaser/vendor
           cp -a Halloween/. dist/Halloween/
           cp jardim-phaser/vendor/phaser-3.90.0.min.js dist/jardim-phaser/vendor/
-          (cd dist && zip -q -r ../Halloween-V0.3.zip Halloween jardim-phaser)
+          (cd dist && zip -q -r ../Halloween-V0.4.zip Halloween jardim-phaser)
           test -s Halloween-V0.1.zip
 
       - name: Guardar pacote para testes
         uses: actions/upload-artifact@v4
         with:
-          name: Halloween-V0.3
+          name: Halloween-V0.4
           path: Halloween-V0.1.zip
           if-no-files-found: error
