@@ -6,6 +6,7 @@
  if(!game || !canvas) return;
  const ctx=canvas.getContext('2d');
  const R=Object.freeze({left:33,top:284,cw:99,gh:129,step:101});
+ const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||false;
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
  const TAU=Math.PI*2;
  const format=n=>(Math.round((n+Number.EPSILON)*100)/100).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+' cr';
@@ -174,6 +175,11 @@
  game.drawIcon=function(sym,x,y,w,h,win=false,t=performance.now()){
   const img=this.images[sym],size=Math.min(w-4,h-4)*(sym==='TOMB'?1.05:1);
   ctx.save();
+  // O símbolo premiado respira com um pulso de escala, sem mexer no resultado.
+  if(win&&!reducedMotion){
+   const pulse=1.025+.045*Math.sin(t*.012);
+   ctx.translate(x+w/2,y+h/2);ctx.scale(pulse,pulse);ctx.translate(-x-w/2,-y-h/2);
+  }
   if(win){
    const alpha=.20+.14*Math.sin(t*.009);
    ctx.fillStyle=radial(ctx,x+w/2,y+h/2,size*.62,[[0,'rgba(255,235,161,'+alpha+')'],[1,'rgba(255,211,101,0)']]);
@@ -234,6 +240,17 @@
   ctx.restore();
  };
  game.reelBoard=function(t){
+  // Só pulsam os símbolos da linha apresentada, alternada de 1,6 em 1,6 s.
+  const pulseCells=new Set();
+  const wins=!this.spinning&&(!this.reveal||t>=this.reveal.end)&&(!this.featureIntro||t>=this.featureIntro.end)
+   ?this.lastResult?.lineWins:null;
+  if(wins?.length){
+   const chosen=wins[Math.floor(t/1600)%wins.length];
+   if(chosen.expanded){
+    const expander=this.lastResult.expanders.find(e=>e.symbol===chosen.symbol);
+    for(const reel of expander?.reels||[])for(let row=0;row<3;row++)pulseCells.add(reel+'-'+row);
+   }else for(let reel=0;reel<chosen.count;reel++)pulseCells.add(reel+'-'+chosen.rows[reel]);
+  }
   const x=20,y=R.top-2,w=520,h=R.top+3*R.gh-y+10;
   ctx.save();ctx.shadowColor='#000c';ctx.shadowBlur=16;ctx.shadowOffsetY=6;
   rounded(ctx,x-5,y-7,w+10,h+10,15,null,'#deb56b',3.7);ctx.restore();
@@ -277,7 +294,7 @@
     const expanding=!!(this.expanded[c]&&(this.reveal?idx>=0&&progress>0:this.lastWasFree));
     const ready=!this.reveal||t>=this.reveal.end-100;
     for(let r=0;r<3;r++){
-     const yy=top+r*gh,win=ready&&this.winCells.includes(c+'-'+r);
+     const yy=top+r*gh,win=ready&&pulseCells.has(c+'-'+r);
      const scan=expanding?clamp(progress*3.18-r*.93,0,1):0;
      const ease=scan*scan*(3-2*scan);
      if(ease<1){
@@ -304,7 +321,7 @@
      const showExpanded=expanding&&this.expanded[c].symbol==='TOMB'&&ease>0;
      if(showBase||showExpanded){
       ctx.save();ctx.globalAlpha=showExpanded?ease:1-ease;
-      this.drawIcon('TOMB',rx,yy+(gh-96)/2+(showExpanded?0:bounce),cw,96,ready&&this.winCells.includes(c+'-'+r),t);
+      this.drawIcon('TOMB',rx,yy+(gh-96)/2+(showExpanded?0:bounce),cw,96,ready&&pulseCells.has(c+'-'+r),t);
       ctx.restore();
      }
     }
@@ -358,7 +375,7 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  txt('V1.2.5',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.2.6',38,985,10,'#e5c68d',850,'Arial');
   if(!this.storageOK)txt('SESSÃO SEM GRAVAÇÃO',280,833,11,'#ffbc83',800,'Arial');
  };
  document.documentElement.dataset.faraoVisual='1.1';
