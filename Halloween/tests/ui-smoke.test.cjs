@@ -165,8 +165,8 @@ test("Botões − e + percorrem os cinco escalões sem separar aposta e linhas",
 
 test("Cinco linhas verticais são numeradas de 26 a 30, só ativas no escalão máximo",()=>{
   const {scene:s}=sceneFixture().mount();
-  assert.deepEqual(s.lineMarkers.slice(25).map(m=>m.t.text),
-    ["26","27","28","29","30"]);
+  assert.deepEqual(Array.from(s.lineMarkers.slice(25),m=>String(m.t.text)).join(","),
+    "26,27,28,29,30");
   assert.ok(s.lineMarkers.slice(25).every(m=>!m.t.visible));
   s.state=s.state&&{...s.state,bet:20,lines:30};
   s.renderState();
