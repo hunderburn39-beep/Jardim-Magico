@@ -156,10 +156,11 @@
         Math.min(MAX_BALANCE,round(v+state.bet*(.01+.007*i))));
     }
     const earnedSpins = (result.scatter >= 3 ? 10 : 0);
-    // No modo base, uma rodada com pelo menos três abóboras recolhe
-    // apenas uma. Nas Free Spins não se recolhem abóboras adicionais,
-    // evitando cadeias de bónus excessivamente longas.
-    const collectedPumpkin = !free && result.pumpkinCount >= 3 ? 1 : 0;
+    // Mecânica demonstrativa (NÃO é a fórmula da Halloween original):
+    // Recolher uma abóbora por rodada paga com quatro ou mais abóboras
+    // visíveis. Nas Free Spins não se recolhem abóboras, para não criar
+    // cadeias de bónus sem fim.
+    const collectedPumpkin = !free && result.pumpkinCount >= 4 ? 1 : 0;
     const pumpkinTotal = state.pumpkins + collectedPumpkin;
     const pumpkinBonuses = Math.floor(pumpkinTotal / PUMPKINS_FOR_BONUS);
     state.pumpkins = pumpkinTotal % PUMPKINS_FOR_BONUS;
@@ -177,14 +178,21 @@
           round(state.bet * POT_VALUES[Math.floor(validRng(rng) * POT_VALUES.length)]))
       };
     }
-    if (pumpkinBonuses > 0) {
+    // A roleta abre só com CINCO abóboras literais alinhadas numa
+    // linha de pagamento ativa. Não basta encher o contador acumulado:
+    // isso dava demasiados prémios grandes na matemática anterior.
+    // O gatilho da máquina comercial continua por confirmar no APK.
+    const wheelEligible=LINES.slice(0,state.lines).some(route =>
+      route.every((row,col)=>grid[col][row]==="pumpkin"));
+    if (wheelEligible) {
       const sectorIndex=Math.floor(validRng(rng)*WHEEL_SECTORS.length);
       const sector=WHEEL_SECTORS[sectorIndex];
       state.pendingWheel={sectorIndex,payout:sector.jackpotIndex===undefined ?
         round(state.bet*sector.multiplier) : state.jackpots[sector.jackpotIndex]};
     }
     return { ok: true, state, grid, result, free, earnedSpins, pumpkinBonuses,
-      heldReels: holds, potTriggered: Boolean(state.pendingPot), wheelTriggered:Boolean(state.pendingWheel) };
+      heldReels: holds, potTriggered: Boolean(state.pendingPot),
+      wheelTriggered:Boolean(state.pendingWheel), wheelEligible };
   }
   function choosePot(input, index) {
     const state = sanitize(input);
