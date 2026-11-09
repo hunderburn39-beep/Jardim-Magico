@@ -1,19 +1,33 @@
-name: Testar e publicar Jardim Magico
+name: "Jardim Mágico | Testes independentes"
 
 on:
   push:
     branches: [main, release/jardim-magico-v5]
+    paths:
+      - 'jardim-phaser/**'
+      - 'jardim-3d/**'
+      - 'index.html'
+      - 'css/**'
+      - 'js/**'
+      - 'assets/**'
+      - '.github/workflows/publicar-jardim-magico.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'jardim-phaser/**'
+      - 'jardim-3d/**'
+      - 'index.html'
+      - 'css/**'
+      - 'js/**'
+      - 'assets/**'
+      - '.github/workflows/publicar-jardim-magico.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: jardim-pages-${{ github.ref }}
-  # Várias máquinas partilham o repositório; um commit noutro jogo
-  # não deve cancelar os testes/publicação que já estão a decorrer.
+  group: jardim-testes-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -50,33 +64,3 @@ jobs:
           path: visual-previews/
           if-no-files-found: ignore
 
-  publicar:
-    needs: verificar
-    if: github.ref == 'refs/heads/main'
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Obter jogo verificado
-        uses: actions/checkout@v4
-      - name: Preparar pagina com fontes editaveis
-        shell: bash
-        run: |
-          mkdir -p public
-          cp index.html public/index.html
-          cp -a css js assets jardim-phaser public/
-          for game in jardim-3d templo-do-trovao Farao-Eterno; do
-            if test -s "$game/index.html"; then cp -a "$game" public/; fi
-          done
-          test -s public/jardim-phaser/vendor/phaser-3.90.0.min.js
-          test -s public/jardim-phaser/release.json
-      - name: Configurar GitHub Pages
-        uses: actions/configure-pages@v5
-      - name: Enviar ficheiros do jogo
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: public
-      - name: Publicar versao verificada
-        id: deployment
-        uses: actions/deploy-pages@v4
