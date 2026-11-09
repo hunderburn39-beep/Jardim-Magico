@@ -4,6 +4,13 @@
   const ROWS = 3, REELS = 5, MAX_BALANCE = 1e12;
   const PUMPKINS_FOR_BONUS = 5;
   const POT_VALUES = Object.freeze([1,2,3,5,8]);
+  // Roleta de entretenimento, não reproduz distribuições históricas.
+  const WHEEL_SECTORS = Object.freeze([
+    {label:"2×",multiplier:2},{label:"3×",multiplier:3},
+    {label:"5×",multiplier:5},{label:"8×",multiplier:8},
+    {label:"10×",multiplier:10},{label:"15×",multiplier:15},
+    {label:"ACUMULADO 1",jackpotIndex:0},{label:"ACUMULADO 2",jackpotIndex:1}
+  ].map(s=>Object.freeze(s)));
   const SYMBOLS = Object.freeze([
     { id: "pumpkin", weight: 19, icon: "🎃", name: "Abóbora" },
     { id: "ghost", weight: 17, icon: "👻", name: "Fantasma" },
@@ -46,7 +53,7 @@
     return SYMBOLS[SYMBOLS.length - 1].id;
   }
   function createState() {
-    return { balance: 1000, bet: 2, lines: 20, jackpots: [350,750], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, pendingPot: null };
+    return { balance: 1000, bet: 2, lines: 20, jackpots: [350,750], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, pendingPot: null, pendingWheel: null };
   }
   function sanitize(s) {
     const d = createState();
@@ -63,7 +70,12 @@
       lastWin: Number.isFinite(s.lastWin) ? Math.max(0,Math.min(MAX_BALANCE,round(s.lastWin))) : 0,
       pendingPot: s.pendingPot && Array.isArray(s.pendingPot.choices) && s.pendingPot.choices.length === 3 &&
         s.pendingPot.choices.every(n => Number.isFinite(n) && n >= 0 && n <= 100000) ?
-          { choices: s.pendingPot.choices.map(round) } : null
+          { choices: s.pendingPot.choices.map(round) } : null,
+      pendingWheel: s.pendingWheel && Number.isInteger(s.pendingWheel.sectorIndex) &&
+        s.pendingWheel.sectorIndex>=0 && s.pendingWheel.sectorIndex<WHEEL_SECTORS.length &&
+        Number.isFinite(s.pendingWheel.payout) && s.pendingWheel.payout>=0 &&
+        s.pendingWheel.payout<=MAX_BALANCE ?
+        {sectorIndex:s.pendingWheel.sectorIndex,payout:round(s.pendingWheel.payout)} : null
     };
   }
   function setBet(input, bet) {
@@ -114,7 +126,7 @@
   function spin(input, rng = Math.random, previousGrid = null, heldColumns = null) {
     const state = sanitize(input);
     const free = state.freeSpins > 0;
-    if (state.pendingPot) return { ok: false, reason: "bonus-pendente", state };
+    if (state.pendingPot || state.pendingWheel) return { ok: false, reason: "bonus-pendente", state };
     if (!free && state.balance < state.bet) return { ok: false, reason: "saldo", state };
     const holds = !free && Array.isArray(previousGrid) && previousGrid.length === REELS &&
       previousGrid.every(col=>Array.isArray(col) && col.length === ROWS &&
@@ -147,8 +159,14 @@
           round(state.bet * POT_VALUES[Math.floor(validRng(rng) * POT_VALUES.length)]))
       };
     }
+    if (pumpkinBonuses > 0) {
+      const sectorIndex=Math.floor(validRng(rng)*WHEEL_SECTORS.length);
+      const sector=WHEEL_SECTORS[sectorIndex];
+      state.pendingWheel={sectorIndex,payout:sector.jackpotIndex===undefined ?
+        round(state.bet*sector.multiplier) : state.jackpots[sector.jackpotIndex]};
+    }
     return { ok: true, state, grid, result, free, earnedSpins, pumpkinBonuses,
-      heldReels: holds, potTriggered: Boolean(state.pendingPot) };
+      heldReels: holds, potTriggered: Boolean(state.pendingPot), wheelTriggered:Boolean(state.pendingWheel) };
   }
   function choosePot(input, index) {
     const state = sanitize(input);
@@ -163,7 +181,20 @@
     return { ok: true, state, awarded, reveal };
 
   }
-  const api = Object.freeze({ SYMBOLS, LINES, PAY, PUMPKINS_FOR_BONUS, createState, sanitize, setBet, pick, evaluateGrid, spin, choosePot });
+  function resolveWheel(input) {
+    const state=sanitize(input);
+    if(!state.pendingWheel)return {ok:false,reason:"sem-roleta",state};
+    const {sectorIndex,payout}=state.pendingWheel;
+    const sector=WHEEL_SECTORS[sectorIndex];
+    state.balance=Math.min(MAX_BALANCE,round(state.balance+payout));
+    state.lastWin=round(state.lastWin+payout);
+    if(sector.jackpotIndex!==undefined)
+      state.jackpots[sector.jackpotIndex]=sector.jackpotIndex===0?350:750;
+    state.pendingWheel=null;
+    return {ok:true,state,awarded:payout,sectorIndex,label:sector.label};
+  }
+  const api = Object.freeze({ SYMBOLS, LINES, PAY, PUMPKINS_FOR_BONUS,
+    WHEEL_SECTORS, createState, sanitize, setBet, pick, evaluateGrid, spin, choosePot, resolveWheel });
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.HalloweenEngine = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
