@@ -163,13 +163,12 @@
    const lowSymbol=['10','J','Q','K','A'].includes(sym);
    if(lowSymbol){
     // O 10 tem margens internas maiores na imagem: ampliá-lo separadamente.
-    if(sym==='10'){
-     ctx.save();
-     ctx.beginPath();ctx.rect(x+2,y+2,w-4,h-4);ctx.clip();
-     const scale=1.32,iw=(w-6)*scale,ih=(h-6)*scale;
-     ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
-     ctx.restore();
-    }else ctx.drawImage(img,x+3,y+3,w-6,h-6);
+    ctx.save();
+    ctx.beginPath();ctx.rect(x+1,y+1,w-2,h-2);ctx.clip();
+    const scale=sym==='10'?1.55:1.18;
+    const iw=(w-4)*scale,ih=(h-4)*scale;
+    ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
+    ctx.restore();
    }else{
     const scale=Math.min(size/img.naturalWidth,size/img.naturalHeight);
     const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
