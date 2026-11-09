@@ -206,7 +206,21 @@ class Game {
    let b=root.children[i];if(!b){b=document.createElement('button');b.type='button';b.className='touch-target';root.appendChild(b);}
    b.setAttribute('aria-label',target.label);b.textContent=target.label;
    b.style.cssText=`left:${ox+(target.x+target.w/2)*sc}px;top:${oy+(target.y+target.h/2)*sc}px;width:${Math.max(44,target.w*sc)}px;height:${Math.max(44,target.h*scY)}px`;
-   b.onclick=()=>{if(!mod.classList.contains('hidden')||this.superseded)return;this.audio.init();this.audio.click();target.action();};
+   // Bind once to the native button; read the current action after every redraw.
+   b._faraoAction=target.action;
+   if(!b._faraoBound){
+    b._faraoBound=true;
+    b.addEventListener('pointerdown',ev=>{
+     if(!mod.classList.contains('hidden')||this.superseded)return;
+     ev.preventDefault();ev.stopPropagation();
+     this.audio.init();this.audio.click();b._faraoAction?.();
+    },{passive:false});
+    b.addEventListener('click',ev=>{
+     if(ev.detail!==0)return; // keyboard/accessibility activation
+     if(!mod.classList.contains('hidden')||this.superseded)return;
+     this.audio.init();this.audio.click();b._faraoAction?.();
+    });
+   }
   });
  }
 
