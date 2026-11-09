@@ -44,7 +44,7 @@
     return SYMBOLS[SYMBOLS.length - 1].id;
   }
   function createState() {
-    return { balance: 1000, bet: 2, lines: 25, jackpots: [350,750], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0 };
+    return { balance: 1000, bet: 2, lines: 20, jackpots: [350,750], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0 };
   }
   function sanitize(s) {
     const d = createState();
@@ -66,7 +66,7 @@
     if ([1,2,5,10].includes(bet)) state.bet = bet;
     return state;
   }
-  function evaluateGrid(grid, bet, inFreeSpins, activeLines = 25) {
+  function evaluateGrid(grid, bet, inFreeSpins, activeLines = 20) {
     if (!Array.isArray(grid) || grid.length !== REELS || grid.some(c => !Array.isArray(c) || c.length !== ROWS ||
         c.some(s => !SYMBOLS.some(def => def.id === s)))) throw new Error("Grelha inválida");
     if (![20,25,30].includes(activeLines)) throw new Error("Número de linhas inválido");
