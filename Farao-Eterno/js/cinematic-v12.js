@@ -143,25 +143,6 @@
   game.reelBoard = function (t) {
     baseReelBoard(t);
     const spin = this.spinObject;
-    if (this.spinning && spin && !reduced) {
-      for (let c = 0; c < 5; c++) {
-        if (spin.stopped[c]) continue;
-        const x = R.left + c * R.step;
-        ctx.save();
-        ctx.beginPath(); ctx.rect(x+3, R.top, R.cw-6, R.gh*3); ctx.clip();
-        const sweep = (t*.64 + c*69) % (R.gh*3 + 90) - 45;
-        const shine = ctx.createLinearGradient(x, 0, x + R.cw, 0);
-        shine.addColorStop(0, 'rgba(253,219,139,0)');
-        shine.addColorStop(.46, 'rgba(255,235,175,.065)');
-        shine.addColorStop(.57, 'rgba(255,231,151,.09)');
-        shine.addColorStop(1, 'rgba(253,219,139,0)');
-        ctx.fillStyle=shine;
-        ctx.fillRect(x+2, R.top, R.cw-4, R.gh*3);
-        ctx.fillStyle='rgba(255,242,197,.08)';
-        ctx.fillRect(x+8, R.top+sweep, R.cw-16, 2.2);
-        ctx.restore();
-      }
-    }
     // Legenda sem retângulo, por baixo da moldura. O índice é o mesmo
     // usado pela linha desenhada pelo motor (alternância a cada 1600 ms).
     if (!this.spinning && this.lastResult && !(this.featureIntro && t < this.featureIntro.end) &&
