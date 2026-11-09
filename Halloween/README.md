@@ -12,12 +12,15 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 
 ## Implementado nesta V0.6
 
-- Ecrã retro com **5 tambores × 3 linhas** de fundo claro, nome Halloween III, marcadores de linhas coloridos, indicadores de crédito/prémio/aposta e dois acumulados virtuais.
+- Ecrã retro com **5 tambores × 3 linhas** de fundo claro, nome Halloween III, marcadores de linhas coloridos, indicadores de crédito/prémio/aposta e quatro acumulados virtuais.
 - Ilustrações **SVG originais** para os **10 tipos encontrados no XAPK**: abóbora Halloween, bruxa verde, WITCH, vampiro, fantasma, bruxa na lua, monstro, diabinho, MAGIC e caldeirão. Não são extraídas de ficheiros comerciais.
 - Possibilidade de escolher **20, 25 ou 30 linhas** de pagamento e apostas de 1, 2, 5 ou 10 créditos.
 - Giros com tiras de 5 sprites por tambor, máscaras de recorte e desaceleração progressiva, paragem por ordem, linhas vencedoras **desenhadas sobre os símbolos e exibidas uma de cada vez**, sons arcade sintetizados em WebAudio (com melodia própria de celebração) e botão automático.
 - **Travar até quatro tambores após uma jogada sem prémio**, tocando nos próprios tambores. Todos os giros seguintes debitam normalmente a aposta.
-- Motor experimental com Wild (Magic) corrigido, inclusive para grupos Wild terminados por Scatter. Três ou mais caldeirões ativam Free Spins e uma janela para escolher um de três potes. A escolha é guardada antes de ser mostrada, para recuperar o bónus ao reabrir o navegador. Cinco abóboras recolhidas em giros pagos (no máximo uma por giro, quando há três ou mais na grelha) dão cinco Free Spins **e uma roleta virtual de **30 posições numeradas**, inspirada no atlas original**, com prémios experimentais de aposta × multiplicador ou um dos **quatro acumulados virtuais**. A roleta fica guardada durante interrupções e atribui o prémio apenas uma vez. As rodadas gratuitas não recolhem novas abóboras. Estas são regras recriadas, ainda diferentes das mecânicas e tabelas históricas documentadas.
+- Motor experimental com Wild (Magic), 30 linhas e deteção de combinações. Três ou mais caldeirões ativam Free Spins e uma escolha de três potes.
+- Uma abóbora é recolhida em rondas pagas com **quatro ou mais abóboras visíveis** (máximo de uma por ronda). Ao reunir cinco, atribui **cinco Free Spins**. Durante estas não se recolhem novas abóboras.
+- A **roleta da sorte, com 30 números**, só abre quando aparecem **cinco abóboras exatamente alinhadas numa linha ativa**. Isto substitui o gatilho antigo, que abria demasiadas roletas. Os prémios são demonstrativos: multiplicadores da aposta ou um de quatro acumulados virtuais.
+- As duas funções de bónus guardam os resultados antes das animações; a sessão recupera mesmo se o navegador for fechado. Todas estas regras continuam a ser **reconstruções experimentais, não as fórmulas originais do APK**.
 - Guardar saldo, linhas, aposta, acumulados, giros, grelha final e bónus de caldeirão ou roleta pendente no armazenamento local, quando disponível. O resultado do giro é guardado antes de começar a animação: ao reabrir o jogo, a combinação e os créditos são recuperados. Aposta e linhas são bloqueadas durante Free Spins, e a seleção de aposta/linhas limpa travas de rolos.
 
 ## Tabela de pagamentos de referência
@@ -39,7 +42,9 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 - `js/engine.js` — cálculos e simulação.
 - `js/art.js` — biblioteca SVG original.
 - `js/game.js` — cena Phaser, som e interface.
-- `tests/engine.test.cjs` — testes do motor.
+- `tests/engine.test.cjs` — testes do motor e regressão económica.
+- `tests/ui-smoke.test.cjs` — testes de cena Phaser sem navegador.
+- `tests/browser.cjs` — Chromium/WebKit, incluindo tabela e recuperação de sessão.
 - `.github/workflows/testar-halloween.yml` — workflow de testes.
 - `.github/workflows/publicar-3-jogos.yml` — publicação comum dos 4 jogos, num único GitHub Pages.
 
@@ -47,9 +52,10 @@ O Phaser é importado localmente de `../jardim-phaser/vendor/phaser-3.90.0.min.j
 
 ## Validação
 
-- `node --test Halloween/tests/engine.test.cjs` — testes de regras, prémios, salvaguardas e 20.000 giros simulados.
+- `node --test Halloween/tests/engine.test.cjs` — testes de regras, prémios, salvaguardas, 20.000 giros simulados e regressão económica.
+- `node --test Halloween/tests/ui-smoke.test.cjs` — verifica carregamento da cena, tabela, giros e restauração de sessão.
 - `node Halloween/tests/browser.cjs` — testes de renderização e interação em Chromium e Safari/WebKit no servidor de testes (requer Playwright instalado).
-- O workflow independente guarda imagens dos ecrãs e pacotes ZIP para testes.
+- O workflow independente cria primeiro o ZIP V0.6 após os testes locais e só depois tenta os testes pesados em Chromium/WebKit. Assim, uma falha na instalação dos browsers não impede a criação do ZIP.
 
 ## Próximos passos
 
