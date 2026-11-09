@@ -63,6 +63,7 @@ export class Preload extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start('Boot');
+    // A versao offline abre diretamente o tabuleiro, sem ecran PLAY.
+    this.scene.start('Game');
   }
 }
