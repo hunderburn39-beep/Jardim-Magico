@@ -71,13 +71,28 @@ class Classica extends Phaser.Scene{
    frame.fillStyle(0x071329,.95).fillRoundedRect(X-9,Y-9,BW+18,BH+18,10);
    frame.lineStyle(7,0xdb9d55,1).strokeRoundedRect(X-8,Y-8,BW+16,BH+16,9);
    frame.fillStyle(0xe9edf1,1).fillRect(X,Y,BW,BH);
-   this.symbols=Array.from({length:5},()=>[]);
-   for(let col=0;col<5;col++) for(let row=0;row<3;row++){
-     const sx=X+CW*col,sy=Y+CH*row;
-     frame.fillGradientStyle(0xf5f9fa,0xdce7ee,0xf3f6f9,0xcbd9e0,1).fillRect(sx+2,sy+2,CW-4,CH-4);
-     const id=E.SYMBOLS[(col+row*3)%E.SYMBOLS.length].id;
-     this.symbols[col][row]=this.add.image(sx+CW/2,sy+CH/2,"h-"+id)
-       .setDisplaySize(CW-12,CH-14);
+   this.symbols=[];
+   this.reelBands=[];
+   for(let col=0;col<5;col++){
+     const sx=X+CW*col;
+     for(let row=0;row<3;row++){
+       const sy=Y+CH*row;
+       frame.fillGradientStyle(0xf5f9fa,0xdce7ee,0xf3f6f9,0xcbd9e0,1)
+         .fillRect(sx+2,sy+2,CW-4,CH-4);
+     }
+     // Cada rolo tem cinco sprites: 1 fora da janela no topo, 3
+     // visíveis e outro em baixo. A máscara recorta o movimento real.
+     const clip=this.add.graphics().fillStyle(0xffffff,1).fillRect(sx,Y,CW,BH).setVisible(false);
+     const mask=clip.createGeometryMask();
+     const band=[];
+     for(let index=0;index<5;index++){
+       const id=E.SYMBOLS[(col+index*3)%E.SYMBOLS.length].id;
+       const sprite=this.add.image(sx+CW/2,Y+(index-.5)*CH,"h-"+id)
+         .setDisplaySize(CW-12,CH-14).setMask(mask);
+       band.push(sprite);
+     }
+     this.reelBands[col]=band;
+     this.symbols[col]=band.slice(1,4);
    }
    const lines=this.add.graphics().lineStyle(4,0x0e1324,1);
    for(let c=1;c<5;c++)lines.lineBetween(X+c*CW,Y,X+c*CW,Y+BH);
@@ -218,27 +233,50 @@ class Classica extends Phaser.Scene{
    this.message.setText(this.held.size?"A GIRAR TAMBORES LIVRES...":"A GIRAR...");
    this.tone(320,.09);
    let count=0;
-   for(let c=0;c<5;c++){
-     const locked=outcome.heldReels?.includes(c);
-     if(locked){count++;continue;}
-     const delay=55,steps=13+5*c;
-     let t=0;
-     this.time.addEvent({delay,repeat:steps-1,callback:()=>{
-       t++;
-       for(let row=0;row<3;row++){
-         const el=this.symbols[c][row];
-         if(t===steps){
-           el.setTexture("h-"+outcome.grid[c][row]).setAlpha(1);
-           this.tweens.add({targets:el,scaleX:{from:.74,to:(CW-12)/156},scaleY:{from:.9,to:(CH-14)/174},duration:190});
-         } else {
-           const id=E.SYMBOLS[Math.floor(Math.random()*E.SYMBOLS.length)].id;
-           el.setTexture("h-"+id).setAlpha(.72);
-         }
-       }
-       if(t===steps){this.tone(210+c*55,.05);count++;if(count===5)this.finish(outcome);}
-     }});
+   const active=[0,1,2,3,4].filter(col=>!outcome.heldReels?.includes(col));
+   if(!active.length){
+     // Não se pode travar os cinco tambores: caso um estado antigo o
+     // tente, termina de forma segura sem bloquear a interface.
+     this.time.delayedCall(150,()=>this.finish(outcome));
+     return;
    }
-   if(count===5)this.time.delayedCall(120,()=>this.finish(outcome));
+   for(const col of active) this.animateReel(col,outcome.grid[col],()=>{
+     count++;
+     if(count===active.length)this.time.delayedCall(180,()=>this.finish(outcome));
+   });
+
+ }
+ animateReel(col,finalColumn,done){
+   const band=this.reelBands[col];
+   const maxSteps=12+col*4;
+   let step=0;
+   const tick=()=>{
+     step++;
+     // O tempo de um movimento aumenta ao aproximar-se da paragem,
+     // simulando o atrito de um tambor físico.
+     const portion=step/maxSteps;
+     const duration=55+Math.round(90*portion*portion*portion);
+     this.tweens.add({
+       targets:band,y:"+="+CH,duration,ease:"Sine.InOut",
+       onComplete:()=>{
+         const keys=band.map(s=>s.texture.key);
+         for(let i=4;i>=1;i--)band[i].setTexture(keys[i-1]);
+         const candidate=E.SYMBOLS[Math.floor(Math.random()*E.SYMBOLS.length)].id;
+         band[0].setTexture("h-"+candidate);
+         for(let i=0;i<5;i++)band[i].y=Y+(i-.5)*CH;
+         if(step>=maxSteps){
+           for(let row=0;row<3;row++)
+             band[row+1].setTexture("h-"+finalColumn[row]).setAlpha(1);
+           const sx=(CW-12)/156,sy=(CH-14)/174;
+           this.tweens.add({targets:this.symbols[col],scaleX:{from:sx*.94,to:sx},
+             scaleY:{from:sy*.94,to:sy},duration:175,ease:"Back.Out"});
+           this.tone(180+col*72,.075);
+           done();
+         }else tick();
+       }
+     });
+   };
+   tick();
  }
  finish(result){
    if(!this.spinning)return;
@@ -247,7 +285,7 @@ class Classica extends Phaser.Scene{
    this.state.jackpots=this.state.jackpots||[350,750];
    this.previous=result.grid;
    this.clearHolds();
-   this.canHold=result.result.total===0&&!result.free&&!result.potTriggered;
+   this.canHold=result.result.total===0&&!result.free&&!result.potTriggered&&!result.wheelTriggered;
    this.highlight(result.result.hits);
    if(result.earnedSpins){this.message.setText("+10 GIROS GRÁTIS!");this.flash();}
    else if(result.pumpkinBonuses){this.message.setText("BÓNUS DAS ABÓBORAS!");this.flash();}
