@@ -136,18 +136,9 @@
   line(ctx,xx+11,bot+29,xx+R.cw-11,bot+29,'#bb8f49',1.1);
  }
  function tileAt(sym,x,y,t,win){
-  if(!['10','J','Q','K','A'].includes(sym)) { game.drawIcon(sym,x,y+(R.gh-108)/2,R.cw,108,win,t); return; } // Figuras altas e WILD sem quadrado.
-  ctx.drawImage(tile,x,y+(R.gh-108)/2,R.cw,108);
-  game.drawIcon(sym,x,y+(R.gh-108)/2,R.cw,108,win,t);
-  // Nas cartas baixas, desenhar a moldura POR CIMA da letra ampliada,
-  // para o quadrado continuar visível mesmo quando a letra ocupa toda a casa.
-  if(['10','J','Q','K','A'].includes(sym)){
-   const bx=x+(R.cw-78)/2,by=y+(R.gh-120)/2;
-   ctx.save();ctx.shadowColor='#eab95b';ctx.shadowBlur=3;
-   rounded(ctx,bx,by,78,120,8,null,'#f1bf6b',1.4);
-   rounded(ctx,bx+3,by+3,72,114,5,null,'#ffe4a3aa',0.6);
-   ctx.restore();
-  }
+  // Os novos PNG já incluem os seus contornos dourados em relevo.
+  // Não desenhar quadrados, fundos ou molduras por cima.
+  game.drawIcon(sym,x,y,R.cw,R.gh,win,t);
  }
  game.visualV11={layout:R,tile,medallion,version:'1.1'};
  game.drawReelSeparators=function(left,top,interval,gh){
@@ -193,13 +184,10 @@
    const lowSymbol=['10','J','Q','K','A'].includes(sym);
    if(lowSymbol){
     // Preencher quase toda a casa sem cortar letras nem deformar a imagem.
-    const b=visibleBounds(img),zoom=1;
-    const factor=Math.min((w-10)/b.w,(h-10)/b.h)*zoom;
+    const b=visibleBounds(img);
+    const factor=Math.min((w-8)/b.w,(h-8)/b.h);
     const iw=b.w*factor,ih=b.h*factor;
-    ctx.save();
-    ctx.beginPath();ctx.rect(x+5,y+5,w-10,h-10);ctx.clip();
     ctx.drawImage(img,b.x,b.y,b.w,b.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
-    ctx.restore();
    }else if(sym==='TOMB'){
     // Torre maior, sem moldura individual; pode atravessar as divisões horizontais.
     const bounds=visibleBounds(img);
