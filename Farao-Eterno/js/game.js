@@ -150,6 +150,34 @@ class Game {
 
   action(x,y,w,h,fn,label='Ação'){this.targets.push({x,y,w,h,action:fn,label});}
  syncTargets(){
+  // Dedicated native buttons above the visual overlay, so Safari taps always work.
+  if(!this._symbolOverlay){
+   const layer=document.createElement('div');
+   layer.id='symbol-hit-layer';
+   layer.style.cssText='position:absolute;inset:0;z-index:5;pointer-events:none';
+   $('stage').appendChild(layer);
+   this._symbolButtons=[];
+   for(let col=0;col<5;col++)for(let row=0;row<3;row++){
+    const button=document.createElement('button');button.type='button';
+    button.style.cssText='position:absolute;transform:translate(-50%,-50%);border:0;background:transparent;color:transparent;pointer-events:auto;touch-action:manipulation;padding:0;cursor:pointer';
+    button.addEventListener('click',ev=>{
+     ev.preventDefault();ev.stopPropagation();
+     if(this.spinning||this.superseded||!mod.classList.contains('hidden'))return;
+     this.audio.init();this.audio.click();this.showSymbolPay(this.grid[col][row]);
+    });
+    layer.appendChild(button);this._symbolButtons.push({button,col,row});
+   }
+   this._symbolOverlay=layer;
+  }
+  const canInspect=!this.spinning&&!this.superseded&&mod.classList.contains('hidden');
+  this._symbolOverlay.style.pointerEvents=canInspect?'auto':'none';
+  for(const {button,col,row} of this._symbolButtons){
+   button.style.left=(ox+(33+col*101+49.5)*sc)+'px';
+   button.style.top=(oy+(268+row*116+58)*scY)+'px';
+   button.style.width=(99*sc)+'px';button.style.height=(116*scY)+'px';
+   button.style.pointerEvents=canInspect?'auto':'none';
+   button.setAttribute('aria-label','Consultar prémio de '+(iconNames[this.grid[col]?.[row]]||'símbolo'));
+  }
   const root=$('touch-controls');
   while(root.children.length>this.targets.length)root.lastChild.remove();
   this.targets.forEach((target,i)=>{
