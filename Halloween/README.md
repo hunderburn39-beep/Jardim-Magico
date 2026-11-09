@@ -10,6 +10,16 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 - Descrição de versões e mecânicas (20/25/30 linhas, travar tambores, bónus): https://www.casinobillionaire.com/portuguese/jogo-caca-niquel-halloween/
 - Manual histórico de configuração das máquinas: https://pt.scribd.com/document/696584543/Manual-Completo-Halloween
 
+## Modo de recursos visuais originais do APK (uso pessoal)
+
+O código Phaser suporta agora um **modo opcional de recursos originais** sem incluir ficheiros comerciais no repositório público. No pacote pessoal criado a partir do XAPK enviado pelo utilizador:
+
+- O `index.html` ativa `window.HALLOWEEN_ORIGINAL_ASSETS = true` antes de carregar `js/game.js`.
+- O motor usa `assets-original/sprites/*.webp` para as dez peças da máquina e `*-win.webp` nas combinações premiadas (atlas `01_slots.webp`).
+- O cenário 9:16 aproveita o logótipo e a textura de `01_telab2.webp`; a roleta usa `01_roleta.webp` e os efeitos áudio foram extraídos de `assets/sons/halloween/`.
+- **Sem o pacote** ou com o sinalizador desativado, o jogo continua a funcionar com SVG e sons sintetizados próprios, sem pedidos a ficheiros que não existem.
+- O pacote foi concebido para **uso pessoal**. A disponibilização pública de gráficos e áudio comerciais exige autorização do respetivo titular dos direitos. As fórmulas do jogo permanecem experimentais, mesmo com a arte original.
+
 ## Implementado nesta V0.10
 
 - Ecrã retro com **5 tambores × 3 linhas** de fundo claro, nome Halloween III, marcadores de linhas coloridos, indicadores de crédito/prémio/aposta e quatro acumulados virtuais.
