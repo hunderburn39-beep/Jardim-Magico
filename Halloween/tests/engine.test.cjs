@@ -155,7 +155,7 @@ test("Escolha inválida do pote não altera créditos nem elimina bónus", () =>
   assert.ok(state.pendingPot);
 });
 
-test("A quinta abóbora prepara roleta recuperável e impede outro giro",()=>{
+test("Cinco abóboras alinhadas preparam roleta recuperável e impedem outro giro",()=>{
   const previous={...E.createState(),pumpkins:4};
   const outcome=E.spin(previous,fixed(0));
   assert.equal(outcome.ok,true);
@@ -197,9 +197,12 @@ test("Caldeirão e roleta na mesma ronda são resolvidos sem duplicar créditos"
   let draws=0;
   const rng=()=>{
     draws++;
-    if(draws<=3)return 0;          // três abóboras
-    if(draws<=6)return .999999;    // três caldeirões
-    return .37;                    // restantes símbolos e sorteios
+    if(draws<=15){
+      const col=Math.floor((draws-1)/3),row=(draws-1)%3;
+      if(row===1)return 0;         // cinco abóboras na linha central
+      if(row===0&&col<3)return .999999; // três caldeirões na fila de cima
+    }
+    return .37;
   };
   const initial={...E.createState(),pumpkins:4,balance:100};
   const spun=E.spin(initial,rng);
@@ -256,4 +259,43 @@ test("Uma roleta com 30 posições atribui o quarto acumulado uma só vez",()=>{
   assert.equal(prize.ok,true);
   assert.equal(prize.state.jackpots[3],3000);
   assert.equal(E.resolveWheel(prize.state).ok,false);
+});
+
+test("A roleta exige cinco abóboras na mesma linha, não apenas cinco dispersas",()=>{
+  let n=0;
+  const picked=E.spin(E.createState(),()=>{
+    n++;
+    // Cinco abóboras repartidas por duas colunas, nenhuma linha com
+    // cinco abóboras consecutivas.
+    return ([1,2,4,5,7].includes(n))?0:.42;
+  });
+  assert.equal(picked.ok,true);
+  assert.equal(picked.result.pumpkinCount,5);
+  assert.equal(picked.wheelEligible,false);
+  assert.equal(picked.wheelTriggered,false);
+  assert.equal(picked.state.pendingWheel,null);
+});
+test("Regressão económica: 20 mil giros não regressam ao retorno extremo inicial",()=>{
+  const rng=seeded(20261109);
+  let state={...E.createState(),balance:10000000,bet:2};
+  let invested=0,received=0,wheels=0;
+  for(let i=0;i<20000;i++){
+    const step=E.spin(state,rng);
+    assert.equal(step.ok,true);
+    state=step.state;
+    if(!step.free)invested+=state.bet;
+    received+=step.result.total;
+    if(state.pendingPot){
+      const result=E.choosePot(state,i%3);
+      received+=result.awarded;state=result.state;
+    }
+    if(state.pendingWheel){
+      const result=E.resolveWheel(state);
+      received+=result.awarded;state=result.state;wheels++;
+    }
+  }
+  const sampleReturn=received/invested;
+  assert.ok(sampleReturn>0 && sampleReturn<2,
+    "Retorno simulado fora de limites de segurança de regressão: "+sampleReturn);
+  assert.ok(wheels<150,"Roleta excessivamente frequente: "+wheels);
 });
