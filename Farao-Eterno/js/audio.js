@@ -20,11 +20,11 @@
     const n=this.musicStep++,when=this.musicNext;this.musicNext+=.78;
     if(n%4!==3){
      const notes=[0,4,3,1,0,6,4,2,0,3,7,4,2,1,4,0],freq=scale[notes[n%notes.length]],o=ctx.createOscillator(),env=ctx.createGain();o.type='sine';o.frequency.value=freq;
-     env.gain.setValueAtTime(.0001,when);env.gain.exponentialRampToValueAtTime(.012,when+.035);env.gain.exponentialRampToValueAtTime(.0001,when+1.3);
+     env.gain.setValueAtTime(.0001,when);env.gain.exponentialRampToValueAtTime(.022,when+.035);env.gain.exponentialRampToValueAtTime(.0001,when+1.3);
      o.connect(env);env.connect(this.out||ctx.destination);o.start(when);o.stop(when+1.35);this.musicNodes.add(o);o.onended=()=>{this.musicNodes.delete(o);env.disconnect();};
     }
     if(n%8===0){
-     const o=ctx.createOscillator(),env=ctx.createGain();o.type='sine';o.frequency.value=n%16?73.42:55;env.gain.setValueAtTime(.0001,when);env.gain.linearRampToValueAtTime(.021,when+.7);env.gain.exponentialRampToValueAtTime(.0001,when+5.8);
+     const o=ctx.createOscillator(),env=ctx.createGain();o.type='sine';o.frequency.value=n%16?73.42:55;env.gain.setValueAtTime(.0001,when);env.gain.linearRampToValueAtTime(.037,when+.7);env.gain.exponentialRampToValueAtTime(.0001,when+5.8);
      o.connect(env);env.connect(this.out||ctx.destination);o.start(when);o.stop(when+6);this.musicNodes.add(o);o.onended=()=>{this.musicNodes.delete(o);env.disconnect();};
     }
    }
