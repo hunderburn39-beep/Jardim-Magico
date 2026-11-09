@@ -20,6 +20,7 @@ for(const [path,hash] of Object.entries(release.preserved_git_blobs)){
  const actual=createHash('sha1').update('blob '+data.length+'\0').update(data).digest('hex');
  check(actual===hash,'Preservação exata da V4.3.3: '+path);
 }
+Math.random=rng; // Also seed the engine's default Hold opener.
 const board=newBoard(rng);
 const fresh=()=>({snapshot:new DemoBank().snapshot,board:structuredClone(board)});
 for(const stake of [.05,.1,.2,.4,.6,.8,1,1.5,2,3,5,7.5,10]){

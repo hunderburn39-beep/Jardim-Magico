@@ -1,6 +1,40 @@
+# Jardim Mágico — V5.0.0 Final
+
+[Jogar em 9:16](https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=5.0.0)
+
+Edição final demonstrativa, baseada na V4.3.3. Mantém os símbolos HD, a queda vertical, as cascatas e o motor de prémios aprovados. O Phaser 3.90.0 é servido pelo próprio repositório, com licença MIT e bytes conferidos com a distribuição oficial.
+
+- Interface exclusivamente vertical, com botões maiores e texto mais legível em ecrãs de 320×568, 390×844 e 430×932.
+- Administração protegida por PIN local: percentagens, modos, fundo e ajustes de créditos fictícios do jogador; movimentos registados no histórico.
+- Gravações administrativas aguardam a transação e repõem os valores anteriores se falharem.
+- Cópias de segurança verificam apostas, cêntimos, contadores e a cobertura dos bónus; dados locais inválidos bloqueiam novas jogadas sem apagar a sessão.
+- Relatório imprimível com todos os movimentos conservados, pesquisa em português, exportação e restauro JSON.
+- Painéis com foco por teclado, fundo inerte, texto acessível e preferência por movimento reduzido.
+- Suspensão, rotação para paisagem e perda de WebGL interrompem novas jogadas e automáticos; resultados já gravados não são novamente cobrados nem pagos.
+
+A matemática e as imagens aprovadas são verificadas por checksum em `release.json`. Os testes de regressão, testes adicionais e testes em Chromium/WebKit antecedem a publicação automática no GitHub Pages.
+
+## Verificar
+
+```sh
+node jardim-phaser/tests/smoke.mjs
+node jardim-phaser/tests/final.mjs
+```
+
+Os testes de navegador estão em `tests/visual.mjs` e `tests/release-browser.mjs`; o GitHub Actions prepara os navegadores e conserva capturas como artefactos da execução.
+
+## Limites desta edição
+
+Créditos exclusivamente fictícios. IndexedDB e PIN existem apenas no navegador atual, sem contas, pagamentos ou sincronização entre dispositivos. O histórico conserva os últimos 2500 movimentos; exporta periodicamente o JSON para conservar sessões. O relatório imprime o histórico disponível e não constitui contabilidade certificada. O PIN local não protege contra alguém com acesso aos dados ou ferramentas do navegador.
+
+O RTP não é auditado nem garantido. MIN/MED/MAX/ULTRA são referências ilustrativas; esta edição mantém a mecânica da V4.3.3, incluindo o extra de 250× ao completar o Hold 4×4. WebKit automatizado não substitui testes físicos no Safari/iPhone nem medições de bateria, som ou FPS no aparelho.
+
+<details>
+<summary>Histórico das versões anteriores</summary>
+
 # Jardim Mágico — Phaser V1
 
-**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.3.3
+**Jogar em HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=5.0.0
 
 Novo motor **Phaser 3.90.0**, com interface artística 2.5D. O jogo original em `/index.html` e o antigo protótipo PlayCanvas em `/jardim-3d/` permanecem intactos.
 
@@ -522,3 +556,5 @@ Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.3.2
 - A queda, as peças HD, as cascatas, os símbolos, apostas, RTP fictício, Free Spins e Hold & Win permanecem aprovados e inalterados.
 
 Jogar: https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=4.3.3
+
+</details>

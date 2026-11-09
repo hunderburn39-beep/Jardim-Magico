@@ -1,5 +1,9 @@
 # Jardim Mágico — jogo web e Android
 
+**Versão final atual: [Jardim Mágico V5.0.0 — jogar em 9:16](https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=5.0.0).**
+
+Código, testes e documentação da edição final na pasta [`jardim-phaser/`](jardim-phaser/). O jogo antigo na raiz e o pacote Android são versões anteriores.
+
 O código está organizado para permitir alterações diretamente no GitHub, sem
 precisar de voltar a carregar ficheiros ZIP.
 
