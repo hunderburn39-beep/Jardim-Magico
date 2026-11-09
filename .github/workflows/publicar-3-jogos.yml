@@ -95,3 +95,23 @@ jobs:
       - name: Publicar o site com os quatro jogos
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Confirmar que Halloween deixou de apresentar 404
+        shell: bash
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          url="${SITE_URL%/}/Halloween/"
+          echo "A confirmar publicação de: $url"
+          for tentativa in {1..8}; do
+            if curl -fLsS --max-time 20 --connect-timeout 10 "$url?sha=${GITHUB_SHA}" -o /tmp/halloween-publicado.html \
+                && grep -qi 'HALLOWEEN' /tmp/halloween-publicado.html; then
+              echo "Halloween disponível online (HTTP 200 e HTML correto)."
+              exit 0
+            fi
+            echo "Tentativa ${tentativa}/8: ainda não está acessível."
+            sleep 10
+          done
+          echo "::error::O site Halloween continua indisponível. Verificar Settings > Pages > Build and deployment > Source = GitHub Actions, e erros do deploy-pages."
+          exit 1
