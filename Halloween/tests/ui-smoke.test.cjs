@@ -27,7 +27,7 @@ function sceneFixture(){
     vm.runInContext(fs.readFileSync(path.join(root,"js",name+".js"),"utf8"),ctx,{filename:name+".js"});
   const node=(key="h-pumpkin")=>{
     const o={texture:{key},text:"",visible:true,events:{}};
-    for(const method of ["fillStyle","fillRect","fillCircle","fillTriangle","lineStyle",
+    for(const method of ["fillStyle","fillRect","fillCircle","fillEllipse","fillTriangle","lineStyle",
       "lineBetween","strokeCircle","strokeTriangle","strokeRoundedRect",
       "fillRoundedRect","fillGradientStyle","clear","setVisible","setOrigin",
       "setText","setInteractive","disableInteractive","on","setDepth",
@@ -96,4 +96,21 @@ test("Mostra o percurso da linha e recupera o resultado de um giro",()=>{
   const b=f.mount(),restored=b.scene.symbols.map(c=>c.map(s=>s.texture.key.slice(2)));
   assert.deepEqual(JSON.parse(JSON.stringify(restored)),saved.lastGrid);
   assert.equal(b.scene.state.balance,saved.balance);
+});
+
+test("Doze morangos recuperam a escolha e não repetem pagamento",()=>{
+  const f=sceneFixture(),a=f.mount(),s=a.scene;
+  s.state.pendingStrawberry={choices:Array.from({length:12},(_,i)=>i+1)};
+  s.store();
+  const next=f.mount(),loaded=next.scene;
+  assert.equal(loaded.strawberryOpen,true);
+  assert.equal(loaded.strawberryHits.length,12);
+  const balance=loaded.state.balance;
+  loaded.pickStrawberry(5);
+  assert.equal(loaded.state.balance,balance+6);
+  assert.equal(loaded.state.pendingStrawberry,null);
+  loaded.pickStrawberry(5);
+  assert.equal(loaded.state.balance,balance+6);
+  next.drain();
+  assert.equal(loaded.strawberryOpen,false);
 });
