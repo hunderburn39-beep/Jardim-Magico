@@ -121,19 +121,19 @@
   // Cylinder walls: narrow fixed gold ribs; transparent central channel.
   for(const [x,sgn] of [[xx-2,1],[xx+R.cw-1,-1]]){
    const wall=grad(ctx,x-2,0,x+5,0,[[0,'#25171b'],[.24,'#ad692b'],[.44,'#ffe6a3'],[.77,'#8f592e'],[1,'#2b1e1c']]);
-   rounded(ctx,x,R.top-55,5,bot-R.top+109,2,wall,'#d69b50a0',.8);
+   rounded(ctx,x,R.top-27,5,bot-R.top+51,2,wall,'#d69b50a0',.8);
    line(ctx,x+sgn*3,R.top+9,x+sgn*3,bot-7,'#6be4d12f',.9);
   }
   ctx.save();ctx.shadowColor='#f4ba55';ctx.shadowBlur=5;
-  rounded(ctx,xx-3,R.top-66,105,21,8,grad(ctx,0,R.top-66,0,R.top-45,
+  rounded(ctx,xx-3,R.top-35,105,21,8,grad(ctx,0,R.top-35,0,R.top-14,
    [[0,'#42271c'],[.18,'#ffe39c'],[.49,'#c78d37'],[.76,'#654126'],[1,'#301f1e']]),'#ffe9a4',1.8);
   ctx.restore();
-  rounded(ctx,xx-3,bot+45,105,23,8,grad(ctx,0,bot+45,0,bot+68,
+  rounded(ctx,xx-3,bot+12,105,23,8,grad(ctx,0,bot+12,0,bot+35,
    [[0,'#fff0b7'],[.14,'#8f5724'],[.44,'#513420'],[.68,'#d1a24a'],[1,'#30201a']]),'#eac277',1.5);
-  drawScarab(ctx,xx+R.cw/2,R.top-55,.67);
-  drawScarab(ctx,xx+R.cw/2,bot+56,.76);
+  drawScarab(ctx,xx+R.cw/2,R.top-24,.67);
+  drawScarab(ctx,xx+R.cw/2,bot+23,.76);
   // Linha horizontal decorativa superior removida a pedido.
-  line(ctx,xx+11,bot+62,xx+R.cw-11,bot+62,'#bb8f49',1.1);
+  line(ctx,xx+11,bot+29,xx+R.cw-11,bot+29,'#bb8f49',1.1);
  }
  function tileAt(sym,x,y,t,win){
   if(!['10','J','Q','K','A'].includes(sym)) { game.drawIcon(sym,x,y+(R.gh-108)/2,R.cw,108,win,t); return; } // Figuras altas e WILD sem quadrado.
