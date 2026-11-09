@@ -274,6 +274,16 @@
     this._cinemaPaySeen = new Set();
   };
 
+  // O gong do Wild deve chamar a atenção enquanto ainda há hipótese de
+  // suspense: se os Wilds só surgirem nos tambores 4/5, tocar apenas o
+  // estalido normal de paragem desses tambores (sem gong especial).
+  game.shouldSoundWildLanding = function (reel, spin = this.spinObject) {
+    const columns = spin?.grid;
+    if (!Array.isArray(columns) || !columns[reel]?.includes('TOMB')) return false;
+    if (reel < 3) return true;
+    return columns.slice(0,3).some(col => col.includes('TOMB'));
+  };
+
   const baseFrame = game.frame.bind(game);
   game.frame = function (t) {
     const spin = this.spinObject;
@@ -287,7 +297,9 @@
         if (hadTomb) {
           const count = spin.grid.reduce((n, col, index) =>
             n + (spin.stopped[index] ? col.filter(s => s === 'TOMB').length : 0), 0);
-          this.audio.sanctuaryLanding?.(c, count);
+          if (this.shouldSoundWildLanding(c, spin)) {
+            this.audio.sanctuaryLanding?.(c, count);
+          }
           events.sanctuaries++;
           // Se houver mais tambores por parar, desvanecer os já resolvidos.
           if (count === 2 && spin.wildFadeAt === null &&
