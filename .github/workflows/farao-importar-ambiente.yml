@@ -17,12 +17,18 @@ concurrency:
 
 jobs:
   importar-audio:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Obter o jogo
         uses: actions/checkout@v4
         with:
           ref: main
+      - name: Preparar ffmpeg e ffprobe
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
       - name: Descarregar gravação CC0 original e validar formato
         run: |
           python3 Farao-Eterno/tools/import-dark-pyramid.py
