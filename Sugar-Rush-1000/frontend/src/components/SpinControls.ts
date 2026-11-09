@@ -202,213 +202,127 @@ export class SpinControls {
   }
 
   /** Draw the premium procedural spin button */
+  /** Botão principal em esmalte roxo com anéis dourados.
+   * Mantém o mesmo hitbox, callbacks e geometria do layout original.
+   */
   drawSpinButton(x: number, y: number, size: number) {
     const g = this.spinGfx;
     g.clear();
     this.spinOuterRing.clear();
     this.spinInnerPulse.clear();
-
     const r = size / 2;
-
-    // ── Pulsing Inner Glow ──
-    this.spinInnerPulse.fillGradientStyle(0x00e676, 0x00e676, 0x00cc66, 0x00cc66, 0.8, 0.8, 0, 0);
-    this.spinInnerPulse.fillCircle(x, y, r + 18);
-
-    // ── Massive Gummy Spin Button ──
-    // 1. Drop shadow (thick, comic style)
-    g.fillStyle(0x003311, 0.7);
-    g.fillCircle(x + 4, y + 6, r + 2);
-
-    // 2. Thick bright border (mint green)
-    g.lineStyle(6, 0x00ff88, 1);
-    g.strokeCircle(x, y, r);
-
-    // 3. Candy Gradient Body (Green)
-    g.fillGradientStyle(0x33ff99, 0x00e676, 0x00cc66, 0x00994d, 1);
+    // Halo controlado, sem o círculo verde fluorescente.
+    this.spinInnerPulse.fillStyle(0xf9c45b, 0.17);
+    this.spinInnerPulse.fillCircle(x, y, r + 8);
+    this.spinOuterRing.lineStyle(Math.max(2, size * 0.035), 0xffd97b, 0.44);
+    this.spinOuterRing.strokeCircle(x, y, r + 7);
+    g.fillStyle(0x120629, 0.65);
+    g.fillCircle(x + 1.5, y + 5, r + 2);
+    g.fillStyle(0xffd98d, 1);
     g.fillCircle(x, y, r);
-
-    // 4. Glass highlight (top crescent)
+    g.fillGradientStyle(0x7e39ba, 0x6829a2, 0x3d126e, 0x310e60, 1);
+    g.fillCircle(x, y, r - Math.max(3, r * 0.095));
+    g.lineStyle(Math.max(1.4, r * 0.034), 0xffe9ad, 0.74);
+    g.strokeCircle(x, y, r * 0.82);
+    g.fillStyle(0xffffff, 0.14);
+    g.fillEllipse(x - r * 0.15, y - r * 0.52, r * 0.84, r * 0.26);
+    // Seta circular em ouro, desenhada por arco contínuo nítido.
+    const iconR = r * 0.43;
+    g.lineStyle(Math.max(4, r * 0.13), 0x2e0d54, 0.6);
     g.beginPath();
-    g.arc(x - 4, y - 4, r * 0.8, Math.PI * 0.65, Math.PI * 1.85, false);
-    g.arc(x - 1, y - 1, r * 0.8, Math.PI * 1.85, Math.PI * 0.65, true);
-    g.closePath();
-    g.fillStyle(0xffffff, 0.4);
-    g.fillPath();
-
-    // ── Play Triangle Icon ──
-    const triSize = r * 0.7; // Large icon
-    const triX = x + triSize * 0.2;
-    
-    // Inset Shadow
-    g.fillStyle(0x3a0055, 0.6);
+    g.arc(x, y + 2, iconR, -Math.PI * 0.74, Math.PI * 0.79, false);
+    g.strokePath();
+    g.lineStyle(Math.max(4, r * 0.12), 0xfff5c5, 1);
     g.beginPath();
-    g.moveTo(triX - triSize * 0.5, y - triSize * 0.6 + 6);
-    g.lineTo(triX + triSize * 0.65, y + 6);
-    g.lineTo(triX - triSize * 0.5, y + triSize * 0.6 + 6);
-    g.closePath();
-    g.fillPath();
-
-    // Crisp White Face
-    g.fillStyle(0xffffff, 1.0);
-    g.beginPath();
-    g.moveTo(triX - triSize * 0.5, y - triSize * 0.6);
-    g.lineTo(triX + triSize * 0.65, y);
-    g.lineTo(triX - triSize * 0.5, y + triSize * 0.6);
-    g.closePath();
-    g.fillPath();
+    g.arc(x, y, iconR, -Math.PI * 0.74, Math.PI * 0.79, false);
+    g.strokePath();
+    const a = Math.PI * 0.79;
+    const ex = x + iconR * Math.cos(a), ey = y + iconR * Math.sin(a);
+    const tx = -Math.sin(a), ty = Math.cos(a);
+    g.fillStyle(0xfff5c5, 1);
+    g.fillTriangle(ex + tx * 2.5, ey + ty * 2.5,
+      ex - tx * r * 0.20 + ty * r * 0.19, ey - ty * r * 0.20 - tx * r * 0.19,
+      ex - tx * r * 0.20 - ty * r * 0.19, ey - ty * r * 0.20 + tx * r * 0.19);
   }
 
-  /** Draw the STOP button (visually replaces spin during active spin) */
   drawStopButton(x: number, y: number, size: number) {
     const g = this.spinGfx;
     g.clear();
     this.spinOuterRing.clear();
     this.spinInnerPulse.clear();
-
     const r = size / 2;
-
-    // 1. Drop shadow
-    g.fillStyle(0x3a0055, 0.7);
-    g.fillCircle(x + 4, y + 6, r + 2);
-
-    // 2. Thick bright border (orange/red)
-    g.lineStyle(6, 0xff5500, 1);
-    g.strokeCircle(x, y, r);
-
-    // 3. Candy Gradient Body (Red/Orange)
-    g.fillGradientStyle(0xff5500, 0xff2200, 0xee1100, 0xcc0000, 1);
+    this.spinInnerPulse.fillStyle(0xffc77e, 0.13);
+    this.spinInnerPulse.fillCircle(x, y, r + 8);
+    this.spinOuterRing.lineStyle(Math.max(2, size * 0.035), 0xffd98d, 0.44);
+    this.spinOuterRing.strokeCircle(x, y, r + 7);
+    g.fillStyle(0x160728, 0.65);
+    g.fillCircle(x + 2, y + 5, r + 2);
+    g.fillStyle(0xffd98d, 1);
     g.fillCircle(x, y, r);
-
-    // 4. Glass highlight (top crescent)
-    g.beginPath();
-    g.arc(x - 4, y - 4, r * 0.8, Math.PI * 0.65, Math.PI * 1.85, false);
-    g.arc(x - 1, y - 1, r * 0.8, Math.PI * 1.85, Math.PI * 0.65, true);
-    g.closePath();
-    g.fillStyle(0xffffff, 0.4);
-    g.fillPath();
-
-    // White square STOP icon
-    const sqSize = r * 0.5;
-
-    // Square shadow
-    g.fillStyle(0x3a0055, 0.6);
-    g.fillRoundedRect(x - sqSize / 2, y - sqSize / 2 + 5, sqSize, sqSize, 6);
-
-    // Square body
-    g.fillStyle(0xffffff, 1.0);
-    g.fillRoundedRect(x - sqSize / 2, y - sqSize / 2, sqSize, sqSize, 6);
+    g.fillGradientStyle(0xb84b74, 0x92295c, 0x6b1848, 0x4a103c, 1);
+    g.fillCircle(x, y, r - Math.max(3, r * 0.095));
+    g.lineStyle(Math.max(1.4, r * 0.034), 0xffe8b4, 0.7);
+    g.strokeCircle(x, y, r * 0.82);
+    const sq = size * 0.26;
+    g.fillStyle(0x2f0d39, 0.55);
+    g.fillRoundedRect(x - sq / 2 + 1, y - sq / 2 + 3, sq, sq, 5);
+    g.fillStyle(0xfff1c8, 1);
+    g.fillRoundedRect(x - sq / 2, y - sq / 2, sq, sq, 5);
   }
 
-  /** Draw a bet +/- button */
+  /** Diminuir / aumentar aposta com acabamento a condizer com o centro. */
   drawBetButton(gfx: Phaser.GameObjects.Graphics, tx: number, ty: number, size: number, isPlus: boolean) {
     gfx.clear();
     gfx.setPosition(tx, ty);
-    const cx = 0;
-    const cy = 0;
     const r = size / 2;
-
-    // 1. Drop shadow (comic style)
-    gfx.fillStyle(0x3a0055, 0.6);
-    gfx.fillCircle(cx + 2, cy + 4, r + 2);
-
-    // 2. Thick border (white or pink)
-    gfx.lineStyle(4, 0xffffff, 1);
-    gfx.strokeCircle(cx, cy, r);
-
-    // 3. Candy Gradient Body
+    gfx.fillStyle(0x12072b, 0.6);
+    gfx.fillCircle(1, 3, r + 1);
+    gfx.fillStyle(0xffd79b, 0.98);
+    gfx.fillCircle(0, 0, r);
     if (isPlus) {
-      // Cyan bouncy gummy for Plus
-      gfx.fillGradientStyle(0x33ddff, 0x00ccff, 0x0099ee, 0x0077cc, 1);
+      gfx.fillGradientStyle(0x835cc6, 0x7650bc, 0x442477, 0x331b65, 1);
     } else {
-      // Golden Orange bouncy gummy for Minus
-      gfx.fillGradientStyle(0xffcc33, 0xffaa00, 0xee8800, 0xcc6600, 1);
+      gfx.fillGradientStyle(0x5c3c99, 0x52358b, 0x30155e, 0x26114c, 1);
     }
-    gfx.fillCircle(cx, cy, r);
-
-    // 4. Glass highlight
-    gfx.beginPath();
-    gfx.arc(cx - 2, cy - 2, r * 0.8, Math.PI * 0.65, Math.PI * 1.85, false);
-    gfx.arc(cx - 1, cy - 1, r * 0.8, Math.PI * 1.85, Math.PI * 0.65, true);
-    gfx.closePath();
-    gfx.fillStyle(0xffffff, 0.35);
-    gfx.fillPath();
-
-    // Icon (plus/minus) — thicker and drop shadowed
-    const arm = size * 0.25;
-    const thick = Math.max(3, size * 0.15);
-    
-    // Icon shadow
-    gfx.fillStyle(0x3a0055, 0.5);
-    if (isPlus) {
-      gfx.fillRoundedRect(cx - thick / 2, cy - arm + 2, thick, arm * 2, 2);
-      gfx.fillRoundedRect(cx - arm, cy - thick / 2 + 2, arm * 2, thick, 2);
-    } else {
-      gfx.fillRoundedRect(cx - arm, cy - thick / 2 + 2, arm * 2, thick, 2);
-    }
-
-    // Pure White Icon
-    gfx.fillStyle(0xffffff, 1);
-    if (isPlus) {
-      gfx.fillRoundedRect(cx - thick / 2, cy - arm, thick, arm * 2, 2);
-      gfx.fillRoundedRect(cx - arm, cy - thick / 2, arm * 2, thick, 2);
-    } else {
-      gfx.fillRoundedRect(cx - arm, cy - thick / 2, arm * 2, thick, 2);
-    }
+    gfx.fillCircle(0, 0, r - Math.max(2, r * 0.12));
+    gfx.lineStyle(Math.max(1, r * 0.055), 0xffedc2, 0.6);
+    gfx.strokeCircle(0, 0, r * 0.78);
+    gfx.fillStyle(0xffffff, 0.13);
+    gfx.fillEllipse(-r * 0.15, -r * 0.42, r * 0.8, r * 0.22);
+    const arm = size * 0.22;
+    const thick = Math.max(3, size * 0.105);
+    gfx.fillStyle(0x2e0c51, 0.65);
+    gfx.fillRoundedRect(-arm + 1, -thick / 2 + 2, arm * 2, thick, 2);
+    if (isPlus) gfx.fillRoundedRect(-thick / 2 + 1, -arm + 2, thick, arm * 2, 2);
+    gfx.fillStyle(0xffe9b1, 1);
+    gfx.fillRoundedRect(-arm, -thick / 2, arm * 2, thick, 2);
+    if (isPlus) gfx.fillRoundedRect(-thick / 2, -arm, thick, arm * 2, 2);
   }
 
-  /** Draw the autoplay button at its last known position */
+  /** Auto giros em vidro escuro; muda para cobre quando está ativo. */
   drawAutoButton(isActive: boolean, remaining: number) {
     if (!this.autoGfx.visible) return;
-    
-    const autoX = this.autoHit.x;
-    const autoY = this.autoHit.y;
+    const x0 = this.autoHit.x, y0 = this.autoHit.y;
     this.autoGfx.clear();
-    this.autoGfx.setPosition(autoX, autoY);
-    this.autoTxt.setPosition(autoX, autoY);
-
+    this.autoGfx.setPosition(x0, y0);
+    this.autoTxt.setPosition(x0, y0);
     const bw = this.autoHit.width || 88;
     const bh = this.autoHit.height || 28;
-    const rad = Math.min(bh * 0.5, 20); // Pill shape
-    const x = -bw / 2;
-    const y = -bh / 2;
-
-    // Drop shadow
-    this.autoGfx.fillStyle(0x3a0055, 0.6);
-    this.autoGfx.fillRoundedRect(x + 2, y + 4, bw, bh, rad);
-
-    if (isActive) {
-      // Active STOP state: Vibrant red/orange gummy
-      this.autoGfx.fillGradientStyle(0xff5500, 0xff5500, 0xcc2200, 0xcc2200, 1);
-      this.autoGfx.fillRoundedRect(x, y, bw, bh, rad);
-
-      this.autoGfx.lineStyle(3, 0xffffff, 1);
-      this.autoGfx.strokeRoundedRect(x, y, bw, bh, rad);
-
-      // Glass highlight
-      this.autoGfx.fillGradientStyle(0xffffff, 0xffffff, 0xffffff, 0xffffff, 0.4, 0.4, 0.05, 0.05);
-      this.autoGfx.fillRoundedRect(x + 2, y + 2, bw - 4, bh * 0.45, { tl: rad - 1, tr: rad - 1, bl: 0, br: 0 } as Phaser.Types.GameObjects.Graphics.RoundedRectRadius);
-
-      const label = remaining > 0 ? `STOP (${remaining})` : 'STOP';
-      this.autoTxt.setText(label)
-                  .setColor('#ffffff')
-                  .setShadow(0, 2, '#661100', 0, false, true);
-    } else {
-      // Inactive AUTOPLAY state: Violet gummy pill
-      this.autoGfx.fillGradientStyle(0x9944ff, 0x8833ff, 0x6611cc, 0x5500aa, 1);
-      this.autoGfx.fillRoundedRect(x, y, bw, bh, rad);
-
-      // Inner border glow
-      this.autoGfx.lineStyle(3, 0xffffff, 1);
-      this.autoGfx.strokeRoundedRect(x, y, bw, bh, rad);
-
-      // Glass highlight
-      this.autoGfx.fillGradientStyle(0xffffff, 0xffffff, 0xffffff, 0xffffff, 0.3, 0.3, 0.05, 0.05);
-      this.autoGfx.fillRoundedRect(x + 2, y + 2, bw - 4, bh * 0.45, { tl: rad - 1, tr: rad - 1, bl: 0, br: 0 } as Phaser.Types.GameObjects.Graphics.RoundedRectRadius);
-
-      this.autoTxt.setText('AUTOPLAY')
-                  .setColor('#ffffff')
-                  .setShadow(0, 2, '#330066', 0, false, true);
-    }
+    const r = Math.min(bh / 2, 17), x = -bw / 2, y = -bh / 2;
+    this.autoGfx.fillStyle(0x100627, 0.46);
+    this.autoGfx.fillRoundedRect(x + 1, y + 3, bw, bh, r);
+    this.autoGfx.fillGradientStyle(
+      isActive ? 0x954166 : 0x513287, isActive ? 0x85315d : 0x4d2b80,
+      isActive ? 0x4a1848 : 0x2b1557, isActive ? 0x4a1848 : 0x28124c, 1
+    );
+    this.autoGfx.fillRoundedRect(x, y, bw, bh, r);
+    this.autoGfx.lineStyle(2, 0xffd897, 0.82);
+    this.autoGfx.strokeRoundedRect(x, y, bw, bh, r);
+    this.autoGfx.fillStyle(0xffffff, 0.14);
+    this.autoGfx.fillRoundedRect(x + 5, y + 2, bw - 10, Math.max(2, bh * 0.15), 2);
+    this.autoTxt.setText(isActive ? (remaining > 0 ? 'PARAR (' + remaining + ')' : 'PARAR') : 'AUTO')
+      .setColor('#fff1cf')
+      .setShadow(0, 1, '#250a45', 2, false, true);
   }
 
   hideAll() {
