@@ -145,7 +145,7 @@
       previousGrid.every(col=>Array.isArray(col) && col.length === ROWS &&
         col.every(sym=>SYMBOLS.some(s=>s.id===sym))) &&
       (Array.isArray(heldColumns)||heldColumns instanceof Set)
-        ? [...heldColumns].filter(c=>Number.isInteger(c) && c>=0 && c<REELS) : [];
+        ? [...new Set(heldColumns)].filter(c=>Number.isInteger(c) && c>=0 && c<REELS).slice(0,REELS-1) : [];
     const grid = Array.from({length: REELS}, (_,col) =>
       holds.includes(col) ? [...previousGrid[col]] : Array.from({length: ROWS}, () => pick(rng)));
     const result = evaluateGrid(grid, state.bet, free, state.lines);
