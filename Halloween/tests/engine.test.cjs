@@ -224,7 +224,8 @@ test("Caldeirão e roleta na mesma ronda são resolvidos sem duplicar créditos"
     if(draws<=15){
       const col=Math.floor((draws-1)/3),row=(draws-1)%3;
       if(row===1)return 0;         // cinco abóboras na linha central
-      if(row===0&&col<3)return .999999; // três caldeirões na fila de cima
+      if((row===0&&col<3)||(row===2&&col<2))
+        return .999999; // cinco dispersos: alternativa não vertical
     }
     return .99;
   };
@@ -367,7 +368,8 @@ test("Morangos e roleta pendentes resolvem-se uma vez cada",()=>{
   let n=0;
   const pick=()=>{n++;if(n<=15){const col=Math.floor((n-1)/3),row=(n-1)%3;
     if(row===1)return 0;
-    if(row===0&&col<4)return .999999; // quatro caldeirões dispersos
+    if((row===0&&col<4)||(row===2&&col===0))
+      return .999999; // cinco caldeirões dispersos
   }
   if(n===16)return .25; // abrir 12 morangos, não os caldeirões
   return .25;};
@@ -526,14 +528,26 @@ test("Três caldeirões espalhados atribuem Free Spins mas não mini-jogo",()=>{
   assert.equal(r.earnedSpins,10);
   assert.equal(r.potTriggered||r.strawberryTriggered||r.diceTriggered,false);
 });
-test("Quatro caldeirões espalhados podem ativar mini-jogo secundário",()=>{
+test("Cinco caldeirões espalhados podem ativar mini-jogo secundário",()=>{
   let draw=0;
   const r=E.spin(E.setBet(E.createState(),20),()=>{
     draw++;
-    return [1,4,7,10].includes(draw)?.999999:.45;
+    return [1,4,7,10,13].includes(draw)?.999999:.45;
   });
-  assert.equal(r.result.scatter,4);
+  assert.equal(r.result.scatter,5);
   assert.equal(r.verticalBonus,false);
   assert.equal(r.bonusEligible,true);
   assert.equal([r.potTriggered,r.strawberryTriggered,r.diceTriggered].filter(Boolean).length,1);
+});
+
+test("Quatro caldeirões dispersos não abrem mini-jogo (bónus sobretudo verticais)",()=>{
+  let draw=0;
+  const result=E.spin(E.setBet(E.createState(),20),()=>{
+    draw++;return [1,4,7,10].includes(draw)?.999999:.45;
+  });
+  assert.equal(result.result.scatter,4);
+  assert.equal(result.earnedSpins,10);
+  assert.equal(result.verticalBonus,false);
+  assert.equal(result.bonusEligible,false);
+  assert.equal(result.potTriggered||result.diceTriggered||result.strawberryTriggered,false);
 });
