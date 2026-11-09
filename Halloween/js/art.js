@@ -1,13 +1,21 @@
 /* Ilustrações vetoriais originais, desenhadas para Halloween — estilo arcade clássico. */
 (function(root){
 "use strict";
-const start=`<svg xmlns="http://www.w3.org/2000/svg" width="156" height="174" viewBox="0 0 156 174"><defs>
-<linearGradient id="gold" x2=".8" y2="1"><stop stop-color="#fff2b0"/><stop offset=".5" stop-color="#ffae39"/><stop offset="1" stop-color="#9c3e13"/></linearGradient>
-<linearGradient id="red" x2="1" y2="1"><stop stop-color="#ff8571"/><stop offset="1" stop-color="#a3141b"/></linearGradient>
-<linearGradient id="green" x2="1" y2="1"><stop stop-color="#bce57c"/><stop offset="1" stop-color="#387836"/></linearGradient>
-<linearGradient id="dark" x2=".8" y2="1"><stop stop-color="#67415a"/><stop offset="1" stop-color="#171127"/></linearGradient>
-</defs><g stroke="#302331" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">`;
-const end=`</g></svg>`;
+/* Camada de luz independente por símbolo: transparência total em redor da figura.
+   SVG vetorial próprio, renderizado em 2× para ecrãs Retina. */
+const start=`<svg xmlns="http://www.w3.org/2000/svg" width="312" height="348" viewBox="0 0 156 174">
+<defs>
+<linearGradient id="gold" x1="0" y1="0" x2=".85" y2="1"><stop stop-color="#fffad1"/><stop offset=".24" stop-color="#ffe889"/><stop offset=".52" stop-color="#f6a944"/><stop offset="1" stop-color="#773a17"/></linearGradient>
+<linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffb5a5"/><stop offset=".36" stop-color="#fa5d55"/><stop offset=".74" stop-color="#bd262d"/><stop offset="1" stop-color="#640c29"/></linearGradient>
+<linearGradient id="green" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e9ffba"/><stop offset=".32" stop-color="#a9e474"/><stop offset=".7" stop-color="#60a454"/><stop offset="1" stop-color="#20524b"/></linearGradient>
+<linearGradient id="dark" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#9574af"/><stop offset=".42" stop-color="#613d70"/><stop offset="1" stop-color="#160e2d"/></linearGradient>
+<radialGradient id="aura"><stop stop-color="AURA" stop-opacity=".52"/><stop offset=".46" stop-color="AURA" stop-opacity=".19"/><stop offset="1" stop-color="AURA" stop-opacity="0"/></radialGradient>
+<linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".68"/><stop offset=".5" stop-color="#fff" stop-opacity=".09"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="plaque" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#512c57"/><stop offset=".55" stop-color="#30192f"/><stop offset="1" stop-color="#1a1023"/></linearGradient>
+<filter id="depth" x="-42%" y="-38%" width="185%" height="185%"><feDropShadow dx="1.5" dy="5" stdDeviation="3" flood-color="#0e0920" flood-opacity=".85"/><feDropShadow dx="-.8" dy="-1.2" stdDeviation=".8" flood-color="#f9dfa4" flood-opacity=".35"/></filter>
+<filter id="glimmer" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="2.3"/></filter>
+</defs>`;
+const end=`</svg>`;
 const pics={
 pumpkin:`<path fill="#377739" d="M80 54c-6-25 1-34 18-38-10 15-13 27-8 37z"/><path fill="#f9a329" d="M78 57c-59-34-78 57-39 86 15 14 63 14 78 0 40-29 18-117-39-86z"/><path fill="#ef6b16" d="M70 58c-23 5-30 21-32 53 0 17 10 30 22 35-18-25-14-68 10-88zM91 57c27 13 26 69 6 89 21-6 33-29 29-52-2-22-15-36-35-37z"/><path fill="#31252d" d="M45 96l29-13-8 26zM109 96L82 83l8 26zM48 123q28 18 59-1l-11 20-14-8-11 11-10-10z"/><path d="M70 57q9-7 18 0" fill="none" stroke="#317943"/>`,
 witch_green:`<path fill="#c76d20" d="M36 50L78 11l39 40 17 15q-58 18-115 0z"/><path fill="#f4b24e" d="M45 54h75l9 14q-48 8-92 0z"/><ellipse fill="#83ad66" cx="77" cy="94" rx="41" ry="43"/><ellipse fill="#f4fdcf" cx="61" cy="87" rx="11" ry="10"/><ellipse fill="#f4fdcf" cx="94" cy="87" rx="11" ry="10"/><circle fill="#30233a" cx="65" cy="87" r="4"/><circle fill="#30233a" cx="92" cy="87" r="4"/><path fill="#618446" d="M72 95l20 9-18 7z"/><path d="M54 121q23 16 50-4" fill="none" stroke="#613137" stroke-width="5"/><path fill="#a77c4d" d="M42 137l-24 25 59-15 52 16-27-27q-30 18-60 1z"/><circle fill="#e6a32f" cx="78" cy="22" r="5"/>`,
@@ -21,9 +29,37 @@ wild:`<path fill="#53418a" d="M44 111q-24 18-25 46h122q-4-30-27-46z"/><ellipse f
 scatter:`<path d="M38 69q-8-20 16-26h52q25 6 14 26" fill="#6f542b"/><path fill="#765038" d="M26 77q-9 52 22 67 29 13 62-1 27-19 20-66z"/><ellipse cx="79" cy="79" rx="55" ry="16" fill="#442c2a"/><ellipse cx="79" cy="75" rx="48" ry="12" fill="#a3ba79"/><circle cx="54" cy="66" r="10" fill="#addc9c"/><circle cx="91" cy="56" r="11" fill="#9ee6b2"/><circle cx="105" cy="71" r="10" fill="#a8cf7d"/><path d="M50 137l-8 19m75-19 8 19" fill="none" stroke="#4c3630" stroke-width="9"/><path d="M46 61q-9-15 11-22m19 11q-7-24 5-27m21 29q16-21 9-31" fill="none" stroke="#a0e2a3" stroke-width="6"/><ellipse cx="80" cy="106" rx="26" ry="13" fill="#97705a" opacity=".35" stroke="none"/>`
 };
 const names={pumpkin:"ABÓBORA",witch_green:"BRUXA",ghost:"FANTASMA",bat:"LUA",cat:"VAMPIRO",skull:"MONSTRO",witch:"WITCH",devil:"DIABINHO",wild:"MAGIC",scatter:"CALDEIRÃO"};
+const glow={
+  pumpkin:"#ff9b22",witch_green:"#e8ab56",ghost:"#b5ecff",bat:"#e0bb72",
+  cat:"#f95a83",skull:"#9add73",witch:"#b56bd9",devil:"#fa5353",
+  wild:"#a995ff",scatter:"#9cf9a0"
+};
+const accents={
+  pumpkin:`<path d="M85 53q12-28 35-24-6 19-28 21" fill="#478541" stroke="#215735" stroke-width="2"/><path d="M45 72q-17 15-13 36M106 66q23 25 14 56" fill="none" stroke="#ffd577" stroke-opacity=".72" stroke-width="3"/><circle cx="46" cy="112" r="3" fill="#fff2ad"/>`,
+  witch_green:`<path d="M50 78q7-13 18-9M98 76q-5-8-13-7" stroke="#efffb7" stroke-width="3" fill="none"/><path d="M42 57h75" stroke="#fff3ba" stroke-width="3"/><rect x="74" y="52" width="15" height="13" rx="2" fill="url(#gold)"/><path d="M36 127l7-5m68-1 9 8" stroke="#d3ffc5" stroke-width="3"/>`,
+  devil:`<path d="M43 54l-9-35 28 22m56 13 8-35-29 22" fill="#ec6d55" stroke="#5f1625" stroke-width="2"/><circle cx="15" cy="40" r="7" fill="#f3b44b"/><path d="M9 36l5-14 8 15" fill="#ffd68f"/><path d="M44 116q10 14 15 14m62-13-17 13" stroke="#ffac8b" stroke-width="2.5" fill="none"/>`,
+  ghost:`<path d="M43 59q7-19 27-21M49 119q-4 12 2 18" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".83"/><circle cx="132" cy="40" r="3" fill="#e8fbff"/><circle cx="26" cy="27" r="2.5" fill="#e8fbff"/><path d="M118 22l3 10 9 2-9 3-3 11-3-11-9-3 9-2z" fill="#f5ffff" stroke="none" opacity=".8"/>`,
+  bat:`<circle cx="83" cy="65" r="56" fill="none" stroke="#fff0b6" stroke-width="2" opacity=".48"/><path d="M15 139q21-6 41-5" fill="none" stroke="#fff0c3" stroke-width="3"/><path d="M121 23l3 8 9 2-9 3-3 8-3-8-8-3 8-2z" fill="#fff1bf" stroke="none"/><path d="M43 113l-15 8m77-3 14 12" stroke="#af82ca" stroke-width="3"/>`,
+  cat:`<path d="M51 56q11-20 27-16m-28 48 16 2m45 2-14 1" stroke="#e7ffed" stroke-width="2.5" fill="none" opacity=".68"/><path d="M76 111l-1 9 5-7 5 8 2-9" fill="#fffdf1" stroke="#cdbbaf" stroke-width="1"/><path d="M38 116l-13 19m94-18 13 18" stroke="#e15a69" stroke-width="3"/>`,
+  skull:`<path d="M48 52l22 13m25-13-20 12M42 119q12 6 17 15m63-13-15 13" fill="none" stroke="#def9ab" stroke-width="2.5"/><path d="M35 79h-12v13h12m86-13h12v13h-12" fill="none" stroke="#a9b9ba" stroke-width="4"/><circle cx="26" cy="53" r="4" fill="#d2c5b1"/><circle cx="130" cy="53" r="4" fill="#d2c5b1"/>`,
+  witch:`<path d="M54 55h54" stroke="#cba9ef" stroke-width="3"/><path d="M71 58h17v12H71z" fill="url(#gold)" stroke="#462b44" stroke-width="1"/><circle cx="117" cy="39" r="5" fill="#d3f496"/><circle cx="135" cy="27" r="3" fill="#b3ebfd"/><circle cx="126" cy="58" r="2" fill="#fff8c7"/><path d="M55 100l-9-4m60 5 10-4" stroke="#d6ffb0" stroke-width="3"/>`,
+  wild:`<path d="M14 63l4 10 10 3-10 4-4 10-4-10-10-4 10-3zM137 24l4 10 10 3-10 4-4 10-4-10-10-4 10-3z" fill="#fff5bd" stroke="none"/><circle cx="17" cy="46" r="5" fill="#bd9bff"/><path d="M52 127q26 16 51-1" fill="none" stroke="#c4adff" stroke-width="3"/><circle cx="49" cy="97" r="11" fill="none" stroke="#fce19a" stroke-width="2"/>`,
+  scatter:`<path d="M28 78q51 19 103 0" fill="none" stroke="#e2d1a6" stroke-width="4"/><path d="M44 113q15 24 38 24" fill="none" stroke="#dcad67" stroke-width="3" opacity=".6"/><circle cx="41" cy="47" r="4" fill="#c9ffd2"/><circle cx="78" cy="28" r="5" fill="#b8ffcc"/><circle cx="122" cy="45" r="3" fill="#a5ffbd"/><path d="M71 35l7-12 8 12" fill="none" stroke="#d3ffc5" stroke-width="2.5"/>`
+};
 const art={};
 for(const [id,markup] of Object.entries(pics)){
-  art[id]=start+markup+`<text x="78" y="171" stroke="#39242c" stroke-width=".8" fill="#f7c05f" text-anchor="middle" font-family="Georgia,serif" font-size="12" font-weight="bold">${names[id]}</text>`+end;
+  const aura=glow[id];
+  const base=start.replaceAll("AURA",aura);
+  const sparkle=`<ellipse cx="77" cy="94" rx="75" ry="74" fill="url(#aura)"/>
+    <ellipse cx="80" cy="143" rx="47" ry="7" fill="#0e1024" opacity=".4" filter="url(#glimmer)"/>
+    <g fill="#ffedb7" opacity=".75"><circle cx="27" cy="61" r="1.8"/><circle cx="131" cy="93" r="1.7"/><circle cx="124" cy="22" r="1.6"/></g>`;
+  const label=`<g><rect x="18" y="149" width="120" height="23" rx="8" fill="#100d23" opacity=".55"/>
+    <rect x="21" y="151" width="114" height="20" rx="7" fill="url(#plaque)" stroke="#f1bd60" stroke-width="1.3"/>
+    <path d="M28 154h100" stroke="#fff1b0" stroke-opacity=".55" stroke-width="1"/>
+    <text x="78" y="165" stroke="#25182e" stroke-width=".6" fill="#ffe5a0" text-anchor="middle"
+      font-family="Georgia,serif" font-size="10" font-weight="900" letter-spacing=".45">${names[id]}</text></g>`;
+  art[id]=base+sparkle+`<g filter="url(#depth)" stroke="#302331" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round">`+
+    markup+`</g><g stroke-linejoin="round" stroke-linecap="round">`+accents[id]+`</g>`+label+end;
 }
 root.HalloweenArt=Object.freeze(art);
 })(typeof globalThis!=="undefined"?globalThis:this);
