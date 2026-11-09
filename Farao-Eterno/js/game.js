@@ -445,7 +445,6 @@ class Game {
    cx.fillStyle=main;cx.fillText(s,280,y);cx.restore();
   };
   emboss('FARAÓ',145,52);emboss('ETERNO',190,43);
-  line(125,200,435,200,'#cda15f',1.5);
   text('OS SEGREDOS DA ETERNIDADE',280,213,10,'#e5c486','center','Georgia',800,2);
   this.smallButton(49,66,68,'☰',()=>this.openInfo());
   this.smallButton(511,66,68,this.sound?'♫':'♪',()=>{this.sound=!this.sound;this.audio.on=this.sound;this.save();});
