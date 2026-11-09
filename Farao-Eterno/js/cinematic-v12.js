@@ -90,8 +90,8 @@
       const t = this.ctx.currentTime;
       state.gain.gain.cancelScheduledValues(t);
       state.gain.gain.setTargetAtTime(.0001, t, .04);
-      // Paragem programada no início; terminá-la mais cedo só se possível.
-      // O nó fica mudo em ~180 ms sem click digital.
+      state.source.stop(t + .22);
+      // O nó é libertado depois de um fade curto, sem clicks digitais.
     } catch (_) {}
   };
   audio.sanctuaryLanding = function (reel, count) {
