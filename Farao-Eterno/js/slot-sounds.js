@@ -150,68 +150,58 @@
     friction(.020,.004,640,.015);
   };
 
-  // "PAAAAAMMMMM": efeito principal do Wild, muito acima do som dos
-  // tambores. Médios e harmónicos para se ouvir bem em altifalantes móveis.
-  // A compressão master existente limita os picos para evitar saturação.
+  // Wild: DOOONG sólido em vez de "boing". O gong original fica apenas
+  // como ressonância filtrada, com cauda amortecida. Uma pancada grave e
+  // centrada dá o impacto audível em altifalantes pequenos.
+  const strike=(ac,t,count)=>{
+    const weight=count<=1 ? 1 : count===2 ? 1.10 : 1.20;
+    function drum(type,from,to,peak,length){
+      const osc=ac.createOscillator(),env=ac.createGain();
+      osc.type=type;
+      osc.frequency.setValueAtTime(from,t);
+      osc.frequency.exponentialRampToValueAtTime(to,t+Math.min(.23,length*.8));
+      env.gain.setValueAtTime(.0001,t);
+      env.gain.exponentialRampToValueAtTime(peak*weight,t+.009);
+      env.gain.exponentialRampToValueAtTime(.0001,t+length);
+      osc.connect(env);env.connect(output());
+      osc.start(t);osc.stop(t+length+.025);
+      osc.onended=()=>{try{osc.disconnect();env.disconnect();}catch(_){}};
+    }
+    drum('triangle',226,118,.24,.34);
+    drum('sine',126,78,.15,.48);
+    // Mais corpo em 170-250 Hz, para o som não desaparecer no iPhone.
+    drum('triangle',286,182,.095,.27);
+    friction(.075,.035*weight,1200);
+  };
+  function lowerAmbience(ac,t){
+    const music=audio.musicBus?.gain;
+    if(!music)return;
+    try{
+      music.cancelScheduledValues(t);
+      music.setValueAtTime(Math.max(.001,music.value),t);
+      music.setTargetAtTime(.10,t,.025);
+      music.setTargetAtTime(2.5,t+2.0,.30);
+    }catch(_){}
+  }
   function wildPaam(count){
     if(!ready())return;
     const ac=audio.ctx,t=ac.currentTime;
-    // +50% de ganho apenas no PAAAAMMMM do Wild, face à V1.3.4.
-    const force=1.5*(count<=1 ? 1 : count===2 ? 1.12 : 1.22);
-    const duration=count>=3 ? 1.75 : 1.55;
+    lowerAmbience(ac,t);
+    strike(ac,t,count);
+    // Ressonância original de emergência quando o MP3 não estiver pronto.
+    note(228,205,1.14,.065*(count<=1?1:1.12));
     audio._wildSoundAtMs=performance.now();
-
-    // Dar prioridade real ao Wild: ambiente quase em silêncio durante
-    // o impacto e a ressonância. Depois a música regressa gradualmente.
-    const music=audio.musicBus?.gain;
-    if(music){
-      try{
-        music.cancelScheduledValues(t);
-        music.setValueAtTime(Math.max(.001,music.value),t);
-        music.setTargetAtTime(.10,t,.022);
-        music.setTargetAtTime(2.5,t+duration-.13,.28);
-      }catch(_){}
-    }
-    try{
-      function layer(type,from,to,peak,length,cutoff,attack=.010){
-        const osc=ac.createOscillator(),lp=ac.createBiquadFilter(),
-              env=ac.createGain();
-        osc.type=type;
-        osc.frequency.setValueAtTime(from,t);
-        osc.frequency.exponentialRampToValueAtTime(Math.max(25,to),t+length*.77);
-        lp.type='lowpass';
-        lp.frequency.setValueAtTime(cutoff,t);
-        lp.frequency.exponentialRampToValueAtTime(Math.max(330,cutoff*.62),
-          t+Math.min(.65,length*.69));
-        env.gain.setValueAtTime(.0001,t);
-        env.gain.exponentialRampToValueAtTime(peak*force,t+attack);
-        env.gain.exponentialRampToValueAtTime(.0001,t+length);
-        osc.connect(lp);lp.connect(env);env.connect(output());
-        osc.start(t);osc.stop(t+length+.03);
-        osc.onended=()=>{try{osc.disconnect();lp.disconnect();env.disconnect();}catch(_){}};
-      }
-      // Todas as camadas começam juntas: um PAAAAM único, não vários bipes.
-      layer('triangle',245,164,.25,duration,1850);
-      layer('sawtooth',395,263,.11,duration*.88,1620);
-      layer('sine',117,81,.105,duration*.94,690);
-      layer('triangle',590,385,.080,duration*.75,2100);
-      layer('sine',820,555,.056,duration*.53,2300);
-      // Pancada inicial, seguida de um "mmmm" longo e cheio.
-      friction(.105,.073*force,2200);
-    }catch(_){
-      note(265,152,1.22,.13*force);
-    }
   }
-  // Gong1 (pfeifferc / freesound_community): o utilizador forneceu o
-  // ficheiro MP3. O ataque foi aparado ~75 ms antes de o guardar.
-  // Carregar e descodificar ANTES da paragem para não haver atraso no Wild.
+  audio._wildSoundAtMs=0;
+
+  // Gong1 fornecido pelo utilizador, pré-descodificado no primeiro toque.
+  // A amostra original mantém a identidade, sem o prolongamento elástico.
   let gongBuffer=null, gongDecodeStarted=false;
   const gongTextPromise=fetch(new URL('assets/wild-gong-synced.b64',document.baseURI))
     .then(response=>{
       if(!response.ok)throw Error('Gong indisponível: '+response.status);
       return response.text();
     }).catch(()=>null);
-
   function prepareWildGong(){
     if(!audio.ctx || gongDecodeStarted)return;
     gongDecodeStarted=true;
@@ -224,8 +214,6 @@
     }).then(buffer=>{if(buffer)gongBuffer=buffer;})
       .catch(()=>{gongBuffer=null;});
   }
-
-  // O contexto áudio nasce depois do primeiro toque do jogador no iPhone.
   const priorAudioInit=audio.init.bind(audio);
   audio.init=function(...args){
     const result=priorAudioInit(...args);
@@ -241,31 +229,27 @@
 
   audio.sanctuaryLanding=function(reel,count){
     if(!ready())return;
-    if(!gongBuffer){
-      prepareWildGong();
-      wildPaam(count); // Só se a amostra ainda não estiver pronta.
-      return;
-    }
+    if(!gongBuffer){prepareWildGong();wildPaam(count);return;}
     try{
       const ac=audio.ctx,t=ac.currentTime;
-      // A música de fundo baixa enquanto o gong real ressoa.
-      const music=audio.musicBus?.gain;
-      if(music){
-        music.cancelScheduledValues(t);
-        music.setValueAtTime(Math.max(.001,music.value),t);
-        music.setTargetAtTime(.12,t,.025);
-        music.setTargetAtTime(2.5,t+2.0,.36);
-      }
-      const source=ac.createBufferSource(),env=ac.createGain();
+      lowerAmbience(ac,t);
+      strike(ac,t,count);
+      const source=ac.createBufferSource(),lowpass=ac.createBiquadFilter(),
+            body=ac.createBiquadFilter(),env=ac.createGain();
       source.buffer=gongBuffer;
-      // Mesmo timbre em todas as torres, intensidade crescente.
-      const volume=count<=1?2.65:count===2?2.9:3.15;
-      env.gain.setValueAtTime(volume,t);
-      source.connect(env);
-      env.connect(output());
-      // Compensar 28 ms de silêncio residual do encoder MP3.
-      source.start(t,.028);
-      source.onended=()=>{try{source.disconnect();env.disconnect();}catch(_){}};
+      source.playbackRate.value=1;
+      // Atenuar harmónicos vibrantes que dão sensação de mola.
+      lowpass.type='lowpass';lowpass.frequency.value=1050;lowpass.Q.value=.45;
+      body.type='peaking';body.frequency.value=270;body.Q.value=.9;body.gain.value=3;
+      const weight=count<=1?1:count===2?1.10:1.20;
+      env.gain.setValueAtTime(.0001,t);
+      env.gain.exponentialRampToValueAtTime(.94*weight,t+.014);
+      env.gain.setValueAtTime(.94*weight,t+.35);
+      env.gain.exponentialRampToValueAtTime(.0001,t+2.65);
+      source.connect(lowpass);lowpass.connect(body);body.connect(env);env.connect(output());
+      // Ataque em simultâneo com a paragem do tambor; sem novo silêncio.
+      source.start(t,.028);source.stop(t+2.68);
+      source.onended=()=>{try{source.disconnect();lowpass.disconnect();body.disconnect();env.disconnect();}catch(_){}};
       audio._wildSoundAtMs=performance.now();
     }catch(_){wildPaam(count);}
   };
@@ -292,5 +276,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.3.7',original:true,procedural:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.3.8',original:true,procedural:true,dynamicReelSpeed:true};
 })();
