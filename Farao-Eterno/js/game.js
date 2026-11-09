@@ -246,9 +246,9 @@ class Game {
    page=`<h3>O santuário é WILD e SCATTER</h3><p>5 tambores × 3 posições, com 1 a 10 linhas. As combinações normais começam no tambor da esquerda, sem intervalos. O santuário substitui os restantes símbolos. Hórus, Máscara e Anúbis pagam desde 2; o Faraó e o santuário também. As cartas pagam desde 3.</p><h3>8 Free Spins e símbolos expansivos</h3><p>3 ou mais santuários em qualquer posição dão 8 giros grátis. Um símbolo normal é sorteado. Quando está em tambores suficientes para pagar, expande nas três posições desses tambores, mesmo separados. Os santuários não substituem o símbolo especial no cálculo da expansão.</p><p>Em cada linha vence o maior pagamento entre a combinação normal e todos os expansivos ativos; os prémios não se somam dentro da mesma linha. Novos 3 ou mais santuários dão +8 giros e outro símbolo, sem repetir, até 9 símbolos. Depois de desbloquear os nove, as novas ativações continuam a dar +8 giros.</p><h3>Limites preservados da V0.6</h3><p>Aposta de 0,10 a 10 créditos. Limite de 5.000× numa jogada base e de 5.000× no total de uma série de Free Spins. O prémio da jogada que ativa o bónus é pago à parte. O bónus termina ao atingir o seu limite. Não há limite artificial de novas ativações.</p><h3>Arriscar e sessão</h3><p>Cor: 50% para ×2; naipe: 25% para ×4. Até cinco tentativas. Arrisca apenas o último prémio base e o limite mantém a aposta da jogada original. O saldo e os resultados pendentes são guardados neste navegador. Ao regressar de outra aplicação, toca em Retomar.</p><p><a href="docs/MATEMATICA.md" target="_blank" rel="noopener">Consultar a matemática e probabilidades</a> · <a href="docs/VALIDACAO.md" target="_blank" rel="noopener">Consultar a validação</a></p><p class="hint">Matemática independente. O RTP deste jogo é medido pelo seu próprio simulador; não é o RTP do Legacy of Dead. Não existe certificação de jogo a dinheiro.</p>`;
   }else{
    const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-   page=`<p>Últimas ${this.history.length} ações. Os valores são créditos fictícios.</p><div class="history">`+(this.history.length?this.history.map(h=>`<p>${h.kind==='reset'?'Reposição de créditos':h.kind==='gamble'?'Carta':h.bonus?'★ Free Spin':'Giro'} · aposta ${money(h.bet)} · prémio <b>${money(h.win)}</b><br><small>${esc(new Date(h.t).toLocaleString('pt-PT'))}</small></p>`).join(''):'<p>O teu legado começa no primeiro giro.</p>')+'</div>';
+   page=`<p>Últimas ${this.history.length} ações. Valores em créditos.</p><div class="history">`+(this.history.length?this.history.map(h=>`<p>${h.kind==='reset'?'Reposição de créditos':h.kind==='gamble'?'Carta':h.bonus?'★ Free Spin':'Giro'} · aposta ${money(h.bet)} · prémio <b>${money(h.win)}</b><br><small>${esc(new Date(h.t).toLocaleString('pt-PT'))}</small></p>`).join(''):'<p>O teu legado começa no primeiro giro.</p>')+'</div>';
   }
-  this.openModal('FARAÓ ETERNO',tabs+page+'<p class="bank-note">Créditos fictícios · Jogo gratuito · Sem dinheiro real</p>');
+  this.openModal('FARAÓ ETERNO',tabs+page);
   modalContent.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>this.openInfo(b.dataset.page));
   if(tab==='menu'){
    $('toggle-sound').onclick=()=>{this.sound=!this.sound;this.audio.on=this.sound;this.audio.init();this.save();this.openInfo();};
@@ -261,7 +261,7 @@ class Game {
  }
  openReset(){
   if(this.feature||this.spinning)return;
-  this.openModal('REPOR CRÉDITOS',`<p>Saldo atual: ${money(this.balance)}.</p><p>Começar com 300 créditos fictícios? A reposição é gratuita.</p><div class="actions"><button class="btn" id="reset-go">Repor 300 créditos</button><button class="btn" id="reset-cancel">Voltar</button></div>`);
+  this.openModal('REPOR CRÉDITOS',`<p>Saldo atual: ${money(this.balance)}.</p><p>Repor o saldo para 300 créditos?</p><div class="actions"><button class="btn" id="reset-go">Repor 300 créditos</button><button class="btn" id="reset-cancel">Voltar</button></div>`);
   $('reset-go').onclick=()=>{S.reset(this.ledger);this.auto=0;this.syncLedger();this.winCount=null;this.save();this.closeModal();this.notice('300 CRÉDITOS · UM NOVO LEGADO',1300);};
   $('reset-cancel').onclick=()=>this.openInfo();
  }
@@ -358,7 +358,7 @@ class Game {
   rect(164,218,232,29,grad(0,218,0,250,[[0,'#70502f'],[.21,'#332522'],[.82,'#101725'],[1,'#a77c43']]),'#d5ae71',9,1.4);
   rect(171,223,218,18,null,'#4ba4a0',4,.7);
   if(this.feature){text(`FREE SPINS   ${this.feature.left} RESTANTES`,280,232,14,'#8effee','center','Arial',900);}
-  else text(`${this.lines} LINHAS  ·  5 × 3  ·  DEMO`,280,232,13,'#f0d6a4','center','Arial',800);
+  else text(`${this.lines} LINHAS  ·  5 × 3`,280,232,13,'#f0d6a4','center','Arial',800);
  }
 
   reelBoard(t){
@@ -639,7 +639,6 @@ class Game {
   this.drawControl(109,900,72,72,'+',()=>this.changeBet(1),{size:32,disabled:locked});
   this.drawControl(198,893,164,84,this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR',()=>this.startSpin(),{primary:true,size:this.paused?20:29,disabled:!this.ready||this.superseded});
   this.drawControl(379,900,152,72,this.auto?'PARAR AUTO':'AUTO ×20',()=>this.setAuto(),{size:14,disabled:!!this.feature||this.superseded});
-  text('CRÉDITOS FICTÍCIOS · JOGO GRATUITO',280,989,10,'#b6a589','center','Arial',700);
   text('V1.0',29,989,10,'#e1be7e','left','Arial',800);
   if(!this.storageOK)text('SESSÃO SEM GRAVAÇÃO',280,795,11,'#ffbc83','center','Arial');
  }
