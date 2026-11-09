@@ -4,6 +4,10 @@
   const ROWS = 3, REELS = 5, MAX_BALANCE = 1e12;
   const PUMPKINS_FOR_BONUS = 5;
   const POT_VALUES = Object.freeze([1,2,3,5,8]);
+  // O APK contém um ecrã de 12 morangos selecionáveis. O sorteio
+  // e os multiplicadores abaixo são originais do protótipo, não do APK.
+  const STRAWBERRY_CHOICES=12;
+  const STRAWBERRY_VALUES=Object.freeze([0,1,2,3,5,8]);
   // Roleta de entretenimento, não reproduz distribuições históricas.
   // O atlas original confirma roleta numerada de 1 a 30. Os prémios
   // abaixo continuam experimentais: ainda não foi validado o algoritmo do APK.
@@ -59,7 +63,7 @@
     return SYMBOLS[SYMBOLS.length - 1].id;
   }
   function createState() {
-    return { balance: 1000, bet: 2, lines: 30, jackpots: [350,750,1500,3000], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null };
+    return { balance: 1000, bet: 2, lines: 30, jackpots: [350,750,1500,3000], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null, pendingStrawberry: null };
   }
   function sanitize(s) {
     const d = createState();
@@ -84,6 +88,10 @@
       pendingPot: s.pendingPot && Array.isArray(s.pendingPot.choices) && s.pendingPot.choices.length === 3 &&
         s.pendingPot.choices.every(n => Number.isFinite(n) && n >= 0 && n <= 100000) ?
           { choices: s.pendingPot.choices.map(round) } : null,
+      pendingStrawberry: s.pendingStrawberry && Array.isArray(s.pendingStrawberry.choices) &&
+        s.pendingStrawberry.choices.length===STRAWBERRY_CHOICES &&
+        s.pendingStrawberry.choices.every(n=>Number.isFinite(n)&&n>=0&&n<=100000) ?
+        {choices:s.pendingStrawberry.choices.map(round)} : null,
       pendingWheel: s.pendingWheel && Number.isInteger(s.pendingWheel.sectorIndex) &&
         s.pendingWheel.sectorIndex>=0 && s.pendingWheel.sectorIndex<WHEEL_SECTORS.length &&
         Number.isFinite(s.pendingWheel.payout) && s.pendingWheel.payout>=0 &&
@@ -139,7 +147,8 @@
   function spin(input, rng = Math.random, previousGrid = null, heldColumns = null) {
     const state = sanitize(input);
     const free = state.freeSpins > 0;
-    if (state.pendingPot || state.pendingWheel) return { ok: false, reason: "bonus-pendente", state };
+    if (state.pendingPot || state.pendingWheel || state.pendingStrawberry)
+      return { ok: false, reason: "bonus-pendente", state };
     if (!free && state.balance < state.bet) return { ok: false, reason: "saldo", state };
     const holds = !free && Array.isArray(previousGrid) && previousGrid.length === REELS &&
       previousGrid.every(col=>Array.isArray(col) && col.length === ROWS &&
@@ -173,10 +182,20 @@
     // Três caldeirões desbloqueiam uma escolha de 3 potes. As escolhas
     // são determinadas no giro e persistidas antes de abrir o painel.
     if (result.scatter >= 3) {
-      state.pendingPot = {
-        choices: Array.from({ length: 3 }, () =>
-          round(state.bet * POT_VALUES[Math.floor(validRng(rng) * POT_VALUES.length)]))
-      };
+      // No APK existem rotinas distintas para caldeirões e morangos.
+      // A seleção de qual bónus surge permanece experimental.
+      const isStrawberry=validRng(rng)<.30;
+      if(isStrawberry){
+        state.pendingStrawberry={
+          choices:Array.from({length:STRAWBERRY_CHOICES},()=>
+            round(state.bet*STRAWBERRY_VALUES[Math.floor(validRng(rng)*STRAWBERRY_VALUES.length)]))
+        };
+      }else{
+        state.pendingPot={
+          choices:Array.from({length:3},()=>
+            round(state.bet*POT_VALUES[Math.floor(validRng(rng)*POT_VALUES.length)]))
+        };
+      }
     }
     // A roleta abre só com CINCO abóboras literais alinhadas numa
     // linha de pagamento ativa. Não basta encher o contador acumulado:
@@ -192,6 +211,7 @@
     }
     return { ok: true, state, grid, result, free, earnedSpins, pumpkinBonuses,
       heldReels: holds, potTriggered: Boolean(state.pendingPot),
+      strawberryTriggered:Boolean(state.pendingStrawberry),
       wheelTriggered:Boolean(state.pendingWheel), wheelEligible };
   }
   function choosePot(input, index) {
@@ -207,6 +227,17 @@
     return { ok: true, state, awarded, reveal };
 
   }
+  function chooseStrawberry(input,index){
+    const state=sanitize(input);
+    if(!state.pendingStrawberry)return {ok:false,reason:"sem-morangos",state};
+    if(!Number.isInteger(index)||index<0||index>=STRAWBERRY_CHOICES)
+      return {ok:false,reason:"selecao-invalida",state};
+    const reveal=[...state.pendingStrawberry.choices],awarded=reveal[index];
+    state.balance=Math.min(MAX_BALANCE,round(state.balance+awarded));
+    state.lastWin=round(state.lastWin+awarded);
+    state.pendingStrawberry=null;
+    return {ok:true,state,awarded,reveal};
+  }
   function resolveWheel(input) {
     const state=sanitize(input);
     if(!state.pendingWheel)return {ok:false,reason:"sem-roleta",state};
@@ -220,7 +251,8 @@
     return {ok:true,state,awarded:payout,sectorIndex,label:sector.label};
   }
   const api = Object.freeze({ SYMBOLS, LINES, PAY, PUMPKINS_FOR_BONUS,
-    WHEEL_SECTORS, createState, sanitize, setBet, pick, evaluateGrid, spin, choosePot, resolveWheel });
+    WHEEL_SECTORS, STRAWBERRY_CHOICES, createState, sanitize, setBet, pick, evaluateGrid,
+    spin, choosePot, chooseStrawberry, resolveWheel });
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.HalloweenEngine = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
