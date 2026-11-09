@@ -12,7 +12,9 @@ permissions:
 
 concurrency:
   group: jardim-pages-${{ github.ref }}
-  cancel-in-progress: true
+  # Várias máquinas partilham o repositório; um commit noutro jogo
+  # não deve cancelar os testes/publicação que já estão a decorrer.
+  cancel-in-progress: false
 
 jobs:
   verificar:
