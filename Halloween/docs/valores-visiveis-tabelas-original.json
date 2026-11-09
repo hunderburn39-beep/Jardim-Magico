@@ -1,0 +1,120 @@
+{
+  "source": "assets/halloween/01_tabela1.webp, 01_tabela2.webp, 01_tabela3x.webp, 01_tabela4x.webp (XAPK fornecido em 09/11/2026)",
+  "use": "documentary-only",
+  "warning": "Valores transcritos visualmente; sem confirmação da fórmula de aposta, linhas, sentido de leitura, variáveis ou versão. NÃO usar automaticamente como tabela de pagamentos.",
+  "version": "XAPK Halloween 30L 6.68",
+  "visible_values": [
+    {
+      "file": "01_tabela1.webp",
+      "figure": "Halloween (abóbora/logótipo)",
+      "count": 5,
+      "displayed": 10000
+    },
+    {
+      "file": "01_tabela1.webp",
+      "figure": "Halloween (abóbora/logótipo)",
+      "count": 4,
+      "displayed": 2000
+    },
+    {
+      "file": "01_tabela1.webp",
+      "figure": "MAGIC",
+      "count": 5,
+      "displayed": 2000
+    },
+    {
+      "file": "01_tabela1.webp",
+      "figure": "MAGIC",
+      "count": 4,
+      "displayed": 500
+    },
+    {
+      "file": "01_tabela1.webp",
+      "figure": "MAGIC",
+      "count": 3,
+      "displayed": 250,
+      "notes": "Tabela apresenta sequência direcional"
+    },
+    {
+      "file": "01_tabela1.webp",
+      "figure": "caldeirão",
+      "count": 5,
+      "displayed": "BONUS×3"
+    },
+    {
+      "file": "01_tabela1.webp",
+      "figure": "caldeirão",
+      "count": 4,
+      "displayed": "BONUS×2"
+    },
+    {
+      "file": "01_tabela1.webp",
+      "figure": "caldeirão",
+      "count": 3,
+      "displayed": "BONUS×1"
+    },
+    {
+      "file": "01_tabela2.webp",
+      "figure": "WITCH",
+      "count": 5,
+      "displayed": 150
+    },
+    {
+      "file": "01_tabela2.webp",
+      "figure": "WITCH",
+      "count": 4,
+      "displayed": 100
+    },
+    {
+      "file": "01_tabela2.webp",
+      "figure": "bruxa verde",
+      "count": 5,
+      "displayed": 30
+    },
+    {
+      "file": "01_tabela2.webp",
+      "figure": "bruxa verde",
+      "count": 4,
+      "displayed": 7
+    },
+    {
+      "file": "01_tabela3x.webp",
+      "figure": "Halloween",
+      "count": 3,
+      "displayed": 300,
+      "notes": "Tabela específica de variante/acumulados"
+    },
+    {
+      "file": "01_tabela3x.webp",
+      "figure": "MAGIC",
+      "count": 3,
+      "displayed": 200,
+      "notes": "Tabela específica de variante/acumulados"
+    }
+  ],
+  "variants": [
+    {
+      "file": "01_tabela3x.webp",
+      "accumulatedDisplays": 3
+    },
+    {
+      "file": "01_tabela4x.webp",
+      "accumulatedDisplays": 4
+    }
+  ],
+  "validated_facts": {
+    "symbol_types": 10,
+    "atlas_columns_per_symbol": 5,
+    "roulette_numbered_positions": 30,
+    "game_class": "com.r7games.slotsaga.GameHalloween30L"
+  },
+  "unknowns": [
+    "multiplicador de aposta e unidades",
+    "critérios completos para atribuição de linhas",
+    "relações ANY e sentido bidirecional",
+    "gatilho de morangos",
+    "resultados reais da roleta",
+    "RTP e prêmios máximos",
+    "diferenças entre versões 25L/30L/Clássica"
+  ]
+}
