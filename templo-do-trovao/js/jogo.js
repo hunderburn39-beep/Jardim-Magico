@@ -104,19 +104,7 @@
   function countScatter(grid){return grid.filter(s=>s.kind==="scatter").length}
   function getWins(grid,cap){return RULES.clusterScore(grid,PAY_TABLE,currentBet(),state.spots,cap)}
   function tumble(grid,matchedPositions){
-    // As casas multiplicadoras não caem: só os símbolos se movem.
-    const next=Array(SIZE);
-    for(let col=0;col<COLS;col++){
-      const survivors=[];
-      for(let row=ROWS-1;row>=0;row--){
-        const index=row*COLS+col;
-        if(!matchedPositions.has(index))survivors.push(grid[index]);
-      }
-      let row=ROWS-1;
-      for(const cell of survivors){next[row*COLS+col]=cell;row--}
-      while(row>=0){next[row*COLS+col]=newSymbol();row--}
-    }
-    return next;
+    return RULES.tumbleClusters(grid,matchedPositions,newSymbol);
   }
   function sfx(kind,options={}){
     if(state.sound && window.TrovaoAudio) window.TrovaoAudio.play(kind,options);
