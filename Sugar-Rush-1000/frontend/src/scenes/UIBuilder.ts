@@ -44,49 +44,43 @@ import { T } from '../helpers/I18n';
     this.logoContainer = this.add.container(0, 0);
     this.logoWrapper.add(this.logoContainer);
 
-    // Candy banner/ribbon behind the logo text
+    // Identidade revista: placa de esmalte violeta com aro champanhe
+    // e reflexos discretos, no lugar da fita vermelha de cartaz.
     const logoBanner = this.add.graphics();
-    // Main ribbon body (candy pink)
-    logoBanner.fillGradientStyle(0xff2277, 0xff0066, 0xcc0055, 0xaa0044, 1);
-    logoBanner.fillRoundedRect(-190, -52, 380, 58, 12);
-    // Ribbon fold left
-    logoBanner.fillStyle(0x880033, 1);
-    logoBanner.fillTriangle(-190, -52, -210, -42, -190, -32);
-    logoBanner.fillTriangle(-190, 6, -210, -4, -190, -14);
-    // Ribbon fold right
-    logoBanner.fillTriangle(190, -52, 210, -42, 190, -32);
-    logoBanner.fillTriangle(190, 6, 210, -4, 190, -14);
-    // Ribbon gloss highlight
-    logoBanner.fillGradientStyle(
-      0xffffff,
-      0xffffff,
-      0xffffff,
-      0xffffff,
-      0.3,
-      0.3,
-      0,
-      0,
-    );
-    logoBanner.fillRoundedRect(-188, -50, 376, 22, {
-      tl: 10,
-      tr: 10,
-      bl: 0,
-      br: 0,
-    } as Phaser.Types.GameObjects.Graphics.RoundedRectRadius);
-    // Gold trim on ribbon edges
-    logoBanner.lineStyle(2, 0xffcc44, 0.8);
-    logoBanner.strokeRoundedRect(-190, -52, 380, 58, 12);
+    logoBanner.fillStyle(0x18052c, 0.58);
+    logoBanner.fillRoundedRect(-207, -55, 414, 123, 24);
+    logoBanner.fillGradientStyle(0x69338d, 0x49206f, 0x210a47, 0x361257, 0.98);
+    logoBanner.fillRoundedRect(-202, -57, 404, 119, 21);
+    logoBanner.lineStyle(4, 0xffd88b, 0.95);
+    logoBanner.strokeRoundedRect(-202, -57, 404, 119, 21);
+    logoBanner.lineStyle(1.5, 0xffefc1, 0.56);
+    logoBanner.strokeRoundedRect(-196, -51, 392, 107, 17);
+    logoBanner.fillStyle(0xffffff, 0.12);
+    logoBanner.fillRoundedRect(-180, -49, 360, 11, 5);
 
-    // Shadow layer for 'SUGAR BLAST'
+    // Açúcar brilhante nas duas pontas sem sobrecarregar o lettering.
+    for (const side of [-1, 1]) {
+      const cx = side * 175;
+      logoBanner.fillStyle(0xffdc83, 0.9);
+      logoBanner.fillCircle(cx, -13, 11);
+      logoBanner.fillStyle(0xff75b5, 1);
+      logoBanner.fillCircle(cx, -15, 8);
+      logoBanner.fillStyle(0xffffff, 0.7);
+      logoBanner.fillCircle(cx - 3, -18, 2.5);
+      logoBanner.lineStyle(2.5, 0xffedb9, 0.8);
+      logoBanner.strokeCircle(cx, -13, 13);
+    }
+
+    // Shadow layer for 'SUGAR RUSH'
     const titleShadow = this.add
-      .text(0, -22, 'SUGAR BLAST', {
+      .text(0, -19, 'SUGAR RUSH', {
         
         fontFamily: '"Poppins", sans-serif',
-        fontSize: '46px',
+        fontSize: '48px',
         fontStyle: 'bold',
-        color: '#ff006a',
-        stroke: '#ff006a',
-        strokeThickness: 16,
+        color: '#4f126f',
+        stroke: '#4f126f',
+        strokeThickness: 12,
         shadow: {
           offsetX: 0,
           offsetY: 4,
@@ -98,16 +92,16 @@ import { T } from '../helpers/I18n';
       })
       .setOrigin(0.5, 0.5);
 
-    // Main layer for 'SUGAR BLAST'
+    // Main layer for 'SUGAR RUSH'
     this.logoText1 = this.add
-      .text(0, -24, 'SUGAR BLAST', {
+      .text(0, -22, 'SUGAR RUSH', {
         
         fontFamily: '"Poppins", sans-serif',
-        fontSize: '46px',
+        fontSize: '48px',
         fontStyle: 'bold',
-        color: '#ffffff',
-        stroke: '#ff006a',
-        strokeThickness: 8,
+        color: '#fff7ed',
+        stroke: '#e44f9e',
+        strokeThickness: 6,
         shadow: {
           offsetX: 0,
           offsetY: 4,
@@ -137,11 +131,11 @@ import { T } from '../helpers/I18n';
         
         fontFamily:
           '"Montserrat", "Poppins", sans-serif',
-        fontSize: '62px',
+        fontSize: '61px',
         fontStyle: 'bold',
-        color: '#ffcc00',
-        stroke: '#ff8800',
-        strokeThickness: 10,
+        color: '#fff0a8',
+        stroke: '#d99b35',
+        strokeThickness: 8,
         shadow: {
           offsetX: 0,
           offsetY: 6,
@@ -160,6 +154,15 @@ import { T } from '../helpers/I18n';
       num1000Shadow,
       this.logoText2,
     ]);
+    this.tweens.add({
+      targets: this.logoText2,
+      scaleX: 1.045,
+      scaleY: 1.045,
+      duration: 1850,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1,
+    });
 
     // Buy buttons setup
     const btnStyle = {
