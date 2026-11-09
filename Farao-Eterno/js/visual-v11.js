@@ -5,7 +5,7 @@
  const game=window.__faraoGame, canvas=document.getElementById('canvas');
  if(!game || !canvas) return;
  const ctx=canvas.getContext('2d');
- const R=Object.freeze({left:33,top:248,cw:99,gh:120,step:101});
+ const R=Object.freeze({left:33,top:266,cw:99,gh:120,step:101});
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
  const TAU=Math.PI*2;
  const format=n=>(Math.round((n+Number.EPSILON)*100)/100).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+' cr';
@@ -246,7 +246,7 @@
   ctx.restore();
  };
  game.reelBoard=function(t){
-  const x=20,y=250,w=520,h=R.top+3*R.gh-y+23;
+  const x=20,y=R.top-16,w=520,h=R.top+3*R.gh-y+23;
   ctx.save();ctx.shadowColor='#000c';ctx.shadowBlur=16;ctx.shadowOffsetY=6;
   rounded(ctx,x-5,y-7,w+10,h+10,15,null,'#deb56b',3.7);ctx.restore();
   rounded(ctx,x-1,y-5,w+2,h+5,13,null,'#745027a9',1.5);
