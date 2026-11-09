@@ -43,6 +43,8 @@ def direct_audio_urls(page):
     urls += [("https:" + u) for u in re.findall(
         r"(?<!:)//(?:cdn\\.pixabay\\.com|cdn\\.freesound\\.org|freesound\\.org)/[^\\s\\\"'<>]+", raw
     )]
+    # A metadata og:audio de Freesound contém um prefixo duplicado.
+    urls=[u.replace("https://freesound.orghttps://", "https://") for u in urls]
     result = []
     for candidate in urls:
         candidate = candidate.rstrip(");,}")
@@ -86,6 +88,11 @@ def main():
         except Exception as exc:
             print("Página indisponível:", exc, flush=True)
     options = list(dict.fromkeys(options))
+    # Tentar a versão HQ da mesma gravação antes da versão LQ.
+    for u in list(options):
+        if "-lq.mp3" in u:
+            hq=u.replace("-lq.mp3","-hq.mp3")
+            if hq not in options: options.insert(0,hq)
     print("Candidatos:", len(options))
     for url in options[:40]:
         print("CANDIDATO:", url)
