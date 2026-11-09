@@ -136,6 +136,7 @@
   line(ctx,xx+11,bot+14,xx+R.cw-11,bot+14,'#bb8f49',1.1);
  }
  function tileAt(sym,x,y,t,win){
+  if(sym==='TOMB')return; // A torre não tem quadrado dourado; é desenhada por cima das casas.
   ctx.drawImage(tile,x,y,R.cw,R.gh);
   game.drawIcon(sym,x,y,R.cw,R.gh,win,t);
   // Nas cartas baixas, desenhar a moldura POR CIMA da letra ampliada,
@@ -199,6 +200,12 @@
     ctx.beginPath();ctx.rect(x+5,y+(h-96)/2+5,w-10,86);ctx.clip();
     ctx.drawImage(img,b.x,b.y,b.w,b.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
     ctx.restore();
+   }else if(sym==='TOMB'){
+    // Torre maior, sem moldura individual; pode atravessar as divisões horizontais.
+    const bounds=visibleBounds(img);
+    const scale=Math.min((w-2)/bounds.w,(h*1.32)/bounds.h);
+    const iw=bounds.w*scale,ih=bounds.h*scale;
+    ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
    }else{
     const scale=Math.min(size/img.naturalWidth,size/img.naturalHeight);
     const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
@@ -266,6 +273,19 @@
       ctx.save();ctx.shadowColor='#68ffe5';ctx.shadowBlur=10;ctx.strokeStyle='rgba(133,255,225,'+(.35+.55*ease)+')';ctx.lineWidth=2;
       rounded(ctx,rx+3,yy+10,cw-6,gh-20,8,null,ctx.strokeStyle,2);
       if(scan<.99){ctx.fillStyle='rgba(203,255,237,'+(.65-ease*.35)+')';ctx.fillRect(rx+7,yy+gh*scan-1,cw-14,3);}
+      ctx.restore();
+     }
+    }
+    // Desenhar as torres por último para sobreporem os quadrados acima e abaixo.
+    for(let r=0;r<3;r++){
+     const yy=top+r*gh;
+     const scan=expanding?clamp(progress*3.18-r*.93,0,1):0;
+     const ease=scan*scan*(3-2*scan);
+     const showBase=grid[c][r]==='TOMB'&&ease<1;
+     const showExpanded=expanding&&this.expanded[c].symbol==='TOMB'&&ease>0;
+     if(showBase||showExpanded){
+      ctx.save();ctx.globalAlpha=showExpanded?ease:1-ease;
+      this.drawIcon('TOMB',rx,yy+(showExpanded?0:bounce),cw,gh,ready&&this.winCells.includes(c+'-'+r),t);
       ctx.restore();
      }
     }
