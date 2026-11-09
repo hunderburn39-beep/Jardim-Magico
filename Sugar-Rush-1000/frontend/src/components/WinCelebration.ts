@@ -32,7 +32,7 @@ export class WinCelebration {
 
   private tierConfig = [
     {
-      name: 'GOOD WIN!',
+      name: 'BOM PRÉMIO!',
       threshold: 2,
       bgColor: '#00cc88',
       glowColor: '#00ff99',
@@ -42,7 +42,7 @@ export class WinCelebration {
       particleLife: 2000,
     },
     {
-      name: 'GREAT WIN!',
+      name: 'GRANDE PRÉMIO!',
       threshold: 10,
       bgColor: '#ffaa00',
       glowColor: '#ffcc44',
@@ -52,7 +52,7 @@ export class WinCelebration {
       particleLife: 3000,
     },
     {
-      name: 'SUPER WIN!',
+      name: 'MEGA PRÉMIO!',
       threshold: 25,
       bgColor: '#ff006a',
       glowColor: '#ff4d94',
@@ -62,7 +62,7 @@ export class WinCelebration {
       particleLife: 3500,
     },
     {
-      name: 'EPIC WIN!',
+      name: 'PRÉMIO ÉPICO!',
       threshold: 50,
       bgColor: '#e60000',
       glowColor: '#ff3333',
@@ -72,7 +72,7 @@ export class WinCelebration {
       particleLife: 4000,
     },
     {
-      name: 'LEGENDARY WIN!',
+      name: 'LENDÁRIO!',
       threshold: 100,
       bgColor: '#ffe600',
       glowColor: '#ffff77',
@@ -177,7 +177,7 @@ export class WinCelebration {
     // DARK OVERLAY WITH GRADIENT
     // ═══════════════════════════════════════════════════
     const overlay = this.scene.add.graphics();
-    overlay.fillStyle(0x000000, 0.65);
+    overlay.fillStyle(0x13072a, 0.60);
     overlay.fillRect(0, 0, w, h);
     overlay.setInteractive(
       new Phaser.Geom.Rectangle(0, 0, w, h),
@@ -221,18 +221,18 @@ export class WinCelebration {
     const glowCircle = this.scene.add.graphics();
     const tierColorInt = parseInt(tier.glowColor.replace('#', '0x'));
     glowCircle.fillStyle(tierColorInt, 0.2);
-    glowCircle.fillCircle(w / 2, h * 0.38, 280);
+    glowCircle.fillCircle(w / 2, h * 0.42, Math.min(w * 0.58, 280));
     glowCircle.fillStyle(tierColorInt, 0.08);
-    glowCircle.fillCircle(w / 2, h * 0.38, 420);
+    glowCircle.fillCircle(w / 2, h * 0.42, Math.min(w * 0.80, 420));
     this.container.add(glowCircle);
 
     // ═══════════════════════════════════════════════════
     // PREMIUM WIN TIER TEXT
     // ═══════════════════════════════════════════════════
     const tierText = this.scene.add
-      .text(w / 2, h * 0.32, tier.name, {
+      .text(w / 2, h * 0.34, tier.name, {
         
-        fontSize: `${tier.fontSize}px`,
+        fontSize: `${Math.floor(Math.min(tier.fontSize, w / (tier.name.length * 0.58)))}px`,
         fontFamily: Theme.fonts.display,
         fontStyle: 'bold',
         color: tier.textColor,
@@ -275,9 +275,9 @@ export class WinCelebration {
     // WIN AMOUNT DISPLAY (COUNTING UP)
     // ═══════════════════════════════════════════════════
     const amountText = this.scene.add
-      .text(w / 2, h * 0.54, '$0.00', {
+      .text(w / 2, h * 0.52, '0,00 ✦', {
         
-        fontSize: `${Math.floor(tier.fontSize * 0.65)}px`,
+        fontSize: `${Math.floor(Math.min(tier.fontSize * 0.65, w * 0.14))}px`,
         fontFamily: Theme.fonts.mono,
         fontStyle: 'bold',
         color: '#ffffff',
@@ -296,6 +296,15 @@ export class WinCelebration {
       .setOrigin(0.5)
       .setAlpha(0)
       .setScale(0.5);
+    // Ornamento dourado pouco opaco: dá hierarquia ao valor sem uma caixa sólida.
+    const amountAccent = this.scene.add.graphics();
+    amountAccent.lineStyle(2, 0xffdc89, 0.56);
+    amountAccent.lineBetween(w * 0.21, h * 0.595, w * 0.79, h * 0.595);
+    amountAccent.fillStyle(0xffe0a4, 0.84);
+    amountAccent.fillCircle(w * 0.21, h * 0.595, 3);
+    amountAccent.fillCircle(w * 0.79, h * 0.595, 3);
+    this.container.add(amountAccent);
+
     this.container.add(amountText);
 
     // Fade in amount text
@@ -323,7 +332,7 @@ export class WinCelebration {
         // Cubic ease-out for smooth acceleration
         const eased = 1 - Math.pow(1 - progress, 3);
         const currentAmount = winAmount * eased;
-        amountText.setText(`$${currentAmount.toFixed(2)}`);
+        amountText.setText(new Intl.NumberFormat('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(currentAmount) + ' ✦');
 
         // Play tick sound with frequency and pitch based on progress
         try {
@@ -482,7 +491,7 @@ export class WinCelebration {
     // TAP-TO-SKIP TEXT & INTERACTION
     // ═══════════════════════════════════════════════════
     const skipText = this.scene.add
-      .text(w / 2, h * 0.85, 'TAP TO CONTINUE', {
+      .text(w / 2, h * 0.85, 'TOCA PARA CONTINUAR', {
         
         fontSize: '14px',
         fontFamily: Theme.fonts.sans,
