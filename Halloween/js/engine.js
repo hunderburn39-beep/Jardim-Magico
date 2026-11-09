@@ -53,7 +53,7 @@
     return SYMBOLS[SYMBOLS.length - 1].id;
   }
   function createState() {
-    return { balance: 1000, bet: 2, lines: 20, jackpots: [350,750], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, pendingPot: null, pendingWheel: null };
+    return { balance: 1000, bet: 2, lines: 20, jackpots: [350,750], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null };
   }
   function sanitize(s) {
     const d = createState();
@@ -68,6 +68,10 @@
       pumpkins: Number.isInteger(s.pumpkins) ? Math.max(0, Math.min(4,s.pumpkins)) : 0,
       spins: Number.isInteger(s.spins) ? Math.max(0,s.spins) : 0,
       lastWin: Number.isFinite(s.lastWin) ? Math.max(0,Math.min(MAX_BALANCE,round(s.lastWin))) : 0,
+      lastGrid: Array.isArray(s.lastGrid) && s.lastGrid.length===REELS &&
+        s.lastGrid.every(col=>Array.isArray(col) && col.length===ROWS &&
+          col.every(symbol=>SYMBOLS.some(def=>def.id===symbol))) ?
+        s.lastGrid.map(col=>[...col]) : null,
       pendingPot: s.pendingPot && Array.isArray(s.pendingPot.choices) && s.pendingPot.choices.length === 3 &&
         s.pendingPot.choices.every(n => Number.isFinite(n) && n >= 0 && n <= 100000) ?
           { choices: s.pendingPot.choices.map(round) } : null,
@@ -154,6 +158,7 @@
     state.balance = Math.min(MAX_BALANCE, round(state.balance + result.total));
     state.spins++;
     state.lastWin = result.total;
+    state.lastGrid = grid.map(col=>[...col]);
     // Três caldeirões desbloqueiam uma escolha de 3 potes. As escolhas
     // são determinadas no giro e persistidas antes de abrir o painel.
     if (result.scatter >= 3) {
