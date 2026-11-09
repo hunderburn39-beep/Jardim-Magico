@@ -5,14 +5,14 @@ const E=globalThis.HalloweenEngine, ART=globalThis.HalloweenArt;
 const status=document.getElementById("status");
 if(!E||!ART||!globalThis.Phaser){status.textContent="Erro ao carregar o jogo";return;}
 const W=720,H=1280,X=66,Y=334,BW=588,BH=510,CW=BW/5,CH=BH/3;
-const saveKey="halloween-classico-v02";
+const saveKey="halloween-classico-v02"; // Guarda também sessões iniciadas na V0.2
 const fmt=n=>Number(n).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2});
 function txt(s,x,y,value,size=28,color="#fff6d9",extra={}) {
   return s.add.text(x,y,value,{fontFamily:"Georgia,serif",fontSize:size+"px",
     fontStyle:"bold",color,align:"center",stroke:"#1a1324",strokeThickness:3,...extra}).setOrigin(.5);
 }
 class Classica extends Phaser.Scene{
- constructor(){super("classica");this.state=E.createState();this.spinning=false;this.auto=false;this.silence=false;this.held=new Set();this.previous=null;this.canHold=false;this.audio=null;}
+ constructor(){super("classica");this.state=E.createState();this.spinning=false;this.auto=false;this.silence=false;this.held=new Set();this.previous=null;this.canHold=false;this.audio=null;this.potOpen=false;}
  preload(){
    for(const [id,svg] of Object.entries(ART))
      this.load.svg("h-"+id,"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg),{width:156,height:174});
@@ -23,8 +23,10 @@ class Classica extends Phaser.Scene{
    this.hud();
    this.grid();
    this.bottom();
+   this.makePotBonus();
    this.shortcuts();
    this.renderState();
+   if (this.state.pendingPot) this.showPotBonus();
    status.textContent="";
  }
  background(){
@@ -109,7 +111,11 @@ class Classica extends Phaser.Scene{
    txt(this,548,953,"ACUMULADO 2",22,"#ffd177");
    this.jack1=txt(this,172,996,"",39,"#fff2a7");
    this.jack2=txt(this,548,996,"",39,"#fff2a7");
-   this.pumpkins=txt(this,360,1053,"🎃 🎃 🎃 🎃 🎃",25,"#ffbc65");
+   this.pumpkinMarkers=[];
+   for(let i=0;i<5;i++){
+     const pumpkin=this.add.image(228+i*66,1052,"h-pumpkin").setDisplaySize(47,56);
+     this.pumpkinMarkers.push(pumpkin);
+   }
    this.message=txt(this,360,1089,"CARREGA EM JOGAR",26,"#ffeaca");
    this.roundButton(367,1192,70,"JOGAR",30,()=>this.spin(),true);
    this.roundButton(90,1192,48,"LINHAS",21,()=>this.changeLines());
@@ -143,9 +149,10 @@ class Classica extends Phaser.Scene{
    this.credit.setText(fmt(this.state.balance));
    this.prize.setText(fmt(this.state.lastWin));
    this.stake.setText(fmt(this.state.bet));
-   this.jack1.setText(fmt(this.state.jackpots?.[0]||350));
-   this.jack2.setText(fmt(this.state.jackpots?.[1]||750));
-   this.pumpkins.setText("🎃 ".repeat(Math.max(1,Math.min(5,Math.ceil((this.state.pumpkins||0)/2)))).trim());
+   this.jack1.setText(fmt(this.state.jackpots?.[0]??350));
+   this.jack2.setText(fmt(this.state.jackpots?.[1]??750));
+   for(let i=0;i<this.pumpkinMarkers.length;i++)
+      this.pumpkinMarkers[i].setAlpha(i<this.state.pumpkins?1:.3);
    if(this.state.freeSpins>0)this.message.setText("GIROS GRÁTIS "+this.state.freeSpins);
    this.autoText.setText(this.auto?"ATIVO":"");
    this.linesText.setText(this.state.lines+" LINHAS • ACUMULADOS");
@@ -156,13 +163,13 @@ class Classica extends Phaser.Scene{
    }
  }
  changeBet(){
-   if(this.spinning)return;
+   if(this.spinning||this.potOpen)return;
    const options=[1,2,5,10],i=options.indexOf(this.state.bet);
    this.state=E.setBet(this.state,options[(i+1)%options.length]);
    this.renderState();this.store();this.tone(480,.06);
  }
  changeLines(){
-   if(this.spinning)return;
+   if(this.spinning||this.potOpen)return;
    const options=[20,25,30],i=options.indexOf(this.state.lines||25);
    this.state.lines=options[(i+1)%3];
    this.renderState();
@@ -170,22 +177,27 @@ class Classica extends Phaser.Scene{
    this.store();this.tone(440,.06);
  }
  toggleAuto(){
+   if(this.potOpen)return;
    this.auto=!this.auto;
    this.autoText.setText(this.auto?"ATIVO":"");
    if(this.auto&&!this.spinning)this.spin();
  }
  toggleSound(){this.silence=!this.silence;this.message.setText(this.silence?"SOM DESLIGADO":"SOM LIGADO");}
  toggleHold(col){
-   if(this.spinning||!this.canHold||!this.previous)return;
+   if(this.spinning||this.potOpen||!this.canHold||!this.previous)return;
    if(this.held.has(col))this.held.delete(col);else this.held.add(col);
    this.locks[col].setVisible(this.held.has(col)).setText("TRAVADO");
    this.message.setText(this.held.size+" TAMBORES TRAVADOS");
    this.tone(560,.05);
  }
  spin(){
-   if(this.spinning)return;
+   if(this.spinning||this.potOpen)return;
    const outcome=E.spin(this.state,Math.random,this.previous,this.held);
    if(!outcome.ok){
+     if(outcome.reason==="bonus-pendente"){
+       this.showPotBonus();
+       return;
+     }
      this.message.setText("CRÉDITOS INSUFICIENTES");this.auto=false;
      this.autoText.setText("");return;
    }
@@ -223,14 +235,82 @@ class Classica extends Phaser.Scene{
    this.state.jackpots=this.state.jackpots.map((v,i)=>Math.round((v+this.state.bet*(i===0?.01:.017))*100)/100);
    this.previous=result.grid;
    this.held.clear();for(const label of this.locks)label.setVisible(false);
-   this.canHold=result.result.total===0&&!result.free;
+   this.canHold=result.result.total===0&&!result.free&&!result.potTriggered;
    this.highlight(result.result.hits);
    if(result.earnedSpins){this.message.setText("+10 GIROS GRÁTIS!");this.flash();}
    else if(result.pumpkinBonuses){this.message.setText("BÓNUS DAS ABÓBORAS!");this.flash();}
    else if(result.result.total>0){this.message.setText("PRÉMIO "+fmt(result.result.total));this.tone(740,.15);}
    else{this.message.setText("SEM PRÉMIO — TOCA NUM TAMBOR PARA TRAVAR");}
    this.renderState();this.store();
-   if(this.auto)this.time.delayedCall(620,()=>{if(this.auto)this.spin();});
+   if(result.potTriggered){
+     this.showPotBonus();
+   } else if(this.auto) {
+     this.time.delayedCall(620,()=>{if(this.auto)this.spin();});
+   }
+ }
+ makePotBonus(){
+   // Janela modal Phaser; mantém a escolha pendente no estado local até
+   // o utilizador tocar num caldeirão, mesmo após fechar o navegador.
+   this.potOverlay=this.add.container(0,0).setDepth(100).setVisible(false);
+   const veil=this.add.rectangle(W/2,H/2,W,H,0x0b071c,.96).setInteractive();
+   this.potOverlay.add(veil);
+   const border=this.add.graphics();
+   border.fillStyle(0x3b1638,.98).fillRoundedRect(53,320,614,600,28);
+   border.lineStyle(8,0xd8a04a,1).strokeRoundedRect(53,320,614,600,28);
+   this.potOverlay.add(border);
+   const heading=txt(this,W/2,386,"BÓNUS DOS CALDEIRÕES",36,"#ffe3a2");
+   const subtitle=txt(this,W/2,456,"ESCOLHE UM DOS TRÊS",27,"#f8dbcb");
+   this.potOverlay.add([heading,subtitle]);
+   this.potValues=[];
+   this.potImages=[];
+   for(let i=0;i<3;i++){
+     const x=155+i*205;
+     const pot=this.add.image(x,620,"h-scatter")
+       .setDisplaySize(162,188).setInteractive({useHandCursor:true});
+     pot.on("pointerdown",()=>this.pickPot(i));
+     this.potOverlay.add(pot);
+     const number=txt(this,x,751,String(i+1),29,"#f8d79b");
+     this.potOverlay.add(number);
+     this.potImages.push(pot);
+     const value=txt(this,x,804,"?",23,"#fff6cf");
+     this.potOverlay.add(value);
+     this.potValues.push(value);
+   }
+   this.potHint=txt(this,W/2,862,"TOCA NO CALDEIRÃO",23,"#fff4d7");
+   this.potOverlay.add(this.potHint);
+ }
+ showPotBonus(){
+   if(!this.state.pendingPot)return;
+   this.potOpen=true;
+   this.canHold=false;
+   this.auto=false;
+   this.autoText.setText("");
+   for(let i=0;i<3;i++){
+     this.potImages[i].setInteractive({useHandCursor:true}).setAlpha(1);
+     this.potValues[i].setText("?");
+   }
+   this.potHint.setText("ESCOLHE O TEU PRÉMIO");
+   this.potOverlay.setVisible(true);
+   this.tone(740,.18);
+ }
+ pickPot(index){
+   if(!this.potOpen||!this.state.pendingPot)return;
+   const outcome=E.choosePot(this.state,index);
+   if(!outcome.ok)return;
+   this.state=outcome.state;
+   this.store();
+   this.renderState();
+   this.potHint.setText("GANHASTE "+fmt(outcome.awarded)+" CRÉDITOS!");
+   for(let i=0;i<3;i++){
+     this.potValues[i].setText(fmt(outcome.reveal[i]));
+     this.potImages[i].disableInteractive().setAlpha(i===index?1:.5);
+   }
+   this.flash();
+   this.time.delayedCall(1500,()=>{
+     this.potOverlay.setVisible(false);
+     this.potOpen=false;
+     this.message.setText("BÓNUS +"+fmt(outcome.awarded));
+   });
  }
  highlight(hits){
    this.winGlow.clear();
