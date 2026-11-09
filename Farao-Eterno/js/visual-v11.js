@@ -236,7 +236,18 @@
     const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
     ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
    }
-  }else txt(sym,x+w/2,y+h/2,29,color.bright);
+  }else{
+   // Safari ainda a receber a imagem: mostrar um marcador dourado discreto,
+   // nunca os nomes internos "HORUS", "MASK", "ANUBIS" na grelha.
+   ctx.save();
+   ctx.shadowColor='#edba62';ctx.shadowBlur=8;
+   const r=Math.min(w,h)*.32;
+   ctx.fillStyle=radial(ctx,x+w/2,y+h/2,r,[[0,'#6c4b2bb8'],[1,'#2c271d35']]);
+   ctx.beginPath();ctx.arc(x+w/2,y+h/2,r,0,TAU);ctx.fill();
+   ctx.restore();
+   const low=['10','J','Q','K','A'].includes(sym);
+   txt(low?sym:'✦',x+w/2,y+h/2,low?30:36,color.bright);
+  }
   ctx.restore();
  };
  game.reelBoard=function(t){
@@ -375,7 +386,7 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  txt('V1.3.10',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.11',38,985,10,'#e5c68d',850,'Arial');
   if(!this.storageOK)txt('SESSÃO SEM GRAVAÇÃO',280,833,11,'#ffbc83',800,'Arial');
  };
  document.documentElement.dataset.faraoVisual='1.1';
