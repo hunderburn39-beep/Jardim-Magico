@@ -47,6 +47,7 @@ jobs:
           for file in js/*.js; do
             node --check "$file"
           done
+          node tests/wild-audio-position.cjs
 
       - name: Testar matemática e recuperação de sessão
         run: npm test
