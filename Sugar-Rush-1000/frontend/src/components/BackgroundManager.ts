@@ -10,7 +10,7 @@ export class BackgroundManager {
   
   // Reactivity
   private pulseTween: Phaser.Tweens.Tween | null = null;
-  private baseRayAlpha = 0.15;
+  private baseRayAlpha = 0.075;
   
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -38,8 +38,8 @@ export class BackgroundManager {
     this.bgBase.setScale(scale);
     
     // Add a slight pink tint overlay to warm it up to match the grid
-    this.overlay = this.scene.add.rectangle(w/2, h/2, w, h, 0xffbbdd, 0.1).setDepth(0);
-    this.overlay.setBlendMode(Phaser.BlendModes.ADD);
+    this.overlay = this.scene.add.rectangle(w/2, h/2, w, h, 0xffbbdd, 0.045).setDepth(0);
+    this.overlay.setBlendMode(Phaser.BlendModes.NORMAL);
   }
 
   private createGodRays() {
@@ -103,7 +103,7 @@ export class BackgroundManager {
       x: { min: 0, max: w },
       y: { min: -100, max: h + 100 },
       quantity: 1,
-      frequency: 200,
+      frequency: 360,
       lifespan: { min: 8000, max: 15000 },
       scale: { start: 0, end: 0.8, ease: 'Sine.easeInOut' },
       alpha: { start: 0, end: 0.6, ease: 'Sine.easeInOut' },
@@ -119,7 +119,7 @@ export class BackgroundManager {
     const h = this.scene.cameras.main.height;
     
     // Create large, out-of-focus, translucent candy props that slowly drift
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 3; i++) {
       const symId = Phaser.Math.Between(0, 6);
       const prop = this.scene.add.sprite(
         Phaser.Math.Between(0, w),
@@ -128,8 +128,8 @@ export class BackgroundManager {
       );
       
       // Extreme depth of field effect
-      prop.setAlpha(Phaser.Math.FloatBetween(0.1, 0.25));
-      prop.setScale(Phaser.Math.FloatBetween(1.5, 3.5));
+      prop.setAlpha(Phaser.Math.FloatBetween(0.06, 0.11));
+      prop.setScale(Phaser.Math.FloatBetween(0.9, 1.8));
       prop.setBlendMode(Phaser.BlendModes.SCREEN);
       prop.setDepth(1); // Behind the grid
 
