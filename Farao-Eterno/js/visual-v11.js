@@ -73,7 +73,7 @@
  });
  // Names stay accessible to the established HTML touch targets.
  function drawMedallion(label,disabled,t){
-  const cx=280,cy=914,r=65;
+  const cx=280,cy=878,r=65;
   ctx.save();
   if(disabled)ctx.globalAlpha=.57;
   const pulse=1+(!game.spinning&&!game.paused?.011*Math.sin(t*.004):0);
@@ -263,13 +263,10 @@
  };
  game.controls=function(){
   const disabled=this.spinning||!!this.feature||this.superseded;
-  this.drawControl(31,870,73,78,'−',()=>this.changeBet(-1),{size:33,disabled});
-  this.drawControl(112,870,73,78,'+',()=>this.changeBet(1),{size:33,disabled});
-  this.drawControl(381,870,150,78,this.auto?'PARAR AUTO':'AUTO ×20',()=>this.setAuto(),{size:14,disabled:!!this.feature||this.superseded});
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
-  if(this.ready&&!this.superseded)this.action(215,849,130,130,()=>this.startSpin(),label);
-  txt('V1.1.4',38,985,10,'#e5c68d',850,'Arial');
+  if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
+  txt('V1.1.5',38,985,10,'#e5c68d',850,'Arial');
   if(!this.storageOK)txt('SESSÃO SEM GRAVAÇÃO',280,833,11,'#ffbc83',800,'Arial');
  };
  document.documentElement.dataset.faraoVisual='1.1';
