@@ -186,7 +186,7 @@
     // O fundo e a moldura ficam nítidos; o blur desaparece em cada paragem.
     const velocity=Math.min(1,Math.max(0,(p<.12?p/.12:p>.82?(1-p)/.18:1)));
     ctx.save();
-    if('filter' in ctx)ctx.filter='blur('+(1.2+velocity*2.1).toFixed(1)+'px)';
+    if('filter' in ctx)ctx.filter='blur('+(2.2+velocity*4.0).toFixed(1)+'px)';
     for(let r=-1;r<4;r++){
      const sym=item.show[c][item.steps[c]+3+r-step]||item.grid[c][clamp(r,0,2)];
      tileAt(sym,rx,top+(r+fraction)*gh,t,false);
@@ -272,7 +272,7 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  txt('V1.1.6',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.1.7',38,985,10,'#e5c68d',850,'Arial');
   if(!this.storageOK)txt('SESSÃO SEM GRAVAÇÃO',280,833,11,'#ffbc83',800,'Arial');
  };
  document.documentElement.dataset.faraoVisual='1.1';
