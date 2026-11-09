@@ -48,7 +48,8 @@ async function run(name,launcher){
         balance:s.state.balance,spins:s.state.spins,
         symbolTypes:window.HalloweenEngine.SYMBOLS.length,
         wheelSectors:window.HalloweenEngine.WHEEL_SECTORS.length,
-        accumulators:s.jackpotsText.length};
+        accumulators:s.jackpotsText.length,
+        stakeCents:s.state.bet,activeLines:s.state.lines};
     });
     assert.equal(visible.isCanvas,true);
     assert.equal(visible.grid,15);
@@ -56,6 +57,20 @@ async function run(name,launcher){
     assert.equal(visible.symbolTypes,10);
     assert.equal(visible.wheelSectors,30);
     assert.equal(visible.accumulators,4);
+    assert.equal(visible.stakeCents,1);
+    assert.equal(visible.activeLines,1);
+    // Clicar em + aumenta ambas as dimensões do escalão,
+    // clicar em − volta ao escalão anterior.
+    await tap(page,208,1192);
+    await page.waitForFunction(()=>{
+      const s=window.__HALLOWEEN_SCENE__;
+      return s?.state?.bet===5 && s?.state?.lines===5;
+    });
+    await tap(page,90,1192);
+    await page.waitForFunction(()=>{
+      const s=window.__HALLOWEEN_SCENE__;
+      return s?.state?.bet===1 && s?.state?.lines===1;
+    });
     fs.mkdirSync("visual-previews",{recursive:true});
     await page.screenshot({path:`visual-previews/halloween-${name}-inicio.png`});
     await tap(page,671,272);
