@@ -144,16 +144,26 @@
     friction(.020,.004,640,.015);
   };
 
+  // O Wild tem um som próprio claramente acima da paragem normal.
+  // Intensidade progressiva do 1.º ao 3.º, controlada pelo compressor global.
   audio.sanctuaryLanding=function(reel,count){
     if(count===1){
-      note(342,268,.24,.011);
-    }else if(count===2 && game.spinning){
-      note(158,117,.55,.013);
-      note(270,229,.43,.007,.055);
-      friction(.30,.0035,640);
+      // Primeiro Wild: impacto dourado e ressonância bem audível.
+      friction(.065,.016,1450);
+      note(450,325,.29,.036);
+      note(680,535,.20,.018,.055);
+    }else if(count===2){
+      // Segundo Wild: acentuar o suspense sem perder o grave da rotação.
+      friction(.11,.019,1500);
+      note(185,112,.53,.045);
+      note(560,407,.42,.042,.035);
+      note(780,620,.25,.015,.105);
     }else if(count>=3){
-      note(270,201,.25,.014);
-      note(392,321,.34,.012,.075);
+      // Terceiro Wild: impacto cheio e duas ressonâncias brilhantes.
+      friction(.12,.022,1650);
+      note(245,132,.42,.058);
+      note(635,465,.40,.048,.047);
+      note(850,680,.32,.025,.12);
     }
   };
 
@@ -179,5 +189,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.3.0',original:true,procedural:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.3.1',original:true,procedural:true,dynamicReelSpeed:true};
 })();
