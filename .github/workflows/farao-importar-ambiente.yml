@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/farao-importar-ambiente.yml'
+      - 'Farao-Eterno/tools/import-dark-pyramid.py'
 
 permissions:
   contents: write
