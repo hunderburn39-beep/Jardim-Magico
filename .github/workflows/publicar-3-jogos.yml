@@ -1,0 +1,91 @@
+name: "Publicar no GitHub Pages | 3 jogos"
+
+# O GitHub Pages oferece um unico site por repositorio.
+# Por isso publicamos os tres jogos juntos, em pastas separadas,
+# sem deixar que a publicacao de um substitua os outros.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'css/**'
+      - 'js/**'
+      - 'assets/**'
+      - 'jardim-phaser/**'
+      - 'jardim-3d/**'
+      - 'templo-do-trovao/**'
+      - 'Farao-Eterno/**'
+      - '.github/workflows/publicar-3-jogos.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: publicar-tres-jogos-pages
+  cancel-in-progress: false
+
+jobs:
+  preparar:
+    name: Verificar e preparar os três jogos
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Obter todas as pastas
+        uses: actions/checkout@v4
+
+      - name: Garantir que os três jogos estão presentes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s index.html
+          test -s jardim-phaser/index.html
+          test -s jardim-phaser/vendor/phaser-3.90.0.min.js
+          test -s templo-do-trovao/index.html
+          test -s Farao-Eterno/index.html
+          test -d css
+          test -d js
+          test -d assets
+          echo "Todos os três jogos existem."
+
+      - name: Criar único site, com pastas independentes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public
+          cp index.html public/index.html
+          cp -a css js assets public/
+          cp -a jardim-phaser jardim-3d public/
+          cp -a templo-do-trovao Farao-Eterno public/
+          touch public/.nojekyll
+          test -s public/index.html
+          test -s public/jardim-phaser/index.html
+          test -s public/templo-do-trovao/index.html
+          test -s public/Farao-Eterno/index.html
+          echo "Jardim Mágico: /jardim-phaser/"
+          echo "Portões do Trovão: /templo-do-trovao/"
+          echo "Faraó Eterno: /Farao-Eterno/"
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Guardar os três jogos num só artefacto
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+
+  publicar:
+    name: Publicar sem apagar os outros jogos
+    needs: preparar
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar o site com os três jogos
+        id: deployment
+        uses: actions/deploy-pages@v4
