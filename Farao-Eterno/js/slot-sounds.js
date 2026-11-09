@@ -152,7 +152,7 @@
   function wildPaam(count){
     if(!ready())return;
     const ac=audio.ctx,t=ac.currentTime;
-    const force=count<=1?.87:count===2?1:1.16;
+    const force=count<=1 ? 0.87 : count===2 ? 1 : 1.16;
     const duration=count>=3?1.24:1.08;
     try{
       // Cada voz começa em simultâneo, como uma única pancada orquestral.
