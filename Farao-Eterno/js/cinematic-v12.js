@@ -65,7 +65,7 @@
     let seen = 0, suspenseEnd = false;
     spin.stopAt = baseStop.map((stop, c) => {
       const slow = seen >= 2 && !suspenseEnd;
-      const adjusted = stop + (slow ? (this.turbo ? 340 : 1050) : 0);
+      const adjusted = stop + (slow ? (this.turbo ? 700 : 2200) : 0);
       if (spin.grid[c].includes('TOMB')) {
         seen++;
         if (seen >= 3) suspenseEnd = true;
