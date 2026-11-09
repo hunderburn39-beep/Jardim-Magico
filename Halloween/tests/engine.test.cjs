@@ -192,3 +192,32 @@ test("Acumulados só crescem em giros pagos",()=>{
   const free=E.spin({...E.createState(),freeSpins:1},fixed(.45));
   assert.deepEqual(free.state.jackpots,[350,750]);
 });
+
+test("Caldeirão e roleta na mesma ronda são resolvidos sem duplicar créditos",()=>{
+  let draws=0;
+  const rng=()=>{
+    draws++;
+    if(draws<=3)return 0;          // três abóboras
+    if(draws<=6)return .999999;    // três caldeirões
+    return .37;                    // restantes símbolos e sorteios
+  };
+  const initial={...E.createState(),pumpkins:4,balance:100};
+  const spun=E.spin(initial,rng);
+  assert.equal(spun.ok,true);
+  assert.equal(spun.potTriggered,true);
+  assert.equal(spun.wheelTriggered,true);
+  assert.ok(spun.state.pendingPot);
+  assert.ok(spun.state.pendingWheel);
+  assert.equal(E.spin(spun.state,()=>.2).ok,false);
+  const afterPot=E.choosePot(spun.state,1);
+  assert.equal(afterPot.ok,true);
+  assert.equal(afterPot.state.pendingPot,null);
+  assert.ok(afterPot.state.pendingWheel);
+  assert.equal(E.spin(afterPot.state,()=>.2).ok,false);
+  const afterWheel=E.resolveWheel(afterPot.state);
+  assert.equal(afterWheel.ok,true);
+  assert.equal(afterWheel.state.pendingWheel,null);
+  assert.equal(afterWheel.state.balance,
+    Math.round((spun.state.balance+afterPot.awarded+afterWheel.awarded)*100)/100);
+  assert.equal(E.resolveWheel(afterWheel.state).ok,false);
+});
