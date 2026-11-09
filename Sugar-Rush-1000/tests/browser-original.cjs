@@ -37,9 +37,13 @@ const fs = require("node:fs");
         return !loader || loader.classList.contains("hidden");
       }, null, {timeout:30000});
       await page.screenshot({path:"visual-previews/sugar-original-"+name+"-entrada.png",fullPage:true});
-      await page.keyboard.press("Space");
-      await page.waitForTimeout(3400);
+      await page.waitForTimeout(900);
+      await page.mouse.click(195, 530);
+      await page.waitForTimeout(2200);
       await page.screenshot({path:"visual-previews/sugar-original-"+name+"-jogo.png",fullPage:true});
+      await page.mouse.click(195, 557);
+      await page.waitForTimeout(1400);
+      await page.screenshot({path:"visual-previews/sugar-original-"+name+"-tabuleiro.png",fullPage:true});
       assert.equal(errors.length,0,"Erros Javascript em "+name+": "+errors.join("\n"));
       console.log(JSON.stringify({browser:name,status:"OK",assets:paths.length,title:await page.title()}));
     } finally {
