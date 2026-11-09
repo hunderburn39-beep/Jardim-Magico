@@ -6,7 +6,8 @@ import {DemoBank,newBoard,winningCells,money,DEMO_PROFILES} from './engine.js?v=
 import {demoDB as localDB,validateBackup,validateSessionState} from './database.js?v=5.0.0';
 import {createStorageGateway} from './storage-gateway-v21.js?v=2.2';
 import {createAdminPinLock} from './admin-pin-v21.js?v=2.1';
-import {audio} from './audio.js?v=1';
+import {audio} from './audio.js?v=5.1.0';
+import {dropHudView} from './drop-hud.js?v=5.1.0';
 import {createReelGame} from './reels.js?v=4.2.3';
 import {canWriteDemoSession} from './session-guard-v427.js?v=4.2.7';
 import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
@@ -47,7 +48,7 @@ let pageSuspended=false;
 let autoLeft=0;
 const turnQueue=createTurnQueue();
 let writerReleasePending=null;
-let bigTimer=null,winTimer=null,dropTimer=null,bonusTimer=null;
+let bigTimer=null,winTimer=null,dropTimer=null,bonusTimer=null,dropHudTimer=null;
 let lastPigSpins=null,pigPopTimer=null;
 let holdBusy=false;
 let freeOrbHistory=[];
@@ -130,7 +131,7 @@ function update(){
  $('jpMed').textContent=money(Math.min(s.reserve,s.stake*500));
  $('jpMax').textContent=money(Math.min(s.reserve,s.stake*1000));
  $('jpUltra').textContent=money(Math.min(s.reserve,s.stake*5000));
- if(!running)$('multiTotal').textContent='×'+(s.mode==='free'?s.freeMultiplier:1);
+ if(!running&&s.mode==='free')renderMultiplier([],s.freeMultiplier);
  $('freeMeter').hidden=s.mode!=='free';
  $('freeCount').textContent=s.freeSpins;
  const free=freeProgress(s);
@@ -191,12 +192,19 @@ function renderMultiplier(_history=[],effective=1){
  const before=Math.max(1,Number(output.dataset.value)||1);
  output.textContent='×'+next;
  output.dataset.value=String(next);
+ clearTimeout(dropHudTimer);
+ $('dropHud').hidden=!dropHudView(_history,next).visible;
  if(next>before){
   output.classList.remove('multi-rise');
   // Reinício único de animação quando entra um multiplicador novo.
   void output.offsetWidth;
   output.classList.add('multi-rise');
  }else if(next<=1)output.classList.remove('multi-rise');
+}
+function finishDropHud(){
+ clearTimeout(dropHudTimer);
+ if(bank.mode==='free')return;
+ dropHudTimer=setTimeout(()=>{$('dropHud').hidden=true},1800);
 }
 function celebrationTier(value,stake){
  const ratio=stake>0?value/stake:0;
@@ -445,6 +453,8 @@ async function runSpin(){
  try{
   if(!(await visual(()=>scene.spin(outcome.board,{turbo}),
     outcome.board,turbo?3900:7000)))repaired=true;
+  audio.stop('spin');
+  if(!repaired)audio.play('stop');
   // Nunca iniciar as quedas quando a própria rotação falhou.
   if(!repaired)for(let i=0;i<stages.length;i++){
    // Uma aba oculta não deve iniciar bursts/cascatas adicionais.
@@ -462,6 +472,9 @@ async function runSpin(){
    const fac=outcome.free?1:stage.ev.multiplier;
    const lineTotal=round(stage.ev.raw*fac);
    const wildAwards=stage.ev.wildAwards||[];
+   if(wildAwards.length)audio.play('wild');
+   else if(stage.ev.scatter>=2)audio.play('scatter');
+   else if(stage.ev.coins>0)audio.play('coin');
    if(wildAwards.length){
     (outcome.free?freeOrbHistory:earnedMultis)
      .push(...wildAwards.map(w=>w.value));
@@ -500,6 +513,7 @@ async function runSpin(){
  }catch(err){
   repaired=true;diagnostics.record('spin-visual-error');console.error('Falha recuperada no giro:',err);
  }finally{
+  audio.stop('spin');
   // Nunca deixar preso o botão: corrigir malhas, limpar estado e continuar.
   // A grelha é restaurada no contextrestored se faltar WebGL.
   if(!rendererUnavailable&&!rendererRestorePending&&!document.hidden&&!pageSuspended)
@@ -538,6 +552,7 @@ async function runSpin(){
   // visual dos Wild que efetivamente saíram durante este giro.
   renderMultiplier(outcome.free?freeOrbHistory:earnedMultis,
    outcome.free?bank.freeMultiplier:outcome.spinMultiplier);
+  finishDropHud();
   if(repaired){
    say('Movimento recuperado · resultado preservado · giros automáticos pausados');
    status('JOGADA RECUPERADA · CONTINUA QUANDO QUISERES');
@@ -1152,6 +1167,21 @@ async function historyModal(){
  next.addEventListener('click',()=>{page++;paint()});
  paint();
 }
+function audioCreditsModal(){
+ modal('Sons e ambiente zen',
+  'Música: “Meditation Impromptu 01”, de Kevin MacLeod (incompetech.com), sob licença CC BY 4.0. Excerto de 120 segundos, com volume ajustado e entrada/saída suaves. Efeitos de Kenney, sob licença CC0.',[]);
+ const sources=[
+  ['Música e compositor','https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100163'],
+  ['Licença CC BY 4.0','https://creativecommons.org/licenses/by/4.0/'],
+  ['Efeitos de Kenney','https://kenney.nl/assets/casino-audio'],
+  ['Fontes e créditos completos','./assets/audio/CREDITS.md']
+ ];
+ for(const [label,href] of sources){
+  const p=document.createElement('p'),a=document.createElement('a');
+  a.href=href;a.textContent=label;a.target='_blank';a.rel='noopener noreferrer';
+  p.append(a);$('modalContent').append(p);
+ }
+}
 function infoModal(){
  modal('Regras do Jardim Mágico Phaser',
  'Demonstração HTML5 em Phaser, com créditos fictícios. Cinco colunas, três linhas e dez linhas de prémio.',[
@@ -1159,6 +1189,7 @@ function infoModal(){
   {name:'✨ SCATTER',detail:'3 na grelha: 15 Free Spins. Nas Free Spins, 2: +8 ou 3: +15.'},
   {name:'🪙 HOLD & WIN',detail:'Seis moedas ativam a grelha 4×4 com três tentativas.'},
   {name:'🪨 Pedra bloqueadora',detail:'Não atribui prémios; interrompe sequências.'},
+  {name:'♫ Sons e ambiente zen',detail:'Gravações reais e música gratuita de meditação. Fontes e créditos.',act:audioCreditsModal},
   {name:'🩺 Diagnóstico local',detail:'Consulta estado da base e falhas técnicas desta sessão.',act:diagnosticModal},
   {name:'🎁 Experimentar Free Spins',detail:'Ativa apenas um teste visual gratuito.',
    act:async()=>{
@@ -1233,6 +1264,22 @@ function autoModal(){
  ]);
 }
 function bind(){
+ const syncAudio=()=>{
+  $('musicBtn').textContent=audio.music?'♫':'♪';
+  $('musicBtn').setAttribute('aria-pressed',String(audio.music));
+  $('musicBtn').dataset.playing=String(audio.musicPlaying);
+  $('soundBtn').textContent=audio.effects?'◖))':'◖';
+  $('soundBtn').setAttribute('aria-pressed',String(audio.effects));
+ };
+ audio.onChange=syncAudio;syncAudio();
+ document.addEventListener('pointerdown',event=>{
+  audio.unlock({startMusic:!event.target.closest?.('#musicBtn')});
+ },{passive:true});
+ document.addEventListener('click',event=>{
+  audio.unlock({startMusic:!event.target.closest?.('#musicBtn')});
+  const button=event.target.closest?.('button');
+  if(button&&!['musicBtn','soundBtn'].includes(button.id))void audio.play('click');
+ },{capture:true,passive:true});
  $('spinBtn').addEventListener('click',()=>{
   if(holdsLong){holdsLong=false;return}
   runSpin();
@@ -1282,13 +1329,15 @@ function bind(){
  });
  window.matchMedia?.('(orientation: landscape)').addEventListener?.('change',()=>{
   if(isLandscape()){
+   audio.pause();
    stopAuto(true);turnQueue.clearAll();
    if(bank.mode==='free')freePaused=true;
    update();
-  }else{update();void refreshWriter(true)}
+  }else{audio.resume();update();void refreshWriter(true)}
  });
  document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
+   audio.pause();
    sessionNeedsRefresh=true;
    if(running||visualSupervisor.active())rendererRestorePending=true;
    visualSupervisor.cancel();
@@ -1309,6 +1358,7 @@ function bind(){
    releaseIfHidden();
   }
   else if(!pageSuspended&&!rendererUnavailable){
+   audio.resume();
    finishRendererRestoration();
    performanceGuard.resume();
    refreshWriter();
@@ -1483,6 +1533,7 @@ async function boot(){
  };
  startWriterHeartbeat();
  window.addEventListener('pagehide',()=>{
+  audio.pause();
   pageSuspended=true;
   sessionNeedsRefresh=true;
   if(running||visualSupervisor.active())rendererRestorePending=true;
@@ -1499,6 +1550,7 @@ async function boot(){
   pageSuspended=false;startWriterHeartbeat();
   update();
   if(document.hidden)return;
+  audio.resume();
   finishRendererRestoration();
   performanceGuard.resume();
   // A lease pode ser renovada sem repor as peças em movimento.

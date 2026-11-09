@@ -54,12 +54,13 @@ for(const [name,type] of [['chromium',chromium],['webkit',webkit]]){
      ready:document.querySelector('#phaser-reels').getAttribute('aria-busy')};
    });
    check(geometry.overflow===0,name+' sem overflow horizontal');
-   check(geometry.spin.bottom<=viewport.height&&geometry.spin.w>=55,name+' RODAR visível');
+   check(geometry.spin.bottom<=viewport.height&&geometry.spin.w>=(viewport.height<650?90:128),name+' RODAR maior e visível');
    check(Math.abs(geometry.reel.w/geometry.reel.h-5/3)<.04,name+' tabuleiro proporcional');
    check(geometry.frame.right<=viewport.width+2&&geometry.frame.x>=-2,name+' moldura dentro do ecrã');
    check(geometry.top.every(r=>r.w>=35&&r.right<=viewport.width),name+' botões superiores acessíveis');
    check(geometry.ready==='false',name+' carregamento concluído');
    check(requests.every(url=>url.startsWith(origin)||url.startsWith('data:')||url.startsWith('blob:')),name+' sem CDN externo');
+   check(await page.locator('#dropHud').isHidden(),name+' painel sem multiplicador permanece oculto');
    await page.locator('#turboBtn').click();
    await page.locator('#betUp').click();await saved(page,d=>d.state?.snapshot.stake===.4);
    await page.locator('#betDown').click();await saved(page,d=>d.state?.snapshot.stake===.2);
@@ -81,6 +82,15 @@ for(const [name,type] of [['chromium',chromium],['webkit',webkit]]){
    await page.evaluate(()=>document.querySelector('canvas').dispatchEvent(new Event('webglcontextrestored')));
    await ready(page);check((await stored(page)).state.snapshot.balance===124.8,name+' restauro sem mudar saldo');
    if(viewport.width===390){
+    const audioState=await page.evaluate(async()=>{
+     const {audio,AUDIO_FILES}=await import('./js/audio.js?v=5.1.0');
+     const clips=await Promise.all(Object.keys(AUDIO_FILES).map(name=>audio.loadEffect(name)));
+     return {decoded:clips.every(buffer=>buffer&&buffer.duration>0),music:audio.musicPlaying,src:audio.background?.currentSrc,loop:audio.background?.loop};
+    });
+    check(audioState.decoded&&audioState.music&&audioState.loop&&audioState.src.includes('zen-meditation.mp3'),name+' gravações descodificadas e fundo zen em loop');
+    await page.locator('#musicBtn').click();
+    check(await page.locator('#musicBtn').getAttribute('aria-pressed')==='false',name+' ambiente zen pode ser desligado');
+    await page.locator('#musicBtn').click();
     await page.locator('#adminBtn').click();
     await page.locator('#adminPinNew').fill('246810');await page.locator('#adminPinConfirm').fill('246810');
     await page.locator('.admin-pin-form button[type="submit"]').click();
@@ -140,6 +150,16 @@ for(const [name,type] of [['chromium',chromium],['webkit',webkit]]){
     await saved(page,d=>d.events.some(e=>e.type==='buy-free'));
     await ready(page);data=await stored(page);
     check(data.state.snapshot.mode==='base'&&data.state.snapshot.freePlayed===15,name+' compra e conclusão das 15 Free Spins');
+    await page.evaluate(()=>{Math.random=()=>.4});
+    await page.locator('#spinBtn').click();
+    await page.locator('#dropHud').waitFor({state:'visible',timeout:10000});
+    const floating=await page.locator('#dropHud').evaluate(el=>{
+     const frame=el.closest('.frame-region'),r=el.getBoundingClientRect(),f=frame.getBoundingClientRect();
+     return {inside:!!frame&&r.top>=f.top&&r.bottom<=f.bottom,value:el.querySelector('#multiTotal').textContent};
+    });
+    check(floating.inside&&Number(floating.value.replace('×',''))>1,name+' valor da queda e MULTI flutuam sobre os tambores apenas com multiplicadores');
+    await ready(page);await page.locator('#dropHud').waitFor({state:'hidden',timeout:6000});
+    await page.evaluate(()=>{Math.random=()=>.9});
     const spinCount=data.state.snapshot.spins;
     await page.locator('#autoBtn').click();await page.getByRole('button',{name:/10 giros/}).click();
     await saved(page,d=>d.state.snapshot.spins>=spinCount+1);

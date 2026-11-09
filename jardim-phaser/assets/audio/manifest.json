@@ -1,0 +1,74 @@
+{
+  "click": {
+    "recordings": [
+      "Interface Sounds/click_001.ogg"
+    ],
+    "seconds": 0.097,
+    "sha256": "99abd00658ad2a9e743e382183f87903b91b080ab4d3c9b8e13861c0a4aadca5"
+  },
+  "spin": {
+    "recordings": [
+      "Casino Audio/card-shuffle.ogg"
+    ],
+    "seconds": 3.613,
+    "sha256": "dbc1ad52e3dd4eb8755f8fbb97e35ba7dda40421f5af89bc47332b39fe938c32"
+  },
+  "stop": {
+    "recordings": [
+      "Casino Audio/chip-lay-2.ogg"
+    ],
+    "seconds": 0.227,
+    "sha256": "e9ff4bb6c28fdbdedff98de573890d6b8bd7c6eb53572e10bc919fffb8eea856"
+  },
+  "cascade": {
+    "recordings": [
+      "Casino Audio/chips-collide-1.ogg"
+    ],
+    "seconds": 0.256,
+    "sha256": "2d68c8bcbab7583a74f01f68dcaf5cc14f0ec57a067f8b27ecdc4f191c967322"
+  },
+  "coin": {
+    "recordings": [
+      "Casino Audio/chips-stack-2.ogg"
+    ],
+    "seconds": 0.17,
+    "sha256": "ba7ccf81478477e9aa7bce9c576e8e6c162235fa5784f47d8bd164d5a9da6caa"
+  },
+  "win": {
+    "recordings": [
+      "Casino Audio/chips-handle-5.ogg",
+      "Interface Sounds/glass_001.ogg"
+    ],
+    "seconds": 0.914,
+    "sha256": "32bb4b1361abc82338b52d35a8e9e63d2192912f12af9b9fda6694f98e0d5722"
+  },
+  "wild": {
+    "recordings": [
+      "Interface Sounds/glass_001.ogg"
+    ],
+    "seconds": 0.492,
+    "sha256": "6fda215cdefe7c86a07cc2eef7273c5afc2ae220de014378cb7fe9f09b25aeef"
+  },
+  "scatter": {
+    "recordings": [
+      "Interface Sounds/glass_001.ogg"
+    ],
+    "seconds": 0.632,
+    "sha256": "203fe6210026d9b8781f110eed1c2d53fca77db2fbb9b370130fce5275823fb7"
+  },
+  "bonus": {
+    "recordings": [
+      "Casino Audio/chips-handle-5.ogg",
+      "Interface Sounds/glass_001.ogg"
+    ],
+    "seconds": 0.914,
+    "sha256": "666c6593e5087ebdb33c7411139c77b504bcd3e8162e278fa1a82c9ea93d4de4"
+  },
+  "zen-meditation": {
+    "seconds": 120,
+    "title": "Meditation Impromptu 01",
+    "composer": "Kevin MacLeod",
+    "license": "CC BY 4.0",
+    "sha256": "440183498b1c743ca07741c7b7ac76cefff90a71463baa231512c7e7320a9a5d"
+  }
+}

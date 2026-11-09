@@ -1,8 +1,12 @@
-# Jardim Mágico — V5.0.0 Final
+# Jardim Mágico — V5.1.0
 
-[Jogar em 9:16](https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=5.0.0)
+[Jogar em 9:16](https://hunderburn39-beep.github.io/Jardim-Magico/jardim-phaser/?v=5.1.0)
 
-Edição final demonstrativa, baseada na V4.3.3. Mantém os símbolos HD, a queda vertical, as cascatas e o motor de prémios aprovados. O Phaser 3.90.0 é servido pelo próprio repositório, com licença MIT e bytes conferidos com a distribuição oficial.
+[Detalhes da atualização V5.1](docs/ATUALIZACAO_V51.md).
+
+Atualização V5.1: valor da queda e MULTI flutuam sobre os tambores apenas quando há multiplicadores, sem barra permanente. O botão RODAR é maior. Nove efeitos gravados substituem os bipes e um excerto de piano de meditação toca em loop após o primeiro toque. Música e efeitos têm controlos independentes. Tudo funciona com ficheiros locais gratuitos, sem assinatura. [Fontes e créditos do áudio](assets/audio/CREDITS.md).
+
+Edição demonstrativa, baseada na V4.3.3. Mantém os símbolos HD, a queda vertical, as cascatas e o motor de prémios aprovados. O Phaser 3.90.0 é servido pelo próprio repositório, com licença MIT e bytes conferidos com a distribuição oficial.
 
 - Interface exclusivamente vertical, com botões maiores e texto mais legível em ecrãs de 320×568, 390×844 e 430×932.
 - Administração protegida por PIN local: percentagens, modos, fundo e ajustes de créditos fictícios do jogador; movimentos registados no histórico.
@@ -14,13 +18,14 @@ Edição final demonstrativa, baseada na V4.3.3. Mantém os símbolos HD, a qued
 
 A matemática e as imagens aprovadas são verificadas por checksum em `release.json`. Os testes de regressão, testes adicionais e testes em Chromium/WebKit antecedem a publicação automática no GitHub Pages.
 
-[Resultado, testes e limitações](docs/RELATORIO_FINAL_V5.md) · [Mecânicas e matemática conservadas](docs/MECANICAS_V5.md) · [Pré-visualização](docs/jardim-v5-preview.jpg)
+[Resultado, testes e limitações](docs/RELATORIO_FINAL_V5.md) · [Mecânicas e matemática conservadas](docs/MECANICAS_V5.md) · [Pré-visualização](docs/jardim-v51-preview.jpg)
 
 ## Verificar
 
 ```sh
 node jardim-phaser/tests/smoke.mjs
 node jardim-phaser/tests/final.mjs
+node jardim-phaser/tests/audio.mjs
 ```
 
 Os testes de navegador estão em `tests/visual.mjs` e `tests/release-browser.mjs`; o GitHub Actions prepara os navegadores e conserva capturas como artefactos da execução.

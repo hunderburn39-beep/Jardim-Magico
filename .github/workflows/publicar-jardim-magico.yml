@@ -27,6 +27,7 @@ jobs:
         run: |
           node jardim-phaser/tests/smoke.mjs
           node jardim-phaser/tests/final.mjs
+          node jardim-phaser/tests/audio.mjs
           node jardim-3d/tests/smoke-v3.mjs
       - name: Preparar testes em Chromium e WebKit
         run: |

@@ -1,0 +1,39 @@
+/* Floating multiplier information, with space returned to the reels and RODAR. */
+.machine .frame-region>.multiplier{
+ position:absolute;z-index:9;left:50%;top:8%;transform:translateX(-50%);
+ width:76%;max-width:460px;height:auto;min-height:0;margin:0;
+ padding:5px 12px;display:grid;grid-template-columns:1fr auto;align-items:center;
+ gap:12px;border:0;border-radius:13px;pointer-events:none;
+ background:linear-gradient(90deg,#20102bd9,#371143ed 50%,#20102bd9);
+ box-shadow:0 2px 12px #10071980;
+ animation:drop-hud-in .2s ease-out;
+}
+.machine #dropHud[hidden]{display:none!important}
+.machine #dropHud .multi-drop{min-width:0}
+.machine #dropHud .multi-drop small,.machine #dropHud .multi-final small{
+ font:700 clamp(9px,2.4vw,15px)/1.1 system-ui,sans-serif;color:#fff0c9;
+}
+.machine #dropHud .multi-drop output{font-size:clamp(21px,5.6vw,38px)}
+.machine #dropHud #multiTotal{font-size:clamp(24px,6.2vw,42px)}
+.machine .frame-region:has(.free-hud:not([hidden]))>#dropHud{top:45px}
+@keyframes drop-hud-in{from{opacity:0;translate:0 4px}to{opacity:1;translate:0 0}}
+.machine .controls{grid-template-columns:1fr 1.48fr 1fr;gap:6px;padding-inline:5px}
+.machine #spinBtn{width:min(37vw,17dvh);height:auto;aspect-ratio:1;max-height:100%}
+.machine #spinBtn .spin-arrow{font-size:clamp(34px,10vw,90px)}
+.machine #spinBtn>b{font-size:clamp(13px,3.4vw,29px)}
+.machine #musicBtn[aria-pressed="true"]{border-color:#f3e4a2;background:radial-gradient(circle at 35% 20%,#9cbe6b,#38614c 65%,#24392f)}
+@media(orientation:portrait){
+ .machine{grid-template-rows:minmax(0,20fr) minmax(0,6fr) minmax(0,36fr) minmax(0,3.5fr) minmax(0,13.5fr) minmax(0,18fr) minmax(0,3fr)}
+ .machine .frame-region{grid-row:3}
+ .machine .result-text{grid-row:4}
+ .machine .dashboard{grid-row:5}
+ .machine .controls{grid-row:6}
+ .machine footer{grid-row:7}
+}
+@media(orientation:portrait) and (max-height:640px){
+ .machine{grid-template-rows:minmax(0,16fr) minmax(0,6.8fr) minmax(0,35.5fr) minmax(0,4fr) minmax(0,16fr) minmax(0,18fr) minmax(0,3.7fr)}
+ .machine #dropHud{top:4%;padding:4px 9px}
+ .machine #dropHud .multi-drop output{font-size:20px}
+ .machine #dropHud #multiTotal{font-size:24px}
+}
+@media(prefers-reduced-motion:reduce){.machine #dropHud{animation:none}}

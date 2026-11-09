@@ -102,4 +102,4 @@ const backup={format:'jardim-magico-demo-v3',state:fresh(),history:events};
 check(validateBackup(backup).history.length===260,'Backup legítimo continua compatível');
 const original=JSON.stringify(backup);validateBackup(backup);
 check(JSON.stringify(backup)===original,'Validação não altera o backup original');
-console.log(JSON.stringify({version:'5.0.0',checks,turns,holds,freeSeries,completedGrid,seed:'0x4a4d5000'}));
+console.log(JSON.stringify({version:release.version,checks,turns,holds,freeSeries,completedGrid,seed:'0x4a4d5000'}));

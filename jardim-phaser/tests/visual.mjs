@@ -14,7 +14,7 @@ try{
   const page=await browser.newPage({viewport:{width:scenario.width,height:scenario.height},deviceScaleFactor:1});
   const errors=[];
   page.on('pageerror',err=>errors.push(err.message));
-  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=5.0.0',{waitUntil:'domcontentloaded'});
+  await page.goto('http://127.0.0.1:8123/jardim-phaser/?qa=5.1.0',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.jardimPhaserScene?.ready===true,{timeout:30000});
   const metrics=await page.evaluate(()=>{
    const box=sel=>{
@@ -39,7 +39,7 @@ try{
    return {
     viewport:{width:innerWidth,height:innerHeight},
     machine:box('.machine'),
-    rows:Object.fromEntries(['.game-header','.jackpots','.multiplier','.frame-region','.result-text','.dashboard','.controls','footer'].map(x=>[x,box(x)])),
+    rows:Object.fromEntries(['.game-header','.jackpots','.frame-region','.result-text','.dashboard','.controls','footer'].map(x=>[x,box(x)])),
     reel:initial,
     spin:box('#spinBtn'),
     frame:box('.frame-region .branch-frame'),
@@ -84,7 +84,7 @@ try{
   assert(metrics.frame.w>=reel.w+10&&metrics.frame.w<=machine.w+2,
    scenario.name+' moldura deve encaixar no tambor '+JSON.stringify(metrics.frame));
   assert(metrics.botanicalScale>180,scenario.name+' símbolos devem ser maiores');
-  assert(spin.w>=40&&spin.h>=40,scenario.name+' spin inaccessible');
+  assert(spin.w>=(scenario.height<=640?90:128)&&spin.h>=90,scenario.name+' botão RODAR maior e acessível');
   assert(metrics.spinLabel==='visible'&&metrics.spinArrow==='visible',
    scenario.name+' label RODAR deve aparecer');
   assert(metrics.touchAction==='manipulation'&&
@@ -94,7 +94,7 @@ try{
   assert(spin.bottom<=scenario.height+4,scenario.name+' spin clipped');
   if(scenario.width<scenario.height){
    assert(metrics.cssGrid==='grid',scenario.name+' expected portrait grid');
-   const order=['.game-header','.jackpots','.multiplier','.frame-region','.result-text','.dashboard','.controls','footer'];
+   const order=['.game-header','.jackpots','.frame-region','.result-text','.dashboard','.controls','footer'];
    for(let i=0;i<order.length-1;i++){
     assert(rows[order[i]].bottom<=rows[order[i+1]].y+4,
       scenario.name+' overlapping '+order[i]+' and '+order[i+1]);
@@ -246,7 +246,7 @@ try{
  }
  const landscape=await browser.newPage({viewport:{width:844,height:390}});
  try{
-  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=5.0.0',{waitUntil:'domcontentloaded'});
+  await landscape.goto('http://127.0.0.1:8123/jardim-phaser/?qa=5.1.0',{waitUntil:'domcontentloaded'});
   const visibility=await landscape.evaluate(()=>{
    const e=document.querySelector('#portraitLock');
    const s=getComputedStyle(e);
