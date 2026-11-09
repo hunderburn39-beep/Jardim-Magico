@@ -91,6 +91,17 @@ class Game {
  announce(s){$('screen-msg').textContent=s;}
  notice(s,time=1750,kind='gold'){this.message=s;this.messageUntil=performance.now()+time;this.flashUntil=this.messageUntil;this.flashKind=kind;this.announce(s);}
  initInputs(){
+  // Capture touches before the transparent button overlay: the active visual
+  // extension uses reel coordinates top=268, height=116 (not the legacy 258/132).
+  $('stage').addEventListener('pointerdown',e=>{
+   if(this.spinning||this.superseded||!mod.classList.contains('hidden'))return;
+   const bounds=canvas.getBoundingClientRect();
+   const x=(e.clientX-bounds.left-ox)/sc,y=(e.clientY-bounds.top-oy)/scY;
+   const col=Math.floor((x-33)/101),row=Math.floor((y-268)/116);
+   if(col<0||col>4||row<0||row>2||x<33+col*101||x>33+col*101+99||y<268||y>=616)return;
+   e.preventDefault();e.stopPropagation();this.audio.init();this.audio.click();
+   this.showSymbolPay(this.grid[col][row]);
+  },{capture:true,passive:false});
   canvas.addEventListener('pointerdown',e=>{e.preventDefault();this.audio.init();let b=canvas.getBoundingClientRect();const x=(e.clientX-b.left-ox)/sc,y=(e.clientY-b.top-oy)/scY;
    if(mod.classList.contains('hidden')===false)return;
    // Direct canvas hit-testing keeps symbols tappable on iPhone Safari,
