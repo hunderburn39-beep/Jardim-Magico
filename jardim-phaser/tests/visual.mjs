@@ -40,6 +40,7 @@ try{
     viewport:{width:innerWidth,height:innerHeight},
     machine:box('.machine'),
     rows:Object.fromEntries(['.game-header','.jackpots','.frame-region','.result-text','.dashboard','.controls','footer'].map(x=>[x,box(x)])),
+    jackpotPositions:{ultra:box('.jackpots .jackpot:nth-child(4)'),max:box('.jackpots .jackpot:nth-child(3)'),med:box('.jackpots .jackpot:nth-child(2)'),min:box('.jackpots .jackpot:nth-child(1)'),logo:box('.game-header .logo')},
     reel:initial,
     spin:box('#spinBtn'),
     frame:box('.frame-region .branch-frame'),
@@ -94,7 +95,20 @@ try{
   assert(spin.bottom<=scenario.height+4,scenario.name+' spin clipped');
   if(scenario.width<scenario.height){
    assert(metrics.cssGrid==='grid',scenario.name+' expected portrait grid');
-   const order=['.game-header','.jackpots','.frame-region','.result-text','.dashboard','.controls','footer'];
+   // A moldura dos jackpots sobrepõe-se intencionalmente ao cabeçalho,
+   // mas não aos tambores: os quatro prémios enquadram o logótipo.
+   const j=metrics.jackpotPositions;
+   assert(j.ultra&&j.max&&j.med&&j.min&&j.logo,scenario.name+' faltam jackpots ou logótipo');
+   assert(j.ultra.y+4<j.max.y&&j.med.y+4<j.min.y,
+     scenario.name+' jackpots não estão empilhados verticalmente');
+   assert(j.ultra.x<j.logo.x+j.logo.w/2&&j.max.x<j.logo.x+j.logo.w/2&&
+     j.med.x>j.logo.x+j.logo.w/2&&j.min.x>j.logo.x+j.logo.w/2,
+     scenario.name+' jackpots não ladeiam o logótipo');
+   assert(j.ultra.y>=rows['.game-header'].y&&j.min.bottom<=rows['.game-header'].bottom+2,
+     scenario.name+' jackpots saem da área superior');
+   assert(rows['.jackpots'].bottom<=rows['.frame-region'].y+4,
+     scenario.name+' jackpots sobrepõem-se aos tambores');
+   const order=['.game-header','.frame-region','.result-text','.dashboard','.controls','footer'];
    for(let i=0;i<order.length-1;i++){
     assert(rows[order[i]].bottom<=rows[order[i+1]].y+4,
       scenario.name+' overlapping '+order[i]+' and '+order[i+1]);
