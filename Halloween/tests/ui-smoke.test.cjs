@@ -94,6 +94,6 @@ test("Mostra o percurso da linha e recupera o resultado de um giro",()=>{
   const saved=JSON.parse(f.storage.get("halloween-classico-v02"));
   assert.equal(saved.spins,1);
   const b=f.mount(),restored=b.scene.symbols.map(c=>c.map(s=>s.texture.key.slice(2)));
-  assert.deepEqual(restored,saved.lastGrid);
+  assert.deepEqual(JSON.parse(JSON.stringify(restored)),saved.lastGrid);
   assert.equal(b.scene.state.balance,saved.balance);
 });
