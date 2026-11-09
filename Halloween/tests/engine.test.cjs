@@ -120,7 +120,7 @@ test("Acumulados e seleção de linhas persistem na alteração de aposta", () =
   const s = { ...E.createState(),lines:30,jackpots:[440,880] };
   const next = E.setBet(s,5);
   assert.equal(next.lines,30);
-  assert.deepEqual(next.jackpots,[440,880]);
+  assert.deepEqual(next.jackpots,[440,880,1500,3000]);
 });
 
 test("Três Wild seguidos de Scatter ainda pagam linha de Wild", () => {
@@ -173,7 +173,7 @@ test("A quinta abóbora prepara roleta recuperável e impede outro giro",()=>{
 });
 test("Roleta atribui um acumulado e repõe apenas esse acumulado",()=>{
   let times=0;
-  const rng=()=>++times<=15?0:.78; // 15 abóboras, depois setor 6 = acumulado 1
+  const rng=()=>++times<=15?0:.2167; // 15 abóboras, depois setor 6 = acumulado 1
   const state={...E.createState(),pumpkins:4,jackpots:[444,888],bet:2};
   const spun=E.spin(state,rng);
   assert.equal(spun.state.pendingWheel.sectorIndex,6);
@@ -190,7 +190,7 @@ test("Acumulados só crescem em giros pagos",()=>{
   assert.ok(base.state.jackpots[0]>original.jackpots[0]);
   assert.ok(base.state.jackpots[1]>original.jackpots[1]);
   const free=E.spin({...E.createState(),freeSpins:1},fixed(.45));
-  assert.deepEqual(free.state.jackpots,[350,750]);
+  assert.deepEqual(free.state.jackpots,[350,750,1500,3000]);
 });
 
 test("Caldeirão e roleta na mesma ronda são resolvidos sem duplicar créditos",()=>{
@@ -231,4 +231,29 @@ test("O motor guarda a grelha e a recupera sem partilhar referências",()=>{
   assert.deepEqual(result.state.lastGrid,result.grid);
   const invalid=E.sanitize({...E.createState(),lastGrid:[["bad"]]});
   assert.equal(invalid.lastGrid,null);
+});
+
+test("O atlas original inspira 10 símbolos e a roleta tem 30 posições",()=>{
+  assert.equal(E.SYMBOLS.length,10);
+  assert.equal(new Set(E.SYMBOLS.map(s=>s.id)).size,10);
+  assert.equal(E.WHEEL_SECTORS.length,30);
+  assert.deepEqual(E.WHEEL_SECTORS.map(s=>s.number),Array.from({length:30},(_,i)=>i+1));
+  assert.deepEqual(E.WHEEL_SECTORS.filter(s=>s.jackpotIndex!==undefined)
+    .map(s=>s.jackpotIndex),[0,1,2,3]);
+});
+test("Versões anteriores com dois acumulados são recuperadas para quatro",()=>{
+  const old={...E.createState(),jackpots:[450,900]};
+  const restored=E.sanitize(old);
+  assert.deepEqual(restored.jackpots,[450,900,1500,3000]);
+});
+test("Uma roleta com 30 posições atribui o quarto acumulado uma só vez",()=>{
+  const original={...E.createState(),pumpkins:4,jackpots:[350,750,1500,4100]};
+  let n=0;
+  const spun=E.spin(original,()=>++n<=15?0:.999999);
+  assert.equal(spun.state.pendingWheel.sectorIndex,29);
+  assert.equal(spun.state.pendingWheel.payout,spun.state.jackpots[3]);
+  const prize=E.resolveWheel(spun.state);
+  assert.equal(prize.ok,true);
+  assert.equal(prize.state.jackpots[3],3000);
+  assert.equal(E.resolveWheel(prize.state).ok,false);
 });
