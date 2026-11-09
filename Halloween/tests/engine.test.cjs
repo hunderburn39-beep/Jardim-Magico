@@ -83,6 +83,11 @@ test("20 000 jogadas reprodutíveis sem NaN nem créditos negativos", () => {
     assert.ok(Number.isFinite(s.balance) && s.balance >= 0);
     assert.ok(Number.isFinite(result.result.total) && result.result.total >= 0);
     assert.ok(s.pumpkins >= 0 && s.pumpkins < 5);
+    if(s.pendingDice){
+      const resolved=E.chooseDice(s,i%5);
+      assert.equal(resolved.ok,true);
+      s=resolved.state;
+    }
     if(s.pendingStrawberry){
       const resolved=E.chooseStrawberry(s,i%12);
       assert.equal(resolved.ok,true);
@@ -207,7 +212,7 @@ test("Caldeirão e roleta na mesma ronda são resolvidos sem duplicar créditos"
       if(row===1)return 0;         // cinco abóboras na linha central
       if(row===0&&col<3)return .999999; // três caldeirões na fila de cima
     }
-    return .37;
+    return .99;
   };
   const initial={...E.createState(),pumpkins:4,balance:100};
   const spun=E.spin(initial,rng);
@@ -290,6 +295,11 @@ test("Regressão económica: 20 mil giros não regressam ao retorno extremo inic
     state=step.state;
     if(!step.free)invested+=state.bet;
     received+=step.result.total;
+    if(state.pendingDice){
+      const result=E.chooseDice(state,i%5);
+      assert.equal(result.ok,true);
+      received+=result.awarded;state=result.state;
+    }
     if(state.pendingStrawberry){
       const result=E.chooseStrawberry(state,i%12);
       assert.equal(result.ok,true);
@@ -322,7 +332,7 @@ test("O motor nunca permite travar os cinco tambores",()=>{
 
 test("Três caldeirões podem abrir a escolha de 12 morangos",()=>{
   let draws=0;
-  const outcome=E.spin(E.createState(),()=>++draws<=15?.999999:0);
+  const outcome=E.spin(E.createState(),()=>++draws<=15?.999999:.25);
   assert.equal(outcome.ok,true);
   assert.equal(outcome.strawberryTriggered,true);
   assert.equal(outcome.potTriggered,false);
@@ -345,7 +355,7 @@ test("Morangos e roleta pendentes resolvem-se uma vez cada",()=>{
     if(row===1)return 0;
     if(row===0&&col<3)return .999999;
   }
-  if(n===16)return 0; // abrir 12 morangos, não os caldeirões
+  if(n===16)return .25; // abrir 12 morangos, não os caldeirões
   return .25;};
   const state={...E.createState(),balance:10000,pumpkins:4};
   const first=E.spin(state,pick);
@@ -360,4 +370,52 @@ test("Morangos e roleta pendentes resolvem-se uma vez cada",()=>{
   assert.equal(wheel.ok,true);
   assert.equal(wheel.state.pendingWheel,null);
   assert.equal(E.resolveWheel(wheel.state).ok,false);
+});
+
+test("O APK indica cinco animações de dados; criam-se cinco escolhas",()=>{
+  let n=0;
+  const r=E.spin(E.createState(),()=>++n<=15?.999999:.01);
+  assert.equal(r.ok,true);
+  assert.equal(r.diceTriggered,true);
+  assert.equal(r.potTriggered,false);
+  assert.equal(r.strawberryTriggered,false);
+  assert.equal(r.state.pendingDice.faces.length,5);
+  assert.ok(r.state.pendingDice.faces.every(face=>face>=1&&face<=6));
+  assert.equal(E.spin(r.state,()=>.5).reason,"bonus-pendente");
+});
+test("Bónus de dados é recuperável e paga uma única vez",()=>{
+  const original={...E.createState(),bet:5,balance:120,
+    pendingDice:{faces:[1,2,3,4,6]}};
+  const restored=E.sanitize(JSON.parse(JSON.stringify(original)));
+  assert.deepEqual(restored.pendingDice,original.pendingDice);
+  assert.equal(E.chooseDice(restored,-1).ok,false);
+  assert.equal(E.chooseDice(restored,5).ok,false);
+  assert.equal(E.chooseDice(restored,1.5).ok,false);
+  const result=E.chooseDice(restored,4);
+  assert.equal(result.ok,true);
+  assert.equal(result.face,6);
+  assert.equal(result.awarded,30);
+  assert.equal(result.state.balance,150);
+  assert.equal(result.state.pendingDice,null);
+  assert.equal(E.chooseDice(result.state,4).ok,false);
+});
+test("Dados e roleta pendentes não duplicam a recompensa",()=>{
+  const input={...E.createState(),pendingDice:{faces:[2,3,4,5,6]},
+    pendingWheel:{sectorIndex:0,payout:10},bet:2};
+  assert.equal(E.spin(input,()=>.2).reason,"bonus-pendente");
+  const dice=E.chooseDice(input,1);
+  assert.equal(dice.awarded,6);
+  assert.ok(dice.state.pendingWheel);
+  assert.equal(E.spin(dice.state,()=>.2).reason,"bonus-pendente");
+  const wheel=E.resolveWheel(dice.state);
+  assert.equal(wheel.awarded,10);
+  assert.equal(wheel.state.pendingWheel,null);
+  assert.equal(E.resolveWheel(wheel.state).ok,false);
+  assert.equal(wheel.state.balance,input.balance+16);
+});
+test("Dados corrompidos não criam pagamentos ao restaurar",()=>{
+  const input={...E.createState(),pendingDice:{faces:[9,-4,1,2,3]}};
+  assert.equal(E.sanitize(input).pendingDice,null);
+  const missing={...E.createState(),pendingDice:{faces:[1,2,3]}};
+  assert.equal(E.sanitize(missing).pendingDice,null);
 });
