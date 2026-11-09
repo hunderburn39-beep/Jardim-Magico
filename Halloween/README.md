@@ -20,6 +20,12 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 - Motor experimental com Wild (Magic) corrigido, inclusive para grupos Wild terminados por Scatter. Três ou mais caldeirões ativam Free Spins e uma janela para escolher um de três potes. A escolha é guardada antes de ser mostrada, para recuperar o bónus ao reabrir o navegador. Cinco abóboras recolhidas em giros pagos (no máximo uma por giro, quando há três ou mais na grelha) dão cinco Free Spins **e uma roleta virtual de **30 posições numeradas**, inspirada no atlas original**, com prémios experimentais de aposta × multiplicador ou um dos **quatro acumulados virtuais**. A roleta fica guardada durante interrupções e atribui o prémio apenas uma vez. As rodadas gratuitas não recolhem novas abóboras. Estas são regras recriadas, ainda diferentes das mecânicas e tabelas históricas documentadas.
 - Guardar saldo, linhas, aposta, acumulados, giros, grelha final e bónus de caldeirão ou roleta pendente no armazenamento local, quando disponível. O resultado do giro é guardado antes de começar a animação: ao reabrir o jogo, a combinação e os créditos são recuperados. Aposta e linhas são bloqueadas durante Free Spins, e a seleção de aposta/linhas limpa travas de rolos.
 
+## Referência técnica do XAPK
+
+- [Auditoria estática detalhada](docs/analise-xapk-original-6-68.md): imagens, áudio, binário LNH1 e classe Java/Dalvik `GameHalloween30L` (231 métodos).
+- [Transcrição parcial da tabela de prémios](docs/valores-visiveis-tabelas-original.json): valores visíveis do APK, **não usados ainda como matemática de jogo**.
+- O modo inicial é agora de **30 linhas**. A reprodução 9:16 mantém símbolos próprios e não reutiliza os recursos comerciais do APK no repositório público.
+
 ## Estrutura
 
 - `index.html` — viewport e carregamento do jogo.
