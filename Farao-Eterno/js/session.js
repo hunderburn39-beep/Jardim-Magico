@@ -8,6 +8,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(E){
   'use strict';
   const UNIT=252000, BETS=[.10,.20,.40,.50,1,2,5,10];
+  const stake=s=>Math.round(units(BETS[s.betIndex])*s.lines/10)/UNIT;
   const units=n=>Math.round(n*UNIT), credits=n=>n/UNIT;
   const clone=x=>JSON.parse(JSON.stringify(x));
   const integer=n=>Number.isSafeInteger(n)&&n>=0;
@@ -15,11 +16,11 @@
   const featureOK=f=>f===null||(f&&integer(f.left)&&integer(f.played)&&integer(f.retriggers)&&integer(f.totalU)&&Array.isArray(f.symbols)&&f.symbols.length>0&&f.symbols.length<=9&&new Set(f.symbols).size===f.symbols.length&&f.symbols.every(s=>E.NORMAL.includes(s)));
   function fresh(){return {version:2,balanceU:units(300),betIndex:4,lines:10,grid:[['10','J','Q'],['HORUS','MASK','K'],['A','TOMB','10'],['ANUBIS','K','J'],['KING','A','Q']],feature:null,pending:null,sequence:0,lastWinU:0,lastBaseWinU:0,lastBet:1,gambles:0,lastWasFree:false,history:[],stats:{paid:0,free:0,stakeU:0,winU:0,features:0},settings:{sound:true,music:true,turbo:false},last:null};}
   function validate(s){
-    if(!s||s.version!==2||!integer(s.balanceU)||!integer(s.sequence)||!Number.isInteger(s.betIndex)||s.betIndex<0||s.betIndex>=BETS.length||!Number.isInteger(s.lines)||s.lines<1||s.lines>10||!gridOK(s.grid)||!featureOK(s.feature)||!integer(s.lastWinU)||!integer(s.lastBaseWinU)||!BETS.includes(s.lastBet)||!integer(s.gambles)||s.gambles>5||!Array.isArray(s.history)||s.history.length>100)throw Error('Sessão inválida');
+    if(!s||s.version!==2||!integer(s.balanceU)||!integer(s.sequence)||!Number.isInteger(s.betIndex)||s.betIndex<0||s.betIndex>=BETS.length||!Number.isInteger(s.lines)||s.lines<1||s.lines>10||!gridOK(s.grid)||!featureOK(s.feature)||!integer(s.lastWinU)||!integer(s.lastBaseWinU)||!(Number.isFinite(s.lastBet)&&s.lastBet>0&&s.lastBet<=10)||!integer(s.gambles)||s.gambles>5||!Array.isArray(s.history)||s.history.length>100)throw Error('Sessão inválida');
     if(!s.stats||!['paid','free','stakeU','winU','features'].every(k=>integer(s.stats[k])))throw Error('Estatísticas inválidas');
-    if(s.feature&&s.feature.totalU>units(E.upperLimit(BETS[s.betIndex])))throw Error('Bónus inválido');
+    if(s.feature&&s.feature.totalU>units(E.upperLimit(stake(s))))throw Error('Bónus inválido');
     if(s.pending){const p=s.pending;
-      if(!gridOK(p.grid)||p.id!==s.sequence||p.bet!==BETS[s.betIndex]||p.lines!==s.lines||typeof p.free!=='boolean'||(p.free&&!s.feature)||(!p.free&&s.feature)||!(p.nextSymbol===null||E.NORMAL.includes(p.nextSymbol)))throw Error('Jogada pendente inválida');
+      if(!gridOK(p.grid)||p.id!==s.sequence||Math.abs(p.bet-stake(s))>1e-8||p.lines!==s.lines||typeof p.free!=='boolean'||(p.free&&!s.feature)||(!p.free&&s.feature)||!(p.nextSymbol===null||E.NORMAL.includes(p.nextSymbol)))throw Error('Jogada pendente inválida');
       const triggered=E.countScatters(p.grid)>=3,choices=p.free?E.NORMAL.filter(x=>!s.feature.symbols.includes(x)):E.NORMAL;
       if(triggered&&choices.length&&!choices.includes(p.nextSymbol)||!triggered&&p.nextSymbol!==null)throw Error('Seleção de bónus inválida');
     }
@@ -35,14 +36,14 @@
     const f=old.feature;
     if(f&&Number.isSafeInteger(f.left)&&f.left>0&&Number.isSafeInteger(f.played)&&f.played>=0&&Number.isFinite(f.total)&&f.total>=0){
       const candidate={left:f.left,played:f.played,totalU:units(f.total),symbols:f.symbols,retriggers:f.retriggers||0};
-      if(featureOK(candidate)&&candidate.totalU<units(E.upperLimit(BETS[s.betIndex])))s.feature=clone(candidate);
+      if(featureOK(candidate)&&candidate.totalU<units(E.upperLimit(stake(s))))s.feature=clone(candidate);
     }
     if(Array.isArray(old.history))s.history=old.history.filter(h=>h&&typeof h.t==='string'&&Number.isFinite(h.bet)&&Number.isFinite(h.win)).slice(0,100).map(h=>({...h,kind:h.bonus?'free':'spin'}));
     s.settings.sound=old.sound!==false;return validate(s);
   }
   function begin(s,rng=E.randomFloat){
     validate(s);if(s.pending)throw Error('Existe uma jogada por terminar');
-    const bet=BETS[s.betIndex],free=!!s.feature;
+    const bet=stake(s),free=!!s.feature;
     if(!free&&s.balanceU<units(bet))throw Error('Créditos insuficientes');
     // Commit the entire outcome, including feature selection, before animation.
     const grid=E.makeGrid(rng),result=E.evaluate(grid,bet,s.lines,free?s.feature.symbols:[]);
@@ -87,5 +88,5 @@
     s.balanceU=units(300);s.lastWinU=0;s.lastBaseWinU=0;s.gambles=0;s.last=null;
     s.history.unshift({t:now,kind:'reset',bet:0,win:0});s.history=s.history.slice(0,100);
   }
-  return {UNIT,BETS,units,credits,fresh,validate,restore,migrate,begin,settle,gamble,reset,gridOK};
+  return {UNIT,BETS,units,credits,stake,fresh,validate,restore,migrate,begin,settle,gamble,reset,gridOK};
 });
