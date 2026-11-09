@@ -578,7 +578,7 @@ import { DisplayBalance } from '../helpers/Currency';
     const fsTitle = Math.max(8, Math.min(16, h * 0.22, w * 0.1));
     const fsSub = Math.max(9, Math.min(22, h * 0.32, w * (isCombinedButton ? 0.08 : 0.12)));
 
-    const title = isCombinedButton ? 'BUY FEATURE' : (type === 'SUPER' ? 'SUPER FREE SPINS' : 'ULTRA FREE SPINS');
+    const title = isCombinedButton ? 'COMPRAR BÓNUS' : (type === 'SUPER' ? 'SUPER FREE SPINS' : 'ULTRA FREE SPINS');
     const costMult = type === 'SUPER' ? 500 : 1000;
     const subText = isCombinedButton ? '1000X / 500X' : `${costMult}X BET`;
 
@@ -609,6 +609,7 @@ import { DisplayBalance } from '../helpers/Currency';
 
     txt2
       .setText(subText)
+      .setColor('#ffedb5')
       .setPosition(x, y + yOffset2)
       .setFontSize(fsSub)
       .setFontFamily('"Poppins", sans-serif')
@@ -618,57 +619,32 @@ import { DisplayBalance } from '../helpers/Currency';
       .setOrigin(0.5);
   }
 
-  export function drawBuyPanel(this: Game, 
-    gfx: Phaser.GameObjects.Graphics,
-    w: number,
-    h: number,
-    isSuper: boolean,
+  export function drawBuyPanel(this: Game,
+    gfx: Phaser.GameObjects.Graphics, w: number, h: number, isSuper: boolean
   ) {
     gfx.clear();
-    const r = Math.min(h * 0.2, 10);
+    const r = Math.min(h * 0.22, 12);
     const disabled = options.anteBetEnabled;
-
+    // Painel de vidro âmbar/violeta: mantém o botão óbvio mas não compete
+    // com o tabuleiro nem com os símbolos coloridos.
+    gfx.fillStyle(0x120526, 0.5);
+    gfx.fillRoundedRect(-w / 2 + 2, -h / 2 + 4, w, h, r);
     if (disabled) {
-      // Disabled state — muted and rigid
-      gfx.fillStyle(0x000000, 0.5);
-      gfx.fillRoundedRect(-w / 2 + 3, -h / 2 + 4, w, h, r);
-      gfx.fillStyle(0x444444, 1);
-      gfx.fillRoundedRect(-w / 2, -h / 2, w, h, r);
-      gfx.lineStyle(2.5, 0x666666, 0.8);
-      gfx.strokeRoundedRect(-w / 2, -h / 2, w, h, r);
-      return;
+      gfx.fillStyle(0x2d2740, 0.94);
+    } else if (isSuper) {
+      gfx.fillGradientStyle(0x4b176d, 0x5d1876, 0x280b52, 0x280b52, 1, 1, 1, 1);
+    } else {
+      gfx.fillGradientStyle(0x83437c, 0x693b78, 0x3f165c, 0x31124f, 1, 1, 1, 1);
     }
-
-    // CARTOON ARCADE ACTIVE STATE
-    // 0. Hard drop shadow (comic-book offset)
-    gfx.fillStyle(0x000000, 0.65);
-    gfx.fillRoundedRect(-w / 2 + 4, -h / 2 + 5, w, h, r);
-
-    // 1. Solid vivid base color
-    const baseColor = isSuper ? 0xff0055 : 0xffaa00;
-    const topColor = isSuper ? 0xff4488 : 0xffcc44;
-    gfx.fillStyle(baseColor, 1);
     gfx.fillRoundedRect(-w / 2, -h / 2, w, h, r);
-
-    // 2. Brighter top half for 3D pop
-    gfx.fillGradientStyle(topColor, topColor, baseColor, baseColor, 1);
-    gfx.fillRoundedRect(-w / 2, -h / 2, w, h * 0.5, { tl: r, tr: r, bl: 0, br: 0 } as Phaser.Types.GameObjects.Graphics.RoundedRectRadius);
-
-    // 3. Hard glossy highlight on top
-    gfx.fillStyle(0xffffff, 0.4);
-    gfx.fillRoundedRect(-w / 2 + 4, -h / 2 + 2, w - 8, h * 0.25, { tl: r - 2, tr: r - 2, bl: 0, br: 0 } as Phaser.Types.GameObjects.Graphics.RoundedRectRadius);
-
-    // 4. Thick border (rigid cartoon outline)
-    const borderColor = isSuper ? 0xffddee : 0xffee88;
-    gfx.lineStyle(3, borderColor, 1);
-    gfx.strokeRoundedRect(-w / 2, -h / 2, w, h, r);
-
-    // 5. Sparkle dots
-    gfx.fillStyle(0xffffff, 0.8);
-    gfx.fillCircle(-w/3, -h/4, 2.5);
-    gfx.fillCircle(w/4, h/3, 3);
-    gfx.fillCircle(w/2.5, -h/3, 2);
-    gfx.fillCircle(-w/4, h/4, 2.5);
+    gfx.lineStyle(2, disabled ? 0x8c849b : 0xffd98c, disabled ? 0.55 : 0.86);
+    gfx.strokeRoundedRect(-w / 2 + 1, -h / 2 + 1, w - 2, h - 2, r);
+    gfx.fillStyle(0xffffff, disabled ? 0.06 : 0.16);
+    gfx.fillRoundedRect(-w / 2 + 6, -h / 2 + 3, w - 12,
+      Math.max(2, h * 0.09), 3);
+    gfx.fillStyle(0xfff0bc, disabled ? 0.14 : 0.6);
+    gfx.fillCircle(-w / 2 + 12, -h / 2 + h * 0.24, 2.3);
+    gfx.fillCircle(w / 2 - 12, -h / 2 + h * 0.24, 2.3);
   }
 
   export function drawAnteBetButton(this: Game, bw: number, bh: number) {
