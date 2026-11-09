@@ -77,6 +77,30 @@ Isto demonstra que o APK inclui rotinas compiladas relacionadas com **caldeirõe
 
 **Nota importante:** imagens e sons foram mantidos apenas no ficheiro extraído para análise privada, fora do GitHub público. Estes nomes servem para elaborar uma especificação e reconstrução original.
 
+## Análise estrutural aprofundada de 09/11/2026
+
+Foi lido o índice binário DEX e cruzada a identidade de cada método com a sua classe. Isto já vai além de procurar strings soltas, **mas não é descompilação do código para Java**.
+
+- Classe identificada: `Lcom/r7games/slotsaga/GameHalloween30L;` dentro de `classes.dex`.
+- Tem **231 métodos com código**, **100 diretos** e **131 virtuais**; o descritor de classe contém também 4 campos estáticos e 240 campos de instância.
+- Métodos significativos: `NovaJogada`, `CreditarJogada`, `SetAcumulado`, `InitCaldeirao`, `EscolheCaldeirao`, `InitMorango`, `EscolheMorango`, `InitRoleta`, `ParaRoleta`, `NumRoleta`, `SetRoletaPremio`, `calcbonus`, `calcbonusRoleta`, `linha`, `soltarLinhas`, `InitDobra` e `ShowDobra`.
+- O corpo de `ShowMorango` tem 990 unidades de instruções Dalvik; `InitCaldeirao` tem 543; `ShowDobra` tem 368; `SetAcumulado` tem 246; `NumRoleta` tem 228; `calcbonusRoleta` tem 48. Estes valores são **tamanhos de bytecode**, não resultados nem fórmulas de prémio.
+- O ficheiro `01_linhas.bin` começa por `LNH1` e tem 47 370 bytes. No mesmo APK, `16_linhas.bin` e `assets/lucky/01_linhas.bin` têm ambos 38 980 bytes. O byte na posição 9 vale **30** para o primeiro e **25** para os restantes, compatível com a contagem de linhas. A semântica integral dos registos continua desconhecida.
+- `01_slots.webp` contém dez linhas de símbolos: **bruxa verde, bruxa WITCH, vampiro, fantasma, bruxa na lua, monstro, abóbora, diabinho, MAGIC, caldeirão**, cada um em cinco versões gráficas.
+- `01_roleta.webp` contém trinta números; `01_tabela3x.webp` apresenta **três acumulados** e `01_tabela4x.webp`, **quatro acumulados**, em variantes distintas. Não foi estabelecida a fórmula real desses valores.
+- Valores legíveis da ilustração `01_tabela1.webp` incluem **10 000** numa sequência de cinco figuras Halloween, **2 000** numa sequência de quatro e **2 000** com cinco MAGIC. Os valores são **transcrição da imagem**, sem validação de relação com aposta, linhas ou créditos.
+
+### O que foi implementado na reconstrução V0.5
+
+- Representação com dez tipos de símbolos, mas em **SVG novos e originais**.
+- Roleta de **30 posições** e quatro acumulados de demonstração; a seleção de prémios e os valores ainda **não replicam as rotinas compiladas**.
+- Persistência dos estados e testes de motor. A roleta anterior de oito posições foi corrigida para respeitar o número de posições documentado.
+- Mantêm-se por validar: os gatilhos originais do bónus de morangos, o mapeamento dos números da roleta, as combinações e a distribuição real dos prémios, efeitos completos dos dados/duplicação e regras de retenção de tambores.
+
+### Limites da análise
+
+O material permite fazer engenharia inversa adicional em ambiente controlado, mas não justifica afirmar que `GameHalloween30L` é o executável da máquina física antiga. O pacote contém uma **adaptação Android**, e as variações `Halloween 25L`, `30L`, `Classica` podem ter regras diferentes. Não foram recolhidos quaisquer dados privados de rede, contas, anúncios ou serviços incluídos na aplicação.
+
 ## Decisões técnicas
 
 - **Não importar automaticamente os gráficos, música ou binários proprietários para este repositório público**, sem autorização/licença apropriada. O ficheiro fornecido permite análise privada, não comprova titularidade dos direitos.
