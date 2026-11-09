@@ -84,6 +84,14 @@ try{
    scenario.name+' moldura não deve ficar esticada '+JSON.stringify(metrics.frame));
   assert(metrics.frame.w>=reel.w+10&&metrics.frame.w<=machine.w+2,
    scenario.name+' moldura deve encaixar no tambor '+JSON.stringify(metrics.frame));
+  // Moldura e grelha sobem em conjunto sem perder o enquadramento.
+  const frameCenter=metrics.frame.y+metrics.frame.h/2;
+  const reelCenter=reel.y+reel.h/2;
+  const slotCenter=rows['.frame-region'].y+rows['.frame-region'].h/2;
+  assert(slotCenter-frameCenter>=6,
+   scenario.name+' a moldura não subiu dentro da região dos tambores');
+  assert(Math.abs(frameCenter-reelCenter)<=12,
+   scenario.name+' moldura e tambores perderam alinhamento após subida');
   assert(metrics.botanicalScale>180,scenario.name+' símbolos devem ser maiores');
   assert(spin.w>=(scenario.height<=640?90:128)&&spin.h>=90,scenario.name+' botão RODAR maior e acessível');
   assert(metrics.spinLabel==='visible'&&metrics.spinArrow==='visible',

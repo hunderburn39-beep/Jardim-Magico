@@ -85,3 +85,18 @@
   padding:0 1px;border-width:1px;border-radius:10px;
  }
 }
+
+
+/* Folga sob os tambores: moldura e grelha sobem juntas, sem mexer no RODAR,
+   nos símbolos, na jogabilidade ou nos painéis de informação. */
+@media (orientation:portrait){
+ .machine .frame-region{--reels-lift:clamp(12px,2.2dvh,23px)}
+ .machine .frame-region .reel-window,
+ .machine .frame-region .branch-frame{
+  translate:0 calc(-1 * var(--reels-lift));
+ }
+}
+/* Em ecrãs baixos a subida é menor para não cortar a parte superior. */
+@media (orientation:portrait) and (max-height:740px){
+ .machine .frame-region{--reels-lift:clamp(4px,1dvh,8px)}
+}
