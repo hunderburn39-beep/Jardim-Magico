@@ -1,0 +1,40 @@
+name: Faraó Eterno 1.1 - validar visuais Chromium e WebKit
+
+on:
+  push:
+    branches: [farao-visual-tambores-hd-20261109]
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preparar navegadores Chromium e WebKit
+        working-directory: Farao-Eterno
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Validar matemática e persistência sem alterações
+        working-directory: Farao-Eterno
+        run: npm test
+      - name: Servir Faraó Eterno
+        run: |
+          python3 -m http.server 8123 --bind 127.0.0.1 --directory Farao-Eterno > /tmp/farao-v11.log 2>&1 &
+          sleep 2
+      - name: Validar gráficos 1.1, giros, Free Spins e sessões
+        working-directory: Farao-Eterno
+        run: node tests/playwright-ci.cjs
+      - name: Guardar imagens reais dos dois navegadores
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: farao-visual-v11-chromium-webkit
+          path: Farao-Eterno/visual-previews/
+          if-no-files-found: ignore
