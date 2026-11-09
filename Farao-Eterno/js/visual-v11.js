@@ -182,10 +182,16 @@
     else if(p<=1-d)travel=p-a/2;
     else{const u=p-(1-d);travel=1-d-a/2+.5*u+.5*d/Math.PI*Math.sin(Math.PI*u/d);}
     const dist=item.steps[c]*travel/(1-(a+d)/2),step=Math.floor(dist),fraction=dist-step;
+    // Motion blur vertical apenas nos tambores em movimento.
+    // O fundo e a moldura ficam nítidos; o blur desaparece em cada paragem.
+    const velocity=Math.min(1,Math.max(0,(p<.12?p/.12:p>.82?(1-p)/.18:1)));
+    ctx.save();
+    if('filter' in ctx)ctx.filter='blur('+(1.2+velocity*2.1).toFixed(1)+'px)';
     for(let r=-1;r<4;r++){
      const sym=item.show[c][item.steps[c]+3+r-step]||item.grid[c][clamp(r,0,2)];
      tileAt(sym,rx,top+(r+fraction)*gh,t,false);
     }
+    ctx.restore();
    }else{
     const grid=item&&item.stopped[c]?item.grid:this.grid;
     const ms=t-this.landings[c];
@@ -266,7 +272,7 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  txt('V1.1.5',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.1.6',38,985,10,'#e5c68d',850,'Arial');
   if(!this.storageOK)txt('SESSÃO SEM GRAVAÇÃO',280,833,11,'#ffbc83',800,'Arial');
  };
  document.documentElement.dataset.faraoVisual='1.1';
