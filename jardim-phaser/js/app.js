@@ -74,7 +74,11 @@ let loopToken=0;
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function round(n){return Math.round((n+Number.EPSILON)*100)/100}
 function say(msg){
- $('resultText').textContent=msg;
+ // Normaliza apenas textos visíveis; o motor e os registos continuam intactos.
+ $('resultText').textContent=String(msg??'')
+  .replace(/\bde demonstração\b/gi,'')
+  .replace(/\b(?:fictícios|fictícias|fictício|fictícia|virtual)\b/gi,'')
+  .replace(/\s{2,}/g,' ').trim();
 }
 function status(msg){$('spinText').textContent=msg}
 function copySnapshot(snapshot){

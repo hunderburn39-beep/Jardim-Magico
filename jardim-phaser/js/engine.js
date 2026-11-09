@@ -284,25 +284,25 @@ export class DemoBank{
  get holdPrice(){return round(this.stake*30)}
  setStake(value){if(this.mode!=='base')return false;this.stake=clamp(round(value),.05,10);return true}
  setProfile(value){if(this.mode!=='base'||!(value in DEMO_PROFILES))return false;this.profile=value;return true}
- creditDemo(amount=25){this.balance=round(this.balance+clamp(amount,1,100));this.status='Créditos adicionados ao saldo';return this.snapshot}
+ creditDemo(amount=25){this.balance=round(this.balance+clamp(amount,1,100));this.status='Créditos de demonstração adicionados';return this.snapshot}
  canSpin(){return this.mode==='free'||(this.mode==='base'&&this.balance>=this.stake)}
  addFree(count=15){
    if(this.mode==='hold')return false;
    if(this.mode==='base'){this.mode='free';this.freeTotal=0;this.freeMultiplier=1;this.freeAwarded=0;this.freeSpins=0;this.freePlayed=0;}
    this.freeSpins=clamp(this.freeSpins+count,0,60);
-   this.status=count+' Free Spins';
+   this.status=count+' Free Spins de demonstração';
    return true;
  }
  buyFree(){
-   if(this.mode!=='base'||this.balance<this.bonusPrice)return {ok:false,message:'Saldo insuficiente'};
+   if(this.mode!=='base'||this.balance<this.bonusPrice)return {ok:false,message:'Saldo virtual insuficiente'};
    this.balance=round(this.balance-this.bonusPrice);
    this.reserve=round(this.reserve+this.bonusPrice);
    this.addFree(15);
-   return {ok:true,message:'Compraste 15 Free Spins'};
+   return {ok:true,message:'Compraste 15 Free Spins fictícias'};
  }
  buyHold(){
    if(this.mode!=='base'||this.balance<this.holdPrice){
-     return {ok:false,message:'Saldo insuficiente'};
+     return {ok:false,message:'Saldo virtual insuficiente'};
    }
    // Compra voluntária: acrescenta o preço ao fundo antes de gerar moedas.
    const price=this.holdPrice;
@@ -313,7 +313,7 @@ export class DemoBank{
    this.reserve=round(this.reserve+price);
    const result=this.startHold();
    if(!result)throw new Error('Compra do Hold sem grelha financiável');
-   return {ok:true,message:'Hold & Win iniciado'};
+   return {ok:true,message:'Hold & Win de demonstração iniciado'};
  }
  startHold(rng=Math.random){
    if(this.mode!=='base'||round(this.stake*6)>this.reserve){
@@ -391,7 +391,7 @@ export class DemoBank{
    return result;
  }
  spin(rng=Math.random){
-   if(!this.canSpin())return {ok:false,message:'Saldo insuficiente ou bónus ativo'};
+   if(!this.canSpin())return {ok:false,message:'Saldo virtual insuficiente ou bónus ativo'};
    const free=this.mode==='free';
    if(!free){
      this.balance=round(this.balance-this.stake);
