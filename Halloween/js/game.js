@@ -1,228 +1,254 @@
-/* Halloween — apresentação original Phaser 3, independente dos outros jogos. */
-(function () {
-  "use strict";
-  const status = document.getElementById("status");
-  const E = globalThis.HalloweenEngine;
-  if (!globalThis.Phaser || !E) {
-    status.textContent = "Não foi possível carregar o motor do jogo. Recarrega a página.";
-    return;
-  }
-
-  const W = 720, H = 1280, X = 54, Y = 386, BW = 612, BH = 492;
-  const CW = BW / 5, CH = BH / 3;
-  const SAVE_KEY = "halloween-noite-bruxas-v01";
-  const fmt = v => Number(v).toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  function label(scene, x, y, text, size, color, extra) {
-    return scene.add.text(x,y,text,{fontFamily:"Trebuchet MS, Arial, sans-serif",
-      fontStyle:"bold",fontSize:size+"px",color:color,align:"center",...extra}).setOrigin(0.5);
-  }
-
-  class Halloween extends Phaser.Scene {
-    constructor() { super("Halloween"); this.state = E.createState(); this.isSpinning = false; this.muted = false; this.audioCtx = null; }
-    create() {
-      this.loadSave();
-      this.drawBackground();
-      label(this, W/2, 140, "HALLOWEEN", 81, "#ffb64b", {stroke:"#310c0e",strokeThickness:12}).setShadow(0,8,"#ec520d",15);
-      label(this, W/2, 210, "NOITE DAS BRUXAS", 31, "#f9e9bd", {stroke:"#5a2437",strokeThickness:5});
-      this.drawProgressBar();
-      this.notice = label(this,W/2,351,"25 LINHAS DE PAGAMENTO",25,"#e9bd76",{stroke:"#130820",strokeThickness:5});
-      this.drawReels();
-      label(this,142,924,"SALDO",25,"#b89dbd");
-      label(this,578,924,"APOSTA",25,"#b89dbd");
-      this.balanceText = label(this,142,967,"",39,"#fff0c6",{stroke:"#231021",strokeThickness:3});
-      this.betText = label(this,578,967,"",39,"#fff0c6",{stroke:"#231021",strokeThickness:3});
-      this.winText = label(this,W/2,1018,"PRÉMIO 0,00",30,"#f8c86a");
-      this.makeCircleButton(141,1123,54,"−",67,()=>this.changeBet(-1));
-      this.makeCircleButton(579,1123,54,"+",67,()=>this.changeBet(1));
-      this.makeCircleButton(W/2,1118,84,"⟳",94,()=>this.startSpin(),true);
-      this.spinLabel = label(this,W/2,1221,"GIRAR",27,"#ffdf95");
-      this.freeText = label(this,W/2,1260,"",21,"#eac2f3");
-      this.soundText = label(this,629,52,"SOM ✓",23,"#ecdbaa").setInteractive({useHandCursor:true});
-      this.soundText.on("pointerdown",()=>{
-        this.muted=!this.muted;
-        this.soundText.setText(this.muted?"SOM ✕":"SOM ✓");
-      });
-      this.updateHUD();
-      this.input.keyboard?.on("keydown-SPACE",()=>this.startSpin());
-      status.textContent = "";
-    }
-
-    drawBackground() {
-      const sky = this.add.graphics();
-      for(let y=0;y<H;y+=8){
-        const t=y/H;
-        const r=Math.round(17+31*t),g=Math.round(8+10*t),b=Math.round(38+20*t);
-        sky.fillStyle(Phaser.Display.Color.GetColor(r,g,b),1).fillRect(0,y,W,9);
-      }
-      const moon=this.add.graphics().fillStyle(0xe4c7a6,0.14).fillCircle(520,226,133);
-      moon.fillStyle(0xffdfae,0.20).fillCircle(520,226,97);
-      moon.fillStyle(0xf6d5a4,0.74).fillCircle(520,226,66);
-      moon.fillStyle(0xb79d8a,0.28).fillCircle(493,207,15).fillCircle(550,249,10);
-      const stars=this.add.graphics();
-      for(let i=0;i<65;i++){
-        const x=(i*197+41)%W, y=(i*71+25)%885;
-        stars.fillStyle(0xe5d9e5,i%3===0?0.7:0.24).fillCircle(x,y,i%5===0?2:1);
-      }
-      const castle=this.add.graphics().fillStyle(0x130c23,0.85);
-      castle.fillRect(35,320,650,80);
-      castle.fillRect(100,265,95,85).fillRect(252,278,155,90).fillRect(503,253,95,115);
-      castle.fillTriangle(80,268,155,190,215,268).fillTriangle(480,257,552,180,618,257);
-      const horizon=this.add.graphics().fillStyle(0x0a0714,0.8);
-      horizon.fillEllipse(140,1270,550,440).fillEllipse(620,1270,590,370);
-      const branches=this.add.graphics().lineStyle(12,0x10091b,0.97);
-      branches.beginPath();branches.moveTo(0,200);branches.lineTo(66,252);branches.lineTo(130,249);branches.moveTo(65,252);branches.lineTo(94,200);branches.strokePath();
-      branches.beginPath();branches.moveTo(720,260);branches.lineTo(664,305);branches.lineTo(594,290);branches.moveTo(665,305);branches.lineTo(641,242);branches.strokePath();
-    }
-
-    drawProgressBar() {
-      const g=this.add.graphics();
-      g.fillStyle(0x160a25,0.86).fillRoundedRect(70,260,580,57,24);
-      g.lineStyle(3,0x9f672e,1).strokeRoundedRect(70,260,580,57,24);
-      label(this,161,289,"🎃  ABÓBORAS",22,"#f9cc7e");
-      this.progressBg=this.add.graphics();
-      this.progressText=label(this,565,289,"0 / 10",25,"#ffe9b9");
-    }
-    drawReels() {
-      const board=this.add.graphics();
-      board.fillStyle(0x12081d,0.96).fillRoundedRect(X-17,Y-19,BW+34,BH+38,26);
-      board.lineStyle(10,0x603334,1).strokeRoundedRect(X-17,Y-19,BW+34,BH+38,26);
-      board.lineStyle(5,0xe1a14f,1).strokeRoundedRect(X-9,Y-10,BW+18,BH+20,17);
-      const cells=this.add.graphics();
-      this.slotTexts=Array.from({length:5},()=>[]);
-      for(let col=0;col<5;col++) for(let row=0;row<3;row++){
-        const x=X+col*CW,y=Y+row*CH, cx=x+CW/2, cy=y+CH/2;
-        cells.fillStyle((col+row)%2===0?0x2e1836:0x24132f,0.89).fillRect(x+2,y+2,CW-4,CH-4);
-        cells.lineStyle(2,0x694554,0.8).strokeRect(x+2,y+2,CW-4,CH-4);
-        const s=E.SYMBOLS[(col+row*3)%E.SYMBOLS.length];
-        const tile=label(this,cx,cy,s.icon,95,"#ffffff",{stroke:"#35182c",strokeThickness:1});
-        this.slotTexts[col][row]=tile;
-      }
-      // Separadores verticais visíveis, sem caixas opacas sobre os ícones.
-      const lines=this.add.graphics().lineStyle(4,0xb9813c,0.84);
-      for(let col=1;col<5;col++) lines.lineBetween(X+col*CW,Y+2,X+col*CW,Y+BH-2);
-      this.highlights=this.add.graphics();
-    }
-    makeCircleButton(x,y,r,symbol,size,callback,primary) {
-      const g=this.add.graphics();
-      g.fillStyle(0x0b0715,0.72).fillCircle(x,y+7,r+7);
-      g.fillStyle(primary?0xe49732:0x583152,1).fillCircle(x,y,r);
-      g.lineStyle(5,primary?0xffda80:0xc18e9d,1).strokeCircle(x,y,r-3);
-      const t=label(this,x,y-5,symbol,size,primary?"#34121a":"#fff1d1");
-      const zone=this.add.zone(x,y,2*r,2*r).setInteractive({useHandCursor:true});
-      zone.on("pointerdown",()=>{ callback(); this.tweens.add({targets:t,scale:0.91,duration:90,yoyo:true}); });
-      return zone;
-    }
-    loadSave() {
-      try { this.state=E.sanitize(JSON.parse(localStorage.getItem(SAVE_KEY))); } catch { this.state=E.createState(); }
-    }
-    save() { try { localStorage.setItem(SAVE_KEY,JSON.stringify(this.state)); } catch { /* Safari privado */ } }
-    changeBet(direction) {
-      if(this.isSpinning)return;
-      const bets=[1,2,5,10],idx=bets.indexOf(this.state.bet);
-      this.state=E.setBet(this.state,bets[Math.max(0,Math.min(bets.length-1,idx+direction))]);
-      this.updateHUD();this.save();this.tone(450,0.06);
-    }
-    updateHUD() {
-      this.balanceText.setText(fmt(this.state.balance));
-      this.betText.setText(fmt(this.state.bet));
-      this.winText.setText("PRÉMIO " + fmt(this.state.lastWin));
-      this.freeText.setText(this.state.freeSpins>0?"RODADAS GRÁTIS: "+this.state.freeSpins:"25 LINHAS · CRÉDITOS");
-      this.progressText.setText(this.state.pumpkins+" / 10");
-      this.progressBg.clear().fillStyle(0xf49d35,0.92)
-        .fillRoundedRect(346,278,Math.max(4,180*this.state.pumpkins/10),24,10);
-    }
-    highlight(hits) {
-      this.highlights.clear();
-      const cells=new Set();
-      for(const hit of hits) for(const cell of hit.cells) cells.add(cell[0]+","+cell[1]);
-      if(!cells.size)return;
-      this.highlights.lineStyle(5,0xffcf62,0.95);
-      for(const key of cells) {
-        const [col,row]=key.split(",").map(Number);
-        this.highlights.strokeRoundedRect(X+col*CW+6,Y+row*CH+7,CW-12,CH-14,15);
-      }
-    }
-    startSpin() {
-      if(this.isSpinning)return;
-      const outcome=E.spin(this.state);
-      if(!outcome.ok) {
-        this.notice.setText("SALDO INSUFICIENTE");
-        this.tone(180,0.19);
-        return;
-      }
-      this.isSpinning=true;
-      this.notice.setText("A NOITE ESTÁ A GIRAR...");
-      this.highlight([]);
-      this.tone(290,0.12);
-      let completed=0;
-      for(let col=0;col<5;col++){
-        let ticks=0, target=13+col*5;
-        const event=this.time.addEvent({delay:60,repeat:target-1,callback:()=>{
-          ticks++;
-          for(let row=0;row<3;row++){
-            const icon=E.SYMBOLS[Math.floor(Math.random()*E.SYMBOLS.length)].icon;
-            this.slotTexts[col][row].setText(icon).setAlpha(0.75);
-          }
-          if(ticks===target){
-            for(let row=0;row<3;row++){
-              const icon=E.SYMBOLS.find(s=>s.id===outcome.grid[col][row]).icon;
-              const tile=this.slotTexts[col][row];
-              tile.setText(icon).setAlpha(1);
-              this.tweens.add({targets:tile,scale:{from:1.2,to:1},duration:240,ease:"Back.Out"});
-            }
-            this.tone(190+col*70,0.045);
-            completed++;
-            if(completed===5) this.time.delayedCall(220,()=>this.finishSpin(outcome));
-          }
-        }});
-      }
-    }
-    finishSpin(outcome) {
-      this.state=outcome.state;
-      this.save();
-      this.updateHUD();
-      this.highlight(outcome.result.hits);
-      if(outcome.earnedSpins>0){
-        this.notice.setText("🔮  +10 RODADAS GRÁTIS!");
-        this.celebrate();
-      } else if(outcome.pumpkinBonuses>0){
-        this.notice.setText("🎃  ABÓBORAS! +"+outcome.pumpkinBonuses*5+" GIROS");
-        this.celebrate();
-      } else if(outcome.result.total>0){
-        this.notice.setText("GANHASTE "+fmt(outcome.result.total)+" CRÉDITOS!");
-        this.tone(620,0.16);
-      } else {
-        this.notice.setText("TENTA A TUA SORTE");
-      }
-      this.isSpinning=false;
-    }
-    celebrate() {
-      this.tone(740,0.19);
-      this.time.delayedCall(170,()=>this.tone(980,0.23));
-      this.cameras.main.flash(220,255,173,47,false);
-    }
-    tone(freq,duration) {
-      if(this.muted)return;
-      try {
-        const C=window.AudioContext||window.webkitAudioContext;
-        if(!C)return;
-        if(!this.audioCtx)this.audioCtx=new C();
-        if(this.audioCtx.state==="suspended")this.audioCtx.resume().catch(()=>{});
-        const t=this.audioCtx.currentTime;
-        const osc=this.audioCtx.createOscillator(),gain=this.audioCtx.createGain();
-        osc.type="sine";osc.frequency.setValueAtTime(freq,t);
-        gain.gain.setValueAtTime(0.0001,t);
-        gain.gain.exponentialRampToValueAtTime(0.07,t+0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001,t+duration);
-        osc.connect(gain);gain.connect(this.audioCtx.destination);
-        osc.start(t);osc.stop(t+duration+0.02);
-      } catch { /* áudio opcional */ }
-    }
-  }
-  new Phaser.Game({
-    type:Phaser.AUTO, parent:"game", width:W, height:H, backgroundColor:"#10091d",
-    render:{antialias:true,pixelArt:false},
-    scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
-    scene:[Halloween]
-  });
+/* Halloween — apresentação estilo clássico, ícones originais, controles táteis Phaser. */
+(function(){
+"use strict";
+const E=globalThis.HalloweenEngine, ART=globalThis.HalloweenArt;
+const status=document.getElementById("status");
+if(!E||!ART||!globalThis.Phaser){status.textContent="Erro ao carregar o jogo";return;}
+const W=720,H=1280,X=66,Y=334,BW=588,BH=510,CW=BW/5,CH=BH/3;
+const saveKey="halloween-classico-v02";
+const fmt=n=>Number(n).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2});
+function txt(s,x,y,value,size=28,color="#fff6d9",extra={}) {
+  return s.add.text(x,y,value,{fontFamily:"Georgia,serif",fontSize:size+"px",
+    fontStyle:"bold",color,align:"center",stroke:"#1a1324",strokeThickness:3,...extra}).setOrigin(.5);
+}
+class Classica extends Phaser.Scene{
+ constructor(){super("classica");this.state=E.createState();this.spinning=false;this.auto=false;this.silence=false;this.held=new Set();this.previous=null;this.canHold=false;this.audio=null;}
+ preload(){
+   for(const [id,svg] of Object.entries(ART))
+     this.load.svg("h-"+id,"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg),{width:156,height:174});
+ }
+ create(){
+   this.restore();
+   this.background();
+   this.hud();
+   this.grid();
+   this.bottom();
+   this.shortcuts();
+   this.renderState();
+   status.textContent="";
+ }
+ background(){
+   const g=this.add.graphics();
+   g.fillGradientStyle(0x0a182b,0x152d4b,0x48103f,0x681449,1).fillRect(0,0,W,H);
+   const moon=this.add.graphics();
+   moon.fillStyle(0xf7cb83,.13).fillCircle(575,155,125);
+   moon.fillStyle(0xf0d4ad,.12).fillCircle(575,155,74);
+   const stars=this.add.graphics();
+   for(let i=0;i<60;i++){
+     stars.fillStyle(0xfff1c2,i%3===0?.85:.25).fillCircle((i*79+37)%W,(i*137+19)%920,i%6===0?2:1);
+   }
+   const roof=this.add.graphics().fillStyle(0x100e29,.6);
+   roof.fillTriangle(0,315,128,207,264,315).fillRect(42,279,168,80);
+   roof.fillTriangle(420,315,565,215,720,315).fillRect(472,271,180,80);
+   this.add.text(360,182,"Halloween",{
+       fontFamily:"Georgia,serif",fontSize:"88px",fontStyle:"italic bold",color:"#ec9c44",
+       stroke:"#381b29",strokeThickness:10,shadow:{color:"#ff8a2b",blur:12}
+     }).setOrigin(.5);
+   txt(this,360,240,"III",50,"#ffd277",{stroke:"#641b2d",strokeThickness:8});
+ }
+ hud(){
+   const g=this.add.graphics();
+   g.fillStyle(0x11122b,.94).fillRoundedRect(8,8,704,102,16);
+   g.lineStyle(3,0xa47d47,1).strokeRoundedRect(8,8,704,102,16);
+   for(const x of [104,355,606]){
+     g.fillStyle(0x650d19,1).fillRoundedRect(x-88,37,176,57,12);
+     g.lineStyle(4,0xd7a253).strokeRoundedRect(x-88,37,176,57,12);
+   }
+   txt(this,104,25,"CRÉDITO",22,"#ffdf84");
+   txt(this,355,25,"PRÉMIO",22,"#ffdf84");
+   txt(this,606,25,"APOSTA",22,"#ffdf84");
+   this.credit=txt(this,104,65,"",32,"#fff8e2");
+   this.prize=txt(this,355,65,"",32,"#fff8e2");
+   this.stake=txt(this,606,65,"",32,"#fff8e2");
+ }
+ grid(){
+   const frame=this.add.graphics();
+   frame.fillStyle(0x071329,.95).fillRoundedRect(X-9,Y-9,BW+18,BH+18,10);
+   frame.lineStyle(7,0xdb9d55,1).strokeRoundedRect(X-8,Y-8,BW+16,BH+16,9);
+   frame.fillStyle(0xe9edf1,1).fillRect(X,Y,BW,BH);
+   this.symbols=Array.from({length:5},()=>[]);
+   for(let col=0;col<5;col++) for(let row=0;row<3;row++){
+     const sx=X+CW*col,sy=Y+CH*row;
+     frame.fillGradientStyle(0xf5f9fa,0xdce7ee,0xf3f6f9,0xcbd9e0,1).fillRect(sx+2,sy+2,CW-4,CH-4);
+     const id=E.SYMBOLS[(col+row*3)%E.SYMBOLS.length].id;
+     this.symbols[col][row]=this.add.image(sx+CW/2,sy+CH/2,"h-"+id)
+       .setDisplaySize(CW-12,CH-14);
+   }
+   const lines=this.add.graphics().lineStyle(4,0x0e1324,1);
+   for(let c=1;c<5;c++)lines.lineBetween(X+c*CW,Y,X+c*CW,Y+BH);
+   for(let r=1;r<3;r++)lines.lineBetween(X,Y+r*CH,X+BW,Y+r*CH);
+   this.winGlow=this.add.graphics();
+   this.lineMarkers=[];
+   for(let i=0;i<20;i++){
+     const left=i<10,rank=left?i:i-10;
+     const x=left?32:688,y=Y+19+rank*49;
+     const palette=[0xf4c43a,0xdd4d5c,0x78bf55,0x5cc1de,0xd48edb];
+     const circ=this.add.graphics().fillStyle(0x17182b,1).fillCircle(x,y,19)
+       .lineStyle(3,palette[i%5]).strokeCircle(x,y,19);
+     const t=txt(this,x,y,String(i+1),19,"#f9e1c7",{strokeThickness:0});
+     this.lineMarkers.push({circ,t});
+   }
+   this.locks=[];
+   for(let c=0;c<5;c++){
+     const x=X+CW*(c+.5);
+     const hit=this.add.zone(x,Y+BH/2,CW, BH).setInteractive({useHandCursor:true});
+     hit.on("pointerdown",()=>this.toggleHold(c));
+     const lock=txt(this,x,Y+BH-22,"",18,"#ffdf6a",{backgroundColor:"#4c0a23",padding:{x:3,y:3}});
+     lock.setVisible(false);
+     this.locks.push(lock);
+   }
+ }
+ bottom(){
+   txt(this,360,886,"25 LINHAS • ACUMULADOS",26,"#ffcb6b");
+   const g=this.add.graphics();
+   for(const [x,w] of [[172,320],[548,320]]){
+     g.fillStyle(0x350e29,.96).fillRoundedRect(x-w/2,930,w,105,8);
+     g.lineStyle(4,0xe6a447).strokeRoundedRect(x-w/2,930,w,105,8);
+   }
+   txt(this,172,953,"ACUMULADO 1",22,"#ffd177");
+   txt(this,548,953,"ACUMULADO 2",22,"#ffd177");
+   this.jack1=txt(this,172,996,"",39,"#fff2a7");
+   this.jack2=txt(this,548,996,"",39,"#fff2a7");
+   this.pumpkins=txt(this,360,1053,"🎃 🎃 🎃 🎃 🎃",25,"#ffbc65");
+   this.message=txt(this,360,1089,"CARREGA EM JOGAR",26,"#ffeaca");
+   this.roundButton(367,1192,70,"JOGAR",30,()=>this.spin(),true);
+   this.roundButton(90,1192,48,"LINHAS",21,()=>this.changeLines());
+   this.roundButton(208,1192,48,"APOSTA",19,()=>this.changeBet());
+   this.roundButton(520,1192,48,"AUTO",21,()=>this.toggleAuto());
+   this.roundButton(634,1192,48,"SOM",21,()=>this.toggleSound());
+   this.autoText=txt(this,520,1252,"",18,"#fbdeb4");
+ }
+ roundButton(x,y,r,caption,size,callback,main=false){
+   const g=this.add.graphics();
+   g.fillStyle(0x130b1c,.84).fillCircle(x,y+5,r+4);
+   g.fillStyle(main?0xb82b1d:0x8b1324,1).fillCircle(x,y,r);
+   g.lineStyle(5,main?0xffc866:0xeebc94).strokeCircle(x,y,r-3);
+   txt(this,x,y,caption,size,"#ffe5c7",{stroke:"#651f19",strokeThickness:3});
+   this.add.zone(x,y,2*r,2*r).setInteractive({useHandCursor:true}).on("pointerdown",callback);
+ }
+ shortcuts(){
+   this.input.keyboard?.on("keydown-SPACE",()=>this.spin());
+   this.input.keyboard?.on("keydown-ARROWUP",()=>this.changeBet());
+ }
+ restore(){
+   try {this.state=E.sanitize(JSON.parse(localStorage.getItem(saveKey)));}catch{this.state=E.createState();}
+   // valores progressivos são apenas pontos e não representam qualquer obrigação de pagamento
+   this.state.jackpots=this.state.jackpots||[350,750];
+   this.state.lines=this.state.lines||25;
+ }
+ store(){
+   try{localStorage.setItem(saveKey,JSON.stringify(this.state));}catch{/* Modo privado */}
+ }
+ renderState(){
+   this.credit.setText(fmt(this.state.balance));
+   this.prize.setText(fmt(this.state.lastWin));
+   this.stake.setText(fmt(this.state.bet));
+   this.jack1.setText(fmt(this.state.jackpots?.[0]||350));
+   this.jack2.setText(fmt(this.state.jackpots?.[1]||750));
+   this.pumpkins.setText("🎃 ".repeat(Math.max(1,Math.min(5,Math.ceil((this.state.pumpkins||0)/2)))).trim());
+   if(this.state.freeSpins>0)this.message.setText("GIROS GRÁTIS "+this.state.freeSpins);
+   this.autoText.setText(this.auto?"ATIVO":"");
+ }
+ changeBet(){
+   if(this.spinning)return;
+   const options=[1,2,5,10],i=options.indexOf(this.state.bet);
+   this.state=E.setBet(this.state,options[(i+1)%options.length]);
+   this.renderState();this.store();this.tone(480,.06);
+ }
+ changeLines(){
+   if(this.spinning)return;
+   const options=[20,25,30],i=options.indexOf(this.state.lines||25);
+   this.state.lines=options[(i+1)%3];
+   this.message.setText(this.state.lines+" LINHAS SELECIONADAS");
+   this.store();this.tone(440,.06);
+ }
+ toggleAuto(){
+   this.auto=!this.auto;
+   this.autoText.setText(this.auto?"ATIVO":"");
+   if(this.auto&&!this.spinning)this.spin();
+ }
+ toggleSound(){this.silence=!this.silence;this.message.setText(this.silence?"SOM DESLIGADO":"SOM LIGADO");}
+ toggleHold(col){
+   if(this.spinning||!this.canHold||!this.previous)return;
+   if(this.held.has(col))this.held.delete(col);else this.held.add(col);
+   this.locks[col].setVisible(this.held.has(col)).setText("TRAVADO");
+   this.message.setText(this.held.size+" TAMBORES TRAVADOS");
+   this.tone(560,.05);
+ }
+ spin(){
+   if(this.spinning)return;
+   const outcome=E.spin(this.state,Math.random,this.previous,this.held);
+   if(!outcome.ok){
+     this.message.setText("CRÉDITOS INSUFICIENTES");this.auto=false;
+     this.autoText.setText("");return;
+   }
+   this.spinning=true;this.canHold=false;this.highlight([]);
+   this.message.setText(this.held.size?"A GIRAR TAMBORES LIVRES...":"A GIRAR...");
+   this.tone(320,.09);
+   let count=0;
+   for(let c=0;c<5;c++){
+     const locked=outcome.heldReels?.includes(c);
+     if(locked){count++;continue;}
+     const delay=55,steps=13+5*c;
+     let t=0;
+     this.time.addEvent({delay,repeat:steps-1,callback:()=>{
+       t++;
+       for(let row=0;row<3;row++){
+         const el=this.symbols[c][row];
+         if(t===steps){
+           el.setTexture("h-"+outcome.grid[c][row]).setAlpha(1);
+           this.tweens.add({targets:el,scaleX:{from:.74,to:(CW-12)/156},scaleY:{from:.9,to:(CH-14)/174},duration:190});
+         } else {
+           const id=E.SYMBOLS[Math.floor(Math.random()*E.SYMBOLS.length)].id;
+           el.setTexture("h-"+id).setAlpha(.72);
+         }
+       }
+       if(t===steps){this.tone(210+c*55,.05);count++;if(count===5)this.finish(outcome);}
+     }});
+   }
+   if(count===5)this.time.delayedCall(120,()=>this.finish(outcome));
+ }
+ finish(result){
+   if(!this.spinning)return;
+   this.spinning=false;this.state=result.state;
+   this.state.lines=this.state.lines||25;
+   this.state.jackpots=this.state.jackpots||[350,750];
+   this.state.jackpots=this.state.jackpots.map((v,i)=>Math.round((v+this.state.bet*(i===0?.01:.017))*100)/100);
+   this.previous=result.grid;
+   this.held.clear();for(const label of this.locks)label.setVisible(false);
+   this.canHold=result.result.total===0&&!result.free;
+   this.highlight(result.result.hits);
+   if(result.earnedSpins){this.message.setText("+10 GIROS GRÁTIS!");this.flash();}
+   else if(result.pumpkinBonuses){this.message.setText("BÓNUS DAS ABÓBORAS!");this.flash();}
+   else if(result.result.total>0){this.message.setText("PRÉMIO "+fmt(result.result.total));this.tone(740,.15);}
+   else{this.message.setText("SEM PRÉMIO — TOCA NUM TAMBOR PARA TRAVAR");}
+   this.renderState();this.store();
+   if(this.auto)this.time.delayedCall(620,()=>{if(this.auto)this.spin();});
+ }
+ highlight(hits){
+   this.winGlow.clear();
+   const set=new Set();
+   for(const hit of hits)for(const [c,r] of hit.cells)set.add(c+","+r);
+   this.winGlow.lineStyle(5,0xffc332,1);
+   for(const key of set){const [c,r]=key.split(",").map(Number);
+     this.winGlow.strokeRoundedRect(X+c*CW+5,Y+r*CH+5,CW-10,CH-10,8);
+   }
+ }
+ flash(){this.cameras.main.flash(230,255,212,127,false);this.tone(900,.19);}
+ tone(freq,len){
+   if(this.silence)return;
+   try{const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;
+     if(!this.audio)this.audio=new Audio();
+     if(this.audio.state==="suspended")this.audio.resume().catch(()=>{});
+     const t=this.audio.currentTime,osc=this.audio.createOscillator(),gain=this.audio.createGain();
+     osc.type="square";osc.frequency.setValueAtTime(freq,t);
+     gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.025,t+.018);
+     gain.gain.exponentialRampToValueAtTime(.0001,t+len);
+     osc.connect(gain);gain.connect(this.audio.destination);osc.start(t);osc.stop(t+len+.02);
+   }catch{/* Áudio opcional */}
+ }
+}
+new Phaser.Game({type:Phaser.AUTO,parent:"game",width:W,height:H,backgroundColor:"#160d28",
+  scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
+  render:{antialias:true},scene:[Classica]});
 })();
