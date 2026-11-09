@@ -41,6 +41,8 @@ jobs:
           test -s Halloween/index.html
           test -s Halloween/js/engine.js
           test -s Halloween/js/game.js
+          test -s Halloween/js/art.js
+          grep -q 'js/art.js' Halloween/index.html
           test -s jardim-phaser/vendor/phaser-3.90.0.min.js
           grep -q 'jardim-phaser/vendor/phaser-3.90.0.min.js' Halloween/index.html
           for file in Halloween/js/*.js; do node --check "$file"; done
