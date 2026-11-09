@@ -37,3 +37,58 @@
  .machine #dropHud #multiTotal{font-size:24px}
 }
 @media(prefers-reduced-motion:reduce){.machine #dropHud{animation:none}}
+
+
+/* V5.1 — jackpots laterais no topo: ULTRA/MAX · logótipo · MED/MIN.
+   Os valores e IDs mantêm-se: a alteração é exclusivamente visual. */
+@media (orientation:portrait){
+ .machine{
+  grid-template-rows:
+   minmax(0,26fr) minmax(0,36fr) minmax(0,3.5fr)
+   minmax(0,13.5fr) minmax(0,18fr) minmax(0,3fr);
+ }
+ .machine .game-header{grid-row:1}
+ .machine .frame-region{grid-row:2}
+ .machine .result-text{grid-row:3}
+ .machine .dashboard{grid-row:4}
+ .machine .controls{grid-row:5}
+ .machine footer{grid-row:6}
+ .machine .game-header .logo{
+  left:23%;width:54%;
+  top:clamp(44px,6dvh,58px);
+  height:calc(100% - clamp(44px,6dvh,58px) - 8px);
+  object-fit:contain;
+ }
+ .machine>.jackpots{
+  position:absolute;grid-area:auto;
+  z-index:3;pointer-events:none;
+  top:clamp(44px,6dvh,58px);
+  left:clamp(3px,1vw,7px);right:clamp(3px,1vw,7px);bottom:auto;
+  width:auto;height:14dvh;min-height:0;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.45fr) minmax(0,1fr);
+  grid-template-rows:repeat(2,minmax(0,1fr));
+  gap:clamp(3px,.8vw,7px);
+ }
+ .machine>.jackpots .jackpot{min-width:0;min-height:0;padding:2px 1px}
+ .machine>.jackpots .jackpot strong{
+  max-width:100%;overflow:hidden;font-size:clamp(11px,3vw,19px);
+  line-height:1.1;white-space:nowrap;
+ }
+ .machine>.jackpots .jackpot span{font-size:clamp(11px,2.8vw,18px)}
+ .machine>.jackpots .jackpot small{font-size:clamp(9px,2.1vw,12px)}
+ /* Ordem independente do HTML: ULTRA / MAX na esquerda, MED / MIN na direita. */
+ .machine>.jackpots .jackpot:nth-child(4){grid-column:1;grid-row:1}
+ .machine>.jackpots .jackpot:nth-child(3){grid-column:1;grid-row:2}
+ .machine>.jackpots .jackpot:nth-child(2){grid-column:3;grid-row:1}
+ .machine>.jackpots .jackpot:nth-child(1){grid-column:3;grid-row:2}
+}
+@media (orientation:portrait) and (max-height:640px){
+ .machine{
+  grid-template-rows:
+   minmax(0,22.8fr) minmax(0,35.5fr) minmax(0,4fr)
+   minmax(0,16fr) minmax(0,18fr) minmax(0,3.7fr);
+ }
+ .machine>.jackpots{height:min(14dvh,calc(22.8dvh - 47px))}
+ .machine .game-header .logo{height:calc(100% - clamp(44px,6dvh,58px) - 2px)}
+}
