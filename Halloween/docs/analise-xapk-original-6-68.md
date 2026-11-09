@@ -97,6 +97,17 @@ Foi lido o índice binário DEX e cruzada a identidade de cada método com a sua
 - Persistência dos estados e testes de motor. A roleta anterior de oito posições foi corrigida para respeitar o número de posições documentado.
 - Mantêm-se por validar: os gatilhos originais do bónus de morangos, o mapeamento dos números da roleta, as combinações e a distribuição real dos prémios, efeitos completos dos dados/duplicação e regras de retenção de tambores.
 
+### Chamadas confirmadas no código Dalvik (sem executar a aplicação)
+
+Uma segunda leitura da tabela DEX permitiu identificar as chamadas efetuadas por métodos concretos da classe `GameHalloween30L`, em vez de depender apenas dos nomes:
+
+- `NumRoleta` lê os campos `premio`, `dbase`, `Database.dificul` e `rand`, chama `GetCredito`, `calcbonusRoleta` e `java.util.Random.nextInt`. O método contém literais inteiros 23, 24 e 4. **Não é correto concluir daí, sem interpretar o fluxo de controlo, quais os pesos dos 30 setores ou a fórmula dos prémios.**
+- `calcbonusRoleta` recebe valores do tipo `Double`, invoca `doubleValue` e `Double.valueOf`, faz operações numéricas e termina com um resultado booleano. Indício de uma verificação de elegibilidade ou limite, mas a semântica exata continua por demonstrar.
+- `EscolheMorango` lê os campos `morangosEscolha`, `moraPrizeValues`, `moraPrizes`, `apBet` e `bonusToCall`; contém valores de estado de animação e utiliza `SetReplayStatus`. Não há evidência suficiente para importar prémios de morango diretamente para a matemática Phaser.
+- `SetRoletaPremio` lê `roletaPremio` e converte o número em texto. A interpretação do resultado e a relação entre setores, crédito e aposta necessitam de análise adicional.
+
+Estas observações são **estrutura e relações de chamada do bytecode compilado**; não são cópia do algoritmo original nem equivalem a uma auditoria do seu comportamento em execução. A V0.6 mantém as regras experimentais explicitamente separadas.
+
 ### Limites da análise
 
 O material permite fazer engenharia inversa adicional em ambiente controlado, mas não justifica afirmar que `GameHalloween30L` é o executável da máquina física antiga. O pacote contém uma **adaptação Android**, e as variações `Halloween 25L`, `30L`, `Classica` podem ter regras diferentes. Não foram recolhidos quaisquer dados privados de rede, contas, anúncios ou serviços incluídos na aplicação.
