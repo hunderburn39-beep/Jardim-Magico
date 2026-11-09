@@ -79,13 +79,13 @@ class Classica extends Phaser.Scene{
    for(let r=1;r<3;r++)lines.lineBetween(X,Y+r*CH,X+BW,Y+r*CH);
    this.winGlow=this.add.graphics();
    this.lineMarkers=[];
-   for(let i=0;i<20;i++){
-     const left=i<10,rank=left?i:i-10;
-     const x=left?32:688,y=Y+19+rank*49;
+   for(let i=0;i<30;i++){
+     const left=i<15,rank=left?i:i-15;
+     const x=left?32:688,y=Y+17+rank*33;
      const palette=[0xf4c43a,0xdd4d5c,0x78bf55,0x5cc1de,0xd48edb];
-     const circ=this.add.graphics().fillStyle(0x17182b,1).fillCircle(x,y,19)
-       .lineStyle(3,palette[i%5]).strokeCircle(x,y,19);
-     const t=txt(this,x,y,String(i+1),19,"#f9e1c7",{strokeThickness:0});
+     const circ=this.add.graphics().fillStyle(0x17182b,1).fillCircle(x,y,15)
+       .lineStyle(3,palette[i%5]).strokeCircle(x,y,15);
+     const t=txt(this,x,y,String(i+1),15,"#f9e1c7",{strokeThickness:0});
      this.lineMarkers.push({circ,t});
    }
    this.locks=[];
@@ -99,7 +99,7 @@ class Classica extends Phaser.Scene{
    }
  }
  bottom(){
-   txt(this,360,886,"25 LINHAS • ACUMULADOS",26,"#ffcb6b");
+   this.linesText=txt(this,360,886,"",26,"#ffcb6b");
    const g=this.add.graphics();
    for(const [x,w] of [[172,320],[548,320]]){
      g.fillStyle(0x350e29,.96).fillRoundedRect(x-w/2,930,w,105,8);
@@ -134,7 +134,7 @@ class Classica extends Phaser.Scene{
    try {this.state=E.sanitize(JSON.parse(localStorage.getItem(saveKey)));}catch{this.state=E.createState();}
    // valores progressivos são apenas pontos e não representam qualquer obrigação de pagamento
    this.state.jackpots=this.state.jackpots||[350,750];
-   this.state.lines=this.state.lines||25;
+   this.state.lines=this.state.lines||20;
  }
  store(){
    try{localStorage.setItem(saveKey,JSON.stringify(this.state));}catch{/* Modo privado */}
@@ -148,6 +148,12 @@ class Classica extends Phaser.Scene{
    this.pumpkins.setText("🎃 ".repeat(Math.max(1,Math.min(5,Math.ceil((this.state.pumpkins||0)/2)))).trim());
    if(this.state.freeSpins>0)this.message.setText("GIROS GRÁTIS "+this.state.freeSpins);
    this.autoText.setText(this.auto?"ATIVO":"");
+   this.linesText.setText(this.state.lines+" LINHAS • ACUMULADOS");
+   for(let i=0;i<this.lineMarkers.length;i++){
+      const active=i<this.state.lines;
+      this.lineMarkers[i].circ.setVisible(active);
+      this.lineMarkers[i].t.setVisible(active);
+   }
  }
  changeBet(){
    if(this.spinning)return;
@@ -159,6 +165,7 @@ class Classica extends Phaser.Scene{
    if(this.spinning)return;
    const options=[20,25,30],i=options.indexOf(this.state.lines||25);
    this.state.lines=options[(i+1)%3];
+   this.renderState();
    this.message.setText(this.state.lines+" LINHAS SELECIONADAS");
    this.store();this.tone(440,.06);
  }
@@ -211,7 +218,7 @@ class Classica extends Phaser.Scene{
  finish(result){
    if(!this.spinning)return;
    this.spinning=false;this.state=result.state;
-   this.state.lines=this.state.lines||25;
+   this.state.lines=this.state.lines||20;
    this.state.jackpots=this.state.jackpots||[350,750];
    this.state.jackpots=this.state.jackpots.map((v,i)=>Math.round((v+this.state.bet*(i===0?.01:.017))*100)/100);
    this.previous=result.grid;
