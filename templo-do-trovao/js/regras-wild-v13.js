@@ -77,6 +77,22 @@
  }
  function scatterMultiplier(n){return n>=6?100:n===5?5:n>=4?3:0}
 
+ // Distribuição própria para este protótipo de 49 casas.
+ // O modo clássico mantém draw() original; o modo clusters usa drawCluster().
+ const CLUSTER_KINDS=[...KINDS];
+ const CLUSTER_WEIGHTS=[8,8,9,10,12,14,15,15,15];
+ const CLUSTER_CONFIG={base:{scatter:.0105,wild:.039},
+                       bonus:{scatter:.015,wild:.052}};
+ function drawCluster(bonus,id,rng){
+   const cfg=bonus?CLUSTER_CONFIG.bonus:CLUSTER_CONFIG.base;
+   const n=rng();
+   if(n<cfg.scatter)return {id,kind:"scatter"};
+   if(n<cfg.scatter+cfg.wild){
+     return {id,kind:"wild",value:pick(WILD_VALUES,WILD_WEIGHTS,rng)};
+   }
+   return {id,kind:pick(CLUSTER_KINDS,CLUSTER_WEIGHTS,rng)};
+ }
+
  // V19: mecânica 7x7 de grupos ortogonais (estilo sugar cluster).
  const CLUSTER_COLS=7,CLUSTER_ROWS=7,CLUSTER_SIZE=49,MAX_CLUSTER_MULT=1024;
  function neighbours(index){
@@ -173,5 +189,5 @@
    return Math.max(1,...(spots||[]).filter(n=>n>=2));
  }
 
- window.TrovaoRules={CONFIG,KINDS,EXCLUDED_WILD_KINDS,canWildReplace,WEIGHTS,MULTIPLIERS,MULT_WEIGHTS,WILD_VALUES,WILD_WEIGHTS,draw,score,scatterMultiplier,CLUSTER_COLS,CLUSTER_ROWS,CLUSTER_SIZE,MAX_CLUSTER_MULT,clusterScore,emptySpots,upgradeSpots,freeSpinAward,maxActiveSpot};
+ window.TrovaoRules={CONFIG,KINDS,EXCLUDED_WILD_KINDS,canWildReplace,WEIGHTS,MULTIPLIERS,MULT_WEIGHTS,WILD_VALUES,WILD_WEIGHTS,draw,score,scatterMultiplier,drawCluster,CLUSTER_CONFIG,CLUSTER_COLS,CLUSTER_ROWS,CLUSTER_SIZE,MAX_CLUSTER_MULT,clusterScore,emptySpots,upgradeSpots,freeSpinAward,maxActiveSpot};
 })();
