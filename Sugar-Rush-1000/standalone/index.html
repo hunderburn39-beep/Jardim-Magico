@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#340c6b">
+  <meta name="description" content="Sugar Rush 1000 — protótipo independente em Phaser 3, grelha 7×7, cascatas, multiplicadores e Free Spins.">
+  <title>Sugar Rush 1000 — edição local</title>
+  <link rel="stylesheet" href="./style.css?v=3">
+  <script src="../../jardim-phaser/vendor/phaser-3.90.0.min.js"></script>
+  <script src="./engine.js?v=3"></script>
+  <script src="./game.js?v=3" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <div class="sparkle s1"></div><div class="sparkle s2"></div><div class="sparkle s3"></div>
+    <header class="header">
+      <div class="edition">7 × 7 &nbsp; · &nbsp; CLUSTERS &nbsp; · &nbsp; CASCATAS</div>
+      <h1><span>SUGAR</span> <i>RUSH</i> <b>1000</b></h1>
+      <div class="subtitle">DOÇURA SEM LIMITES · EDIÇÃO INDEPENDENTE</div>
+      <div class="head-actions">
+        <button id="info" class="round-button" type="button" aria-label="Tabela de pagamentos" title="Tabela de pagamentos">ⓘ</button>
+        <button id="audio" class="round-button" type="button" aria-label="Ligar ou desligar som" title="Som">♫</button>
+      </div>
+    </header>
+
+    <section class="game-area" aria-label="Tabuleiro do jogo">
+      <div class="scene-top" aria-live="polite">
+        <div class="mode-label" id="mode">JOGO BASE</div>
+        <div class="middle-label" id="fs-count"></div>
+        <div class="win-label">PRÉMIO <strong id="round-win">0,00</strong></div>
+      </div>
+      <div class="board-frame">
+        <div class="board-light"></div>
+        <div id="board" aria-label="Grelha de 7 linhas e 7 colunas"></div>
+        <div class="board-grain" aria-hidden="true"></div>
+      </div>
+      <div class="message" id="message" role="status" aria-live="polite">Junta 5 ou mais doces da mesma cor!</div>
+    </section>
+
+    <section class="bottom" aria-label="Controlos do jogo">
+      <div class="scores">
+        <div class="score"><small>SALDO</small><strong id="balance">2 000,00</strong></div>
+        <div class="score"><small>APOSTA</small><strong id="bet">0,20</strong></div>
+        <div class="score"><small>ÚLTIMO PRÉMIO</small><strong id="lastwin">0,00</strong></div>
+      </div>
+      <div class="control-row">
+        <button id="less" class="change-bet" type="button" aria-label="Diminuir aposta">−</button>
+        <button id="spin" class="spin" type="button" aria-label="Girar"><span class="spin-symbol">↻</span><span class="spin-label">GIRAR</span></button>
+        <button id="more" class="change-bet" type="button" aria-label="Aumentar aposta">+</button>
+      </div>
+      <div class="extras">
+        <button id="auto" type="button">10 GIROS AUTO</button>
+        <button id="turbo" type="button" aria-pressed="false">⚡ TURBO</button>
+        <button id="reset" type="button">REPOR SALDO</button>
+      </div>
+    </section>
+    <footer>Créditos de teste sem valor monetário. Matemática experimental, RTP não certificado.</footer>
+  </main>
+
+  <div class="overlay" id="overlay" hidden>
+    <div class="overlay-panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
+      <button id="close-info" type="button" class="close" aria-label="Fechar">×</button>
+      <div class="edition">REGRAS DO JOGO</div>
+      <h2 id="help-title">COMO GANHAR</h2>
+      <p>5 ou mais doces iguais ligados <strong>na horizontal ou vertical</strong> formam um grupo premiado. Cada grupo desaparece, os restantes caem e entram novos doces. As cascatas continuam enquanto houver prémios.</p>
+      <p>Uma posição premiada fica marcada e, quando volta a participar numa vitória, recebe multiplicadores <strong>×2, ×4, ×8… até ×1024</strong>. Na mesma vitória, somam-se os multiplicadores das posições premiadas.</p>
+      <p><strong>3 ou mais foguetes</strong> no fim das cascatas ativam 10 a 30 Free Spins; as posições multiplicadoras persistem durante a sequência. Limite por sessão de bónus: 200 giros. Prémio máximo total por aposta: 25 000×.</p>
+      <h3>TABELA DE PAGAMENTOS</h3>
+      <p class="small-caption">Multiplicador da aposta por grupo (5 / 10 / 15+ símbolos). As quantias são calculadas em créditos.</p>
+      <div class="paytable" id="paytable"></div>
+      <p class="small-caption">Esta implementação usa resultados locais aleatórios e pagamentos definidos em <code>engine.js</code>. Não utiliza servidor RGS. Não existe RTP validado para esta distribuição de símbolos.</p>
+      <button id="close-info-bottom" type="button" class="primary-small">CONTINUAR</button>
+    </div>
+  </div>
+</body>
+</html>
