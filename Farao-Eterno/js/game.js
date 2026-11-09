@@ -581,22 +581,14 @@ class Game {
  }
 
   header(t){
-  rect(111,106,338,110,grad(0,106,0,216,[[0,'#06132600'],[.25,'#041121b0'],[.75,'#041121db'],[1,'#04112100']]));
-  // Golden title with two embossed outlines.
-  const main=grad(0,98,0,183,[[0,'#fff5ca'],[.36,'#f5c975'],[.62,'#b97832'],[.82,'#ffe3a1'],[1,'#915e28']]);
-  const emboss=(s,y,font)=>{
-   cx.save();cx.textAlign='center';cx.textBaseline='middle';cx.font=`900 ${font}px Georgia,serif`;
-   cx.shadowColor='#000';cx.shadowBlur=8;cx.shadowOffsetY=4;
-   cx.lineWidth=5;cx.strokeStyle='#1d1520';cx.strokeText(s,280,y);
-   cx.shadowBlur=0;cx.shadowOffsetY=0;cx.lineWidth=1.6;cx.strokeStyle='#fff1a9';cx.strokeText(s,280,y);
-   cx.fillStyle=main;cx.fillText(s,280,y);cx.restore();
-  };
-  emboss('FARAÓ',145,52);emboss('ETERNO',190,43);
-  text('OS SEGREDOS DA ETERNIDADE',280,213,10,'#e5c486','center','Georgia',800,2);
+  // A inscrição 3D é colocada sobre a moldura em visual-v11.js.
+  // Não desenhar o título duas vezes nem ocultar o cenário ao fundo.
   this.smallButton(49,66,68,'☰',()=>this.openInfo());
-  this.smallButton(511,66,68,this.sound?'♫':'♪',()=>{this.sound=!this.sound;this.audio.on=this.sound;this.save();});
-  // Sem indicador redundante de linhas acima dos tambores.
-  if(this.feature)text('FREE SPINS  '+this.feature.left+' RESTANTES',280,235,13,'#a7fff0','center','Arial',900);
+  this.smallButton(511,66,68,this.sound?'♫':'♪',()=>{
+   this.sound=!this.sound;this.audio.on=this.sound;this.save();
+  });
+  if(this.feature)text('FREE SPINS  '+this.feature.left+' RESTANTES',
+   280,212,13,'#a7fff0','center','Arial',900);
  }
 
   reelBoard(t){
