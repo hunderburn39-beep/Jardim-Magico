@@ -2,6 +2,8 @@
 (function (root) {
   "use strict";
   const ROWS = 3, REELS = 5, MAX_BALANCE = 1e12;
+  const PUMPKINS_FOR_BONUS = 5;
+  const POT_VALUES = Object.freeze([1,2,3,5,8]);
   const SYMBOLS = Object.freeze([
     { id: "pumpkin", weight: 19, icon: "🎃", name: "Abóbora" },
     { id: "ghost", weight: 17, icon: "👻", name: "Fantasma" },
@@ -44,7 +46,7 @@
     return SYMBOLS[SYMBOLS.length - 1].id;
   }
   function createState() {
-    return { balance: 1000, bet: 2, lines: 20, jackpots: [350,750], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0 };
+    return { balance: 1000, bet: 2, lines: 20, jackpots: [350,750], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, pendingPot: null };
   }
   function sanitize(s) {
     const d = createState();
@@ -56,9 +58,12 @@
       jackpots: Array.isArray(s.jackpots) && s.jackpots.length === 2 ? s.jackpots.map((v,i)=>
         Number.isFinite(v)?Math.max(0,Math.min(MAX_BALANCE,round(v))):d.jackpots[i]) : [...d.jackpots],
       freeSpins: Number.isInteger(s.freeSpins) ? Math.max(0, Math.min(1000,s.freeSpins)) : 0,
-      pumpkins: Number.isInteger(s.pumpkins) ? Math.max(0, Math.min(9,s.pumpkins)) : 0,
+      pumpkins: Number.isInteger(s.pumpkins) ? Math.max(0, Math.min(4,s.pumpkins)) : 0,
       spins: Number.isInteger(s.spins) ? Math.max(0,s.spins) : 0,
-      lastWin: Number.isFinite(s.lastWin) ? Math.max(0,Math.min(MAX_BALANCE,round(s.lastWin))) : 0
+      lastWin: Number.isFinite(s.lastWin) ? Math.max(0,Math.min(MAX_BALANCE,round(s.lastWin))) : 0,
+      pendingPot: s.pendingPot && Array.isArray(s.pendingPot.choices) && s.pendingPot.choices.length === 3 &&
+        s.pendingPot.choices.every(n => Number.isFinite(n) && n >= 0 && n <= 100000) ?
+          { choices: s.pendingPot.choices.map(round) } : null
     };
   }
   function setBet(input, bet) {
@@ -75,20 +80,27 @@
     for (let lineNo = 0; lineNo < activeLines; lineNo++) {
       const route = LINES[lineNo];
       const entries = route.map((row,col) => grid[col][row]);
-      // Primeiro símbolo não-Wild define o conjunto; Scatter não substitui.
+      // O Wild substitui símbolos comuns, não Scatter; entre combinações
+      // concorrentes na mesma linha paga-se apenas a de maior valor.
+      // Isto também preserva 3 Wild consecutivos seguidos de Scatter.
       if (entries[0] === "scatter") continue;
-      const target = entries.find(x => x !== "wild") || "wild";
-      if (target === "scatter") continue;
-      let count = 0;
-      for (const value of entries) {
-        if (value === target || value === "wild") count++;
-        else break;
-      }
-      if (count >= 3) {
+      let best = null;
+      for (const target of Object.keys(PAY)) {
+        let count = 0;
+        for (const value of entries) {
+          if (value === target || (value === "wild" && target !== "scatter")) count++;
+          else break;
+        }
+        if (count < 3) continue;
         const amount = round(bet * PAY[target][count] / activeLines * (inFreeSpins ? 2 : 1));
-        total = round(total + amount);
-        hits.push({ line: lineNo + 1, count, symbol: target, amount,
-          cells: route.slice(0,count).map((row,col) => [col,row]) });
+        if (!best || amount > best.amount) {
+          best = { line: lineNo + 1, count, symbol: target, amount,
+            cells: route.slice(0,count).map((row,col) => [col,row]) };
+        }
+      }
+      if (best && best.amount > 0) {
+        total = round(total + best.amount);
+        hits.push(best);
       }
     }
     let scatter = 0, pumpkinCount = 0;
@@ -102,6 +114,7 @@
   function spin(input, rng = Math.random, previousGrid = null, heldColumns = null) {
     const state = sanitize(input);
     const free = state.freeSpins > 0;
+    if (state.pendingPot) return { ok: false, reason: "bonus-pendente", state };
     if (!free && state.balance < state.bet) return { ok: false, reason: "saldo", state };
     const holds = !free && Array.isArray(previousGrid) && previousGrid.length === REELS &&
       previousGrid.every(col=>Array.isArray(col) && col.length === ROWS &&
@@ -114,16 +127,43 @@
     if (free) state.freeSpins--;
     else state.balance = round(state.balance - state.bet);
     const earnedSpins = (result.scatter >= 3 ? 10 : 0);
-    const pumpkinTotal = state.pumpkins + result.pumpkinCount;
-    const pumpkinBonuses = Math.floor(pumpkinTotal / 10);
-    state.pumpkins = pumpkinTotal % 10;
+    // No modo base, uma rodada com pelo menos três abóboras recolhe
+    // apenas uma. Nas Free Spins não se recolhem abóboras adicionais,
+    // evitando cadeias de bónus excessivamente longas.
+    const collectedPumpkin = !free && result.pumpkinCount >= 3 ? 1 : 0;
+    const pumpkinTotal = state.pumpkins + collectedPumpkin;
+    const pumpkinBonuses = Math.floor(pumpkinTotal / PUMPKINS_FOR_BONUS);
+    state.pumpkins = pumpkinTotal % PUMPKINS_FOR_BONUS;
+    result.collectedPumpkin = collectedPumpkin;
     state.freeSpins = Math.min(1000, state.freeSpins + earnedSpins + pumpkinBonuses * 5);
     state.balance = Math.min(MAX_BALANCE, round(state.balance + result.total));
     state.spins++;
     state.lastWin = result.total;
-    return { ok: true, state, grid, result, free, earnedSpins, pumpkinBonuses, heldReels: holds };
+    // Três caldeirões desbloqueiam uma escolha de 3 potes. As escolhas
+    // são determinadas no giro e persistidas antes de abrir o painel.
+    if (result.scatter >= 3) {
+      state.pendingPot = {
+        choices: Array.from({ length: 3 }, () =>
+          round(state.bet * POT_VALUES[Math.floor(validRng(rng) * POT_VALUES.length)]))
+      };
+    }
+    return { ok: true, state, grid, result, free, earnedSpins, pumpkinBonuses,
+      heldReels: holds, potTriggered: Boolean(state.pendingPot) };
   }
-  const api = Object.freeze({ SYMBOLS, LINES, PAY, createState, sanitize, setBet, pick, evaluateGrid, spin });
+  function choosePot(input, index) {
+    const state = sanitize(input);
+    if (!state.pendingPot) return { ok: false, reason: "sem-bonus", state };
+    if (!Number.isInteger(index) || index < 0 || index > 2)
+      return { ok: false, reason: "selecao-invalida", state };
+    const awarded = state.pendingPot.choices[index];
+    state.balance = Math.min(MAX_BALANCE, round(state.balance + awarded));
+    state.lastWin = round(state.lastWin + awarded);
+    const reveal = [...state.pendingPot.choices];
+    state.pendingPot = null;
+    return { ok: true, state, awarded, reveal };
+
+  }
+  const api = Object.freeze({ SYMBOLS, LINES, PAY, PUMPKINS_FOR_BONUS, createState, sanitize, setBet, pick, evaluateGrid, spin, choosePot });
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.HalloweenEngine = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
