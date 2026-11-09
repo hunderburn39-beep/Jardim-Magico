@@ -54,6 +54,23 @@ jobs:
           cache: pnpm
           cache-dependency-path: Sugar-Rush-1000/frontend/pnpm-lock.yaml
 
+      - name: Converter os doces originais em PNG transparente
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check -q pillow
+          python3 Sugar-Rush-1000/frontend/scripts/prepare_art.py
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          base = Path('Sugar-Rush-1000/frontend/public/images/candies')
+          for i in range(7):
+              with Image.open(base / f'candy_{i}.png') as im:
+                  assert im.format == 'PNG' and im.mode == 'RGBA', i
+                  assert im.getchannel('A').getextrema()[1] == 255, i
+          print('7 simbolos HD reais, em PNG RGBA, preparados.')
+          PY
+
       - name: Compilar frontend Phaser original com imagens e audio
         working-directory: Sugar-Rush-1000/frontend
         shell: bash
