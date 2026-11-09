@@ -250,7 +250,7 @@
   const amount=this.winCount?this.winCount.amount*(1-Math.pow(1-progress,3)):this.lastWin;
   const meters=[['SALDO',format(this.balance)],['APOSTA',format(this.bet)],['PRÉMIO',format(this.feature?this.feature.total:amount)]];
   for(let i=0;i<3;i++){
-   const x=28+i*170,y=742,w=164,h=78;
+   const x=28+i*170,y=R.top+R.gh*3+31,w=164,h=78;
    ctx.save();ctx.shadowColor='#000d';ctx.shadowBlur=12;ctx.shadowOffsetY=5;
    rounded(ctx,x,y,w,h,12,'#18202a','#f2c478',2.7);ctx.restore();
    rounded(ctx,x+3,y+3,w-6,h-6,9,grad(ctx,x,y,x,y+h,
