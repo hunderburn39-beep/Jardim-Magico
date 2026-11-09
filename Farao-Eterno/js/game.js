@@ -62,7 +62,7 @@ class Game {
   this.load();this.initInputs();this.loadArt();this.resize();window.addEventListener('resize',()=>this.resize());
   requestAnimationFrame(t=>this.frame(t));
  }
- get bet(){return bets[this.betIndex]}
+ get bet(){return S.stake(this.ledger)}
  load(){
   try{
    const raw=localStorage.getItem(STORE_KEY);
