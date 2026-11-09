@@ -154,9 +154,10 @@ class Classica extends Phaser.Scene{
    this.jack2.setText(fmt(this.state.jackpots?.[1]??750));
    for(let i=0;i<this.pumpkinMarkers.length;i++)
       this.pumpkinMarkers[i].setAlpha(i<this.state.pumpkins?1:.3);
-   if(this.state.freeSpins>0)this.message.setText("GIROS GRÁTIS "+this.state.freeSpins);
    this.autoText.setText(this.auto?"ATIVO":"");
-   this.linesText.setText(this.state.lines+" LINHAS • ACUMULADOS");
+   this.linesText.setText(this.state.freeSpins>0
+     ? this.state.lines+" LINHAS • GIROS GRÁTIS: "+this.state.freeSpins
+     : this.state.lines+" LINHAS • ACUMULADOS");
    for(let i=0;i<this.lineMarkers.length;i++){
       const active=i<this.state.lines;
       this.lineMarkers[i].circ.setVisible(active);
@@ -164,13 +165,15 @@ class Classica extends Phaser.Scene{
    }
  }
  changeBet(){
-   if(this.spinning||this.potOpen)return;
+   if(this.spinning||this.potOpen||this.state.freeSpins>0)return;
+   this.clearHolds();
    const options=[1,2,5,10],i=options.indexOf(this.state.bet);
    this.state=E.setBet(this.state,options[(i+1)%options.length]);
    this.renderState();this.store();this.tone(480,.06);
  }
  changeLines(){
-   if(this.spinning||this.potOpen)return;
+   if(this.spinning||this.potOpen||this.state.freeSpins>0)return;
+   this.clearHolds();
    const options=[20,25,30],i=options.indexOf(this.state.lines||25);
    this.state.lines=options[(i+1)%3];
    this.renderState();
@@ -184,9 +187,15 @@ class Classica extends Phaser.Scene{
    if(this.auto&&!this.spinning)this.spin();
  }
  toggleSound(){this.silence=!this.silence;this.message.setText(this.silence?"SOM DESLIGADO":"SOM LIGADO");}
+ clearHolds(){
+   this.held.clear();this.canHold=false;
+   for(const label of this.locks)label.setVisible(false);
+ }
  toggleHold(col){
    if(this.spinning||this.potOpen||!this.canHold||!this.previous)return;
-   if(this.held.has(col))this.held.delete(col);else this.held.add(col);
+   if(this.held.has(col))this.held.delete(col);
+   else if(this.held.size<4)this.held.add(col);
+   else { this.message.setText("PELO MENOS UM TAMBOR TEM DE RODAR"); return; }
    this.locks[col].setVisible(this.held.has(col)).setText("TRAVADO");
    this.message.setText(this.held.size+" TAMBORES TRAVADOS");
    this.tone(560,.05);
@@ -235,7 +244,7 @@ class Classica extends Phaser.Scene{
    this.state.jackpots=this.state.jackpots||[350,750];
    this.state.jackpots=this.state.jackpots.map((v,i)=>Math.round((v+this.state.bet*(i===0?.01:.017))*100)/100);
    this.previous=result.grid;
-   this.held.clear();for(const label of this.locks)label.setVisible(false);
+   this.clearHolds();
    this.canHold=result.result.total===0&&!result.free&&!result.potTriggered;
    this.highlight(result.result.hits);
    if(result.earnedSpins){this.message.setText("+10 GIROS GRÁTIS!");this.flash();}
