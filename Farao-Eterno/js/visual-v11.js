@@ -209,25 +209,25 @@
     ctx.save();
     const dx=centerX-iw/2,dy=centerY-ih/2;
     // Profundidade por camadas: sombra projetada, lateral escura e relevo dourado.
-    ctx.globalAlpha=.46;
-    ctx.filter='brightness(0.24) sepia(1) saturate(1.3)';
-    ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,dx+7,dy+8,iw,ih);
+    ctx.globalAlpha=.58;
+    ctx.filter='brightness(0.18) sepia(1) saturate(1.8)';
+    ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,dx+11,dy+13,iw,ih);
     ctx.filter='none';
-    ctx.globalAlpha=.83;
-    ctx.filter='brightness(0.46) sepia(1) saturate(1.2)';
-    ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,dx+4,dy+2,iw,ih);
+    ctx.globalAlpha=.96;
+    ctx.filter='brightness(0.34) sepia(1) saturate(1.5)';
+    ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,dx+7,dy+4,iw,ih);
     ctx.filter='none';
     ctx.globalAlpha=1;
-    ctx.shadowColor='#ffd477';ctx.shadowBlur=13;
+    ctx.shadowColor='#ffd477';ctx.shadowBlur=23;
     ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,dx,dy,iw,ih);
     ctx.shadowBlur=0;
     // Reflexo subtil e direcional, recortado à silhueta da própria torre.
     ctx.globalCompositeOperation='source-atop';
     const light=ctx.createLinearGradient(dx,dy,dx+iw,dy+ih*.25);
-    light.addColorStop(0,'#fff0bc58');
-    light.addColorStop(.32,'#ffe5a918');
+    light.addColorStop(0,'#fff0bc91');
+    light.addColorStop(.32,'#ffe5a938');
     light.addColorStop(.68,'#24110800');
-    light.addColorStop(1,'#080b2250');
+    light.addColorStop(1,'#080b2288');
     ctx.fillStyle=light;ctx.fillRect(dx-2,dy-2,iw+4,ih+4);
     ctx.restore();
    }else{
