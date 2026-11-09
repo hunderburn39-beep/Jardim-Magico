@@ -253,19 +253,15 @@ export function computeLayout(w: number, h: number): LayoutMetrics {
   let logoVisible = false;
 
   if (mode === 'portrait') {
-    const maxLogoW = clamp(w * 0.38, 100, 180); // 38% of screen width max
-    const maxLogoH = toolbarH * 1.6; // allow slightly taller
-
-    const scaleW = maxLogoW / R.logoBaseW;
-    const scaleH = maxLogoH / R.logoBaseH;
-    logoScale = clamp(Math.min(scaleW, scaleH), CLAMP.logoScaleMin, CLAMP.logoScaleMax);
-    
+    // Centro na faixa entre a toolbar e a moldura dos tambores.
+    // O logotipo deixa de ficar minúsculo no canto superior direito.
+    const headRoom = Math.max(63, gridY - toolbarY - toolbarIconSize / 2 - 4);
+    const scaleForWidth = (w * 0.59) / 414;
+    const scaleForHeight = (headRoom * 0.86) / 123;
+    logoScale = clamp(Math.min(scaleForWidth, scaleForHeight), 0.26, 0.61);
     logoVisible = true;
-    const actualLogoWidth = R.logoBaseW * logoScale;
-    const actualLogoHeight = R.logoBaseH * logoScale;
-    logoX = w - toolbarPad - (actualLogoWidth / 2);
-    // Center logo exactly on the toolbar line
-    logoY = toolbarY; 
+    logoX = w / 2;
+    logoY = toolbarY + (gridY - toolbarY) * 0.55;
   } else if (mode === 'landscape-compact') {
     const availW = w * 0.5;
     const availH = gridY - 5;
