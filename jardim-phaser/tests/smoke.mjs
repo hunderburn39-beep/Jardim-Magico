@@ -441,7 +441,7 @@ ok(mobileCss.includes('max-height:570px')&&mobileCss.includes('min-height:0'),
 ok(mobileCss.includes('animation-play-state:paused')&&
  mobileCss.includes('lite-effects')&&mobileCss.includes('prefers-reduced-motion'),
  'efeitos adaptativos respeitam movimento reduzido');
-ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=4.3.3'),
+ok(html.includes('mobile-v17.css?v=1.7')&&html.includes('app.js?v=5.0.0'),
  'nova versão carregada com cache isolada');
 ok(main.includes('performanceGuard.start();')&&
  main.includes('performanceGuard.stop();')&&main.includes('document.hidden||'),
@@ -474,7 +474,7 @@ ok(Admin.makePrintableReport({summary:stats,history:[],settings:Admin.normalizeA
  reserve:100,dbMode:'indexedDB'}).includes('CRÉDITOS FICTÍCIOS'),
  'relatório imprimível deixa explícito ser demonstração');
 ok(html.includes('admin-v18.css?v=1.8')&&html.includes('id="adminBtn"')&&
- html.includes('app.js?v=4.3.3'),'botão e versão Phaser V3.2');
+ html.includes('app.js?v=5.0.0'),'botão e versão Phaser V3.2');
 ok(main.includes('admin-access')&&main.includes('fund-withdraw')&&
  main.includes('admin-share'),'histórico de ações admin');
 ok(dbsource.includes('ownerPct:Number.isFinite')&&adminCss.includes('.admin-row'),
@@ -1449,7 +1449,7 @@ ok(main.includes("$('spinBtn').disabled=running||mutating||!ready||!writable")&&
 ok(main.includes('void refreshWriter(!writerReady);')&&
  main.includes('if(scene?.ready&&!running&&!rendererUnavailable&&!pageSuspended)'),
  'restauro WebGL revalida a sessao e nao repinta moedas a meio');
-ok(html.includes('app.js?v=4.3.3')&&html.includes('V4.3.3')&&
+ok(html.includes('app.js?v=5.0.0')&&html.includes('V5.0.0')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'timings e trajetorias dos rolos e cascatas mantidos');
@@ -1468,7 +1468,7 @@ ok(main.includes('else if(!repaired){\n   scheduleNext(')&&
  main.includes('if(!rendererUnavailable&&!rendererRestorePending&&!document.hidden&&!pageSuspended)')&&
  main.includes("pendingVisual=spinRecoveryReceipt(outcome,bank.snapshot,stages.length)"),
  'o resultado previamente gravado permanece e nao ha agendamento novo');
-ok(html.includes('app.js?v=4.3.3')&&html.includes('V4.3.3')&&
+ok(html.includes('app.js?v=5.0.0')&&html.includes('V5.0.0')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'mantem movimentos e duracoes de giros e cascatas aprovados');
@@ -1490,7 +1490,7 @@ ok(main.includes('else if(sessionNeedsRefresh||!writerReady)void refreshWriter(s
  main.includes('else if(!repaired){\n   scheduleNext(')&&
  main.includes('if(writerReleasePending)await writerReleasePending;'),
  'próxima jogada só é agendada após uma sessão válida');
-ok(html.includes('V4.3.3')&&html.includes('app.js?v=4.3.3')&&
+ok(html.includes('V5.0.0')&&html.includes('app.js?v=5.0.0')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'tempos e trajectos anteriores intactos');
@@ -1520,7 +1520,7 @@ ok(main.includes("$('creditBtn').disabled=!writable")&&
  main.includes("$('holdBtn').disabled=holdBusy||!writable")&&
  main.includes("if(!sessionCanWrite()||bank.mode!=='base'||running)return;"),
  'UI e bonus de teste aguardam sessao validada');
-ok(html.includes('V4.3.3')&&html.includes('app.js?v=4.3.3')&&
+ok(html.includes('V5.0.0')&&html.includes('app.js?v=5.0.0')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'versao nova sem alteracoes aos movimentos da queda');
@@ -1546,7 +1546,7 @@ ok(main.includes('button.disabled=!sessionCanWrite();')&&
  main.includes("$('holdBtn').disabled=holdBusy||!writable;")&&
  main.includes("if(!sessionCanWrite()||mutating||bank.mode!=='hold'"),
  'Hold & Win aguarda validação antes de nova tentativa');
-ok(html.includes('V4.3.3')&&html.includes('app.js?v=4.3.3')&&
+ok(html.includes('V5.0.0')&&html.includes('app.js?v=5.0.0')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'testes conservam o motor e a queda aprovados');
@@ -1557,7 +1557,7 @@ const resume429Text=main.slice(
 );
 ok(resume429Text.startsWith('function resumeQueuedTurnAfterSync(')&&
  resume429Text.includes('turnQueue.pending(kind)')&&
- main.includes('else if(!displayed)resumeQueuedTurnAfterSync(1100);')&&
+ main.includes('resumeQueuedTurnAfterSync(1100);')&&
  main.includes('}else if(ready)resumeQueuedTurnAfterSync(650);'),
  'revalidação reativa a fila apenas quando não há aviso recuperado');
 let state429={...baseTurn,autoLeft:3},pending429=new Set(),calls429=[];
@@ -1595,7 +1595,7 @@ ok(main.includes('if(repaired){\n   stopAuto(true);')&&
  main.includes("if(bank.mode==='free')freePaused=true;")&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)')&&
- html.includes('V4.3.3')&&html.includes('app.js?v=4.3.3'),
+ html.includes('V5.0.0')&&html.includes('app.js?v=5.0.0'),
  'sem retoma após falha visual; arte, queda e cascata inalteradas');
 // V4.3.0: renovar uma segunda vez se pageshow chegar durante a
 // verificação anterior; nunca executar enquanto os rolos animam.
@@ -1610,15 +1610,15 @@ ok(main.includes('if(writerRefreshQueued&&!document.hidden&&!pageSuspended&&!ren
  'revalidação concorrente repete uma vez quando o jogo está seguro');
 ok(main.includes('const syncing=!graphicsPending&&writerReady&&(sessionNeedsRefresh||!!writerReleasePending);')&&
  main.includes("panel.dataset.kind=graphicsPending?'blocked':syncing?'saving':state.kind;")&&
- main.includes('button.hidden=graphicsPending||syncing||!state.action;')&&
+ main.includes('button.hidden=!!sessionDataIssue||graphicsPending||syncing||!state.action;')&&
  main.includes('A confirmar os créditos fictícios guardados'),
  'painel informa a confirmação de créditos e oculta retoma até terminar');
 ok(main.includes('if(forceReload)sessionNeedsRefresh=true;')&&
  main.includes('if(running){\n   if(reloadRequested)sessionNeedsRefresh=true;\n   return;')&&
  main.includes('if(writerReleasePending)await writerReleasePending;')&&
- main.includes('else if(!displayed)resumeQueuedTurnAfterSync(1100);'),
+ main.includes('resumeQueuedTurnAfterSync(1100);'),
  'suspensão, giros longos e retoma da fila mantêm regras anteriores');
-ok(html.includes('app.js?v=4.3.3')&&html.includes('V4.3.3')&&
+ok(html.includes('app.js?v=5.0.0')&&html.includes('V5.0.0')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'nenhuma alteração às trajetórias e tempos aprovados');
@@ -1664,9 +1664,9 @@ ok(fixture431.restore()===true&&restored431===1&&!fixture431.pending()&&
  'restauro decorre uma vez; Free Spins continuam pausadas');
 ok(main.includes('if(rendererRestorePending&&!rendererUnavailable)finishRendererRestoration();')&&
  main.includes('finishRendererRestoration();\n    if(!document.hidden&&!pageSuspended){')&&
- main.includes('ready=true;update();\n  finishRendererRestoration();'),
+ main.includes('ready=true;update();')&&main.includes('finishRendererRestoration();'),
  'recuperação usa os gatilhos fim de giro, WebGL e motor pronto');
-ok(html.includes('V4.3.3')&&html.includes('app.js?v=4.3.3')&&
+ok(html.includes('V5.0.0')&&html.includes('app.js?v=5.0.0')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'queda, símbolos HD e cálculos de ganhos não alterados');
@@ -1702,7 +1702,7 @@ ok(main.includes('if(running||visualSupervisor.active())rendererRestorePending=t
  main.includes('if(scene?.ready&&!rendererRestorePending)try{scene.recover(board)}')&&
  main.includes('if(rendererRestorePending&&!rendererUnavailable)finishRendererRestoration();'),
  'regresso a primeiro plano restaura somente a grelha guardada');
-ok(html.includes('V4.3.3')&&html.includes('app.js?v=4.3.3')&&
+ok(html.includes('V5.0.0')&&html.includes('app.js?v=5.0.0')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'motor de prémios, queda e gráficos HD mantidos');
@@ -1749,12 +1749,12 @@ ok(fixes433===1&&checks433===7,
  'watchdog não repete restauro quando já não está pendente');
 ok(main.includes("const graphicsPending=rendererUnavailable||rendererRestorePending;")&&
  main.includes("panel.dataset.kind=graphicsPending?'blocked':syncing?'saving':state.kind;")&&
- main.includes("button.hidden=graphicsPending||syncing||!state.action;")&&
+ main.includes("button.hidden=!!sessionDataIssue||graphicsPending||syncing||!state.action;")&&
  main.includes('A recuperar os gráficos do Jardim Mágico…')&&
  main.includes('rendererUnavailable||rendererRestorePending||'),
  'aviso informa estado gráfico e desativa ações até restauro');
-ok(html.includes('V4.3.3')&&html.includes('app.js?v=4.3.3')&&
+ok(html.includes('V5.0.0')&&html.includes('app.js?v=5.0.0')&&
  reels.includes('const motion=spinMotionProfile(turbo,c)')&&
  reels.includes('const motion=cascadeMotionProfile(turbo,c,newPiece,this.liteEffects)'),
  'queda e símbolos HD mantidos em V4.3.3');
-console.log('Phaser V4.3.3: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);
+console.log('Phaser V5.0.0: '+checked+' testes passaram; giros='+spins+', free='+free+', Hold='+hold+', etapas='+stages);

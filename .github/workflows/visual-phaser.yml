@@ -5,25 +5,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/visual-phaser.yml'
-      - 'jardim-phaser/tests/visual.mjs'
-      - 'jardim-phaser/css/cenario-v35.css'
-      - 'jardim-phaser/css/polimento-v37.css'
-      - 'jardim-phaser/css/icones-v38.css'
-      - 'jardim-phaser/css/materiais-v39.css'
-      - 'jardim-phaser/js/material-v39.js'
-      - 'jardim-phaser/js/art-presentation-v37.js'
-      - 'assets/imagens/jm40-moeda-magica.svg'
-      - 'jardim-phaser/js/reels.js'
-      - 'jardim-phaser/js/spin-motion-v391.js'
-      - 'jardim-phaser/js/cascade-fx-v41.js'
-      - 'jardim-phaser/js/coin-values-v42.js'
-      - 'jardim-phaser/js/coin-face-v422.js'
-      - 'jardim-phaser/js/reels.js'
-      - 'jardim-phaser/css/moedas-porco-v42.css'
-      - 'assets/imagens/jm42-moeda-sem-numero.svg'
-      - 'assets/imagens/jm38-*.svg'
-      - 'jardim-phaser/js/art-presentation-v37.js'
-      - 'jardim-phaser/js/reels.js'
+      - 'jardim-phaser/**'
+      - 'assets/imagens/**'
   workflow_dispatch:
 
 permissions:
@@ -40,7 +23,7 @@ jobs:
           node-version: '22'
       - name: Instalar navegador de testes
         run: |
-          npm install --no-save playwright
+          npm install --no-save --package-lock=false playwright@1.56.1
           npx playwright install --with-deps chromium
       - name: Servir jogo real
         run: |
@@ -76,6 +59,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phaser-v42-visual
+          name: phaser-v5-visual
           path: visual-previews/
           if-no-files-found: ignore

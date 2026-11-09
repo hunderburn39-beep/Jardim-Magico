@@ -29,29 +29,38 @@ export function validRecoveryMarker(marker){
  */
 const MAX_BACKUP_EVENTS=2500;
 const finiteRange=(v,min,max)=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max;
-export function validateBackup(data){
- if(!data||typeof data!=='object'||data.format!=='jardim-magico-demo-v3')
-  throw Error('Formato de cópia de segurança desconhecido.');
- const state=data.state;
+const validMoney=v=>finiteRange(v,0,1e12)&&
+ Math.abs(v-Math.round(v*100)/100)<=Number.EPSILON*Math.max(1,v)*2;
+const sameMoney=(a,b)=>Math.round(a*100)===Math.round(b*100);
+const VALID_STAKES=[.05,.1,.2,.4,.6,.8,1,1.5,2,3,5,7.5,10];
+export function validateSessionState(state){
  const s=state?.snapshot,b=state?.board;
  if(!s||typeof s!=='object')throw Error('A cópia não contém uma sessão válida.');
  if(!Array.isArray(b)||b.length!==5||b.some(col=>
    !Array.isArray(col)||col.length!==3||col.some(x=>!Number.isInteger(x)||x<0||x>11)))
   throw Error('O tabuleiro da cópia de segurança é inválido.');
  for(const key of ['balance','reserve','lastWin','freeTotal','freeAwarded']){
-  if(!finiteRange(s[key],0,1e12))throw Error('Campo inválido: '+key);
+  if(!validMoney(s[key]))throw Error('Campo inválido: '+key);
  }
- if(!finiteRange(s.stake,.05,10)||!Number.isInteger(s.spins)||s.spins<0||
+ if(!VALID_STAKES.includes(s.stake)||!Number.isInteger(s.spins)||s.spins<0||
     s.spins>1e9||!Number.isInteger(s.freeSpins)||s.freeSpins<0||s.freeSpins>60||
     !Number.isInteger(s.freeMultiplier)||s.freeMultiplier<1||s.freeMultiplier>1000||
     !['base','free','hold'].includes(s.mode))
   throw Error('Os contadores e o modo da cópia são inválidos.');
+ const played=s.freePlayed??0;
+ if(!Number.isInteger(played)||played<0||played>60||
+    (s.mode==='free'&&(s.freeSpins<1||s.freeSpins+played>60||
+     Math.round(s.freeTotal*s.freeMultiplier*100)>Math.round(s.reserve*100))))
+  throw Error('A série de Free Spins não tem contadores ou cobertura válidos.');
  if(s.mode==='hold'){
   const h=s.hold;
   if(!h||!Array.isArray(h.grid)||h.grid.length!==16||
-     h.grid.some(v=>!finiteRange(v,0,1000))||
-     !Number.isInteger(h.tries)||h.tries<0||h.tries>3||
-     !finiteRange(h.total,0,1e12))
+     h.grid.some(v=>!Number.isInteger(v)||![0,1,2,3,5,10,20].includes(v))||
+     h.grid.filter(Boolean).length<6||h.grid.every(Boolean)||
+     !Number.isInteger(h.tries)||h.tries<1||h.tries>3||
+     !Number.isInteger(h.rounds)||h.rounds<0||h.rounds>1e9||
+     !validMoney(h.total)||!sameMoney(h.total,h.grid.reduce((a,b)=>a+b,0)*s.stake)||
+     h.total>s.reserve)
    throw Error('A grelha Hold da cópia é inválida.');
  }
  if(s.pendingVisual!==undefined&&s.pendingVisual!==null&&!validRecoveryMarker(s.pendingVisual))
@@ -60,8 +69,17 @@ export function validateBackup(data){
   throw Error('O perfil guardado não é válido.');
  if(s.admin!==undefined){
   const p=s.admin?.ownerPct;
-  if(!finiteRange(p,0,100))throw Error('As percentagens administrativas são inválidas.');
+  if(!finiteRange(p,0,100)||
+    (s.admin.merchantPct!==undefined&&(!finiteRange(s.admin.merchantPct,0,100)||
+      !sameMoney(p+s.admin.merchantPct,100))))
+   throw Error('As percentagens administrativas são inválidas.');
  }
+ return state;
+}
+export function validateBackup(data){
+ if(!data||typeof data!=='object'||data.format!=='jardim-magico-demo-v3')
+  throw Error('Formato de cópia de segurança desconhecido.');
+ const state=validateSessionState(data.state);
  if(!Array.isArray(data.history)||data.history.length>MAX_BACKUP_EVENTS)
   throw Error('O histórico da cópia excede o limite permitido.');
  const ids=new Set();
@@ -69,13 +87,15 @@ export function validateBackup(data){
   if(!e||typeof e!=='object'||typeof e.eventId!=='string'||
      e.eventId.length<1||e.eventId.length>128||ids.has(e.eventId)||
      typeof e.type!=='string'||e.type.length>80||
-     typeof e.timestamp!=='string'||e.timestamp.length>48)
+     typeof e.timestamp!=='string'||e.timestamp.length>48||!Number.isFinite(Date.parse(e.timestamp)))
    throw Error('O histórico contém eventos malformados ou duplicados.');
   ids.add(e.eventId);
   for(const key of ['wager','cost','paid','balance','reserve','amount']){
-   if(e[key]!==undefined&&!finiteRange(e[key],0,1e12))
+   if(e[key]!==undefined&&!validMoney(e[key]))
     throw Error('Valor histórico inválido em '+key);
   }
+  if(e.ownerPct!==undefined&&!finiteRange(e.ownerPct,0,100))
+   throw Error('Percentagem histórica inválida.');
   if(e.recoveryId!==undefined&&
     (typeof e.recoveryId!=='string'||e.recoveryId.length<8||
      e.recoveryId.length>128))

@@ -3,7 +3,7 @@
    Cada resultado e prémio são decididos ANTES da animação vertical Phaser.
  */
 import {DemoBank,newBoard,winningCells,money,DEMO_PROFILES} from './engine.js?v=3.3';
-import {demoDB as localDB,validateBackup} from './database.js?v=2.2';
+import {demoDB as localDB,validateBackup,validateSessionState} from './database.js?v=5.0.0';
 import {createStorageGateway} from './storage-gateway-v21.js?v=2.2';
 import {createAdminPinLock} from './admin-pin-v21.js?v=2.1';
 import {audio} from './audio.js?v=1';
@@ -11,8 +11,9 @@ import {createReelGame} from './reels.js?v=4.2.3';
 import {canWriteDemoSession} from './session-guard-v427.js?v=4.2.7';
 import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
 import {createPerformanceGuard} from './performance-v17.js?v=2.9';
-import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=1.8';
-import {filterHistory,historyPage} from './history-v19.js?v=1.9';
+import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=5.0.0';
+import {createDialogFocus} from './dialog-focus.js?v=5.0.0';
+import {filterHistory,historyPage,eventLabel} from './history-v19.js?v=5.0.0';
 import {auditSessionHistory} from './history-integrity-v32.js?v=3.2';
 import {spinRecoveryReceipt,holdRecoveryReceipt,recoveryMessage,createDiagnostics} from './recovery-v23.js?v=2.3';
 import {sessionState,canResumeFree} from './session-v24.js?v=2.4';
@@ -28,6 +29,8 @@ const visualSupervisor=createVisualSupervisor();
 diagnostics.record('boot');
 const requireAdminUnlocked=()=>adminLock.unlocked()&&adminLock.touch();
 const $=id=>document.getElementById(id);
+const dialogFocus=createDialogFocus(document);
+const isLandscape=()=>window.matchMedia?.('(orientation: landscape)').matches===true;
 const BETS=[.05,.1,.2,.4,.6,.8,1,1.5,2,3,5,7.5,10];
 const bank=new DemoBank();
 let adminSettings=normalizeAdmin();
@@ -55,7 +58,9 @@ let writerReady=false,writerCheckBusy=false,writerTimer=null,pendingVisual=null,
 let sessionNeedsRefresh=false;
 // Pedidos de revalidação recebidos durante uma transação IndexedDB ativa.
 let writerRefreshQueued=false;
+let sessionDataIssue='';
 function sessionCanWrite(){
+ if(isLandscape()||sessionDataIssue)return false;
  return canWriteDemoSession({
   writerReady,pendingReload:sessionNeedsRefresh,releasing:!!writerReleasePending,
   suspended:pageSuspended,
@@ -91,6 +96,14 @@ function copySnapshot(snapshot){
 }
 function snapshot(){
  return {...bank.snapshot,admin:{...adminSettings},pendingVisual};
+}
+function applyStoredSession(saved){
+ if(!saved)return;
+ try{validateSessionState(saved)}
+ catch(err){sessionDataIssue='Dados locais inválidos. Abre o histórico para exportar ou restaurar uma cópia.';throw err}
+ copySnapshot(saved.snapshot);
+ board=saved.board.map(col=>col.slice());
+ sessionDataIssue='';
 }
 function update(){
  const s=snapshot();
@@ -246,7 +259,10 @@ function showWinText(wins,value,total=false,factor=1){
 }
 async function persist(type,details={}){
  if(!writerReady){diagnostics.record('save-failed');saveIssue=true;update();return false}
- const ok=await demoDB.save(snapshot(),details.board||board,{
+ let ok=false;
+ try{
+ validateSessionState({snapshot:snapshot(),board:details.board||board});
+ ok=await demoDB.save(snapshot(),details.board||board,{
   type,id:(typeof crypto!=='undefined'&&crypto.randomUUID)?
    crypto.randomUUID():'event-'+Date.now()+'-'+Math.random().toString(36).slice(2),
   stake:bank.stake,paid:details.paid||0,wager:details.wager||0,
@@ -254,6 +270,7 @@ async function persist(type,details={}){
   ownerPct:adminSettings.ownerPct,merchantPct:adminSettings.merchantPct,
   amount:details.amount||0,note:details.note||'',profile:bank.profile
  });
+ }catch(err){console.error('Gravação da sessão:',err);diagnostics.record('storage-error')}
  diagnostics.record(ok?'save-ok':'save-failed');
  saveIssue=!ok;
  if(!ok)$('dbStatus').textContent='PHASER · ERRO A GUARDAR';
@@ -267,20 +284,20 @@ function renderSessionBanner(){
  // A sessão pode estar válida, mas o Phaser continuar sem gráficos utilizáveis.
  const graphicsPending=rendererUnavailable||rendererRestorePending;
  const syncing=!graphicsPending&&writerReady&&(sessionNeedsRefresh||!!writerReleasePending);
- panel.hidden=(state.kind==='ok'||state.kind==='boot')&&!syncing&&!graphicsPending;
+ panel.hidden=(state.kind==='ok'||state.kind==='boot')&&!syncing&&!graphicsPending&&!sessionDataIssue;
  panel.dataset.kind=graphicsPending?'blocked':syncing?'saving':state.kind;
- $('sessionMessage').textContent=graphicsPending?
+ $('sessionMessage').textContent=sessionDataIssue|| (graphicsPending?
   'A recuperar os gráficos do Jardim Mágico…':syncing?
-  'A confirmar os créditos fictícios guardados…':state.message;
+  'A confirmar os créditos fictícios guardados…':state.message);
  const button=$('sessionAction');
- button.hidden=graphicsPending||syncing||!state.action;
+ button.hidden=!!sessionDataIssue||graphicsPending||syncing||!state.action;
  button.disabled=running||mutating||holdBusy||writerCheckBusy||pageSuspended||rendererUnavailable||rendererRestorePending||
   (state.kind==='paused'&&!sessionCanWrite());
  if(state.action)button.textContent=state.action;
 }
 function continuationState(){
  return {mode:bank.mode,autoLeft,freePaused,
-  visible:!document.hidden&&!pageSuspended&&!rendererUnavailable,
+  visible:!document.hidden&&!pageSuspended&&!rendererUnavailable&&!isLandscape(),
   // Nenhum turno avança enquanto o saldo local ainda está a sincronizar.
   writerReady:sessionCanWrite(),ready,modalOpen,running,mutating,holdBusy};
 }
@@ -457,12 +474,12 @@ async function runSpin(){
     status('FIM DAS QUEDAS · SEM NOVAS COMBINAÇÕES');
     break;
    }
-   status('QUEDA '+(i+1)+' · '+wins.length+' COMBINAÇÃO'+
-    (wins.length>1?'ÕES':'')+' PREMIADA'+(wins.length>1?'S':''));
+   status('QUEDA '+(i+1)+' · '+wins.length+
+    (wins.length>1?' COMBINAÇÕES PREMIADAS':' COMBINAÇÃO PREMIADA'));
    showWinText(wins,lineTotal,false,fac);
    $('dropLabel').textContent='QUEDA '+(i+1);
    showDropAmount(lineTotal);
-   say(wins.length+' combinação'+(wins.length>1?'ões':'')+
+   say(wins.length+(wins.length>1?' combinações':' combinação')+
     ' · queda '+(i+1)+' · '+money(lineTotal)+' créditos');
    // Não repetir celebrações em cada cascata: um destaque no fim do giro.
    audio.play('win');
@@ -579,10 +596,11 @@ function modal(title,description,actions=[]){
   area.append(btn);
  }
  $('overlay').hidden=false;
+ dialogFocus.open($('overlay'));
  update();
 }
 function closeModal(){
- modalOpen=false;$('overlay').hidden=true;update();
+ modalOpen=false;$('overlay').hidden=true;dialogFocus.close($('overlay'));update();
  if(bank.mode==='free'&&!running&&!freePaused&&writerReady&&!document.hidden)
   scheduleNext(500);
 }
@@ -716,6 +734,7 @@ async function clearVisualReceipt(){
 function showHold(){
  if(bank.mode!=='hold'||!bank.hold)return;
  $('holdOverlay').hidden=false;
+ dialogFocus.open($('holdOverlay'));
  $('holdResult').hidden=true;
  $('holdBtn').hidden=false;
  $('holdBtn').disabled=holdBusy;
@@ -788,6 +807,7 @@ async function holdTurn(){
    audio.play('bonus');
    await wait(turbo?850:1450);
    $('holdOverlay').hidden=true;
+   dialogFocus.close($('holdOverlay'));
    celebrate('HOLD & WIN',result.prize);
    say('Hold & Win · prémio integral: '+money(result.prize));
    // O próximo giro automático só começa depois de libertar holdBusy.
@@ -803,7 +823,7 @@ async function holdTurn(){
   if(!saved)copySnapshot(before);
   say(saved?'Resultado Hold preservado; efeito visual recuperado.':
    'Não foi possível concluir a tentativa. Saldo anterior reposto.');
-  if(bank.mode!=='hold')$('holdOverlay').hidden=true;
+  if(bank.mode!=='hold'){$('holdOverlay').hidden=true;dialogFocus.close($('holdOverlay'))}
   else renderHold(null,bank.hold);
  }finally{
   if(saved&&pendingVisual)await clearVisualReceipt();
@@ -892,8 +912,11 @@ async function adminModal(){
   '<button type="button" id="saveProfile">GRAVAR</button></div>',
   '<p class="admin-footnote">Prémios favorece mais combinações; Entretenimento favorece menos; Normal conserva a geração original. Não equivale a margens de 30%, 50% ou 70%, nem garante RTP.</p>',
   '<p>Adicionar / retirar créditos do cofre:</p>',
-  '<div class="admin-fund"><input id="adminFundAmount" type="number" inputmode="decimal" min="0.01" step="0.01" value="100" aria-label="Valor fictício">',
+  '<div class="admin-fund"><input id="adminFundAmount" type="text" inputmode="decimal" maxlength="16" value="100" aria-label="Valor fictício">',
   '<button class="admin-action" id="fundDeposit">＋ FUNDO</button><button class="admin-action" id="fundWithdraw">− FUNDO</button></div>',
+  '<p><b>Créditos fictícios do jogador · <span id="adminBalance"></span></b></p>',
+  '<div class="admin-fund"><input id="adminCreditAmount" type="text" inputmode="decimal" maxlength="16" value="25" aria-label="Créditos do jogador">',
+  '<button class="admin-action" id="playerCredit">＋ CRÉDITOS</button><button class="admin-action" id="playerDebit">− CRÉDITOS</button></div>',
   '<p class="admin-message" id="adminMessage" role="status"></p>',
   '<button class="choice" id="adminHistory">☷ HISTÓRICO LOCAL</button>',
   '<button class="choice" id="adminReport">⬇ IMPRIMIR / GUARDAR PDF</button>',
@@ -911,52 +934,76 @@ async function adminModal(){
   find('adminMerchant').textContent=money(totals.merchant);
   find('adminNet').textContent=money(totals.net);
   find('adminReserve').textContent=money(bank.reserve);
+  find('adminBalance').textContent=money(bank.balance);
  }
  let working=false;
  const notice=text=>{find('adminMessage').textContent=text};
  refresh();
- async function saveShare(role){
+ async function adminChange(action){
   if(working)return;
   if(!requireAdminUnlocked()){closeModal();return requireAdmin(adminModal)}
+  return withMutation(async()=>{
+   working=true;
+   const controls=[...section.querySelectorAll('button,input,select')];
+   controls.forEach(control=>control.disabled=true);
+   try{return await action()}
+   finally{working=false;controls.forEach(control=>control.disabled=false);refresh()}
+  });
+ }
+ async function saveShare(role){
   const value=readPercent(find(role==='owner'?'ownerPct':'merchantPct').value);
   if(value===null){notice('Percentagem inválida: usa de 0 a 100.');return}
-  working=true;
-  const previous=adminSettings;
-  adminSettings=normalizeAdmin(role==='owner'?value:100-value);
-  const saved=await persist('admin-share',{note:role+' '+value+'%'});
-  if(!saved)adminSettings=previous;
-  working=false;refresh();
-  notice(saved?'Percentagens guardadas para movimentos futuros.':'Falha a guardar; valores anteriores repostos.');
+  return adminChange(async()=>{
+   const previous=adminSettings;
+   adminSettings=normalizeAdmin(role==='owner'?value:100-value);
+   const saved=await persist('admin-share',{note:role+' '+value+'%'});
+   if(!saved)adminSettings=previous;
+   notice(saved?'Percentagens guardadas para movimentos futuros.':'Falha a guardar; valores anteriores repostos.');
+   return saved;
+  });
  }
  find('saveOwner').addEventListener('click',()=>saveShare('owner'));
  find('saveMerchant').addEventListener('click',()=>saveShare('merchant'));
  find('saveProfile').addEventListener('click',async()=>{
   if(working||running||bank.mode!=='base')return;
-  if(!requireAdminUnlocked()){closeModal();return requireAdmin(adminModal)}
-  const desired=find('adminProfile').value,old=bank.profile;
-  if(!bank.setProfile(desired)){notice('Modo inválido.');return}
-  working=true;update();
-  let saved=false;
-  try{saved=await persist('admin-profile',{note:DEMO_PROFILES[desired]})}
-  catch(err){console.error('Perfil de demonstração:',err)}
-  if(!saved)bank.profile=old;
-  working=false;refresh();update();
-  notice(saved?'Modo de demonstração guardado.':'Não foi possível gravar o modo anterior.');
+  return adminChange(async()=>{
+   const desired=find('adminProfile').value,old=bank.profile;
+   if(!bank.setProfile(desired)){notice('Modo inválido.');return false}
+   const saved=await persist('admin-profile',{note:DEMO_PROFILES[desired]});
+   if(!saved)bank.profile=old;
+   notice(saved?'Modo de demonstração guardado.':'Não foi possível gravar; modo anterior reposto.');
+   return saved;
+  });
  });
  async function changeFund(kind){
-  if(working)return;
-  if(!requireAdminUnlocked()){closeModal();return requireAdmin(adminModal)}
   const val=validateFundChange(kind,find('adminFundAmount').value,bank.reserve,bank.mode,running);
   if(!val.ok){notice(val.message);return}
-  working=true;const before=bank.reserve;
-  bank.reserve=val.target;update();
-  const saved=await persist(kind==='deposit'?'fund-deposit':'fund-withdraw',{amount:val.amount});
-  if(!saved)bank.reserve=before;
-  working=false;refresh();update();
-  notice(saved?'Movimento fictício guardado.':'Não foi possível guardar; movimento desfeito.');
+  return adminChange(async()=>{
+   const before=bank.reserve;
+   bank.reserve=val.target;
+   const saved=await persist(kind==='deposit'?'fund-deposit':'fund-withdraw',{amount:val.amount});
+   if(!saved)bank.reserve=before;
+   notice(saved?'Movimento fictício guardado.':'Não foi possível guardar; movimento desfeito.');
+   return saved;
+  });
  }
  find('fundDeposit').addEventListener('click',()=>changeFund('deposit'));
  find('fundWithdraw').addEventListener('click',()=>changeFund('withdraw'));
+ async function changePlayerCredits(kind){
+  const val=validateFundChange(kind,find('adminCreditAmount').value,bank.balance,bank.mode,running);
+  if(!val.ok){notice(kind==='withdraw'&&val.message.includes('não tem')?
+   'O jogador não tem esses créditos disponíveis.':val.message);return}
+  return adminChange(async()=>{
+   const before=bank.balance;
+   bank.balance=val.target;
+   const saved=await persist(kind==='deposit'?'player-credit':'player-debit',{amount:val.amount});
+   if(!saved)bank.balance=before;
+   notice(saved?'Créditos do jogador guardados.':'Falha na gravação; saldo anterior reposto.');
+   return saved;
+  });
+ }
+ find('playerCredit').addEventListener('click',()=>changePlayerCredits('deposit'));
+ find('playerDebit').addEventListener('click',()=>changePlayerCredits('withdraw'));
  find('adminHistory').addEventListener('click',()=>requireAdmin(historyModal));
  find('adminPinChange').addEventListener('click',()=>{
   if(!requireAdminUnlocked()){closeModal();return requireAdmin(adminModal)}
@@ -1004,7 +1051,7 @@ async function historyModal(){
     setTimeout(()=>URL.revokeObjectURL(url),3000);
    }},
   {name:'↥ Restaurar cópia JSON',detail:'Valida e substitui a sessão e o histórico local. Não mistura dados.',
-   disabled:running||holdBusy||bank.mode!=='base',
+   disabled:running||holdBusy||mutating||bank.mode!=='base',
    act:()=>{
     if(!requireAdminUnlocked())return requireAdmin(historyModal);
     if(running||holdBusy||bank.mode!=='base')return;
@@ -1028,7 +1075,9 @@ async function historyModal(){
     picker.click();
    }},
   {name:'♻ Reiniciar demonstração',detail:'Apaga esta sessão e o histórico do dispositivo.',
+   disabled:running||holdBusy||mutating||bank.mode!=='base',
    act:async()=>{
+    if(running||holdBusy||mutating||bank.mode!=='base')return;
     if(!requireAdminUnlocked())return requireAdmin(historyModal);
     if(!confirm('Apagar todos os créditos fictícios e o histórico desta instalação?'))return;
     const success=await demoDB.clear();
@@ -1070,7 +1119,7 @@ async function historyModal(){
   for(const event of slice.items){
    const el=document.createElement('div');el.className='history-row';
    const left=document.createElement('div');
-   const name=document.createElement('b');name.textContent=event.type||'evento';
+   const name=document.createElement('b');name.textContent=eventLabel(event.type);
    const date=document.createElement('small');
    date.textContent=String(event.timestamp||'').replace('T',' ').slice(0,19);
    const note=document.createElement('small');
@@ -1231,6 +1280,13 @@ function bind(){
  window.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&modalOpen)closeModal();
  });
+ window.matchMedia?.('(orientation: landscape)').addEventListener?.('change',()=>{
+  if(isLandscape()){
+   stopAuto(true);turnQueue.clearAll();
+   if(bank.mode==='free')freePaused=true;
+   update();
+  }else{update();void refreshWriter(true)}
+ });
  document.addEventListener('visibilitychange',()=>{
   if(document.hidden){
    sessionNeedsRefresh=true;
@@ -1305,8 +1361,7 @@ async function refreshWriter(forceReload=false){
     if(!running&&granted){writerReady=true;await releaseIfHidden(true)}
     return;
    }
-   if(saved?.snapshot)copySnapshot(saved.snapshot);
-   if(saved?.board?.length===5)board=saved.board;
+   applyStoredSession(saved);
    if(scene?.ready&&!rendererRestorePending)try{scene.recover(board)}catch(err){console.warn(err)}
    writerReady=true;saveIssue=false;sessionNeedsRefresh=false;
    diagnostics.record('writer-granted');
@@ -1317,7 +1372,10 @@ async function refreshWriter(forceReload=false){
    if(ready){
     const displayed=showRecoveryState(recoveredVisual?saved?.snapshot?.pendingVisual:null);
     if(!displayed&&bank.mode==='hold')showHold();
-    else if(!displayed)resumeQueuedTurnAfterSync(1100);
+    else if(!displayed){
+     if(bank.mode==='base')say('Pronto para jogar · créditos fictícios sincronizados.');
+     resumeQueuedTurnAfterSync(1100);
+    }
    }else say('Sessão exclusiva obtida. Saldo sincronizado com a base local.');
   }else if(ready)resumeQueuedTurnAfterSync(650);
  }catch(err){
@@ -1358,10 +1416,10 @@ async function boot(){
   writerReady=exclusive;
   diagnostics.record(exclusive?'writer-granted':'writer-denied');
   const saved=await demoDB.load();
-  if(saved?.snapshot)copySnapshot(saved.snapshot);
-  if(Array.isArray(saved?.board)&&saved.board.length===5)board=saved.board;
+  applyStoredSession(saved);
   $('dbStatus').textContent=writerReady?'PHASER · BASE LOCAL EXCLUSIVA':'PHASER · SÓ LEITURA';
  }catch(err){
+  writerReady=false;saveIssue=true;
   console.error('Base local:',err);
   $('dbStatus').textContent='PHASER · SEM BASE LOCAL';
  }
@@ -1401,6 +1459,7 @@ async function boot(){
   scene.setCoinBet?.(bank.stake);
   scene.setBoard(board);
   ready=true;update();
+  $('phaser-reels').setAttribute('aria-busy','false');
   finishRendererRestoration();
   showIdleCoinValues();
   status('TAMBORES VERTICAIS PRONTOS');

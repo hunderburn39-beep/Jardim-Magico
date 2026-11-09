@@ -1,6 +1,12 @@
 /* Jardim Mágico Phaser V1.8: relatórios e contabilidade fictícia local. */
 const round=v=>Math.round((v+Number.EPSILON)*100)/100;
 const num=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
+export function readCredits(raw){
+ const input=String(raw??'').trim();
+ if(!/^\d+(?:[.,]\d{1,2})?$/.test(input))return null;
+ const n=Number(input.replace(',','.'));
+ return Number.isFinite(n)&&n>0&&n<=1e12?round(n):null;
+}
 export function readPercent(value){
  const input=String(value??'').trim().replace(',','.');
  const n=Number(input);
@@ -12,16 +18,15 @@ export function normalizeAdmin(owner=50){
 }
 export function validateFundChange(kind,raw,reserve,mode='base',running=false){
  if(running||mode!=='base')return {ok:false,message:'Termina primeiro o giro ou bónus.'};
- const input=String(raw??'').trim().replace(',','.');
- const amount=round(Number(input));
- if(!input||!Number.isFinite(amount)||amount<=0||
+ const amount=readCredits(raw);
+ if(amount===null||
     !Number.isSafeInteger(Math.round(amount*100)))
   return {ok:false,message:'Indica um valor válido em créditos fictícios.'};
  if(!['deposit','withdraw'].includes(kind))return {ok:false,message:'Operação inválida.'};
  if(kind==='withdraw'&&amount>round(reserve))
   return {ok:false,message:'O cofre não tem esse valor disponível.'};
  const target=round(reserve+(kind==='deposit'?amount:-amount));
- if(!Number.isSafeInteger(Math.round(target*100)))
+ if(target>1e12||!Number.isSafeInteger(Math.round(target*100)))
   return {ok:false,message:'Precisão numérica excedida para esta demonstração.'};
  return {ok:true,amount,target};
 }
@@ -46,7 +51,7 @@ function escapeHtml(x){return String(x??'').replace(/[&<>"']/g,ch=>({
 })[ch])}
 const money=v=>num(v).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2});
 export function makePrintableReport({summary,history,settings,reserve,dbMode}){
- const rows=history.slice(0,250).map(x=>
+ const rows=history.map(x=>
   '<tr><td>'+escapeHtml(String(x.timestamp||'').replace('T',' ').slice(0,19))+
   '</td><td>'+escapeHtml(x.type)+'</td><td>'+money(x.amount)+'</td><td>'+
   money(num(x.wager)+num(x.cost))+'</td><td>'+money(x.paid)+'</td><td>'+
@@ -69,8 +74,8 @@ export function makePrintableReport({summary,history,settings,reserve,dbMode}){
  '<tr><td>'+money(summary.owner)+'</td><td>'+money(summary.merchant)+'</td><td>'+
  money(reserve)+'</td><td>'+settings.ownerPct+'% / '+settings.merchantPct+'%</td></tr></table>'+
  '<p>Percentagens históricas guardadas por evento; nos eventos anteriores à V1.8 assume-se 50/50.</p>'+
- '<h2>Últimos '+Math.min(250,history.length)+' movimentos de '+history.length+' existentes</h2>'+
+ '<h2>'+history.length+' movimentos guardados neste dispositivo</h2>'+
  '<table><thead><tr><th>Data</th><th>Tipo</th><th>Valor do fundo</th><th>Entradas</th><th>Prémios</th><th>Quota dono</th></tr></thead>'+
  '<tbody>'+rows+'</tbody></table>'+
- '<p class="noprint">Imprimir → Guardar como PDF. Para dados completos exporta também o JSON.</p></body></html>';
+ '<p class="noprint">Imprimir → Guardar como PDF. O histórico conserva os últimos 2500 movimentos. Exporta também o JSON para uma cópia da sessão.</p></body></html>';
 }
