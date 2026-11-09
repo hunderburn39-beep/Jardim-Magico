@@ -162,8 +162,14 @@
   if(img&&img.complete&&img.naturalWidth>0&&img.naturalHeight>0){
    const lowSymbol=['10','J','Q','K','A'].includes(sym);
    if(lowSymbol){
-    // As letras e o 10 ocupam praticamente toda a casa.
-    ctx.drawImage(img,x+3,y+3,w-6,h-6);
+    // O 10 tem margens internas maiores na imagem: ampliá-lo separadamente.
+    if(sym==='10'){
+     ctx.save();
+     ctx.beginPath();ctx.rect(x+2,y+2,w-4,h-4);ctx.clip();
+     const scale=1.32,iw=(w-6)*scale,ih=(h-6)*scale;
+     ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
+     ctx.restore();
+    }else ctx.drawImage(img,x+3,y+3,w-6,h-6);
    }else{
     const scale=Math.min(size/img.naturalWidth,size/img.naturalHeight);
     const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
