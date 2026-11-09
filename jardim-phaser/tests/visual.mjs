@@ -44,6 +44,9 @@ try{
     reel:initial,
     spin:box('#spinBtn'),
     frame:box('.frame-region .branch-frame'),
+    frameBackground:getComputedStyle(document.querySelector('.branch-frame')).backgroundImage,
+    playedVisibility:getComputedStyle(document.querySelector('#hudFreePlayed')).display,
+    winNoticeVisibility:getComputedStyle(document.querySelector('#winNotice')).display,
     botanicalScale:scene.getVisible(1,0)?.displayWidth,
     assets:art,
     artFailed:scene.failedAssets.filter(key=>key.startsWith('botanical-')),
@@ -84,6 +87,10 @@ try{
    scenario.name+' moldura não deve ficar esticada '+JSON.stringify(metrics.frame));
   assert(metrics.frame.w>=reel.w+10&&metrics.frame.w<=machine.w+2,
    scenario.name+' moldura deve encaixar no tambor '+JSON.stringify(metrics.frame));
+  assert(metrics.frameBackground.includes('jm51-moldura-limpa.svg'),
+   scenario.name+' a moldura de cantos livres não carregou');
+  assert(metrics.playedVisibility==='none'&&metrics.winNoticeVisibility==='none',
+   scenario.name+' as faixas extra tapam os símbolos');
   // Moldura e grelha sobem em conjunto sem perder o enquadramento.
   const frameCenter=metrics.frame.y+metrics.frame.h/2;
   const reelCenter=reel.y+reel.h/2;

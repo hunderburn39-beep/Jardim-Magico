@@ -100,3 +100,39 @@
 @media (orientation:portrait) and (max-height:740px){
  .machine .frame-region{--reels-lift:clamp(4px,1dvh,8px)}
 }
+
+
+/* V5.1.4 — HUD acima da moldura, cantos livres e sem faixas duplicadas.
+   Só muda a apresentação; mantém cálculos, dados e animações Phaser. */
+@media (orientation:portrait){
+ .machine .frame-region > #dropHud{
+  position:absolute;
+  top:calc(-1 * clamp(44px,5.8dvh,58px));
+  left:50%;transform:translateX(-50%);
+  z-index:15;width:min(91%,470px);min-height:0;
+  padding:4px 10px;
+  background:linear-gradient(90deg,#271132e8,#351440f0,#271132e8);
+  box-shadow:0 2px 8px #130a2090;
+ }
+ /* Prevalece também quando as Free Spins estão ativas. */
+ .machine .frame-region:has(.free-hud:not([hidden])) > #dropHud{
+  top:calc(-1 * clamp(44px,5.8dvh,58px));
+ }
+ .machine .frame-region .branch-frame{
+  background-image:url('../../assets/imagens/jm51-moldura-limpa.svg');
+ }
+ /* Contador "giros realizados · MULTI..." é redundante. */
+ .machine #hudFreePlayed{display:none!important}
+ .machine .free-hud{grid-template-rows:auto;row-gap:0;padding-block:4px}
+ /* A faixa "1 COMBINAÇÃO / 0,40" não deve tapar os ícones. */
+ .machine #winNotice{display:none!important}
+}
+@media (orientation:portrait) and (max-height:640px){
+ .machine .frame-region > #dropHud,
+ .machine .frame-region:has(.free-hud:not([hidden])) > #dropHud{
+  top:-42px;
+  padding:2px 8px;
+ }
+ .machine #dropHud .multi-drop output{font-size:19px}
+ .machine #dropHud #multiTotal{font-size:22px}
+}

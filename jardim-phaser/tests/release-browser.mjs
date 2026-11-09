@@ -155,9 +155,16 @@ for(const [name,type] of [['chromium',chromium],['webkit',webkit]]){
     await page.locator('#dropHud').waitFor({state:'visible',timeout:10000});
     const floating=await page.locator('#dropHud').evaluate(el=>{
      const frame=el.closest('.frame-region'),r=el.getBoundingClientRect(),f=frame.getBoundingClientRect();
-     return {inside:!!frame&&r.top>=f.top&&r.bottom<=f.bottom,value:el.querySelector('#multiTotal').textContent};
+     const frameArt=document.querySelector('.branch-frame');
+     const frameBackground=getComputedStyle(frameArt).backgroundImage;
+     const played=getComputedStyle(document.querySelector('#hudFreePlayed')).display;
+     const winBand=getComputedStyle(document.querySelector('#winNotice')).display;
+     return {above:!!frame&&r.top>=0&&r.bottom<=f.top+10,
+      frameBackground,played,winBand,value:el.querySelector('#multiTotal').textContent};
     });
-    check(floating.inside&&Number(floating.value.replace('×',''))>1,name+' valor da queda e MULTI flutuam sobre os tambores apenas com multiplicadores');
+    check(floating.above&&Number(floating.value.replace('×',''))>1,name+' valor da queda e MULTI acima da moldura');
+    check(floating.frameBackground.includes('jm51-moldura-limpa.svg')&&floating.played==='none'&&floating.winBand==='none',
+     name+' cantos livres e informações redundantes ocultas');
     await ready(page);await page.locator('#dropHud').waitFor({state:'hidden',timeout:6000});
     await page.evaluate(()=>{Math.random=()=>.9});
     const spinCount=data.state.snapshot.spins;
