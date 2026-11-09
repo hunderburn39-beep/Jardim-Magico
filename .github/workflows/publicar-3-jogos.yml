@@ -186,8 +186,14 @@ jobs:
           echo "A confirmar publicação de: $url"
           for tentativa in {1..8}; do
             if curl -fLsS --max-time 20 --connect-timeout 10 "$url?sha=${GITHUB_SHA}" -o /tmp/halloween-publicado.html \
-                && grep -qi 'HALLOWEEN' /tmp/halloween-publicado.html; then
-              echo "Halloween disponível online (HTTP 200 e HTML correto)."
+                && grep -q 'js/engine.js' /tmp/halloween-publicado.html \
+                && curl -fLsS --max-time 20 "$url/js/engine.js?sha=${GITHUB_SHA}" -o /tmp/halloween-engine.js \
+                && grep -q 'HalloweenEngine' /tmp/halloween-engine.js \
+                && curl -fLsS --max-time 20 "$url/js/art.js?sha=${GITHUB_SHA}" -o /tmp/halloween-art.js \
+                && grep -q 'HalloweenArt' /tmp/halloween-art.js \
+                && curl -fLsS --max-time 20 "$url/js/game.js?sha=${GITHUB_SHA}" -o /tmp/halloween-game.js \
+                && grep -q 'Phaser.Game' /tmp/halloween-game.js; then
+              echo "Halloween disponível online: HTML e os três ficheiros JS confirmados (HTTP 200)."
               exit 0
             fi
             echo "Tentativa ${tentativa}/8: ainda não está acessível."
