@@ -40,6 +40,11 @@ async function run(name,launcher){
     assert.equal(visible.accumulators,4);
     fs.mkdirSync("visual-previews",{recursive:true});
     await page.screenshot({path:`visual-previews/halloween-${name}-inicio.png`});
+    await tap(page,671,272);
+    await page.waitForFunction(()=>window.__HALLOWEEN_SCENE__?.tableOpen===true);
+    await page.screenshot({path:`visual-previews/halloween-${name}-tabela-original.png`});
+    await tap(page,360,998);
+    await page.waitForFunction(()=>window.__HALLOWEEN_SCENE__?.tableOpen===false);
     // Interromper um giro a meio: o resultado e o saldo já devem
     // estar guardados e os símbolos restaurados no novo carregamento.
     await tap(page,367,1192);
