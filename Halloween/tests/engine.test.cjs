@@ -27,15 +27,22 @@ test("Sem saldo não roda nem altera o estado", () => {
   assert.equal(r.state.balance, 0);
   assert.equal(r.state.spins, 0);
 });
-test("Recolha de abóboras gera rodadas gratuitas e preserva excedentes", () => {
+test("Abóboras acumulam uma por giro pago e dão bónus à quinta", () => {
   const s = E.createState();
   const r = E.spin(s, fixed(0));
   assert.equal(r.ok, true);
   assert.equal(r.result.pumpkinCount, 15);
-  assert.equal(r.pumpkinBonuses, 1);
-  assert.equal(r.state.pumpkins, 5);
-  assert.equal(r.state.freeSpins, 5);
-  assert.equal(s.spins, 0); // sem mutação do estado fornecido
+  assert.equal(r.result.collectedPumpkin, 1);
+  assert.equal(r.pumpkinBonuses, 0);
+  assert.equal(r.state.pumpkins, 1);
+  assert.equal(s.spins, 0);
+  const fifth = E.spin({ ...E.createState(), pumpkins: 4 }, fixed(0));
+  assert.equal(fifth.pumpkinBonuses, 1);
+  assert.equal(fifth.state.pumpkins, 0);
+  assert.equal(fifth.state.freeSpins, 5);
+  const free = E.spin({ ...E.createState(), pumpkins: 4, freeSpins: 1 }, fixed(0));
+  assert.equal(free.result.collectedPumpkin, 0);
+  assert.equal(free.state.pumpkins, 4);
 });
 test("Scatter acumula free spins e prémio correto", () => {
   const r = E.spin(E.createState(), fixed(0.999999));
@@ -44,6 +51,8 @@ test("Scatter acumula free spins e prémio correto", () => {
   assert.equal(r.earnedSpins, 10);
   assert.equal(r.result.scatterWin, 30);
   assert.ok(r.state.freeSpins >= 10);
+  assert.ok(r.state.pendingPot);
+  assert.equal(r.state.pendingPot.choices.length, 3);
 });
 test("O Wild substitui símbolos mas não o Scatter", () => {
   const grid = Array.from({length:5}, () => ["bat", "bat", "bat"]);
@@ -72,7 +81,12 @@ test("20 000 jogadas reprodutíveis sem NaN nem créditos negativos", () => {
     s = result.state;
     assert.ok(Number.isFinite(s.balance) && s.balance >= 0);
     assert.ok(Number.isFinite(result.result.total) && result.result.total >= 0);
-    assert.ok(s.pumpkins >= 0 && s.pumpkins < 10);
+    assert.ok(s.pumpkins >= 0 && s.pumpkins < 5);
+    if(s.pendingPot){
+      const resolved = E.choosePot(s, i%3);
+      assert.equal(resolved.ok,true);
+      s=resolved.state;
+    }
     assert.equal(result.grid.length, 5);
     assert.ok(result.grid.every(col => col.length === 3));
   }
@@ -101,4 +115,36 @@ test("Acumulados e seleção de linhas persistem na alteração de aposta", () =
   const next = E.setBet(s,5);
   assert.equal(next.lines,30);
   assert.deepEqual(next.jackpots,[440,880]);
+});
+
+test("Três Wild seguidos de Scatter ainda pagam linha de Wild", () => {
+  const grid = Array.from({ length: 5 }, () => ["bat","ghost","witch"]);
+  grid[0][1] = "wild"; grid[1][1] = "wild"; grid[2][1] = "wild";
+  grid[3][1] = "scatter"; grid[4][1] = "scatter";
+  const r = E.evaluateGrid(grid,2,false,20);
+  assert.ok(r.hits.some(h => h.line===1 && h.count===3 && h.symbol==="wild"));
+});
+test("Bónus caldeirão bloqueia nova aposta até escolher um dos três", () => {
+  const first = E.spin(E.createState(), fixed(.999999));
+  assert.equal(first.ok,true);
+  assert.equal(first.potTriggered,true);
+  const block = E.spin(first.state,fixed(0));
+  assert.equal(block.ok,false);
+  assert.equal(block.reason,"bonus-pendente");
+  assert.deepEqual(block.state,first.state);
+  const recovered=E.sanitize(JSON.parse(JSON.stringify(first.state)));
+  assert.deepEqual(recovered.pendingPot,first.state.pendingPot);
+  const prize=E.choosePot(recovered,1);
+  assert.equal(prize.ok,true);
+  assert.equal(prize.state.pendingPot,null);
+  assert.equal(prize.awarded,prize.reveal[1]);
+  assert.equal(prize.state.balance,recovered.balance+prize.awarded);
+  assert.equal(prize.state.lastWin,recovered.lastWin+prize.awarded);
+  assert.equal(E.spin(prize.state,fixed(.3)).ok,true);
+});
+test("Escolha inválida do pote não altera créditos nem elimina bónus", () => {
+  const state=E.spin(E.createState(),fixed(.999999)).state;
+  assert.equal(E.choosePot(state,-1).ok,false);
+  assert.equal(E.choosePot(state,3).ok,false);
+  assert.ok(state.pendingPot);
 });
