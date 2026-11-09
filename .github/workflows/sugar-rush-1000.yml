@@ -93,20 +93,26 @@ jobs:
             git push origin HEAD:main
           fi
 
+      - name: Preparar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '10.18.0'
+          run_install: false
+
       - name: Preparar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: Sugar-Rush-1000/frontend/package-lock.json
+          cache: pnpm
+          cache-dependency-path: Sugar-Rush-1000/frontend/pnpm-lock.yaml
 
       - name: Testar compilacao do frontend Phaser
         working-directory: Sugar-Rush-1000/frontend
         shell: bash
         run: |
           set -euo pipefail
-          npm install --ignore-scripts --no-package-lock --no-audit --no-fund
-          npm run build
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm run build
 
       - name: Resumo
         if: always()
