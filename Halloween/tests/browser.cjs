@@ -93,8 +93,24 @@ async function run(name,launcher){
     const wheelAfter=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.state.balance);
     assert.equal(wheelAfter,Math.round((wheelBefore+350.75)*100)/100);
     await page.screenshot({path:`visual-previews/halloween-${name}-roleta.png`});
+    await page.evaluate(()=>{
+      const s=window.__HALLOWEEN_SCENE__;
+      const next={...s.state,pendingPot:null,pendingWheel:null,
+        pendingStrawberry:{choices:Array.from({length:12},(_,i)=>i+1)}};
+      localStorage.setItem("halloween-classico-v02",JSON.stringify(next));
+    });
+    await page.reload({waitUntil:"domcontentloaded"});
+    await page.waitForFunction(()=>window.__HALLOWEEN_SCENE__?.strawberryOpen===true,{},{timeout:25000});
+    const berries=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.strawberryHits.length);
+    assert.equal(berries,12);
+    const berryBefore=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.state.balance);
+    await tap(page,144,506);
+    await page.waitForFunction(()=>window.__HALLOWEEN_SCENE__?.state?.pendingStrawberry===null,{},{timeout:5000});
+    const berryAfter=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.state.balance);
+    assert.equal(berryAfter,Math.round((berryBefore+1)*100)/100);
+    await page.screenshot({path:`visual-previews/halloween-${name}-morangos.png`});
     assert.deepEqual(errors,[],`${name}: erros no browser: ${errors.join("; ")}`);
-    console.log(`${name}: carregamento, 15 símbolos, giro, potes, roleta, recuperação e screenshots OK`);
+    console.log(`${name}: carregamento, 15 símbolos, giro, potes, morangos, roleta, recuperação e screenshots OK`);
     await context.close();
   }finally{await browser.close();}
 }
