@@ -228,7 +228,7 @@
    ctx.save();ctx.beginPath();ctx.rect(rx,top,cw,gh*3);ctx.clip();
    const item=this.spinObject;
    if(this.spinning&&item&&!item.stopped[c]){
-    const p=clamp((t-item.start)/(item.duration+c*item.reelGap),0,1),a=.12,d=.32;
+    const p=clamp((t-item.start)/((item.stopAt?.[c]??(item.start+item.duration+c*item.reelGap))-item.start),0,1),a=.12,d=.32;
     let travel;
     if(p<a)travel=.5*p-.5*a/Math.PI*Math.sin(Math.PI*p/a);
     else if(p<=1-d)travel=p-a/2;
