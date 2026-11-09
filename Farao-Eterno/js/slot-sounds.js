@@ -202,8 +202,71 @@
       note(265,152,1.22,.13*force);
     }
   }
+  // Gong1 (pfeifferc / freesound_community): o utilizador forneceu o
+  // ficheiro MP3. O ataque foi aparado ~75 ms antes de o guardar.
+  // Carregar e descodificar ANTES da paragem para não haver atraso no Wild.
+  let gongBuffer=null, gongDecodeStarted=false;
+  const gongTextPromise=fetch(new URL('assets/wild-gong-synced.b64',document.baseURI))
+    .then(response=>{
+      if(!response.ok)throw Error('Gong indisponível: '+response.status);
+      return response.text();
+    }).catch(()=>null);
+
+  function prepareWildGong(){
+    if(!audio.ctx || gongDecodeStarted)return;
+    gongDecodeStarted=true;
+    gongTextPromise.then(encoded=>{
+      if(!encoded || encoded.trim().length!==24124)return null;
+      const decoded=atob(encoded.trim());
+      const bytes=new Uint8Array(decoded.length);
+      for(let i=0;i<decoded.length;i++)bytes[i]=decoded.charCodeAt(i);
+      return audio.ctx.decodeAudioData(bytes.buffer);
+    }).then(buffer=>{if(buffer)gongBuffer=buffer;})
+      .catch(()=>{gongBuffer=null;});
+  }
+
+  // O contexto áudio nasce depois do primeiro toque do jogador no iPhone.
+  const priorAudioInit=audio.init.bind(audio);
+  audio.init=function(...args){
+    const result=priorAudioInit(...args);
+    prepareWildGong();
+    return result;
+  };
+  const priorAudioSpin=audio.spin.bind(audio);
+  audio.spin=function(...args){
+    prepareWildGong();
+    return priorAudioSpin(...args);
+  };
+  prepareWildGong();
+
   audio.sanctuaryLanding=function(reel,count){
-    wildPaam(count);
+    if(!ready())return;
+    if(!gongBuffer){
+      prepareWildGong();
+      wildPaam(count); // Só se a amostra ainda não estiver pronta.
+      return;
+    }
+    try{
+      const ac=audio.ctx,t=ac.currentTime;
+      // A música de fundo baixa enquanto o gong real ressoa.
+      const music=audio.musicBus?.gain;
+      if(music){
+        music.cancelScheduledValues(t);
+        music.setValueAtTime(Math.max(.001,music.value),t);
+        music.setTargetAtTime(.12,t,.025);
+        music.setTargetAtTime(2.5,t+2.0,.36);
+      }
+      const source=ac.createBufferSource(),env=ac.createGain();
+      source.buffer=gongBuffer;
+      // Mesmo timbre em todas as torres, intensidade crescente.
+      const volume=count<=1?2.65:count===2?2.9:3.15;
+      env.gain.setValueAtTime(volume,t);
+      source.connect(env);
+      env.connect(output());
+      source.start(t);
+      source.onended=()=>{try{source.disconnect();env.disconnect();}catch(_){}};
+      audio._wildSoundAtMs=performance.now();
+    }catch(_){wildPaam(count);}
   };
 
   audio.paylineChime=function(index){
@@ -228,5 +291,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.3.5',original:true,procedural:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.3.6',original:true,procedural:true,dynamicReelSpeed:true};
 })();
