@@ -12,15 +12,16 @@
     { id: "wild", weight: 7, icon: "🧿", name: "Wild" },
     { id: "scatter", weight: 4, icon: "🔮", name: "Scatter" }
   ]);
-  // Uma linha por entrada, indexada de 0 a 24; cada valor representa a fila (0 a 2).
+  // Trajetos originais de demonstração: 20, 25 ou 30 linhas (0 a 2).
   const LINES = Object.freeze([
     [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2],
     [0,0,1,0,0], [2,2,1,2,2], [1,0,0,0,1], [1,2,2,2,1], [0,1,1,1,0],
     [2,1,1,1,2], [1,0,1,0,1], [1,2,1,2,1], [0,1,0,1,0], [2,1,2,1,2],
     [1,1,0,1,1], [1,1,2,1,1], [0,2,0,2,0], [2,0,2,0,2], [0,2,2,2,0],
-    [2,0,0,0,2], [1,0,2,0,1], [1,2,0,2,1], [0,0,2,0,0], [2,2,0,2,2]
+    [2,0,0,0,2], [1,0,2,0,1], [1,2,0,2,1], [0,0,2,0,0], [2,2,0,2,2],
+    [0,1,2,2,1], [2,1,0,0,1], [1,2,2,0,1], [1,0,0,2,1], [0,2,1,2,0]
   ].map(a => Object.freeze(a)));
-  // Multiplicadores de aposta total para 3, 4 e 5 símbolos. 25 linhas ativas.
+  // Pagamentos experimentais para 3, 4 e 5 símbolos. Não reproduzem a matemática proprietária.
   const PAY = Object.freeze({
     pumpkin: [0,0,0,2,6,16], ghost: [0,0,0,3,8,22],
     bat: [0,0,0,3,9,26], cat: [0,0,0,4,12,35],
@@ -43,7 +44,7 @@
     return SYMBOLS[SYMBOLS.length - 1].id;
   }
   function createState() {
-    return { balance: 1000, bet: 2, freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0 };
+    return { balance: 1000, bet: 2, lines: 25, jackpots: [350,750], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0 };
   }
   function sanitize(s) {
     const d = createState();
@@ -51,6 +52,9 @@
     return {
       balance: Number.isFinite(s.balance) ? Math.max(0, Math.min(MAX_BALANCE, round(s.balance))) : d.balance,
       bet: [1,2,5,10].includes(s.bet) ? s.bet : d.bet,
+      lines: [20,25,30].includes(s.lines) ? s.lines : d.lines,
+      jackpots: Array.isArray(s.jackpots) && s.jackpots.length === 2 ? s.jackpots.map((v,i)=>
+        Number.isFinite(v)?Math.max(0,Math.min(MAX_BALANCE,round(v))):d.jackpots[i]) : [...d.jackpots],
       freeSpins: Number.isInteger(s.freeSpins) ? Math.max(0, Math.min(1000,s.freeSpins)) : 0,
       pumpkins: Number.isInteger(s.pumpkins) ? Math.max(0, Math.min(9,s.pumpkins)) : 0,
       spins: Number.isInteger(s.spins) ? Math.max(0,s.spins) : 0,
@@ -62,12 +66,13 @@
     if ([1,2,5,10].includes(bet)) state.bet = bet;
     return state;
   }
-  function evaluateGrid(grid, bet, inFreeSpins) {
+  function evaluateGrid(grid, bet, inFreeSpins, activeLines = 25) {
     if (!Array.isArray(grid) || grid.length !== REELS || grid.some(c => !Array.isArray(c) || c.length !== ROWS ||
         c.some(s => !SYMBOLS.some(def => def.id === s)))) throw new Error("Grelha inválida");
+    if (![20,25,30].includes(activeLines)) throw new Error("Número de linhas inválido");
     const hits = [];
     let total = 0;
-    for (let lineNo = 0; lineNo < LINES.length; lineNo++) {
+    for (let lineNo = 0; lineNo < activeLines; lineNo++) {
       const route = LINES[lineNo];
       const entries = route.map((row,col) => grid[col][row]);
       // Primeiro símbolo não-Wild define o conjunto; Scatter não substitui.
@@ -80,7 +85,7 @@
         else break;
       }
       if (count >= 3) {
-        const amount = round(bet * PAY[target][count] / 25 * (inFreeSpins ? 2 : 1));
+        const amount = round(bet * PAY[target][count] / activeLines * (inFreeSpins ? 2 : 1));
         total = round(total + amount);
         hits.push({ line: lineNo + 1, count, symbol: target, amount,
           cells: route.slice(0,count).map((row,col) => [col,row]) });
@@ -94,12 +99,18 @@
     const scatterWin = scatter >= 3 ? round(bet * (scatter >= 5 ? 15 : scatter === 4 ? 5 : 2)) : 0;
     return { total: round(total + scatterWin), hits, scatter, scatterWin, pumpkinCount };
   }
-  function spin(input, rng = Math.random) {
+  function spin(input, rng = Math.random, previousGrid = null, heldColumns = null) {
     const state = sanitize(input);
     const free = state.freeSpins > 0;
     if (!free && state.balance < state.bet) return { ok: false, reason: "saldo", state };
-    const grid = Array.from({length: REELS}, () => Array.from({length: ROWS}, () => pick(rng)));
-    const result = evaluateGrid(grid, state.bet, free);
+    const holds = !free && Array.isArray(previousGrid) && previousGrid.length === REELS &&
+      previousGrid.every(col=>Array.isArray(col) && col.length === ROWS &&
+        col.every(sym=>SYMBOLS.some(s=>s.id===sym))) &&
+      (Array.isArray(heldColumns)||heldColumns instanceof Set)
+        ? [...heldColumns].filter(c=>Number.isInteger(c) && c>=0 && c<REELS) : [];
+    const grid = Array.from({length: REELS}, (_,col) =>
+      holds.includes(col) ? [...previousGrid[col]] : Array.from({length: ROWS}, () => pick(rng)));
+    const result = evaluateGrid(grid, state.bet, free, state.lines);
     if (free) state.freeSpins--;
     else state.balance = round(state.balance - state.bet);
     const earnedSpins = (result.scatter >= 3 ? 10 : 0);
@@ -110,7 +121,7 @@
     state.balance = Math.min(MAX_BALANCE, round(state.balance + result.total));
     state.spins++;
     state.lastWin = result.total;
-    return { ok: true, state, grid, result, free, earnedSpins, pumpkinBonuses };
+    return { ok: true, state, grid, result, free, earnedSpins, pumpkinBonuses, heldReels: holds };
   }
   const api = Object.freeze({ SYMBOLS, LINES, PAY, createState, sanitize, setBet, pick, evaluateGrid, spin });
   if (typeof module !== "undefined" && module.exports) module.exports = api;
