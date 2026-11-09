@@ -137,7 +137,10 @@
       holds.includes(col) ? [...previousGrid[col]] : Array.from({length: ROWS}, () => pick(rng)));
     const result = evaluateGrid(grid, state.bet, free, state.lines);
     if (free) state.freeSpins--;
-    else state.balance = round(state.balance - state.bet);
+    else {
+      state.balance = round(state.balance - state.bet);
+      state.jackpots=state.jackpots.map((v,i)=>round(v+state.bet*(i===0?.01:.017)));
+    }
     const earnedSpins = (result.scatter >= 3 ? 10 : 0);
     // No modo base, uma rodada com pelo menos três abóboras recolhe
     // apenas uma. Nas Free Spins não se recolhem abóboras adicionais,
