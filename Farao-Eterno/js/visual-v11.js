@@ -132,7 +132,7 @@
    [[0,'#fff0b7'],[.14,'#8f5724'],[.44,'#513420'],[.68,'#d1a24a'],[1,'#30201a']]),'#eac277',1.5);
   drawScarab(ctx,xx+R.cw/2,R.top-6,.67);
   drawScarab(ctx,xx+R.cw/2,bot+8,.76);
-  line(ctx,xx+12,R.top-13,xx+R.cw-12,R.top-13,'#ffefad',1.4);
+  // Linha horizontal decorativa superior removida a pedido.
   line(ctx,xx+11,bot+14,xx+R.cw-11,bot+14,'#bb8f49',1.1);
  }
  function tileAt(sym,x,y,t,win){
