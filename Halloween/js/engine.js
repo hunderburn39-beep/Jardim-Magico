@@ -47,15 +47,20 @@
     { id: "wild", weight: 7, icon: "🧿", name: "Magic" },
     { id: "scatter", weight: 4, icon: "🔮", name: "Caldeirão" }
   ]);
-  // Trajetos originais de demonstração: escalões de 1, 5, 15, 25 ou 30 linhas (0 a 2).
-  const LINES = Object.freeze([
+  // 25 trajetos da esquerda para a direita + 5 trajetos na vertical,
+  // um por tambor. Estes percursos são uma reconstrução do protótipo.
+  const HORIZONTAL_LINES = Object.freeze([
     [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2],
     [0,0,1,0,0], [2,2,1,2,2], [1,0,0,0,1], [1,2,2,2,1], [0,1,1,1,0],
     [2,1,1,1,2], [1,0,1,0,1], [1,2,1,2,1], [0,1,0,1,0], [2,1,2,1,2],
     [1,1,0,1,1], [1,1,2,1,1], [0,2,0,2,0], [2,0,2,0,2], [0,2,2,2,0],
-    [2,0,0,0,2], [1,0,2,0,1], [1,2,0,2,1], [0,0,2,0,0], [2,2,0,2,2],
-    [0,1,2,2,1], [2,1,0,0,1], [1,2,2,0,1], [1,0,0,2,1], [0,2,1,2,0]
+    [2,0,0,0,2], [1,0,2,0,1], [1,2,0,2,1], [0,0,2,0,0], [2,2,0,2,2]
   ].map(a => Object.freeze(a)));
+  const VERTICAL_LINES = Object.freeze(Array.from({length:REELS},(_,col)=>
+    Object.freeze(Array.from({length:ROWS},(_,row)=>Object.freeze([col,row])))));
+  // As entradas 0–24 são trajetos horizontais (um índice de linha por tambor).
+  // As entradas 25–29 são trajetos verticais (três coordenadas [tambor, linha]).
+  const LINES = Object.freeze([...HORIZONTAL_LINES,...VERTICAL_LINES]);
   // Pagamentos experimentais para 3, 4 e 5 símbolos. Não reproduzem a matemática proprietária.
   const PAY = Object.freeze({
     pumpkin: [0,0,0,2,6,16], ghost: [0,0,0,3,8,22],
@@ -151,24 +156,31 @@
     const hits = [];
     let total = 0;
     for (let lineNo = 0; lineNo < activeLines; lineNo++) {
-      const route = LINES[lineNo];
-      const entries = route.map((row,col) => grid[col][row]);
-      // O Wild substitui símbolos comuns, não Scatter; entre combinações
-      // concorrentes na mesma linha paga-se apenas a de maior valor.
-      // Isto também preserva 3 Wild consecutivos seguidos de Scatter.
-      if (entries[0] === "scatter") continue;
-      let best = null;
-      for (const target of Object.keys(PAY)) {
-        let count = 0;
-        for (const value of entries) {
-          if (value === target || (value === "wild" && target !== "scatter")) count++;
+      const vertical=lineNo>=HORIZONTAL_LINES.length;
+      const route=LINES[lineNo];
+      const cells=vertical
+        ? route
+        : route.map((row,col)=>[col,row]);
+      const entries=cells.map(([col,row])=>grid[col][row]);
+      // Em linhas horizontais são necessários 3+ símbolos consecutivos
+      // desde o tambor esquerdo. Nas cinco verticais são os três símbolos
+      // do mesmo tambor (de cima para baixo). MAGIC substitui todos os
+      // símbolos comuns, mas nunca o caldeirão (Scatter).
+      if(entries[0]==="scatter")continue;
+      let best=null;
+      for(const target of Object.keys(PAY)){
+        let count=0;
+        for(const value of entries){
+          if(value===target || (value==="wild"&&target!=="scatter"))count++;
           else break;
         }
-        if (count < 3) continue;
-        const amount = round(bet * PAY[target][count] / activeLines * (inFreeSpins ? 2 : 1));
-        if (!best || amount > best.amount) {
-          best = { line: lineNo + 1, count, symbol: target, amount,
-            cells: route.slice(0,count).map((row,col) => [col,row]) };
+        if(count<3)continue;
+        const amount=round(bet*PAY[target][count]/activeLines*
+          (inFreeSpins?2:1));
+        if(!best||amount>best.amount){
+          best={line:lineNo+1,count,symbol:target,amount,
+            direction:vertical?"vertical":"horizontal",
+            cells:cells.slice(0,count).map(cell=>[...cell])};
         }
       }
       if (best && best.amount > 0) {
@@ -252,8 +264,10 @@
     // linha de pagamento ativa. Não basta encher o contador acumulado:
     // isso dava demasiados prémios grandes na matemática anterior.
     // O gatilho da máquina comercial continua por confirmar no APK.
-    const wheelEligible=LINES.slice(0,state.lines).some(route =>
-      route.every((row,col)=>grid[col][row]==="pumpkin"));
+    // Só as linhas da esquerda para a direita podem ativar a
+    // roleta por cinco abóboras; uma vertical tem apenas três peças.
+    const wheelEligible=HORIZONTAL_LINES.slice(0,Math.min(state.lines,25))
+      .some(route=>route.every((row,col)=>grid[col][row]==="pumpkin"));
     if (wheelEligible) {
       const sectorIndex=Math.floor(validRng(rng)*WHEEL_SECTORS.length);
       const sector=WHEEL_SECTORS[sectorIndex];
@@ -315,7 +329,8 @@
     state.pendingWheel=null;
     return {ok:true,state,awarded:payout,sectorIndex,label:sector.label};
   }
-  const api = Object.freeze({ SYMBOLS, LINES, PAY, BET_LEVELS, PUMPKINS_FOR_BONUS,
+  const api = Object.freeze({ SYMBOLS, LINES, HORIZONTAL_LINES, VERTICAL_LINES,
+    PAY, BET_LEVELS, PUMPKINS_FOR_BONUS,
     WHEEL_SECTORS, STRAWBERRY_CHOICES, DICE_CHOICES, createState, sanitize, setBet, setLines, pick, evaluateGrid,
     spin, choosePot, chooseStrawberry, chooseDice, resolveWheel });
   if (typeof module !== "undefined" && module.exports) module.exports = api;
