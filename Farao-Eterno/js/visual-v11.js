@@ -5,7 +5,7 @@
  const game=window.__faraoGame, canvas=document.getElementById('canvas');
  if(!game || !canvas) return;
  const ctx=canvas.getContext('2d');
- const R=Object.freeze({left:33,top:268,cw:99,gh:116,step:101});
+ const R=Object.freeze({left:33,top:268,cw:99,gh:96,step:101});
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
  const TAU=Math.PI*2;
  const format=n=>(Math.round((n+Number.EPSILON)*100)/100).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+' cr';
