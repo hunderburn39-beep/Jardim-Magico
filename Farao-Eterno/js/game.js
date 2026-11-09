@@ -342,7 +342,6 @@ class Game {
  }
 
  openInfo(tab='menu'){
-  this.auto=0;
   const tabs=`<div class="header-tabs">${[['menu','Menu'],['pays','Prémios'],['rules','Regras'],['history','Histórico']].map(([key,label])=>`<button data-page="${key}" class="${tab===key?'active':''}">${label}</button>`).join('')}</div>`;
   let page='';
   if(tab==='menu'){
@@ -369,6 +368,8 @@ class Game {
    $('toggle-music').onclick=()=>{this.ledger.settings.music=!this.ledger.settings.music;this.audio.stopMusic?.();this.save();this.openInfo();};
    $('toggle-turbo').onclick=()=>{this.turbo=!this.turbo;this.save();this.openInfo();};
    $('toggle-auto').onclick=()=>{this.closeModal();this.setAuto();};
+   $('bet-less').onclick=()=>{this.changeBet(-1);this.openInfo();};
+   $('bet-more').onclick=()=>{this.changeBet(1);this.openInfo();};
    $('line-less').onclick=()=>{this.changeLines(-1);this.openInfo();};$('line-more').onclick=()=>{this.changeLines(1);this.openInfo();};
    $('menu-reset').onclick=()=>this.openReset();$('menu-gamble').onclick=()=>this.openGamble();
   }
