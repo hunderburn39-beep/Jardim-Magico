@@ -233,18 +233,32 @@ class Game {
   mod.classList.remove('hidden');mod.setAttribute('aria-hidden','false');$('touch-controls').inert=true;
   $('close-modal').focus();
  }
- showHistoricSpin(id){
+ showHistoricSpin(id,selectedLine=null){
   const h=this.history.find(x=>x.id===id&&x.grid);if(!h)return;
-  const wins=Array.isArray(h.lineWins)?h.lineWins:[],cells=new Set();
-  for(const w of wins)if(Array.isArray(w.rows))for(let c=0;c<Math.min(w.count,w.rows.length);c++)cells.add(c+'-'+w.rows[c]);
-  const rows=Array.from({length:3},(_,row)=>'<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:4px 0">'+Array.from({length:5},(_,col)=>{
+  const wins=Array.isArray(h.lineWins)?h.lineWins:[],valid=wins.filter(w=>Number.isInteger(w.line)&&w.line>=0&&w.line<E.LINES.length);
+  const selected=selectedLine===null?null:valid.find(w=>w.line===selectedLine)?.line??null;
+  const cells=new Set();
+  for(const w of valid)if(selected===null||selected===w.line){
+   const line=E.LINES[w.line];
+   if(w.expanded){for(let c=0;c<5;c++)if(h.grid[c]?.includes(w.symbol))for(let row=0;row<3;row++)cells.add(c+'-'+row);}
+   else for(let c=0;c<Math.min(w.count,5);c++)cells.add(c+'-'+line[c]);
+  }
+  const rows=Array.from({length:3},(_,row)=>'<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px">'+Array.from({length:5},(_,col)=>{
    const sym=h.grid[col]?.[row],img=this.images[sym],highlight=cells.has(col+'-'+row);
-   return '<div style="aspect-ratio:1;border:2px solid '+(highlight?'#ffe18a':'#775d3c')+';background:#13202b"><img alt="Símbolo" src="'+(img?.src||'')+'" style="width:100%;height:100%;object-fit:contain"></div>';
+   return '<div style="aspect-ratio:1;border:2px solid '+(highlight?'#ffe18a':'#775d3c')+';background:#13202b"><img alt="Símbolo" src="'+(img?.src||'')+'" style="display:block;width:100%;height:100%;object-fit:contain"></div>';
   }).join('')+'</div>').join('');
-  const details=wins.map(w=>'<p>Linha '+(w.line+1)+' · '+(iconNames[w.symbol]||w.symbol)+' × '+w.count+'</p>').join('');
-  this.openModal('JOGADA #'+id,'<p>'+new Date(h.t).toLocaleString('pt-PT')+' · Aposta '+money(h.bet)+' · Prémio '+money(h.win)+'</p><div style="max-width:500px;margin:auto">'+rows+'</div><p>'+wins.length+' linhas vencedoras</p>'+details+'<button class="btn" id="back-history">Voltar ao histórico</button>');
+  const paths=valid.filter(w=>selected===null||selected===w.line).map((w,i)=>{
+   const points=E.LINES[w.line].map((row,col)=>(col*100+50)+','+(row*100+50)).join(' ');
+   const color=['#ffdc75','#6af8e5','#ff8fa2','#b9a2ff'][i%4];
+   return '<polyline points="'+points+'" fill="none" stroke="#0b1324" stroke-width="8" stroke-linejoin="round" stroke-linecap="round" opacity=".85"/><polyline points="'+points+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/><circle cx="50" cy="'+(E.LINES[w.line][0]*100+50)+'" r="17" fill="#14212b" stroke="'+color+'" stroke-width="3"/><text x="50" y="'+(E.LINES[w.line][0]*100+56)+'" font-size="18" font-weight="bold" fill="'+color+'" text-anchor="middle">'+(w.line+1)+'</text>';
+  }).join('');
+  const board='<div style="position:relative;max-width:500px;margin:12px auto"><div style="display:grid;gap:3px">'+rows+'</div><svg viewBox="0 0 500 300" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible">'+paths+'</svg></div>';
+  const choices=valid.map(w=>'<button type="button" class="btn" data-history-line="'+w.line+'" style="margin:3px;'+(selected===w.line?'border-color:#fff1a5;':'')+'">Linha '+(w.line+1)+' · '+money(w.amount||0)+'</button>').join('');
+  this.openModal('JOGADA #'+id,'<p>'+new Date(h.t).toLocaleString('pt-PT')+' · Aposta '+money(h.bet)+' · Prémio '+money(h.win)+'</p>'+board+'<p>'+valid.length+' linhas vencedoras. '+(valid.length?'Escolhe uma linha para a destacar.':'Sem linhas vencedoras nesta jogada.')+'</p><div style="text-align:center">'+choices+'</div><button class="btn" id="back-history">Voltar ao histórico</button>');
   $('back-history').onclick=()=>this.openInfo('history');
+  modalContent.querySelectorAll('[data-history-line]').forEach(b=>b.onclick=()=>this.showHistoricSpin(id,Number(b.dataset.historyLine)));
  }
+
  showSymbolPay(symbol){
   if(this.spinning||!E.PAYS[symbol])return;
   const image=this.images[symbol],name=iconNames[symbol]||symbol;
