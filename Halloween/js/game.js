@@ -24,10 +24,12 @@ class Classica extends Phaser.Scene{
    this.grid();
    this.bottom();
    this.makePotBonus();
+   this.makeWheelBonus();
    this.shortcuts();
    this.renderState();
    if(new URLSearchParams(window.location.search).has("smoke")) globalThis.__HALLOWEEN_SCENE__=this;
    if (this.state.pendingPot) this.showPotBonus();
+   else if(this.state.pendingWheel) this.showWheelBonus();
    status.textContent="";
  }
  background(){
@@ -165,14 +167,14 @@ class Classica extends Phaser.Scene{
    }
  }
  changeBet(){
-   if(this.spinning||this.potOpen||this.state.freeSpins>0)return;
+   if(this.spinning||this.potOpen||this.wheelOpen||this.state.freeSpins>0)return;
    this.clearHolds();
    const options=[1,2,5,10],i=options.indexOf(this.state.bet);
    this.state=E.setBet(this.state,options[(i+1)%options.length]);
    this.renderState();this.store();this.tone(480,.06);
  }
  changeLines(){
-   if(this.spinning||this.potOpen||this.state.freeSpins>0)return;
+   if(this.spinning||this.potOpen||this.wheelOpen||this.state.freeSpins>0)return;
    this.clearHolds();
    const options=[20,25,30],i=options.indexOf(this.state.lines||25);
    this.state.lines=options[(i+1)%3];
@@ -181,7 +183,7 @@ class Classica extends Phaser.Scene{
    this.store();this.tone(440,.06);
  }
  toggleAuto(){
-   if(this.potOpen)return;
+   if(this.potOpen||this.wheelOpen)return;
    this.auto=!this.auto;
    this.autoText.setText(this.auto?"ATIVO":"");
    if(this.auto&&!this.spinning)this.spin();
@@ -192,7 +194,7 @@ class Classica extends Phaser.Scene{
    for(const label of this.locks)label.setVisible(false);
  }
  toggleHold(col){
-   if(this.spinning||this.potOpen||!this.canHold||!this.previous)return;
+   if(this.spinning||this.potOpen||this.wheelOpen||!this.canHold||!this.previous)return;
    if(this.held.has(col))this.held.delete(col);
    else if(this.held.size<4)this.held.add(col);
    else { this.message.setText("PELO MENOS UM TAMBOR TEM DE RODAR"); return; }
@@ -201,11 +203,12 @@ class Classica extends Phaser.Scene{
    this.tone(560,.05);
  }
  spin(){
-   if(this.spinning||this.potOpen)return;
+   if(this.spinning||this.potOpen||this.wheelOpen)return;
    const outcome=E.spin(this.state,Math.random,this.previous,this.held);
    if(!outcome.ok){
      if(outcome.reason==="bonus-pendente"){
-       this.showPotBonus();
+       if(this.state.pendingPot)this.showPotBonus();
+       else if(this.state.pendingWheel)this.showWheelBonus();
        return;
      }
      this.message.setText("CRÉDITOS INSUFICIENTES");this.auto=false;
@@ -242,7 +245,6 @@ class Classica extends Phaser.Scene{
    this.spinning=false;this.state=result.state;
    this.state.lines=this.state.lines||20;
    this.state.jackpots=this.state.jackpots||[350,750];
-   this.state.jackpots=this.state.jackpots.map((v,i)=>Math.round((v+this.state.bet*(i===0?.01:.017))*100)/100);
    this.previous=result.grid;
    this.clearHolds();
    this.canHold=result.result.total===0&&!result.free&&!result.potTriggered;
@@ -252,11 +254,9 @@ class Classica extends Phaser.Scene{
    else if(result.result.total>0){this.message.setText("PRÉMIO "+fmt(result.result.total));this.tone(740,.15);}
    else{this.message.setText("SEM PRÉMIO — TOCA NUM TAMBOR PARA TRAVAR");}
    this.renderState();this.store();
-   if(result.potTriggered){
-     this.showPotBonus();
-   } else if(this.auto) {
-     this.time.delayedCall(620,()=>{if(this.auto)this.spin();});
-   }
+   if(result.potTriggered) this.showPotBonus();
+   else if(result.wheelTriggered) this.showWheelBonus();
+   else if(this.auto) this.time.delayedCall(620,()=>{if(this.auto)this.spin();});
  }
  makePotBonus(){
    // Janela modal Phaser; mantém a escolha pendente no estado local até
@@ -320,6 +320,86 @@ class Classica extends Phaser.Scene{
      this.potOverlay.setVisible(false);
      this.potOpen=false;
      this.message.setText("BÓNUS +"+fmt(outcome.awarded));
+     if(this.state.pendingWheel)this.showWheelBonus();
+   });
+ }
+ makeWheelBonus(){
+   this.wheelOpen=false;this.wheelBusy=false;
+   this.wheelOverlay=this.add.container(0,0).setDepth(110).setVisible(false);
+   const bg=this.add.rectangle(W/2,H/2,W,H,0x0e0a1c,.97).setInteractive();
+   const border=this.add.graphics();
+   border.fillStyle(0x28152d,.97).fillRoundedRect(26,282,668,728,20);
+   border.lineStyle(7,0xf0ac4a).strokeRoundedRect(26,282,668,728,20);
+   this.wheelOverlay.add([bg,border,txt(this,360,330,"ROLETA DAS ABÓBORAS",35,"#fce2a5")]);
+   this.wheelDisk=this.add.container(360,642);
+   const shape=this.add.graphics();
+   const colors=[0xcc7833,0x8d2440,0xbe9b38,0x385681,0xa44247,0x4a7750,0xaf621e,0x753e88];
+   for(let i=0;i<E.WHEEL_SECTORS.length;i++){
+     const first=-Math.PI/2-Math.PI/8+i*Math.PI/4;
+     const last=first+Math.PI/4;
+     shape.fillStyle(colors[i],1);
+     shape.fillTriangle(0,0,Math.cos(first)*226,Math.sin(first)*226,
+       Math.cos(last)*226,Math.sin(last)*226);
+   }
+   shape.lineStyle(9,0xe2b661).strokeCircle(0,0,209);
+   shape.fillStyle(0x1d152d,1).fillCircle(0,0,34);
+   shape.lineStyle(6,0xffd18d).strokeCircle(0,0,34);
+   this.wheelDisk.add(shape);
+   for(let i=0;i<E.WHEEL_SECTORS.length;i++){
+     const angle=-Math.PI/2+i*Math.PI/4;
+     const x=Math.cos(angle)*144,y=Math.sin(angle)*144;
+     const label=E.WHEEL_SECTORS[i].label.replace("ACUMULADO ","A");
+     this.wheelDisk.add(txt(this,x,y,label,22,"#fff6d4",{stroke:"#3a2431",strokeThickness:4}));
+   }
+   this.wheelOverlay.add(this.wheelDisk);
+   const pin=this.add.graphics();
+   pin.fillStyle(0xffd77c).fillTriangle(360,428,341,398,379,398);
+   pin.lineStyle(3,0x552633).strokeTriangle(360,428,341,398,379,398);
+   this.wheelOverlay.add(pin);
+   this.wheelHint=txt(this,360,925,"PRIME O BOTÃO PARA RODAR",25,"#ffe8bc");
+   this.wheelOverlay.add(this.wheelHint);
+   const start=this.add.graphics();
+   start.fillStyle(0x9c2a27).fillRoundedRect(221,817,278,72,18);
+   start.lineStyle(4,0xffd278).strokeRoundedRect(221,817,278,72,18);
+   this.wheelOverlay.add(start);
+   this.wheelButton=txt(this,360,854,"RODAR ROLETA",29,"#fff1ce");
+   this.wheelOverlay.add(this.wheelButton);
+   const press=this.add.zone(360,852,286,80).setInteractive({useHandCursor:true});
+   press.on("pointerdown",()=>this.rollWheel());
+   this.wheelOverlay.add(press);
+ }
+ showWheelBonus(){
+   if(!this.state.pendingWheel)return;
+   this.wheelOpen=true;this.wheelBusy=false;
+   this.auto=false;this.autoText.setText("");
+   this.wheelDisk.setAngle(0);
+   this.wheelHint.setText("PRIME O BOTÃO PARA RODAR");
+   this.wheelButton.setText("RODAR ROLETA").setVisible(true);
+   this.wheelOverlay.setVisible(true);
+   this.tone(620,.18);
+ }
+ rollWheel(){
+   if(!this.wheelOpen||this.wheelBusy||!this.state.pendingWheel)return;
+   this.wheelBusy=true;this.wheelButton.setText("A RODAR...");
+   this.wheelHint.setText("BOA SORTE!");
+   const sector=this.state.pendingWheel.sectorIndex;
+   this.tone(460,.2);
+   this.tweens.add({targets:this.wheelDisk,angle:6*360-sector*45,duration:3400,
+     ease:"Cubic.Out",onComplete:()=>this.finishWheel()});
+ }
+ finishWheel(){
+   if(!this.state.pendingWheel)return;
+   const result=E.resolveWheel(this.state);
+   if(!result.ok)return;
+   this.state=result.state;this.store();this.renderState();
+   this.wheelButton.setText("GANHASTE!");
+   this.wheelHint.setText(result.label+" · "+fmt(result.awarded)+" CRÉDITOS");
+   this.flash();
+   this.time.delayedCall(2000,()=>{
+     this.wheelOverlay.setVisible(false);
+     this.wheelOpen=false;this.wheelBusy=false;
+     this.message.setText("ROLETA +"+fmt(result.awarded));
+     if(this.state.pendingPot)this.showPotBonus();
    });
  }
  highlight(hits){
