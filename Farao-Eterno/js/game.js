@@ -245,6 +245,16 @@ class Game {
   this.openModal('JOGADA #'+id,'<p>'+new Date(h.t).toLocaleString('pt-PT')+' · Aposta '+money(h.bet)+' · Prémio '+money(h.win)+'</p><div style="max-width:500px;margin:auto">'+rows+'</div><p>'+wins.length+' linhas vencedoras</p>'+details+'<button class="btn" id="back-history">Voltar ao histórico</button>');
   $('back-history').onclick=()=>this.openInfo('history');
  }
+ showSymbolPay(symbol){
+  if(this.spinning||!E.PAYS[symbol])return;
+  const image=this.images[symbol],name=iconNames[symbol]||symbol;
+  const rows=[2,3,4,5].map(n=>{
+   const mult=E.PAYS[symbol][n]||0;
+   return '<tr><td style="padding:8px 12px">'+n+' símbolos</td><td style="padding:8px 12px;text-align:right;color:#ffe0a0">'+(mult?'×'+nice(mult)+' · '+money(mult*this.bet/this.lines):'—')+'</td></tr>';
+  }).join('');
+  const pic=image?.src?'<img src="'+image.src+'" alt="" style="display:block;width:100px;height:100px;object-fit:contain;margin:8px auto;filter:drop-shadow(0 0 12px #e5ac52)">':'';
+  this.openModal(name.toUpperCase(),'<div style="max-width:380px;margin:auto;padding:14px;border:2px solid #c89a51;border-radius:16px;background:linear-gradient(140deg,#302419,#101b2a 70%,#3c2a19);box-shadow:inset 0 0 22px #d7a44d40,0 0 18px #c99a4540">'+pic+'<h3 style="text-align:center;color:#ffdf98">'+name+'</h3><table style="width:100%;color:#f7e9ca">'+rows+'</table><p style="font-size:12px;text-align:center">Valores por linha, para aposta de '+money(this.bet)+' e '+this.lines+' linhas ativas.</p></div>');
+ }
  openInfo(tab='menu'){
   this.auto=0;
   const tabs=`<div class="header-tabs">${[['menu','Menu'],['pays','Prémios'],['rules','Regras'],['history','Histórico']].map(([key,label])=>`<button data-page="${key}" class="${tab===key?'active':''}">${label}</button>`).join('')}</div>`;
@@ -469,6 +479,11 @@ class Game {
   for(const xx of [22,538])for(const yy of [258,647]){
    cx.save();cx.shadowColor='#50ffe6';cx.shadowBlur=8;
    ellipse(xx,yy,5,8,'#2ae3d0');ellipse(xx-1,yy-2,2,4,'#ceffff');cx.restore();
+  }
+  // Transparent touch targets follow the 15 symbol cells.
+  if(!this.spinning&&!this.superseded)for(let c=0;c<5;c++)for(let row=0;row<3;row++){
+   const symbol=this.grid[c][row];
+   this.action(left+c*interval,top+row*gh,cw,gh,()=>this.showSymbolPay(symbol),'Ver prémios de '+(iconNames[symbol]||symbol));
   }
   this.drawActivePayline(t,left,top,cw,gh,interval);
   rect(23,662,514,11,grad(0,661,0,673,[[0,'#f6e0a4'],[.5,'#a3773e'],[1,'#4d301f']]),'#ffe8a6',4,1.5);
