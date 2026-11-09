@@ -136,10 +136,11 @@ test("Cinco dados vermelhos abrem, recuperam e não pagam duas vezes",()=>{
   const before=s.state.spins;
   s.spin();assert.equal(s.state.spins,before);
   s.pickDice(4);
-  assert.equal(s.state.balance,old+12);
+  const award=s.state.bet*6;
+  assert.equal(s.state.balance,old+award);
   assert.equal(s.state.pendingDice,null);
   s.pickDice(4);
-  assert.equal(s.state.balance,old+12);
+  assert.equal(s.state.balance,old+award);
   second.drain();
   assert.equal(s.diceOpen,false);
 });
