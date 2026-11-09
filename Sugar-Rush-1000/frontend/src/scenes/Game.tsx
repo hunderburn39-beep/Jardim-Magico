@@ -99,7 +99,7 @@ export class Game extends Phaser.Scene {
 
   // State Ã¢â‚¬â€ balance always starts from options.money in demo, or from Stake Engine auth
   valueMoney = options.money;
-  currency = 'USD';
+  currency = 'CRD';
   betPresetIndex = options.defaultBetIndex;
   autoSpinActive = false;
   autoSpinStopOnFeature = false;
