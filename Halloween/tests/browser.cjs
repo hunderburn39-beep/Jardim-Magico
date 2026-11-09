@@ -16,12 +16,30 @@ async function run(name,launcher){
     const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
     const page=await context.newPage();
     const errors=[];
-    page.on("pageerror",e=>errors.push(e.message));
+    page.on("pageerror",e=>{errors.push(e.message);console.error(name+" pageerror:",e.message);});
     page.on("console",msg=>{if(msg.type()==="error")errors.push(msg.text());});
     const response=await page.goto(ORIGIN,{waitUntil:"domcontentloaded",timeout:25000});
     assert.equal(response.status(),200);
     await page.locator("canvas").waitFor({state:"visible",timeout:25000});
-    await page.waitForFunction(()=>window.__HALLOWEEN_SCENE__?.symbols?.length===5,{},{timeout:25000});
+    try{
+      await page.waitForFunction(()=>window.__HALLOWEEN_SCENE__?.symbols?.length===5,null,{timeout:12000});
+    }catch(error){
+      const details=await page.evaluate(()=>({
+        statusText:document.getElementById("status")?.textContent,
+        phaserLoaded:typeof window.Phaser!=="undefined",
+        engineLoaded:typeof window.HalloweenEngine!=="undefined",
+        artLoaded:typeof window.HalloweenArt!=="undefined",
+        sceneExists:Boolean(window.__HALLOWEEN_SCENE__),
+        sceneSymbols:window.__HALLOWEEN_SCENE__?.symbols?.length,
+        images:Array.from(document.images).map(e=>({src:e.currentSrc,complete:e.complete})),
+        scripts:Array.from(document.scripts).map(e=>e.src),
+        resources:performance.getEntriesByType("resource").filter(e=>/Halloween|phaser/i.test(e.name)).map(e=>({name:e.name,duration:e.duration}))
+      }));
+      console.error(name+" diagnóstico:",JSON.stringify(details),"pageerrors:",JSON.stringify(errors));
+      fs.mkdirSync("visual-previews",{recursive:true});
+      await page.screenshot({path:"visual-previews/halloween-"+name+"-erro-arranque.png"});
+      throw error;
+    }
     await page.waitForTimeout(300);
     const visible=await page.evaluate(()=>{
       const s=window.__HALLOWEEN_SCENE__;
