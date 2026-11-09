@@ -250,7 +250,7 @@
   const amount=this.winCount?this.winCount.amount*(1-Math.pow(1-progress,3)):this.lastWin;
   const meters=[['SALDO',format(this.balance)],['APOSTA',format(this.bet)],['PRÉMIO',format(this.feature?this.feature.total:amount)]];
   for(let i=0;i<3;i++){
-   const x=28+i*170,y=R.top+R.gh*3+12,w=164,h=72;
+   const x=28+i*170,y=R.top+R.gh*3+27,w=164,h=72;
    ctx.save();ctx.shadowColor='#000d';ctx.shadowBlur=12;ctx.shadowOffsetY=5;
    rounded(ctx,x,y,w,h,12,'#18202a','#f2c478',2.7);ctx.restore();
    rounded(ctx,x+3,y+3,w-6,h-6,9,grad(ctx,x,y,x,y+h,
@@ -269,7 +269,7 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,849,130,130,()=>this.startSpin(),label);
-  txt('V1.1',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.1.4',38,985,10,'#e5c68d',850,'Arial');
   if(!this.storageOK)txt('SESSÃO SEM GRAVAÇÃO',280,833,11,'#ffbc83',800,'Arial');
  };
  document.documentElement.dataset.faraoVisual='1.1';
