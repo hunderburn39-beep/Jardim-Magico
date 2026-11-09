@@ -3,7 +3,7 @@
  */
 export const HISTORY_PAGE_SIZE=20;
 const EVENT_LABELS=Object.freeze({
- spin:'Giro',stake:'Alteração de aposta','credit-demo':'Recarga de demonstração',
+ spin:'Giro',stake:'Alteração de aposta','credit-demo':'Recarga de saldo',
  'buy-free':'Compra de Free Spins','buy-hold':'Compra de Hold & Win',
  'hold-paid':'Prémio Hold & Win','hold-turn':'Tentativa Hold & Win',
  'test-free':'Free Spins gratuitas','test-hold':'Hold & Win gratuito',

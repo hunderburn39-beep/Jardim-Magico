@@ -39,56 +39,49 @@
 @media(prefers-reduced-motion:reduce){.machine #dropHud{animation:none}}
 
 
-/* V5.1 — jackpots laterais no topo: ULTRA/MAX · logótipo · MED/MIN.
-   Os valores e IDs mantêm-se: a alteração é exclusivamente visual. */
+/* V5.1.1: o logótipo faz parte da mesma grelha dos jackpots.
+   O arranjo não altera valores nem lógica dos prémios. */
 @media (orientation:portrait){
- .machine{
-  grid-template-rows:
-   minmax(0,26fr) minmax(0,36fr) minmax(0,3.5fr)
-   minmax(0,13.5fr) minmax(0,18fr) minmax(0,3fr);
- }
- .machine .game-header{grid-row:1}
- .machine .frame-region{grid-row:2}
- .machine .result-text{grid-row:3}
- .machine .dashboard{grid-row:4}
- .machine .controls{grid-row:5}
- .machine footer{grid-row:6}
- .machine .game-header .logo{
-  left:23%;width:54%;
-  top:clamp(44px,6dvh,58px);
-  height:calc(100% - clamp(44px,6dvh,58px) - 8px);
-  object-fit:contain;
- }
- .machine>.jackpots{
-  position:absolute;grid-area:auto;
-  z-index:3;pointer-events:none;
-  top:clamp(44px,6dvh,58px);
-  left:clamp(3px,1vw,7px);right:clamp(3px,1vw,7px);bottom:auto;
-  width:auto;height:14dvh;min-height:0;
-  display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(0,1.45fr) minmax(0,1fr);
+ .machine .game-header{grid-row:1;min-width:0}
+ .machine .game-header .jackpots{
+  position:absolute;z-index:2;
+  top:clamp(44px,6dvh,58px);bottom:clamp(6px,1dvh,14px);
+  left:clamp(3px,1vw,8px);right:clamp(3px,1vw,8px);
+  width:auto;height:auto;min-height:0;max-height:none;
+  display:grid;align-items:stretch;justify-items:stretch;
+  grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr);
   grid-template-rows:repeat(2,minmax(0,1fr));
+  grid-template-areas:"ultra logo med" "max logo min";
   gap:clamp(3px,.8vw,7px);
+  pointer-events:none;
  }
- .machine>.jackpots .jackpot{min-width:0;min-height:0;padding:2px 1px}
- .machine>.jackpots .jackpot strong{
-  max-width:100%;overflow:hidden;font-size:clamp(11px,3vw,19px);
-  line-height:1.1;white-space:nowrap;
+ .machine .game-header .jackpots .jackpot{
+  min-width:0;min-height:0;height:100%;
+  padding:2px 1px;box-sizing:border-box;
  }
- .machine>.jackpots .jackpot span{font-size:clamp(11px,2.8vw,18px)}
- .machine>.jackpots .jackpot small{font-size:clamp(9px,2.1vw,12px)}
- /* Ordem independente do HTML: ULTRA / MAX na esquerda, MED / MIN na direita. */
- .machine>.jackpots .jackpot:nth-child(4){grid-column:1;grid-row:1}
- .machine>.jackpots .jackpot:nth-child(3){grid-column:1;grid-row:2}
- .machine>.jackpots .jackpot:nth-child(2){grid-column:3;grid-row:1}
- .machine>.jackpots .jackpot:nth-child(1){grid-column:3;grid-row:2}
+ .machine .game-header .jackpots .jackpot[data-tier="ultra"]{grid-area:ultra}
+ .machine .game-header .jackpots .jackpot[data-tier="max"]{grid-area:max}
+ .machine .game-header .jackpots .jackpot[data-tier="med"]{grid-area:med}
+ .machine .game-header .jackpots .jackpot[data-tier="min"]{grid-area:min}
+ .machine .game-header .jackpots .logo{
+  grid-area:logo;position:relative;left:auto;right:auto;top:auto;bottom:auto;
+  width:100%;height:100%;max-height:100%;min-height:0;
+  object-fit:contain;align-self:center;justify-self:center;
+  margin:0;padding:0;transform:none;pointer-events:none;
+  filter:drop-shadow(0 4px 5px #1d082acc);
+ }
+ .machine .game-header .jackpots .jackpot span{font-size:clamp(10px,2.7vw,18px)}
+ .machine .game-header .jackpots .jackpot strong{
+  font-size:clamp(10px,2.7vw,19px);max-width:100%;white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+ }
+ .machine .game-header .jackpots .jackpot small{font-size:clamp(8px,1.95vw,12px)}
 }
 @media (orientation:portrait) and (max-height:640px){
- .machine{
-  grid-template-rows:
-   minmax(0,22.8fr) minmax(0,35.5fr) minmax(0,4fr)
-   minmax(0,16fr) minmax(0,18fr) minmax(0,3.7fr);
+ .machine .game-header .jackpots{
+  top:clamp(39px,6dvh,44px);bottom:2px;
  }
- .machine>.jackpots{height:min(14dvh,calc(22.8dvh - 47px))}
- .machine .game-header .logo{height:calc(100% - clamp(44px,6dvh,58px) - 2px)}
+ .machine .game-header .jackpots .jackpot{
+  padding:0 1px;border-width:1px;border-radius:10px;
+ }
 }

@@ -2,7 +2,7 @@
    Sem pagamentos reais, sem RTP auditado e sem sincronização entre devices.
    Cada resultado e prémio são decididos ANTES da animação vertical Phaser.
  */
-import {DemoBank,newBoard,winningCells,money,DEMO_PROFILES} from './engine.js?v=3.3';
+import {DemoBank,newBoard,winningCells,money,DEMO_PROFILES} from './engine.js?v=3.3.1';
 import {demoDB as localDB,validateBackup,validateSessionState} from './database.js?v=5.0.0';
 import {createStorageGateway} from './storage-gateway-v21.js?v=2.2';
 import {createAdminPinLock} from './admin-pin-v21.js?v=2.1';
@@ -12,12 +12,12 @@ import {createReelGame} from './reels.js?v=4.2.3';
 import {canWriteDemoSession} from './session-guard-v427.js?v=4.2.7';
 import {holdLandingIndices,holdDisplay,freeDisplay} from './bonus-presentation.js?v=1.5';
 import {createPerformanceGuard} from './performance-v17.js?v=2.9';
-import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=5.0.0';
+import {normalizeAdmin,readPercent,validateFundChange,summarizeLedger,makePrintableReport} from './admin-v18.js?v=5.1.1';
 import {createDialogFocus} from './dialog-focus.js?v=5.0.0';
-import {filterHistory,historyPage,eventLabel} from './history-v19.js?v=5.0.0';
+import {filterHistory,historyPage,eventLabel} from './history-v19.js?v=5.1.1';
 import {auditSessionHistory} from './history-integrity-v32.js?v=3.2';
-import {spinRecoveryReceipt,holdRecoveryReceipt,recoveryMessage,createDiagnostics} from './recovery-v23.js?v=2.3';
-import {sessionState,canResumeFree} from './session-v24.js?v=2.4';
+import {spinRecoveryReceipt,holdRecoveryReceipt,recoveryMessage,createDiagnostics} from './recovery-v23.js?v=2.3.1';
+import {sessionState,canResumeFree} from './session-v24.js?v=2.4.1';
 import {freeProgress,holdProgress} from './bonus-progress-v26.js?v=2.6';
 import {celebrationView,winBreakdown} from './win-ui-v27.js?v=2.7';
 import {createVisualSupervisor} from './visual-supervisor-v30.js?v=3.0';
@@ -296,7 +296,7 @@ function renderSessionBanner(){
  panel.dataset.kind=graphicsPending?'blocked':syncing?'saving':state.kind;
  $('sessionMessage').textContent=sessionDataIssue|| (graphicsPending?
   'A recuperar os gráficos do Jardim Mágico…':syncing?
-  'A confirmar os créditos fictícios guardados…':state.message);
+  'A confirmar o saldo guardado…':state.message);
  const button=$('sessionAction');
  button.hidden=!!sessionDataIssue||graphicsPending||syncing||!state.action;
  button.disabled=running||mutating||holdBusy||writerCheckBusy||pageSuspended||rendererUnavailable||rendererRestorePending||
@@ -621,8 +621,8 @@ function closeModal(){
 }
 function bonusModal(){
  if(!sessionCanWrite()||running||mutating||bank.mode!=='base')return;
- modal('Comprar bónus DEMO',
-  'Compras voluntárias apenas com créditos fictícios; sem dinheiro real.',[
+ modal('Comprar bónus',
+  'Utiliza o saldo disponível para comprar um bónus.',[
    {name:'✨ 15 Free Spins',detail:'Custo: '+money(bank.bonusPrice),
     disabled:bank.balance<bank.bonusPrice,
     act:()=>withMutation(async()=>{
@@ -632,7 +632,7 @@ function bonusModal(){
       if(!(await persist('buy-free',{cost}))){
        copySnapshot(before);update();say('Compra cancelada: não foi possível guardar.');return;
       }
-      bonusAnnouncement('✨ FREE SPINS ✨','15 giros de demonstração',1300);
+      bonusAnnouncement('✨ FREE SPINS ✨','15 giros',1300);
       // A continuação é armada após withMutation terminar a gravação.
      }
     })},
@@ -669,7 +669,7 @@ function exportDiagnostics(){
 }
 function diagnosticModal(){
  const counts=diagnostics.snapshot().counts;
- modal('Diagnóstico da demonstração',
+ modal('Diagnóstico do jogo',
   'Estado desta sessão. Só contém contagens técnicas locais, nunca PIN nem dados pessoais.',[
   {name:'⬇ Guardar diagnóstico JSON',detail:'Inclui falhas de gravação, recuperação e estado da aba.',act:exportDiagnostics}
  ]);
@@ -718,7 +718,7 @@ function showRecoveryState(marker){
  }
  if(!marker)return false;
  diagnostics.record(marker.kind==='hold'?'recovered-hold':'recovered-spin');
- modal(summary.title,summary.detail,[{name:'CONTINUAR',detail:'Os créditos fictícios já foram contabilizados.'}]);
+ modal(summary.title,summary.detail,[{name:'CONTINUAR',detail:'Os créditos já foram contabilizados.'}]);
  if(summary.kind==='hold-complete'&&Array.isArray(marker.grid)&&marker.grid.length===16){
   const grid=document.createElement('div');grid.className='recovered-hold-grid';
   grid.setAttribute('aria-label','Grelha de moedas recuperada de quatro por quatro');
@@ -767,7 +767,7 @@ function renderHold(previousGrid=null,hold=bank.hold){
    (landing.has(i)?' new-coin':'');
   cell.textContent=value?coinLabel(bank.stake,value):'✦';
   cell.setAttribute('aria-label',value?
-   'Moeda de '+coinLabel(bank.stake,value)+' (créditos fictícios)':'Espaço vazio');
+   'Moeda de '+coinLabel(bank.stake,value)+' créditos':'Espaço vazio');
   grid.append(cell);
  }
  $('holdCoins').textContent=display.coins+'/16';
@@ -855,8 +855,8 @@ async function holdTurn(){
 
 function adminPinForm(next,changePin=false){
  const configured=adminLock.isConfigured();
- modal(changePin?'Alterar PIN local':configured?'PIN de administração DEMO':'Criar PIN de administração DEMO',
-  'Proteção local da demonstração. Não é autenticação segura de operador.',[]);
+ modal(changePin?'Alterar PIN local':configured?'PIN de administração':'Criar PIN de administração',
+  'Proteção local neste dispositivo. O PIN não substitui a autenticação de servidor.',[]);
  const area=$('modalContent');
  const form=document.createElement('form');
  form.className='admin-pin-form';
@@ -902,34 +902,34 @@ async function requireAdmin(next){
 async function adminModal(){
  if(!sessionCanWrite()||running||bank.mode!=='base'||!ready)return;
  if(!requireAdminUnlocked())return requireAdmin(adminModal);
- modal('Administração DEMO','Controlo LOCAL de créditos fictícios; não existe autenticação segura.',[]);
+ modal('Administração','Gestão local do saldo, cofre e opções. O PIN protege apenas este dispositivo.',[]);
  await persist('admin-access');
- if(!modalOpen||$('modalTitle').textContent!=='Administração DEMO')return;
+ if(!modalOpen||$('modalTitle').textContent!=='Administração')return;
  let history=[];
  try{history=await demoDB.history()}catch(err){console.warn(err)}
- if(!modalOpen||$('modalTitle').textContent!=='Administração DEMO')return;
+ if(!modalOpen||$('modalTitle').textContent!=='Administração')return;
  const totals=summarizeLedger(history);
  const section=document.createElement('section');
  section.className='admin-panel';
  section.innerHTML=[
   '<div class="admin-stats">',
-  '<div class="admin-stat"><small>DONO · DEMO</small><strong id="adminOwner"></strong></div>',
-  '<div class="admin-stat"><small>COMERCIANTE · DEMO</small><strong id="adminMerchant"></strong></div>',
+  '<div class="admin-stat"><small>DONO</small><strong id="adminOwner"></strong></div>',
+  '<div class="admin-stat"><small>COMERCIANTE</small><strong id="adminMerchant"></strong></div>',
   '<div class="admin-stat"><small>RESULTADO OBSERVADO</small><strong id="adminNet"></strong></div>',
-  '<div class="admin-stat"><small>COFRE VIRTUAL</small><strong id="adminReserve"></strong></div></div>',
+  '<div class="admin-stat"><small>COFRE</small><strong id="adminReserve"></strong></div></div>',
   '<p>Percentagens para movimentos futuros:</p>',
   '<div class="admin-row"><label for="ownerPct">Dono (%)</label><input id="ownerPct" type="number" inputmode="decimal" min="0" max="100" step="0.01"><button id="saveOwner">GRAVAR</button></div>',
   '<div class="admin-row"><label for="merchantPct">Comerciante (%)</label><input id="merchantPct" type="number" inputmode="decimal" min="0" max="100" step="0.01"><button id="saveMerchant">GRAVAR</button></div>',
   '<p class="admin-footnote">Somam sempre 100%. Alterações não modificam os movimentos antigos. Os resultados podem ser negativos.</p>',
-  '<p><b>Perfil da máquina (apenas DEMO)</b></p>',
+  '<p><b>Perfil da máquina</b></p>',
   '<div class="admin-profile"><label for="adminProfile">Modo</label>',
   '<select id="adminProfile"><option value="premios">Prémios</option><option value="normal">Normal</option><option value="entretenimento">Entretenimento</option></select>',
   '<button type="button" id="saveProfile">GRAVAR</button></div>',
   '<p class="admin-footnote">Prémios favorece mais combinações; Entretenimento favorece menos; Normal conserva a geração original. Não equivale a margens de 30%, 50% ou 70%, nem garante RTP.</p>',
   '<p>Adicionar / retirar créditos do cofre:</p>',
-  '<div class="admin-fund"><input id="adminFundAmount" type="text" inputmode="decimal" maxlength="16" value="100" aria-label="Valor fictício">',
+  '<div class="admin-fund"><input id="adminFundAmount" type="text" inputmode="decimal" maxlength="16" value="100" aria-label="Valor do fundo">',
   '<button class="admin-action" id="fundDeposit">＋ FUNDO</button><button class="admin-action" id="fundWithdraw">− FUNDO</button></div>',
-  '<p><b>Créditos fictícios do jogador · <span id="adminBalance"></span></b></p>',
+  '<p><b>Saldo do jogador · <span id="adminBalance"></span></b></p>',
   '<div class="admin-fund"><input id="adminCreditAmount" type="text" inputmode="decimal" maxlength="16" value="25" aria-label="Créditos do jogador">',
   '<button class="admin-action" id="playerCredit">＋ CRÉDITOS</button><button class="admin-action" id="playerDebit">− CRÉDITOS</button></div>',
   '<p class="admin-message" id="adminMessage" role="status"></p>',
@@ -937,7 +937,7 @@ async function adminModal(){
   '<button class="choice" id="adminReport">⬇ IMPRIMIR / GUARDAR PDF</button>',
   '<button class="choice" id="adminPinChange">🔐 ALTERAR PIN LOCAL</button>',
   '<button class="choice" id="adminLock">🔒 BLOQUEAR PAINEL</button>',
-  '<p class="admin-footnote">No diálogo de impressão escolhe Guardar como PDF. Só simulação, sem dinheiro real.</p>'
+  '<p class="admin-footnote">No diálogo de impressão escolhe Guardar como PDF.</p>'
  ].join('');
  $('modalContent').append(section);
  const find=id=>section.querySelector('#'+id);
@@ -986,7 +986,7 @@ async function adminModal(){
    if(!bank.setProfile(desired)){notice('Modo inválido.');return false}
    const saved=await persist('admin-profile',{note:DEMO_PROFILES[desired]});
    if(!saved)bank.profile=old;
-   notice(saved?'Modo de demonstração guardado.':'Não foi possível gravar; modo anterior reposto.');
+   notice(saved?'Modo guardado.':'Não foi possível gravar; modo anterior reposto.');
    return saved;
   });
  });
@@ -998,7 +998,7 @@ async function adminModal(){
    bank.reserve=val.target;
    const saved=await persist(kind==='deposit'?'fund-deposit':'fund-withdraw',{amount:val.amount});
    if(!saved)bank.reserve=before;
-   notice(saved?'Movimento fictício guardado.':'Não foi possível guardar; movimento desfeito.');
+   notice(saved?'Movimento guardado.':'Não foi possível guardar; movimento desfeito.');
    return saved;
   });
  }
@@ -1080,7 +1080,7 @@ async function historyModal(){
       if(file.size>5*1024*1024)throw Error('O ficheiro excede 5 MB.');
       const backup=JSON.parse(await file.text());
       validateBackup(backup);
-      if(!confirm('Substituir todo o saldo fictício e histórico local pela cópia selecionada? Esta operação não pode ser desfeita.'))return;
+      if(!confirm('Substituir todo o saldo e o histórico local pela cópia selecionada? Esta operação não pode ser desfeita.'))return;
       const outcome=await demoDB.restoreData(backup);
       if(!outcome.ok)throw Error(outcome.message||'Erro ao restaurar.');
       location.reload();
@@ -1089,12 +1089,12 @@ async function historyModal(){
     },{once:true});
     picker.click();
    }},
-  {name:'♻ Reiniciar demonstração',detail:'Apaga esta sessão e o histórico do dispositivo.',
+  {name:'♻ Reiniciar sessão',detail:'Apaga esta sessão e o histórico do dispositivo.',
    disabled:running||holdBusy||mutating||bank.mode!=='base',
    act:async()=>{
     if(running||holdBusy||mutating||bank.mode!=='base')return;
     if(!requireAdminUnlocked())return requireAdmin(historyModal);
-    if(!confirm('Apagar todos os créditos fictícios e o histórico desta instalação?'))return;
+    if(!confirm('Apagar o saldo e o histórico desta instalação?'))return;
     const success=await demoDB.clear();
     if(success)location.reload();
     else alert('Não foi possível limpar a base de dados.');
@@ -1148,7 +1148,7 @@ async function historyModal(){
    }
    const value=document.createElement('strong');
    value.textContent=money(event.paid||0);
-   value.title='Prémio fictício do movimento';
+   value.title='Prémio do movimento';
    el.append(left,value);list.append(el);
   }
   if(!slice.items.length){
@@ -1184,7 +1184,7 @@ function audioCreditsModal(){
 }
 function infoModal(){
  modal('Regras do Jardim Mágico Phaser',
- 'Demonstração HTML5 em Phaser, com créditos fictícios. Cinco colunas, três linhas e dez linhas de prémio.',[
+ 'Cinco colunas, três linhas e dez linhas de prémio.',[
   {name:'🌟 WILD ×1 a ×5',detail:'Substitui figuras normais; nunca o SCATTER.'},
   {name:'✨ SCATTER',detail:'3 na grelha: 15 Free Spins. Nas Free Spins, 2: +8 ou 3: +15.'},
   {name:'🪙 HOLD & WIN',detail:'Seis moedas ativam a grelha 4×4 com três tentativas.'},
@@ -1200,10 +1200,10 @@ function infoModal(){
      copySnapshot(before);update();say('Teste cancelado: não foi possível guardar.');return;
     }
     update();
-    bonusAnnouncement('✨ FREE SPINS ✨','15 giros gratuitos de demonstração',1200);
+    bonusAnnouncement('✨ FREE SPINS ✨','15 giros gratuitos',1200);
     scheduleNext(1250);
    }},
-  {name:'🪙 Experimentar Hold & Win',detail:'Ativa grelha fictícia se o fundo permitir.',
+  {name:'🪙 Experimentar Hold & Win',detail:'Ativa a grelha se o fundo permitir.',
    act:async()=>{
     if(!sessionCanWrite()||bank.mode!=='base'||running)return;
     const before=snapshot();
@@ -1219,8 +1219,8 @@ function infoModal(){
 function vaultModal(){
  if(!sessionCanWrite())return;
  modal('Porquinho Mágico',
- 'O porquinho cresce ao longo das jogadas e rebenta quando completa um ciclo visual. Não representa dinheiro nem atribui prémios adicionais. O fundo da demonstração continua disponível no painel administrativo.',[
-  {name:'⚙ Administrar fundo DEMO',detail:'Acesso ao painel com PIN local.',
+ 'O porquinho cresce ao longo das jogadas e rebenta quando completa um ciclo visual. Não atribui prémios adicionais. O fundo está disponível no painel administrativo.',[
+  {name:'⚙ Administrar fundo',detail:'Acesso ao painel com PIN local.',
    act:()=>requireAdmin(adminModal)}
  ]);
 }
@@ -1231,7 +1231,7 @@ async function creditDemo(){
   if(!(await persist('credit-demo',{amount:25}))){
    copySnapshot(before);update();say('Recarga cancelada: falha na gravação.');return false;
   }
-  say('Adicionados 25 créditos fictícios');return true;
+  say('Adicionados 25 créditos ao saldo');return true;
  });
 }
 async function changeBet(dir){
@@ -1256,7 +1256,7 @@ function autoModal(){
  if(!sessionCanWrite()||mutating)return;
  if(running||bank.mode!=='base')return;
  modal('Giros automáticos',
- 'Escolhe o número de giros de demonstração. Podes parar no botão AUTO.',[
+ 'Escolhe o número de giros. Podes parar no botão AUTO.',[
   ...[10,25,50].map(n=>({
    name:n+' giros',detail:'O automático não altera os prémios.',
    act:()=>{autoLeft=n;update();runSpin()}
@@ -1346,8 +1346,8 @@ function bind(){
    // A libertação é feita uma única vez por releaseIfHidden(), com
    // uma promessa que o regresso à aplicação aguarda antes de readquirir.
    adminLock.lock();
-   if(modalOpen&&['Administração DEMO','Histórico e cópias locais',
-    'PIN de administração DEMO','Criar PIN de administração DEMO',
+   if(modalOpen&&['Administração','Histórico e cópias locais',
+    'PIN de administração','Criar PIN de administração',
     'Alterar PIN local'].includes($('modalTitle').textContent))closeModal();
    diagnostics.record('page-background');
    clearTimeout(longTimer);holdsLong=false;
@@ -1390,7 +1390,7 @@ async function refreshWriter(forceReload=false){
    if(writerReady){writerReady=false;stopAuto();adminLock.lock()}
    writerReady=false;update();
    $('dbStatus').textContent='PHASER · OUTRA ABA ATIVA / SEM INDEXEDDB';
-   if(!document.hidden)say('Modo de leitura: outra aba controla esta demonstração. Fecha-a para jogar aqui.');
+   if(!document.hidden)say('Modo de leitura: outra aba controla esta sessão. Fecha-a para jogar aqui.');
    return;
   }
   if(running){
@@ -1423,7 +1423,7 @@ async function refreshWriter(forceReload=false){
     const displayed=showRecoveryState(recoveredVisual?saved?.snapshot?.pendingVisual:null);
     if(!displayed&&bank.mode==='hold')showHold();
     else if(!displayed){
-     if(bank.mode==='base')say('Pronto para jogar · créditos fictícios sincronizados.');
+     if(bank.mode==='base')say('Pronto para jogar · saldo sincronizado.');
      resumeQueuedTurnAfterSync(1100);
     }
    }else say('Sessão exclusiva obtida. Saldo sincronizado com a base local.');

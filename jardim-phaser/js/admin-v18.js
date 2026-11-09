@@ -21,13 +21,13 @@ export function validateFundChange(kind,raw,reserve,mode='base',running=false){
  const amount=readCredits(raw);
  if(amount===null||
     !Number.isSafeInteger(Math.round(amount*100)))
-  return {ok:false,message:'Indica um valor válido em créditos fictícios.'};
+  return {ok:false,message:'Indica um valor válido.'};
  if(!['deposit','withdraw'].includes(kind))return {ok:false,message:'Operação inválida.'};
  if(kind==='withdraw'&&amount>round(reserve))
   return {ok:false,message:'O cofre não tem esse valor disponível.'};
  const target=round(reserve+(kind==='deposit'?amount:-amount));
  if(target>1e12||!Number.isSafeInteger(Math.round(target*100)))
-  return {ok:false,message:'Precisão numérica excedida para esta demonstração.'};
+  return {ok:false,message:'Precisão numérica excedida.'};
  return {ok:true,amount,target};
 }
 export function summarizeLedger(events=[]){
@@ -53,24 +53,24 @@ const money=v=>num(v).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFra
 export function makePrintableReport({summary,history,settings,reserve,dbMode}){
  const rows=history.map(x=>
   '<tr><td>'+escapeHtml(String(x.timestamp||'').replace('T',' ').slice(0,19))+
-  '</td><td>'+escapeHtml(x.type)+'</td><td>'+money(x.amount)+'</td><td>'+
+  '</td><td>'+escapeHtml(x.type==='credit-demo'?'Recarga de saldo':x.type)+'</td><td>'+money(x.amount)+'</td><td>'+
   money(num(x.wager)+num(x.cost))+'</td><td>'+money(x.paid)+'</td><td>'+
   escapeHtml(x.ownerPct??'50')+'%</td></tr>').join('');
  return '<!doctype html><html lang="pt"><head><meta charset="utf-8">'+
- '<title>Jardim Mágico — Relatório DEMO</title><style>'+
+ '<title>Jardim Mágico — Relatório de movimentos</title><style>'+
  'body{font:12px Arial,sans-serif;max-width:950px;margin:20px auto;color:#222}'+
  'h1{font-size:24px}h2{font-size:16px;margin-top:20px}'+
  'table{border-collapse:collapse;width:100%}th,td{border:1px solid #bbb;padding:6px;text-align:left}'+
  'th{background:#eee}tr{break-inside:avoid}.notice{padding:10px;background:#eee}'+
  '@page{size:A4;margin:12mm}@media print{body{margin:0}.noprint{display:none}}</style></head><body>'+
- '<h1>Jardim Mágico — Relatório DEMO</h1><p>Gerado: '+
+ '<h1>Jardim Mágico — Relatório de movimentos</h1><p>Gerado: '+
  escapeHtml(new Date().toLocaleString('pt-PT'))+' · Base: '+escapeHtml(dbMode)+'</p>'+
- '<p class="notice">APENAS CRÉDITOS FICTÍCIOS. Não é uma contabilidade financeira certificada nem RTP auditado.</p>'+
+ '<p class="notice">Movimentos internos deste dispositivo. Este relatório não substitui documentação contabilística.</p>'+
  '<h2>Movimentos de jogo observados</h2>'+
  '<table><tr><th>Apostas</th><th>Compras de bónus</th><th>Prémios</th><th>Resultado líquido</th></tr>'+
  '<tr><td>'+money(summary.wagers)+'</td><td>'+money(summary.costs)+'</td><td>'+
  money(summary.paid)+'</td><td>'+money(summary.net)+'</td></tr></table>'+
- '<h2>Repartição demonstrativa</h2><table><tr><th>Dono</th><th>Comerciante</th><th>Fundo atual</th><th>Percentagens atuais</th></tr>'+
+ '<h2>Repartição por percentagens</h2><table><tr><th>Dono</th><th>Comerciante</th><th>Fundo atual</th><th>Percentagens atuais</th></tr>'+
  '<tr><td>'+money(summary.owner)+'</td><td>'+money(summary.merchant)+'</td><td>'+
  money(reserve)+'</td><td>'+settings.ownerPct+'% / '+settings.merchantPct+'%</td></tr></table>'+
  '<p>Percentagens históricas guardadas por evento; nos eventos anteriores à V1.8 assume-se 50/50.</p>'+

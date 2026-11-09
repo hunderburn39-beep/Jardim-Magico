@@ -40,7 +40,7 @@ try{
     viewport:{width:innerWidth,height:innerHeight},
     machine:box('.machine'),
     rows:Object.fromEntries(['.game-header','.jackpots','.frame-region','.result-text','.dashboard','.controls','footer'].map(x=>[x,box(x)])),
-    jackpotPositions:{ultra:box('.jackpots .jackpot:nth-child(4)'),max:box('.jackpots .jackpot:nth-child(3)'),med:box('.jackpots .jackpot:nth-child(2)'),min:box('.jackpots .jackpot:nth-child(1)'),logo:box('.game-header .logo')},
+    jackpotPositions:{ultra:box('.jackpots .jackpot[data-tier="ultra"]'),max:box('.jackpots .jackpot[data-tier="max"]'),med:box('.jackpots .jackpot[data-tier="med"]'),min:box('.jackpots .jackpot[data-tier="min"]'),logo:box('.game-header .logo')},
     reel:initial,
     spin:box('#spinBtn'),
     frame:box('.frame-region .branch-frame'),
@@ -101,9 +101,11 @@ try{
    assert(j.ultra&&j.max&&j.med&&j.min&&j.logo,scenario.name+' faltam jackpots ou logótipo');
    assert(j.ultra.y+4<j.max.y&&j.med.y+4<j.min.y,
      scenario.name+' jackpots não estão empilhados verticalmente');
-   assert(j.ultra.x<j.logo.x+j.logo.w/2&&j.max.x<j.logo.x+j.logo.w/2&&
-     j.med.x>j.logo.x+j.logo.w/2&&j.min.x>j.logo.x+j.logo.w/2,
-     scenario.name+' jackpots não ladeiam o logótipo');
+   assert(j.ultra.right<=j.logo.x+5&&j.max.right<=j.logo.x+5&&
+     j.med.x>=j.logo.right-5&&j.min.x>=j.logo.right-5,
+     scenario.name+' o logótipo não está encaixado entre os jackpots');
+   assert(Math.abs(j.logo.x+j.logo.w/2-(machine.x+machine.w/2))<=5,
+     scenario.name+' logótipo descentrado em relação à máquina');
    assert(j.ultra.y>=rows['.game-header'].y&&j.min.bottom<=rows['.game-header'].bottom+2,
      scenario.name+' jackpots saem da área superior');
    assert(rows['.jackpots'].bottom<=rows['.frame-region'].y+4,
@@ -199,7 +201,7 @@ try{
      .every(id=>document.getElementById(id).disabled);
     const banner=document.getElementById('sessionBanner');
     const syncing=!banner.hidden&&
-      banner.textContent.includes('A confirmar os créditos fictícios guardados');
+      banner.textContent.includes('A confirmar o saldo guardado');
     window.dispatchEvent(new Event('pageshow'));
     return {before,disabled,syncing};
    });

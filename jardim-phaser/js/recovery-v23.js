@@ -48,12 +48,12 @@ export function recoveryMessage(marker,state){
  if(marker?.kind==='hold'&&marker.done){
   return {kind:'hold-complete',title:'HOLD & WIN CONCLUÍDO',
    detail:'Prémio já creditado: '+safeAmount(marker.paid).toFixed(2)+
-    ' créditos fictícios. A grelha e o valor foram recuperados, sem novo pagamento.'};
+    ' créditos. A grelha e o valor foram recuperados, sem novo pagamento.'};
  }
  if(marker?.kind==='spin'&&marker.wasFree){
   return {kind:'free-complete',title:'FREE SPINS CONCLUÍDAS',
    detail:'O resultado final já foi contabilizado: '+safeAmount(marker.paid).toFixed(2)+
-    ' créditos fictícios. Não é feito novo pagamento.'};
+    ' créditos. Não é feito novo pagamento.'};
  }
  return {kind:'spin-complete',title:'GIRO RECUPERADO',
   detail:'O resultado e o saldo já estavam guardados; não foi cobrado nem pago novamente.'};
