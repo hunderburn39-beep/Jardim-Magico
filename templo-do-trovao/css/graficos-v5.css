@@ -133,3 +133,73 @@ body.asset-fallback .symbol-bitmap::after,body:not(.assets-ready) .symbol-bitmap
 @media(prefers-reduced-motion:reduce){
   .symbol-bitmap,.symbol-bitmap::after{animation:none!important}
 }
+
+
+/* PORTÕES V19 — adaptação 7×7 com posições multiplicadoras persistentes.
+   Mantém o atlas e a moldura 3D originais; não altera as imagens de Zeus. */
+.board{
+  grid-template-columns:repeat(7,minmax(0,1fr))!important;
+  grid-template-rows:repeat(7,minmax(0,1fr))!important;
+  border-color:rgba(255,221,142,.62)!important;
+}
+.board .cell:nth-child(6n){border-right:1px solid #e8daff11!important}
+.board .cell:nth-child(7n){border-right:0!important}
+.board .cell{
+  overflow:visible;
+  border-bottom:1px solid rgba(255,245,186,.08);
+  border-right:1px solid rgba(255,245,186,.10);
+}
+.board .cell .cluster-spot{
+  position:absolute;z-index:8;right:1%;bottom:1%;
+  width:clamp(18px,4.7vw,37px);
+  height:clamp(18px,4.7vw,37px);
+  display:grid;place-items:center;
+  border:2px solid #ffdf86;border-radius:50%;
+  background:radial-gradient(circle at 35% 25%,#ffd284,#b45c21 52%,#51204d 100%);
+  box-shadow:0 0 9px #fff2a099,inset 0 1px 5px #fff5b4ae,0 2px 5px #150b2d;
+  color:#fff9cd;text-shadow:0 2px 3px #4e153a;
+  font-family:Cinzel,Georgia,serif;font-size:clamp(10px,2.15vw,21px);
+  font-weight:900;line-height:1;
+  pointer-events:none;contain:paint;
+  animation:clusterSpotSpark 2.6s ease-in-out infinite alternate;
+}
+.board .cell.spot-marked .cluster-spot{
+  width:clamp(8px,2.4vw,15px);height:clamp(8px,2.4vw,15px);
+  border-width:1px;opacity:.64;box-shadow:0 0 7px #ffce72aa;
+}
+.board .cell.spot-active{
+  background:radial-gradient(circle at 55% 55%,#ffd57620,transparent 68%)!important;
+  box-shadow:inset 0 0 9px #ffd98644;
+}
+.board .cell.winner .cluster-spot{
+  animation:clusterSpotWin .29s ease-in-out infinite alternate;
+  filter:brightness(1.4);
+}
+@keyframes clusterSpotSpark{to{filter:brightness(1.22);box-shadow:0 0 13px #ffcf7bb8,inset 0 1px 5px #fff9bb99}}
+@keyframes clusterSpotWin{to{transform:scale(1.18);filter:brightness(1.6)}}
+@media(orientation:portrait){
+  .machine{justify-content:center}
+  .board-shell{
+    width:100%;
+    flex:0 1 auto;
+    height:auto;
+    aspect-ratio:1/1;
+    max-height:calc(100dvh - 320px);
+    min-height:225px;
+  }
+  .board .cell .cluster-spot{
+    width:clamp(17px,5.5vw,26px);
+    height:clamp(17px,5.5vw,26px);
+    font-size:clamp(10px,2.8vw,15px);
+  }
+  .board .cell.spot-marked .cluster-spot{
+    width:clamp(8px,2.4vw,12px);
+    height:clamp(8px,2.4vw,12px);
+  }
+}
+@media(orientation:portrait) and (max-height:670px){
+  .board-shell{max-height:calc(100dvh - 245px);min-height:190px}
+}
+@media(prefers-reduced-motion:reduce){
+  .board .cell .cluster-spot{animation:none!important}
+}

@@ -38,6 +38,7 @@ jobs:
         shell: bash
         run: |
           test -s templo-do-trovao/index.html
+          test -s templo-do-trovao/clusters-v19.html
           test -s templo-do-trovao/js/jogo.js
           test -s templo-do-trovao/js/regras-wild-v13.js
           test -d templo-do-trovao/assets
@@ -47,6 +48,12 @@ jobs:
 
       - name: Testar pagamentos e regras WILD
         run: node templo-do-trovao/tools/testar-wild-v14.js
+
+      - name: Testar a nova mecanica 7x7 em DOM e Phaser
+        shell: bash
+        run: |
+          node --check templo-do-trovao/tools/testar-clusters-v19.cjs
+          node templo-do-trovao/tools/testar-clusters-v19.cjs
 
       - name: Simular rondas de forma reprodutível
         run: |

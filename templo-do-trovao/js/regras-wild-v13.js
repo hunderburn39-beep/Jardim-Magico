@@ -76,5 +76,136 @@
    return {result,pay,matched};
  }
  function scatterMultiplier(n){return n>=6?100:n===5?5:n>=4?3:0}
- window.TrovaoRules={CONFIG,KINDS,EXCLUDED_WILD_KINDS,canWildReplace,WEIGHTS,MULTIPLIERS,MULT_WEIGHTS,WILD_VALUES,WILD_WEIGHTS,draw,score,scatterMultiplier};
+
+ // Distribuição própria para este protótipo de 49 casas.
+ // O modo clássico mantém draw() original; o modo clusters usa drawCluster().
+ const CLUSTER_KINDS=[...KINDS];
+ const CLUSTER_WEIGHTS=[8,8,9,10,12,14,15,15,15];
+ const CLUSTER_CONFIG={base:{scatter:.0105,wild:.039},
+                       bonus:{scatter:.015,wild:.052}};
+ function drawCluster(bonus,id,rng){
+   const cfg=bonus?CLUSTER_CONFIG.bonus:CLUSTER_CONFIG.base;
+   const n=rng();
+   if(n<cfg.scatter)return {id,kind:"scatter"};
+   if(n<cfg.scatter+cfg.wild){
+     return {id,kind:"wild",value:pick(WILD_VALUES,WILD_WEIGHTS,rng)};
+   }
+   return {id,kind:pick(CLUSTER_KINDS,CLUSTER_WEIGHTS,rng)};
+ }
+
+ // V19: mecânica 7x7 de grupos ortogonais (estilo sugar cluster).
+ const CLUSTER_COLS=7,CLUSTER_ROWS=7,CLUSTER_SIZE=49,MAX_CLUSTER_MULT=1024;
+ function neighbours(index){
+   const x=index%CLUSTER_COLS,y=Math.floor(index/CLUSTER_COLS),out=[];
+   if(x>0)out.push(index-1);
+   if(x<CLUSTER_COLS-1)out.push(index+1);
+   if(y>0)out.push(index-CLUSTER_COLS);
+   if(y<CLUSTER_ROWS-1)out.push(index+CLUSTER_COLS);
+   return out;
+ }
+ function emptySpots(){return Array(CLUSTER_SIZE).fill(0)}
+
+ function tumbleClusters(grid,removed,draw){
+   if(!Array.isArray(grid)||grid.length!==CLUSTER_SIZE)throw Error("Grelha inválida");
+   if(!(removed instanceof Set)||typeof draw!=="function")throw Error("Queda inválida");
+   const out=Array(CLUSTER_SIZE);
+   for(let col=0;col<CLUSTER_COLS;col++){
+     const survivors=[];
+     for(let r=CLUSTER_ROWS-1;r>=0;r--){
+       const idx=r*CLUSTER_COLS+col;
+       if(!removed.has(idx))survivors.push(grid[idx]);
+     }
+     let r=CLUSTER_ROWS-1;
+     for(const cell of survivors)out[r--*CLUSTER_COLS+col]=cell;
+     while(r>=0)out[r--*CLUSTER_COLS+col]=draw();
+   }
+   return out;
+ }
+
+ function upgradeSpots(spots,positions){
+   if(!Array.isArray(spots)||spots.length!==CLUSTER_SIZE)throw Error("Spots inválidos");
+   const next=spots.slice();
+   for(const i of positions){
+     if(!Number.isInteger(i)||i<0||i>=CLUSTER_SIZE)throw Error("Índice inválido");
+     const old=next[i]||0;
+     next[i]=old===0?1:old===1?2:Math.min(MAX_CLUSTER_MULT,old*2);
+   }
+   return next;
+ }
+ function clusterScore(grid,payTable,bet=1,spots=emptySpots(),maxPay=Infinity){
+   if(!Array.isArray(grid)||grid.length!==CLUSTER_SIZE)throw Error("Grelha não é 7x7");
+   if(!Array.isArray(spots)||spots.length!==CLUSTER_SIZE)throw Error("Spots inválidos");
+   if(!Number.isFinite(bet)||bet<=0)throw Error("Aposta inválida");
+   const allowed=Number(maxPay);
+   if(Number.isNaN(allowed)||allowed<0)throw Error("Teto inválido");
+   const candidates=[];
+   for(const kind of KINDS){
+     const visited=new Set();
+     for(let start=0;start<CLUSTER_SIZE;start++){
+       if(visited.has(start)||grid[start]?.kind!==kind)continue;
+       const queue=[start],group=new Set([start]);visited.add(start);
+       for(let head=0;head<queue.length;head++){
+         for(const n of neighbours(queue[head])){
+           if(group.has(n))continue;
+           const t=grid[n]?.kind;
+           if(t!==kind&&t!=="wild")continue;
+           group.add(n);queue.push(n);
+           if(t===kind)visited.add(n);
+         }
+       }
+       const positions=Array.from(group);
+       if(positions.length<5)continue;
+       const wildMultiplier=positions.reduce((v,i)=>grid[i].kind==="wild"?
+         Math.max(v,Math.min(5,Math.max(1,Number(grid[i].value)||1))):v,1);
+       const rate=payTable[kind][positions.length>=12?2:positions.length>=8?1:0];
+       const spotX=Math.max(1,positions.reduce((n,i)=>n+(spots[i]>=2?spots[i]:0),0));
+       candidates.push({kind,positions,
+         potential:bet*rate*spotX*wildMultiplier});
+     }
+   }
+   candidates.sort((a,b)=>b.potential-a.potential);
+   const taken=new Set(),matchedPositions=new Set(),result=[];
+   let totalCents=0;
+   const capCents=Number.isFinite(allowed)?Math.floor(allowed*100+0.0000001):Number.MAX_SAFE_INTEGER;
+   for(const candidate of candidates){
+     // Resolver novamente cada componente sem WILD/peças já utilizados.
+     const eligible=new Set(candidate.positions.filter(i=>!taken.has(i)));
+     const visited=new Set();
+     for(const start of eligible){
+       if(visited.has(start)||grid[start].kind!==candidate.kind)continue;
+       const queue=[start],component=[];visited.add(start);
+       for(let j=0;j<queue.length;j++){
+         const ix=queue[j];component.push(ix);
+         for(const n of neighbours(ix)){
+           if(eligible.has(n)&&!visited.has(n)){visited.add(n);queue.push(n)}
+         }
+       }
+       if(component.length<5)continue;
+       const wildCount=component.filter(i=>grid[i].kind==="wild").length;
+       const wildMultiplier=component.reduce((v,i)=>grid[i].kind==="wild"?
+         Math.max(v,Math.min(5,Math.max(1,Number(grid[i].value)||1))):v,1);
+       const rate=payTable[candidate.kind][component.length>=12?2:component.length>=8?1:0];
+       const spotMultiplier=Math.max(1,component.reduce((n,i)=>n+(spots[i]>=2?spots[i]:0),0));
+       const nominal=Math.round(bet*100*rate*spotMultiplier*wildMultiplier);
+       const cents=Math.max(0,Math.min(nominal,capCents-totalCents));
+       if(!cents)break;
+       totalCents+=cents;
+       component.forEach(i=>{taken.add(i);matchedPositions.add(i)});
+       result.push({symbol:candidate.kind,count:component.length,
+         amount:cents/100,wildCount,wildMultiplier,spotMultiplier,positions:component});
+       if(totalCents>=capCents)break;
+     }
+     if(totalCents>=capCents)break;
+   }
+   return{result,pay:totalCents/100,matchedPositions,
+     matched:new Set(result.map(x=>x.symbol)),capReached:totalCents>=capCents};
+ }
+ function freeSpinAward(n){
+   return n>=7?30:n===6?20:n===5?15:n===4?12:n===3?10:0;
+ }
+ function maxActiveSpot(spots){
+   return Math.max(1,...(spots||[]).filter(n=>n>=2));
+ }
+
+ window.TrovaoRules={CONFIG,KINDS,EXCLUDED_WILD_KINDS,canWildReplace,WEIGHTS,MULTIPLIERS,MULT_WEIGHTS,WILD_VALUES,WILD_WEIGHTS,draw,score,scatterMultiplier,drawCluster,CLUSTER_CONFIG,CLUSTER_COLS,CLUSTER_ROWS,CLUSTER_SIZE,MAX_CLUSTER_MULT,clusterScore,tumbleClusters,emptySpots,upgradeSpots,freeSpinAward,maxActiveSpot};
 })();

@@ -1,10 +1,10 @@
-/* PORTÕES DO TROVÃO V18.0 — motor original de demonstração.
- * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
- * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
+/* PORTÕES DO TROVÃO V19 — modo Zeus Clusters 7×7.
+ * Adaptação original da mecânica de grupos conectados, quedas e spots ×2..×1024.
+ * A arte original de Zeus mantém-se. Créditos virtuais. RTP não certificado.
  */
 "use strict";
 (() => {
-  const COLS = 6, ROWS = 5, SIZE = COLS * ROWS;
+  const COLS = 7, ROWS = 7, SIZE = COLS * ROWS;
   const SYMBOLS = ["crown","ring","goblet","hourglass","ruby","sapphire","emerald","amethyst","amber"];
   const RULES=window.TrovaoRules;
   if(!RULES)throw Error("Motor WILD indisponível");
@@ -14,12 +14,12 @@
   const MULT_WEIGHTS = [28,21,15,11,8,6,4,3,2,1.5,1,.45,.18,.045,.012];
   const BETS = [.20,.40,.60,.80,1,1.50,2,3,5,10,20];
   const MAX_WIN_X = 5000;
-  // Tabela da versão clássica (expressa em múltiplos da aposta).
-  // Índices: 8–9, 10–11, 12–30 símbolos iguais.
+  // Clusters ligados na horizontal/vertical; tabela própria em × aposta.
+  // Colunas: grupos de 5–7, 8–11, 12+ doces/joias ligados.
   const PAY_TABLE={
-    crown:[10,25,50],hourglass:[2.5,10,25],ring:[2,5,15],
-    goblet:[1.5,2,12],ruby:[1,1.5,10],amethyst:[.8,1.2,8],
-    amber:[.5,1,5],emerald:[.4,.9,4],sapphire:[.25,.75,2]
+    crown:[2,6,16],hourglass:[1.5,4,12],ring:[1.25,3,10],
+    goblet:[.9,2.2,8],ruby:[.7,1.7,6],amethyst:[.6,1.3,4.5],
+    amber:[.5,1,3],emerald:[.4,.8,2.5],sapphire:[.35,.7,2]
   };
   function scatterMultiplier(n){return n>=6?100:n===5?5:n===4?3:0}
   // Recortes do atlas 3D (5 colunas, 3 linhas); as 11 peças têm arte própria.
@@ -76,7 +76,8 @@
   const state = {
     balance:INITIAL_CREDITS,betIndex:4,busy:false,bonus:false,
     freeLeft:0,bonusWon:0,bonusMult:0,autoRemaining:0,cancelAuto:false,
-    turbo:false,sound:true,grid:[],currentWin:0,cascade:0
+    turbo:false,sound:true,grid:[],currentWin:0,cascade:0,
+    spots:RULES.emptySpots(),bonusSpinsUsed:0,visibleMult:1
   };
   let ctx = null, holdTimer = null, longFired = false, modalOpen = false;
   let landingTimers = [];
@@ -98,23 +99,12 @@
     for(let i=0;i<values.length;i++){p-=weights[i];if(p<0)return values[i];}
     return values[values.length-1];
   }
-  function newSymbol(){return RULES.draw(state.bonus,nextId++,rand)}
+  function newSymbol(){return RULES.drawCluster(state.bonus,nextId++,rand)}
   function makeGrid(){return Array.from({length:SIZE},newSymbol)}
   function countScatter(grid){return grid.filter(s=>s.kind==="scatter").length}
-  function getWins(grid){return RULES.score(grid,PAY_TABLE,currentBet())}
-    function tumble(grid,matched){
-    const next=Array(SIZE);
-    for(let col=0;col<COLS;col++){
-      const survivors=[];
-      for(let row=ROWS-1;row>=0;row--){
-        const cell=grid[row*COLS+col];
-        if(!matched.has(cell.kind))survivors.push(cell);
-      }
-      let row=ROWS-1;
-      for(const cell of survivors){next[row*COLS+col]=cell;row--}
-      while(row>=0){next[row*COLS+col]=newSymbol();row--}
-    }
-    return next;
+  function getWins(grid,cap){return RULES.clusterScore(grid,PAY_TABLE,currentBet(),state.spots,cap)}
+  function tumble(grid,matchedPositions){
+    return RULES.tumbleClusters(grid,matchedPositions,newSymbol);
   }
   function sfx(kind,options={}){
     if(state.sound && window.TrovaoAudio) window.TrovaoAudio.play(kind,options);
@@ -155,7 +145,15 @@
           landings.push({column:col,row,kind:symbol.kind,when:Math.round(delay+duration*.83)});
         }
       }
-      if(options.matchKinds?.has(symbol.kind))tile.classList.add("winner");
+      const spot=state.spots[index]||0;
+      let spotTag=tile.querySelector(".cluster-spot");
+      if(spot>0){
+        if(!spotTag){spotTag=document.createElement("span");spotTag.className="cluster-spot";tile.appendChild(spotTag)}
+        spotTag.textContent=spot>1?"×"+spot:"";
+        spotTag.setAttribute("aria-label",spot>1?"Posição multiplicadora vezes "+spot:"Posição marcada");
+        tile.classList.add(spot>1?"spot-active":"spot-marked");
+      }else if(spotTag){spotTag.remove()}
+      if(options.matchPositions?.has(index))tile.classList.add("winner");
       if(options.scatterGlow&&symbol.kind==="scatter")tile.classList.add("scat-hit");
       tile.dataset.kind=symbol.kind;
       tile.setAttribute("aria-label",symbol.kind==="mult"?"Multiplicador "+symbol.value+" vezes":symbol.kind==="wild"?"WILD "+symbol.value+" vezes":symbol.kind==="scatter"?"Scatter":LABELS[symbol.kind]);
@@ -281,9 +279,9 @@
     el.buyCost.textContent=money(currentBet()*100);
     el.win.textContent=money(state.bonus?state.bonusWon:state.currentWin);
     el.free.textContent=state.bonus?String(state.freeLeft):"—";
-    el.freeHint.textContent=state.bonus?"TOTAL BÓNUS "+money(state.bonusWon):"4 SCATTER ativam 15";
-    el.mult.textContent=(state.bonus?Math.max(1,state.bonusMult):Math.max(1,state.visibleMult||1))+"×";
-    el.multHint.textContent=state.bonus?"Acumulado no bónus":"Até 500×";
+    el.freeHint.textContent=state.bonus?"TOTAL BÓNUS "+money(state.bonusWon):"3 SCATTER = 10 FREE SPINS";
+    el.mult.textContent=RULES.maxActiveSpot(state.spots)+"×";
+    el.multHint.textContent=state.bonus?"SPOTS PERSISTENTES":"SPOTS ATÉ 1024×";
     el.cascades.textContent=String(state.cascade);
     el.spin.classList.toggle("spinning",state.busy);
     el.spin.classList.toggle("auto-mode",state.autoRemaining>0);
@@ -321,21 +319,21 @@
       PAY_TABLE[kind].map(v=>'<td class="pay-value">'+fmt(v)+'</td>').join("")+'</tr>'
     ).join("");
     const scat='<tr class="scatter-row"><td class="pay-name">'+symSvg("scatter")+
-      '<b>SCATTER</b></td><td class="pay-value">3× <small>4 símbolos</small></td>'+
-      '<td class="pay-value">5× <small>5 símbolos</small></td>'+
-      '<td class="pay-value">100× <small>6+ símbolos</small></td></tr>';
+      '<b>SCATTER</b></td><td class="pay-value">10 FS <small>3 símbolos</small></td>'+
+      '<td class="pay-value">12 FS <small>4 símbolos</small></td>'+
+      '<td class="pay-value">15–30 FS <small>5+</small></td></tr>';
     const wildRow='<tr class="wild-payrow"><td class="pay-name">'+symSvg("wild")+'<b>WILD</b></td>'+
-      '<td colspan="3">Substitui qualquer uma das 9 peças pagantes (1×–5×). Nunca substitui SCATTER, esferas MULT ou outros WILDs. Só vale para a melhor combinação da queda.</td></tr>';
+      '<td colspan="3">LIGA grupos de qualquer uma das nove peças, até 5×. Não substitui SCATTER. Só entra numa combinação por queda.</td></tr>';
     openModal("TABELA DE PAGAMENTOS",
-      '<div class="pay-head">⚡ OS SÍMBOLOS PAGAM EM QUALQUER POSIÇÃO ⚡</div>'+
-      '<div class="pay-scroll"><table class="paytable-table"><thead><tr><th>SÍMBOLO</th><th>8–9</th><th>10–11</th><th>12+</th></tr></thead><tbody>'+rows+scat+wildRow+'</tbody></table></div>'+
+      '<div class="pay-head">⚡ GRUPOS LIGADOS · CASCATAS · SPOTS ⚡</div>'+
+      '<div class="pay-scroll"><table class="paytable-table"><thead><tr><th>SÍMBOLO</th><th>5–7</th><th>8–11</th><th>12+</th></tr></thead><tbody>'+rows+scat+wildRow+'</tbody></table></div>'+
       '<div class="pay-rules">'+
-      '<p><b>Grelha 6×5:</b> 8 ou mais figuras iguais pagam sem precisar de estar na mesma linha. As peças premiadas desaparecem, as restantes descem e entram novas.</p>'+
-      '<p><b>SCATTER:</b> 4, 5 ou 6+ pagam respetivamente 3×, 5× ou 100× a aposta. 4 ou mais ativam 15 rodadas grátis; durante o bónus, 3 ou mais oferecem +5.</p>'+
-      '<p><b>WILD (1×–5×):</b> substitui todas as 9 peças pagantes para formar 8 ou mais; NUNCA substitui SCATTER, esferas multiplicadoras nem outros WILDs. Só participa na melhor combinação da queda, usando o maior multiplicador WILD (até 5×), sem duplicar pagamentos. A imagem é a mesma do Jardim Mágico.</p>'+
-      '<p><b>Multiplicadores:</b> 2× a 500×, somados numa jogada vencedora; nas rodadas grátis são acumuláveis nas condições do jogo.</p>'+
+      '<p><b>Grelha 7×7:</b> 5 ou mais figuras iguais ligadas horizontal/verticalmente formam um grupo premiado. Só esses símbolos desaparecem, os restantes caem.</p>'+
+      '<p><b>SCATTER:</b> 3, 4, 5, 6 ou 7+ símbolos ativam 10, 12, 15, 20 ou 30 Free Spins. Durante o bónus os SCATTER voltam a acrescentar giros, até 200 na sessão.</p>'+
+      '<p><b>WILD (1×–5×):</b> ajuda a ligar os grupos das nove peças, sem substituir SCATTER. Cada Wild só pode participar uma vez por queda.</p>'+
+      '<p><b>Multiplicadores:</b> cada vitória marca as posições. Se voltarem a vencer, sobem para ×2, ×4, ×8... ×1024. Os valores das casas do grupo somam-se. Durante Free Spins mantêm-se entre giros.</p>'+
       '<p><b>Comprar bónus:</b> 100× a aposta em créditos virtuais. Limite de 5 000× a aposta por ciclo.</p>'+
-      '<p class="note">Pagamentos idênticos aos valores da tabela de referência que enviaste. Os gráficos e as probabilidades são próprios deste protótipo. RTP não certificado; não utiliza dinheiro real.</p></div>',
+      '<p class="note">Tabela nova 5+ que substitui as probabilidades clássicas 8+. RTP ainda não calibrado/certificado. Créditos exclusivamente fictícios.</p></div>',
       [{text:"FECHAR TABELA",secondary:true}]);
     const m=el.modal.querySelector(".modal");if(m)m.classList.add("pay-modal");
   }
@@ -347,127 +345,130 @@
   }
   async function playSpin(){
     if(state.busy)return false;
-    const bonusSpin=state.bonus;
-    const bet=currentBet();
+    const bonusSpin=state.bonus,bet=currentBet();
     if(!bonusSpin&&state.balance+1e-9<bet){
-      openModal("SALDO INSUFICIENTE","<p>Reponha créditos virtuais para continuar. Esta versão não aceita depósitos.</p>",[{text:"REPOR 1 000 €",action:refill},{text:"FECHAR",secondary:true}]);
+      openModal("SALDO INSUFICIENTE",
+        "<p>Repor créditos virtuais para continuar. Este jogo não aceita depósitos.</p>",
+        [{text:"REPOR CRÉDITOS",action:refill},{text:"FECHAR",secondary:true}]);
       return false;
     }
-    state.busy=true;
-    el.fx?.replaceChildren();
-    if(!bonusSpin){state.balance=Math.round((state.balance-bet)*100)/100;state.currentWin=0}
-    else state.freeLeft--;
+    state.busy=true;el.fx?.replaceChildren();
+    if(!bonusSpin){
+      state.balance=Math.round((state.balance-bet)*100)/100;
+      state.spots=RULES.emptySpots();state.currentWin=0;
+    }else{
+      state.freeLeft=Math.max(0,state.freeLeft-1);
+      state.bonusSpinsUsed++;
+    }
     state.cascade=0;state.visibleMult=1;
-    setMsg(bonusSpin?"RODADA GRÁTIS • PODER ACUMULADO":"OS DEUSES ESTÃO A GIRAR...");
+    setMsg(bonusSpin?"FREE SPIN • SPOTS ACUMULADOS":"ZEUS ESTÁ A GIRAR...");
     refresh();
-    // Primeira ação audível, ainda no gesto do utilizador. O MP3 salta
-    // o silêncio inicial; só depois começa a animação das peças.
     sfx("spin");
     await pause(state.turbo?65:150);
     state.grid=makeGrid();
     window.TrovaoHistory?.startSpin({bet,bonus:bonusSpin,grid:state.grid});
-    const previousIds=new Set();
-    state.grid.forEach(s=>previousIds.add(s.id));
-    const fallFinished=render(state.grid,{dropIds:previousIds});
+    const incoming=new Set(state.grid.map(x=>x.id));
+    const fallFinished=render(state.grid,{dropIds:incoming});
     await pause(fallFinished+(state.turbo?75:130));
-    let totalBase=0,spinMult=0,steps=0,scatterTriggered=false,retrigger=false,scatterAward=0,maxScatterPaid=0;
-    const countedMultipliers=new Set();
+
+    let paid=0,steps=0,freeAward=0;
+    const cap=Math.max(0,MAX_WIN_X*bet-(bonusSpin?state.bonusWon:0));
     for(;;){
-      const scatterCount=countScatter(state.grid);
-      if(scatterCount>=(bonusSpin?3:4)){
-        if(bonusSpin)retrigger=true;else scatterTriggered=true;
-      }
-      if(scatterCount>=4 && scatterCount>maxScatterPaid){
-        scatterAward+=bet*(scatterMultiplier(scatterCount)-scatterMultiplier(maxScatterPaid));
-        maxScatterPaid=scatterCount;
-      }
-      for(const s of state.grid){
-        if(s.kind==="mult"&&!countedMultipliers.has(s.id)){
-          countedMultipliers.add(s.id);spinMult+=s.value;
-        }
-      }
-      const wins=getWins(state.grid);
-      if(!wins.result.length||steps>=36)break; // limite de proteção contra ciclos excessivos
+      const scatters=countScatter(state.grid);
+      freeAward=Math.max(freeAward,RULES.freeSpinAward(scatters));
+      const left=Math.max(0,cap-paid);
+      if(left<.009||steps>=45)break;
+      const wins=getWins(state.grid,left);
+      if(!wins.result.length)break;
       steps++;state.cascade=steps;
-      totalBase+=wins.pay;
+      paid=Math.round((paid+wins.pay)*100)/100;
       window.TrovaoHistory?.recordWin(wins);
-      render(state.grid,{matchKinds:wins.matched});
-      // O painel de histórico conserva as peças e prémios discriminados,
-      // mas durante a jogada só se vê o valor desta queda, em dourado.
-      setMsg(money(wins.pay));
+
+      // Atualizar os spots APÓS calcular o valor do grupo vencedor:
+      // primeira vitória marca, segunda ×2, depois ×4... até ×1024.
+      state.spots=RULES.upgradeSpots(state.spots,wins.matchedPositions);
+      render(state.grid,{matchPositions:wins.matchedPositions});
+      setMsg("QUEDA "+steps+" • "+money(wins.pay));
       showPrizeFloat(wins.pay);
-      if(spinMult>0&&steps===1)sfx("mult");
+      if(RULES.maxActiveSpot(state.spots)>1)sfx("mult");
       refresh();
-      await pause(state.turbo?105:280);
-      const explosionTime=explodeWinningSymbols();
-      // Esperar que os cristais se partam e se dissipem antes da queda.
-      await pause(explosionTime+(state.turbo?35:40));
-      const oldPositions=new Map(state.grid.map((s,index)=>[s.id,index]));
-      state.grid=tumble(state.grid,wins.matched);
-      const bornIds=new Set(state.grid.filter(s=>!oldPositions.has(s.id)).map(s=>s.id));
+      await pause(state.turbo?110:300);
+      const blast=explodeWinningSymbols();
+      await pause(blast+(state.turbo?35:40));
+      if(paid>=cap-.009)break;
+
+      const oldPositions=new Map(state.grid.map((cell,index)=>[cell.id,index]));
+      state.grid=tumble(state.grid,wins.matchedPositions);
+      const bornIds=new Set(state.grid.filter(cell=>!oldPositions.has(cell.id)).map(cell=>cell.id));
       window.TrovaoHistory?.recordFall(state.grid,bornIds);
       sfx("tumble");
       const tumbleFinished=render(state.grid,{fallFrom:oldPositions});
       await pause(tumbleFinished+(state.turbo?70:105));
     }
-    let total=totalBase;
-    if(totalBase>0||scatterAward>0){
-      if(bonusSpin){
-        if(totalBase>0&&spinMult>0)state.bonusMult+=spinMult;
-        // O acumulado só potencia rodadas com novo multiplicador vencedor.
-        total=totalBase*(totalBase>0&&spinMult>0?Math.max(1,state.bonusMult):1)+scatterAward;
-        const remaining=Math.max(0,MAX_WIN_X*bet-state.bonusWon);
-        total=Math.min(total,remaining);
-        state.bonusWon=Math.round((state.bonusWon+total)*100)/100;
-      }else{
-        state.visibleMult=totalBase>0&&spinMult>0?spinMult:1;
-        total=totalBase*state.visibleMult+scatterAward;
-        total=Math.min(MAX_WIN_X*bet,total);
-        state.currentWin=Math.round(total*100)/100;
-        state.balance=Math.round((state.balance+state.currentWin)*100)/100;
-      }
-      setMsg(steps+" QUEDA"+(steps!==1?"S":"")+" • "+money(total)+" GANHOS");
+
+    const total=Math.min(cap,Math.round(paid*100)/100);
+    if(bonusSpin){
+      state.bonusWon=Math.round((state.bonusWon+total)*100)/100;
+    }else{
+      state.currentWin=total;
+      state.balance=Math.round((state.balance+total)*100)/100;
+    }
+    if(total>0){
+      setMsg(steps+" QUEDA"+(steps===1?"":"S")+" • "+money(total));
       sfx("reward");
     }else{
-      state.visibleMult=1;
-      setMsg(bonusSpin?"A TROVOADA CONTINUA...":"SEM PRÉMIO • TENTA DE NOVO");
+      setMsg(bonusSpin?"ZEUS CONTINUA...":"SEM PRÉMIO • TENTA DE NOVO");
     }
     window.TrovaoHistory?.endSpin({
-      total,scatterAward,mult:bonusSpin?(state.bonusMult||1):(state.visibleMult||1)
+      total,scatterAward:0,mult:RULES.maxActiveSpot(state.spots)
     });
-    if(bonusSpin&&retrigger){
-      state.freeLeft+=5;setOverlay("+5 RODADAS GRÁTIS");
-      sfx("scatter");await pause(state.turbo?250:900);setOverlay("");
+
+    // Mesmo que apareçam scatters em várias cascatas, há apenas um
+    // prémio de giros por spin (o maior observado).
+    if(bonusSpin&&freeAward>0){
+      const room=Math.max(0,200-state.bonusSpinsUsed);
+      const old=state.freeLeft;
+      state.freeLeft=Math.min(room,old+freeAward);
+      const added=state.freeLeft-old;
+      if(added>0){
+        setOverlay("⚡ +"+added+" FREE SPINS ⚡");
+        sfx("scatter");await pause(state.turbo?250:900);setOverlay("");
+      }
     }
-    if(!bonusSpin&&scatterTriggered){
+    if(!bonusSpin&&freeAward>0){
       render(state.grid,{scatterGlow:true});
-      setOverlay("⚡ 15 RODADAS GRÁTIS ⚡");
+      setOverlay("⚡ "+freeAward+" FREE SPINS ⚡");
       window.TrovaoScene?.burst();
       sfx("scatter");await pause(state.turbo?350:1150);setOverlay("");
     }
+    if(bonusSpin&&(state.bonusWon>=MAX_WIN_X*bet-.001||state.bonusSpinsUsed>=200)){
+      state.freeLeft=0;
+    }
     refresh();state.busy=false;refresh();
-    if(bonusSpin&&state.bonusWon>=MAX_WIN_X*bet-0.001){state.freeLeft=0}
     if(bonusSpin&&state.freeLeft<=0){
       await finishBonus();
-    }else if(!bonusSpin&&scatterTriggered){
-      await startBonus();
+    }else if(!bonusSpin&&freeAward>0){
+      await startBonus(freeAward);
     }else if(!bonusSpin){
       await showBig(state.currentWin);
     }
     return true;
   }
-  async function startBonus(){
-    state.bonus=true;state.freeLeft=15;state.bonusWon=0;state.bonusMult=0;
+  async function startBonus(count=10){
+    state.bonus=true;
+    state.freeLeft=Math.min(200,Math.max(1,count));
+    state.bonusWon=0;state.bonusMult=0;state.bonusSpinsUsed=0;
+    state.spots=RULES.emptySpots();
     el.free.parentElement.classList.add("bonus-active");
-    setMsg("BÓNUS ATIVO • 15 RODADAS GRÁTIS");refresh();
+    setMsg("BÓNUS ATIVO • "+state.freeLeft+" FREE SPINS");refresh();
     window.TrovaoScene?.burst();
     await pause(state.turbo?180:400);
-    // Executado automaticamente; o utilizador pode terminar a automatização.
-    while(state.bonus&&state.freeLeft>0){
+    while(state.bonus&&state.freeLeft>0&&state.bonusSpinsUsed<200){
       const ok=await playSpin();
       if(!ok)break;
       await pause(state.turbo?120:340);
     }
+    if(state.bonus)await finishBonus();
   }
   async function finishBonus(){
     if(!state.bonus)return;
@@ -475,8 +476,9 @@
     state.balance=Math.round((state.balance+state.bonusWon)*100)/100;
     state.currentWin=Math.round(state.bonusWon*100)/100;
     const win=state.currentWin;
-    state.bonusWon=0;state.visibleMult=1;
+    state.bonusWon=0;state.visibleMult=1;state.spots=RULES.emptySpots();
     el.free.parentElement.classList.remove("bonus-active");
+    render(state.grid);
     setMsg("BÓNUS TERMINADO • GANHASTE "+money(win));refresh();
     setOverlay("BÓNUS: "+money(win));sfx("reward");
     await showBig(win,"PRÉMIO DO BÓNUS");
@@ -515,14 +517,14 @@
     function buyBonus(){
     if(state.busy||state.bonus||state.autoRemaining>0)return;
     const cost=currentBet()*100;
-    openModal("COMPRAR 15 RODADAS",
-      "<p>Ativar 15 rodadas grátis por <b>"+money(cost)+"</b> em créditos virtuais?</p>"+
-      "<p>Durante o bónus podes ganhar +5 rodadas sempre que aparecerem 3 ou mais símbolos SCATTER na grelha.</p>",
+    openModal("COMPRAR 10 FREE SPINS",
+      "<p>Ativar 10 rodadas grátis por <b>"+money(cost)+"</b> em créditos virtuais?</p>"+
+      "<p>Durante o bónus 3 ou mais SCATTER podem acrescentar 10 a 30 Free Spins. Os spots mantêm-se.</p>",
       [{text:"COMPRAR "+money(cost),action:async()=>{
         if(state.balance<cost){openModal("SALDO INSUFICIENTE","<p>Não tens créditos virtuais suficientes para comprar o bónus.</p>",[{text:"REPOR 1 000 €",action:refill},{text:"FECHAR",secondary:true}]);return}
         state.balance=Math.round((state.balance-cost)*100)/100;state.busy=true;refresh();
-        setOverlay("⚡ 4 SCATTER ⚡");await pause(state.turbo?200:800);setOverlay("");
-        state.busy=false;await startBonus();
+        setOverlay("⚡ FREE SPINS ⚡");await pause(state.turbo?200:800);setOverlay("");
+        state.busy=false;await startBonus(10);
       }},{text:"CANCELAR",secondary:true}]);
   }
   function refill(){
