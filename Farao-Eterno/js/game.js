@@ -101,6 +101,9 @@ class Game {
   $('close-modal').addEventListener('click',()=>this.closeModal());
   window.addEventListener('storage',ev=>{if(ev.key===STORE_KEY&&ev.newValue){this.superseded=true;this.auto=0;this.paused=true;this.audio.stopMusic?.();$('session-lock').classList.remove('hidden');}});
   $('reload-session').onclick=()=>location.reload();
+  const preventStageZoom=ev=>{if(ev.cancelable)ev.preventDefault();};
+  $('stage').addEventListener('dblclick',preventStageZoom,{passive:false});
+  $('stage').addEventListener('gesturestart',preventStageZoom,{passive:false});
   window.addEventListener('pagehide',()=>this.save());
   document.addEventListener('visibilitychange',()=>{if(document.hidden){this.auto=0;this.paused=true;this.audio.stopMusic?.();}else if(this.paused)this.announce('Jogo em pausa. Toca em Retomar.');});
   mod.addEventListener('click',ev=>{if(ev.target===mod)this.closeModal();});
@@ -363,22 +366,15 @@ class Game {
 
   reelBoard(t){
   const x=20,y=251,w=520,h=410;
-  cx.save();cx.shadowColor='#000c';cx.shadowBlur=22;cx.shadowOffsetY=9;
-  rect(x-5,y-7,w+10,h+16,'#110f1a','#ecbf6e',13,5);cx.restore();
-  rect(x-4,y-7,w+8,h+14,grad(x-4,y,0,y+h,[[0,'#ffe8a0'],[.035,'#91602e'],[.13,'#442c24'],[.84,'#8a582e'],[.96,'#f5d18a'],[1,'#684120']]),'#ebc782',11,2);
-  rect(x+6,y+2,w-12,h-5,'#101421','#513624',6,2);
-  // Subtle deep-red panels between the five columns.
-  const cw=99,gh=132,left=33,top=258,interval=101;
+  // Preserve the Egyptian frame but do not obscure the temple image behind the reels.
+  cx.save();cx.shadowColor='#000b';cx.shadowBlur=19;cx.shadowOffsetY=7;
+  rect(x-5,y-7,w+10,h+16,null,'#dfb66a',13,4);cx.restore();
+  rect(x-4,y-7,w+8,h+14,null,'#bb8648',11,2.5);
+  rect(x+6,y+2,w-12,h-5,null,'#ad874d88',6,1.2);
+  // Five unfilled reels with 15 fixed, square glass-cell borders.
+  const cw=99,gh=132,left=33,top=258,interval=101,square=94;
   for(let c=0;c<5;c++){
    const rx=left+c*interval;
-   const bg=grad(rx,top,rx+cw,top,[[0,'#111927'],[.17,c%2?'#252735':'#2b2630'],[.54,'#35272c'],[.88,'#20212d'],[1,'#101421']]);
-   rect(rx,top,cw,gh*3,bg);
-   for(let r=0;r<3;r++){
-    const yy=top+r*gh;
-    rect(rx+1,yy+1,cw-2,gh-2,grad(rx,yy,rx,yy+gh,[[0,'#e6c68c21'],[.13,'#ffffff04'],[.8,'#00000008'],[1,'#00000030']]));
-    if(r)line(rx+4,yy,rx+cw-4,yy,'#a276493d',1);
-    ellipse(rx+cw/2,yy+gh/2,45,53,'#e3a54b0b');
-   }
    cx.save();cx.beginPath();cx.rect(rx,top,cw,gh*3);cx.clip();
    const item=this.spinObject;
     if(this.spinning && item && !item.stopped[c]){
@@ -394,8 +390,7 @@ class Game {
       const symbol=item.show[c][item.steps[c]+3+r-step]||item.grid[c][Math.max(0,Math.min(2,r))];
       this.drawIcon(symbol,rx,top+(r+fraction)*gh,cw,gh,false,t);
      }
-     cx.save();cx.globalAlpha=.12*Math.sin(p*Math.PI);
-     rect(rx,top,cw,gh*3,grad(rx,top,rx,top+gh*3,[[0,'#c39a6b55'],[.2,'#273a4300'],[.55,'#78beca1e'],[1,'#00000066']]));cx.restore();
+     // Keep the temple visible even while the symbol strip is in motion.
     } else {    const reelGrid=item&&item.stopped[c]?item.grid:this.grid;
     const landMs=t-this.landings[c];
     const landing=this.landings[c]&&landMs>=0&&landMs<300;
@@ -442,11 +437,17 @@ class Game {
     }
    }
    cx.restore();
-   // Brushed bronze column separators, with bright edges and emerald inlay.
-   if(c>0){rect(rx-4,top-4,5,gh*3+8,grad(rx-4,top,rx+1,top,[[0,'#39251e'],[.24,'#fce1a1'],[.48,'#8e5630'],[.75,'#2b2025'],[1,'#f8c97b']]));}
-   line(rx+2,top+4,rx+cw-2,top+4,'#f2d69181',1.7);
-   line(rx+2,top+gh*3-4,rx+cw-2,top+gh*3-4,'#f2c5775e',2);
+   // Subtle, permanently transparent glass squares on top of moving artwork.
+   for(let r=0;r<3;r++){
+    const yy=top+r*gh+(gh-square)/2;
+    cx.save();cx.shadowColor='#f5d18a';cx.shadowBlur=2;
+    rect(rx+(cw-square)/2,yy,square,square,null,'#f4d38a60',4,1.05);
+    cx.restore();
+   }
+   line(rx+2,top+4,rx+cw-2,top+4,'#f2d69181',1.1);
+   line(rx+2,top+gh*3-4,rx+cw-2,top+gh*3-4,'#f2c5775e',1.2);
   }
+  this.drawReelSeparators(left,top,interval,gh);
   // Decorative royal carved corners and teal gemstones.
   for(const [xx,yy,sgn] of [[25,252,1],[535,252,-1],[25,656,1],[535,656,-1]]){
    cx.save();cx.translate(xx,yy);cx.scale(sgn,yy<400?1:-1);
@@ -467,6 +468,17 @@ class Game {
    for(let i=0;i<keys.length;i++)this.drawMiniSymbol(keys[i],178+i*33,678,31);
   }
  }
+
+  // Exactly four fixed Egyptian-gold hairline separators, rendered over the strip.
+  drawReelSeparators(left,top,interval,gh){
+   for(let c=1;c<5;c++){
+    const xx=left+c*interval-1;
+    cx.save();cx.shadowColor='#f5d390';cx.shadowBlur=6;
+    line(xx,top+5,xx,top+gh*3-5,'#ecca85ba',1.35);
+    cx.restore();
+    line(xx+.75,top+5,xx+.75,top+gh*3-5,'#fff1b744',.65);
+   }
+  }
 
   drawActivePayline(t,left,top,cw,gh,interval){
   if(this.spinning || !this.lastResult?.lineWins?.length || this.featureIntro&&t<this.featureIntro.end)return;
@@ -527,24 +539,29 @@ class Game {
  }
  drawIcon(sym,x,y,w,h,win=false,t=performance.now()){
   cx.save();
+  // Contain all original image proportions in one centred square: no crop or stretch.
+  const box=Math.min(w-6,h-6),bx=x+(w-box)/2,by=y+(h-box)/2;
   if(win){
    const glow=.6+.4*Math.sin(t*.008+x*.2);
    cx.shadowColor='#f8d875';cx.shadowBlur=16+11*glow;
-   const aura=cx.createRadialGradient(x+w*.5,y+h*.49,6,x+w*.5,y+h*.49,w*.54);
-   aura.addColorStop(0,`rgba(255,233,156,${.28*glow})`);aura.addColorStop(1,'rgba(247,194,89,0)');
-   rect(x,y,w,h,aura);
+   const aura=cx.createRadialGradient(x+w*.5,y+h*.5,5,x+w*.5,y+h*.5,box*.58);
+   aura.addColorStop(0,`rgba(255,233,156,${.26*glow})`);
+   aura.addColorStop(1,'rgba(247,194,89,0)');
+   rect(bx,by,box,box,aura);
   }
   const img=this.images[sym];
-  if(img?.complete&&img?.naturalWidth){
+  if(img?.complete&&img?.naturalWidth&&img.naturalHeight){
    const premium=E.NORMAL.slice(5).includes(sym)||sym==='TOMB';
-   const iw=w*(premium?.96:.88),ih=Math.min(h*(premium?.91:.82),iw*img.naturalHeight/img.naturalWidth),xx=x+(w-iw)/2,yy=y+(h-ih)/2;
-   cx.drawImage(img,xx,yy,iw,ih);
-  }else {text(sym,x+w/2,y+h/2,31,'#fce8b4');}
+   const maxSide=box*(premium?.97:.92);
+   const scale=Math.min(maxSide/img.naturalWidth,maxSide/img.naturalHeight);
+   const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
+   cx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
+  }else{text(sym,x+w/2,y+h/2,26,'#fce8b4');}
   cx.restore();
   if(win){
    cx.save();cx.globalAlpha=.52+.33*Math.sin(t*.009);
    cx.shadowColor='#ffe79c';cx.shadowBlur=10;
-   rect(x+3,y+3,w-6,h-6,null,'#ffdfa0',6,2);
+   rect(bx+2,by+2,box-4,box-4,null,'#ffdfa0',5,2);
    cx.restore();
   }
  }

@@ -15,6 +15,32 @@ document.getElementById('run').onclick=async()=>{
  document.getElementById('run').disabled=true;rows=[];list.innerHTML='';summary.textContent='Testes em execução…';
  await poll(()=>get()?.ready);
  await check('Arte HD carregada e versão 1.0',()=>{const g=get();assert(frame.contentDocument.documentElement.dataset.faraoVersion==='1.0');assert(Object.values(g.images).every(i=>i.complete&&i.naturalWidth>0&&!i.fallback));assert(g.temple?.naturalWidth>0);});
+
+ await check('Cenário visível através dos cinco tambores',()=>{
+  const g=reset(),d=frame.contentDocument,ctx=d.getElementById('canvas').getContext('2d');
+  const pixel=(x,y)=>{const v=g.viewport;return [...ctx.getImageData(Math.floor((v.ox+x*v.scale)*v.dpr),Math.floor((v.oy+y*v.scale)*v.dpr),1,1).data];};
+  const draw=g.reelBoard;let expected;
+  try{g.reelBoard=()=>{};g.render(4000);expected=Array.from({length:5},(_,c)=>pixel(83+c*101,270));}
+  finally{g.reelBoard=draw;}
+  g.render(4000);
+  for(let c=0;c<5;c++){const actual=pixel(83+c*101,270),delta=actual.slice(0,3).reduce((n,v,i)=>n+Math.abs(v-expected[c][i]),0);assert(delta<42,'Fundo opaco no tambor '+(c+1)+': '+delta);}
+ });
+ await check('Quatro separadores fixos e zoom duplo bloqueado',()=>{
+  const g=reset();assert(typeof g.drawReelSeparators==='function');
+  let count=0;const draw=g.drawReelSeparators;
+  try{g.drawReelSeparators=function(l,t,i,h){count++;assert(l===33&&t===258&&i===101&&h===132);return draw.call(this,l,t,i,h);};g.render(4000);}
+  finally{g.drawReelSeparators=draw;}
+  assert(count===1,'Separadores não desenhados numa única camada');
+  const stage=frame.contentDocument.getElementById('stage'),ev=new frame.contentWindow.MouseEvent('dblclick',{cancelable:true,bubbles:true});
+  stage.dispatchEvent(ev);assert(ev.defaultPrevented,'Toque duplo não bloqueado');
+ });
+ await check('Símbolos HD cabem nos quadrados sem deformação',()=>{
+  const g=reset(),ctx=frame.contentDocument.getElementById('canvas').getContext('2d'),draw=ctx.drawImage,positions=[];
+  try{ctx.drawImage=function(...args){if(args[0]===g.images.KING||args[0]===g.images.A)positions.push(args);return draw.apply(this,args);};g.drawIcon('KING',33,258,99,132);g.drawIcon('A',33,258,99,132);}
+  finally{ctx.drawImage=draw;}
+  assert(positions.length===2,'Símbolos não desenhados');
+  for(const [img,x,y,w,h] of positions){assert(w<=94&&h<=94,'Imagem maior que o quadrado');assert(x>=33&&x+w<=132&&y>=258&&y+h<=390,'Ícone cortado');assert(Math.abs(w/h-img.naturalWidth/img.naturalHeight)<.003,'Imagem deformada');}
+ });
  for(const [w,h]of [[320,568],[375,667],[390,844],[430,932],[768,1024]])await check(`Formato 9:16 e alvos táteis ≥44 px em ${w}×${h}`,async()=>{frame.style.width=w+'px';frame.style.height=h+'px';await raf();await poll(()=>Math.abs(get().viewport.width-frame.contentDocument.getElementById('stage').clientWidth)<2);const d=frame.contentDocument,b=d.getElementById('stage').getBoundingClientRect();assert(Math.abs(b.width/b.height-9/16)<.002);const buttons=[...d.querySelectorAll('.touch-target')];assert(buttons.length>=5);for(const el of buttons){const r=el.getBoundingClientRect();assert(r.width>=43.9&&r.height>=43.9);assert(r.left>=b.left-1&&r.right<=b.right+1&&r.top>=b.top-1&&r.bottom<=b.bottom+1,'Alvo fora do ecrã');}});
  frame.style.width='390px';frame.style.height='844px';await raf();
  await check('Menu, regras, tabela, dez linhas e histórico',()=>{const g=reset();g.openInfo('pays');assert(frame.contentDocument.querySelectorAll('tbody tr').length===10);assert(frame.contentDocument.querySelectorAll('.paylines figure').length===10);g.openInfo('rules');assert(frame.contentDocument.getElementById('modal-content').textContent.includes('8 Free Spins'));g.openInfo('history');g.closeModal();});
