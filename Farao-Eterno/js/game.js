@@ -200,12 +200,15 @@ class Game {
    button.style.pointerEvents=canInspect?'auto':'none';
    button.setAttribute('aria-label','Consultar prémio de '+(iconNames[this.grid[col]?.[row]]||'símbolo'));
   }
-  const root=$('touch-controls');
+  // The symbol overlay must never steal input from the header or spin controls.
+  // Keep the reel-only hit layer beneath the native game controls.
+  this._symbolOverlay.style.zIndex='2';
+    const root=$('touch-controls');
   while(root.children.length>this.targets.length)root.lastChild.remove();
   this.targets.forEach((target,i)=>{
    let b=root.children[i];if(!b){b=document.createElement('button');b.type='button';b.className='touch-target';root.appendChild(b);}
    b.setAttribute('aria-label',target.label);b.textContent=target.label;
-   b.style.cssText=`left:${ox+(target.x+target.w/2)*sc}px;top:${oy+(target.y+target.h/2)*sc}px;width:${Math.max(44,target.w*sc)}px;height:${Math.max(44,target.h*scY)}px`;
+   b.style.cssText=`position:absolute;pointer-events:auto;touch-action:manipulation;z-index:1;left:${ox+(target.x+target.w/2)*sc}px;top:${oy+(target.y+target.h/2)*sc}px;width:${Math.max(44,target.w*sc)}px;height:${Math.max(44,target.h*scY)}px`;
    // Bind once to the native button; read the current action after every redraw.
    b._faraoAction=target.action;
    if(!b._faraoBound){
