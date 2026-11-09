@@ -263,7 +263,8 @@
       env.gain.setValueAtTime(volume,t);
       source.connect(env);
       env.connect(output());
-      source.start(t);
+      // Compensar 28 ms de silêncio residual do encoder MP3.
+      source.start(t,.028);
       source.onended=()=>{try{source.disconnect();env.disconnect();}catch(_){}};
       audio._wildSoundAtMs=performance.now();
     }catch(_){wildPaam(count);}
@@ -291,5 +292,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.3.6',original:true,procedural:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.3.7',original:true,procedural:true,dynamicReelSpeed:true};
 })();
