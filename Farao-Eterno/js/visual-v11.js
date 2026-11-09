@@ -187,10 +187,10 @@
     const velocity=Math.min(1,Math.max(0,(p<.12?p/.12:p>.82?(1-p)/.18:1)));
     // Fast vertical streaks simulate the reels spinning at high speed,
     // without accelerating the actual outcome or changing the game maths.
-    for(const [offset,alpha] of [[-85,.15],[-42,.2],[0,.3],[42,.2],[85,.15]]){
+    for(const [offset,alpha] of [[-170,.15],[-84,.2],[0,.3],[84,.2],[170,.15]]){
      ctx.save();
      ctx.globalAlpha=alpha;
-     if('filter' in ctx)ctx.filter='blur('+(3.5+velocity*8.5).toFixed(1)+'px)';
+     if('filter' in ctx)ctx.filter='blur('+(7+velocity*17).toFixed(1)+'px)';
      for(let r=-1;r<4;r++){
       const sym=item.show[c][item.steps[c]+3+r-step]||item.grid[c][clamp(r,0,2)];
       tileAt(sym,rx,top+(r+fraction)*gh+offset*velocity,t,false);
@@ -201,10 +201,10 @@
     if(velocity>.18){
      ctx.save();
      ctx.beginPath();ctx.rect(rx+2,top,cw-4,gh*3);ctx.clip();
-     ctx.lineWidth=2.6;
+     ctx.lineWidth=3.4;
      for(let k=0;k<12;k++){
-      const sx=rx+5+k*8,sy=top+((t*(2.4+velocity*2.6)+k*83+c*27)%(gh*3+520))-460;
-      const length=(340+velocity*240);
+      const sx=rx+5+k*8,sy=top+((t*(4.8+velocity*5.2)+k*83+c*27)%(gh*3+1040))-920;
+      const length=(680+velocity*480);
       const streak=ctx.createLinearGradient(sx,sy,sx,sy+length);
       streak.addColorStop(0,'rgba(255,227,163,0)');
       streak.addColorStop(.35,'rgba(255,227,163,'+(.23*velocity)+')');
@@ -294,7 +294,7 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  txt('V1.2.1',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.2.2',38,985,10,'#e5c68d',850,'Arial');
   if(!this.storageOK)txt('SESSÃO SEM GRAVAÇÃO',280,833,11,'#ffbc83',800,'Arial');
  };
  document.documentElement.dataset.faraoVisual='1.1';
