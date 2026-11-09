@@ -195,8 +195,8 @@
     }
     // Os caldeirões completos de cima a baixo num só tambor são
     // a forma principal de abrir os mini-jogos da reconstrução.
-    // Scatter disperso continua a permitir Free Spins, mas só 4+
-    // caldeirões dispersos também podem ativar um mini-jogo.
+    // Scatter disperso continua a permitir Free Spins, mas são
+    // necessários cinco dispersos para abrir outro mini-jogo.
     const verticalScatterColumns=[];
     for(let col=0;col<REELS;col++){
       if(grid[col].every(symbol=>symbol==="scatter"))
@@ -254,12 +254,12 @@
     state.lastWin = result.total;
     state.lastGrid = grid.map(col=>[...col]);
     // O principal gatilho dos mini-jogos são 3 caldeirões na vertical
-    // do mesmo tambor. Como forma secundária, 4+ caldeirões espalhados
-    // também podem ativar o bónus. Três Scatter dispersos continuam a
-    // conceder os Free Spins, mas não abrem sempre um mini-jogo.
+    // do mesmo tambor. Como forma secundária, 5+ caldeirões espalhados
+    // também podem ativar o bónus. Três ou quatro Scatter dispersos
+    // concedem Free Spins mas não abrem mini-jogo automaticamente.
     // É uma interpretação de teste; fórmula comercial não confirmada.
     const verticalBonus=result.verticalScatterColumns.length>0;
-    const bonusEligible=verticalBonus || result.scatter>=4;
+    const bonusEligible=verticalBonus || result.scatter>=5;
     if(bonusEligible) {
       // No APK existem rotinas distintas para caldeirões e morangos.
       // A seleção de qual bónus surge permanece experimental.
