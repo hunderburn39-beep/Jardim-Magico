@@ -1,4 +1,21 @@
-# Validação — Faraó Eterno V1.0
+# Validação — Faraó Eterno V1.0 e atualização gráfica V1.1
+
+## Atualização V1.1 — 9 de novembro de 2026
+
+A apresentação foi refeita sem modificar a matemática ou o armazenamento: quadrados e símbolos com deslocamento conjunto durante a rotação, cinco rolos com remates e separadores egípcios, botão circular, contadores únicos e ausência de texto redundante.
+
+- **24/24 testes Node aprovados**, cobrindo as regras, 10.000 comparações com V0.6 e recuperação de sessões.
+- **21/21 cenários Chromium aprovados**, sem erros JavaScript e sem carregamentos HTTP em falta.
+- **21/21 cenários WebKit aprovados**, com as mesmas condições.
+- Testes gráficos específicos: peças e molduras deslocam-se juntas, transparência do cenário, separadores, símbolos sem deformação, botão redondo e ausência do painel de prémio duplicado.
+- Validação de toque duplo e proporção 9:16, giro/paragem rápida, Scatter, símbolos expansivos, Free Spins automáticas e recuperação.
+- [Prova e capturas do GitHub Actions](https://github.com/hunderburn39-beep/Jardim-Magico/actions/runs/42630753257).
+
+Todos os ficheiros modificados pertencem a `Farao-Eterno/`; a validação usa um workflow temporário que é retirado antes da integração na versão pública. A execução em WebKit de Linux é uma verificação do motor Safari, não um teste físico num iPhone.
+
+---
+
+## Histórico V1.0
 
 Executada em 9 de novembro de 2026. Base preservada: V0.6, commit `7222903bb4e780b6e5aa0e632d43adaad5eeab5b`.
 

@@ -1,4 +1,4 @@
-# Faraó Eterno — V1.0
+# Faraó Eterno — V1.1 (apresentação)
 
 Jogo original de demonstração, gratuito, exclusivamente com créditos fictícios. Layout vertical 9:16. HTML5 Canvas 2D e Web Audio, sem dependências externas ou compilação.
 
@@ -9,6 +9,17 @@ Jogo original de demonstração, gratuito, exclusivamente com créditos fictíci
 ## Regras preservadas
 
 Motor e pagamentos derivados da V0.6, commit `7222903bb4e780b6e5aa0e632d43adaad5eeab5b`. Cinco tambores, três posições, dez linhas selecionáveis, santuário WILD/SCATTER, 8 Free Spins, novas ativações de +8 e símbolos expansivos adicionais. A maior combinação de cada linha vence. [Matemática completa](docs/MATEMATICA.md).
+
+## Atualização gráfica V1.1
+
+- Tambores com molduras egípcias douradas, topos com escaravelhos e separadores finos entre os cinco rolos; o templo continua visível através das zonas transparentes.
+- Símbolos HD maiores, sem deformação; cada contorno quadrado acompanha a sua peça ao rodar, sem quadrados fixos por cima.
+- Altura útil das células reduzida de 132 para 116 unidades, com peças maiores e menos intervalos vazios.
+- Removidos o pequeno indicador redundante no topo e o retângulo central com o prémio repetido.
+- Botão **GIRAR / PARAR / RETOMAR** circular, com medalhão dourado e acessibilidade preservada; permanecem os contadores **SALDO**, **APOSTA** e **PRÉMIO**.
+- Sem alterações a `engine.js`, `session.js`, à matemática, às Free Spins ou aos dados guardados.
+
+**Validação real**: 24/24 testes Node, 21/21 cenários Chromium e 21/21 WebKit, sem erros JavaScript nem recursos ausentes. [GitHub Actions — evidências](https://github.com/hunderburn39-beep/Jardim-Magico/actions/runs/42630753257). Testes automatizados não equivalem a uma inspeção em todos os modelos físicos.
 
 ## Melhorias da edição completa
 
@@ -23,7 +34,7 @@ Motor e pagamentos derivados da V0.6, commit `7222903bb4e780b6e5aa0e632d43adaad5
 
 ## Estrutura e testes
 
-`js/engine.js`: matemática; `js/session.js`: créditos e transações; `js/game.js`: apresentação e interação; `js/effects.js`: efeitos; `js/audio.js`: música; `assets/`: arte. Tudo fica nesta pasta. Nenhuma alteração ao Jardim Mágico ou aos seus dados.
+`js/engine.js`: matemática; `js/session.js`: créditos e transações; `js/game.js`: apresentação e interação; `js/effects.js`: efeitos; `js/visual-v11.js`: tambores e interface gráfica 1.1; `js/audio.js`: música; `assets/`: arte. Tudo fica nesta pasta. Nenhuma alteração ao Jardim Mágico ou aos seus dados.
 
 Requer Node.js 18 ou superior apenas para os testes:
 
