@@ -1,0 +1,123 @@
+name: "Sugar Rush 1000 | importar e testar"
+
+# Importacao manual ou automatica apenas quando este workflow for criado/alterado.
+# Nao publica no GitHub Pages nem altera nenhum outro jogo.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sugar-rush-1000.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sugar-rush-1000-importacao
+  cancel-in-progress: false
+
+jobs:
+  importar:
+    name: Importar fonte completa em pasta independente
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Obter o repositorio de destino
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 1
+
+      - name: Descarregar os ficheiros originais e preservar assets
+        shell: bash
+        env:
+          SOURCE_SHA: "83515b4bd37f1c2815005ed7a4f33b3ae17c6e5d"
+        run: |
+          set -euo pipefail
+          destino="Sugar-Rush-1000"
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          mkdir -p "$tmp/fonte" "$destino"
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/Anurag-Basuri/phaser_slot_game/archive/${SOURCE_SHA}.tar.gz" \
+            -o "$tmp/fonte.tar.gz"
+          tar -xzf "$tmp/fonte.tar.gz" -C "$tmp/fonte" --strip-components=1
+          test -s "$tmp/fonte/README.md"
+          test -s "$tmp/fonte/LICENSE"
+          test -s "$tmp/fonte/frontend/package.json"
+          test -d "$tmp/fonte/frontend/public/images"
+          test -d "$tmp/fonte/frontend/public/audio"
+          test -s "$tmp/fonte/math-engine/MATH_ENGINE_DOCUMENTATION.md"
+          rsync -a --delete "$tmp/fonte/" "$destino/"
+          cat > "$destino/ORIGEM_IMPORTACAO.md" << 'EOF'
+          # Sugar Rush 1000 — origem e limites
+
+          Repositorio original: https://github.com/Anurag-Basuri/phaser_slot_game
+
+          Revisao importada: `83515b4bd37f1c2815005ed7a4f33b3ae17c6e5d`.
+
+          Copia de referencia para estudo tecnico, em pasta independente.
+          Foram incluidos os ficheiros rastreados da revisao original,
+          nomeadamente o frontend Phaser 3, os ficheiros de imagem e audio,
+          e o motor matematico Python.
+
+          **Licencas:** o repositorio possui um ficheiro LICENSE MIT, mas esse
+          ficheiro atribui o copyright a Richard Davey e nao demonstra, por si
+          so, que o autor da copia tenha direitos sobre os graficos, musica,
+          sons, marcas ou personagens do jogo comercial. Confirmar a autorizacao
+          especifica antes de redistribuir/publicar os assets.
+
+          **Execucao:** o frontend original pode depender de um servidor RGS
+          da plataforma Stake. Compilar nao significa que esteja jogavel sem
+          o backend. Este workflow nao publica o jogo no GitHub Pages.
+
+          **Seguranca:** nao utilizar dinheiro real nem credenciais externas
+          nos testes; validar a matematica independentemente antes de qualquer uso.
+          EOF
+          quantos="$(find "$destino" -type f | wc -l | tr -d ' ')"
+          echo "Ficheiros na pasta depois da importacao: $quantos"
+          test "$quantos" -ge 295
+          echo "FILE_COUNT=$quantos" >> "$GITHUB_ENV"
+
+      - name: Guardar a copia no GitHub sem modificar os outros jogos
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- Sugar-Rush-1000
+          if git diff --cached --quiet; then
+            echo "A pasta ja corresponde a revisao pedida."
+          else
+            git commit -m "Adicionar Sugar Rush 1000 completo em pasta isolada"
+            git push origin HEAD:main
+          fi
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: Sugar-Rush-1000/frontend/package-lock.json
+
+      - name: Testar compilacao do frontend Phaser
+        working-directory: Sugar-Rush-1000/frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build
+
+      - name: Resumo
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### Sugar Rush 1000"
+            echo "- Origem: Anurag-Basuri/phaser_slot_game"
+            echo "- Revisao fixa: 83515b4bd37f1c2815005ed7a4f33b3ae17c6e5d"
+            echo "- Destino: \`Sugar-Rush-1000/\`"
+            echo "- Ficheiros preparados: ${FILE_COUNT:-desconhecido}"
+            echo "- O GitHub Pages dos outros jogos nao foi alterado."
+            echo "- Compilacao Phaser nao garante o funcionamento sem o RGS original."
+          } >> "$GITHUB_STEP_SUMMARY"
