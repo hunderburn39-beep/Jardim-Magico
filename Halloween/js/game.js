@@ -26,6 +26,7 @@ class Classica extends Phaser.Scene{
    this.makePotBonus();
    this.shortcuts();
    this.renderState();
+   if(new URLSearchParams(window.location.search).has("smoke")) globalThis.__HALLOWEEN_SCENE__=this;
    if (this.state.pendingPot) this.showPotBonus();
    status.textContent="";
  }
