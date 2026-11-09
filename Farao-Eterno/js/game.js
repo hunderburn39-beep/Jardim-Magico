@@ -194,6 +194,8 @@ class Game {
   }
   const img=new Image();
   img.onload=()=>{
+   // A nova fotografia não tem as linhas do logótipo antigo; não a retocar.
+   if(!img.fallback){this.temple=img;return;}
    // The thin gold line beside the title is baked into the background artwork.
    // Inpaint only the two side strips, leaving the title and the temple intact.
    const off=document.createElement('canvas');off.width=W;off.height=H;
@@ -213,8 +215,11 @@ class Game {
    }
    this.temple=off;
   };
-  img.onerror=()=>{if(!img.fallback){img.fallback=true;img.src='assets/temple_back.svg';}};
-  img.src='assets/temple.webp';
+  img.onerror=()=>{
+   if(!img.fallback){img.fallback=1;img.src='assets/temple.webp';}
+   else if(img.fallback===1){img.fallback=2;img.src='assets/temple_back.svg';}
+  };
+  img.src='assets/temple-realistic.avif?v=1.3.13';
  }
 
   action(x,y,w,h,fn,label='Ação'){this.targets.push({x,y,w,h,action:fn,label});}
