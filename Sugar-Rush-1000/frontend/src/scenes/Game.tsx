@@ -276,9 +276,9 @@ export class Game extends Phaser.Scene {
     if (pendingRound) {
       handlePendingRound.call(this, pendingRound);
     } else {
-      if (!this.stakeEngine.isReplayMode()) {
-        this.introSplash.show(() => {});
-      }
+      // Sem sobreposicoes de boas-vindas: deixar o tabuleiro completo visivel.
+      // Os icones reais ja foram carregados em Preload e colocados com fillEmpty().
+      this.updateSpinButtonState();
     }
   }
 
