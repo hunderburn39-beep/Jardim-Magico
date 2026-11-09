@@ -5,12 +5,12 @@
   const SYMBOLS = Object.freeze([
     { id: "pumpkin", weight: 19, icon: "🎃", name: "Abóbora" },
     { id: "ghost", weight: 17, icon: "👻", name: "Fantasma" },
-    { id: "bat", weight: 17, icon: "🦇", name: "Morcego" },
-    { id: "cat", weight: 14, icon: "🐈‍⬛", name: "Gato" },
-    { id: "skull", weight: 12, icon: "💀", name: "Caveira" },
+    { id: "bat", weight: 17, icon: "🦇", name: "Bruxa na vassoura" },
+    { id: "cat", weight: 14, icon: "🐈‍⬛", name: "Drácula" },
+    { id: "skull", weight: 12, icon: "💀", name: "Monstro" },
     { id: "witch", weight: 10, icon: "🧙", name: "Bruxa" },
-    { id: "wild", weight: 7, icon: "🧿", name: "Wild" },
-    { id: "scatter", weight: 4, icon: "🔮", name: "Scatter" }
+    { id: "wild", weight: 7, icon: "🧿", name: "Magic" },
+    { id: "scatter", weight: 4, icon: "🔮", name: "Caldeirão" }
   ]);
   // Trajetos originais de demonstração: 20, 25 ou 30 linhas (0 a 2).
   const LINES = Object.freeze([
