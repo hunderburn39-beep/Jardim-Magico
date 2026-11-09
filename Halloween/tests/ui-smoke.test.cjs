@@ -50,7 +50,7 @@ function sceneFixture(){
     const scene=new configuration.scene[0]();
     const queue=[];
     scene.add={
-      graphics:()=>node(),text:()=>node(),zone:()=>node(),
+      graphics:()=>node(),text:(x,y,value)=>{const item=node();item.text=String(value);return item;},zone:()=>node(),
       image:(x,y,key)=>node(key),rectangle:()=>node(),container:()=>node()
     };
     scene.load={svg:(key,uri)=>{
