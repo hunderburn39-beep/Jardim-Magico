@@ -203,6 +203,38 @@ class Game {
   // The symbol overlay must never steal input from the header or spin controls.
   // Keep the reel-only hit layer beneath the native game controls.
   this._symbolOverlay.style.zIndex='2';
+    // Independent, fixed-position native controls for Safari. Unlike the
+  // redraw-generated targets these are never removed/recycled between frames.
+  if(!this._primaryButtons){
+   const layer=document.createElement('div');
+   layer.id='primary-touch-controls';
+   layer.style.cssText='position:absolute;inset:0;z-index:9;pointer-events:none';
+   $('stage').appendChild(layer);
+   this._primaryButtons={};
+   for(const [key,label] of [['menu','Abrir menu'],['sound','Alternar som'],['spin','Girar']]){
+    const b=document.createElement('button');
+    b.type='button';b.setAttribute('aria-label',label);
+    b.style.cssText='position:absolute;transform:translate(-50%,-50%);pointer-events:auto;touch-action:manipulation;border:0;background:transparent;color:transparent;font-size:1px;cursor:pointer;padding:0';
+    const invoke=()=>{
+     if(!mod.classList.contains('hidden')||this.superseded)return;
+     this.audio.init();
+     if(key==='menu')this.openInfo();
+     else if(key==='sound'){this.sound=!this.sound;this.audio.on=this.sound;this.save();}
+     else this.startSpin();
+    };
+    b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();invoke();},{passive:false});
+    b.addEventListener('click',e=>{if(e.detail===0)invoke();});
+    layer.appendChild(b);this._primaryButtons[key]=b;
+   }
+   this._primaryLayer=layer;
+  }
+  const positions={menu:[49,66,76,76],sound:[511,66,76,76],spin:[280,878,146,146]};
+  for(const [key,b] of Object.entries(this._primaryButtons)){
+   const [x,y,w,h]=positions[key];
+   b.style.left=(ox+x*sc)+'px';b.style.top=(oy+y*scY)+'px';
+   b.style.width=(w*sc)+'px';b.style.height=(h*scY)+'px';
+   b.style.pointerEvents=this.superseded||!mod.classList.contains('hidden')?'none':'auto';
+  }
     const root=$('touch-controls');
   while(root.children.length>this.targets.length)root.lastChild.remove();
   this.targets.forEach((target,i)=>{
