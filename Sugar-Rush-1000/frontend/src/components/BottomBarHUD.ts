@@ -74,13 +74,13 @@ export class BottomBarHUD {
     this.pillsGfx = this.scene.add.graphics().setDepth(46);
     this.winPillGlow = this.scene.add.graphics().setDepth(47).setAlpha(0);
 
-    this.txtMoneyLabel = this.scene.add.text(0, 0, T('BALANCE', isSocial), tLabel).setOrigin(0, 0.5).setDepth(50);
+    this.txtMoneyLabel = this.scene.add.text(0, 0, 'SALDO', tLabel).setOrigin(0, 0.5).setDepth(50);
     this.txtMoney = this.scene.add.text(0, 0, '', tVal).setOrigin(1, 0.5).setDepth(50);
 
-    this.txtBetLabel = this.scene.add.text(0, 0, T('BET', isSocial), tLabel).setOrigin(0, 0.5).setDepth(50);
+    this.txtBetLabel = this.scene.add.text(0, 0, 'APOSTA', tLabel).setOrigin(0, 0.5).setDepth(50);
     this.txtBet = this.scene.add.text(0, 0, '', tVal).setOrigin(1, 0.5).setDepth(50);
 
-    this.txtLastWinLabel = this.scene.add.text(0, 0, T('LAST WIN', isSocial), tLabel).setOrigin(0, 0.5).setDepth(50);
+    this.txtLastWinLabel = this.scene.add.text(0, 0, 'ÚLTIMO PRÉMIO', tLabel).setOrigin(0, 0.5).setDepth(50);
     this.txtLastWin = this.scene.add.text(0, 0, '', { ...tVal, color: this.COL_WIN }).setOrigin(1, 0.5).setDepth(50);
     this.txtLastWin.setText(DisplayBalance({ amount: 0, currency: 'USD' }));
 
@@ -91,7 +91,7 @@ export class BottomBarHUD {
     }).setOrigin(0.5, 0.5).setDepth(50).setAlpha(0.7);
 
     if (getStakeEngine().isDemoMode()) {
-      this.demoLabel.setText('DEMO');
+      this.demoLabel.setText('').setVisible(false);
     }
 
     this.betPillHit = this.scene.add.rectangle(0, 0, 10, 10, 0xffffff, 0)
