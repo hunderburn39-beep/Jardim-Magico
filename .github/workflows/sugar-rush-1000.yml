@@ -48,7 +48,8 @@ jobs:
           test -d "$tmp/fonte/frontend/public/images"
           test -d "$tmp/fonte/frontend/public/audio"
           test -s "$tmp/fonte/math-engine/MATH_ENGINE_DOCUMENTATION.md"
-          rsync -a --delete "$tmp/fonte/" "$destino/"
+          echo "A preservar qualquer arte, matematica e frontend ja editados no destino."
+          rsync -a --ignore-existing "$tmp/fonte/" "$destino/"
           cat > "$destino/ORIGEM_IMPORTACAO.md" << 'EOF'
           # Sugar Rush 1000 — origem e limites
 
