@@ -358,10 +358,8 @@ class Game {
   text('OS SEGREDOS DA ETERNIDADE',280,213,10,'#e5c486','center','Georgia',800,2);
   this.smallButton(49,66,68,'☰',()=>this.openInfo());
   this.smallButton(511,66,68,this.sound?'♫':'♪',()=>{this.sound=!this.sound;this.audio.on=this.sound;this.save();});
-  rect(164,218,232,29,grad(0,218,0,250,[[0,'#70502f'],[.21,'#332522'],[.82,'#101725'],[1,'#a77c43']]),'#d5ae71',9,1.4);
-  rect(171,223,218,18,null,'#4ba4a0',4,.7);
-  if(this.feature){text(`FREE SPINS   ${this.feature.left} RESTANTES`,280,232,14,'#8effee','center','Arial',900);}
-  else text(`${this.lines} LINHAS  ·  5 × 3`,280,232,13,'#f0d6a4','center','Arial',800);
+  // Sem indicador redundante de linhas acima dos tambores.
+  if(this.feature)text('FREE SPINS  '+this.feature.left+' RESTANTES',280,235,13,'#a7fff0','center','Arial',900);
  }
 
   reelBoard(t){
