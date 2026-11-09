@@ -1,0 +1,74 @@
+name: "Sugar Rush 1000 | testes do jogo local"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Sugar-Rush-1000/standalone/**'
+      - 'index2.html'
+      - '.github/workflows/testar-sugar-rush-local.yml'
+  pull_request:
+    paths:
+      - 'Sugar-Rush-1000/standalone/**'
+      - 'index2.html'
+      - '.github/workflows/testar-sugar-rush-local.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sugar-local-tests
+  cancel-in-progress: true
+
+jobs:
+  validar:
+    name: Validar motor local, graficos e entrada
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Obter codigo
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verificar ficheiros essenciais e isolamento
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s index2.html
+          test -s Sugar-Rush-1000/standalone/index.html
+          test -s Sugar-Rush-1000/standalone/engine.js
+          test -s Sugar-Rush-1000/standalone/game.js
+          test -s Sugar-Rush-1000/standalone/style.css
+          test -s Sugar-Rush-1000/standalone/tests/engine.test.cjs
+          test -s jardim-phaser/vendor/phaser-3.90.0.min.js
+          grep -q 'Sugar-Rush-1000/standalone/index.html' index2.html
+          grep -q 'jardim-phaser/vendor/phaser-3.90.0.min.js' Sugar-Rush-1000/standalone/index.html
+          grep -q 'engine.js' Sugar-Rush-1000/standalone/index.html
+          grep -q 'game.js' Sugar-Rush-1000/standalone/index.html
+          echo "Entrada, Phaser e motor matematico presentes."
+
+      - name: Validar sintaxe JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check Sugar-Rush-1000/standalone/engine.js
+          node --check Sugar-Rush-1000/standalone/game.js
+          node --check Sugar-Rush-1000/standalone/tests/engine.test.cjs
+
+      - name: Executar testes matematicos
+        shell: bash
+        run: |
+          set -euo pipefail
+          node Sugar-Rush-1000/standalone/tests/engine.test.cjs | tee /tmp/sugar-check.json
+          {
+            echo "### Sugar Rush 1000 — teste da matematica local"
+            echo '~~~json'
+            cat /tmp/sugar-check.json
+            echo '~~~'
+            echo "Nenhum destes testes equivale a certificacao RTP."
+          } >> "$GITHUB_STEP_SUMMARY"
