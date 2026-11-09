@@ -20,15 +20,43 @@ document.getElementById('run').onclick=async()=>{
   const g=reset(),d=frame.contentDocument,ctx=d.getElementById('canvas').getContext('2d');
   const pixel=(x,y)=>{const v=g.viewport;return [...ctx.getImageData(Math.floor((v.ox+x*v.scale)*v.dpr),Math.floor((v.oy+y*v.scale)*v.dpr),1,1).data];};
   const draw=g.reelBoard;let expected;
-  try{g.reelBoard=()=>{};g._v05LastRender=0;g.render(performance.now());expected=Array.from({length:5},(_,c)=>pixel(83+c*101,270));}
+  try{g.reelBoard=()=>{};g._v05LastRender=0;g.render(performance.now());expected=Array.from({length:5},(_,c)=>pixel(83+c*101,380));}
   finally{g.reelBoard=draw;}
   g._v05LastRender=0;g.render(performance.now());
-  for(let c=0;c<5;c++){const actual=pixel(83+c*101,270),delta=actual.slice(0,3).reduce((n,v,i)=>n+Math.abs(v-expected[c][i]),0);assert(delta<42,'Fundo opaco no tambor '+(c+1)+': '+delta);}
+  for(let c=0;c<5;c++){const actual=pixel(83+c*101,380),delta=actual.slice(0,3).reduce((n,v,i)=>n+Math.abs(v-expected[c][i]),0);assert(delta<42,'Fundo opaco no tambor '+(c+1)+': '+delta);}
+ });
+ await check('Peças e molduras deslocam-se juntas durante a rotação',()=>{
+  const g=reset(),layout=g.visualV11?.layout,ctx=frame.contentDocument.getElementById('canvas').getContext('2d');
+  assert(layout&&layout.top===268&&layout.gh===116,'Novo layout não carregado');
+  const q=quiet(),strip=Array.from({length:45},(_,i)=>q[i%5][i%3]);
+  g.spinObject={start:1000,duration:940,reelGap:145,steps:[18,21,24,27,30],
+   stopped:[false,false,false,false,false],grid:q,show:Array.from({length:5},()=>strip)};
+  g.spinning=true;
+  const original=ctx.drawImage,coords=[];
+  try{
+   ctx.drawImage=function(...args){if(args[0]===g.visualV11.tile)coords.push([args[1],args[2]]);return original.apply(this,args);};
+   g.reelBoard(1250);
+  }finally{ctx.drawImage=original;g.spinning=false;g.spinObject=null;}
+  const first=coords.filter(p=>p[0]===layout.left);
+  assert(first.length>=4,'As células não aparecem durante a rotação');
+  assert(first.some(p=>Math.abs((p[1]-layout.top)/layout.gh-Math.round((p[1]-layout.top)/layout.gh))>.025),
+   'As molduras não acompanham o deslocamento dos símbolos');
+ });
+ await check('GIRAR circular, sem painel duplicado de prémios nem letras sobre os tambores',()=>{
+  const g=reset(),ctx=frame.contentDocument.getElementById('canvas').getContext('2d'),original=ctx.fillText,texts=[];
+  try{
+   ctx.fillText=function(...args){texts.push(String(args[0]));return original.apply(this,args);};
+   g._v05LastRender=0;g.render(performance.now());
+  }finally{ctx.fillText=original;}
+  for(const label of ['SALDO','APOSTA','PRÉMIO'])assert(texts.includes(label),'Falta '+label);
+  assert(!texts.some(x=>x.includes('PRÉMIO DA JOGADA')||x.includes('LINHAS  ·')),'Informação redundante desenhada');
+  assert(g.targets.some(x=>x.label==='GIRAR'&&x.w===130&&x.h===130),'Botão GIRAR circular não interativo');
+  assert(g.visualV11.medallion.width>200,'Medalhão HD não criado');
  });
  await check('Quatro separadores fixos e zoom duplo bloqueado',()=>{
   const g=reset();assert(typeof g.drawReelSeparators==='function');
   let count=0;const draw=g.drawReelSeparators;
-  try{g.drawReelSeparators=function(l,t,i,h){count++;assert(l===33&&t===258&&i===101&&h===132);return draw.call(this,l,t,i,h);};g._v05LastRender=0;g.render(performance.now());}
+  try{g.drawReelSeparators=function(l,t,i,h){count++;assert(l===33&&t===268&&i===101&&h===116);return draw.call(this,l,t,i,h);};g._v05LastRender=0;g.render(performance.now());}
   finally{g.drawReelSeparators=draw;}
   assert(count>=1,'Separadores não foram desenhados (chamadas: '+count+')');
   const stage=frame.contentDocument.getElementById('stage'),ev=new frame.contentWindow.MouseEvent('dblclick',{cancelable:true,bubbles:true});
@@ -39,7 +67,7 @@ document.getElementById('run').onclick=async()=>{
   try{ctx.drawImage=function(...args){if(args[0]===g.images.KING||args[0]===g.images.A)positions.push(args);return draw.apply(this,args);};g.drawIcon('KING',33,258,99,132);g.drawIcon('A',33,258,99,132);}
   finally{ctx.drawImage=draw;}
   assert(positions.length===2,'Símbolos não desenhados');
-  for(const [img,x,y,w,h] of positions){assert(w<=94&&h<=94,'Imagem maior que o quadrado');assert(x>=33&&x+w<=132&&y>=258&&y+h<=390,'Ícone cortado');assert(Math.abs(w/h-img.naturalWidth/img.naturalHeight)<.003,'Imagem deformada');}
+  for(const [img,x,y,w,h] of positions){assert(w<=99&&h<=99,'Imagem maior que o quadrado');assert(x>=33&&x+w<=132&&y>=258&&y+h<=390,'Ícone cortado');assert(Math.abs(w/h-img.naturalWidth/img.naturalHeight)<.003,'Imagem deformada');}
  });
  for(const [w,h]of [[320,568],[375,667],[390,844],[430,932],[768,1024]])await check(`Formato 9:16 e alvos táteis ≥44 px em ${w}×${h}`,async()=>{frame.style.width=w+'px';frame.style.height=h+'px';await raf();await poll(()=>Math.abs(get().viewport.width-frame.contentDocument.getElementById('stage').clientWidth)<2);const d=frame.contentDocument,b=d.getElementById('stage').getBoundingClientRect();assert(Math.abs(b.width/b.height-9/16)<.002);const buttons=[...d.querySelectorAll('.touch-target')];assert(buttons.length>=5);for(const el of buttons){const r=el.getBoundingClientRect();assert(r.width>=43.9&&r.height>=43.9);assert(r.left>=b.left-1&&r.right<=b.right+1&&r.top>=b.top-1&&r.bottom<=b.bottom+1,'Alvo fora do ecrã');}});
  frame.style.width='390px';frame.style.height='844px';await raf();
