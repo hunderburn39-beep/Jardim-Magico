@@ -93,15 +93,7 @@ class Game {
  initInputs(){
   // Capture touches before the transparent button overlay: the active visual
   // extension uses reel coordinates top=268, height=116 (not the legacy 258/132).
-  $('stage').addEventListener('pointerdown',e=>{
-   if(this.spinning||this.superseded||!mod.classList.contains('hidden'))return;
-   const bounds=canvas.getBoundingClientRect();
-   const x=(e.clientX-bounds.left-ox)/sc,y=(e.clientY-bounds.top-oy)/scY;
-   const col=Math.floor((x-33)/101),row=Math.floor((y-268)/116);
-   if(col<0||col>4||row<0||row>2||x<33+col*101||x>33+col*101+99||y<268||y>=616)return;
-   e.preventDefault();e.stopPropagation();this.audio.init();this.audio.click();
-   this.showSymbolPay(this.grid[col][row]);
-  },{capture:true,passive:false});
+
   canvas.addEventListener('pointerdown',e=>{e.preventDefault();this.audio.init();let b=canvas.getBoundingClientRect();const x=(e.clientX-b.left-ox)/sc,y=(e.clientY-b.top-oy)/scY;
    if(mod.classList.contains('hidden')===false)return;
    // Direct canvas hit-testing keeps symbols tappable on iPhone Safari,
@@ -160,11 +152,15 @@ class Game {
    for(let col=0;col<5;col++)for(let row=0;row<3;row++){
     const button=document.createElement('button');button.type='button';
     button.style.cssText='position:absolute;transform:translate(-50%,-50%);border:0;background:transparent;color:transparent;pointer-events:auto;touch-action:manipulation;padding:0;cursor:pointer';
-    button.addEventListener('click',ev=>{
+    button.addEventListener('pointerdown',ev=>{
      ev.preventDefault();ev.stopPropagation();
      if(this.spinning||this.superseded||!mod.classList.contains('hidden'))return;
-     this.audio.init();this.audio.click();this.showSymbolPay(this.grid[col][row]);
+     this.showSymbolPay(this.grid[col][row]);
     });
+    for(const eventName of ['pointerup','pointercancel','pointerleave','lostpointercapture']){
+     button.addEventListener(eventName,()=>this.hideSymbolPay());
+    }
+
     layer.appendChild(button);this._symbolButtons.push({button,col,row});
    }
    this._symbolOverlay=layer;
@@ -308,16 +304,15 @@ class Game {
 
  showSymbolPay(symbol){
   if(this.spinning||this.superseded||!E.PAYS[symbol])return;
-  const name=iconNames[symbol]||symbol,stake=this.bet/this.lines;
-  const rows=[2,3,4,5].map(n=>'<div style="display:flex;justify-content:space-between;gap:15px;padding:3px 0"><b>'+n+'×</b><b style="color:#ffe29a">'+(E.PAYS[symbol][n]?money(E.PAYS[symbol][n]*stake):'—')+'</b></div>').join('');
-  const old=document.getElementById('symbol-pay-bubble');if(old)old.remove();
+  this.hideSymbolPay();
+  const stake=this.bet/this.lines;
   const bubble=document.createElement('div');bubble.id='symbol-pay-bubble';
-  bubble.setAttribute('role','status');
-  bubble.style.cssText='position:absolute;z-index:9;left:50%;top:46%;transform:translate(-50%,-50%);width:190px;max-width:80%;padding:12px 15px;border:2px solid #e1b968;border-radius:13px;background:linear-gradient(150deg,#34291e,#0d1b2b);box-shadow:0 6px 24px #000b,0 0 12px #d4a04a66;color:#f9e7c2;font:700 14px/1.4 Arial,sans-serif;pointer-events:none';
-  bubble.innerHTML='<div style="font-size:12px;text-align:center;color:#ffdfa0;margin-bottom:6px">'+name+'</div>'+rows;
+  bubble.style.cssText='position:absolute;z-index:9;left:50%;top:43%;transform:translate(-50%,-50%);width:155px;padding:8px 12px;border:2px solid #e1b968;border-radius:11px;background:#14202cf5;box-shadow:0 5px 20px #000b;color:#ffe5a6;font:700 14px/1.5 Arial,sans-serif;pointer-events:none';
+  bubble.innerHTML=[2,3,4,5].map(n=>'<div style="display:flex;justify-content:space-between;gap:12px"><span>'+n+'×</span><span>'+(E.PAYS[symbol][n]?money(E.PAYS[symbol][n]*stake):'—')+'</span></div>').join('');
   $('stage').appendChild(bubble);
-  clearTimeout(this._symbolBubbleTimer);
-  this._symbolBubbleTimer=setTimeout(()=>{if(bubble.isConnected)bubble.remove();},2600);
+ }
+ hideSymbolPay(){
+  document.getElementById('symbol-pay-bubble')?.remove();
  }
 
  openInfo(tab='menu'){
