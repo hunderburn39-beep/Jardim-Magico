@@ -155,8 +155,9 @@ export function computeLayout(w: number, h: number): LayoutMetrics {
     const bottomEstimate = Math.max(160, Math.min(h * 0.32, 340));
 
     const availableH = Math.max(CLAMP.gridMin, safeH - topReserved - bottomEstimate);
-    // Cap grid width to 78% of screen so it doesn't stretch edge-to-edge on narrow phones
-    const maxGridW = w * 0.78;
+    // Ocupa quase toda a largura útil do iPhone. Mantém 5% de margem
+    // para a moldura, em vez de desperdiçar 22% do ecrã.
+    const maxGridW = w * 0.89;
 
     gridSize = Math.min(maxGridW, availableH);
     gridSize = Math.max(gridSize, CLAMP.gridMin);
