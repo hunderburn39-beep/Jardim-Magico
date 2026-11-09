@@ -81,7 +81,7 @@
     const factor = this.bet > 0 ? prize / this.bet : 0;
     if (!Number.isFinite(factor) || factor < 10) return;
     const tier = factor >= 100 ? 3 : factor >= 30 ? 2 : 1;
-    const duration = reduceMotion ? 750 : this.turbo ? 1100 : tier === 3 ? 3150 : tier === 2 ? 2550 : 1900;
+    const duration = reduceMotion ? 1250 : this.turbo ? 1900 : tier === 3 ? 5150 : tier === 2 ? 4550 : 3900;
     const start=Math.max(performance.now(),this.reveal?.end||0,this.featureIntro?.end||0);
     const messages = { 1: 'GRANDE PRÉMIO', 2: 'PRÉMIO ÉPICO', 3: 'TESOURO LENDÁRIO' };
     this.v04Celebration = {
