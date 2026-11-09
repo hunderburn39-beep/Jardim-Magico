@@ -18,7 +18,7 @@ test("30 trajetos possíveis e todas as posições válidas", () => {
 test("Aposta limitada aos valores previstos", () => {
   let s = E.createState();
   assert.equal(E.setBet(s, 5).bet, 5);
-  assert.equal(E.setBet(s, 999).bet, 2);
+  assert.equal(E.setBet(s, 999).bet, 1);
 });
 test("Sem saldo não roda nem altera o estado", () => {
   const s = { ...E.createState(), balance: 0 };
@@ -50,7 +50,7 @@ test("Scatter acumula free spins e prémio correto", () => {
   assert.equal(r.ok, true);
   assert.equal(r.result.scatter, 15);
   assert.equal(r.earnedSpins, 10);
-  assert.equal(r.result.scatterWin, 30);
+  assert.equal(r.result.scatterWin, 15);
   assert.ok(r.state.freeSpins >= 10);
   assert.ok(r.state.pendingPot);
   assert.equal(r.state.pendingPot.choices.length, 3);
@@ -108,28 +108,27 @@ test("20 000 jogadas reprodutíveis sem NaN nem créditos negativos", () => {
   }
 });
 
-test("20, 25 e 30 linhas selecionam contagens diferentes", () => {
-  const grid = Array.from({length:5}, () => ["wild","wild","wild"]);
-  const p20 = E.evaluateGrid(grid,2,false,20);
-  const p25 = E.evaluateGrid(grid,2,false,25);
-  const p30 = E.evaluateGrid(grid,2,false,30);
-  assert.equal(p20.hits.length,20);
-  assert.equal(p25.hits.length,25);
-  assert.equal(p30.hits.length,30);
+test("1, 5, 15, 25 e 30 linhas selecionam contagens diferentes", () => {
+  const grid=Array.from({length:5},()=>["wild","wild","wild"]);
+  for(const tier of E.BET_LEVELS){
+    const result=E.evaluateGrid(grid,tier.bet,false,tier.lines);
+    assert.equal(result.hits.length,tier.lines);
+  }
 });
 test("Tambores travados conservam ícones entre jogadas", () => {
   const previous = Array.from({length:5},()=>["pumpkin","ghost","bat"]);
-  const s = { ...E.createState(), balance:100, lines:20 };
+  const s = { ...E.createState(), balance:100, lines:25, bet:15 };
   const result = E.spin(s, fixed(.999999), previous, new Set([0,2,4]));
   assert.equal(result.ok,true);
   assert.deepEqual(result.heldReels,[0,2,4]);
   for(const col of [0,2,4])assert.deepEqual(result.grid[col],previous[col]);
-  assert.equal(result.state.lines,20);
+  assert.equal(result.state.lines,25);
 });
 test("Acumulados e seleção de linhas persistem na alteração de aposta", () => {
   const s = { ...E.createState(),lines:30,jackpots:[440,880] };
   const next = E.setBet(s,5);
-  assert.equal(next.lines,30);
+  assert.equal(next.lines,5);
+  assert.equal(next.bet,5);
   assert.deepEqual(next.jackpots,[440,880,1500,3000]);
 });
 
@@ -137,7 +136,7 @@ test("Três Wild seguidos de Scatter ainda pagam linha de Wild", () => {
   const grid = Array.from({ length: 5 }, () => ["bat","ghost","witch"]);
   grid[0][1] = "wild"; grid[1][1] = "wild"; grid[2][1] = "wild";
   grid[3][1] = "scatter"; grid[4][1] = "scatter";
-  const r = E.evaluateGrid(grid,2,false,20);
+  const r = E.evaluateGrid(grid,1,false,1);
   assert.ok(r.hits.some(h => h.line===1 && h.count===3 && h.symbol==="wild"));
 });
 test("Bónus caldeirão bloqueia nova aposta até escolher um dos três", () => {
@@ -194,13 +193,22 @@ test("Roleta atribui um acumulado e repõe apenas esse acumulado",()=>{
   assert.equal(credited.state.jackpots[0],350);
   assert.equal(credited.state.jackpots[1],spun.state.jackpots[1]);
 });
-test("Acumulados só crescem em giros pagos",()=>{
+test("Acumulados guardam frações de cêntimo e só crescem em giros pagos",()=>{
   const original=E.createState();
-  const base=E.spin(original,fixed(.45));
-  assert.ok(base.state.jackpots[0]>original.jackpots[0]);
-  assert.ok(base.state.jackpots[1]>original.jackpots[1]);
+  const first=E.spin(original,fixed(.45));
+  assert.equal(first.ok,true);
+  assert.ok(first.state.jackpotRemainders[0]>0);
+  let paid=first.state;
+  for(let i=0;i<100;i++){
+    const result=E.spin(paid,fixed(.45));
+    assert.equal(result.ok,true);
+    paid=result.state;
+  }
+  assert.ok(paid.jackpots[0]>original.jackpots[0]);
+  assert.ok(paid.jackpots[1]>original.jackpots[1]);
   const free=E.spin({...E.createState(),freeSpins:1},fixed(.45));
   assert.deepEqual(free.state.jackpots,[350,750,1500,3000]);
+  assert.deepEqual(free.state.jackpotRemainders,[0,0,0,0]);
 });
 
 test("Caldeirão e roleta na mesma ronda são resolvidos sem duplicar créditos",()=>{
@@ -384,7 +392,7 @@ test("O APK indica cinco animações de dados; criam-se cinco escolhas",()=>{
   assert.equal(E.spin(r.state,()=>.5).reason,"bonus-pendente");
 });
 test("Bónus de dados é recuperável e paga uma única vez",()=>{
-  const original={...E.createState(),bet:5,balance:120,
+  const original={...E.createState(),bet:5,lines:5,balance:120,
     pendingDice:{faces:[1,2,3,4,6]}};
   const restored=E.sanitize(JSON.parse(JSON.stringify(original)));
   assert.deepEqual(restored.pendingDice,original.pendingDice);
@@ -401,21 +409,61 @@ test("Bónus de dados é recuperável e paga uma única vez",()=>{
 });
 test("Dados e roleta pendentes não duplicam a recompensa",()=>{
   const input={...E.createState(),pendingDice:{faces:[2,3,4,5,6]},
-    pendingWheel:{sectorIndex:0,payout:10},bet:2};
+    pendingWheel:{sectorIndex:0,payout:10},bet:5,lines:5};
   assert.equal(E.spin(input,()=>.2).reason,"bonus-pendente");
   const dice=E.chooseDice(input,1);
-  assert.equal(dice.awarded,6);
+  assert.equal(dice.awarded,15);
   assert.ok(dice.state.pendingWheel);
   assert.equal(E.spin(dice.state,()=>.2).reason,"bonus-pendente");
   const wheel=E.resolveWheel(dice.state);
   assert.equal(wheel.awarded,10);
   assert.equal(wheel.state.pendingWheel,null);
   assert.equal(E.resolveWheel(wheel.state).ok,false);
-  assert.equal(wheel.state.balance,input.balance+16);
+  assert.equal(wheel.state.balance,input.balance+25);
 });
 test("Dados corrompidos não criam pagamentos ao restaurar",()=>{
   const input={...E.createState(),pendingDice:{faces:[9,-4,1,2,3]}};
   assert.equal(E.sanitize(input).pendingDice,null);
   const missing={...E.createState(),pendingDice:{faces:[1,2,3]}};
   assert.equal(E.sanitize(missing).pendingDice,null);
+});
+
+test("Escalões fixos associam aposta total em cêntimos e número de linhas",()=>{
+  const expected=[[1,1],[5,5],[10,15],[15,25],[20,30]];
+  assert.deepEqual(E.BET_LEVELS.map(t=>[t.bet,t.lines]),expected);
+  for(const [bet,lines] of expected){
+    const byBet=E.setBet(E.createState(),bet);
+    assert.equal(byBet.bet,bet);
+    assert.equal(byBet.lines,lines);
+    const byLines=E.setLines(E.createState(),lines);
+    assert.equal(byLines.bet,bet);
+    assert.equal(byLines.lines,lines);
+    assert.equal(E.sanitize(byBet).lines,lines);
+  }
+});
+test("Um giro pago desconta só a aposta total e não aposta vezes linhas",()=>{
+  for(const tier of E.BET_LEVELS){
+    const s={...E.setBet(E.createState(),tier.bet),balance:10000};
+    const r=E.spin(s,fixed(.45));
+    assert.equal(r.ok,true);
+    assert.equal(r.state.balance,10000-tier.bet+r.result.total);
+    assert.equal(r.state.bet,tier.bet);
+    assert.equal(r.state.lines,tier.lines);
+  }
+});
+test("Apostas e linhas emparelhadas mantêm os bónus e bloqueiam alteração em Free Spins",()=>{
+  for(const tier of E.BET_LEVELS){
+    const s={...E.setBet(E.createState(),tier.bet),freeSpins:1};
+    assert.equal(E.setBet(s,20).bet,tier.bet);
+    assert.equal(E.setLines(s,30).lines,tier.lines);
+    const bonus={...E.setBet(E.createState(),tier.bet),
+      pendingDice:{faces:[1,2,3,4,6]}};
+    assert.equal(E.setBet(bonus,20).bet,tier.bet);
+  }
+});
+test("Sessões antigas convertem 20, 25 e 30 linhas sem pares inválidos",()=>{
+  assert.deepEqual([20,25,30].map(lines=>{
+    const s=E.sanitize({bet:2,lines});
+    return [s.bet,s.lines];
+  }),[[15,25],[15,25],[20,30]]);
 });
