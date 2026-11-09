@@ -308,15 +308,16 @@ class Game {
 
  showSymbolPay(symbol){
   if(this.spinning||this.superseded||!E.PAYS[symbol])return;
-  const image=this.images[symbol],name=iconNames[symbol]||symbol;
-  const stake=this.bet/this.lines;
-  const rows=[2,3,4,5].map(n=>{
-   const multiplier=E.PAYS[symbol][n]||0;
-   const amount=multiplier*stake;
-   return '<tr><td style="padding:9px 12px">'+n+' iguais</td><td style="padding:9px 12px;text-align:right;color:#ffe6a4;font-weight:800">'+(multiplier?money(amount):'—')+'</td></tr>';
-  }).join('');
-  const pic=image?.src?'<img src="'+image.src+'" alt="" style="display:block;width:100px;height:100px;object-fit:contain;margin:8px auto;filter:drop-shadow(0 0 14px #f0b84d)">':'';
-  this.openModal(name.toUpperCase(),'<div style="max-width:380px;margin:auto;padding:14px;border:2px solid #d4a45c;border-radius:16px;background:linear-gradient(145deg,#38251b,#101b2a 65%,#3d2919);box-shadow:inset 0 0 22px #d7a44d40,0 0 18px #c99a4540">'+pic+'<h3 style="text-align:center;color:#ffdf98">'+name+'</h3><p style="text-align:center">Aposta atual: <b>'+money(this.bet)+'</b></p><table style="width:100%;color:#f7e9ca">'+rows+'</table><p style="font-size:12px;text-align:center">Prémios por linha ativa ('+this.lines+' linhas). Os símbolos contam da esquerda para a direita. O santuário também pode ativar Free Spins como Scatter.</p></div>');
+  const name=iconNames[symbol]||symbol,stake=this.bet/this.lines;
+  const rows=[2,3,4,5].map(n=>'<div style="display:flex;justify-content:space-between;gap:15px;padding:3px 0"><b>'+n+'×</b><b style="color:#ffe29a">'+(E.PAYS[symbol][n]?money(E.PAYS[symbol][n]*stake):'—')+'</b></div>').join('');
+  const old=document.getElementById('symbol-pay-bubble');if(old)old.remove();
+  const bubble=document.createElement('div');bubble.id='symbol-pay-bubble';
+  bubble.setAttribute('role','status');
+  bubble.style.cssText='position:absolute;z-index:9;left:50%;top:46%;transform:translate(-50%,-50%);width:190px;max-width:80%;padding:12px 15px;border:2px solid #e1b968;border-radius:13px;background:linear-gradient(150deg,#34291e,#0d1b2b);box-shadow:0 6px 24px #000b,0 0 12px #d4a04a66;color:#f9e7c2;font:700 14px/1.4 Arial,sans-serif;pointer-events:none';
+  bubble.innerHTML='<div style="font-size:12px;text-align:center;color:#ffdfa0;margin-bottom:6px">'+name+'</div>'+rows;
+  $('stage').appendChild(bubble);
+  clearTimeout(this._symbolBubbleTimer);
+  this._symbolBubbleTimer=setTimeout(()=>{if(bubble.isConnected)bubble.remove();},2600);
  }
 
  openInfo(tab='menu'){
