@@ -272,7 +272,7 @@ class Game {
   this.syncLedger();if(!free&&this.auto>0)this.auto--;
   this.reveal=null;this.featureIntro=null;this.winCount=null;this.lastWin=0;this.lastResult=null;this.expanded={};this.winCells=[];
   this.spinning=true;this.landings.fill(0);this.fxParticles=[];
-  const t=performance.now(),duration=this.turbo?440:940,reelGap=this.turbo?75:145;
+  const t=performance.now(),duration=this.turbo?520:1180,reelGap=this.turbo?90:175;
   this.spinObject={grid:begun.pending.grid,result:begun.result,free,start:t,duration,reelGap,stopped:Array(5).fill(false),show:Array.from({length:5},()=>Array.from({length:14},()=>choose(E.ALL)))};
   this.spinObject.steps=Array.from({length:5},(_,c)=>18+c*3);
   this.spinObject.show=this.spinObject.steps.map((n,c)=>{const strip=Array.from({length:n+10},()=>choose(E.ALL));for(let r=0;r<3;r++){strip[n+3+r]=this.grid[c][r];strip[3+r]=begun.pending.grid[c][r];}return strip;});
