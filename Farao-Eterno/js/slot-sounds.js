@@ -121,7 +121,11 @@
     // Motor acelera, mantém velocidade, abranda e desaparece por etapas.
     s.source.playbackRate.setTargetAtTime(.66+.72*speed,at,.085);
     s.filter.frequency.setTargetAtTime(680+1250*speed,at,.075);
-    s.gain.gain.setTargetAtTime(.002+.015*weight*(.34+.66*speed),at,.08);
+    // Quando um Wild toca, as engrenagens recuam para deixar o PAAAMMM em primeiro plano.
+    const elapsed=t-(this._wildSoundAtMs??-10000);
+    const duck=elapsed<0?1:elapsed<380?.28:elapsed<1120
+      ?.28+.72*((elapsed-380)/740):1;
+    s.gain.gain.setTargetAtTime((.002+.015*weight*(.34+.66*speed))*duck,at,.08);
     s.motor.frequency.setTargetAtTime(53+21*speed,at,.09);
     s.motorGain.gain.setTargetAtTime(.0005+.003*weight*speed,at,.09);
     // Catraca muito discreta, ligeiramente mais espaçada durante a travagem.
@@ -152,8 +156,21 @@
   function wildPaam(count){
     if(!ready())return;
     const ac=audio.ctx,t=ac.currentTime;
-    const force=count<=1 ? 0.87 : count===2 ? 1 : 1.16;
-    const duration=count>=3?1.24:1.08;
+    // Muito mais alto que o som normal, com compressão global para evitar clipping.
+    // O segundo e o terceiro Wild ganham peso, mas mantêm o mesmo timbre.
+    const force=count<=1 ? 1.92 : count===2 ? 2.22 : 2.52;
+    const duration=count>=3?1.30:1.16;
+    audio._wildSoundAtMs=performance.now();
+    // Baixar temporariamente a música (sem desligá-la) e devolver suavemente.
+    const music=audio.musicBus?.gain;
+    if(music){
+      try{
+        music.cancelScheduledValues(t);
+        music.setValueAtTime(Math.max(.001,music.value),t);
+        music.setTargetAtTime(.44,t,.040);
+        music.setTargetAtTime(2.5,t+.58,.30);
+      }catch(_){}
+    }
     try{
       // Cada voz começa em simultâneo, como uma única pancada orquestral.
       function layer(type,from,to,peak,length,cutoff){
@@ -173,12 +190,13 @@
         osc.onended=()=>{try{osc.disconnect();lp.disconnect();env.disconnect();}catch(_){}};
       }
       // A componente central é audível nos altifalantes pequenos do iPhone.
-      layer('triangle',205,154,.066,duration,1350);
-      layer('sawtooth',307,240,.027,duration*.82,1040);
-      layer('sine',108,82,.039,duration*.88,580);
-      layer('sine',410,348,.015,duration*.62,1200);
-      // Um único ataque curto — depois fica só a ressonância "mmmm".
-      friction(.084,.018*force,1500);
+      layer('triangle',205,154,.074,duration,1350);
+      layer('sawtooth',307,240,.029,duration*.82,1040);
+      layer('sine',108,82,.043,duration*.88,580);
+      layer('sine',410,348,.024,duration*.68,1200);
+      // Ataque que se ouve bem no iPhone, seguido da ressonância "mmmm".
+      layer('triangle',615,365,.026,duration*.22,1700);
+      friction(.084,.016*force,1420);
     }catch(_){
       note(220,152,.85,.042*force);
     }
@@ -209,5 +227,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.3.2',original:true,procedural:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.3.3',original:true,procedural:true,dynamicReelSpeed:true};
 })();
