@@ -12,7 +12,7 @@ function txt(s,x,y,value,size=28,color="#fff6d9",extra={}) {
     fontStyle:"bold",color,align:"center",stroke:"#1a1324",strokeThickness:3,...extra}).setOrigin(.5);
 }
 class Classica extends Phaser.Scene{
- constructor(){super("classica");this.state=E.createState();this.spinning=false;this.auto=false;this.silence=false;this.held=new Set();this.previous=null;this.canHold=false;this.audio=null;this.potOpen=false;this.strawberryOpen=false;this.tableOpen=false;this.winTimer=null;this.winIndex=0;}
+ constructor(){super("classica");this.state=E.createState();this.spinning=false;this.auto=false;this.silence=false;this.held=new Set();this.previous=null;this.canHold=false;this.audio=null;this.potOpen=false;this.strawberryOpen=false;this.diceOpen=false;this.tableOpen=false;this.winTimer=null;this.winIndex=0;}
  preload(){
    for(const [id,svg] of Object.entries(ART))
      this.load.svg("h-"+id,"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg),{width:156,height:174});
@@ -25,15 +25,17 @@ class Classica extends Phaser.Scene{
    this.bottom();
    this.makePotBonus();
    this.makeStrawberryBonus();
+   this.makeDiceBonus();
    this.makeWheelBonus();
    this.makePaytable();
    this.shortcuts();
    this.renderState();
    this.previous=this.state.lastGrid;
    this.canHold=Boolean(this.previous)&&this.state.lastWin===0&&
-     this.state.freeSpins===0&&!this.state.pendingPot&&!this.state.pendingStrawberry&&!this.state.pendingWheel;
+     this.state.freeSpins===0&&!this.state.pendingPot&&!this.state.pendingStrawberry&&!this.state.pendingDice&&!this.state.pendingWheel;
    if(new URLSearchParams(window.location.search).has("smoke")) globalThis.__HALLOWEEN_SCENE__=this;
-   if(this.state.pendingStrawberry)this.showStrawberryBonus();
+   if(this.state.pendingDice)this.showDiceBonus();
+   else if(this.state.pendingStrawberry)this.showStrawberryBonus();
    else if(this.state.pendingPot)this.showPotBonus();
    else if(this.state.pendingWheel)this.showWheelBonus();
    status.textContent="";
@@ -197,14 +199,14 @@ class Classica extends Phaser.Scene{
    }
  }
  changeBet(){
-   if(this.spinning||this.potOpen||this.strawberryOpen||this.wheelOpen||this.tableOpen||this.state.freeSpins>0)return;
+   if(this.spinning||this.potOpen||this.strawberryOpen||this.diceOpen||this.wheelOpen||this.tableOpen||this.state.freeSpins>0)return;
    this.clearHolds();
    const options=[1,2,5,10],i=options.indexOf(this.state.bet);
    this.state=E.setBet(this.state,options[(i+1)%options.length]);
    this.renderState();this.store();this.tone(480,.06);
  }
  changeLines(){
-   if(this.spinning||this.potOpen||this.strawberryOpen||this.wheelOpen||this.tableOpen||this.state.freeSpins>0)return;
+   if(this.spinning||this.potOpen||this.strawberryOpen||this.diceOpen||this.wheelOpen||this.tableOpen||this.state.freeSpins>0)return;
    this.clearHolds();
    const options=[20,25,30],i=options.indexOf(this.state.lines||30);
    this.state.lines=options[(i+1)%3];
@@ -213,7 +215,7 @@ class Classica extends Phaser.Scene{
    this.store();this.tone(440,.06);
  }
  toggleAuto(){
-   if(this.potOpen||this.strawberryOpen||this.wheelOpen||this.tableOpen)return;
+   if(this.potOpen||this.strawberryOpen||this.diceOpen||this.wheelOpen||this.tableOpen)return;
    this.auto=!this.auto;
    this.autoText.setText(this.auto?"ATIVO":"");
    if(this.auto&&!this.spinning)this.spin();
@@ -224,7 +226,7 @@ class Classica extends Phaser.Scene{
    for(const label of this.locks)label.setVisible(false);
  }
  toggleHold(col){
-   if(this.spinning||this.potOpen||this.strawberryOpen||this.wheelOpen||this.tableOpen||!this.canHold||!this.previous)return;
+   if(this.spinning||this.potOpen||this.strawberryOpen||this.diceOpen||this.wheelOpen||this.tableOpen||!this.canHold||!this.previous)return;
    if(this.held.has(col))this.held.delete(col);
    else if(this.held.size<4)this.held.add(col);
    else { this.message.setText("PELO MENOS UM TAMBOR TEM DE RODAR"); return; }
@@ -233,11 +235,12 @@ class Classica extends Phaser.Scene{
    this.tone(560,.05);
  }
  spin(){
-   if(this.spinning||this.potOpen||this.strawberryOpen||this.wheelOpen||this.tableOpen)return;
+   if(this.spinning||this.potOpen||this.strawberryOpen||this.diceOpen||this.wheelOpen||this.tableOpen)return;
    const outcome=E.spin(this.state,Math.random,this.previous,this.held);
    if(!outcome.ok){
      if(outcome.reason==="bonus-pendente"){
-       if(this.state.pendingStrawberry)this.showStrawberryBonus();
+       if(this.state.pendingDice)this.showDiceBonus();
+       else if(this.state.pendingStrawberry)this.showStrawberryBonus();
        else if(this.state.pendingPot)this.showPotBonus();
        else if(this.state.pendingWheel)this.showWheelBonus();
        return;
@@ -302,17 +305,18 @@ class Classica extends Phaser.Scene{
    if(!this.spinning)return;
    this.spinning=false;this.state=result.state;
    this.state.lines=this.state.lines||30;
-   this.state.jackpots=this.state.jackpots||[350,750];
+   this.state.jackpots=this.state.jackpots||[350,750,1500,3000];
    this.previous=result.grid;
    this.clearHolds();
-   this.canHold=result.result.total===0&&!result.free&&!result.potTriggered&&!result.strawberryTriggered&&!result.wheelTriggered;
+   this.canHold=result.result.total===0&&!result.free&&!result.potTriggered&&!result.strawberryTriggered&&!result.diceTriggered&&!result.wheelTriggered;
    this.highlight(result.result.hits);
    if(result.earnedSpins){this.message.setText("+10 GIROS GRÁTIS!");this.flash();}
    else if(result.pumpkinBonuses){this.message.setText("BÓNUS DAS ABÓBORAS!");this.flash();}
    else if(result.result.total>0){this.message.setText("PRÉMIO "+fmt(result.result.total));this.tone(740,.15);}
    else{this.message.setText("SEM PRÉMIO — TOCA NUM TAMBOR PARA TRAVAR");}
    this.renderState();this.store();
-   if(result.strawberryTriggered)this.showStrawberryBonus();
+   if(result.diceTriggered)this.showDiceBonus();
+   else if(result.strawberryTriggered)this.showStrawberryBonus();
    else if(result.potTriggered)this.showPotBonus();
    else if(result.wheelTriggered)this.showWheelBonus();
    else if(this.auto) this.time.delayedCall(620,()=>{if(this.auto)this.spin();});
@@ -368,6 +372,69 @@ class Classica extends Phaser.Scene{
    if(this.tableOpen)this.auto=false;
    this.tableOverlay.setVisible(this.tableOpen);
    this.autoText.setText("");
+ }
+ makeDiceBonus(){
+   // Atlas original: dados vermelhos e cinco animações individuais.
+   // Todos os elementos aqui são desenhados no Phaser, sem assets do APK.
+   this.diceOpen=false;
+   this.diceOverlay=this.add.container(0,0).setDepth(125).setVisible(false);
+   const dark=this.add.rectangle(W/2,H/2,W,H,0x0c0819,.97).setInteractive();
+   const border=this.add.graphics();
+   border.fillStyle(0x29142a,.98).fillRoundedRect(28,330,664,620,22);
+   border.lineStyle(6,0xe5ad61).strokeRoundedRect(28,330,664,620,22);
+   this.diceOverlay.add([dark,border,txt(this,360,391,"BÓNUS DOS DADOS",37,"#ffda9d"),
+     txt(this,360,453,"ESCOLHE UM DOS CINCO",26,"#f4dfbf")]);
+   this.diceHits=[];this.diceFaces=[];
+   for(let i=0;i<E.DICE_CHOICES;i++){
+     const x=100+i*130,y=638;
+     const shadow=this.add.graphics();
+     shadow.fillStyle(0x070913,.7).fillRoundedRect(x-51,y-45,108,110,14);
+     shadow.fillStyle(0xa01d1b).fillRoundedRect(x-52,y-59,104,101,14);
+     shadow.lineStyle(5,0xee956d).strokeRoundedRect(x-52,y-59,104,101,14);
+     shadow.fillStyle(0xd52e28).fillRoundedRect(x-42,y-51,84,83,11);
+     shadow.fillStyle(0xffcfb9);
+     for(const [dx,dy] of [[-24,-24],[24,-24],[-24,22],[24,22]])
+        shadow.fillCircle(x+dx,y+dy,5);
+     this.diceOverlay.add(shadow);
+     const face=txt(this,x,y-8,"?",43,"#fff2d5");
+     this.diceOverlay.add(face);this.diceFaces.push(face);
+     this.diceOverlay.add(txt(this,x,y+74,String(i+1),23,"#f8c888"));
+     const hit=this.add.zone(x,y,116,124).setInteractive({useHandCursor:true});
+     hit.on("pointerdown",()=>this.pickDice(i));
+     this.diceOverlay.add(hit);this.diceHits.push(hit);
+   }
+   this.diceHint=txt(this,360,822,"TOCA NUM DADO",26,"#f8dcac");
+   this.diceOverlay.add(this.diceHint);
+ }
+ showDiceBonus(){
+   if(!this.state.pendingDice)return;
+   this.diceOpen=true;this.auto=false;this.autoText.setText("");
+   for(let i=0;i<this.diceHits.length;i++){
+     this.diceHits[i].setInteractive({useHandCursor:true});
+     this.diceFaces[i].setText("?");
+   }
+   this.diceHint.setText("QUAL SERÁ O TEU NÚMERO?");
+   this.diceOverlay.setVisible(true);
+   this.tone(510,.12);
+ }
+ pickDice(index){
+   if(!this.diceOpen||!this.state.pendingDice)return;
+   const result=E.chooseDice(this.state,index);
+   if(!result.ok)return;
+   this.state=result.state;this.store();this.renderState();
+   for(let i=0;i<this.diceHits.length;i++){
+     this.diceHits[i].disableInteractive();
+     this.diceFaces[i].setText(String(result.reveal[i]));
+   }
+   this.diceHint.setText("DADO "+result.face+" · GANHASTE "+fmt(result.awarded)+" CRÉDITOS");
+   this.flash();
+   this.time.delayedCall(1700,()=>{
+      this.diceOverlay.setVisible(false);this.diceOpen=false;
+      this.message.setText("DADOS +"+fmt(result.awarded));
+      if(this.state.pendingWheel)this.showWheelBonus();
+      else if(this.state.pendingStrawberry)this.showStrawberryBonus();
+      else if(this.state.pendingPot)this.showPotBonus();
+   });
  }
  makeStrawberryBonus(){
    // Doze escolhas, como na grelha de elementos gráficos do APK.
