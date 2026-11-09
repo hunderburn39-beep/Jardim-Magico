@@ -6,7 +6,9 @@ const status=document.getElementById("status");
 if(!E||!ART||!globalThis.Phaser){status.textContent="Erro ao carregar o jogo";return;}
 const W=720,H=1280,X=66,Y=334,BW=588,BH=510,CW=BW/5,CH=BH/3;
 const saveKey="halloween-classico-v02"; // Guarda também sessões iniciadas na V0.2
-const fmt=n=>Number(n).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2});
+// O motor usa cêntimos fictícios inteiros; a interface apresenta euros.
+const fmt=n=>(Number(n)/100).toLocaleString("pt-PT",
+  {minimumFractionDigits:2,maximumFractionDigits:2})+" €";
 function txt(s,x,y,value,size=28,color="#fff6d9",extra={}) {
   return s.add.text(x,y,value,{fontFamily:"Georgia,serif",fontSize:size+"px",
     fontStyle:"bold",color,align:"center",stroke:"#1a1324",strokeThickness:3,...extra}).setOrigin(.5);
@@ -151,8 +153,8 @@ class Classica extends Phaser.Scene{
    }
    this.message=txt(this,360,1089,"CARREGA EM JOGAR",26,"#ffeaca");
    this.roundButton(367,1192,70,"JOGAR",30,()=>this.spin(),true);
-   this.roundButton(90,1192,48,"LINHAS",21,()=>this.changeLines());
-   this.roundButton(208,1192,48,"APOSTA",19,()=>this.changeBet());
+   this.roundButton(90,1192,48,"−",39,()=>this.changeLines());
+   this.roundButton(208,1192,48,"+",39,()=>this.changeBet());
    this.roundButton(520,1192,48,"AUTO",21,()=>this.toggleAuto());
    this.roundButton(634,1192,48,"SOM",21,()=>this.toggleSound());
    this.autoText=txt(this,520,1252,"",18,"#fbdeb4");
@@ -179,7 +181,7 @@ class Classica extends Phaser.Scene{
    try {this.state=E.sanitize(JSON.parse(localStorage.getItem(saveKey)));}catch{this.state=E.createState();}
    // valores progressivos são apenas pontos e não representam qualquer obrigação de pagamento
    this.state.jackpots=this.state.jackpots||[350,750,1500,3000];
-   this.state.lines=this.state.lines||30;
+   this.state.lines=this.state.lines||1;
  }
  store(){
    try{localStorage.setItem(saveKey,JSON.stringify(this.state));}catch{/* Modo privado */}
@@ -194,8 +196,10 @@ class Classica extends Phaser.Scene{
       this.pumpkinMarkers[i].setAlpha(i<this.state.pumpkins?1:.3);
    this.autoText.setText(this.auto?"ATIVO":"");
    this.linesText.setText(this.state.freeSpins>0
-     ? this.state.lines+" LINHAS • GIROS GRÁTIS: "+this.state.freeSpins
-     : this.state.lines+" LINHAS • ACUMULADOS");
+     ? "APOSTA "+fmt(this.state.bet)+" • "+this.state.lines+
+       (this.state.lines===1?" LINHA":" LINHAS")+" • GRÁTIS: "+this.state.freeSpins
+     : "APOSTA "+fmt(this.state.bet)+" • "+this.state.lines+
+       (this.state.lines===1?" LINHA":" LINHAS"));
    for(let i=0;i<this.lineMarkers.length;i++){
       const active=i<this.state.lines;
       this.lineMarkers[i].circ.setVisible(active);
@@ -205,17 +209,20 @@ class Classica extends Phaser.Scene{
  changeBet(){
    if(this.spinning||this.potOpen||this.strawberryOpen||this.diceOpen||this.wheelOpen||this.tableOpen||this.state.freeSpins>0)return;
    this.clearHolds();
-   const options=[1,2,5,10],i=options.indexOf(this.state.bet);
-   this.state=E.setBet(this.state,options[(i+1)%options.length]);
+   const options=E.BET_LEVELS,i=options.findIndex(t=>t.bet===this.state.bet);
+   this.state=E.setBet(this.state,options[(i+1)%options.length].bet);
    this.renderState();this.store();this.tone(480,.06);
+   this.message.setText(fmt(this.state.bet)+" • "+this.state.lines+
+     (this.state.lines===1?" LINHA":" LINHAS"));
  }
  changeLines(){
    if(this.spinning||this.potOpen||this.strawberryOpen||this.diceOpen||this.wheelOpen||this.tableOpen||this.state.freeSpins>0)return;
    this.clearHolds();
-   const options=[20,25,30],i=options.indexOf(this.state.lines||30);
-   this.state.lines=options[(i+1)%3];
+   const options=E.BET_LEVELS,i=options.findIndex(t=>t.lines===this.state.lines);
+   this.state=E.setLines(this.state,options[(i+options.length-1)%options.length].lines);
    this.renderState();
-   this.message.setText(this.state.lines+" LINHAS SELECIONADAS");
+   this.message.setText(fmt(this.state.bet)+" • "+this.state.lines+
+     (this.state.lines===1?" LINHA":" LINHAS"));
    this.store();this.tone(440,.06);
  }
  toggleAuto(){
@@ -308,7 +315,7 @@ class Classica extends Phaser.Scene{
  finish(result){
    if(!this.spinning)return;
    this.spinning=false;this.state=result.state;
-   this.state.lines=this.state.lines||30;
+   this.state.lines=this.state.lines||1;
    this.state.jackpots=this.state.jackpots||[350,750,1500,3000];
    this.previous=result.grid;
    this.clearHolds();
@@ -430,7 +437,7 @@ class Classica extends Phaser.Scene{
      this.diceHits[i].disableInteractive();
      this.diceFaces[i].setText(String(result.reveal[i]));
    }
-   this.diceHint.setText("DADO "+result.face+" · GANHASTE "+fmt(result.awarded)+" CRÉDITOS");
+   this.diceHint.setText("DADO "+result.face+" · GANHASTE "+fmt(result.awarded)+" CRÉDITOS VIRTUAIS");
    this.flash();
    this.time.delayedCall(1700,()=>{
       this.diceOverlay.setVisible(false);this.diceOpen=false;
@@ -500,7 +507,7 @@ class Classica extends Phaser.Scene{
       this.strawberryHits[i].disableInteractive();
       this.strawberryValues[i].setText(fmt(result.reveal[i]));
    }
-   this.strawberryHint.setText("GANHASTE "+fmt(result.awarded)+" CRÉDITOS");
+   this.strawberryHint.setText("GANHASTE "+fmt(result.awarded)+" CRÉDITOS VIRTUAIS");
    this.flash();
    this.time.delayedCall(1600,()=>{
       this.strawberryOverlay.setVisible(false);
@@ -647,7 +654,7 @@ class Classica extends Phaser.Scene{
    if(!result.ok)return;
    this.state=result.state;this.store();this.renderState();
    this.wheelButton.setText("GANHASTE!");
-   this.wheelHint.setText(result.label+" · "+fmt(result.awarded)+" CRÉDITOS");
+   this.wheelHint.setText(result.label+" · "+fmt(result.awarded)+" CRÉDITOS VIRTUAIS");
    this.flash();
    this.time.delayedCall(2000,()=>{
      this.wheelOverlay.setVisible(false);
@@ -682,7 +689,7 @@ class Classica extends Phaser.Scene{
      }
      this.winPath.strokePath();
      this.winLabel.setText("LINHA "+hit.line+" · "+hit.symbol.toUpperCase()+
-       " ×"+hit.count+" · "+fmt(hit.amount)+" CRÉDITOS");
+       " ×"+hit.count+" · "+fmt(hit.amount)+" CRÉDITOS VIRTUAIS");
    };
    draw();
    if(sequence.length>1)this.winTimer=this.time.addEvent({
