@@ -160,9 +160,15 @@
    ctx.shadowColor='#f4c76b';ctx.shadowBlur=10;
   }
   if(img&&img.complete&&img.naturalWidth>0&&img.naturalHeight>0){
-   const scale=Math.min(size/img.naturalWidth,size/img.naturalHeight);
-   const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
-   ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
+   const lowSymbol=['10','J','Q','K','A'].includes(sym);
+   if(lowSymbol){
+    // As letras e o 10 ocupam praticamente toda a casa.
+    ctx.drawImage(img,x+3,y+3,w-6,h-6);
+   }else{
+    const scale=Math.min(size/img.naturalWidth,size/img.naturalHeight);
+    const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
+    ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
+   }
   }else txt(sym,x+w/2,y+h/2,29,color.bright);
   ctx.restore();
  };
