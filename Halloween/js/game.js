@@ -12,7 +12,7 @@ function txt(s,x,y,value,size=28,color="#fff6d9",extra={}) {
     fontStyle:"bold",color,align:"center",stroke:"#1a1324",strokeThickness:3,...extra}).setOrigin(.5);
 }
 class Classica extends Phaser.Scene{
- constructor(){super("classica");this.state=E.createState();this.spinning=false;this.auto=false;this.silence=false;this.held=new Set();this.previous=null;this.canHold=false;this.audio=null;this.potOpen=false;}
+ constructor(){super("classica");this.state=E.createState();this.spinning=false;this.auto=false;this.silence=false;this.held=new Set();this.previous=null;this.canHold=false;this.audio=null;this.potOpen=false;this.tableOpen=false;this.winTimer=null;this.winIndex=0;}
  preload(){
    for(const [id,svg] of Object.entries(ART))
      this.load.svg("h-"+id,"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg),{width:156,height:174});
@@ -25,6 +25,7 @@ class Classica extends Phaser.Scene{
    this.bottom();
    this.makePotBonus();
    this.makeWheelBonus();
+   this.makePaytable();
    this.shortcuts();
    this.renderState();
    this.previous=this.state.lastGrid;
@@ -102,6 +103,8 @@ class Classica extends Phaser.Scene{
    for(let c=1;c<5;c++)lines.lineBetween(X+c*CW,Y,X+c*CW,Y+BH);
    for(let r=1;r<3;r++)lines.lineBetween(X,Y+r*CH,X+BW,Y+r*CH);
    this.winGlow=this.add.graphics();
+   this.winPath=this.add.graphics();
+   this.winLabel=txt(this,360,299,"",21,"#ffe9a0");
    this.lineMarkers=[];
    for(let i=0;i<30;i++){
      const left=i<15,rank=left?i:i-15;
@@ -145,6 +148,12 @@ class Classica extends Phaser.Scene{
    this.roundButton(520,1192,48,"AUTO",21,()=>this.toggleAuto());
    this.roundButton(634,1192,48,"SOM",21,()=>this.toggleSound());
    this.autoText=txt(this,520,1252,"",18,"#fbdeb4");
+   const help=this.add.graphics();
+   help.fillStyle(0x541b37,.96).fillCircle(671,272,28);
+   help.lineStyle(3,0xfbd68b).strokeCircle(671,272,28);
+   txt(this,671,272,"?",35,"#fff0cb");
+   this.add.zone(671,272,65,65).setInteractive({useHandCursor:true})
+     .on("pointerdown",()=>this.togglePaytable());
  }
  roundButton(x,y,r,caption,size,callback,main=false){
    const g=this.add.graphics();
@@ -186,14 +195,14 @@ class Classica extends Phaser.Scene{
    }
  }
  changeBet(){
-   if(this.spinning||this.potOpen||this.wheelOpen||this.state.freeSpins>0)return;
+   if(this.spinning||this.potOpen||this.wheelOpen||this.tableOpen||this.state.freeSpins>0)return;
    this.clearHolds();
    const options=[1,2,5,10],i=options.indexOf(this.state.bet);
    this.state=E.setBet(this.state,options[(i+1)%options.length]);
    this.renderState();this.store();this.tone(480,.06);
  }
  changeLines(){
-   if(this.spinning||this.potOpen||this.wheelOpen||this.state.freeSpins>0)return;
+   if(this.spinning||this.potOpen||this.wheelOpen||this.tableOpen||this.state.freeSpins>0)return;
    this.clearHolds();
    const options=[20,25,30],i=options.indexOf(this.state.lines||30);
    this.state.lines=options[(i+1)%3];
@@ -202,7 +211,7 @@ class Classica extends Phaser.Scene{
    this.store();this.tone(440,.06);
  }
  toggleAuto(){
-   if(this.potOpen||this.wheelOpen)return;
+   if(this.potOpen||this.wheelOpen||this.tableOpen)return;
    this.auto=!this.auto;
    this.autoText.setText(this.auto?"ATIVO":"");
    if(this.auto&&!this.spinning)this.spin();
@@ -213,7 +222,7 @@ class Classica extends Phaser.Scene{
    for(const label of this.locks)label.setVisible(false);
  }
  toggleHold(col){
-   if(this.spinning||this.potOpen||this.wheelOpen||!this.canHold||!this.previous)return;
+   if(this.spinning||this.potOpen||this.wheelOpen||this.tableOpen||!this.canHold||!this.previous)return;
    if(this.held.has(col))this.held.delete(col);
    else if(this.held.size<4)this.held.add(col);
    else { this.message.setText("PELO MENOS UM TAMBOR TEM DE RODAR"); return; }
@@ -222,7 +231,7 @@ class Classica extends Phaser.Scene{
    this.tone(560,.05);
  }
  spin(){
-   if(this.spinning||this.potOpen||this.wheelOpen)return;
+   if(this.spinning||this.potOpen||this.wheelOpen||this.tableOpen)return;
    const outcome=E.spin(this.state,Math.random,this.previous,this.held);
    if(!outcome.ok){
      if(outcome.reason==="bonus-pendente"){
@@ -303,6 +312,58 @@ class Classica extends Phaser.Scene{
    if(result.potTriggered) this.showPotBonus();
    else if(result.wheelTriggered) this.showWheelBonus();
    else if(this.auto) this.time.delayedCall(620,()=>{if(this.auto)this.spin();});
+ }
+ makePaytable(){
+   this.tableOverlay=this.add.container(0,0).setDepth(130).setVisible(false);
+   const veil=this.add.rectangle(W/2,H/2,W,H,0x070c1c,.97).setInteractive();
+   this.tableOverlay.add(veil);
+   const panel=this.add.graphics();
+   panel.fillStyle(0x171a30,.98).fillRoundedRect(28,200,664,845,24);
+   panel.lineStyle(5,0xe4a84a).strokeRoundedRect(28,200,664,845,24);
+   this.tableOverlay.add(panel);
+   this.tableOverlay.add(txt(this,360,257,"TABELA DA HALLOWEEN III",36,"#ffe5aa"));
+   this.tableOverlay.add(txt(this,360,308,"Referência visual do APK de 30 linhas",23,"#eecb9c"));
+   const columns=[{title:"SÍMBOLO",x:176},{title:"3",x:360},{title:"4",x:467},{title:"5",x:584}];
+   for(const col of columns)
+     this.tableOverlay.add(txt(this,col.x,376,col.title,22,"#ffdc8c"));
+   const entries=[
+     {id:"pumpkin",label:"HALLOWEEN",numbers:["2 000","2 000","10 000"]},
+     {id:"wild",label:"MAGIC",numbers:["250","500","2 000"]},
+     {id:"witch",label:"WITCH",numbers:["7","100","150"]},
+     {id:"scatter",label:"CALDEIRÃO",numbers:["BÓNUS","BÓNUS","BÓNUS"]}
+   ];
+   for(let i=0;i<entries.length;i++){
+     const entry=entries[i],y=452+i*105;
+     const bg=this.add.graphics();
+     bg.fillStyle(i%2?0x241c38:0x36203b,.8).fillRoundedRect(50,y-37,617,79,10);
+     this.tableOverlay.add(bg);
+     const image=this.add.image(91,y,"h-"+entry.id).setDisplaySize(60,67);
+     this.tableOverlay.add(image);
+     this.tableOverlay.add(txt(this,190,y,entry.label,21,"#ffdd9a"));
+     for(let j=0;j<3;j++){
+       const size=entry.numbers[j]==="BÓNUS"?19:23;
+       this.tableOverlay.add(txt(this,360+j*106,y,entry.numbers[j],size,"#fff2c9"));
+     }
+   }
+   this.tableOverlay.add(txt(this,360,890,
+      "Valores visíveis no APK; unidade e regras não confirmadas.",20,"#ffcf92"));
+   this.tableOverlay.add(txt(this,360,926,
+      "A matemática atual é experimental, não equivalente.",20,"#ffcf92"));
+   const btn=this.add.graphics();
+   btn.fillStyle(0xa1322a,.96).fillRoundedRect(235,967,250,62,16);
+   btn.lineStyle(4,0xf1c47a).strokeRoundedRect(235,967,250,62,16);
+   this.tableOverlay.add(btn);
+   this.tableOverlay.add(txt(this,360,998,"FECHAR",27,"#fff6d4"));
+   const tap=this.add.zone(360,998,270,75).setInteractive({useHandCursor:true});
+   tap.on("pointerdown",()=>this.togglePaytable());
+   this.tableOverlay.add(tap);
+ }
+ togglePaytable(){
+   if(this.spinning||this.potOpen||this.wheelOpen)return;
+   this.tableOpen=!this.tableOpen;
+   if(this.tableOpen)this.auto=false;
+   this.tableOverlay.setVisible(this.tableOpen);
+   this.autoText.setText("");
  }
  makePotBonus(){
    // Janela modal Phaser; mantém a escolha pendente no estado local até
@@ -451,13 +512,37 @@ class Classica extends Phaser.Scene{
    });
  }
  highlight(hits){
-   this.winGlow.clear();
-   const set=new Set();
-   for(const hit of hits)for(const [c,r] of hit.cells)set.add(c+","+r);
-   this.winGlow.lineStyle(5,0xffc332,1);
-   for(const key of set){const [c,r]=key.split(",").map(Number);
-     this.winGlow.strokeRoundedRect(X+c*CW+5,Y+r*CH+5,CW-10,CH-10,8);
+   if(this.winTimer){
+     this.winTimer.remove(false);
+     this.winTimer=null;
    }
+   this.winGlow.clear();this.winPath.clear();this.winLabel.setText("");
+   if(!Array.isArray(hits)||hits.length===0)return;
+   const sequence=hits.filter(hit=>hit?.cells?.length>=3);
+   if(!sequence.length)return;
+   this.winIndex=0;
+   const draw=()=>{
+     if(this.spinning||this.tableOpen)return;
+     const hit=sequence[this.winIndex%sequence.length];
+     this.winGlow.clear();this.winPath.clear();
+     const palette=[0xf8bb50,0xd9566d,0x56c1d8,0x97d75b,0xc78ee8];
+     const color=palette[(hit.line-1)%palette.length];
+     this.winPath.lineStyle(7,color,1);
+     this.winPath.beginPath();
+     for(let i=0;i<hit.cells.length;i++){
+       const [col,row]=hit.cells[i],x=X+(col+.5)*CW,y=Y+(row+.5)*CH;
+       if(i===0)this.winPath.moveTo(x,y);else this.winPath.lineTo(x,y);
+       this.winGlow.lineStyle(4,color,1).strokeRoundedRect(
+         X+col*CW+6,Y+row*CH+6,CW-12,CH-12,9);
+     }
+     this.winPath.strokePath();
+     this.winLabel.setText("LINHA "+hit.line+" · "+hit.symbol.toUpperCase()+
+       " ×"+hit.count+" · "+fmt(hit.amount)+" CRÉDITOS");
+   };
+   draw();
+   if(sequence.length>1)this.winTimer=this.time.addEvent({
+     delay:1100,loop:true,callback:()=>{this.winIndex++;draw();}
+   });
  }
  flash(){
    this.cameras.main.flash(230,255,212,127,false);
