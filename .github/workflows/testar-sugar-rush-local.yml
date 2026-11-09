@@ -72,3 +72,31 @@ jobs:
             echo '~~~'
             echo "Nenhum destes testes equivale a certificacao RTP."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Instalar browsers para testes reais de interface
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+
+      - name: Servir o repositorio para o browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8137 --bind 127.0.0.1 > /tmp/sugar-http.log 2>&1 &
+          sleep 2
+
+      - name: Testar em Chromium e Safari WebKit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node Sugar-Rush-1000/standalone/tests/browser.test.cjs
+
+      - name: Guardar imagens dos testes no telemovel
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sugar-rush-offline-mobile
+          path: visual-previews/sugar-*.png
+          if-no-files-found: ignore
