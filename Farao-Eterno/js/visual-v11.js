@@ -187,10 +187,10 @@
     const velocity=Math.min(1,Math.max(0,(p<.12?p/.12:p>.82?(1-p)/.18:1)));
     // Fast vertical streaks simulate the reels spinning at high speed,
     // without accelerating the actual outcome or changing the game maths.
-    for(const [offset,alpha] of [[-24,.19],[0,.62],[24,.19]]){
+    for(const [offset,alpha] of [[-55,.13],[-28,.19],[0,.36],[28,.19],[55,.13]]){
      ctx.save();
      ctx.globalAlpha=alpha;
-     if('filter' in ctx)ctx.filter='blur('+(1.5+velocity*4.5).toFixed(1)+'px)';
+     if('filter' in ctx)ctx.filter='blur('+(2.5+velocity*6.5).toFixed(1)+'px)';
      for(let r=-1;r<4;r++){
       const sym=item.show[c][item.steps[c]+3+r-step]||item.grid[c][clamp(r,0,2)];
       tileAt(sym,rx,top+(r+fraction)*gh+offset*velocity,t,false);
@@ -198,12 +198,12 @@
      ctx.restore();
     }
     // Vertical speed lines stay inside each reel, never over the frame.
-    if(velocity>.25){
-     ctx.save();ctx.globalAlpha=.09*velocity;ctx.strokeStyle='#ffe3a3';
+    if(velocity>.18){
+     ctx.save();ctx.globalAlpha=.15*velocity;ctx.strokeStyle='#ffe3a3';
      ctx.lineWidth=1.5;
-     for(let k=0;k<7;k++){
+     for(let k=0;k<10;k++){
       const sx=rx+9+k*13,sy=top+((t*(.75+velocity)+k*83+c*27)%(gh*3+90))-45;
-      ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx,sy+30+velocity*45);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx,sy+55+velocity*80);ctx.stroke();
      }
      ctx.restore();
     }
@@ -287,7 +287,7 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  txt('V1.1.8',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.1.9',38,985,10,'#e5c68d',850,'Arial');
   if(!this.storageOK)txt('SESSÃO SEM GRAVAÇÃO',280,833,11,'#ffbc83',800,'Arial');
  };
  document.documentElement.dataset.faraoVisual='1.1';
