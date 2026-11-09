@@ -1,0 +1,79 @@
+name: "Sugar Rush | grafico Phaser original Safari"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Sugar-Rush-1000/tests/**'
+      - 'Sugar-Rush-1000/frontend/**'
+      - 'index2.html'
+      - '.github/workflows/testar-sugar-original.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testes-sugar-original
+  cancel-in-progress: true
+
+jobs:
+  validar:
+    name: Testar imagens, inicio e tabuleiro
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.18.0'
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: Sugar-Rush-1000/frontend/pnpm-lock.yaml
+
+      - name: Compilar o verdadeiro frontend Phaser
+        working-directory: Sugar-Rush-1000/frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm run build
+
+      - name: Preparar URL index2 e assets para os navegadores
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p Sugar-Rush-1000/play
+          cp -a Sugar-Rush-1000/frontend/dist/. Sugar-Rush-1000/play/
+          test -s Sugar-Rush-1000/play/images/candies/candy_0.png
+          test -s Sugar-Rush-1000/play/images/candies/scatter.png
+          test -s Sugar-Rush-1000/play/audio/music_default.mp3
+
+      - name: Instalar Chromium e Safari WebKit
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+
+      - name: Iniciar servidor local
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8139 --bind 127.0.0.1 > /tmp/sugar-original.log 2>&1 &
+          sleep 2
+
+      - name: Abrir frontend com imagens e sons nos 2 navegadores
+        shell: bash
+        run: node Sugar-Rush-1000/tests/browser-original.cjs
+
+      - name: Guardar capturas dos ecras reais
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sugar-original-webkit-chromium
+          path: visual-previews/sugar-original-*.png
+          if-no-files-found: ignore
