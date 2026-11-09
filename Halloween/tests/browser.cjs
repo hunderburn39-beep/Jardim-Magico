@@ -32,11 +32,25 @@ async function run(name,launcher){
     assert.equal(visible.spins,0);
     fs.mkdirSync("visual-previews",{recursive:true});
     await page.screenshot({path:`visual-previews/halloween-${name}-inicio.png`});
+    // Interromper um giro a meio: o resultado e o saldo já devem
+    // estar guardados e os símbolos restaurados no novo carregamento.
     await tap(page,367,1192);
-    await page.waitForFunction(()=>window.__HALLOWEEN_SCENE__?.state?.spins>=1,{},{timeout:20000});
+    await page.waitForFunction(()=>{
+      const s=window.__HALLOWEEN_SCENE__;
+      return s?.state?.spins===1 && s?.spinning===true && !!s?.state?.lastGrid;
+    },{},{timeout:15000});
+    const saved=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.state);
+    await page.reload({waitUntil:"domcontentloaded"});
+    await page.waitForFunction(()=>window.__HALLOWEEN_SCENE__?.symbols?.length===5,{},{timeout:25000});
+    const restored=await page.evaluate(()=>{
+      const s=window.__HALLOWEEN_SCENE__;
+      return {state:s.state,visible:s.symbols.map(col=>col.map(icon=>icon.texture.key.slice(2)))};
+    });
+    assert.equal(restored.state.spins,1);
+    assert.equal(restored.state.balance,saved.balance);
+    assert.deepEqual(restored.state.lastGrid,saved.lastGrid);
+    assert.deepEqual(restored.visible,saved.lastGrid);
     await page.screenshot({path:`visual-previews/halloween-${name}-giro.png`});
-    const next=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.state);
-    assert.equal(next.spins,1);
     // Simular um bónus persistente após fechar a aplicação.
     await page.evaluate(()=>{
       const s=window.__HALLOWEEN_SCENE__;
