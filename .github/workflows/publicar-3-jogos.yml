@@ -41,20 +41,23 @@ jobs:
       - name: Obter todas as pastas
         uses: actions/checkout@v4
 
-      - name: Instalar pnpm para o frontend original
+      - name: Instalar pnpm para o frontend original (opcional)
+        continue-on-error: true
         uses: pnpm/action-setup@v4
         with:
           version: '10.18.0'
           run_install: false
 
-      - name: Preparar Node.js
+      - name: Preparar Node.js (frontend opcional)
+        continue-on-error: true
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: pnpm
           cache-dependency-path: Sugar-Rush-1000/frontend/pnpm-lock.yaml
 
-      - name: Converter os doces originais em PNG transparente
+      - name: Converter os doces originais em PNG transparente (opcional)
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -71,7 +74,8 @@ jobs:
           print('7 simbolos HD reais, em PNG RGBA, preparados.')
           PY
 
-      - name: Compilar frontend Phaser original com imagens e audio
+      - name: Compilar frontend Phaser original com imagens e audio (opcional)
+        continue-on-error: true
         working-directory: Sugar-Rush-1000/frontend
         shell: bash
         run: |
@@ -101,6 +105,7 @@ jobs:
           test -s Halloween/index.html
           test -s Halloween/js/engine.js
           test -s Halloween/js/game.js
+          test -s Halloween/js/art.js
           test -d css
           test -d js
           test -d assets
@@ -119,19 +124,31 @@ jobs:
           mkdir -p public/Sugar-Rush-1000
           cp -a Sugar-Rush-1000/standalone public/Sugar-Rush-1000/
           mkdir -p public/Sugar-Rush-1000/play
-          cp -a Sugar-Rush-1000/frontend/dist/. public/Sugar-Rush-1000/play/
+          if test -s Sugar-Rush-1000/frontend/dist/index.html \
+             && test -s Sugar-Rush-1000/frontend/dist/images/candies/candy_0.png \
+             && test -s Sugar-Rush-1000/frontend/dist/images/candies/scatter.png \
+             && test -s Sugar-Rush-1000/frontend/dist/audio/music_default.mp3; then
+            cp -a Sugar-Rush-1000/frontend/dist/. public/Sugar-Rush-1000/play/
+            echo "Sugar Rush frontend compilado foi incluído no Pages."
+          else
+            echo "::warning::Build opcional Sugar Rush indisponível; manter jogo standalone e criar acesso alternativo."
+            cat > public/Sugar-Rush-1000/play/index.html <<'EOF'
+          <!doctype html>
+          <html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+          <title>Sugar Rush 1000</title><meta http-equiv="refresh" content="0;url=../standalone/">
+          </head><body><p><a href="../standalone/">Abrir Sugar Rush 1000</a></p></body></html>
+          EOF
+          fi
           touch public/.nojekyll
           test -s public/index.html
           test -s public/jardim-phaser/index.html
           test -s public/templo-do-trovao/index.html
           test -s public/Farao-Eterno/index.html
           test -s public/Halloween/index.html
+          test -s public/Halloween/js/art.js
           test -s public/index2.html
           test -s public/Sugar-Rush-1000/standalone/index.html
           test -s public/Sugar-Rush-1000/play/index.html
-          test -s public/Sugar-Rush-1000/play/images/candies/candy_0.png
-          test -s public/Sugar-Rush-1000/play/images/candies/scatter.png
-          test -s public/Sugar-Rush-1000/play/audio/music_default.mp3
           echo "Jardim Mágico: /jardim-phaser/"
           echo "Portões do Trovão: /templo-do-trovao/"
           echo "Faraó Eterno: /Farao-Eterno/"
