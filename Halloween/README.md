@@ -1,4 +1,4 @@
-# Halloween III — Clássica (V0.9, reconstrução independente)
+# Halloween III — Clássica (V0.10, reconstrução independente)
 
 Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-níqueis Halloween III dos anos 2000.
 
@@ -10,7 +10,7 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 - Descrição de versões e mecânicas (20/25/30 linhas, travar tambores, bónus): https://www.casinobillionaire.com/portuguese/jogo-caca-niquel-halloween/
 - Manual histórico de configuração das máquinas: https://pt.scribd.com/document/696584543/Manual-Completo-Halloween
 
-## Implementado nesta V0.9
+## Implementado nesta V0.10
 
 - Ecrã retro com **5 tambores × 3 linhas** de fundo claro, nome Halloween III, marcadores de linhas coloridos, indicadores de crédito/prémio/aposta e quatro acumulados virtuais.
 - Ilustrações **SVG originais** para os **10 tipos encontrados no XAPK**: abóbora Halloween, bruxa verde, WITCH, vampiro, fantasma, bruxa na lua, monstro, diabinho, MAGIC e caldeirão. Não são extraídas de ficheiros comerciais.
@@ -26,11 +26,13 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 - **Bónus dos 12 morangos**, em grelha 4×3, com seleção por toque e prémio guardado antes da animação. A documentação do APK confirma 12 elementos gráficos, mas os valores e a forma de o ativar são experimentais.
 - **Novo bónus dos dados vermelhos**, com cinco escolhas, inspirado nas cinco animações referenciadas pelo bytecode `InitDados` e no atlas `01_dado.webp`. Os cinco dados são desenhados em Phaser, sem copiar os sprites do APK. Os valores de 1 a 6 e o prémio aposta × face são regras fictícias do protótipo, não a fórmula `NumDado`/ `SetDadoPremio`.
 - **Travar até quatro tambores após uma jogada sem prémio**, tocando nos próprios tambores. Todos os giros seguintes debitam normalmente a aposta.
-- Motor experimental com Wild (Magic), 30 linhas e deteção de combinações. Três ou mais caldeirões ativam Free Spins e um bónus experimental de caldeirões, **morangos ou dados**. A escolha dos 12 morangos não reproduz ainda as probabilidades do APK.
+- **25 linhas da esquerda para a direita** e **cinco linhas verticais** (linhas 26–30), uma por tambor, para prémios de três símbolos iguais ou combinações com MAGIC. A linha vertical só entra nos pagamentos quando estão ativas as 30 linhas (escalão de 0,20 €). Os percursos horizontais continuam a ser aproximações próprias do projeto, não os dados de `LNH1` descodificados.
+- **Bónus sobretudo verticais:** três caldeirões no mesmo tambor, um sobre o outro, abrem um mini-jogo de caldeirões, morangos ou dados; cinco ou mais caldeirões dispersos são uma alternativa. Três ou quatro caldeirões dispersos mantêm os Free Spins mas não abrem automaticamente um mini-jogo. Os três caldeirões empilhados são destacados antes da janela de bónus, mesmo se as linhas verticais pagas não estiverem ativas. Esta é uma regra experimental para refletir a referência do utilizador; as probabilidades exatas do APK continuam por verificar.
+- No bónus de roleta mantém-se a regra provisória de cinco abóboras numa linha horizontal completa.
 - Uma abóbora é recolhida em rondas pagas com **quatro ou mais abóboras visíveis** (máximo de uma por ronda). Ao reunir cinco, atribui **cinco Free Spins**. Durante estas não se recolhem novas abóboras.
-- A **roleta da sorte, com 30 números**, só abre quando aparecem **cinco abóboras exatamente alinhadas numa linha ativa**. Isto substitui o gatilho antigo, que abria demasiadas roletas. Os prémios são demonstrativos: multiplicadores da aposta ou um de quatro acumulados virtuais.
-- As duas funções de bónus guardam os resultados antes das animações; a sessão recupera mesmo se o navegador for fechado. Todas estas regras continuam a ser **reconstruções experimentais, não as fórmulas originais do APK**.
-- Guardar saldo, linhas, aposta, acumulados, giros, grelha final e bónus de caldeirão ou roleta pendente no armazenamento local, quando disponível. O resultado do giro é guardado antes de começar a animação: ao reabrir o jogo, a combinação e os créditos são recuperados. Aposta e linhas são bloqueadas durante Free Spins, e a seleção de aposta/linhas limpa travas de rolos.
+- A **roleta da sorte, com 30 números**, só abre quando aparecem **cinco abóboras exatamente alinhadas numa linha horizontal ativa**. Isto substitui o gatilho antigo, que abria demasiadas roletas. Os prémios são demonstrativos: multiplicadores da aposta ou um de quatro acumulados virtuais.
+- Os mini-jogos guardam os resultados antes das animações; a sessão recupera mesmo se o navegador for fechado. Todas estas regras continuam a ser **reconstruções experimentais, não as fórmulas originais do APK**.
+- Guardar saldo, linhas, aposta, acumulados, giros, grelha final e bónus de caldeirão, morangos, dados ou roleta pendente no armazenamento local, quando disponível. O resultado do giro é guardado antes de começar a animação: ao reabrir o jogo, a combinação e os créditos são recuperados. Aposta e linhas são bloqueadas durante Free Spins, e a seleção de aposta/linhas limpa travas de rolos.
 
 ## Valores e recuperação de sessões
 
