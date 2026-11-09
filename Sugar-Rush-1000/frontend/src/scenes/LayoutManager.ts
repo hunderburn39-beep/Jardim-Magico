@@ -43,95 +43,55 @@ import { DisplayBalance } from '../helpers/Currency';
     // === GRID PANEL IMAGE ===
     this.gridPanel.setVisible(false); // Hide the old background image
 
-    // === RIGID CARTOON CANDY MACHINE GRID FRAME ===
+    // === MOLDURA DE VIDRO CANDY / OURO, LEVE E FINA ===
     this.gridFrame.clear();
     const f = this.gridFrame;
-
-    const borderThickness = Math.max(8, Math.min(gridW, gridH) * 0.028);
+    const borderThickness = Math.max(5, Math.min(gridW, gridH) * 0.017);
     const framePadding = borderThickness + 4;
     const frameW = gridW + framePadding * 2;
     const frameH = gridH + framePadding * 2;
     const frameX = gridX - framePadding;
     const frameY = gridY - framePadding;
-    const frameR = Math.max(12, Math.min(gridW, gridH) * 0.025);
+    const frameR = Math.max(10, Math.min(gridW, gridH) * 0.028);
 
-    // --- Layer 1: Hard drop shadow (no blur, comic-book) ---
-    f.fillStyle(0x000000, 0.6);
-    f.fillRoundedRect(frameX + 5, frameY + 7, frameW, frameH, frameR + 2);
+    // Sombra difusa simulada em duas camadas, sem grandes blocos cor-de-rosa.
+    f.fillStyle(0x10052b, 0.35);
+    f.fillRoundedRect(frameX - 5, frameY + 9, frameW + 10, frameH + 10, frameR + 4);
+    f.fillStyle(0x1d083e, 0.72);
+    f.fillRoundedRect(frameX - 2, frameY + 4, frameW + 4, frameH + 3, frameR + 2);
 
-    // --- Layer 2: Thick solid candy rim (hyper-saturated pink) ---
-    f.fillStyle(0xff3399, 1);
+    // Aro estreito champagne e lilás, que realça o interior em vez de o tapar.
+    f.fillGradientStyle(0xffe8ad, 0xebbcfa, 0xc962a1, 0xfdd27d, 1, 1, 1, 1);
     f.fillRoundedRect(frameX, frameY, frameW, frameH, frameR);
+    f.fillStyle(0x1c063e, 0.98);
+    f.fillRoundedRect(frameX + borderThickness, frameY + borderThickness,
+      frameW - borderThickness * 2, frameH - borderThickness * 2,
+      Math.max(5, frameR - 4));
 
-    // Top half brighter highlight
-    f.fillGradientStyle(0xff66bb, 0xff66bb, 0xff3399, 0xff3399, 1);
-    f.fillRoundedRect(frameX, frameY, frameW, frameH * 0.4, {
-      tl: frameR,
-      tr: frameR,
-      bl: 0,
-      br: 0,
-    } as Phaser.Types.GameObjects.Graphics.RoundedRectRadius);
+    f.lineStyle(Math.max(1.3, borderThickness * 0.29), 0xfff3c4, 0.87);
+    f.strokeRoundedRect(frameX + 1, frameY + 1, frameW - 2, frameH - 2, frameR);
+    f.lineStyle(Math.max(1, borderThickness * 0.22), 0xe5a9ff, 0.48);
+    f.strokeRoundedRect(frameX + borderThickness - 1, frameY + borderThickness - 1,
+      frameW - (borderThickness - 1) * 2, frameH - (borderThickness - 1) * 2,
+      Math.max(5, frameR - 4));
 
-    // Hard glossy white stripe on top edge
-    f.fillStyle(0xffffff, 0.5);
-    f.fillRoundedRect(
-      frameX + 6,
-      frameY + 3,
-      frameW - 12,
-      borderThickness * 0.4,
-      { tl: frameR - 2, tr: frameR - 2, bl: 0, br: 0 } as Phaser.Types.GameObjects.Graphics.RoundedRectRadius,
-    );
-
-    // --- Layer 3: Inner recess (dark well holding the grid) ---
-    const innerX = frameX + borderThickness;
-    const innerY = frameY + borderThickness;
-    const innerW = frameW - borderThickness * 2;
-    const innerH = frameH - borderThickness * 2;
-    const innerR = Math.max(6, frameR - 4);
-
-    // Dark inset shadow
-    f.fillStyle(0x000000, 0.5);
-    f.fillRoundedRect(
-      innerX - 2,
-      innerY - 2,
-      innerW + 4,
-      innerH + 4,
-      innerR + 2,
-    );
-
-    // Inner border (bright saturated)
-    f.lineStyle(2.5, 0xffdd00, 0.8);
-    f.strokeRoundedRect(innerX, innerY, innerW, innerH, innerR);
-
-    // --- Layer 4: Thick outer rim border (gold/yellow) ---
-    f.lineStyle(3, 0xffee44, 0.9);
-    f.strokeRoundedRect(frameX, frameY, frameW, frameH, frameR);
-
-    // --- Layer 5: Decorative candy-bolt corner accents ---
-    const minGridDim = Math.min(gridW, gridH);
-    if (minGridDim > 250) {
-      const boltR = Math.max(5, minGridDim * 0.014);
-      const boltInset = borderThickness * 0.5;
-      const boltPositions = [
-        { x: frameX + boltInset, y: frameY + boltInset },
-        { x: frameX + frameW - boltInset, y: frameY + boltInset },
-        { x: frameX + boltInset, y: frameY + frameH - boltInset },
-        { x: frameX + frameW - boltInset, y: frameY + frameH - boltInset },
-      ];
-      for (const bp of boltPositions) {
-        // Hard shadow bolt
-        f.fillStyle(0x000000, 0.5);
-        f.fillCircle(bp.x + 2, bp.y + 2, boltR);
-        // Bolt body — bright yellow/gold
-        f.fillStyle(0xffdd44, 1);
-        f.fillCircle(bp.x, bp.y, boltR);
-        // Bolt highlight
-        f.fillStyle(0xffffff, 0.7);
-        f.fillCircle(bp.x - boltR * 0.25, bp.y - boltR * 0.25, boltR * 0.4);
-        // Thick bolt rim
-        f.lineStyle(2, 0xcc8800, 1);
-        f.strokeCircle(bp.x, bp.y, boltR);
-      }
+    // Reflexo superior e apenas quatro pequenos detalhes dourados.
+    f.fillStyle(0xffffff, 0.24);
+    f.fillRoundedRect(frameX + frameR, frameY + 2, frameW - frameR * 2,
+      Math.max(2, borderThickness * 0.24), 2);
+    const boltR = Math.max(3, Math.min(5.3, gridW * 0.012));
+    for (const [x, y] of [
+      [frameX + borderThickness * 0.5, frameY + borderThickness * 0.5],
+      [frameX + frameW - borderThickness * 0.5, frameY + borderThickness * 0.5],
+      [frameX + borderThickness * 0.5, frameY + frameH - borderThickness * 0.5],
+      [frameX + frameW - borderThickness * 0.5, frameY + frameH - borderThickness * 0.5],
+    ]) {
+      f.fillStyle(0x8f4f31, 0.75);
+      f.fillCircle(x + 0.8, y + 1, boltR + 0.6);
+      f.fillStyle(0xffe699, 1);
+      f.fillCircle(x, y, boltR);
+      f.fillStyle(0xffffff, 0.75);
+      f.fillCircle(x - boltR * 0.25, y - boltR * 0.25, boltR * 0.34);
     }
 
     // ==========================================
