@@ -5,7 +5,7 @@
  const game=window.__faraoGame, canvas=document.getElementById('canvas');
  if(!game || !canvas) return;
  const ctx=canvas.getContext('2d');
- const R=Object.freeze({left:33,top:298,cw:99,gh:120,step:101});
+ const R=Object.freeze({left:33,top:284,cw:99,gh:129,step:101});
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
  const TAU=Math.PI*2;
  const format=n=>(Math.round((n+Number.EPSILON)*100)/100).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+' cr';
@@ -121,19 +121,19 @@
   // Cylinder walls: narrow fixed gold ribs; transparent central channel.
   for(const [x,sgn] of [[xx-2,1],[xx+R.cw-1,-1]]){
    const wall=grad(ctx,x-2,0,x+5,0,[[0,'#25171b'],[.24,'#ad692b'],[.44,'#ffe6a3'],[.77,'#8f592e'],[1,'#2b1e1c']]);
-   rounded(ctx,x,R.top-27,5,bot-R.top+51,2,wall,'#d69b50a0',.8);
-   line(ctx,x+sgn*3,R.top+9,x+sgn*3,bot-7,'#6be4d12f',.9);
+   rounded(ctx,x,R.top-13,5,bot-R.top+24,2,wall,'#d69b50a0',.8);
+   line(ctx,x+sgn*3,R.top+23,x+sgn*3,bot-20,'#6be4d12f',.9);
   }
   ctx.save();ctx.shadowColor='#f4ba55';ctx.shadowBlur=5;
-  rounded(ctx,xx-3,R.top-35,105,21,8,grad(ctx,0,R.top-35,0,R.top-14,
+  rounded(ctx,xx-3,R.top-21,105,21,8,grad(ctx,0,R.top-21,0,R.top,
    [[0,'#42271c'],[.18,'#ffe39c'],[.49,'#c78d37'],[.76,'#654126'],[1,'#301f1e']]),'#ffe9a4',1.8);
   ctx.restore();
-  rounded(ctx,xx-3,bot+12,105,23,8,grad(ctx,0,bot+12,0,bot+35,
+  rounded(ctx,xx-3,bot-1,105,23,8,grad(ctx,0,bot-1,0,bot+22,
    [[0,'#fff0b7'],[.14,'#8f5724'],[.44,'#513420'],[.68,'#d1a24a'],[1,'#30201a']]),'#eac277',1.5);
-  drawScarab(ctx,xx+R.cw/2,R.top-24,.67);
-  drawScarab(ctx,xx+R.cw/2,bot+23,.76);
+  drawScarab(ctx,xx+R.cw/2,R.top-10,.67);
+  drawScarab(ctx,xx+R.cw/2,bot+10,.76);
   // Linha horizontal decorativa superior removida a pedido.
-  line(ctx,xx+11,bot+29,xx+R.cw-11,bot+29,'#bb8f49',1.1);
+  line(ctx,xx+11,bot+16,xx+R.cw-11,bot+16,'#bb8f49',1.1);
  }
  function tileAt(sym,x,y,t,win){
   // Os novos PNG já incluem os seus contornos dourados em relevo.
@@ -234,7 +234,7 @@
   ctx.restore();
  };
  game.reelBoard=function(t){
-  const x=20,y=R.top-16,w=520,h=R.top+3*R.gh-y+23;
+  const x=20,y=R.top-2,w=520,h=R.top+3*R.gh-y+10;
   ctx.save();ctx.shadowColor='#000c';ctx.shadowBlur=16;ctx.shadowOffsetY=6;
   rounded(ctx,x-5,y-7,w+10,h+10,15,null,'#deb56b',3.7);ctx.restore();
   rounded(ctx,x-1,y-5,w+2,h+5,13,null,'#745027a9',1.5);
@@ -327,8 +327,8 @@
   this.drawReelSeparators(R.left,R.top,R.step,R.gh);
   this.drawActivePayline(t,R.left,R.top,R.cw,R.gh,R.step);
   ctx.save();ctx.shadowColor='#ffdd84';ctx.shadowBlur=7;
-  rounded(ctx,23,R.top+R.gh*3+21,514,9,4,
-   grad(ctx,0,R.top+R.gh*3+21,0,R.top+R.gh*3+30,
+  rounded(ctx,23,R.top+R.gh*3+8,514,9,4,
+   grad(ctx,0,R.top+R.gh*3+8,0,R.top+R.gh*3+17,
    [[0,'#ffefaf'],[.43,'#ae782c'],[1,'#452d22']]),'#ffe09a',1.5);
   ctx.restore();
   if(this.feature?.symbols?.length){
@@ -342,7 +342,7 @@
   const amount=this.winCount?this.winCount.amount*(1-Math.pow(1-progress,3)):this.lastWin;
   const meters=[['SALDO',format(this.balance)],['APOSTA',format(this.bet)],['PRÉMIO',format(this.feature?this.feature.total:amount)]];
   for(let i=0;i<3;i++){
-   const x=28+i*170,y=R.top+R.gh*3+27,w=164,h=72;
+   const x=28+i*170,y=R.top+R.gh*3+14,w=164,h=72;
    ctx.save();ctx.shadowColor='#000d';ctx.shadowBlur=12;ctx.shadowOffsetY=5;
    rounded(ctx,x,y,w,h,12,'#18202a','#f2c478',2.7);ctx.restore();
    rounded(ctx,x+3,y+3,w-6,h-6,9,grad(ctx,x,y,x,y+h,
@@ -358,7 +358,7 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  txt('V1.2.4',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.2.5',38,985,10,'#e5c68d',850,'Arial');
   if(!this.storageOK)txt('SESSÃO SEM GRAVAÇÃO',280,833,11,'#ffbc83',800,'Arial');
  };
  document.documentElement.dataset.faraoVisual='1.1';
