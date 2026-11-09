@@ -162,7 +162,7 @@ class Classica extends Phaser.Scene{
    try {this.state=E.sanitize(JSON.parse(localStorage.getItem(saveKey)));}catch{this.state=E.createState();}
    // valores progressivos são apenas pontos e não representam qualquer obrigação de pagamento
    this.state.jackpots=this.state.jackpots||[350,750];
-   this.state.lines=this.state.lines||20;
+   this.state.lines=this.state.lines||30;
  }
  store(){
    try{localStorage.setItem(saveKey,JSON.stringify(this.state));}catch{/* Modo privado */}
@@ -195,7 +195,7 @@ class Classica extends Phaser.Scene{
  changeLines(){
    if(this.spinning||this.potOpen||this.wheelOpen||this.state.freeSpins>0)return;
    this.clearHolds();
-   const options=[20,25,30],i=options.indexOf(this.state.lines||25);
+   const options=[20,25,30],i=options.indexOf(this.state.lines||30);
    this.state.lines=options[(i+1)%3];
    this.renderState();
    this.message.setText(this.state.lines+" LINHAS SELECIONADAS");
@@ -289,7 +289,7 @@ class Classica extends Phaser.Scene{
  finish(result){
    if(!this.spinning)return;
    this.spinning=false;this.state=result.state;
-   this.state.lines=this.state.lines||20;
+   this.state.lines=this.state.lines||30;
    this.state.jackpots=this.state.jackpots||[350,750];
    this.previous=result.grid;
    this.clearHolds();
