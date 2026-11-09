@@ -194,7 +194,7 @@
      if('filter' in ctx)ctx.filter='blur('+(5+velocity*11).toFixed(1)+'px)';
      for(let r=-1;r<4;r++){
       const sym=item.show[c][item.steps[c]+3+r-step]||item.grid[c][clamp(r,0,2)];
-      tileAt(sym,rx,top+(r+fraction)*gh+offset,t,false);
+      this.drawIcon(sym,rx,top+(r+fraction)*gh+offset,R.cw,R.gh,false,t);
      }
      ctx.restore();
     }
