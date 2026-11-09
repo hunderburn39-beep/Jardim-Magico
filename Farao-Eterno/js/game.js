@@ -347,6 +347,7 @@ class Game {
   let page='';
   if(tab==='menu'){
    page=`<p class="eyebrow">OS SEGREDOS DA ETERNIDADE</p><div class="settings-grid"><button class="btn" id="toggle-sound">Efeitos sonoros: ${this.sound?'Ligados':'Desligados'}</button><button class="btn" id="toggle-music">Música: ${this.ledger.settings.music?'Ligada':'Desligada'}</button><button class="btn" id="toggle-turbo">Velocidade: ${this.turbo?'Turbo':'Normal'}</button><button class="btn" id="toggle-auto" ${this.feature?'disabled':''}>${this.auto?'Parar automático':'20 giros automáticos'}</button></div>
+   <h3>Aposta: ${money(this.bet)}</h3><div class="actions"><button class="btn" id="bet-less" ${this.spinning||this.feature?'disabled':''}>− Diminuir aposta</button><button class="btn" id="bet-more" ${this.spinning||this.feature?'disabled':''}>+ Aumentar aposta</button></div>
    <h3>Linhas ativas: ${this.lines}</h3><div class="actions"><button class="btn" id="line-less" ${this.feature?'disabled':''}>Menos linhas</button><button class="btn" id="line-more" ${this.feature?'disabled':''}>Mais linhas</button></div>
    <div class="actions"><button class="btn" id="menu-reset" ${this.feature?'disabled':''}>Repor 300 créditos</button><button class="btn" id="menu-gamble" ${this.feature||!this.lastBaseWin||this.gambleTimes>=5?'disabled':''}>Arriscar último prémio</button></div><p class="hint">Segundo toque em GIRAR pára os tambores por ordem. O resultado já está definido. As Free Spins continuam automaticamente e a aposta fica bloqueada.</p>`;
   }else if(tab==='pays'){
