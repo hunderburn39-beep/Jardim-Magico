@@ -93,6 +93,14 @@ class Game {
  initInputs(){
   canvas.addEventListener('pointerdown',e=>{e.preventDefault();this.audio.init();let b=canvas.getBoundingClientRect();const x=(e.clientX-b.left-ox)/sc,y=(e.clientY-b.top-oy)/scY;
    if(mod.classList.contains('hidden')===false)return;
+   // Direct canvas hit-testing keeps symbols tappable on iPhone Safari,
+   // independently of the transparent accessibility control layer.
+   if(!this.spinning&&!this.superseded&&x>=33&&x<33+5*101&&y>=258&&y<258+3*132){
+    const col=Math.floor((x-33)/101),row=Math.floor((y-258)/132);
+    if(col>=0&&col<5&&row>=0&&row<3){
+     this.audio.click();this.showSymbolPay(this.grid[col][row]);return;
+    }
+   }
    for(const target of [...this.targets].reverse()){const {x:bx,y:by,w,h,action}=target;if(x>=bx&&y>=by&&x<=bx+w&&y<=by+h){this.audio.click();action();break;}}
   },{passive:false});
   document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){this.closeModal();return;}if(mod.classList.contains('hidden')===false)return;
@@ -260,15 +268,18 @@ class Game {
  }
 
  showSymbolPay(symbol){
-  if(this.spinning||!E.PAYS[symbol])return;
+  if(this.spinning||this.superseded||!E.PAYS[symbol])return;
   const image=this.images[symbol],name=iconNames[symbol]||symbol;
+  const stake=this.bet/this.lines;
   const rows=[2,3,4,5].map(n=>{
-   const mult=E.PAYS[symbol][n]||0;
-   return '<tr><td style="padding:8px 12px">'+n+' símbolos</td><td style="padding:8px 12px;text-align:right;color:#ffe0a0">'+(mult?'×'+nice(mult)+' · '+money(mult*this.bet/this.lines):'—')+'</td></tr>';
+   const multiplier=E.PAYS[symbol][n]||0;
+   const amount=multiplier*stake;
+   return '<tr><td style="padding:9px 12px">'+n+' iguais</td><td style="padding:9px 12px;text-align:right;color:#ffe6a4;font-weight:800">'+(multiplier?money(amount):'—')+'</td></tr>';
   }).join('');
-  const pic=image?.src?'<img src="'+image.src+'" alt="" style="display:block;width:100px;height:100px;object-fit:contain;margin:8px auto;filter:drop-shadow(0 0 12px #e5ac52)">':'';
-  this.openModal(name.toUpperCase(),'<div style="max-width:380px;margin:auto;padding:14px;border:2px solid #c89a51;border-radius:16px;background:linear-gradient(140deg,#302419,#101b2a 70%,#3c2a19);box-shadow:inset 0 0 22px #d7a44d40,0 0 18px #c99a4540">'+pic+'<h3 style="text-align:center;color:#ffdf98">'+name+'</h3><table style="width:100%;color:#f7e9ca">'+rows+'</table><p style="font-size:12px;text-align:center">Valores por linha, para aposta de '+money(this.bet)+' e '+this.lines+' linhas ativas.</p></div>');
+  const pic=image?.src?'<img src="'+image.src+'" alt="" style="display:block;width:100px;height:100px;object-fit:contain;margin:8px auto;filter:drop-shadow(0 0 14px #f0b84d)">':'';
+  this.openModal(name.toUpperCase(),'<div style="max-width:380px;margin:auto;padding:14px;border:2px solid #d4a45c;border-radius:16px;background:linear-gradient(145deg,#38251b,#101b2a 65%,#3d2919);box-shadow:inset 0 0 22px #d7a44d40,0 0 18px #c99a4540">'+pic+'<h3 style="text-align:center;color:#ffdf98">'+name+'</h3><p style="text-align:center">Aposta atual: <b>'+money(this.bet)+'</b></p><table style="width:100%;color:#f7e9ca">'+rows+'</table><p style="font-size:12px;text-align:center">Prémios por linha ativa ('+this.lines+' linhas). Os símbolos contam da esquerda para a direita. O santuário também pode ativar Free Spins como Scatter.</p></div>');
  }
+
  openInfo(tab='menu'){
   this.auto=0;
   const tabs=`<div class="header-tabs">${[['menu','Menu'],['pays','Prémios'],['rules','Regras'],['history','Histórico']].map(([key,label])=>`<button data-page="${key}" class="${tab===key?'active':''}">${label}</button>`).join('')}</div>`;
