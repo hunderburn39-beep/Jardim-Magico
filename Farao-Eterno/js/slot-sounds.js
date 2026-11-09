@@ -150,55 +150,55 @@
     friction(.020,.004,640,.015);
   };
 
-  // "PAAAMMM": ataque grave, corpo metálico suave e cauda longa.
-  // Sintetizado de raiz com camadas harmónicas — sem bipes sequenciais.
-  // Os três Wilds partilham o mesmo timbre, cada vez mais expressivo.
+  // "PAAAAAMMMMM": efeito principal do Wild, muito acima do som dos
+  // tambores. Médios e harmónicos para se ouvir bem em altifalantes móveis.
+  // A compressão master existente limita os picos para evitar saturação.
   function wildPaam(count){
     if(!ready())return;
     const ac=audio.ctx,t=ac.currentTime;
-    // Muito mais alto que o som normal, com compressão global para evitar clipping.
-    // O segundo e o terceiro Wild ganham peso, mas mantêm o mesmo timbre.
-    const force=count<=1 ? 1.92 : count===2 ? 2.22 : 2.52;
-    const duration=count>=3?1.30:1.16;
+    const force=count<=1 ? 1 : count===2 ? 1.12 : 1.22;
+    const duration=count>=3 ? 1.75 : 1.55;
     audio._wildSoundAtMs=performance.now();
-    // Baixar temporariamente a música (sem desligá-la) e devolver suavemente.
+
+    // Dar prioridade real ao Wild: ambiente quase em silêncio durante
+    // o impacto e a ressonância. Depois a música regressa gradualmente.
     const music=audio.musicBus?.gain;
     if(music){
       try{
         music.cancelScheduledValues(t);
         music.setValueAtTime(Math.max(.001,music.value),t);
-        music.setTargetAtTime(.44,t,.040);
-        music.setTargetAtTime(2.5,t+.58,.30);
+        music.setTargetAtTime(.10,t,.022);
+        music.setTargetAtTime(2.5,t+duration-.13,.28);
       }catch(_){}
     }
     try{
-      // Cada voz começa em simultâneo, como uma única pancada orquestral.
-      function layer(type,from,to,peak,length,cutoff){
+      function layer(type,from,to,peak,length,cutoff,attack=.010){
         const osc=ac.createOscillator(),lp=ac.createBiquadFilter(),
               env=ac.createGain();
         osc.type=type;
         osc.frequency.setValueAtTime(from,t);
-        osc.frequency.exponentialRampToValueAtTime(to,t+length*.72);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(25,to),t+length*.77);
         lp.type='lowpass';
         lp.frequency.setValueAtTime(cutoff,t);
-        lp.frequency.exponentialRampToValueAtTime(Math.max(320,cutoff*.56),t+Math.min(.48,length*.65));
+        lp.frequency.exponentialRampToValueAtTime(Math.max(330,cutoff*.62),
+          t+Math.min(.65,length*.69));
         env.gain.setValueAtTime(.0001,t);
-        env.gain.exponentialRampToValueAtTime(peak*force,t+.021);
+        env.gain.exponentialRampToValueAtTime(peak*force,t+attack);
         env.gain.exponentialRampToValueAtTime(.0001,t+length);
         osc.connect(lp);lp.connect(env);env.connect(output());
         osc.start(t);osc.stop(t+length+.03);
         osc.onended=()=>{try{osc.disconnect();lp.disconnect();env.disconnect();}catch(_){}};
       }
-      // A componente central é audível nos altifalantes pequenos do iPhone.
-      layer('triangle',205,154,.074,duration,1350);
-      layer('sawtooth',307,240,.029,duration*.82,1040);
-      layer('sine',108,82,.043,duration*.88,580);
-      layer('sine',410,348,.024,duration*.68,1200);
-      // Ataque que se ouve bem no iPhone, seguido da ressonância "mmmm".
-      layer('triangle',615,365,.026,duration*.22,1700);
-      friction(.084,.016*force,1420);
+      // Todas as camadas começam juntas: um PAAAAM único, não vários bipes.
+      layer('triangle',245,164,.25,duration,1850);
+      layer('sawtooth',395,263,.11,duration*.88,1620);
+      layer('sine',117,81,.105,duration*.94,690);
+      layer('triangle',590,385,.080,duration*.75,2100);
+      layer('sine',820,555,.056,duration*.53,2300);
+      // Pancada inicial, seguida de um "mmmm" longo e cheio.
+      friction(.105,.073*force,2200);
     }catch(_){
-      note(220,152,.85,.042*force);
+      note(265,152,1.22,.13*force);
     }
   }
   audio.sanctuaryLanding=function(reel,count){
@@ -227,5 +227,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.3.3',original:true,procedural:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.3.4',original:true,procedural:true,dynamicReelSpeed:true};
 })();
