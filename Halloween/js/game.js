@@ -125,14 +125,14 @@ class Classica extends Phaser.Scene{
  bottom(){
    this.linesText=txt(this,360,886,"",26,"#ffcb6b");
    const g=this.add.graphics();
-   for(const [x,w] of [[172,320],[548,320]]){
-     g.fillStyle(0x350e29,.96).fillRoundedRect(x-w/2,930,w,105,8);
-     g.lineStyle(4,0xe6a447).strokeRoundedRect(x-w/2,930,w,105,8);
+   this.jackpotsText=[];
+   for(let i=0;i<4;i++){
+     const x=95+i*176,w=166;
+     g.fillStyle(0x350e29,.96).fillRoundedRect(x-w/2,929,w,106,8);
+     g.lineStyle(3,0xe6a447).strokeRoundedRect(x-w/2,929,w,106,8);
+     txt(this,x,953,"ACUM. "+(i+1),20,"#ffd177");
+     this.jackpotsText.push(txt(this,x,996,"",26,"#fff2a7"));
    }
-   txt(this,172,953,"ACUMULADO 1",22,"#ffd177");
-   txt(this,548,953,"ACUMULADO 2",22,"#ffd177");
-   this.jack1=txt(this,172,996,"",39,"#fff2a7");
-   this.jack2=txt(this,548,996,"",39,"#fff2a7");
    this.pumpkinMarkers=[];
    for(let i=0;i<5;i++){
      const pumpkin=this.add.image(228+i*66,1052,"h-pumpkin").setDisplaySize(47,56);
@@ -171,8 +171,8 @@ class Classica extends Phaser.Scene{
    this.credit.setText(fmt(this.state.balance));
    this.prize.setText(fmt(this.state.lastWin));
    this.stake.setText(fmt(this.state.bet));
-   this.jack1.setText(fmt(this.state.jackpots?.[0]??350));
-   this.jack2.setText(fmt(this.state.jackpots?.[1]??750));
+   for(let i=0;i<4;i++)
+     this.jackpotsText[i].setText(fmt(this.state.jackpots?.[i]??[350,750,1500,3000][i]));
    for(let i=0;i<this.pumpkinMarkers.length;i++)
       this.pumpkinMarkers[i].setAlpha(i<this.state.pumpkins?1:.3);
    this.autoText.setText(this.auto?"ATIVO":"");
@@ -379,23 +379,25 @@ class Classica extends Phaser.Scene{
    this.wheelOverlay.add([bg,border,txt(this,360,330,"ROLETA DAS ABÓBORAS",35,"#fce2a5")]);
    this.wheelDisk=this.add.container(360,642);
    const shape=this.add.graphics();
-   const colors=[0xcc7833,0x8d2440,0xbe9b38,0x385681,0xa44247,0x4a7750,0xaf621e,0x753e88];
+   const colors=[0xc97739,0x83233b,0xb79c40,0x355981,0x973044,0x4e804b];
+   const slice=2*Math.PI/E.WHEEL_SECTORS.length;
    for(let i=0;i<E.WHEEL_SECTORS.length;i++){
-     const first=-Math.PI/2-Math.PI/8+i*Math.PI/4;
-     const last=first+Math.PI/4;
-     shape.fillStyle(colors[i],1);
-     shape.fillTriangle(0,0,Math.cos(first)*226,Math.sin(first)*226,
-       Math.cos(last)*226,Math.sin(last)*226);
+     const first=-Math.PI/2-slice/2+i*slice;
+     const last=first+slice;
+     shape.fillStyle(colors[i%colors.length],1);
+     shape.fillTriangle(0,0,Math.cos(first)*210,Math.sin(first)*210,
+       Math.cos(last)*210,Math.sin(last)*210);
    }
    shape.lineStyle(9,0xe2b661).strokeCircle(0,0,209);
    shape.fillStyle(0x1d152d,1).fillCircle(0,0,34);
    shape.lineStyle(6,0xffd18d).strokeCircle(0,0,34);
    this.wheelDisk.add(shape);
    for(let i=0;i<E.WHEEL_SECTORS.length;i++){
-     const angle=-Math.PI/2+i*Math.PI/4;
-     const x=Math.cos(angle)*144,y=Math.sin(angle)*144;
-     const label=E.WHEEL_SECTORS[i].label.replace("ACUMULADO ","A");
-     this.wheelDisk.add(txt(this,x,y,label,22,"#fff6d4",{stroke:"#3a2431",strokeThickness:4}));
+     const angle=-Math.PI/2+i*2*Math.PI/E.WHEEL_SECTORS.length;
+     const x=Math.cos(angle)*170,y=Math.sin(angle)*170;
+     const label=String(E.WHEEL_SECTORS[i].number);
+     this.wheelDisk.add(txt(this,x,y,label,15,"#fff6d4",
+       {stroke:"#3a2431",strokeThickness:2}));
    }
    this.wheelOverlay.add(this.wheelDisk);
    const pin=this.add.graphics();
@@ -430,7 +432,7 @@ class Classica extends Phaser.Scene{
    this.wheelHint.setText("BOA SORTE!");
    const sector=this.state.pendingWheel.sectorIndex;
    this.tone(460,.2);
-   this.tweens.add({targets:this.wheelDisk,angle:6*360-sector*45,duration:3400,
+   this.tweens.add({targets:this.wheelDisk,angle:7*360-sector*(360/E.WHEEL_SECTORS.length),duration:4900,
      ease:"Cubic.Out",onComplete:()=>this.finishWheel()});
  }
  finishWheel(){
