@@ -116,12 +116,18 @@ class Classica extends Phaser.Scene{
    this.winPath=this.add.graphics();
    this.winLabel=txt(this,360,299,"",21,"#ffe9a0");
    this.lineMarkers=[];
+   // 25 marcadores de percurso lateral + cinco números por baixo do
+   // tambor respetivo para as combinações verticais (26 a 30).
    for(let i=0;i<30;i++){
-     const left=i<15,rank=left?i:i-15;
-     const x=left?32:688,y=Y+17+rank*33;
+     const vertical=i>=25;
+     const col=i-25;
+     const left=i<13,rank=left?i:i-13;
+     const x=vertical?X+(col+.5)*CW:left?32:688;
+     const y=vertical?Y+BH+18:Y+17+rank*38;
      const palette=[0xf4c43a,0xdd4d5c,0x78bf55,0x5cc1de,0xd48edb];
+     const color=vertical?0xffd878:palette[i%5];
      const circ=this.add.graphics().fillStyle(0x17182b,1).fillCircle(x,y,15)
-       .lineStyle(3,palette[i%5]).strokeCircle(x,y,15);
+       .lineStyle(3,color).strokeCircle(x,y,15);
      const t=txt(this,x,y,String(i+1),15,"#f9e1c7",{strokeThickness:0});
      this.lineMarkers.push({circ,t});
    }
@@ -320,17 +326,24 @@ class Classica extends Phaser.Scene{
    this.previous=result.grid;
    this.clearHolds();
    this.canHold=result.result.total===0&&!result.free&&!result.potTriggered&&!result.strawberryTriggered&&!result.diceTriggered&&!result.wheelTriggered;
-   this.highlight(result.result.hits);
+   this.highlight([...result.result.hits,...result.result.bonusHits]);
    if(result.earnedSpins){this.message.setText("+10 GIROS GRÁTIS!");this.flash();}
    else if(result.pumpkinBonuses){this.message.setText("BÓNUS DAS ABÓBORAS!");this.flash();}
    else if(result.result.total>0){this.message.setText("PRÉMIO "+fmt(result.result.total));this.tone(740,.15);}
    else{this.message.setText("SEM PRÉMIO — TOCA NUM TAMBOR PARA TRAVAR");}
    this.renderState();this.store();
-   if(result.diceTriggered)this.showDiceBonus();
-   else if(result.strawberryTriggered)this.showStrawberryBonus();
-   else if(result.potTriggered)this.showPotBonus();
-   else if(result.wheelTriggered)this.showWheelBonus();
-   else if(this.auto) this.time.delayedCall(620,()=>{if(this.auto)this.spin();});
+   const showBonus=()=>{
+     if(result.diceTriggered)this.showDiceBonus();
+     else if(result.strawberryTriggered)this.showStrawberryBonus();
+     else if(result.potTriggered)this.showPotBonus();
+     else if(result.wheelTriggered)this.showWheelBonus();
+     else if(this.auto)this.time.delayedCall(620,()=>{if(this.auto)this.spin();});
+   };
+   if(result.verticalBonus){
+     const columns=result.result.verticalScatterColumns.map(col=>col+1).join(", ");
+     this.message.setText("BÓNUS VERTICAL · TAMBOR "+columns);
+     this.time.delayedCall(950,showBonus);
+   }else showBonus();
  }
  makePaytable(){
    this.tableOverlay=this.add.container(0,0).setDepth(130).setVisible(false);
@@ -688,8 +701,11 @@ class Classica extends Phaser.Scene{
          X+col*CW+6,Y+row*CH+6,CW-12,CH-12,9);
      }
      this.winPath.strokePath();
-     this.winLabel.setText("LINHA "+hit.line+" · "+hit.symbol.toUpperCase()+
-       " ×"+hit.count+" · "+fmt(hit.amount)+" CRÉDITOS VIRTUAIS");
+     this.winLabel.setText(hit.bonus
+       ? "BÓNUS VERTICAL · TAMBOR "+(hit.cells[0][0]+1)+" · 3 CALDEIRÕES"
+       : (hit.direction==="vertical"?"VERTICAL ":"LINHA ")+hit.line+
+         " · "+hit.symbol.toUpperCase()+" ×"+hit.count+
+         " · "+fmt(hit.amount)+" CRÉDITOS VIRTUAIS");
    };
    draw();
    if(sequence.length>1)this.winTimer=this.time.addEvent({
