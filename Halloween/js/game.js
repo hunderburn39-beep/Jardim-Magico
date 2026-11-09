@@ -16,11 +16,26 @@ function txt(s,x,y,value,size=28,color="#fff6d9",extra={}) {
 class Classica extends Phaser.Scene{
  constructor(){super("classica");this.state=E.createState();this.spinning=false;this.auto=false;this.silence=false;this.held=new Set();this.previous=null;this.canHold=false;this.audio=null;this.potOpen=false;this.strawberryOpen=false;this.diceOpen=false;this.tableOpen=false;this.winTimer=null;this.winIndex=0;}
  preload(){
+   // Os recursos originais são usados apenas num pacote privado opt-in.
+   // No GitHub público sem o pacote, mantém-se o atlas SVG original do projeto.
+   this.originalMode=globalThis.HALLOWEEN_ORIGINAL_ASSETS===true;
    for(const [id,svg] of Object.entries(ART)){
-     // Phaser 3.90 descodifica data URI SVG com atob; a URL
-     // percent-encoded anterior causava InvalidCharacterError.
-     const binary=Array.from(new TextEncoder().encode(svg),b=>String.fromCharCode(b)).join("");
-     this.load.svg("h-"+id,"data:image/svg+xml;base64,"+btoa(binary),{width:156,height:174});
+     if(this.originalMode){
+       this.load.image("h-"+id,"./assets-original/sprites/"+id+".webp");
+       this.load.image("h-win-"+id,"./assets-original/sprites/"+id+"-win.webp");
+     }else{
+       const binary=Array.from(new TextEncoder().encode(svg),b=>String.fromCharCode(b)).join("");
+       this.load.svg("h-"+id,"data:image/svg+xml;base64,"+btoa(binary),{width:156,height:174});
+     }
+   }
+   if(this.originalMode){
+     this.load.image("h-original-scene","./assets-original/scene.webp");
+     this.load.image("h-original-wheel","./assets-original/roulette.webp");
+     for(const [key,file] of Object.entries({
+       "h-spin":"slots.mp3","h-win":"premio4.mp3",
+       "h-bonus":"bonus11.mp3","h-freespins":"bonus1.mp3",
+       "h-jackpot":"acumulado.mp3","h-bonuswin":"premiobonus.mp3"
+     }))this.load.audio(key,"./assets-original/audio/"+file);
    }
  }
  create(){
@@ -47,6 +62,10 @@ class Classica extends Phaser.Scene{
    status.textContent="";
  }
  background(){
+   if(this.originalMode){
+     this.add.image(W/2,H/2,"h-original-scene").setDisplaySize(W,H);
+     return;
+   }
    const g=this.add.graphics();
    g.fillGradientStyle(0x0a182b,0x152d4b,0x48103f,0x681449,1).fillRect(0,0,W,H);
    const moon=this.add.graphics();
@@ -271,7 +290,7 @@ class Classica extends Phaser.Scene{
    this.store();
    this.spinning=true;this.canHold=false;this.highlight([]);
    this.message.setText(this.held.size?"A GIRAR TAMBORES LIVRES...":"A GIRAR...");
-   this.tone(320,.09);
+   if(!this.playOriginalSound("h-spin"))this.tone(320,.09);
    let count=0;
    const active=[0,1,2,3,4].filter(col=>!outcome.heldReels?.includes(col));
    if(!active.length){
@@ -307,7 +326,8 @@ class Classica extends Phaser.Scene{
          if(step>=maxSteps){
            for(let row=0;row<3;row++)
              band[row+1].setTexture("h-"+finalColumn[row]).setAlpha(1);
-           const sx=(CW-12)/156,sy=(CH-14)/174;
+           const sx=(CW-12)/(this.symbols[col][0].width||156);
+   const sy=(CH-14)/(this.symbols[col][0].height||174);
            this.tweens.add({targets:this.symbols[col],scaleX:{from:sx*.94,to:sx},
              scaleY:{from:sy*.94,to:sy},duration:175,ease:"Back.Out"});
            this.tone(180+col*72,.075);
@@ -329,7 +349,10 @@ class Classica extends Phaser.Scene{
    this.highlight([...result.result.hits,...result.result.bonusHits]);
    if(result.earnedSpins){this.message.setText("+10 GIROS GRÁTIS!");this.flash();}
    else if(result.pumpkinBonuses){this.message.setText("BÓNUS DAS ABÓBORAS!");this.flash();}
-   else if(result.result.total>0){this.message.setText("PRÉMIO "+fmt(result.result.total));this.tone(740,.15);}
+   else if(result.result.total>0){
+     this.message.setText("PRÉMIO "+fmt(result.result.total));
+     if(!this.playOriginalSound("h-win"))this.tone(740,.15);
+   }
    else{this.message.setText("SEM PRÉMIO — TOCA NUM TAMBOR PARA TRAVAR");}
    this.renderState();this.store();
    const showBonus=()=>{
@@ -439,7 +462,7 @@ class Classica extends Phaser.Scene{
    }
    this.diceHint.setText("QUAL SERÁ O TEU NÚMERO?");
    this.diceOverlay.setVisible(true);
-   this.tone(510,.12);
+   if(!this.playOriginalSound("h-bonus"))this.tone(510,.12);
  }
  pickDice(index){
    if(!this.diceOpen||!this.state.pendingDice)return;
@@ -509,7 +532,7 @@ class Classica extends Phaser.Scene{
    }
    this.strawberryHint.setText("ESCOLHE UM DOS 12 MORANGOS");
    this.strawberryOverlay.setVisible(true);
-   this.tone(650,.13);
+   if(!this.playOriginalSound("h-bonus"))this.tone(650,.13);
  }
  pickStrawberry(index){
    if(!this.strawberryOpen||!this.state.pendingStrawberry)return;
@@ -573,7 +596,7 @@ class Classica extends Phaser.Scene{
    }
    this.potHint.setText("ESCOLHE O TEU PRÉMIO");
    this.potOverlay.setVisible(true);
-   this.tone(740,.18);
+   if(!this.playOriginalSound("h-bonus"))this.tone(740,.18);
  }
  pickPot(index){
    if(!this.potOpen||!this.state.pendingPot)return;
@@ -604,6 +627,9 @@ class Classica extends Phaser.Scene{
    border.lineStyle(7,0xf0ac4a).strokeRoundedRect(26,282,668,728,20);
    this.wheelOverlay.add([bg,border,txt(this,360,330,"ROLETA DAS ABÓBORAS",35,"#fce2a5")]);
    this.wheelDisk=this.add.container(360,642);
+   if(this.originalMode){
+     this.wheelDisk.add(this.add.image(0,0,"h-original-wheel").setDisplaySize(450,450));
+   }else{
    const shape=this.add.graphics();
    const colors=[0xc97739,0x83233b,0xb79c40,0x355981,0x973044,0x4e804b];
    const slice=2*Math.PI/E.WHEEL_SECTORS.length;
@@ -624,6 +650,7 @@ class Classica extends Phaser.Scene{
      const label=String(E.WHEEL_SECTORS[i].number);
      this.wheelDisk.add(txt(this,x,y,label,15,"#fff6d4",
        {stroke:"#3a2431",strokeThickness:2}));
+   }
    }
    this.wheelOverlay.add(this.wheelDisk);
    const pin=this.add.graphics();
@@ -650,7 +677,7 @@ class Classica extends Phaser.Scene{
    this.wheelHint.setText("PRIME O BOTÃO PARA RODAR");
    this.wheelButton.setText("RODAR ROLETA").setVisible(true);
    this.wheelOverlay.setVisible(true);
-   this.tone(620,.18);
+   if(!this.playOriginalSound("h-bonus"))this.tone(620,.18);
  }
  rollWheel(){
    if(!this.wheelOpen||this.wheelBusy||!this.state.pendingWheel)return;
@@ -676,12 +703,27 @@ class Classica extends Phaser.Scene{
      if(this.state.pendingPot)this.showPotBonus();
    });
  }
+ highlightOriginalSprites(hit){
+   if(!this.originalMode||!this.symbols)return;
+   for(let col=0;col<5;col++){
+     for(let row=0;row<3;row++){
+       const image=this.symbols[col]?.[row],id=this.state.lastGrid?.[col]?.[row];
+       if(image&&id&&image.texture.key!=="h-"+id)
+         image.setTexture("h-"+id);
+     }
+   }
+   for(const [col,row] of hit?.cells||[]){
+     const id=this.state.lastGrid?.[col]?.[row],image=this.symbols[col]?.[row];
+     if(id&&image)image.setTexture("h-win-"+id);
+   }
+ }
  highlight(hits){
    if(this.winTimer){
      this.winTimer.remove(false);
      this.winTimer=null;
    }
    this.winGlow.clear();this.winPath.clear();this.winLabel.setText("");
+   this.highlightOriginalSprites(null);
    if(!Array.isArray(hits)||hits.length===0)return;
    const sequence=hits.filter(hit=>hit?.cells?.length>=3);
    if(!sequence.length)return;
@@ -690,6 +732,7 @@ class Classica extends Phaser.Scene{
      if(this.spinning||this.tableOpen)return;
      const hit=sequence[this.winIndex%sequence.length];
      this.winGlow.clear();this.winPath.clear();
+     this.highlightOriginalSprites(hit);
      const palette=[0xf8bb50,0xd9566d,0x56c1d8,0x97d75b,0xc78ee8];
      const color=palette[(hit.line-1)%palette.length];
      this.winPath.lineStyle(7,color,1);
@@ -717,6 +760,11 @@ class Classica extends Phaser.Scene{
    // Pequena melodia original de celebração, sem amostras proprietárias.
    for(const [index,note] of [659,784,988,1318].entries())
      this.time.delayedCall(115*index,()=>this.tone(note,.17));
+ }
+ playOriginalSound(key){
+   if(!this.originalMode||this.silence||!this.sound?.play)return false;
+   try{this.sound.play(key,{volume:key==="h-spin"?.56:.75});return true;}
+   catch{return false;}
  }
  tone(freq,len){
    if(this.silence)return;
