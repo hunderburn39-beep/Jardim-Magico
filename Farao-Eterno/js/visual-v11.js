@@ -185,32 +185,16 @@
     // Motion blur vertical apenas nos tambores em movimento.
     // O fundo e a moldura ficam nítidos; o blur desaparece em cada paragem.
     const velocity=Math.min(1,Math.max(0,(p<.12?p/.12:p>.82?(1-p)/.18:1)));
-    // Fast vertical streaks simulate the reels spinning at high speed,
-    // without accelerating the actual outcome or changing the game maths.
-    for(const [offset,alpha] of [[-340,.15],[-168,.2],[0,.3],[168,.2],[340,.15]]){
+    // Desfoque de movimento dos símbolos, sem linhas verticais artificiais.
+    // Três passagens suaves criam arrastamento contínuo, sem sobrecarregar o Safari.
+    const smear=velocity*28;
+    for(const [offset,alpha] of [[-smear,.22],[0,.56],[smear,.22]]){
      ctx.save();
      ctx.globalAlpha=alpha;
-     if('filter' in ctx)ctx.filter='blur('+(14+velocity*34).toFixed(1)+'px)';
+     if('filter' in ctx)ctx.filter='blur('+(5+velocity*11).toFixed(1)+'px)';
      for(let r=-1;r<4;r++){
       const sym=item.show[c][item.steps[c]+3+r-step]||item.grid[c][clamp(r,0,2)];
-      tileAt(sym,rx,top+(r+fraction)*gh+offset*velocity,t,false);
-     }
-     ctx.restore();
-    }
-    // Long speed trails cover most of the reel height, clipped to the reel.
-    if(velocity>.18){
-     ctx.save();
-     ctx.beginPath();ctx.rect(rx+2,top,cw-4,gh*3);ctx.clip();
-     ctx.lineWidth=3.4;
-     for(let k=0;k<12;k++){
-      const sx=rx+5+k*8,sy=top+((t*(7.2+velocity*7.8)+k*83+c*27)%(gh*3+2080))-1840;
-      const length=(1360+velocity*960);
-      const streak=ctx.createLinearGradient(sx,sy,sx,sy+length);
-      streak.addColorStop(0,'rgba(255,227,163,0)');
-      streak.addColorStop(.35,'rgba(255,227,163,'+(.23*velocity)+')');
-      streak.addColorStop(.8,'rgba(255,235,190,'+(.38*velocity)+')');
-      streak.addColorStop(1,'rgba(255,227,163,0)');
-      ctx.strokeStyle=streak;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(sx,sy+length);ctx.stroke();
+      tileAt(sym,rx,top+(r+fraction)*gh+offset,t,false);
      }
      ctx.restore();
     }
