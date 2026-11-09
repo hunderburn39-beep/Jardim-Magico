@@ -135,7 +135,26 @@ class Game {
    im.src='assets/'+key.toLowerCase()+(E.NORMAL.slice(5).includes(key)||key==='TOMB'?'.webp':'.svg');this.images[key]=im;
   }
   const img=new Image();
-  img.onload=()=>{this.temple=img;};
+  img.onload=()=>{
+   // The thin gold line beside the title is baked into the background artwork.
+   // Inpaint only the two side strips, leaving the title and the temple intact.
+   const off=document.createElement('canvas');off.width=W;off.height=H;
+   const oc=off.getContext('2d',{willReadFrequently:true});
+   oc.drawImage(img,0,0,W,H);
+   for(const [x0,x1] of [[116,224],[365,444]]){
+    const top=192,bottom=205;
+    const upper=oc.getImageData(x0,top-2,x1-x0,1).data;
+    const lower=oc.getImageData(x0,bottom+2,x1-x0,1).data;
+    const area=oc.getImageData(x0,top,x1-x0,bottom-top+1);
+    for(let y=0;y<=bottom-top;y++)for(let x=0;x<x1-x0;x++){
+     const p=(y*(x1-x0)+x)*4,q=x*4,f=(y+1)/(bottom-top+2);
+     for(let ch=0;ch<3;ch++)area.data[p+ch]=Math.round(upper[q+ch]*(1-f)+lower[q+ch]*f);
+     area.data[p+3]=255;
+    }
+    oc.putImageData(area,x0,top);
+   }
+   this.temple=off;
+  };
   img.onerror=()=>{if(!img.fallback){img.fallback=true;img.src='assets/temple_back.svg';}};
   img.src='assets/temple.webp';
  }
