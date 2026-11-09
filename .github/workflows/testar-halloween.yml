@@ -1,0 +1,66 @@
+name: "Halloween | Testes independentes"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Halloween/**'
+      - '.github/workflows/testar-halloween.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Halloween/**'
+      - '.github/workflows/testar-halloween.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: halloween-testes-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verificar-halloween:
+    name: Verificar Halloween
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Obter repositório
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validar ficheiros e JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s Halloween/index.html
+          test -s Halloween/js/engine.js
+          test -s Halloween/js/game.js
+          test -s jardim-phaser/vendor/phaser-3.90.0.min.js
+          grep -q 'jardim-phaser/vendor/phaser-3.90.0.min.js' Halloween/index.html
+          for file in Halloween/js/*.js; do node --check "$file"; done
+
+      - name: Testar matemática e bónus
+        run: node --test Halloween/tests/engine.test.cjs
+
+      - name: Preparar pacote autónomo de execução
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/Halloween dist/jardim-phaser/vendor
+          cp -a Halloween/. dist/Halloween/
+          cp jardim-phaser/vendor/phaser-3.90.0.min.js dist/jardim-phaser/vendor/
+          (cd dist && zip -q -r ../Halloween-V0.1.zip Halloween jardim-phaser)
+          test -s Halloween-V0.1.zip
+
+      - name: Guardar pacote para testes
+        uses: actions/upload-artifact@v4
+        with:
+          name: Halloween-V0.1
+          path: Halloween-V0.1.zip
+          if-no-files-found: error
