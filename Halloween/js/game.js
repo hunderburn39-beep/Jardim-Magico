@@ -14,8 +14,12 @@ function txt(s,x,y,value,size=28,color="#fff6d9",extra={}) {
 class Classica extends Phaser.Scene{
  constructor(){super("classica");this.state=E.createState();this.spinning=false;this.auto=false;this.silence=false;this.held=new Set();this.previous=null;this.canHold=false;this.audio=null;this.potOpen=false;this.strawberryOpen=false;this.diceOpen=false;this.tableOpen=false;this.winTimer=null;this.winIndex=0;}
  preload(){
-   for(const [id,svg] of Object.entries(ART))
-     this.load.svg("h-"+id,"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg),{width:156,height:174});
+   for(const [id,svg] of Object.entries(ART)){
+     // Phaser 3.90 descodifica data URI SVG com atob; a URL
+     // percent-encoded anterior causava InvalidCharacterError.
+     const binary=Array.from(new TextEncoder().encode(svg),b=>String.fromCharCode(b)).join("");
+     this.load.svg("h-"+id,"data:image/svg+xml;base64,"+btoa(binary),{width:156,height:174});
+   }
  }
  create(){
    this.restore();
