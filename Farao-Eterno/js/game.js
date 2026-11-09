@@ -68,6 +68,22 @@ class Game {
    const raw=localStorage.getItem(STORE_KEY);
    this.ledger=raw?S.restore(JSON.parse(raw)):S.migrate(QA?null:JSON.parse(localStorage.getItem('farao-eterno-v1')||'null'));
    if(this.ledger.pending){S.settle(this.ledger);this.recovered=true;}
+   // Sessões antigas podem trazer letras duplicadas já pagas. Corrigir
+   // APENAS o ecrã inicial, depois de liquidar qualquer jogada pendente.
+   // Saldo, prémios, histórico e resultados contabilizados ficam intactos.
+   if(this.ledger.grid.some(col=>new Set(col).size!==3)){
+    this.ledger.grid=this.ledger.grid.map((col,reel)=>{
+     const used=new Set();
+     return col.map((symbol,row)=>{
+      if(!used.has(symbol)){used.add(symbol);return symbol;}
+      const choices=E.NORMAL.filter(candidate=>!used.has(candidate));
+      const replacement=choices[(reel+row)%choices.length];
+      used.add(replacement);return replacement;
+     });
+    });
+    // Evitar destacar linhas antigas após corrigir só o desenho guardado.
+    this.ledger.last=null;
+   }
   }catch(e){this.ledger=S.fresh();this.recoveryWarning=true;}
   this.syncLedger();this.paused=!!this.feature;
   this.save();
