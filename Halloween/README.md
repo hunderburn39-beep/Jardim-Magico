@@ -34,6 +34,7 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 
 - [Auditoria estática detalhada](docs/analise-xapk-original-6-68.md): imagens, áudio, binário LNH1 e classe Java/Dalvik `GameHalloween30L` (231 métodos).
 - [Transcrição parcial da tabela de prémios](docs/valores-visiveis-tabelas-original.json): valores visíveis do APK, **não usados ainda como matemática de jogo**.
+- [Auditoria dos créditos virtuais V0.6](docs/auditoria-creditos-v06.md): correção da roleta excessivamente frequente e simulações determinísticas. Não é certificado de RTP.
 - O modo inicial é agora de **30 linhas**. A reprodução 9:16 mantém símbolos próprios e não reutiliza os recursos comerciais do APK no repositório público.
 
 ## Estrutura
