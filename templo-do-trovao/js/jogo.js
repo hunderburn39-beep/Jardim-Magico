@@ -331,21 +331,21 @@
       PAY_TABLE[kind].map(v=>'<td class="pay-value">'+fmt(v)+'</td>').join("")+'</tr>'
     ).join("");
     const scat='<tr class="scatter-row"><td class="pay-name">'+symSvg("scatter")+
-      '<b>SCATTER</b></td><td class="pay-value">3× <small>4 símbolos</small></td>'+
-      '<td class="pay-value">5× <small>5 símbolos</small></td>'+
-      '<td class="pay-value">100× <small>6+ símbolos</small></td></tr>';
+      '<b>SCATTER</b></td><td class="pay-value">10 FS <small>3 símbolos</small></td>'+
+      '<td class="pay-value">12 FS <small>4 símbolos</small></td>'+
+      '<td class="pay-value">15–30 FS <small>5+</small></td></tr>';
     const wildRow='<tr class="wild-payrow"><td class="pay-name">'+symSvg("wild")+'<b>WILD</b></td>'+
-      '<td colspan="3">Substitui qualquer uma das 9 peças pagantes (1×–5×). Nunca substitui SCATTER, esferas MULT ou outros WILDs. Só vale para a melhor combinação da queda.</td></tr>';
+      '<td colspan="3">LIGA grupos de qualquer uma das nove peças, até 5×. Não substitui SCATTER. Só entra numa combinação por queda.</td></tr>';
     openModal("TABELA DE PAGAMENTOS",
-      '<div class="pay-head">⚡ OS SÍMBOLOS PAGAM EM QUALQUER POSIÇÃO ⚡</div>'+
-      '<div class="pay-scroll"><table class="paytable-table"><thead><tr><th>SÍMBOLO</th><th>8–9</th><th>10–11</th><th>12+</th></tr></thead><tbody>'+rows+scat+wildRow+'</tbody></table></div>'+
+      '<div class="pay-head">⚡ GRUPOS LIGADOS · CASCATAS · SPOTS ⚡</div>'+
+      '<div class="pay-scroll"><table class="paytable-table"><thead><tr><th>SÍMBOLO</th><th>5–7</th><th>8–11</th><th>12+</th></tr></thead><tbody>'+rows+scat+wildRow+'</tbody></table></div>'+
       '<div class="pay-rules">'+
-      '<p><b>Grelha 6×5:</b> 8 ou mais figuras iguais pagam sem precisar de estar na mesma linha. As peças premiadas desaparecem, as restantes descem e entram novas.</p>'+
-      '<p><b>SCATTER:</b> 4, 5 ou 6+ pagam respetivamente 3×, 5× ou 100× a aposta. 4 ou mais ativam 15 rodadas grátis; durante o bónus, 3 ou mais oferecem +5.</p>'+
-      '<p><b>WILD (1×–5×):</b> substitui todas as 9 peças pagantes para formar 8 ou mais; NUNCA substitui SCATTER, esferas multiplicadoras nem outros WILDs. Só participa na melhor combinação da queda, usando o maior multiplicador WILD (até 5×), sem duplicar pagamentos. A imagem é a mesma do Jardim Mágico.</p>'+
-      '<p><b>Multiplicadores:</b> 2× a 500×, somados numa jogada vencedora; nas rodadas grátis são acumuláveis nas condições do jogo.</p>'+
+      '<p><b>Grelha 7×7:</b> 5 ou mais figuras iguais ligadas horizontal/verticalmente formam um grupo premiado. Só esses símbolos desaparecem, os restantes caem.</p>'+
+      '<p><b>SCATTER:</b> 3, 4, 5, 6 ou 7+ símbolos ativam 10, 12, 15, 20 ou 30 Free Spins. Durante o bónus os SCATTER voltam a acrescentar giros, até 200 na sessão.</p>'+
+      '<p><b>WILD (1×–5×):</b> ajuda a ligar os grupos das nove peças, sem substituir SCATTER. Cada Wild só pode participar uma vez por queda.</p>'+
+      '<p><b>Multiplicadores:</b> cada vitória marca as posições. Se voltarem a vencer, sobem para ×2, ×4, ×8... ×1024. Os valores das casas do grupo somam-se. Durante Free Spins mantêm-se entre giros.</p>'+
       '<p><b>Comprar bónus:</b> 100× a aposta em créditos virtuais. Limite de 5 000× a aposta por ciclo.</p>'+
-      '<p class="note">Pagamentos idênticos aos valores da tabela de referência que enviaste. Os gráficos e as probabilidades são próprios deste protótipo. RTP não certificado; não utiliza dinheiro real.</p></div>',
+      '<p class="note">Tabela nova 5+ que substitui as probabilidades clássicas 8+. RTP ainda não calibrado/certificado. Créditos exclusivamente fictícios.</p></div>',
       [{text:"FECHAR TABELA",secondary:true}]);
     const m=el.modal.querySelector(".modal");if(m)m.classList.add("pay-modal");
   }
@@ -529,14 +529,14 @@
     function buyBonus(){
     if(state.busy||state.bonus||state.autoRemaining>0)return;
     const cost=currentBet()*100;
-    openModal("COMPRAR 15 RODADAS",
-      "<p>Ativar 15 rodadas grátis por <b>"+money(cost)+"</b> em créditos virtuais?</p>"+
-      "<p>Durante o bónus podes ganhar +5 rodadas sempre que aparecerem 3 ou mais símbolos SCATTER na grelha.</p>",
+    openModal("COMPRAR 10 FREE SPINS",
+      "<p>Ativar 10 rodadas grátis por <b>"+money(cost)+"</b> em créditos virtuais?</p>"+
+      "<p>Durante o bónus 3 ou mais SCATTER podem acrescentar 10 a 30 Free Spins. Os spots mantêm-se.</p>",
       [{text:"COMPRAR "+money(cost),action:async()=>{
         if(state.balance<cost){openModal("SALDO INSUFICIENTE","<p>Não tens créditos virtuais suficientes para comprar o bónus.</p>",[{text:"REPOR 1 000 €",action:refill},{text:"FECHAR",secondary:true}]);return}
         state.balance=Math.round((state.balance-cost)*100)/100;state.busy=true;refresh();
-        setOverlay("⚡ 4 SCATTER ⚡");await pause(state.turbo?200:800);setOverlay("");
-        state.busy=false;await startBonus();
+        setOverlay("⚡ FREE SPINS ⚡");await pause(state.turbo?200:800);setOverlay("");
+        state.busy=false;await startBonus(10);
       }},{text:"CANCELAR",secondary:true}]);
   }
   function refill(){
