@@ -1084,67 +1084,59 @@ export class Grid {
           });
         }
 
-        const winPopFS = Math.max(14, Math.min(28, this.cellW * 0.38));
-        const winPop = this.scene.add.text(popX, popY, `+${clusterWin.toFixed(2)}`, {
-          
+        // O prémio é mostrado junto dos doces vencedores, não no centro
+        // de toda a grelha. Algarismos maiores em dourado, sem caixa preta.
+        const winPopFS = Math.max(19, Math.min(34, this.cellW * 0.51));
+        const displayValue = '+' + clusterWin.toFixed(2);
+        const winPop = this.scene.add.text(popX, popY, displayValue, {
           fontFamily: '"Poppins", sans-serif',
-          fontSize: `${Math.round(winPopFS)}px`,
-          color: '#ffee00',
-          stroke: '#cc4400',
-          strokeThickness: Math.max(3, winPopFS * 0.18),
-          shadow: { offsetX: 0, offsetY: 2, color: '#000000', blur: 5, stroke: true, fill: true },
-        }).setOrigin(0.5).setDepth(21).setScale(0.5).setAlpha(0);
+          fontSize: Math.round(winPopFS) + 'px',
+          fontStyle: 'bold',
+          color: '#fff1a5',
+          stroke: '#5a206a',
+          strokeThickness: Math.max(3, winPopFS * 0.15),
+          shadow: {
+            offsetX: 0, offsetY: 3, color: '#260b45',
+            blur: 4, stroke: false, fill: true
+          },
+        }).setOrigin(0.5).setDepth(22).setAlpha(0).setScale(0.5);
 
-        const pillPadX = Math.max(8, winPopFS * 0.6);
-        const pillPadY = Math.max(3, winPopFS * 0.2);
-        const pillBg = this.scene.add.graphics().setDepth(20).setAlpha(0).setScale(0.5);
-        const pillW = winPop.width + pillPadX * 2;
-        const pillH = winPopFS + pillPadY * 2;
-        pillBg.fillStyle(0x000000, 0.55);
-        pillBg.fillRoundedRect(popX - pillW / 2, popY - pillH / 2, pillW, pillH, pillH / 2);
+        // Círculo luminoso que acompanha o valor por uma fração de segundo.
+        const prizeHalo = this.scene.add.graphics().setDepth(14);
+        prizeHalo.lineStyle(Math.max(2, this.cellW * 0.045), 0xffda84, 0.9);
+        prizeHalo.strokeCircle(popX, popY, this.cellW * 0.36);
+        prizeHalo.lineStyle(Math.max(1, this.cellW * 0.02), 0xffffff, 0.72);
+        prizeHalo.strokeCircle(popX, popY, this.cellW * 0.24);
+        this.scene.tweens.add({
+          targets: prizeHalo,
+          scaleX: 1.75,
+          scaleY: 1.75,
+          alpha: 0,
+          duration: this.turboMode ? 170 : 430,
+          ease: 'Cubic.easeOut',
+          onComplete: () => prizeHalo.destroy()
+        });
 
-        if (this.turboMode) {
-          winPop.setScale(0.8).setAlpha(1);
-          pillBg.setScale(0.8).setAlpha(1);
-          
-          this.scene.tweens.add({
-            targets: [winPop, pillBg],
-            y: `-=${this.cellW * 0.4}`,
-            duration: 300,
-            ease: 'Cubic.easeOut'
-          });
-          
-          this.scene.tweens.add({
-            targets: [winPop, pillBg],
-            alpha: 0,
-            duration: 150,
-            delay: 150,
-            onComplete: () => {
-              if (winPop && winPop.scene) winPop.destroy();
-              if (pillBg && pillBg.scene) pillBg.destroy();
-            }
-          });
-        } else {
-          this.scene.tweens.add({
-            targets: [winPop, pillBg],
-            y: `-=${this.cellW * 1.0}`,
-            scaleX: 1.1, scaleY: 1.1,
-            alpha: { from: 0, to: 1 },
-            duration: 400,
-            ease: 'Cubic.easeOut',
-            onComplete: () => {
-              this.scene.tweens.add({
-                targets: [winPop, pillBg],
-                y: `-=${this.cellW * 0.5}`,
-                alpha: 0,
-                duration: 350,
-                delay: 200,
-                ease: 'Quad.easeIn',
-                onComplete: () => { if (winPop && winPop.scene) winPop.destroy(); if (pillBg && pillBg.scene) pillBg.destroy(); },
-              });
-            }
-          });
-        }
+        // Pequeno impulso inicial, pausa legível e subida suave.
+        this.scene.tweens.add({
+          targets: winPop,
+          scaleX: this.turboMode ? 0.95 : 1.05,
+          scaleY: this.turboMode ? 0.95 : 1.05,
+          alpha: 1,
+          duration: this.turboMode ? 95 : 230,
+          ease: 'Back.easeOut',
+          onComplete: () => {
+            this.scene.tweens.add({
+              targets: winPop,
+              y: popY - this.cellW * 0.65,
+              alpha: 0,
+              duration: this.turboMode ? 210 : 450,
+              delay: this.turboMode ? 80 : 270,
+              ease: 'Sine.easeIn',
+              onComplete: () => { if (winPop && winPop.scene) winPop.destroy(); }
+            });
+          }
+        });
 
         // Explode animations
         cluster.positions.forEach((pos: any) => {
