@@ -104,6 +104,24 @@
    return out;
  }
  function emptySpots(){return Array(CLUSTER_SIZE).fill(0)}
+
+ function tumbleClusters(grid,removed,draw){
+   if(!Array.isArray(grid)||grid.length!==CLUSTER_SIZE)throw Error("Grelha inválida");
+   if(!(removed instanceof Set)||typeof draw!=="function")throw Error("Queda inválida");
+   const out=Array(CLUSTER_SIZE);
+   for(let col=0;col<CLUSTER_COLS;col++){
+     const survivors=[];
+     for(let r=CLUSTER_ROWS-1;r>=0;r--){
+       const idx=r*CLUSTER_COLS+col;
+       if(!removed.has(idx))survivors.push(grid[idx]);
+     }
+     let r=CLUSTER_ROWS-1;
+     for(const cell of survivors)out[r--*CLUSTER_COLS+col]=cell;
+     while(r>=0)out[r--*CLUSTER_COLS+col]=draw();
+   }
+   return out;
+ }
+
  function upgradeSpots(spots,positions){
    if(!Array.isArray(spots)||spots.length!==CLUSTER_SIZE)throw Error("Spots inválidos");
    const next=spots.slice();
@@ -189,5 +207,5 @@
    return Math.max(1,...(spots||[]).filter(n=>n>=2));
  }
 
- window.TrovaoRules={CONFIG,KINDS,EXCLUDED_WILD_KINDS,canWildReplace,WEIGHTS,MULTIPLIERS,MULT_WEIGHTS,WILD_VALUES,WILD_WEIGHTS,draw,score,scatterMultiplier,drawCluster,CLUSTER_CONFIG,CLUSTER_COLS,CLUSTER_ROWS,CLUSTER_SIZE,MAX_CLUSTER_MULT,clusterScore,emptySpots,upgradeSpots,freeSpinAward,maxActiveSpot};
+ window.TrovaoRules={CONFIG,KINDS,EXCLUDED_WILD_KINDS,canWildReplace,WEIGHTS,MULTIPLIERS,MULT_WEIGHTS,WILD_VALUES,WILD_WEIGHTS,draw,score,scatterMultiplier,drawCluster,CLUSTER_CONFIG,CLUSTER_COLS,CLUSTER_ROWS,CLUSTER_SIZE,MAX_CLUSTER_MULT,clusterScore,tumbleClusters,emptySpots,upgradeSpots,freeSpinAward,maxActiveSpot};
 })();
