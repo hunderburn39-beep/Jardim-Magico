@@ -5,19 +5,24 @@
   const PUMPKINS_FOR_BONUS = 5;
   const POT_VALUES = Object.freeze([1,2,3,5,8]);
   // Roleta de entretenimento, não reproduz distribuições históricas.
-  const WHEEL_SECTORS = Object.freeze([
-    {label:"2×",multiplier:2},{label:"3×",multiplier:3},
-    {label:"5×",multiplier:5},{label:"8×",multiplier:8},
-    {label:"10×",multiplier:10},{label:"15×",multiplier:15},
-    {label:"ACUMULADO 1",jackpotIndex:0},{label:"ACUMULADO 2",jackpotIndex:1}
-  ].map(s=>Object.freeze(s)));
+  // O atlas original confirma roleta numerada de 1 a 30. Os prémios
+  // abaixo continuam experimentais: ainda não foi validado o algoritmo do APK.
+  const WHEEL_SECTORS = Object.freeze(Array.from({length:30},(_,i)=>{
+    const jackpotMap={6:0,7:1,22:2,29:3};
+    const jackpotIndex=jackpotMap[i];
+    return Object.freeze(jackpotIndex!==undefined ?
+      {number:i+1,label:"ACUMULADO "+(jackpotIndex+1),jackpotIndex} :
+      {number:i+1,label:String(i+1),multiplier:2+(i%7)});
+  }));
   const SYMBOLS = Object.freeze([
-    { id: "pumpkin", weight: 19, icon: "🎃", name: "Abóbora" },
+    { id: "pumpkin", weight: 19, icon: "🎃", name: "Abóbora Halloween" },
+    { id: "witch_green", weight: 9, icon: "🧙", name: "Bruxa verde" },
     { id: "ghost", weight: 17, icon: "👻", name: "Fantasma" },
-    { id: "bat", weight: 17, icon: "🦇", name: "Bruxa na vassoura" },
-    { id: "cat", weight: 14, icon: "🐈‍⬛", name: "Drácula" },
+    { id: "bat", weight: 17, icon: "🦇", name: "Bruxa na lua" },
+    { id: "cat", weight: 14, icon: "🧛", name: "Vampiro" },
     { id: "skull", weight: 12, icon: "💀", name: "Monstro" },
-    { id: "witch", weight: 10, icon: "🧙", name: "Bruxa" },
+    { id: "witch", weight: 10, icon: "🧙", name: "Bruxa WITCH" },
+    { id: "devil", weight: 8, icon: "👹", name: "Diabinho" },
     { id: "wild", weight: 7, icon: "🧿", name: "Magic" },
     { id: "scatter", weight: 4, icon: "🔮", name: "Caldeirão" }
   ]);
@@ -35,6 +40,7 @@
     pumpkin: [0,0,0,2,6,16], ghost: [0,0,0,3,8,22],
     bat: [0,0,0,3,9,26], cat: [0,0,0,4,12,35],
     skull: [0,0,0,5,15,45], witch: [0,0,0,6,18,60],
+    witch_green:[0,0,0,3,10,30], devil:[0,0,0,5,15,42],
     wild: [0,0,0,8,24,80]
   });
   const round = n => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -53,7 +59,7 @@
     return SYMBOLS[SYMBOLS.length - 1].id;
   }
   function createState() {
-    return { balance: 1000, bet: 2, lines: 20, jackpots: [350,750], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null };
+    return { balance: 1000, bet: 2, lines: 20, jackpots: [350,750,1500,3000], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null };
   }
   function sanitize(s) {
     const d = createState();
@@ -62,8 +68,11 @@
       balance: Number.isFinite(s.balance) ? Math.max(0, Math.min(MAX_BALANCE, round(s.balance))) : d.balance,
       bet: [1,2,5,10].includes(s.bet) ? s.bet : d.bet,
       lines: [20,25,30].includes(s.lines) ? s.lines : d.lines,
-      jackpots: Array.isArray(s.jackpots) && s.jackpots.length === 2 ? s.jackpots.map((v,i)=>
-        Number.isFinite(v)?Math.max(0,Math.min(MAX_BALANCE,round(v))):d.jackpots[i]) : [...d.jackpots],
+      jackpots: Array.isArray(s.jackpots) ?
+        d.jackpots.map((seed,i)=>{
+          const v=s.jackpots[i];
+          return Number.isFinite(v)?Math.max(0,Math.min(MAX_BALANCE,round(v))):seed;
+        }) : [...d.jackpots],
       freeSpins: Number.isInteger(s.freeSpins) ? Math.max(0, Math.min(1000,s.freeSpins)) : 0,
       pumpkins: Number.isInteger(s.pumpkins) ? Math.max(0, Math.min(4,s.pumpkins)) : 0,
       spins: Number.isInteger(s.spins) ? Math.max(0,s.spins) : 0,
@@ -143,7 +152,8 @@
     if (free) state.freeSpins--;
     else {
       state.balance = round(state.balance - state.bet);
-      state.jackpots=state.jackpots.map((v,i)=>round(v+state.bet*(i===0?.01:.017)));
+      state.jackpots=state.jackpots.map((v,i)=>
+        Math.min(MAX_BALANCE,round(v+state.bet*(.01+.007*i))));
     }
     const earnedSpins = (result.scatter >= 3 ? 10 : 0);
     // No modo base, uma rodada com pelo menos três abóboras recolhe
@@ -197,7 +207,7 @@
     state.balance=Math.min(MAX_BALANCE,round(state.balance+payout));
     state.lastWin=round(state.lastWin+payout);
     if(sector.jackpotIndex!==undefined)
-      state.jackpots[sector.jackpotIndex]=sector.jackpotIndex===0?350:750;
+      state.jackpots[sector.jackpotIndex]=[350,750,1500,3000][sector.jackpotIndex];
     state.pendingWheel=null;
     return {ok:true,state,awarded:payout,sectorIndex,label:sector.label};
   }
