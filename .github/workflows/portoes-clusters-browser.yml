@@ -1,0 +1,41 @@
+name: "Portões do Trovão | Safari Zeus Clusters V19"
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'templo-do-trovao/clusters-v19.html'
+      - 'templo-do-trovao/tools/testar-clusters-browser.cjs'
+      - '.github/workflows/portoes-clusters-browser.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: portoes-v19-browser
+  cancel-in-progress: true
+jobs:
+  safari:
+    name: Testar giro real 7x7 no Safari e Chromium
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright e browsers
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Iniciar servidor do repositório
+        run: |
+          python3 -m http.server 8144 --bind 127.0.0.1 >/tmp/portoes-server.log 2>&1 &
+          sleep 2
+      - name: Abrir Zeus Clusters e rodar em 390x844
+        run: node templo-do-trovao/tools/testar-clusters-browser.cjs
+      - name: Guardar capturas de iPhone
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portoes-zeus-clusters-v19-mobile
+          path: visual-previews/portoes-v19-*.png
+          if-no-files-found: ignore
