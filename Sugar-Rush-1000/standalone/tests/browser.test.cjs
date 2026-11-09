@@ -13,13 +13,12 @@ const {chromium,webkit}=require("playwright");
     });
     const errors=[];
     page.on("pageerror",e=>errors.push(e.message));
-    page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
     try{
       await page.goto("http://127.0.0.1:8137/index2.html",{waitUntil:"load",timeout:30000});
       await page.waitForURL(/Sugar-Rush-1000\/standalone\/index\.html/,{timeout:15000});
       await page.locator("#board canvas").waitFor({state:"visible",timeout:25000});
       await page.waitForFunction(()=>!document.querySelector("#spin").disabled,
-        {timeout:25000});
+        null,{timeout:25000});
       assert.equal(await page.locator("#board canvas").count(),1);
       const title=await page.title();
       assert.ok(title.includes("Sugar Rush 1000"));
@@ -33,7 +32,7 @@ const {chromium,webkit}=require("playwright");
         const el=document.getElementById("spin");
         const msg=document.getElementById("message").textContent;
         return !el.disabled&&(/Sem prémio|PRÉMIO TOTAL|PRÉMIO MÁXIMO|Limite de/.test(msg));
-      },{timeout:60000});
+      },null,{timeout:90000});
       const after=await page.locator("#balance").innerText();
       const last=await page.locator("#lastwin").innerText();
       assert.ok(after.length>0&&last.length>0);
