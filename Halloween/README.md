@@ -1,4 +1,4 @@
-# Halloween III — Clássica (V0.3, reconstrução independente)
+# Halloween III — Clássica (V0.4, reconstrução independente)
 
 Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-níqueis Halloween III dos anos 2000.
 
@@ -10,15 +10,15 @@ Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-ní
 - Descrição de versões e mecânicas (20/25/30 linhas, travar tambores, bónus): https://www.casinobillionaire.com/portuguese/jogo-caca-niquel-halloween/
 - Manual histórico de configuração das máquinas: https://pt.scribd.com/document/696584543/Manual-Completo-Halloween
 
-## Implementado nesta V0.3
+## Implementado nesta V0.4
 
 - Ecrã retro com **5 tambores × 3 linhas** de fundo claro, nome Halloween III, marcadores de linhas coloridos, indicadores de crédito/prémio/aposta e dois acumulados virtuais.
 - Ilustrações **SVG originais**: abóbora, fantasma, morcego, gato, monstro, bruxa, Magic e caldeirão. Não são extraídas de ficheiros comerciais.
 - Possibilidade de escolher **20, 25 ou 30 linhas** de pagamento e apostas de 1, 2, 5 ou 10 créditos.
-- Giros em sequência de paragens, prémios realçados, sons arcade e botão automático.
+- Giros com tiras de 5 sprites por tambor, máscaras de recorte e desaceleração progressiva, paragem por ordem, prémios realçados, sons arcade sintetizados e botão automático.
 - **Travar até quatro tambores após uma jogada sem prémio**, tocando nos próprios tambores. Todos os giros seguintes debitam normalmente a aposta.
-- Motor experimental com Wild (Magic) corrigido, inclusive para grupos Wild terminados por Scatter. Três ou mais caldeirões ativam Free Spins e uma janela para escolher um de três potes. A escolha é guardada antes de ser mostrada, para recuperar o bónus ao reabrir o navegador. Cinco abóboras recolhidas em giros pagos (no máximo uma por giro, quando há três ou mais na grelha) dão cinco Free Spins; as rodadas gratuitas não recolhem novas abóboras. Estas são regras recriadas, ainda diferentes das mecânicas e tabelas históricas documentadas.
-- Guardar saldo, linhas, aposta, acumulados, giros e bónus pendente no armazenamento local, quando disponível. Aposta e linhas são bloqueadas durante Free Spins, e a seleção de aposta/linhas limpa travas de rolos.
+- Motor experimental com Wild (Magic) corrigido, inclusive para grupos Wild terminados por Scatter. Três ou mais caldeirões ativam Free Spins e uma janela para escolher um de três potes. A escolha é guardada antes de ser mostrada, para recuperar o bónus ao reabrir o navegador. Cinco abóboras recolhidas em giros pagos (no máximo uma por giro, quando há três ou mais na grelha) dão cinco Free Spins **e uma roleta virtual de oito setores**, com prémios de aposta × multiplicador ou um dos dois acumulados. A roleta fica guardada durante interrupções e atribui o prémio apenas uma vez. As rodadas gratuitas não recolhem novas abóboras. Estas são regras recriadas, ainda diferentes das mecânicas e tabelas históricas documentadas.
+- Guardar saldo, linhas, aposta, acumulados, giros, caldeirão e roleta pendentes no armazenamento local, quando disponível. Aposta e linhas são bloqueadas durante Free Spins, e a seleção de aposta/linhas limpa travas de rolos.
 
 ## Estrutura
 
@@ -40,4 +40,4 @@ O Phaser é importado localmente de `../jardim-phaser/vendor/phaser-3.90.0.min.j
 
 ## Próximos passos
 
-Substituir as restantes aproximações pelas regras que conseguirmos verificar da versão original; melhorar a roleta, os acumulados e os efeitos sonoros. O GitHub Pages precisa de publicação bem-sucedida antes de se poder confirmar o URL público. O visual original serve apenas de referência, sem reutilização de recursos protegidos.
+Substituir as restantes aproximações pelas regras que conseguirmos verificar da versão original; melhorar a roleta, os acumulados e os efeitos sonoros. O GitHub Pages precisa de publicação bem-sucedida antes de se poder confirmar o URL público. Os resultados dos testes de Chromium/WebKit são verificados no workflow GitHub Actions; não presumir que passaram antes de ver os respetivos registos. O visual original serve apenas de referência, sem reutilização de recursos protegidos.
