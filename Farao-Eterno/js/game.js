@@ -391,13 +391,18 @@ class Game {
  }
 
  openInfo(tab='menu'){
-  const tabs=`<div class="header-tabs">${[['menu','Menu'],['pays','Prémios'],['rules','Regras'],['history','Histórico']].map(([key,label])=>`<button data-page="${key}" class="${tab===key?'active':''}">${label}</button>`).join('')}</div>`;
+  const tabs=`<div class="header-tabs">${[['menu','APOSTA'],['settings','CONFIGURAÇÕES'],['pays','PAGAMENTOS'],['history','HISTÓRICO']].map(([key,label])=>`<button data-page="${key}" class="${tab===key?'active':''}">${label}</button>`).join('')}</div>`;
   let page='';
   if(tab==='menu'){
-   page=`<p class="eyebrow">OS SEGREDOS DA ETERNIDADE</p><div class="settings-grid"><button class="btn" id="toggle-sound">Efeitos sonoros: ${this.sound?'Ligados':'Desligados'}</button><button class="btn" id="toggle-music">Música: ${this.ledger.settings.music?'Ligada':'Desligada'}</button><button class="btn" id="toggle-turbo">Velocidade: ${this.turbo?'Turbo':'Normal'}</button><button class="btn" id="toggle-auto" ${this.feature?'disabled':''}>${this.auto?'Parar automático':'20 giros automáticos'}</button></div>
-   <h3>Aposta: ${money(this.bet)}</h3><div class="actions"><button class="btn" id="bet-less" ${this.spinning||this.feature?'disabled':''}>− Diminuir aposta</button><button class="btn" id="bet-more" ${this.spinning||this.feature?'disabled':''}>+ Aumentar aposta</button></div>
-   <h3>Linhas ativas: ${this.lines}</h3><div class="actions"><button class="btn" id="line-less" ${this.feature?'disabled':''}>Menos linhas</button><button class="btn" id="line-more" ${this.feature?'disabled':''}>Mais linhas</button></div>
-   <div class="actions"><button class="btn" id="menu-reset" ${this.feature?'disabled':''}>Repor 300 créditos</button><button class="btn" id="menu-gamble" ${this.feature||!this.lastBaseWin||this.gambleTimes>=5?'disabled':''}>Arriscar último prémio</button></div><p class="hint">Segundo toque em GIRAR pára os tambores por ordem. O resultado já está definido. As Free Spins continuam automaticamente e a aposta fica bloqueada.</p>`;
+   page=`<div class="bet-summary"><span>Aposta total</span><strong id="bet-total">${money(this.bet)}</strong></div>
+   <div class="slider-field"><div class="slider-title"><span>Valor da aposta</span><strong id="bet-display">${money(this.bet)}</strong></div><input type="range" id="bet-slider" min="0" max="${bets.length-1}" step="1" value="${this.betIndex}" ${this.spinning||this.feature?'disabled':''}></div>
+   <div class="slider-field"><div class="slider-title"><span>Linhas</span><strong id="lines-display">${this.lines}</strong></div><input type="range" id="lines-slider" min="1" max="10" step="1" value="${this.lines}" ${this.spinning||this.feature?'disabled':''}></div>
+   <hr class="menu-divider"><h3>Autojogo</h3>
+   <div class="slider-field"><div class="slider-title"><span>Giros automáticos</span><strong id="auto-display">${this.autoChoice||20}</strong></div><input type="range" id="auto-slider" min="10" max="100" step="10" value="${this.autoChoice||20}" ${this.feature?'disabled':''}></div>
+   <button class="btn auto-start" id="toggle-auto" ${this.feature?'disabled':''}>${this.auto?'PARAR AUTOJOGO':'INICIAR AUTOJOGO'}</button>
+   <p class="hint">A aposta e as linhas só podem ser alteradas com os tambores parados.</p>`;
+  }else if(tab==='settings'){
+   page=`<h3>Configurações</h3><div class="settings-grid"><button class="btn" id="toggle-sound">Efeitos sonoros: ${this.sound?'Ligados':'Desligados'}</button><button class="btn" id="toggle-music">Música: ${this.ledger.settings.music?'Ligada':'Desligada'}</button><button class="btn" id="toggle-turbo">Velocidade: ${this.turbo?'Turbo':'Normal'}</button></div><div class="actions"><button class="btn" id="menu-reset" ${this.feature?'disabled':''}>Repor créditos</button><button class="btn" id="menu-gamble" ${this.feature||!this.lastBaseWin||this.gambleTimes>=5?'disabled':''}>Arriscar último prémio</button></div>`;
   }else if(tab==='pays'){
    page=`<p>Multiplicadores da <b>aposta por linha</b>: ${money(this.bet/this.lines)}. Só o maior prémio de cada linha é pago, incluindo as expansões.</p><div class="scroll"><table><thead><tr><th>Símbolo</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead><tbody>`;
    for(const key of ['KING','TOMB','ANUBIS','HORUS','MASK','A','K','Q','J','10']){page+=`<tr><td><img class="pay-symbol" src="${this.images[key].src}" alt="">${iconNames[key]}</td>${[2,3,4,5].map(n=>`<td>${E.PAYS[key][n]?'×'+nice(E.PAYS[key][n]):'—'}</td>`).join('')}</tr>`;}
@@ -413,13 +418,14 @@ class Game {
   modalContent.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>this.openInfo(b.dataset.page));
   modalContent.querySelectorAll('[data-replay]').forEach(b=>b.onclick=()=>this.showHistoricSpin(Number(b.dataset.replay)));
   if(tab==='menu'){
-   $('toggle-sound').onclick=()=>{this.sound=!this.sound;this.audio.on=this.sound;this.audio.init();this.save();this.openInfo();};
-   $('toggle-music').onclick=()=>{this.ledger.settings.music=!this.ledger.settings.music;this.audio.stopMusic?.();this.save();this.openInfo();};
-   $('toggle-turbo').onclick=()=>{this.turbo=!this.turbo;this.save();this.openInfo();};
-   $('toggle-auto').onclick=()=>{this.closeModal();this.setAuto();};
-   $('bet-less').onclick=()=>{this.changeBet(-1);this.openInfo();};
-   $('bet-more').onclick=()=>{this.changeBet(1);this.openInfo();};
-   $('line-less').onclick=()=>{this.changeLines(-1);this.openInfo();};$('line-more').onclick=()=>{this.changeLines(1);this.openInfo();};
+   $('bet-slider').oninput=e=>{this.ledger.betIndex=Number(e.target.value);this.syncLedger();this.save();$('bet-display').textContent=money(this.bet);$('bet-total').textContent=money(this.bet);};
+   $('lines-slider').oninput=e=>{this.ledger.lines=Number(e.target.value);this.syncLedger();this.save();$('lines-display').textContent=this.lines;};
+   $('auto-slider').oninput=e=>{this.autoChoice=Number(e.target.value);$('auto-display').textContent=this.autoChoice;};
+   $('toggle-auto').onclick=()=>{const wasAuto=this.auto>0;this.closeModal();if(wasAuto){this.auto=0;this.notice('AUTOJOGO DESLIGADO',900);}else{this.auto=this.autoChoice||20;this.paused=false;this.notice(this.auto+' GIROS AUTOMÁTICOS',1100);}};
+  }else if(tab==='settings'){
+   $('toggle-sound').onclick=()=>{this.sound=!this.sound;this.audio.on=this.sound;this.audio.init();this.save();this.openInfo('settings');};
+   $('toggle-music').onclick=()=>{this.ledger.settings.music=!this.ledger.settings.music;this.audio.stopMusic?.();this.save();this.openInfo('settings');};
+   $('toggle-turbo').onclick=()=>{this.turbo=!this.turbo;this.save();this.openInfo('settings');};
    $('menu-reset').onclick=()=>this.openReset();$('menu-gamble').onclick=()=>this.openGamble();
   }
  }
