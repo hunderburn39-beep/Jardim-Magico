@@ -10,6 +10,7 @@ on:
       - 'index.html'
       - 'index2.html'
       - 'Sugar-Rush-1000/standalone/**'
+      - 'Sugar-Rush-1000/frontend/**'
       - 'css/**'
       - 'js/**'
       - 'assets/**'
@@ -39,6 +40,32 @@ jobs:
     steps:
       - name: Obter todas as pastas
         uses: actions/checkout@v4
+
+      - name: Instalar pnpm para o frontend original
+        uses: pnpm/action-setup@v4
+        with:
+          version: '10.18.0'
+          run_install: false
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: Sugar-Rush-1000/frontend/pnpm-lock.yaml
+
+      - name: Compilar frontend Phaser original com imagens e audio
+        working-directory: Sugar-Rush-1000/frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm run build
+          test -s dist/index.html
+          test -s dist/images/candies/candy_0.png
+          test -s dist/images/candies/scatter.png
+          test -s dist/audio/music_default.mp3
+          echo "Frontend original compilado com imagens e som."
 
       - name: Garantir que os quatro jogos estão presentes
         shell: bash
@@ -74,6 +101,8 @@ jobs:
           cp -a templo-do-trovao Farao-Eterno Halloween public/
           mkdir -p public/Sugar-Rush-1000
           cp -a Sugar-Rush-1000/standalone public/Sugar-Rush-1000/
+          mkdir -p public/Sugar-Rush-1000/play
+          cp -a Sugar-Rush-1000/frontend/dist/. public/Sugar-Rush-1000/play/
           touch public/.nojekyll
           test -s public/index.html
           test -s public/jardim-phaser/index.html
@@ -82,11 +111,15 @@ jobs:
           test -s public/Halloween/index.html
           test -s public/index2.html
           test -s public/Sugar-Rush-1000/standalone/index.html
+          test -s public/Sugar-Rush-1000/play/index.html
+          test -s public/Sugar-Rush-1000/play/images/candies/candy_0.png
+          test -s public/Sugar-Rush-1000/play/images/candies/scatter.png
+          test -s public/Sugar-Rush-1000/play/audio/music_default.mp3
           echo "Jardim Mágico: /jardim-phaser/"
           echo "Portões do Trovão: /templo-do-trovao/"
           echo "Faraó Eterno: /Farao-Eterno/"
           echo "Halloween: /Halloween/"
-          echo "Sugar Rush (offline): /index2.html"
+          echo "Sugar Rush original Phaser offline: /index2.html"
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
