@@ -137,34 +137,54 @@
     note(108,79,.16,.006);
   };
 
-  // Um 'clac' abafado + corpo curto, sem o antigo apito agudo.
+  // Os tambores normais mantêm o "clac" curto. Ao revelar um Wild,
+  // ignorar o clac para deixar ouvir um só PAAAMMM, sem duas pancadas.
   audio.tick=function(reel){
+    if(game.spinObject?.grid?.[reel]?.includes('TOMB'))return;
     friction(.042,.016,1360);
     note(152-reel*4,79-reel*2,.13,.016);
     friction(.020,.004,640,.015);
   };
 
-  // O Wild tem um som próprio claramente acima da paragem normal.
-  // Intensidade progressiva do 1.º ao 3.º, controlada pelo compressor global.
-  audio.sanctuaryLanding=function(reel,count){
-    if(count===1){
-      // Primeiro Wild: impacto dourado e ressonância bem audível.
-      friction(.065,.016,1450);
-      note(450,325,.29,.036);
-      note(680,535,.20,.018,.055);
-    }else if(count===2){
-      // Segundo Wild: acentuar o suspense sem perder o grave da rotação.
-      friction(.11,.019,1500);
-      note(185,112,.53,.045);
-      note(560,407,.42,.042,.035);
-      note(780,620,.25,.015,.105);
-    }else if(count>=3){
-      // Terceiro Wild: impacto cheio e duas ressonâncias brilhantes.
-      friction(.12,.022,1650);
-      note(245,132,.42,.058);
-      note(635,465,.40,.048,.047);
-      note(850,680,.32,.025,.12);
+  // "PAAAMMM": ataque grave, corpo metálico suave e cauda longa.
+  // Sintetizado de raiz com camadas harmónicas — sem bipes sequenciais.
+  // Os três Wilds partilham o mesmo timbre, cada vez mais expressivo.
+  function wildPaam(count){
+    if(!ready())return;
+    const ac=audio.ctx,t=ac.currentTime;
+    const force=count<=1?.87:count===2?1:1.16;
+    const duration=count>=3?1.24:1.08;
+    try{
+      // Cada voz começa em simultâneo, como uma única pancada orquestral.
+      function layer(type,from,to,peak,length,cutoff){
+        const osc=ac.createOscillator(),lp=ac.createBiquadFilter(),
+              env=ac.createGain();
+        osc.type=type;
+        osc.frequency.setValueAtTime(from,t);
+        osc.frequency.exponentialRampToValueAtTime(to,t+length*.72);
+        lp.type='lowpass';
+        lp.frequency.setValueAtTime(cutoff,t);
+        lp.frequency.exponentialRampToValueAtTime(Math.max(320,cutoff*.56),t+Math.min(.48,length*.65));
+        env.gain.setValueAtTime(.0001,t);
+        env.gain.exponentialRampToValueAtTime(peak*force,t+.021);
+        env.gain.exponentialRampToValueAtTime(.0001,t+length);
+        osc.connect(lp);lp.connect(env);env.connect(output());
+        osc.start(t);osc.stop(t+length+.03);
+        osc.onended=()=>{try{osc.disconnect();lp.disconnect();env.disconnect();}catch(_){}};
+      }
+      // A componente central é audível nos altifalantes pequenos do iPhone.
+      layer('triangle',205,154,.066,duration,1350);
+      layer('sawtooth',307,240,.027,duration*.82,1040);
+      layer('sine',108,82,.039,duration*.88,580);
+      layer('sine',410,348,.015,duration*.62,1200);
+      // Um único ataque curto — depois fica só a ressonância "mmmm".
+      friction(.084,.018*force,1500);
+    }catch(_){
+      note(220,152,.85,.042*force);
     }
+  }
+  audio.sanctuaryLanding=function(reel,count){
+    wildPaam(count);
   };
 
   audio.paylineChime=function(index){
@@ -189,5 +209,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.3.1',original:true,procedural:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.3.2',original:true,procedural:true,dynamicReelSpeed:true};
 })();
