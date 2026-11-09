@@ -203,7 +203,7 @@
    }else if(sym==='TOMB'){
     // Torre maior, sem moldura individual; pode atravessar as divisões horizontais.
     const bounds=visibleBounds(img);
-    const scale=Math.min((w*1.22)/bounds.w,(h*1.62)/bounds.h);
+    const scale=Math.min((w*1.12)/bounds.w,(h*1.42)/bounds.h);
     const iw=bounds.w*scale,ih=bounds.h*scale;
     const centerX=x+w/2,centerY=y+h/2;
     ctx.save();
