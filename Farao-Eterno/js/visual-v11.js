@@ -165,7 +165,7 @@
     // O 10 tem margens internas maiores na imagem: ampliá-lo separadamente.
     ctx.save();
     ctx.beginPath();ctx.rect(x+1,y+1,w-2,h-2);ctx.clip();
-    const scale=sym==='10'?1.55:1.18;
+    const scale=sym==='10'?1.78:1.35;
     const iw=(w-4)*scale,ih=(h-4)*scale;
     ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
     ctx.restore();
