@@ -22,23 +22,23 @@
     const symbols = ['10','J','Q','K','A','HORUS','MASK','ANUBIS','KING','TOMB'];
     const strip = Array.from({ length: stepCount + 10 }, (_, i) =>
       symbols[(i * 7 + reel * 3 + round * 5 + Math.floor(i / 5)) % symbols.length]);
-    // As janelas de três símbolos da fita não podem repetir símbolos.
-    // Preservar a grelha de chegada; corrigir apenas a fita decorativa.
-    for (let row = 0; row < 3; row++) {
-      strip[3 + row] = final[row];
-    }
+    // Símbolos distintos em qualquer janela visível de três posições.
+    // A sequência final é sempre a gerada pelo motor matemático.
+    const locked = new Map();
+    for (let row = 0; row < 3; row++) locked.set(3 + row, final[row]);
+    // A grelha anterior pode vir de uma sessão guardada antes desta regra.
+    const safePrior = prior.map((sym, row) => prior.slice(0, row).includes(sym)
+      ? symbols.find(candidate => !prior.slice(0, row).includes(candidate)) : sym);
+    for (let row = 0; row < 3; row++) locked.set(stepCount + 3 + row, safePrior[row]);
     for (let i = 0; i < strip.length; i++) {
-      if (i >= 3 && i <= 5) continue;
+      if (locked.has(i)) { strip[i] = locked.get(i); continue; }
       const forbidden = new Set();
       for (let j = Math.max(0, i - 2); j < i; j++) forbidden.add(strip[j]);
-      if (i >= 6 && i <= 7) for (let j = i - 2; j <= 5; j++) forbidden.add(strip[j]);
+      for (let j = i + 1; j <= i + 2; j++) if (locked.has(j)) forbidden.add(locked.get(j));
       if (forbidden.has(strip[i])) {
         strip[i] = symbols.find(symbol => !forbidden.has(symbol)) || strip[i];
       }
     }
-    // O início do giro deve apresentar o tambor anterior sem repetições.
-    // Os símbolos finais são sempre os calculados pelo motor.
-    for (let row = 0; row < 3; row++) strip[stepCount + 3 + row] = prior[row];
     return strip;
   }
   game.cinematicV12.stripFor = stripFor;
