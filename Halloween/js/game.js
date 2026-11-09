@@ -12,7 +12,7 @@ function txt(s,x,y,value,size=28,color="#fff6d9",extra={}) {
     fontStyle:"bold",color,align:"center",stroke:"#1a1324",strokeThickness:3,...extra}).setOrigin(.5);
 }
 class Classica extends Phaser.Scene{
- constructor(){super("classica");this.state=E.createState();this.spinning=false;this.auto=false;this.silence=false;this.held=new Set();this.previous=null;this.canHold=false;this.audio=null;this.potOpen=false;this.tableOpen=false;this.winTimer=null;this.winIndex=0;}
+ constructor(){super("classica");this.state=E.createState();this.spinning=false;this.auto=false;this.silence=false;this.held=new Set();this.previous=null;this.canHold=false;this.audio=null;this.potOpen=false;this.strawberryOpen=false;this.tableOpen=false;this.winTimer=null;this.winIndex=0;}
  preload(){
    for(const [id,svg] of Object.entries(ART))
      this.load.svg("h-"+id,"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg),{width:156,height:174});
@@ -24,16 +24,18 @@ class Classica extends Phaser.Scene{
    this.grid();
    this.bottom();
    this.makePotBonus();
+   this.makeStrawberryBonus();
    this.makeWheelBonus();
    this.makePaytable();
    this.shortcuts();
    this.renderState();
    this.previous=this.state.lastGrid;
    this.canHold=Boolean(this.previous)&&this.state.lastWin===0&&
-     this.state.freeSpins===0&&!this.state.pendingPot&&!this.state.pendingWheel;
+     this.state.freeSpins===0&&!this.state.pendingPot&&!this.state.pendingStrawberry&&!this.state.pendingWheel;
    if(new URLSearchParams(window.location.search).has("smoke")) globalThis.__HALLOWEEN_SCENE__=this;
-   if (this.state.pendingPot) this.showPotBonus();
-   else if(this.state.pendingWheel) this.showWheelBonus();
+   if(this.state.pendingStrawberry)this.showStrawberryBonus();
+   else if(this.state.pendingPot)this.showPotBonus();
+   else if(this.state.pendingWheel)this.showWheelBonus();
    status.textContent="";
  }
  background(){
@@ -170,7 +172,7 @@ class Classica extends Phaser.Scene{
  restore(){
    try {this.state=E.sanitize(JSON.parse(localStorage.getItem(saveKey)));}catch{this.state=E.createState();}
    // valores progressivos são apenas pontos e não representam qualquer obrigação de pagamento
-   this.state.jackpots=this.state.jackpots||[350,750];
+   this.state.jackpots=this.state.jackpots||[350,750,1500,3000];
    this.state.lines=this.state.lines||30;
  }
  store(){
@@ -195,14 +197,14 @@ class Classica extends Phaser.Scene{
    }
  }
  changeBet(){
-   if(this.spinning||this.potOpen||this.wheelOpen||this.tableOpen||this.state.freeSpins>0)return;
+   if(this.spinning||this.potOpen||this.strawberryOpen||this.wheelOpen||this.tableOpen||this.state.freeSpins>0)return;
    this.clearHolds();
    const options=[1,2,5,10],i=options.indexOf(this.state.bet);
    this.state=E.setBet(this.state,options[(i+1)%options.length]);
    this.renderState();this.store();this.tone(480,.06);
  }
  changeLines(){
-   if(this.spinning||this.potOpen||this.wheelOpen||this.tableOpen||this.state.freeSpins>0)return;
+   if(this.spinning||this.potOpen||this.strawberryOpen||this.wheelOpen||this.tableOpen||this.state.freeSpins>0)return;
    this.clearHolds();
    const options=[20,25,30],i=options.indexOf(this.state.lines||30);
    this.state.lines=options[(i+1)%3];
@@ -211,7 +213,7 @@ class Classica extends Phaser.Scene{
    this.store();this.tone(440,.06);
  }
  toggleAuto(){
-   if(this.potOpen||this.wheelOpen||this.tableOpen)return;
+   if(this.potOpen||this.strawberryOpen||this.wheelOpen||this.tableOpen)return;
    this.auto=!this.auto;
    this.autoText.setText(this.auto?"ATIVO":"");
    if(this.auto&&!this.spinning)this.spin();
@@ -222,7 +224,7 @@ class Classica extends Phaser.Scene{
    for(const label of this.locks)label.setVisible(false);
  }
  toggleHold(col){
-   if(this.spinning||this.potOpen||this.wheelOpen||this.tableOpen||!this.canHold||!this.previous)return;
+   if(this.spinning||this.potOpen||this.strawberryOpen||this.wheelOpen||this.tableOpen||!this.canHold||!this.previous)return;
    if(this.held.has(col))this.held.delete(col);
    else if(this.held.size<4)this.held.add(col);
    else { this.message.setText("PELO MENOS UM TAMBOR TEM DE RODAR"); return; }
@@ -231,11 +233,12 @@ class Classica extends Phaser.Scene{
    this.tone(560,.05);
  }
  spin(){
-   if(this.spinning||this.potOpen||this.wheelOpen||this.tableOpen)return;
+   if(this.spinning||this.potOpen||this.strawberryOpen||this.wheelOpen||this.tableOpen)return;
    const outcome=E.spin(this.state,Math.random,this.previous,this.held);
    if(!outcome.ok){
      if(outcome.reason==="bonus-pendente"){
-       if(this.state.pendingPot)this.showPotBonus();
+       if(this.state.pendingStrawberry)this.showStrawberryBonus();
+       else if(this.state.pendingPot)this.showPotBonus();
        else if(this.state.pendingWheel)this.showWheelBonus();
        return;
      }
@@ -302,15 +305,16 @@ class Classica extends Phaser.Scene{
    this.state.jackpots=this.state.jackpots||[350,750];
    this.previous=result.grid;
    this.clearHolds();
-   this.canHold=result.result.total===0&&!result.free&&!result.potTriggered&&!result.wheelTriggered;
+   this.canHold=result.result.total===0&&!result.free&&!result.potTriggered&&!result.strawberryTriggered&&!result.wheelTriggered;
    this.highlight(result.result.hits);
    if(result.earnedSpins){this.message.setText("+10 GIROS GRÁTIS!");this.flash();}
    else if(result.pumpkinBonuses){this.message.setText("BÓNUS DAS ABÓBORAS!");this.flash();}
    else if(result.result.total>0){this.message.setText("PRÉMIO "+fmt(result.result.total));this.tone(740,.15);}
    else{this.message.setText("SEM PRÉMIO — TOCA NUM TAMBOR PARA TRAVAR");}
    this.renderState();this.store();
-   if(result.potTriggered) this.showPotBonus();
-   else if(result.wheelTriggered) this.showWheelBonus();
+   if(result.strawberryTriggered)this.showStrawberryBonus();
+   else if(result.potTriggered)this.showPotBonus();
+   else if(result.wheelTriggered)this.showWheelBonus();
    else if(this.auto) this.time.delayedCall(620,()=>{if(this.auto)this.spin();});
  }
  makePaytable(){
@@ -364,6 +368,76 @@ class Classica extends Phaser.Scene{
    if(this.tableOpen)this.auto=false;
    this.tableOverlay.setVisible(this.tableOpen);
    this.autoText.setText("");
+ }
+ makeStrawberryBonus(){
+   // Doze escolhas, como na grelha de elementos gráficos do APK.
+   // Ilustrações e sorteio independentes; os valores são virtuais.
+   this.strawberryOpen=false;
+   this.strawberryOverlay=this.add.container(0,0).setDepth(120).setVisible(false);
+   const dark=this.add.rectangle(W/2,H/2,W,H,0x100a1f,.97).setInteractive();
+   const frame=this.add.graphics();
+   frame.fillStyle(0x2c1630,.99).fillRoundedRect(32,265,656,740,22);
+   frame.lineStyle(6,0xe8bb65).strokeRoundedRect(32,265,656,740,22);
+   this.strawberryOverlay.add([dark,frame]);
+   this.strawberryOverlay.add(txt(this,360,328,"BÓNUS DOS MORANGOS",37,"#ffe6ae"));
+   this.strawberryOverlay.add(txt(this,360,380,"ESCOLHE UM MORANGO",26,"#ffdbad"));
+   this.strawberryValues=[];
+   this.strawberryHits=[];
+   for(let i=0;i<E.STRAWBERRY_CHOICES;i++){
+      const col=i%4,row=Math.floor(i/4);
+      const x=144+col*145,y=506+row*123;
+      const fruit=this.add.graphics();
+      fruit.fillStyle(0xa91a34).fillEllipse(x,y,76,80);
+      fruit.fillStyle(0xe82b4c).fillEllipse(x-8,y-10,57,59);
+      fruit.fillStyle(0x338746);
+      fruit.fillTriangle(x-28,y-33,x+30,y-33,x,y-7);
+      fruit.fillStyle(0x3c8d4f).fillEllipse(x+2,y-38,48,21);
+      fruit.fillStyle(0xffcc83);
+      for(let k=0;k<5;k++){
+         const sx=x-21+(k%3)*20,sy=y-7+Math.floor(k/3)*26;
+         fruit.fillCircle(sx,sy,3);
+      }
+      this.strawberryOverlay.add(fruit);
+      const value=txt(this,x,y+58,"?",21,"#fff3bc");
+      this.strawberryOverlay.add(value);
+      this.strawberryValues.push(value);
+      const zone=this.add.zone(x,y,108,105).setInteractive({useHandCursor:true});
+      zone.on("pointerdown",()=>this.pickStrawberry(i));
+      this.strawberryOverlay.add(zone);
+      this.strawberryHits.push(zone);
+   }
+   this.strawberryHint=txt(this,360,935,"TOCA NO MORANGO",25,"#ffdfa5");
+   this.strawberryOverlay.add(this.strawberryHint);
+ }
+ showStrawberryBonus(){
+   if(!this.state.pendingStrawberry)return;
+   this.strawberryOpen=true;this.auto=false;this.autoText.setText("");
+   for(let i=0;i<this.strawberryHits.length;i++){
+      this.strawberryHits[i].setInteractive({useHandCursor:true});
+      this.strawberryValues[i].setText("?");
+   }
+   this.strawberryHint.setText("ESCOLHE UM DOS 12 MORANGOS");
+   this.strawberryOverlay.setVisible(true);
+   this.tone(650,.13);
+ }
+ pickStrawberry(index){
+   if(!this.strawberryOpen||!this.state.pendingStrawberry)return;
+   const result=E.chooseStrawberry(this.state,index);
+   if(!result.ok)return;
+   this.state=result.state;this.store();this.renderState();
+   for(let i=0;i<this.strawberryHits.length;i++){
+      this.strawberryHits[i].disableInteractive();
+      this.strawberryValues[i].setText(fmt(result.reveal[i]));
+   }
+   this.strawberryHint.setText("GANHASTE "+fmt(result.awarded)+" CRÉDITOS");
+   this.flash();
+   this.time.delayedCall(1600,()=>{
+      this.strawberryOverlay.setVisible(false);
+      this.strawberryOpen=false;
+      this.message.setText("MORANGOS +"+fmt(result.awarded));
+      if(this.state.pendingWheel)this.showWheelBonus();
+      else if(this.state.pendingPot)this.showPotBonus();
+   });
  }
  makePotBonus(){
    // Janela modal Phaser; mantém a escolha pendente no estado local até
