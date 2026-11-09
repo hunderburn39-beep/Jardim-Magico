@@ -93,6 +93,7 @@ def main():
         if "-lq.mp3" in u:
             hq=u.replace("-lq.mp3","-hq.mp3")
             if hq not in options: options.insert(0,hq)
+    options.sort(key=lambda u: (0 if "-hq." in u else 1, 0 if "534876" in u else 1))
     print("Candidatos:", len(options))
     for url in options[:40]:
         print("CANDIDATO:", url)
