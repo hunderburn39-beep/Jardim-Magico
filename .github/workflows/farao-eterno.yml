@@ -1,0 +1,53 @@
+name: Faraó Eterno — testes independentes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Farao-Eterno/**'
+      - '.github/workflows/farao-eterno.yml'
+  pull_request:
+    paths:
+      - 'Farao-Eterno/**'
+      - '.github/workflows/farao-eterno.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: farao-eterno-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validar-farao:
+    name: Validar Faraó Eterno
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v4
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar ficheiros essenciais
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s Farao-Eterno/index.html
+          test -s Farao-Eterno/js/visual-v11.js
+          grep -q 'js/visual-v11.js' Farao-Eterno/index.html
+          grep -q 'id="canvas"' Farao-Eterno/index.html
+          echo "Faraó Eterno: ficheiros essenciais presentes."
+      - name: Validar sintaxe JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          find Farao-Eterno/js -type f -name '*.js' -print0 | while IFS= read -r -d '' file; do
+            node --check "$file"
+          done
+      - name: Resumo
+        run: |
+          echo '### Faraó Eterno' >> "$GITHUB_STEP_SUMMARY"
+          echo "Validação concluída para o commit \`$GITHUB_SHA\`." >> "$GITHUB_STEP_SUMMARY"
+          echo 'A publicação GitHub Pages continua a ser gerida pelo workflow de publicação partilhado, para não apagar os outros jogos.' >> "$GITHUB_STEP_SUMMARY"
