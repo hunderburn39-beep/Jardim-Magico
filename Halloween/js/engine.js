@@ -81,7 +81,7 @@
     return SYMBOLS[SYMBOLS.length - 1].id;
   }
   function createState() {
-    return { balance: 1000, bet: 1, lines: 1, jackpots: [350,750,1500,3000], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null, pendingStrawberry: null, pendingDice: null };
+    return { balance: 1000, bet: 1, lines: 1, jackpots: [350,750,1500,3000], jackpotRemainders:[0,0,0,0], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null, pendingStrawberry: null, pendingDice: null };
   }
   function sanitize(s) {
     const d = createState();
@@ -96,6 +96,9 @@
           const v=s.jackpots[i];
           return Number.isFinite(v)?Math.max(0,Math.min(MAX_BALANCE,round(v))):seed;
         }) : [...d.jackpots],
+      jackpotRemainders: Array.isArray(s.jackpotRemainders) && s.jackpotRemainders.length===4 ?
+        s.jackpotRemainders.map(v=>Number.isFinite(v)?Math.max(0,Math.min(.999999, v)):0)
+        : [...d.jackpotRemainders],
       freeSpins: Number.isInteger(s.freeSpins) ? Math.max(0, Math.min(1000,s.freeSpins)) : 0,
       pumpkins: Number.isInteger(s.pumpkins) ? Math.max(0, Math.min(4,s.pumpkins)) : 0,
       spins: Number.isInteger(s.spins) ? Math.max(0,s.spins) : 0,
@@ -198,8 +201,15 @@
     if (free) state.freeSpins--;
     else {
       state.balance = round(state.balance - state.bet);
-      state.jackpots=state.jackpots.map((v,i)=>
-        Math.min(MAX_BALANCE,round(v+state.bet*(.01+.007*i))));
+      // Conservar as frações de cêntimo dos progressivos, só tornando
+      // visíveis cêntimos inteiros. Assim os progressivos também avançam
+      // quando a aposta é 1 cêntimo, após vários giros.
+      state.jackpots=state.jackpots.map((v,i)=>{
+        const increase=state.jackpotRemainders[i]+state.bet*(.01+.007*i);
+        const cents=Math.floor(increase+1e-9);
+        state.jackpotRemainders[i]=Math.round((increase-cents)*1e6)/1e6;
+        return Math.min(MAX_BALANCE,v+cents);
+      });
     }
     const earnedSpins = (result.scatter >= 3 ? 10 : 0);
     // Mecânica demonstrativa (NÃO é a fórmula da Halloween original):
@@ -301,6 +311,7 @@
     state.lastWin=round(state.lastWin+payout);
     if(sector.jackpotIndex!==undefined)
       state.jackpots[sector.jackpotIndex]=[350,750,1500,3000][sector.jackpotIndex];
+      state.jackpotRemainders[sector.jackpotIndex]=0;
     state.pendingWheel=null;
     return {ok:true,state,awarded:payout,sectorIndex,label:sector.label};
   }
