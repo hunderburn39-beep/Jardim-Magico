@@ -1,0 +1,48 @@
+name: Faraó Eterno | Importar música de fundo
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/farao-importar-ambiente.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: farao-importar-ambiente-main
+  cancel-in-progress: false
+
+jobs:
+  importar-audio:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obter o jogo
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Descarregar gravação CC0 original e validar formato
+        run: |
+          python3 Farao-Eterno/tools/import-dark-pyramid.py
+          test -s Farao-Eterno/assets/dark-pyramid-ambience.mp3
+          ffprobe -v error -show_entries format=duration,size -of default=nw=1 Farao-Eterno/assets/dark-pyramid-ambience.mp3
+      - name: Publicar apenas a faixa do Faraó Eterno
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Farao-Eterno/assets/dark-pyramid-ambience.mp3
+          if git diff --cached --quiet; then
+            echo 'Faixa já publicada.'
+            exit 0
+          fi
+          git commit -m 'Faraó Eterno: publicar atmosfera Dark Pyramid Night Ambience em loop'
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep 3
+          done
+          echo 'Não foi possível publicar a faixa após várias tentativas.' >&2
+          exit 1
