@@ -24,7 +24,7 @@ jobs:
   verificar-halloween:
     name: Verificar Halloween
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - name: Obter repositório
         uses: actions/checkout@v4
@@ -50,6 +50,33 @@ jobs:
       - name: Testar matemática e bónus
         run: node --test Halloween/tests/engine.test.cjs
 
+      - name: Instalar Playwright para Chromium e Safari/WebKit
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+
+      - name: Iniciar servidor HTTP local
+        shell: bash
+        run: |
+          python3 -m http.server 8124 --bind 127.0.0.1 >/tmp/halloween-http.log 2>&1 &
+          for n in {1..15}; do
+            if curl -fsS http://127.0.0.1:8124/Halloween/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/halloween-http.log
+          exit 1
+
+      - name: Testar interface, giro e bónus em Chromium e WebKit
+        run: node Halloween/tests/browser.cjs
+
+      - name: Guardar capturas visuais
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: halloween-testes-visuais
+          path: visual-previews/
+          if-no-files-found: ignore
+
       - name: Preparar pacote autónomo de execução
         shell: bash
         run: |
@@ -57,12 +84,12 @@ jobs:
           mkdir -p dist/Halloween dist/jardim-phaser/vendor
           cp -a Halloween/. dist/Halloween/
           cp jardim-phaser/vendor/phaser-3.90.0.min.js dist/jardim-phaser/vendor/
-          (cd dist && zip -q -r ../Halloween-V0.1.zip Halloween jardim-phaser)
+          (cd dist && zip -q -r ../Halloween-V0.3.zip Halloween jardim-phaser)
           test -s Halloween-V0.1.zip
 
       - name: Guardar pacote para testes
         uses: actions/upload-artifact@v4
         with:
-          name: Halloween-V0.1
+          name: Halloween-V0.3
           path: Halloween-V0.1.zip
           if-no-files-found: error
