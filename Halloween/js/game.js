@@ -27,6 +27,9 @@ class Classica extends Phaser.Scene{
    this.makeWheelBonus();
    this.shortcuts();
    this.renderState();
+   this.previous=this.state.lastGrid;
+   this.canHold=Boolean(this.previous)&&this.state.lastWin===0&&
+     this.state.freeSpins===0&&!this.state.pendingPot&&!this.state.pendingWheel;
    if(new URLSearchParams(window.location.search).has("smoke")) globalThis.__HALLOWEEN_SCENE__=this;
    if (this.state.pendingPot) this.showPotBonus();
    else if(this.state.pendingWheel) this.showWheelBonus();
@@ -86,7 +89,8 @@ class Classica extends Phaser.Scene{
      const mask=clip.createGeometryMask();
      const band=[];
      for(let index=0;index<5;index++){
-       const id=E.SYMBOLS[(col+index*3)%E.SYMBOLS.length].id;
+       const id=(index>=1&&index<=3&&this.state.lastGrid?.[col]?.[index-1]) ||
+         E.SYMBOLS[(col+index*3)%E.SYMBOLS.length].id;
        const sprite=this.add.image(sx+CW/2,Y+(index-.5)*CH,"h-"+id)
          .setDisplaySize(CW-12,CH-14).setMask(mask);
        band.push(sprite);
@@ -229,6 +233,10 @@ class Classica extends Phaser.Scene{
      this.message.setText("CRÉDITOS INSUFICIENTES");this.auto=false;
      this.autoText.setText("");return;
    }
+   // Guardar o resultado antes de iniciar a animação: sair do navegador
+   // durante os rolos não devolve a aposta nem perde o bónus pendente.
+   this.state=outcome.state;
+   this.store();
    this.spinning=true;this.canHold=false;this.highlight([]);
    this.message.setText(this.held.size?"A GIRAR TAMBORES LIVRES...":"A GIRAR...");
    this.tone(320,.09);
