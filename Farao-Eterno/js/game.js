@@ -419,7 +419,7 @@ class Game {
   modalContent.querySelectorAll('[data-replay]').forEach(b=>b.onclick=()=>this.showHistoricSpin(Number(b.dataset.replay)));
   if(tab==='menu'){
    $('bet-slider').oninput=e=>{this.ledger.betIndex=Number(e.target.value);this.syncLedger();this.save();$('bet-display').textContent=money(this.bet);$('bet-total').textContent=money(this.bet);};
-   $('lines-slider').oninput=e=>{this.ledger.lines=Number(e.target.value);this.syncLedger();this.save();$('lines-display').textContent=this.lines;};
+   $('lines-slider').oninput=e=>{this.ledger.lines=Number(e.target.value);this.syncLedger();this.save();$('lines-display').textContent=this.lines;$('bet-display').textContent=money(this.bet);$('bet-total').textContent=money(this.bet);};
    $('auto-slider').oninput=e=>{this.autoChoice=Number(e.target.value);$('auto-display').textContent=this.autoChoice;};
    $('toggle-auto').onclick=()=>{const wasAuto=this.auto>0;this.closeModal();if(wasAuto){this.auto=0;this.notice('AUTOJOGO DESLIGADO',900);}else{this.auto=this.autoChoice||20;this.paused=false;this.notice(this.auto+' GIROS AUTOMÁTICOS',1100);}};
   }else if(tab==='settings'){
