@@ -188,12 +188,12 @@
     const iw=b.w*factor,ih=b.h*factor;
     ctx.save();
     ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
-    ctx.drawImage(img,b.x,b.y,b.w,b.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
+    ctx.drawImage(img,b.x,b.y,b.w,b.h,x+(w-iw)/2,y+(h-ih)/2-9,iw,ih);
     ctx.restore();
    }else{
     const scale=Math.min(size/img.naturalWidth,size/img.naturalHeight);
     const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
-    ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
+    ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2-9,iw,ih);
    }
   }else txt(sym,x+w/2,y+h/2,29,color.bright);
   ctx.restore();
