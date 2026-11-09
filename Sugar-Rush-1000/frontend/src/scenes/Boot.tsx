@@ -283,6 +283,13 @@ export class Boot extends Phaser.Scene {
     this.titleMain.setStroke('#ff0070', Math.max(8, titleFS * 0.15));
     this.titleShadow.setStroke('#ff0070', Math.max(16, titleFS * 0.3));
     this.titleShadow.setPosition(0, titleFS * 0.08);
+    // Corrigir texto cortado nas laterais em ecra vertical (iPhone/Safari).
+    // Escalar as duas camadas do titulo, sem alterar a animacao do container.
+    const availableTitleWidth = w * 0.91;
+    const widestTitle = Math.max(this.titleMain.width, this.titleShadow.width, 1);
+    const titleFit = Math.min(1, availableTitleWidth / widestTitle);
+    this.titleMain.setScale(titleFit);
+    this.titleShadow.setScale(titleFit);
 
     // 5. "1000" Graphic
     const numY = titleY + actualG1;
