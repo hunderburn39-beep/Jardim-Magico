@@ -114,3 +114,23 @@ test("Doze morangos recuperam a escolha e não repetem pagamento",()=>{
   next.drain();
   assert.equal(loaded.strawberryOpen,false);
 });
+
+test("Cinco dados vermelhos abrem, recuperam e não pagam duas vezes",()=>{
+  const f=sceneFixture(),first=f.mount();
+  const old=first.scene.state.balance;
+  first.scene.state.pendingDice={faces:[1,2,3,4,6]};
+  first.scene.store();
+  const second=f.mount(),s=second.scene;
+  assert.equal(s.diceOpen,true);
+  assert.equal(s.diceHits.length,5);
+  assert.equal(s.state.balance,old);
+  const before=s.state.spins;
+  s.spin();assert.equal(s.state.spins,before);
+  s.pickDice(4);
+  assert.equal(s.state.balance,old+12);
+  assert.equal(s.state.pendingDice,null);
+  s.pickDice(4);
+  assert.equal(s.state.balance,old+12);
+  second.drain();
+  assert.equal(s.diceOpen,false);
+});
