@@ -21,8 +21,8 @@
   const LINES = [
     [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2],
     [0,1,2,1,0], [2,1,0,1,2],
-    [1,0,0,0,1], [1,2,2,2,1],
-    [0,0,1,2,2], [2,2,1,0,0], [1,0,1,2,1]
+    [0,0,1,2,2], [2,2,1,0,0],
+    [1,0,1,2,1], [1,2,1,0,1], [0,1,1,1,2]
   ];
   const randomFloat = () => {
     if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
@@ -40,13 +40,16 @@
     return Object.keys(weights).at(-1);
   }
   function makeGrid(rng = randomFloat, weights = WEIGHTS) {
-    // Three distinct symbols per reel; retain weighted selection for each position.
-    // A symbol removed from one reel remains eligible on the other four reels.
     return Array.from({length:5}, () => {
-      const available = {...weights};
+      let hasTomb = false;
       return Array.from({length:3}, () => {
-        const symbol = pickWeighted(available,rng);
-        delete available[symbol];
+        let symbol = pickWeighted(weights,rng);
+        if (symbol === 'TOMB' && hasTomb) {
+          // One Tomb per reel, consistent with the 5-reel scatter mechanic.
+          const nonTomb = {...weights}; delete nonTomb.TOMB;
+          symbol = pickWeighted(nonTomb,rng);
+        }
+        if (symbol === 'TOMB') hasTomb = true;
         return symbol;
       });
     });
