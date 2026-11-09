@@ -83,6 +83,11 @@ test("20 000 jogadas reprodutíveis sem NaN nem créditos negativos", () => {
     assert.ok(Number.isFinite(s.balance) && s.balance >= 0);
     assert.ok(Number.isFinite(result.result.total) && result.result.total >= 0);
     assert.ok(s.pumpkins >= 0 && s.pumpkins < 5);
+    if(s.pendingStrawberry){
+      const resolved=E.chooseStrawberry(s,i%12);
+      assert.equal(resolved.ok,true);
+      s=resolved.state;
+    }
     if(s.pendingPot){
       const resolved = E.choosePot(s, i%3);
       assert.equal(resolved.ok,true);
@@ -285,6 +290,11 @@ test("Regressão económica: 20 mil giros não regressam ao retorno extremo inic
     state=step.state;
     if(!step.free)invested+=state.bet;
     received+=step.result.total;
+    if(state.pendingStrawberry){
+      const result=E.chooseStrawberry(state,i%12);
+      assert.equal(result.ok,true);
+      received+=result.awarded;state=result.state;
+    }
     if(state.pendingPot){
       const result=E.choosePot(state,i%3);
       received+=result.awarded;state=result.state;
@@ -308,4 +318,46 @@ test("O motor nunca permite travar os cinco tambores",()=>{
   assert.equal(result.heldReels.length,4);
   assert.deepEqual(result.heldReels,[0,1,2,3]);
   assert.equal(result.state.spins,1);
+});
+
+test("Três caldeirões podem abrir a escolha de 12 morangos",()=>{
+  let draws=0;
+  const outcome=E.spin(E.createState(),()=>++draws<=15?.999999:0);
+  assert.equal(outcome.ok,true);
+  assert.equal(outcome.strawberryTriggered,true);
+  assert.equal(outcome.potTriggered,false);
+  assert.equal(outcome.state.pendingStrawberry.choices.length,12);
+  assert.equal(E.spin(outcome.state,()=>.5).reason,"bonus-pendente");
+  const saved=E.sanitize(JSON.parse(JSON.stringify(outcome.state)));
+  assert.deepEqual(saved.pendingStrawberry,outcome.state.pendingStrawberry);
+  assert.equal(E.chooseStrawberry(saved,-1).ok,false);
+  assert.equal(E.chooseStrawberry(saved,12).ok,false);
+  const prize=E.chooseStrawberry(saved,7);
+  assert.equal(prize.ok,true);
+  assert.equal(prize.awarded,prize.reveal[7]);
+  assert.equal(prize.state.pendingStrawberry,null);
+  assert.equal(E.chooseStrawberry(prize.state,7).ok,false);
+  assert.equal(prize.state.balance,outcome.state.balance+prize.awarded);
+});
+test("Morangos e roleta pendentes resolvem-se uma vez cada",()=>{
+  let n=0;
+  const pick=()=>{n++;if(n<=15){const col=Math.floor((n-1)/3),row=(n-1)%3;
+    if(row===1)return 0;
+    if(row===0&&col<3)return .999999;
+  }
+  if(n===16)return 0; // abrir 12 morangos, não os caldeirões
+  return .25;};
+  const state={...E.createState(),balance:10000,pumpkins:4};
+  const first=E.spin(state,pick);
+  assert.equal(first.ok,true);
+  assert.equal(first.strawberryTriggered,true);
+  assert.equal(first.wheelTriggered,true);
+  const won=E.chooseStrawberry(first.state,0);
+  assert.equal(won.ok,true);
+  assert.ok(won.state.pendingWheel);
+  assert.equal(E.spin(won.state,()=>.1).reason,"bonus-pendente");
+  const wheel=E.resolveWheel(won.state);
+  assert.equal(wheel.ok,true);
+  assert.equal(wheel.state.pendingWheel,null);
+  assert.equal(E.resolveWheel(wheel.state).ok,false);
 });
