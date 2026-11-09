@@ -48,7 +48,8 @@ export const CurrencyMeta: Record<
   Currency | string,
   { symbol: string; decimals: number; symbolAfter?: boolean }
 > = {
-  USD: { symbol: '
+  USD: { symbol: '$', decimals: 2 },
+  CRD: { symbol: '✦', decimals: 2, symbolAfter: true },
   CAD: { symbol: 'CA$', decimals: 2 },
   JPY: { symbol: '¥', decimals: 0 },
   EUR: { symbol: '€', decimals: 2 },
