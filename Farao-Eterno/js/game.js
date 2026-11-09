@@ -233,6 +233,18 @@ class Game {
   mod.classList.remove('hidden');mod.setAttribute('aria-hidden','false');$('touch-controls').inert=true;
   $('close-modal').focus();
  }
+ showHistoricSpin(id){
+  const h=this.history.find(x=>x.id===id&&x.grid);if(!h)return;
+  const wins=Array.isArray(h.lineWins)?h.lineWins:[],cells=new Set();
+  for(const w of wins)if(Array.isArray(w.rows))for(let c=0;c<Math.min(w.count,w.rows.length);c++)cells.add(c+'-'+w.rows[c]);
+  const rows=Array.from({length:3},(_,row)=>'<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin:4px 0">'+Array.from({length:5},(_,col)=>{
+   const sym=h.grid[col]?.[row],img=this.images[sym],highlight=cells.has(col+'-'+row);
+   return '<div style="aspect-ratio:1;border:2px solid '+(highlight?'#ffe18a':'#775d3c')+';background:#13202b"><img alt="Símbolo" src="'+(img?.src||'')+'" style="width:100%;height:100%;object-fit:contain"></div>';
+  }).join('')+'</div>').join('');
+  const details=wins.map(w=>'<p>Linha '+(w.line+1)+' · '+(iconNames[w.symbol]||w.symbol)+' × '+w.count+'</p>').join('');
+  this.openModal('JOGADA #'+id,'<p>'+new Date(h.t).toLocaleString('pt-PT')+' · Aposta '+money(h.bet)+' · Prémio '+money(h.win)+'</p><div style="max-width:500px;margin:auto">'+rows+'</div><p>'+wins.length+' linhas vencedoras</p>'+details+'<button class="btn" id="back-history">Voltar ao histórico</button>');
+  $('back-history').onclick=()=>this.openInfo('history');
+ }
  openInfo(tab='menu'){
   this.auto=0;
   const tabs=`<div class="header-tabs">${[['menu','Menu'],['pays','Prémios'],['rules','Regras'],['history','Histórico']].map(([key,label])=>`<button data-page="${key}" class="${tab===key?'active':''}">${label}</button>`).join('')}</div>`;
@@ -249,10 +261,11 @@ class Game {
    page=`<h3>O santuário é WILD e SCATTER</h3><p>5 tambores × 3 posições, com 1 a 10 linhas. As combinações normais começam no tambor da esquerda, sem intervalos. O santuário substitui os restantes símbolos. Hórus, Máscara e Anúbis pagam desde 2; o Faraó e o santuário também. As cartas pagam desde 3.</p><h3>8 Free Spins e símbolos expansivos</h3><p>3 ou mais santuários em qualquer posição dão 8 giros grátis. Um símbolo normal é sorteado. Quando está em tambores suficientes para pagar, expande nas três posições desses tambores, mesmo separados. Os santuários não substituem o símbolo especial no cálculo da expansão.</p><p>Em cada linha vence o maior pagamento entre a combinação normal e todos os expansivos ativos; os prémios não se somam dentro da mesma linha. Novos 3 ou mais santuários dão +8 giros e outro símbolo, sem repetir, até 9 símbolos. Depois de desbloquear os nove, as novas ativações continuam a dar +8 giros.</p><h3>Limites preservados da V0.6</h3><p>Aposta de 0,10 a 10 créditos. Limite de 5.000× numa jogada base e de 5.000× no total de uma série de Free Spins. O prémio da jogada que ativa o bónus é pago à parte. O bónus termina ao atingir o seu limite. Não há limite artificial de novas ativações.</p><h3>Arriscar e sessão</h3><p>Cor: 50% para ×2; naipe: 25% para ×4. Até cinco tentativas. Arrisca apenas o último prémio base e o limite mantém a aposta da jogada original. O saldo e os resultados pendentes são guardados neste navegador. Ao regressar de outra aplicação, toca em Retomar.</p><p><a href="docs/MATEMATICA.md" target="_blank" rel="noopener">Consultar a matemática e probabilidades</a> · <a href="docs/VALIDACAO.md" target="_blank" rel="noopener">Consultar a validação</a></p><p class="hint">Matemática independente. O RTP deste jogo é medido pelo seu próprio simulador; não é o RTP do Legacy of Dead. Não existe certificação de jogo a dinheiro.</p>`;
   }else{
    const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-   page=`<p>Últimas ${this.history.length} ações. Valores em créditos.</p><div class="history">`+(this.history.length?this.history.map(h=>`<p>${h.kind==='reset'?'Reposição de créditos':h.kind==='gamble'?'Carta':h.bonus?'★ Free Spin':'Giro'} · aposta ${money(h.bet)} · prémio <b>${money(h.win)}</b><br><small>${esc(new Date(h.t).toLocaleString('pt-PT'))}</small></p>`).join(''):'<p>O teu legado começa no primeiro giro.</p>')+'</div>';
+    page=`<p>Últimas ${this.history.length} ações. Os giros recentes podem ser reconstruídos.</p><div class="history">`+(this.history.length?this.history.map(h=>`<p>${h.kind==='reset'?'Reposição de créditos':h.kind==='gamble'?'Carta':h.bonus?'★ Free Spin':'Giro'} ${Number.isInteger(h.id)?'#'+h.id:''} · aposta ${money(h.bet)} · prémio <b>${money(h.win)}</b><br><small>${esc(new Date(h.t).toLocaleString('pt-PT'))}</small>${h.grid?`<br><button class="btn" data-replay="${h.id}">Ver jogada</button>`:''}</p>`).join(''):'<p>O teu legado começa no primeiro giro.</p>')+'</div>';
   }
   this.openModal('FARAÓ ETERNO',tabs+page);
   modalContent.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>this.openInfo(b.dataset.page));
+  modalContent.querySelectorAll('[data-replay]').forEach(b=>b.onclick=()=>this.showHistoricSpin(Number(b.dataset.replay)));
   if(tab==='menu'){
    $('toggle-sound').onclick=()=>{this.sound=!this.sound;this.audio.on=this.sound;this.audio.init();this.save();this.openInfo();};
    $('toggle-music').onclick=()=>{this.ledger.settings.music=!this.ledger.settings.music;this.audio.stopMusic?.();this.save();this.openInfo();};
