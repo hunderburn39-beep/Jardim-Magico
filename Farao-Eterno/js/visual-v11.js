@@ -149,6 +149,26 @@
    line(ctx,x+.6,top+6,x+.6,top+gh*3-5,'#fff2c845',.6);
   }
  };
+ // Recorta apenas as margens transparentes das cartas baixas, uma vez por imagem.
+ const letterBounds=new WeakMap();
+ function visibleBounds(img){
+  if(letterBounds.has(img))return letterBounds.get(img);
+  const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
+  const cc=c.getContext('2d',{willReadFrequently:true});cc.drawImage(img,0,0);
+  let box={x:0,y:0,w:c.width,h:c.height};
+  try{
+   const data=cc.getImageData(0,0,c.width,c.height).data;
+   let minX=c.width,minY=c.height,maxX=-1,maxY=-1;
+   for(let y=0;y<c.height;y+=2)for(let x=0;x<c.width;x+=2){
+    if(data[(y*c.width+x)*4+3]>24){
+     minX=Math.min(minX,x);minY=Math.min(minY,y);
+     maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);
+    }
+   }
+   if(maxX>=minX&&maxY>=minY)box={x:minX,y:minY,w:Math.min(c.width-minX,maxX-minX+2),h:Math.min(c.height-minY,maxY-minY+2)};
+  }catch(e){}
+  letterBounds.set(img,box);return box;
+ }
  // Larger icons, strictly preserving their source aspect ratio.
  game.drawIcon=function(sym,x,y,w,h,win=false,t=performance.now()){
   const img=this.images[sym],size=Math.min(w-1,h-8)*.985;
@@ -162,13 +182,11 @@
   if(img&&img.complete&&img.naturalWidth>0&&img.naturalHeight>0){
    const lowSymbol=['10','J','Q','K','A'].includes(sym);
    if(lowSymbol){
-    // O 10 tem margens internas maiores na imagem: ampliá-lo separadamente.
-    ctx.save();
-    ctx.beginPath();ctx.rect(x+1,y+1,w-2,h-2);ctx.clip();
-    const scale=sym==='10'?1.78:1.35;
-    const iw=(w-4)*scale,ih=(h-4)*scale;
-    ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
-    ctx.restore();
+    // Preencher quase toda a casa sem cortar letras nem deformar a imagem.
+    const b=visibleBounds(img),margin=2;
+    const factor=Math.min((w-margin*2)/b.w,(h-margin*2)/b.h);
+    const iw=b.w*factor,ih=b.h*factor;
+    ctx.drawImage(img,b.x,b.y,b.w,b.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
    }else{
     const scale=Math.min(size/img.naturalWidth,size/img.naturalHeight);
     const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
