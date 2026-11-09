@@ -163,6 +163,13 @@ class Game {
 
     layer.appendChild(button);this._symbolButtons.push({button,col,row});
    }
+   // iOS Safari may deliver release to the document rather than the button.
+   // Listen in capture phase globally, including touchend, to hide instantly.
+   const release=()=>this.hideSymbolPay();
+   for(const eventName of ['pointerup','pointercancel','touchend','touchcancel','mouseup','blur']){
+    window.addEventListener(eventName,release,{capture:true,passive:true});
+   }
+   document.addEventListener('visibilitychange',()=>{if(document.hidden)release();});
    this._symbolOverlay=layer;
   }
   const canInspect=!this.spinning&&!this.superseded&&mod.classList.contains('hidden');
