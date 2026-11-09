@@ -48,6 +48,10 @@ assert.ok(html.includes("Phaser 3.90.0"));
 assert.ok(html.includes("Zeus Clusters 7×7"));
 const scripts=Array.from(html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g));
 const inlineLogic=scripts.map(x=>x[1]).find(x=>x.includes("const COLS = 7;"));
+const phaserCode=scripts.map(x=>x[1]).find(x=>x.includes("class ThunderScene extends Phaser.Scene"));
+assert.ok(phaserCode,"Falta o motor visual Phaser V19");
+new vm.Script(phaserCode,{filename:"clusters-v19-phaser.js"});
+
 assert.ok(inlineLogic,"Motor 7x7 nao foi incluido no HTML Phaser.");
 const context={console,Math,Number,Array,Object,Set,WeakSet,Date};
 context.globalThis=context;
