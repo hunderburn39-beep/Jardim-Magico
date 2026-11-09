@@ -10,7 +10,9 @@ fs.mkdirSync(output,{recursive:true});
     try{
       const page=await browser.newPage({
         viewport:{width:390,height:844},
-        deviceScaleFactor:2,isMobile:true,hasTouch:true
+        deviceScaleFactor:2,isMobile:true,hasTouch:true,
+        // Perfil de Safari iPhone real: o Phaser usa Canvas como no dispositivo.
+        userAgent:"Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1"
       });
       const errors=[];
       page.on("pageerror",e=>errors.push(e.message));
