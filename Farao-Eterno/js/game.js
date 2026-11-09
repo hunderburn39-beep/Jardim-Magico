@@ -442,7 +442,7 @@ class Game {
    $('toggle-auto').onclick=()=>{const wasAuto=this.auto>0;this.closeModal();if(wasAuto){this.auto=0;this.notice('AUTOJOGO DESLIGADO',900);}else{this.auto=this.autoChoice||20;this.paused=false;this.notice(this.auto+' GIROS AUTOMÁTICOS',1100);}};
   }else if(tab==='settings'){
    $('toggle-sound').onclick=()=>{this.sound=!this.sound;this.audio.on=this.sound;this.audio.init();this.save();this.openInfo('settings');};
-   $('toggle-music').onclick=()=>{this.ledger.settings.music=!this.ledger.settings.music;this.audio.stopMusic?.();this.save();this.openInfo('settings');};
+   $('toggle-music').onclick=()=>{this.ledger.settings.music=!this.ledger.settings.music;if(this.ledger.settings.music){this.audio.init();this.audio.startMusic?.();}else this.audio.stopMusic?.();this.save();this.openInfo('settings');};
    $('toggle-turbo').onclick=()=>{this.turbo=!this.turbo;this.save();this.openInfo('settings');};
    $('menu-reset').onclick=()=>this.openReset();$('menu-gamble').onclick=()=>this.openGamble();
   }
