@@ -221,8 +221,15 @@
     ctx.shadowColor='#ffd477';ctx.shadowBlur=23;
     ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,dx,dy,iw,ih);
     ctx.shadowBlur=0;
-    // Reflexo subtil e direcional, recortado à silhueta da própria torre.
+    // Banho dourado recortado à silhueta da torre, preservando detalhes e sombras 3D.
     ctx.globalCompositeOperation='source-atop';
+    const gold=ctx.createLinearGradient(dx,dy,dx+iw,dy+ih);
+    gold.addColorStop(0,'#fff3bb80');
+    gold.addColorStop(.35,'#ffcf5380');
+    gold.addColorStop(.7,'#d38a2080');
+    gold.addColorStop(1,'#f8c04c70');
+    ctx.fillStyle=gold;ctx.fillRect(dx-2,dy-2,iw+4,ih+4);
+    // Reflexo direcional dourado, recortado à silhueta da própria torre.
     const light=ctx.createLinearGradient(dx,dy,dx+iw,dy+ih*.25);
     light.addColorStop(0,'#fff0bc91');
     light.addColorStop(.32,'#ffe5a938');
