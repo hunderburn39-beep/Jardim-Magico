@@ -213,7 +213,29 @@ class Game {
     }
     oc.putImageData(area,x0,top);
    }
-   this.temple=off;
+   // Opção A: conservar exatamente a fotografia e toda a composição
+   // do templo original. Apenas dar relevo, calor às tochas e profundidade.
+   // O efeito é processado UMA vez no carregamento (não a cada frame).
+   const polished=document.createElement('canvas');
+   polished.width=W;polished.height=H;
+   const pc=polished.getContext('2d');
+   pc.filter='contrast(1.13) saturate(1.10) brightness(.97)';
+   pc.drawImage(off,0,0,W,H);
+   pc.filter='none';
+   const vignette=pc.createRadialGradient(280,430,155,280,490,640);
+   vignette.addColorStop(0,'rgba(10,13,22,0)');
+   vignette.addColorStop(.68,'rgba(7,12,21,.045)');
+   vignette.addColorStop(1,'rgba(4,8,17,.30)');
+   pc.fillStyle=vignette;pc.fillRect(0,0,W,H);
+   // Luz lateral muito subtil; não desenha novas colunas nem objetos.
+   for(const x of [29,531]){
+    const glow=pc.createRadialGradient(x,289,4,x,289,184);
+    glow.addColorStop(0,'rgba(255,172,75,.115)');
+    glow.addColorStop(.5,'rgba(255,147,58,.035)');
+    glow.addColorStop(1,'rgba(255,147,58,0)');
+    pc.fillStyle=glow;pc.fillRect(x-184,105,368,368);
+   }
+   this.temple=polished;
   };
   img.onerror=()=>{
    if(!img.fallback){img.fallback=true;img.src='assets/temple_back.svg';}
