@@ -1,10 +1,10 @@
-/* PORTÕES DO TROVÃO V18.0 — motor original de demonstração.
- * Não afiliado à Pragmatic Play. Sem dinheiro real. RTP não certificado.
- * Símbolos: 8+ iguais em qualquer posição; tumble; scatter; multiplicadores.
+/* PORTÕES DO TROVÃO V19 — modo Zeus Clusters 7×7.
+ * Adaptação original da mecânica de grupos conectados, quedas e spots ×2..×1024.
+ * A arte original de Zeus mantém-se. Créditos virtuais. RTP não certificado.
  */
 "use strict";
 (() => {
-  const COLS = 6, ROWS = 5, SIZE = COLS * ROWS;
+  const COLS = 7, ROWS = 7, SIZE = COLS * ROWS;
   const SYMBOLS = ["crown","ring","goblet","hourglass","ruby","sapphire","emerald","amethyst","amber"];
   const RULES=window.TrovaoRules;
   if(!RULES)throw Error("Motor WILD indisponível");
@@ -14,12 +14,12 @@
   const MULT_WEIGHTS = [28,21,15,11,8,6,4,3,2,1.5,1,.45,.18,.045,.012];
   const BETS = [.20,.40,.60,.80,1,1.50,2,3,5,10,20];
   const MAX_WIN_X = 5000;
-  // Tabela da versão clássica (expressa em múltiplos da aposta).
-  // Índices: 8–9, 10–11, 12–30 símbolos iguais.
+  // Clusters ligados na horizontal/vertical; tabela própria em × aposta.
+  // Colunas: grupos de 5–7, 8–11, 12+ doces/joias ligados.
   const PAY_TABLE={
-    crown:[10,25,50],hourglass:[2.5,10,25],ring:[2,5,15],
-    goblet:[1.5,2,12],ruby:[1,1.5,10],amethyst:[.8,1.2,8],
-    amber:[.5,1,5],emerald:[.4,.9,4],sapphire:[.25,.75,2]
+    crown:[2,6,16],hourglass:[1.5,4,12],ring:[1.25,3,10],
+    goblet:[.9,2.2,8],ruby:[.7,1.7,6],amethyst:[.6,1.3,4.5],
+    amber:[.5,1,3],emerald:[.4,.8,2.5],sapphire:[.35,.7,2]
   };
   function scatterMultiplier(n){return n>=6?100:n===5?5:n===4?3:0}
   // Recortes do atlas 3D (5 colunas, 3 linhas); as 11 peças têm arte própria.
@@ -76,7 +76,8 @@
   const state = {
     balance:INITIAL_CREDITS,betIndex:4,busy:false,bonus:false,
     freeLeft:0,bonusWon:0,bonusMult:0,autoRemaining:0,cancelAuto:false,
-    turbo:false,sound:true,grid:[],currentWin:0,cascade:0
+    turbo:false,sound:true,grid:[],currentWin:0,cascade:0,
+    spots:RULES.emptySpots(),bonusSpinsUsed:0,visibleMult:1
   };
   let ctx = null, holdTimer = null, longFired = false, modalOpen = false;
   let landingTimers = [];
@@ -98,17 +99,18 @@
     for(let i=0;i<values.length;i++){p-=weights[i];if(p<0)return values[i];}
     return values[values.length-1];
   }
-  function newSymbol(){return RULES.draw(state.bonus,nextId++,rand)}
+  function newSymbol(){return RULES.drawCluster(state.bonus,nextId++,rand)}
   function makeGrid(){return Array.from({length:SIZE},newSymbol)}
   function countScatter(grid){return grid.filter(s=>s.kind==="scatter").length}
-  function getWins(grid){return RULES.score(grid,PAY_TABLE,currentBet())}
-    function tumble(grid,matched){
+  function getWins(grid,cap){return RULES.clusterScore(grid,PAY_TABLE,currentBet(),state.spots,cap)}
+  function tumble(grid,matchedPositions){
+    // As casas multiplicadoras não caem: só os símbolos se movem.
     const next=Array(SIZE);
     for(let col=0;col<COLS;col++){
       const survivors=[];
       for(let row=ROWS-1;row>=0;row--){
-        const cell=grid[row*COLS+col];
-        if(!matched.has(cell.kind))survivors.push(cell);
+        const index=row*COLS+col;
+        if(!matchedPositions.has(index))survivors.push(grid[index]);
       }
       let row=ROWS-1;
       for(const cell of survivors){next[row*COLS+col]=cell;row--}
@@ -155,7 +157,15 @@
           landings.push({column:col,row,kind:symbol.kind,when:Math.round(delay+duration*.83)});
         }
       }
-      if(options.matchKinds?.has(symbol.kind))tile.classList.add("winner");
+      const spot=state.spots[index]||0;
+      let spotTag=tile.querySelector(".cluster-spot");
+      if(spot>0){
+        if(!spotTag){spotTag=document.createElement("span");spotTag.className="cluster-spot";tile.appendChild(spotTag)}
+        spotTag.textContent=spot>1?"×"+spot:"";
+        spotTag.setAttribute("aria-label",spot>1?"Posição multiplicadora vezes "+spot:"Posição marcada");
+        tile.classList.add(spot>1?"spot-active":"spot-marked");
+      }else if(spotTag){spotTag.remove()}
+      if(options.matchPositions?.has(index))tile.classList.add("winner");
       if(options.scatterGlow&&symbol.kind==="scatter")tile.classList.add("scat-hit");
       tile.dataset.kind=symbol.kind;
       tile.setAttribute("aria-label",symbol.kind==="mult"?"Multiplicador "+symbol.value+" vezes":symbol.kind==="wild"?"WILD "+symbol.value+" vezes":symbol.kind==="scatter"?"Scatter":LABELS[symbol.kind]);
@@ -281,9 +291,9 @@
     el.buyCost.textContent=money(currentBet()*100);
     el.win.textContent=money(state.bonus?state.bonusWon:state.currentWin);
     el.free.textContent=state.bonus?String(state.freeLeft):"—";
-    el.freeHint.textContent=state.bonus?"TOTAL BÓNUS "+money(state.bonusWon):"4 SCATTER ativam 15";
-    el.mult.textContent=(state.bonus?Math.max(1,state.bonusMult):Math.max(1,state.visibleMult||1))+"×";
-    el.multHint.textContent=state.bonus?"Acumulado no bónus":"Até 500×";
+    el.freeHint.textContent=state.bonus?"TOTAL BÓNUS "+money(state.bonusWon):"3 SCATTER = 10 FREE SPINS";
+    el.mult.textContent=RULES.maxActiveSpot(state.spots)+"×";
+    el.multHint.textContent=state.bonus?"SPOTS PERSISTENTES":"SPOTS ATÉ 1024×";
     el.cascades.textContent=String(state.cascade);
     el.spin.classList.toggle("spinning",state.busy);
     el.spin.classList.toggle("auto-mode",state.autoRemaining>0);
