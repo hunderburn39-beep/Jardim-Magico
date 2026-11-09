@@ -1,0 +1,41 @@
+name: Farao Eterno - QA temporario Chromium e WebKit
+
+on:
+  push:
+    branches:
+      - farao-reels-transparentes-20261109
+
+permissions:
+  contents: read
+
+jobs:
+  teste-visual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright
+        working-directory: Farao-Eterno
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium webkit
+      - name: Validar matematica, sessoes e giros
+        working-directory: Farao-Eterno
+        run: npm test
+      - name: Servir o jogo completo
+        run: |
+          python3 -m http.server 8123 --bind 127.0.0.1 --directory Farao-Eterno >/tmp/farao-http.log 2>&1 &
+          sleep 2
+      - name: Validar interface, WebKit, giro e Free Spins
+        working-directory: Farao-Eterno
+        run: node tests/playwright-ci.cjs
+      - name: Guardar provas visuais
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: farao-eterno-qa-visual
+          path: Farao-Eterno/visual-previews/
+          if-no-files-found: ignore
