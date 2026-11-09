@@ -3,6 +3,19 @@
   "use strict";
   const ROWS = 3, REELS = 5, MAX_BALANCE = 1e12;
   const PUMPKINS_FOR_BONUS = 5;
+  // Valores guardados em cêntimos fictícios, não dinheiro real.
+  // Aposta total por jogada e linhas formam um escalão indivisível.
+  const BET_LEVELS=Object.freeze([
+    {bet:1,lines:1},{bet:5,lines:5},{bet:10,lines:15},
+    {bet:15,lines:25},{bet:20,lines:30}
+  ].map(x=>Object.freeze(x)));
+  const tierFor=(bet,lines)=>{
+    return BET_LEVELS.find(t=>t.bet===bet&&t.lines===lines)
+      || BET_LEVELS.find(t=>t.lines===lines)
+      || (lines===20 ? BET_LEVELS[3] : null)
+      || BET_LEVELS.find(t=>t.bet===bet)
+      || BET_LEVELS[0];
+  };
   const POT_VALUES = Object.freeze([1,2,3,5,8]);
   // O APK contém um ecrã de 12 morangos selecionáveis. O sorteio
   // e os multiplicadores abaixo são originais do protótipo, não do APK.
@@ -34,7 +47,7 @@
     { id: "wild", weight: 7, icon: "🧿", name: "Magic" },
     { id: "scatter", weight: 4, icon: "🔮", name: "Caldeirão" }
   ]);
-  // Trajetos originais de demonstração: 20, 25 ou 30 linhas (0 a 2).
+  // Trajetos originais de demonstração: escalões de 1, 5, 15, 25 ou 30 linhas (0 a 2).
   const LINES = Object.freeze([
     [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2], [0,1,2,1,0], [2,1,0,1,2],
     [0,0,1,0,0], [2,2,1,2,2], [1,0,0,0,1], [1,2,2,2,1], [0,1,1,1,0],
@@ -51,7 +64,8 @@
     witch_green:[0,0,0,3,10,30], devil:[0,0,0,5,15,42],
     wild: [0,0,0,8,24,80]
   });
-  const round = n => Math.round((n + Number.EPSILON) * 100) / 100;
+  // Créditos guardados em cêntimos inteiros, evitando frações invisíveis de cêntimo.
+  const round = n => Math.round(n + Number.EPSILON);
   const validRng = rng => {
     const n = rng();
     if (!Number.isFinite(n)) throw new Error("RNG inválido");
@@ -67,15 +81,16 @@
     return SYMBOLS[SYMBOLS.length - 1].id;
   }
   function createState() {
-    return { balance: 1000, bet: 2, lines: 30, jackpots: [350,750,1500,3000], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null, pendingStrawberry: null, pendingDice: null };
+    return { balance: 1000, bet: 1, lines: 1, jackpots: [350,750,1500,3000], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null, pendingStrawberry: null, pendingDice: null };
   }
   function sanitize(s) {
     const d = createState();
     if (!s || typeof s !== "object") return d;
+    const tier=tierFor(s.bet,s.lines);
     return {
       balance: Number.isFinite(s.balance) ? Math.max(0, Math.min(MAX_BALANCE, round(s.balance))) : d.balance,
-      bet: [1,2,5,10].includes(s.bet) ? s.bet : d.bet,
-      lines: [20,25,30].includes(s.lines) ? s.lines : d.lines,
+      bet:tier.bet,
+      lines:tier.lines,
       jackpots: Array.isArray(s.jackpots) ?
         d.jackpots.map((seed,i)=>{
           const v=s.jackpots[i];
@@ -108,14 +123,28 @@
     };
   }
   function setBet(input, bet) {
-    const state = sanitize(input);
-    if ([1,2,5,10].includes(bet)) state.bet = bet;
+    const state=sanitize(input);
+    const tier=BET_LEVELS.find(t=>t.bet===bet);
+    if(tier && !state.freeSpins && !state.pendingPot && !state.pendingDice &&
+       !state.pendingStrawberry && !state.pendingWheel){
+      state.bet=tier.bet;state.lines=tier.lines;
+    }
     return state;
   }
-  function evaluateGrid(grid, bet, inFreeSpins, activeLines = 20) {
+  function setLines(input, lines) {
+    const state=sanitize(input);
+    const tier=BET_LEVELS.find(t=>t.lines===lines);
+    if(tier && !state.freeSpins && !state.pendingPot && !state.pendingDice &&
+       !state.pendingStrawberry && !state.pendingWheel){
+      state.bet=tier.bet;state.lines=tier.lines;
+    }
+    return state;
+  }
+  function evaluateGrid(grid, bet, inFreeSpins, activeLines = 30) {
     if (!Array.isArray(grid) || grid.length !== REELS || grid.some(c => !Array.isArray(c) || c.length !== ROWS ||
         c.some(s => !SYMBOLS.some(def => def.id === s)))) throw new Error("Grelha inválida");
-    if (![20,25,30].includes(activeLines)) throw new Error("Número de linhas inválido");
+    if (!BET_LEVELS.some(t=>t.lines===activeLines))
+      throw new Error("Número de linhas inválido");
     const hits = [];
     let total = 0;
     for (let lineNo = 0; lineNo < activeLines; lineNo++) {
@@ -275,8 +304,8 @@
     state.pendingWheel=null;
     return {ok:true,state,awarded:payout,sectorIndex,label:sector.label};
   }
-  const api = Object.freeze({ SYMBOLS, LINES, PAY, PUMPKINS_FOR_BONUS,
-    WHEEL_SECTORS, STRAWBERRY_CHOICES, DICE_CHOICES, createState, sanitize, setBet, pick, evaluateGrid,
+  const api = Object.freeze({ SYMBOLS, LINES, PAY, BET_LEVELS, PUMPKINS_FOR_BONUS,
+    WHEEL_SECTORS, STRAWBERRY_CHOICES, DICE_CHOICES, createState, sanitize, setBet, setLines, pick, evaluateGrid,
     spin, choosePot, chooseStrawberry, chooseDice, resolveWheel });
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.HalloweenEngine = api;
