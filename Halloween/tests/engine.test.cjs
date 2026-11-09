@@ -8,12 +8,18 @@ function seeded(seed) {
   let state = seed >>> 0;
   return () => { state = (1664525 * state + 1013904223) >>> 0; return state / 4294967296; };
 }
-test("30 trajetos possíveis e todas as posições válidas", () => {
-  assert.equal(E.LINES.length, 30);
-  for (const line of E.LINES) {
-    assert.equal(line.length, 5);
-    for (const row of line) assert.ok(Number.isInteger(row) && row >= 0 && row <= 2);
+test("25 linhas da esquerda para a direita e cinco verticais, uma por tambor",()=>{
+  assert.equal(E.HORIZONTAL_LINES.length,25);
+  assert.equal(E.VERTICAL_LINES.length,5);
+  assert.equal(E.LINES.length,30);
+  for(const line of E.HORIZONTAL_LINES){
+    assert.equal(line.length,5);
+    for(const row of line)assert.ok(Number.isInteger(row)&&row>=0&&row<=2);
   }
+  E.VERTICAL_LINES.forEach((line,col)=>{
+    assert.deepEqual(line,[[col,0],[col,1],[col,2]]);
+    assert.deepEqual(E.LINES[25+col],line);
+  });
 });
 test("Aposta limitada aos valores previstos", () => {
   let s = E.createState();
@@ -361,7 +367,7 @@ test("Morangos e roleta pendentes resolvem-se uma vez cada",()=>{
   let n=0;
   const pick=()=>{n++;if(n<=15){const col=Math.floor((n-1)/3),row=(n-1)%3;
     if(row===1)return 0;
-    if(row===0&&col<3)return .999999;
+    if(row===0&&col<4)return .999999; // quatro caldeirões dispersos
   }
   if(n===16)return .25; // abrir 12 morangos, não os caldeirões
   return .25;};
@@ -466,4 +472,68 @@ test("Sessões antigas convertem 20, 25 e 30 linhas sem pares inválidos",()=>{
     const s=E.sanitize({bet:2,lines});
     return [s.bet,s.lines];
   }),[[15,25],[15,25],[20,30]]);
+});
+
+test("Três símbolos iguais na vertical pagam só com 30 linhas ativas",()=>{
+  const grid=Array.from({length:5},()=>["ghost","ghost","ghost"]);
+  grid[2]=["witch","witch","witch"];
+  const r25=E.evaluateGrid(grid,20,false,25);
+  const r30=E.evaluateGrid(grid,20,false,30);
+  assert.ok(!r25.hits.some(h=>h.direction==="vertical"));
+  const hit=r30.hits.find(h=>h.line===28 && h.direction==="vertical");
+  assert.ok(hit,"A linha 28 deveria pagar no terceiro tambor");
+  assert.equal(hit.count,3);
+  assert.equal(hit.symbol,"witch");
+  assert.deepEqual(hit.cells,[[2,0],[2,1],[2,2]]);
+  assert.ok(hit.amount>0);
+});
+test("MAGIC substitui na vertical mas não substitui caldeirões",()=>{
+  const grid=Array.from({length:5},()=>["ghost","ghost","ghost"]);
+  grid[4]=["wild","witch","witch"];
+  const withWild=E.evaluateGrid(grid,20,false,30);
+  assert.ok(withWild.hits.some(h=>h.line===30&&h.symbol==="witch"&&h.count===3));
+  grid[4]=["wild","scatter","scatter"];
+  const excluded=E.evaluateGrid(grid,20,false,30);
+  assert.ok(!excluded.hits.some(h=>h.line===30));
+});
+test("Três caldeirões empilhados abrem bónus vertical e Free Spins",()=>{
+  let draw=0;
+  const r=E.spin(E.setBet(E.createState(),20),()=>{
+    const col=Math.floor(draw/3);draw++;
+    return col===3?.999999:.45;
+  });
+  assert.equal(r.ok,true);
+  assert.equal(r.result.scatter,3);
+  assert.deepEqual(r.result.verticalScatterColumns,[3]);
+  assert.equal(r.verticalBonus,true);
+  assert.equal(r.bonusEligible,true);
+  assert.equal(r.earnedSpins,10);
+  assert.equal(r.result.bonusHits.length,1);
+  assert.equal(r.result.bonusHits[0].line,29);
+  assert.deepEqual(r.result.bonusHits[0].cells,[[3,0],[3,1],[3,2]]);
+  assert.equal([r.potTriggered,r.strawberryTriggered,r.diceTriggered].filter(Boolean).length,1);
+});
+test("Três caldeirões espalhados atribuem Free Spins mas não mini-jogo",()=>{
+  let draw=0;
+  const r=E.spin(E.setBet(E.createState(),20),()=>{
+    draw++;
+    return [1,4,7].includes(draw)?.999999:.45;
+  });
+  assert.equal(r.result.scatter,3);
+  assert.deepEqual(r.result.verticalScatterColumns,[]);
+  assert.equal(r.verticalBonus,false);
+  assert.equal(r.bonusEligible,false);
+  assert.equal(r.earnedSpins,10);
+  assert.equal(r.potTriggered||r.strawberryTriggered||r.diceTriggered,false);
+});
+test("Quatro caldeirões espalhados podem ativar mini-jogo secundário",()=>{
+  let draw=0;
+  const r=E.spin(E.setBet(E.createState(),20),()=>{
+    draw++;
+    return [1,4,7,10].includes(draw)?.999999:.45;
+  });
+  assert.equal(r.result.scatter,4);
+  assert.equal(r.verticalBonus,false);
+  assert.equal(r.bonusEligible,true);
+  assert.equal([r.potTriggered,r.strawberryTriggered,r.diceTriggered].filter(Boolean).length,1);
 });
