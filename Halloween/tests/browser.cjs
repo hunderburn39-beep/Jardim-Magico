@@ -25,11 +25,19 @@ async function run(name,launcher){
     await page.waitForTimeout(300);
     const visible=await page.evaluate(()=>{
       const s=window.__HALLOWEEN_SCENE__;
-      return {isCanvas:document.querySelector("canvas")?.width>0,grid:s.symbols.reduce((a,c)=>a+c.length,0),balance:s.state.balance,spins:s.state.spins};
+      return {isCanvas:document.querySelector("canvas")?.width>0,
+        grid:s.symbols.reduce((a,c)=>a+c.length,0),
+        balance:s.state.balance,spins:s.state.spins,
+        symbolTypes:window.HalloweenEngine.SYMBOLS.length,
+        wheelSectors:window.HalloweenEngine.WHEEL_SECTORS.length,
+        accumulators:s.jackpotsText.length};
     });
     assert.equal(visible.isCanvas,true);
     assert.equal(visible.grid,15);
     assert.equal(visible.spins,0);
+    assert.equal(visible.symbolTypes,10);
+    assert.equal(visible.wheelSectors,30);
+    assert.equal(visible.accumulators,4);
     fs.mkdirSync("visual-previews",{recursive:true});
     await page.screenshot({path:`visual-previews/halloween-${name}-inicio.png`});
     // Interromper um giro a meio: o resultado e o saldo já devem
