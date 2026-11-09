@@ -40,18 +40,19 @@
     return Object.keys(weights).at(-1);
   }
   function makeGrid(rng = randomFloat, weights = WEIGHTS) {
+    // Sorteio ponderado sem reposição: três símbolos diferentes em cada tambor.
+    // A tabela de pagamentos e evaluate() não mudam.
     return Array.from({length:5}, () => {
-      let hasTomb = false;
-      return Array.from({length:3}, () => {
-        let symbol = pickWeighted(weights,rng);
-        if (symbol === 'TOMB' && hasTomb) {
-          // One Tomb per reel, consistent with the 5-reel scatter mechanic.
-          const nonTomb = {...weights}; delete nonTomb.TOMB;
-          symbol = pickWeighted(nonTomb,rng);
-        }
-        if (symbol === 'TOMB') hasTomb = true;
-        return symbol;
-      });
+      const pool = Object.fromEntries(Object.entries(weights)
+        .filter(([,w]) => Number.isFinite(w) && w > 0));
+      if (Object.keys(pool).length < 3) throw new Error('São necessários três símbolos diferentes');
+      const column=[];
+      for (let row=0;row<3;row++) {
+        const symbol=pickWeighted(pool,rng);
+        column.push(symbol);
+        delete pool[symbol];
+      }
+      return column;
     });
   }
   function countScatters(grid) {
