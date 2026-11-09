@@ -132,7 +132,7 @@ class Game {
   let loaded=0;for(const key of E.ALL){const im=new Image();
    im.onload=()=>{loaded++;if(loaded===E.ALL.length)this.ready=true;};
    im.onerror=()=>{if(!im.fallback){im.fallback=true;im.src='assets/'+key.toLowerCase()+'.svg';}else{loaded++;if(loaded===E.ALL.length)this.ready=true;}};
-   im.src='assets/'+key.toLowerCase()+(E.NORMAL.slice(5).includes(key)||key==='TOMB'?'.webp':'.svg');this.images[key]=im;
+   im.src='assets/'+key.toLowerCase()+(E.NORMAL.slice(5).includes(key)||key==='TOMB'?'.webp':'.svg')+(E.NORMAL.slice(0,5).includes(key)?'?v=transparent2':'');this.images[key]=im;
   }
   const img=new Image();
   img.onload=()=>{
