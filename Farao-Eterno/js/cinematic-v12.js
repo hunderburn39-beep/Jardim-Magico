@@ -15,7 +15,7 @@
   const format = n => (Math.round((n + Number.EPSILON) * 100) / 100)
     .toLocaleString('pt-PT', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' cr';
   const events = { spins: 0, landings: 0, sanctuaries: 0, paylineChimes: 0 };
-  game.cinematicV12 = { version: '1.4', events, mathUnchanged: true };
+  game.cinematicV12 = { version: '1.5', events, mathUnchanged: true };
 
   // A fita gráfica é determinística e NÃO consome o RNG dos prémios.
   function stripFor(reel, stepCount, prior, final, round) {
@@ -284,6 +284,31 @@
     return columns.slice(0,3).some(col => col.includes('TOMB'));
   };
 
+  // Detetar apenas vitórias já comprovadas pelas colunas paradas.
+  // Não usar o resultado futuro para disparar o alerta antecipadamente:
+  // KING/HORUS/etc. pagam com 2; letras simples pagam a partir de 3.
+  const E = window.TombEngine;
+  function hasConfirmedSequence(spin,activeLines) {
+    if(!E || !spin || !Array.isArray(spin.grid) || !Array.isArray(spin.stopped))return false;
+    let visible=0;
+    while(visible<5 && spin.stopped[visible])visible++;
+    if(visible<2)return false;
+    for(let i=0;i<Math.min(activeLines||10,E.LINES.length);i++){
+      const rows=E.LINES[i];
+      for(const symbol of E.ALL){
+        let matched=0;
+        for(let c=0;c<visible;c++){
+          const at=spin.grid[c][rows[c]];
+          if(at===symbol || (at==='TOMB' && symbol!=='TOMB'))matched++;
+          else break;
+        }
+        if((E.PAYS[symbol]?.[matched]||0)>0)return true;
+      }
+    }
+    return false;
+  }
+  game.cinematicV12.hasConfirmedSequence=hasConfirmedSequence;
+
   const baseFrame = game.frame.bind(game);
   game.frame = function (t) {
     const spin = this.spinObject;
@@ -313,6 +338,14 @@
           }
         }
       }
+    }
+    // O primeiro conjunto vencedor confirmado recebe UM alerta musical.
+    // Os cinco pops de paragem mantêm-se e o gong do Wild é independente.
+    if (spin && !spin._sequenceAlerted && this.sound &&
+        hasConfirmedSequence(spin,this.ledger?.lines)) {
+      spin._sequenceAlerted=true;
+      this.audio.sequenceAlert?.();
+      events.sequenceAlerts=(events.sequenceAlerts||0)+1;
     }
     if (!this.sound || document.hidden || this.paused) this.audio.stopReelWhirr?.();
     const wins = this.lastResult?.lineWins || [];
