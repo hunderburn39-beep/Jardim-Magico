@@ -69,6 +69,7 @@ class Game {
    const raw=localStorage.getItem(STORE_KEY);
    this.ledger=raw?S.restore(JSON.parse(raw)):S.migrate(QA?null:JSON.parse(localStorage.getItem('farao-eterno-v1')||'null'));
    if(this.ledger.pending){S.settle(this.ledger);this.recovered=true;}
+   if(this.ledger.payout){S.finishPayout(this.ledger);this.recovered=true;}
    // Sessões antigas podem trazer letras duplicadas já pagas. Corrigir
    // APENAS o ecrã inicial, depois de liquidar qualquer jogada pendente.
    // Saldo, prémios, histórico e resultados contabilizados ficam intactos.
@@ -351,12 +352,13 @@ class Game {
   if(this.recovered){this.recovered=false;this.announce('Jogada recuperada. O prémio já está no saldo.');}
   if(this.paused){this.paused=false;this.audio.startMusic?.();this.notice('O TEMPLO DESPERTA',650);if(this.spinning)return;}
   if(this.spinning)return;
+  if(this.ledger.payout){this.notice('A REVELAR AS SEQUÊNCIAS',650);return;}
   if(performance.now()<this.nextActionAt)return;
   const free=!!this.feature;
   let begun;
   try{begun=S.begin(this.ledger,this.rng);}catch(e){this.auto=0;this.notice('CRÉDITOS INSUFICIENTES · MENU PARA REPOR',1900,'red');return;}
   this.syncLedger();if(!free&&this.auto>0)this.auto--;
-  this.reveal=null;this.featureIntro=null;this.winCount=null;this.lastWin=0;this.lastResult=null;this.expanded={};this.winCells=[];
+  this.reveal=null;this.featureIntro=null;this.winCount=null;this.sequencePlayback=null;this.lastWin=0;this.lastResult=null;this.expanded={};this.winCells=[];
   this.spinning=true;this.landings.fill(0);this.fxParticles=[];
   const t=performance.now(),duration=this.turbo?520:1180,reelGap=this.turbo?90:175;
   this.spinObject={grid:begun.pending.grid,result:begun.result,free,start:t,duration,reelGap,stopped:Array(5).fill(false),show:Array.from({length:5},()=>Array.from({length:14},()=>choose(E.ALL)))};
@@ -371,7 +373,7 @@ class Game {
   const finishedAt=performance.now();
   const result=item.result;
   this.lastWasFree=item.free;
-  const settled=S.settle(this.ledger);if(!settled)return;
+  const settled=S.settle(this.ledger,undefined,{defer:true});if(!settled)return;
   this.syncLedger();const prize=S.credits(settled.prizeU);this.lastResult=result;
   this.winCells=this.computeWinners(result);
   this.expanded={};
@@ -388,6 +390,32 @@ class Game {
   this.spinObject=null;this.nextActionAt=finishedAt+(this.turbo?320:690);
   // Pagamentos de vários símbolos expansivos animados do mais baixo
   // para o mais alto, sem efetuar de novo o crédito já pago por S.settle().
+  const stagedPayout=settled.payout?.groups||[];
+  if(stagedPayout.length){
+   let cursor=finishedAt+140;
+   const stages=stagedPayout.map((group,index)=>{
+    // O tempo de cada imagem cresce de cima para baixo; pausa antes da próxima.
+    const reels=[...group.reels];
+    const perReel=this.turbo?400:790,preDelay=this.turbo?190:390;
+    const creditAt=cursor+preDelay+Math.max(1,reels.length)*perReel;
+    const end=creditAt+(this.turbo?760:1450);
+    const stage={...group,index,start:cursor,preDelay,perReel,
+     reels,creditAt,end,amount:S.credits(group.amountU),
+     win:group.kind==='line'?result.lineWins.find(w=>!w.expanded&&
+       w.line===group.line&&w.symbol===group.symbol):null};
+    if(group.kind==='expansion')reels.forEach((reel,k)=>
+     this.emitBurst(83+reel*101,444,13,'#83ffef',cursor+preDelay+(k+1)*perReel));
+    cursor=end+(this.turbo?430:950);
+    return stage;
+   });
+   const end=stages.at(-1).end;
+   this.sequencePlayback={id:settled.id,stages,start:finishedAt,end};
+   this.reveal={start:finishedAt,end,stages};
+   // O prémio mostrado apenas soma parcelas efetivamente creditadas.
+   this.winCount={start:finishedAt,duration:end-finishedAt,amount:prize,
+    stages:stages.map(g=>({amount:g.amount,start:g.creditAt,end:g.creditAt}))};
+   this.nextActionAt=Math.max(this.nextActionAt,end+(this.turbo?380:850));
+  }else{
   const expansions=item.free?(result.expansionAwards||[]):[];
   if(expansions.length){
    let cursor=finishedAt+90;
@@ -434,6 +462,7 @@ class Game {
     duration:this.turbo?450:820,amount:prize};
    this.nextActionAt=Math.max(this.nextActionAt,this.winCount.start+this.winCount.duration+250);
   }
+  }
   if(item.free){
    if(result.trigger){
     // A terceira torre confirmou o retrigger real, não apenas o tease.
@@ -464,10 +493,15 @@ class Game {
   this.featureIntro={symbol,start:from,end:from+duration,pages,turns,number};
   this.nextActionAt=Math.max(this.nextActionAt,from+duration+250);
  }
+ sequenceFocusAt(t){
+  const playing=this.sequencePlayback;
+  if(!playing||t<playing.start||t>playing.end)return null;
+  return playing.stages.find(g=>t>=g.start&&t<=g.end)||null;
+ }
  expansionView(t){
   if(!this.reveal?.stages?.length||t>=this.reveal.end)return null;
-  const stage=this.reveal.stages.find(x=>t<x.end);
-  if(!stage)return null;
+  const stage=this.reveal.stages.find(x=>t>=x.start&&t<x.end);
+  if(!stage||stage.kind&&stage.kind!=='expansion')return null;
   return {stage,reveal:stage,expanded:Object.fromEntries(stage.reels.map(reel=>[reel,stage]))};
  }
  displayWinAt(t){
@@ -702,6 +736,21 @@ class Game {
 
  frame(t){
   const dt=Math.min(60,t-lastFrame||16);lastFrame=t;
+  // A única operação que credita cada parcela. O anúncio final não o faz.
+  if(!this.spinning&&!this.paused&&!this.superseded&&!document.hidden&&
+     this.sequencePlayback&&this.ledger.payout){
+   for(const stage of this.sequencePlayback.stages){
+    if(t<stage.creditAt||stage.paid)continue;
+    const received=S.creditNext(this.ledger,this.sequencePlayback.id,stage.index);
+    if(!received)continue;
+    stage.paid=true;
+    this.syncLedger();
+    this.save();
+    this.announce('Sequência '+(stage.index+1)+': '+money(stage.amount)+
+      '. Saldo '+money(this.balance)+'.');
+    this.audio.paylineChime?.(stage.index);
+   }
+  }
   if(this.spinning&&!this.paused&&!document.hidden){
    const item=this.spinObject;
    for(let c=0;c<5;c++) if(!item.stopped[c] && t>=(item.stopAt?.[c]??(item.start+item.duration+c*item.reelGap))){item.stopped[c]=true;this.landings[c]=t;this.audio.tick(c);}
@@ -902,12 +951,17 @@ class Game {
 
   drawActivePayline(t,left,top,cw,gh,interval){
    if(this.spinning || !this.lastResult?.lineWins?.length || this.featureIntro&&t<this.featureIntro.end)return;
-   if(this.reveal&&t<this.reveal.end)return;
+   const focus=this.sequenceFocusAt(t);
+   if(this.reveal&&t<this.reveal.end&&!focus)return;
    // Linha azul completa do tambor 1 ao 5, mesmo se apenas 2/3/4 peças pagarem.
    // Só as peças da combinação têm pontos de destaque.
    const wins=this.lastResult.lineWins;
-   const chosen=wins[Math.floor(t/1600)%wins.length];
-   if(!Array.isArray(chosen.rows)||chosen.rows.length!==5)return;
+   const chosen=focus
+     ?focus.kind==='line'?focus.win:
+      focus.kind==='expansion'?wins.find(w=>w.expanded&&w.symbol===focus.symbol):
+      null
+     :wins[Math.floor(t/1600)%wins.length];
+   if(!chosen||!Array.isArray(chosen.rows)||chosen.rows.length!==5)return;
    const soften=Boolean(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
    const alpha=soften?.92:.86+.12*Math.sin(t*.006);
    const coords=chosen.rows.map((row,c)=>({
@@ -1137,6 +1191,37 @@ class Game {
    }
    cx.restore();
   };
+  const ornateBack=(x,y,w,h)=>{
+   cx.save();
+   const leather=cx.createLinearGradient(x,y,x+w,y+h);
+   leather.addColorStop(0,'#3d1930');leather.addColorStop(.5,'#71302e');
+   leather.addColorStop(1,'#251226');
+   rect(x,y,w,h,leather,'#f7d18a',5,3);
+   rect(x+9,y+9,w-18,h-18,null,'#e8be74',4,2);
+   rect(x+17,y+17,w-34,h-34,null,'#a36e40',2,1.5);
+   for(let j=0;j<4;j++){
+    const xx=x+24+j*(w-48)/3;
+    line(xx,y+23,xx,y+h-23,'#d4ab5655',1);
+   }
+   const ox=x+w/2,oy=y+h/2;
+   cx.translate(ox,oy);cx.rotate(Math.PI/4);
+   rect(-40,-40,80,80,'#d8af6127','#f6d585',2,3);
+   rect(-30,-30,60,60,null,'#d39d49',2,1.6);
+   cx.rotate(-Math.PI/4);
+   // Medalhão solar egípcio em relevo, sem letras nem identificação.
+   ellipse(0,0,27,27,'#af793b');
+   ellipse(0,0,21,21,'#ffe3a1');
+   ellipse(0,-2,13,13,'#693223');
+   for(let i=0;i<12;i++){
+    const a=i*Math.PI/6;
+    line(Math.cos(a)*34,Math.sin(a)*34,
+     Math.cos(a)*47,Math.sin(a)*47,'#ffdb8c',2.5);
+   }
+   cx.beginPath();cx.moveTo(-7,7);cx.quadraticCurveTo(0,-18,7,7);
+   cx.quadraticCurveTo(0,12,-7,7);cx.closePath();
+   cx.fillStyle='#ffe5aa';cx.fill();
+   cx.restore();
+  };
   cx.save();
   cx.globalAlpha=fade;
   cx.shadowColor='#000b';cx.shadowBlur=30;
@@ -1148,7 +1233,7 @@ class Game {
   rect(93,343,374,244,'#3b2017','#c99c57',11,5);
   cx.restore();
   for(let k=0;k<4;k++)rect(102+k,350+k,356-k*2,229-k*2,null,'#d4ad6d66',5,1);
-  parchment(left,top,pageW,pageH,previous);
+  ornateBack(left,top,pageW,pageH);
   parchment(spine+5,top,pageW,pageH,next);
   if(index<turns){
    const factor=Math.max(.018,Math.abs(Math.cos(Math.PI*phase)));
@@ -1161,7 +1246,7 @@ class Game {
    }else{
     cx.translate(spine+4-width,0);
     cx.scale(factor,1);
-    parchment(0,top,pageW,pageH,current,true);
+    ornateBack(0,top,pageW,pageH);
    }
    cx.restore();
    cx.save();cx.globalAlpha=.17*(1-factor);
