@@ -29,7 +29,14 @@ h2{font-size:clamp(11px,3.3vw,15px);margin:5px 0 6px;text-align:center;letter-sp
 .cell{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;border-radius:8px;border:2px solid #c7861b;background:linear-gradient(160deg,#fff6cd,#fff3a2);color:#0b3563;box-shadow:inset 0 1px 4px #fff,0 1px 3px #7d480a70}
 .cell b{font-size:clamp(18px,5vw,26px);line-height:1.05}
 .cell small{font-weight:900;font-size:clamp(9px,2.4vw,12px);margin-top:3px;white-space:nowrap}
-.cell.winning{background:linear-gradient(130deg,#fffcc6,#b5ffb9);border-color:#40ac62}
+.cell.winning{background:linear-gradient(140deg,#ff8888 0%,#f12125 45%,#a7000b 100%);border:2px solid #ffcb43;color:#fff8dc;box-shadow:inset 0 0 8px #ffdb8380,0 0 10px #ffdb6990;isolation:isolate}
+.cell.winning b,.cell.winning small{color:#fff8d9;text-shadow:0 1px 2px #520000,0 0 5px #ffe67c}
+.cell.winning.revealed{animation:prizeFlash .75s ease-in-out 6 alternate;box-shadow:inset 0 0 12px #ffeb90,0 0 14px #ffd13d,0 0 22px #ffa614}
+@keyframes prizeFlash{
+  from{filter:brightness(1);box-shadow:inset 0 0 7px #ffc44c,0 0 7px #ffb829}
+  to{filter:brightness(1.5);box-shadow:inset 0 0 18px #fff09d,0 0 18px #ffdc37,0 0 28px #ffd13d}
+}
+@media(prefers-reduced-motion:reduce){.cell.winning.revealed{animation:none}}
 .cell canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
 .actions{display:flex;gap:8px;flex:none}
 .actions button{border-radius:10px;padding:12px 8px;min-height:46px;font-size:clamp(11px,3.1vw,14px);font-weight:950}
@@ -115,7 +122,7 @@ function buy(){
 }
 function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
   const cell=document.createElement("div");
-  cell.className="cell"+(isWinner?" winning":"");
+  cell.className="cell"+(isWinner?" winning":"")+(isWinner&&alreadyRevealed?" revealed":"");
   const number=document.createElement("b");number.textContent=String(num).padStart(2,"0");cell.append(number);
   if(label){const amount=document.createElement("small");amount.textContent=label;cell.append(amount)}
   el(parent).append(cell);
@@ -145,6 +152,7 @@ function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
   function reveal(){
     if(!canvas.isConnected)return;
     canvas.remove();active=false;stopScratchSound();
+    if(isWinner)cell.classList.add("revealed");
     if(!state.ticket.revealed.includes(id))state.ticket.revealed.push(id);
     if(state.ticket.revealed.length===25)finish();
     else save();
