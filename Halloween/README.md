@@ -1,4 +1,4 @@
-# Halloween III — Clássica (V0.13, reconstrução independente)
+# Halloween III — Clássica (V0.14, reconstrução independente)
 
 Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-níqueis Halloween III dos anos 2000.
 
@@ -19,6 +19,14 @@ O código Phaser suporta agora um **modo opcional de recursos originais** sem in
 - O cenário 9:16 aproveita o logótipo e a textura de `01_telab2.webp`; a roleta usa `01_roleta.webp` e os efeitos áudio foram extraídos de `assets/sons/halloween/`.
 - **Sem o pacote** ou com o sinalizador desativado, o jogo continua a funcionar com SVG e sons sintetizados próprios, sem pedidos a ficheiros que não existem.
 - O pacote foi concebido para **uso pessoal**. A disponibilização pública de gráficos e áudio comerciais exige autorização do respetivo titular dos direitos. As fórmulas do jogo permanecem experimentais, mesmo com a arte original.
+
+## Melhoria da arte existente V0.14
+
+- Mantidos os **dez desenhos vetoriais anteriores** em `js/art.js`, sem trocar personagens, silhuetas, expressões ou símbolos por novos.
+- Refeitos os tratamentos de volume para evitar imagens duplicadas demasiado escuras; acrescentados reflexos e luz de relevo discretos.
+- Cada figura recebeu pormenores próprios (abóbora, bruxas, diabinho, fantasma, lua, vampiro, monstro, MAGIC e caldeirão).
+- O código continua a aceitar um pacote privado de recursos originais do APK, se estiver ativado; estes novos acabamentos são aplicados às ilustrações SVG públicas.
+- Sem alterações a `js/engine.js`, às regras de giro, às linhas, à matemática ou ao saldo guardado.
 
 ## Melhorias visuais V0.13
 
