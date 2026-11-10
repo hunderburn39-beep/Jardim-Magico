@@ -59,26 +59,32 @@
     spin.teasePlayed = false;
     const round = (this._cinemaRound || 0) + 1;
     this._cinemaRound = round;
-    spin.duration = this.turbo ? 520 : 1040;
-    spin.reelGap = this.turbo ? 72 : 170;
-    // Suspense progressivo: depois de duas torres WILD, abrandar todos os
-    // tambores seguintes, incluindo o quinto se o terceiro e quarto falharem.
-    // A terceira torre termina a procura; nunca alterar os símbolos sorteados.
+    // Free Spins mais rápidas; a mecânica e a grelha sorteada não mudam.
+    spin.duration = this.turbo ? 500 : spin.free ? 900 : 1040;
+    spin.reelGap = this.turbo ? 65 : spin.free ? 120 : 170;
+    // As paragens são estritamente sequenciais (1→2→3→4→5).
+    // Duas torres acrescentam UMA pausa antes do próximo tambor; essa pausa
+    // mantém-se nos seguintes, mesmo quando aparece a terceira torre.
+    // Assim, o 4.º nunca termina antes do 3.º.
     const baseStop = spin.grid.map((_, c) => spin.start + spin.duration + c * spin.reelGap);
-    let seen = 0, suspenseEnd = false;
+    let seen = 0, suspenseDelay = 0, holdAdded = false, previousStop = spin.start;
     spin.stopAt = baseStop.map((stop, c) => {
-      const slow = seen >= 2 && !suspenseEnd;
-      // Nas Free Spins, prolongar um pouco o suspense após dois Scatters
-      // realmente visíveis. A grelha sorteada nunca é alterada.
-      const suspenseMs=this.turbo?(spin.free?1050:700):(spin.free?2650:2200);
-      const adjusted = stop + (slow ? suspenseMs : 0);
-      if (spin.grid[c].includes('TOMB')) {
-        seen++;
-        if (seen >= 3) suspenseEnd = true;
+      if (spin.free && seen >= 2 && !holdAdded) {
+        suspenseDelay = this.turbo ? 280 : 720;
+        holdAdded = true;
+      } else if (!spin.free && seen >= 2 && !holdAdded) {
+        suspenseDelay = this.turbo ? 420 : 1300;
+        holdAdded = true;
       }
+      const adjusted = Math.max(stop + suspenseDelay,
+        c > 0 ? previousStop + spin.reelGap : stop);
+      previousStop = adjusted;
+      if (spin.grid[c].includes('TOMB')) seen++;
       return adjusted;
     });
-    spin.cinematicSuspense = spin.stopAt.some((stop, c) => stop > baseStop[c]);
+    spin.cinematicSuspense = holdAdded;
+    // Facilita os testes e evita regressões com paragens fora de ordem.
+    spin.stopOrder = [0,1,2,3,4];
     spin.steps = Array.from({length: 5}, (_, c) => 27 + 4 * c);
     spin.show = spin.steps.map((steps, c) => stripFor(c, steps, prior[c], spin.grid[c], round));
     spin.cinematicPrior = prior;
