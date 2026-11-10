@@ -1,4 +1,4 @@
-# Halloween III — Clássica (V0.11, reconstrução independente)
+# Halloween III — Clássica (V0.12, reconstrução independente)
 
 Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-níqueis Halloween III dos anos 2000.
 
@@ -20,13 +20,19 @@ O código Phaser suporta agora um **modo opcional de recursos originais** sem in
 - **Sem o pacote** ou com o sinalizador desativado, o jogo continua a funcionar com SVG e sons sintetizados próprios, sem pedidos a ficheiros que não existem.
 - O pacote foi concebido para **uso pessoal**. A disponibilização pública de gráficos e áudio comerciais exige autorização do respetivo titular dos direitos. As fórmulas do jogo permanecem experimentais, mesmo com a arte original.
 
-## Correção da frequência dos bónus V0.11
+## Correção da frequência dos bónus V0.12
 
 Os mini-bónus de caldeirões, morangos e dados eram demasiado raros. Esta versão regista os giros pagos desde o último mini-bónus e aumenta progressivamente a probabilidade de **três caldeirões na vertical**, sem passar de 49 giros pagos sem mini-bónus. Os desenhos, a lógica dos 25+5 percursos e os cinco escalões de aposta são preservados.
 
-Esta regra de entretenimento **não existe como regra confirmada do APK**. Consulta a [análise de bónus V0.11](docs/bonus-vertical-frequente-v011.md) para os valores, a limitação das simulações e a forma de recuperar sessões anteriores.
+Esta regra de entretenimento **não existe como regra confirmada do APK**. Consulta a [análise de bónus V0.12](docs/bonus-vertical-frequente-v011.md) para os valores, a limitação das simulações e a forma de recuperar sessões anteriores.
 
-## Implementado nesta V0.11
+## Linhas originais recuperadas — V0.12
+
+Foi descodificado o formato `LNH1` do APK e foram reconstruídos os **30 desenhos originais**. A ordem real é **1–20 horizontais, 21–25 verticais, 26–30 horizontais**, diferente da ordem que usávamos anteriormente. A numeração do motor e dos marcadores foi corrigida; a geometria discreta dos símbolos e a matemática do jogo continuam interpretações do protótipo, ainda não equivalentes ao algoritmo Android.
+
+[Consultar a descodificação técnica e a origem da numeração](docs/linhas-originais-lnh1.md).
+
+## Implementado nesta V0.12
 
 - Ecrã retro com **5 tambores × 3 linhas** de fundo claro, nome Halloween III, marcadores de linhas coloridos, indicadores de crédito/prémio/aposta e quatro acumulados virtuais.
 - Ilustrações **SVG originais** para os **10 tipos encontrados no XAPK**: abóbora Halloween, bruxa verde, WITCH, vampiro, fantasma, bruxa na lua, monstro, diabinho, MAGIC e caldeirão. Não são extraídas de ficheiros comerciais.
@@ -42,7 +48,7 @@ Esta regra de entretenimento **não existe como regra confirmada do APK**. Consu
 - **Bónus dos 12 morangos**, em grelha 4×3, com seleção por toque e prémio guardado antes da animação. A documentação do APK confirma 12 elementos gráficos, mas os valores e a forma de o ativar são experimentais.
 - **Novo bónus dos dados vermelhos**, com cinco escolhas, inspirado nas cinco animações referenciadas pelo bytecode `InitDados` e no atlas `01_dado.webp`. Os cinco dados são desenhados em Phaser, sem copiar os sprites do APK. Os valores de 1 a 6 e o prémio aposta × face são regras fictícias do protótipo, não a fórmula `NumDado`/ `SetDadoPremio`.
 - **Travar até quatro tambores após uma jogada sem prémio**, tocando nos próprios tambores. Todos os giros seguintes debitam normalmente a aposta.
-- **25 linhas da esquerda para a direita** e **cinco linhas verticais** (linhas 26–30), uma por tambor, para prémios de três símbolos iguais ou combinações com MAGIC. A linha vertical só entra nos pagamentos quando estão ativas as 30 linhas (escalão de 0,20 €). Os percursos horizontais continuam a ser aproximações próprias do projeto, não os dados de `LNH1` descodificados.
+- **25 linhas da esquerda para a direita** e **cinco linhas verticais** (linhas 21–25, identificadas no APK), uma por tambor, para prémios de três símbolos iguais ou combinações com MAGIC. Na numeração original, as cinco verticais entram no escalão de 25 linhas (0,15 €); as horizontais 26–30 são ativadas apenas com 30 linhas (0,20 €). Os percursos horizontais continuam a ser aproximações próprias do projeto, não os dados de `LNH1` descodificados.
 - **Bónus sobretudo verticais:** três caldeirões no mesmo tambor, um sobre o outro, abrem um mini-jogo de caldeirões, morangos ou dados; cinco ou mais caldeirões dispersos são uma alternativa. Três ou quatro caldeirões dispersos mantêm os Free Spins mas não abrem automaticamente um mini-jogo. Os três caldeirões empilhados são destacados antes da janela de bónus, mesmo se as linhas verticais pagas não estiverem ativas. Esta é uma regra experimental para refletir a referência do utilizador; as probabilidades exatas do APK continuam por verificar.
 - No bónus de roleta mantém-se a regra provisória de cinco abóboras numa linha horizontal completa.
 - Uma abóbora é recolhida em rondas pagas com **quatro ou mais abóboras visíveis** (máximo de uma por ronda). Ao reunir cinco, atribui **cinco Free Spins**. Durante estas não se recolhem novas abóboras.
