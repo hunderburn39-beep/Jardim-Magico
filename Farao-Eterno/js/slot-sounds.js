@@ -315,6 +315,57 @@
     note(659.25,718,.26,.040,.17,'sine');
   };
 
+  // Leitura de laser sincronizada com a passagem vertical das figuras
+  // expansivas nas Free Spins. Um varrimento por tambor, do topo para a base.
+  audio.expansionLaserScan=function(seconds){
+    if(!ready())return;
+    const d=clamp(seconds*.88,.22,.69);
+    try{
+      const ac=this.ctx,t=ac.currentTime+Math.min(.01,d*.03);
+      const osc=ac.createOscillator(),filter=ac.createBiquadFilter(),env=ac.createGain();
+      osc.type='sawtooth';
+      osc.frequency.setValueAtTime(1760,t);
+      osc.frequency.exponentialRampToValueAtTime(390,t+d);
+      filter.type='lowpass';filter.Q.value=1.25;
+      filter.frequency.setValueAtTime(3100,t);
+      filter.frequency.exponentialRampToValueAtTime(750,t+d);
+      env.gain.setValueAtTime(.0001,t);
+      env.gain.exponentialRampToValueAtTime(.022,t+.018);
+      env.gain.setValueAtTime(.022,t+d*.42);
+      env.gain.exponentialRampToValueAtTime(.0001,t+d);
+      osc.connect(filter);filter.connect(env);env.connect(output());
+      osc.start(t);osc.stop(t+d+.015);
+      osc.onended=()=>{try{osc.disconnect();filter.disconnect();env.disconnect();}catch(_){}};
+      // Três impulsos suaves acompanham as três posições, de cima para baixo.
+      for(let row=0;row<3;row++){
+        const offset=d*(.08+row*.33);
+        note(1480-row*270,790-row*150,Math.min(.085,d*.24),.009,offset,'sine');
+      }
+      friction(d*.82,.010,2300,0);
+    }catch(_){}
+  };
+
+  audio.updateExpansionLaser=function(t,gameState){
+    if(!ready()||gameState.spinning||!gameState.lastWasFree||
+       gameState.paused||gameState.superseded)return;
+    const reveal=gameState.reveal;
+    if(!reveal||t>=reveal.end)return;
+    const stages=Array.isArray(reveal.stages)?reveal.stages:
+      Array.isArray(reveal.reels)?[reveal]:[];
+    for(const stage of stages){
+      if(stage.kind&&stage.kind!=='expansion')continue;
+      if(!stage.reels?.length||!stage.perReel)continue;
+      for(let i=0;i<stage.reels.length;i++){
+        const at=stage.start+stage.preDelay+i*stage.perReel;
+        if(t<at||t>=at+Math.min(160,stage.perReel*.45))continue;
+        if(!stage._laserPlayedReels)stage._laserPlayedReels=new Set();
+        if(stage._laserPlayedReels.has(i))continue;
+        stage._laserPlayedReels.add(i);
+        this.expansionLaserScan(stage.perReel/1000);
+      }
+    }
+  };
+
   audio.paylineChime=function(index){
     const tones=[392,440,493.88,523.25,587.33],f=tones[index%tones.length];
     note(f,f*.90,.25,.013);
@@ -333,9 +384,10 @@
   game.frame=function(t){
     baseFrame(t);
     this.audio.updateReelWhirr?.(t,this.spinObject);
+    this.audio.updateExpansionLaser?.(t,this);
   };
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.4.3',original:true,realReelStopSample:true,sequenceAlert:true,retriggerTease:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.4.4',original:true,realReelStopSample:true,sequenceAlert:true,retriggerTease:true,dynamicReelSpeed:true};
 })();
