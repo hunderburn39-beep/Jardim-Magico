@@ -77,6 +77,8 @@
   game.finishSpin = function () {
     if (!this.spinObject) return;
     finishSpin();
+    // As Free Spins só celebram o total ao abrir o resumo final.
+    if(this.lastWasFree||this.lastResult?.trigger)return;
     const staged=this.sequencePlayback?.stages||[];
     const paidSequences=staged.filter(g=>g.kind!=='scatter');
     const informational=paidSequences.length>=2;
