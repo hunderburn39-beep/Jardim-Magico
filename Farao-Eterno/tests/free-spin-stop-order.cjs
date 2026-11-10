@@ -74,8 +74,8 @@ test('Free Spins usam tempos curtos nas sequências, preservando crédito fasead
  assert.match(gameSrc,/this\.audio\.paylineChime\?\.\(stage\.index\)/);
 });
 
-test('pirâmides WILD pulsam sempre acima de 5%, com brilho dourado e sobreposição',()=>{
- assert.match(visual,/const pulse=1\+\.08\*wave;/);
+test('pirâmides WILD pulsam até 13%, com brilho dourado e sobreposição',()=>{
+ assert.match(visual,/const pulse=1\+\.13\*wave;/);
  assert.match(visual,/ctx\.shadowColor='rgba\(255,198,68,/);
  assert.match(visual,/ctx\.shadowBlur=12\+16\*wave;/);
  assert.match(visual,/if\(sym==='TOMB'\)return;/,
