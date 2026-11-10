@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#071b43">
-<title>Raspadinha 100X — 1 € por bilhete</title>
+<title>Raspadinha 100X — 10 € por bilhete</title>
 <style>
 :root{color-scheme:dark;--gold:#ffd34a;--blue:#0b3268;--light:#fff2b8}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -67,6 +67,19 @@ footer{text-align:center;color:#b5c9e1;font-size:10px;line-height:1.2;flex:none}
 @keyframes celebrationFade{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.celebration-amount{animation:none}.firework-spark,.firework-core{animation-duration:.15s}}
 
+
+.celebration-overlay{pointer-events:auto;background:radial-gradient(ellipse at center,#1a235d99,#030817e8 75%);backdrop-filter:blur(5px)}
+.celebration-stage{width:min(95vw,500px);height:min(75dvh,560px);border:3px solid #ffc64b;border-radius:24px;background:radial-gradient(ellipse at 50% 40%,#1a376d 0%,#070e29 72%);box-shadow:0 0 40px #ffb31c88,inset 0 0 50px #244fb7a0;flex-direction:column;overflow:hidden}
+.celebration-stage:before{content:"";position:absolute;inset:6px;border:2px solid #d92b60;border-radius:18px;box-shadow:0 0 18px #ff276d,0 0 35px #195bff inset;pointer-events:none}
+.celebration-stage:after{content:"";position:absolute;bottom:60px;width:85%;height:25px;border-radius:50%;background:#ffbb22;filter:blur(20px);opacity:.65}
+.celebration-center{width:100%;padding:12px;z-index:5}
+.celebration-brand{font-weight:1000;font-size:clamp(20px,6vw,30px);color:#eaf5ff;text-shadow:0 0 12px #55aaff;letter-spacing:1px;margin-bottom:26px}
+.celebration-brand strong{display:block;font-size:clamp(50px,17vw,90px);line-height:.9;color:#ffd34d;text-shadow:0 3px #a32500,0 0 18px #ff4a19}
+.celebration-title{font-size:clamp(27px,8vw,44px);color:#ffd652;text-shadow:0 3px #a62600,0 0 20px #fa5525}
+.celebration-subtitle{font-size:clamp(18px,5vw,28px);font-weight:1000;color:#f3f8ff;margin:12px 0}
+.celebration-amount{font-size:clamp(38px,10vw,61px);white-space:nowrap}
+.celebration-fireworks.left{left:20%;top:34%}.celebration-fireworks.right{right:20%;top:34%}
+#celebration-close{position:absolute;z-index:8;bottom:24px;left:50%;transform:translateX(-50%);border:2px solid #ffe27e;border-radius:28px;background:linear-gradient(#e72c40,#8c061d);box-shadow:0 5px 0 #5e0715,0 0 18px #ff8d34;color:white;padding:12px 32px;font-weight:1000;font-size:17px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -74,13 +87,13 @@ footer{text-align:center;color:#b5c9e1;font-size:10px;line-height:1.2;flex:none}
 <main>
   <div class="summary"><div>SALDO <strong id="balance">100,00 €</strong></div><button id="sound" type="button" aria-label="Desligar som">🔊 Som ligado</button></div>
   <section class="ticket" aria-label="Bilhete de raspadinha">
-    <div class="tickettop"><span id="ticketid">BILHETE Nº 1</span><span>1 € → ATÉ 100 €</span></div>
+    <div class="tickettop"><span id="ticketid">BILHETE Nº 1</span><span>10 € → ATÉ 1.000 €</span></div>
     <h2>NÚMEROS DA SORTE</h2>
     <div class="numgrid lucky" id="lucky"></div>
     <h2>OS TEUS NÚMEROS</h2>
     <div class="numgrid play" id="play"></div>
   </section>
-  <div class="actions"><button id="new" type="button">NOVA RASPADINHA · 1 €</button><button id="reveal" type="button">RASPAR TUDO</button></div>
+  <div class="actions"><button id="new" type="button">NOVA RASPADINHA · 10 €</button><button id="reveal" type="button">RASPAR TUDO</button></div>
   <p id="status" role="status" aria-live="polite"></p>
   <footer>Protótipo de teste local. Sem depósitos ou pagamentos reais.</footer>
 </main>
@@ -89,10 +102,10 @@ footer{text-align:center;color:#b5c9e1;font-size:10px;line-height:1.2;flex:none}
   <div class="celebration-stage">
     <div class="celebration-fireworks left" id="fireworks-left"></div>
     <div class="celebration-center">
-      <div class="celebration-title">GANHASTE!</div>
+      <div class="celebration-brand">RASPADINHA <strong>100X</strong></div><div class="celebration-title">PARABÉNS!</div><div class="celebration-subtitle">GANHASTE</div>
       <div class="celebration-amount" id="celebration-amount">0 €</div>
     </div>
-    <div class="celebration-fireworks right" id="fireworks-right"></div>
+    <div class="celebration-fireworks right" id="fireworks-right"></div><button id="celebration-close" type="button">CONTINUAR ▶</button>
   </div>
 </div>
 <script>
@@ -100,19 +113,19 @@ footer{text-align:center;color:#b5c9e1;font-size:10px;line-height:1.2;flex:none}
 // Valores em cêntimos: 1 € por bilhete; prémio mínimo vencedor 1 € e máximo 100 €.
 // Divisão de cada bilhete: técnico 10%, comerciante 20%, fundo 10%, cofre de prémios 60%.
 // O jogo nunca compromete prémios superiores ao montante disponível no cofre.
-const KEY="raspadinha100x_v2";
-const PRICE=100;
+const KEY="raspadinha100x_v3_10eur";
+const PRICE=1000;
 const PRIZES=[
-  {value:100, weight:700},{value:200, weight:250},{value:500, weight:30},
-  {value:1000, weight:10},{value:2000, weight:6},{value:5000, weight:3},
-  {value:10000, weight:1}
+  {value:1000, weight:700},{value:2000, weight:250},{value:5000, weight:30},
+  {value:10000, weight:10},{value:20000, weight:6},{value:50000, weight:3},
+  {value:100000, weight:1}
 ];
 const el=id=>document.getElementById(id);
 const eur=c=>(c/100).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
 const money=c=>(c/100).toLocaleString("pt-PT",{maximumFractionDigits:0})+" €";
 const randomInt=max=>Math.floor(Math.random()*max);
 function shuffle(items){for(let i=items.length-1;i>0;i--){const j=randomInt(i+1);[items[i],items[j]]=[items[j],items[i]]}return items}
-function fresh(){return{balance:10000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true}}
+function fresh(){return{balance:100000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true}}
 function load(){
   try{
     const saved=JSON.parse(localStorage.getItem(KEY));
@@ -139,10 +152,10 @@ function buy(){
   stopScratchSound();
   clearCelebration();
   state.balance-=PRICE;
-  state.technician+=10;
-  state.merchant+=20;
-  state.reserve+=10;
-  state.prizeBank+=60;
+  state.technician+=100;
+  state.merchant+=200;
+  state.reserve+=100;
+  state.prizeBank+=600;
   const prize=selectPrize(state.prizeBank);
   state.prizeBank-=prize; // reserva contabilística antes de revelar, evitando ultrapassar o cofre
   const nums=shuffle(Array.from({length:70},(_,i)=>i+1));
@@ -152,7 +165,7 @@ function buy(){
   state.cards++;
   state.ticket={id:state.cards,lucky,play,prize,winAt,revealed:[],completed:false};
   save();render();
-  status("Raspa com o dedo. Cada bilhete custa 1 €.");
+  status("Raspa com o dedo. Cada bilhete custa 10 €.");
 }
 function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
   const cell=document.createElement("div");
@@ -250,6 +263,8 @@ function revealAll(){
 }
 
 let celebrationTimeouts=[];
+function fireworkSound(){const ac=ensureAudio();if(!ac)return;const now=ac.currentTime;const buffer=ac.createBuffer(1,Math.floor(ac.sampleRate*.65),ac.sampleRate);const d=buffer.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/d.length*6);const src=ac.createBufferSource(),filter=ac.createBiquadFilter(),gain=ac.createGain();src.buffer=buffer;filter.type="lowpass";filter.frequency.setValueAtTime(1700,now);filter.frequency.exponentialRampToValueAtTime(160,now+.55);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.27,now+.025);gain.gain.exponentialRampToValueAtTime(.0001,now+.63);src.connect(filter);filter.connect(gain);gain.connect(ac.destination);src.start(now);src.stop(now+.65);}
+el("celebration-close").addEventListener("click",clearCelebration);
 function clearCelebration(){
   for(const timer of celebrationTimeouts)clearTimeout(timer);
   celebrationTimeouts=[];
@@ -289,9 +304,10 @@ function showCelebration(prizeCents){
     celebrationTimeouts.push(setTimeout(()=>{
       launchFirework(el("fireworks-left"));
       launchFirework(el("fireworks-right"));
+      fireworkSound();
     },i*850+130));
   }
-  celebrationTimeouts.push(setTimeout(clearCelebration,4*850+1150));
+  // A celebração permanece visível até o jogador tocar em Continuar.
 }
 function celebrateWinningTicket(){
   const t=state.ticket;
