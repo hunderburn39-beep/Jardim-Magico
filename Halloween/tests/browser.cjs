@@ -71,13 +71,13 @@ async function run(name,launcher){
       const s=window.__HALLOWEEN_SCENE__;
       return s?.state?.bet===1 && s?.state?.lines===1;
     });
-    // Validar em viewport móvel as cinco linhas verticais (26–30)
+    // Validar em viewport móvel as cinco linhas verticais (21–25)
     // e a apresentação gráfica dos três símbolos do mesmo tambor.
     const vertical=await page.evaluate(()=>{
       const s=window.__HALLOWEEN_SCENE__;
       for(let i=0;i<4;i++)s.changeBet();
-      const active=s.lineMarkers.slice(25).every(m=>m.t.visible);
-      s.highlight([{line:28,direction:"vertical",symbol:"witch",count:3,
+      const active=s.lineMarkers.slice(20,25).every(m=>m.t.visible);
+      s.highlight([{line:23,direction:"vertical",symbol:"witch",count:3,
         amount:6,cells:[[2,0],[2,1],[2,2]]}]);
       const winLabel=s.winLabel.text;
       return {active,winLabel,lines:s.state.lines,bet:s.state.bet};
@@ -85,12 +85,12 @@ async function run(name,launcher){
     assert.equal(vertical.active,true);
     assert.equal(vertical.lines,30);
     assert.equal(vertical.bet,20);
-    assert.match(vertical.winLabel,/VERTICAL 28/);
+    assert.match(vertical.winLabel,/VERTICAL 23/);
     fs.mkdirSync("visual-previews",{recursive:true});
     await page.screenshot({path:`visual-previews/halloween-${name}-linhas-verticais.png`});
     await page.evaluate(()=>{
       const s=window.__HALLOWEEN_SCENE__;
-      s.highlight([{line:28,direction:"vertical",symbol:"scatter",count:3,
+      s.highlight([{line:23,direction:"vertical",symbol:"scatter",count:3,
         amount:0,bonus:true,cells:[[2,0],[2,1],[2,2]]}]);
     });
     const bonusLabel=await page.evaluate(()=>window.__HALLOWEEN_SCENE__.winLabel.text);
