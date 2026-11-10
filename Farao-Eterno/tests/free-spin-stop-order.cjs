@@ -31,7 +31,7 @@ test('paragens do 1º ao 5º tambor, mesmo quando a 3ª torre cai no 4º',()=>{
   for(const free of [false,true]){
    for(const turbo of [false,true]){
     const spin=startWithTowers(towers,{free,turbo});
-    assert.deepEqual(spin.stopOrder,[0,1,2,3,4]);
+    assert.deepEqual(Array.from(spin.stopOrder),[0,1,2,3,4]);
     for(let reel=1;reel<5;reel++){
      assert.ok(spin.stopAt[reel]>spin.stopAt[reel-1],
       'Ordem violada: '+JSON.stringify({towers,free,turbo,stops:spin.stopAt}));
