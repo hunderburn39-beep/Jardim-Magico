@@ -77,7 +77,7 @@
     }
     return n;
   }
-  function evaluate(grid, bet = 1, activeLines = 10, special = [], paylines = LINES) {
+  function evaluate(grid, bet = 1, activeLines = 10, special = [], paylines = LINES, expansionMode = 'separate') {
     if(!Array.isArray(grid) || grid.length !== 5 || grid.some(col=>!Array.isArray(col)||col.length!==3||col.some(symbol=>!ALL.includes(symbol)))) throw new Error('Grelha 5x3 inválida');
     if(!Number.isFinite(bet)||bet<=0)throw new Error('Aposta inválida');
     if (!Number.isInteger(activeLines) || activeLines < 1 || activeLines > 10) throw new Error('Linhas devem ser 1–10');
@@ -87,32 +87,59 @@
     const expanders = activeSpecial.map(symbol => {
       const reelIndices = grid.map((col,i)=>col.includes(symbol)?i:-1).filter(x=>x>=0);
       const award=PAYS[symbol][reelIndices.length] || 0;
-      return {symbol, reels:reelIndices, count:reelIndices.length, award};
-    }).filter(s=>s.award>0);
+      return {symbol, reels:reelIndices, count:reelIndices.length, award,
+        amount:award * bet};
+    }).filter(s=>s.award>0).sort((a,b)=>NORMAL.indexOf(a.symbol)-NORMAL.indexOf(b.symbol));
     const lineWins=[];
-    let paylinesTotal=0;
+    let paylinesTotal=0,baseTotal=0;
+    // Em Free Spins, todos os expansivos elegíveis pagam individualmente.
+    // Nunca pagar duas vezes uma figura que já foi coberta pela sua expansão.
+    // A opção legacy conserva exatamente a matemática de jogadas antigas.
+    const separate=expansionMode==='separate' && expanders.length>0;
+    const expandedSymbols=new Set(expanders.map(x=>x.symbol));
     for(let i=0;i<activeLines;i++) {
       const rows=paylines[i];
       let best={symbol:null,count:0,payCoins:0,expanded:false};
       for(const symbol of ALL) {
+        if(separate && expandedSymbols.has(symbol))continue;
         const count=lineCandidate(grid,rows,symbol);
         const payCoins=PAYS[symbol][count]||0;
         if(payCoins > best.payCoins) best={symbol,count,payCoins,expanded:false};
       }
-      for(const candidate of expanders) {
-        if(candidate.award > best.payCoins) best={symbol:candidate.symbol,count:candidate.count,payCoins:candidate.award,expanded:true};
+      if(!separate) {
+        for(const candidate of expanders) {
+          if(candidate.award > best.payCoins) best={symbol:candidate.symbol,count:candidate.count,payCoins:candidate.award,expanded:true};
+        }
       }
       if(best.payCoins>0) {
         const amount=best.payCoins*lineStake;
+        paylinesTotal+=amount;baseTotal+=amount;
+        lineWins.push({...best,line:i,rows:[...rows],amount});
+      }
+      if(separate)for(const candidate of expanders){
+        const amount=candidate.award*lineStake;
         paylinesTotal+=amount;
-        lineWins.push({...best, line:i, rows:[...rows], amount});
+        lineWins.push({symbol:candidate.symbol,count:candidate.count,payCoins:candidate.award,
+          expanded:true,line:i,rows:[...rows],amount});
       }
     }
+    // Histórico, animações e contabilização usam esta lista (10 → J → Q →
+    // K → A → Hórus → Máscara → Anúbis → Faraó), não o valor sorteado.
+    if(separate)lineWins.sort((a,b)=>{
+      if(a.expanded!==b.expanded)return a.expanded?1:-1;
+      if(a.expanded){const diff=NORMAL.indexOf(a.symbol)-NORMAL.indexOf(b.symbol);
+        if(diff)return diff;}
+      return a.line-b.line;
+    });
+    const expansionAwards=separate?expanders.map(candidate=>({
+      symbol:candidate.symbol,count:candidate.count,reels:[...candidate.reels],
+      amount:candidate.award*bet
+    })):[];
     const scatterCount=countScatters(grid);
     const scatterMult=scatterCount>=5?200:scatterCount===4?20:scatterCount===3?2:0;
     const scatterWin=scatterMult*bet;
     const total=paylinesTotal+scatterWin;
-    return {total, paylinesTotal, scatterWin, scatterCount, trigger:scatterCount>=3, lineWins, expanders};
+    return {total, paylinesTotal, scatterWin, scatterCount, trigger:scatterCount>=3, lineWins, expanders, expansionAwards, baseTotal, expansionMode:separate?'separate':'legacy'};
   }
   function startFeature(rng = randomFloat) {
     return {left:8, played:0, total:0, symbols:[NORMAL[Math.floor(rng()*NORMAL.length)]], retriggers:0};
