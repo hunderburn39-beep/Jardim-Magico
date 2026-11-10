@@ -17,9 +17,23 @@ const base='http://127.0.0.1:8123/index.html?qa=loading-fast';
         }
         const started=Date.now();
         await page.goto(base,{waitUntil:'domcontentloaded',timeout:15000});
-        await page.waitForFunction(
-          ()=>window.__faraoGame?.ready===true,null,{timeout:5500}
-        );
+        try{
+          await page.waitForFunction(
+            ()=>window.__faraoGame?.ready===true,null,{timeout:5500}
+          );
+        }catch(error){
+          const state=await page.evaluate(()=>({
+            gameExists:!!window.__faraoGame,
+            ready:window.__faraoGame?.ready,
+            artLoaded:window.__faraoGame?.artLoaded,
+            artFailed:window.__faraoGame?.artFailed,
+            html:document.readyState,
+            scripts:[...document.scripts].map(s=>({src:s.src,loaded:!!s.src})),
+          })).catch(e=>({evaluationError:String(e)}));
+          console.error('DIAGNÓSTICO DE LOADING:',browserType.name(),blocked?'falha simulada':'normal',
+            JSON.stringify({state,errors}));
+          throw error;
+        }
         const elapsed=Date.now()-started;
         const state=await page.evaluate(()=>({
           ready:window.__faraoGame.ready,
