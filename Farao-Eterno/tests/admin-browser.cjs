@@ -26,7 +26,7 @@ const url='http://127.0.0.1:8123/index.html?qa=admin-economy';
    await page.locator('#admin-save-level').click();
    await page.locator('#admin-fund').fill('20,50');
    await page.locator('#admin-fund-add').click();
-   assert.equal(await page.evaluate(()=>window.__faraoGame.ledger.economy.prizeU/252000),5020.5);
+   assert.equal(await page.evaluate(()=>window.__faraoGame.ledger.economy.prizeU/252000),20.5);
    await page.locator('#admin-change-deposit').click();
    await page.locator('#admin-current-pin').fill('12345');
    await page.locator('#admin-new-pin').fill('24680');
@@ -56,12 +56,12 @@ const url='http://127.0.0.1:8123/index.html?qa=admin-economy';
        changedDeposit:e.pin.deposit};
    });
    assert.deepEqual(state,{deposit:25,withdrawal:10,level:95,tech:65,
-     merchant:35,prize:5020.5,changedDeposit:'24680'});
+     merchant:35,prize:20.5,changedDeposit:'24680'});
    await page.reload({waitUntil:'domcontentloaded'});
    await page.waitForFunction(()=>window.__faraoGame?.ready===true,null,{timeout:12000});
    assert.equal(await page.evaluate(()=>window.__faraoGame.ledger.economy.pin.deposit),'24680');
    assert.deepEqual(errors,[],'Sem erros de execução');
-   console.log(browserType.name()+': aba, PINs, comissões, fundo, créditos e recuperação OK');
+   console.log(browserType.name()+': aba, PINs, comissões, fundo, euros e recuperação OK');
    await context.close();
   }finally{await browser.close();}
  }
