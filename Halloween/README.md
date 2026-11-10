@@ -1,4 +1,4 @@
-# Halloween III — Clássica (V0.10, reconstrução independente)
+# Halloween III — Clássica (V0.11, reconstrução independente)
 
 Jogo browser em **Phaser 3** (formato 9:16), inspirado na interface de caça-níqueis Halloween III dos anos 2000.
 
@@ -20,7 +20,13 @@ O código Phaser suporta agora um **modo opcional de recursos originais** sem in
 - **Sem o pacote** ou com o sinalizador desativado, o jogo continua a funcionar com SVG e sons sintetizados próprios, sem pedidos a ficheiros que não existem.
 - O pacote foi concebido para **uso pessoal**. A disponibilização pública de gráficos e áudio comerciais exige autorização do respetivo titular dos direitos. As fórmulas do jogo permanecem experimentais, mesmo com a arte original.
 
-## Implementado nesta V0.10
+## Correção da frequência dos bónus V0.11
+
+Os mini-bónus de caldeirões, morangos e dados eram demasiado raros. Esta versão regista os giros pagos desde o último mini-bónus e aumenta progressivamente a probabilidade de **três caldeirões na vertical**, sem passar de 49 giros pagos sem mini-bónus. Os desenhos, a lógica dos 25+5 percursos e os cinco escalões de aposta são preservados.
+
+Esta regra de entretenimento **não existe como regra confirmada do APK**. Consulta a [análise de bónus V0.11](docs/bonus-vertical-frequente-v011.md) para os valores, a limitação das simulações e a forma de recuperar sessões anteriores.
+
+## Implementado nesta V0.11
 
 - Ecrã retro com **5 tambores × 3 linhas** de fundo claro, nome Halloween III, marcadores de linhas coloridos, indicadores de crédito/prémio/aposta e quatro acumulados virtuais.
 - Ilustrações **SVG originais** para os **10 tipos encontrados no XAPK**: abóbora Halloween, bruxa verde, WITCH, vampiro, fantasma, bruxa na lua, monstro, diabinho, MAGIC e caldeirão. Não são extraídas de ficheiros comerciais.
