@@ -465,7 +465,14 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  txt('V1.3.26',38,985,10,'#e5c68d',850,'Arial');
+  // Botão pequeno diretamente sob o painel SALDO (fim do painel y=757).
+  // Mantém distância do botão de rodar e bloqueia compras em jogadas/bónus.
+  const bonusDisabled=!this.ready||this.superseded||this.spinning||
+   !!this.feature||!!this.ledger?.pending||!!this.pendingSummary||
+   performance.now()<this.nextActionAt;
+  this.drawControl(28,R.top+R.gh*3+95,164,35,'COMPRAR BÓNUS',
+   ()=>this.openBuyBonus(),{size:12,disabled:bonusDisabled});
+  txt('V1.3.27',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
