@@ -451,7 +451,18 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  txt('V1.3.16',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.17',38,985,10,'#e5c68d',850,'Arial');
+  // Identificador real da jogada: o motor incrementa ledger.sequence ao
+  // iniciar cada giro (incluindo Free Spins) e guarda-o na sessão recuperável.
+  // Posicionado no canto inferior direito, sem caixa nem sobrepor controlos.
+  const spinNumber=Number.isSafeInteger(this.ledger?.sequence)?this.ledger.sequence:0;
+  ctx.save();
+  ctx.textAlign='right';ctx.textBaseline='middle';
+  ctx.font='800 11px Arial,sans-serif';
+  ctx.fillStyle='#f8d78c';
+  ctx.shadowColor='#000e';ctx.shadowBlur=3;ctx.shadowOffsetY=2;
+  ctx.fillText('JOGADA N.º '+String(spinNumber).padStart(6,'0'),526,985);
+  ctx.restore();
   if(!this.storageOK)txt('SESSÃO SEM GRAVAÇÃO',280,833,11,'#ffbc83',800,'Arial');
  };
  document.documentElement.dataset.faraoVisual='1.1';
