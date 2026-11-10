@@ -957,8 +957,7 @@ class Game {
      const yy=top+r*gh;
      const win=readyToGlow&&this.winCells.includes(c+'-'+r);
      // One row at a time: transformation travels from the top to the bottom.
-     const rowScan=expanding?clamp(expandProgress*3.18-r*.93,0,1):0;
-     const rowEase=rowScan*rowScan*(3-2*rowScan);
+     const rowEase=expanding?expandProgress:0;
      if(rowEase<1){cx.save();cx.globalAlpha=1-rowEase;
       this.drawIcon(reelGrid[c][r],rx,yy+bounce,cw,gh,win&&!expanding,t);cx.restore();}
      if(expanding && rowEase>0){
@@ -970,22 +969,12 @@ class Game {
       cx.strokeStyle=`rgba(111,255,226,${.20+.55*rowEase})`;
       cx.shadowColor='#62ffe1';cx.shadowBlur=9;
       cx.lineWidth=2;cx.strokeRect(rx+5,yy+7,cw-10,gh-14);
-      if(rowScan<.99){
-       const scanY=yy+gh*rowScan;
-       cx.fillStyle=`rgba(207,255,237,${.85-rowEase*.38})`;
-       cx.fillRect(rx+7,scanY-2,cw-14,4);
-      }
       cx.restore();
      }
     }
     if(expanding){
      const vertical=grad(rx,top,rx+cw,top,[[0,'#e3fff000'],[.42,'#bfffea2a'],[.50,'#8cffe599'],[.59,'#9cffdf22'],[1,'#e3fff000']]);
      cx.save();cx.globalAlpha=.8*(1-expandProgress)+.1;rect(rx+2,top+2,cw-4,gh*3-3,vertical);cx.restore();
-     if(this.reveal&&expandProgress<1){
-      const beamY=top+gh*3*expandProgress;
-      cx.save();cx.shadowColor='#8bffef';cx.shadowBlur=18;
-      rect(rx+4,beamY-5,cw-8,11,'#90fff0b8');cx.restore();
-     }
     }
    }
    cx.restore();
