@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#110a20">
+<title>Halloween III — abrir edição original no iPhone</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;width:100%;background:#0a0715;color:#fff1dc;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{overscroll-behavior:none}
+main{position:fixed;inset:0;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 50% 16%,#66371e 0,#25142d 34%,#0a0715 76%)}
+section{width:min(100%,440px);text-align:center;padding:26px 19px 24px;border:2px solid #c58c3b;border-radius:22px;background:#160e29;box-shadow:0 0 40px #0009, inset 0 1px #ffe5a155}
+h1{font-family:Georgia,serif;color:#ffd077;text-shadow:2px 4px #4c1f0c,0 0 16px #dc7a28;font-size:clamp(32px,8vw,48px);margin:0 0 6px}
+.sub{color:#edcc9b;font-size:16px;line-height:1.5}
+.steps{text-align:left;font-size:15px;line-height:1.55;margin:22px auto;max-width:330px}
+.steps p{margin:10px 0}
+button,input::file-selector-button{cursor:pointer;font-weight:800}
+input{width:100%;max-width:348px;border:2px solid #ffe09b;border-radius:12px;padding:12px;background:#322044;color:#fff9e6;font-size:14px}
+input::file-selector-button{padding:10px;border:0;border-radius:8px;background:#f4ad44;color:#201019;margin-right:12px}
+.small{color:#bfb0ca;font-size:12px;line-height:1.45;margin-top:18px}
+#notice{min-height:28px;color:#ffd079;line-height:1.45;font-size:14px;margin-top:12px}
+#gameframe{display:none;position:fixed;inset:0;width:100%;height:100%;border:0;background:#10081f}
+#toolbar{display:none;position:fixed;right:10px;bottom:max(12px,env(safe-area-inset-bottom));z-index:10;box-shadow:0 3px 12px #0009;border:1px solid #edb464;border-radius:30px;padding:9px 13px;color:#fce0a8;background:#2b1437ed;font-size:13px;font-weight:700}
+#errormenu{display:none;position:fixed;inset:0;z-index:11;padding:18px;background:#0a0616e8;align-items:center;justify-content:center}
+#errormenu>div{max-width:430px;width:100%;padding:26px 20px;border:1px solid #dca154;border-radius:18px;background:#1c122b;text-align:center}
+#errormenu button{border:0;border-radius:12px;padding:12px 17px;background:#efb45f;color:#1b1020}
+</style>
+</head>
+<body>
+<main id="picker">
+  <section>
+    <h1>Halloween III</h1>
+    <div class="sub">Jogar no iPhone com os símbolos originais e rebordo 3D</div>
+    <div class="steps">
+      <p><strong>1.</strong> Descarrega o ficheiro HTML pessoal que te enviei no ChatGPT e guarda-o na app Ficheiros.</p>
+      <p><strong>2.</strong> Toca em «Escolher ficheiro» e seleciona esse HTML na pasta Descargas.</p>
+      <p><strong>3.</strong> O jogo abre aqui no Safari, sem instalar aplicações nem enviar as imagens para a Internet.</p>
+    </div>
+    <input id="file" type="file" accept=".html,text/html" aria-label="Escolher o ficheiro HTML do Halloween">
+    <p id="notice" aria-live="polite">Seleciona o HTML pessoal do Halloween III.</p>
+    <p class="small">As imagens comerciais permanecem no teu ficheiro local. Esta página não as publica nem as envia a servidores. Para melhor compatibilidade, abre esta página no Safari.</p>
+  </section>
+</main>
+<iframe id="gameframe" title="Halloween III — edição original" allow="autoplay;fullscreen"></iframe>
+<button type="button" id="toolbar" aria-label="Voltar à seleção de ficheiro">↩ Trocar ficheiro</button>
+<div id="errormenu" role="alert"><div><strong>Não foi possível iniciar o jogo.</strong><p id="errorbody"></p><button type="button" id="again">Escolher outro ficheiro</button></div></div>
+<script>
+(function(){
+ "use strict";
+ const picker=document.getElementById("picker");
+ const file=document.getElementById("file");
+ const frame=document.getElementById("gameframe");
+ const notice=document.getElementById("notice");
+ const toolbar=document.getElementById("toolbar");
+ const error=document.getElementById("errormenu");
+ const errorbody=document.getElementById("errorbody");
+ function reset(){
+   frame.style.display="none";
+   frame.removeAttribute("srcdoc");
+   toolbar.style.display="none";
+   error.style.display="none";
+   picker.style.display="grid";
+   file.value="";
+   notice.textContent="Seleciona o HTML pessoal do Halloween III.";
+ }
+ function showError(message){
+   errorbody.textContent=message;
+   error.style.display="flex";
+   picker.style.display="none";
+   frame.style.display="none";
+   toolbar.style.display="none";
+ }
+ toolbar.addEventListener("click",reset);
+ document.getElementById("again").addEventListener("click",reset);
+ file.addEventListener("change",async function(){
+   const picked=file.files&&file.files[0];
+   if(!picked)return;
+   notice.textContent="A verificar o ficheiro…";
+   if(picked.size>28000000){notice.textContent="Ficheiro demasiado grande. Seleciona o HTML do Halloween.";return;}
+   if(!/\.html?$/i.test(picked.name)){notice.textContent="Escolhe o ficheiro .html, não o .zip.";return;}
+   try{
+     const html=await picked.text();
+     if(!html.includes("HALLOWEEN_ASSET_DATA") || !html.includes("new Phaser.Game") || !html.includes("sprites/pumpkin.webp")){
+       notice.textContent="Este não é o HTML pessoal do Halloween com imagens originais. Escolhe o ficheiro certo.";
+       return;
+     }
+     notice.textContent="A abrir as imagens originais…";
+     frame.onload=function(){
+       window.setTimeout(function(){
+         try{
+           const doc=frame.contentDocument;
+           const canvas=doc&&doc.querySelector("#game canvas");
+           const msg=doc&&doc.getElementById("status");
+           if(!canvas && msg && msg.textContent)showError(msg.textContent);
+           else if(!canvas)showError("O jogo não desenhou os tambores. Confirma que selecionaste o HTML completo do Halloween e experimenta abrir a página diretamente no Safari.");
+         }catch(e){/* Safari pode isolar o iframe; não bloquear a utilização. */}
+       },1800);
+     };
+     // srcdoc executa o HTML do utilizador no contexto da página já aberta no Safari.
+     // Nenhum recurso é enviado ao servidor e o pacote comercial não fica no repositório.
+     frame.srcdoc=html;
+     frame.style.display="block";
+     picker.style.display="none";
+     toolbar.style.display="block";
+   }catch(err){
+     notice.textContent="Erro ao ler o ficheiro. Descarrega novamente o HTML e tenta outra vez.";
+   }
+ });
+})();
+</script>
+</body>
+</html>
