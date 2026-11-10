@@ -262,6 +262,7 @@ function launchFirework(container){
   const burst=document.createElement("div");
   burst.className="firework-core";
   container.append(burst);
+  const spawned=[burst];
   const count=24;
   for(let i=0;i<count;i++){
     const angle=(2*Math.PI*i/count)+(Math.random()-.5)*.16;
@@ -272,8 +273,9 @@ function launchFirework(container){
     particle.style.setProperty("--y",(Math.sin(angle)*radius).toFixed(2)+"px");
     particle.style.animationDelay=(Math.random()*85)+"ms";
     container.append(particle);
+    spawned.push(particle);
   }
-  celebrationTimeouts.push(setTimeout(()=>{burst.remove();container.replaceChildren()},1170));
+  celebrationTimeouts.push(setTimeout(()=>{for(const piece of spawned)piece.remove()},1170));
 }
 function showCelebration(prizeCents){
   if(!Number.isFinite(prizeCents)||prizeCents<=0)return;
