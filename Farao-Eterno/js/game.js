@@ -1090,9 +1090,9 @@ class Game {
    const scale=Math.min(maxSide/img.naturalWidth,maxSide/img.naturalHeight);
    const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
    if(sym==='TOMB'){
-    // O renderizador de reserva segue a mesma pulsação de 8% e
+    // O renderizador de reserva segue a mesma pulsação de 13% e
     // iluminação dourada da pirâmide, sem placa de fundo.
-    const wave=.5+.5*Math.sin(t*.0035),pulse=1+.08*wave;
+    const wave=.5+.5*Math.sin(t*.0035),pulse=1+.13*wave;
     const pw=iw*pulse,ph=ih*pulse;
     cx.save();cx.filter='none';
     cx.shadowColor='rgba(255,198,68,'+(.56+.32*wave)+')';
