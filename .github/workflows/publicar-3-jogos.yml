@@ -206,3 +206,23 @@ jobs:
           done
           echo "::error::O site Halloween continua indisponível. Verificar Settings > Pages > Build and deployment > Source = GitHub Actions, e erros do deploy-pages."
           exit 1
+
+      - name: Confirmar Raspadinha 100X online
+        shell: bash
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          url="${SITE_URL%/}/Raspadinha-100X/index3.html"
+          for tentativa in {1..12}; do
+            if curl -fLsS --max-time 20 "$url?sha=${GITHUB_SHA}" -o /tmp/raspadinha-publicada.html \
+               && grep -q 'const PRICE=100' /tmp/raspadinha-publicada.html \
+               && grep -q 'startScratchSound' /tmp/raspadinha-publicada.html; then
+              echo "Raspadinha 1 euro, 100x e som acessivel online: HTTP 200"
+              exit 0
+            fi
+            echo "Raspadinha: tentativa ${tentativa}/12."
+            sleep 10
+          done
+          echo "::error::Raspadinha indisponivel ou versao desatualizada no GitHub Pages."
+          exit 1
