@@ -10,6 +10,10 @@
   const NORMAL = ['10','J','Q','K','A','HORUS','MASK','ANUBIS','KING'];
   const ALL = [...NORMAL, 'TOMB'];
   const WEIGHTS = { '10':18,'J':17,'Q':16,'K':15,'A':14,'HORUS':8,'MASK':7,'ANUBIS':5,'KING':3,'TOMB':3.85 };
+  // Nas Free Spins, um peso Scatter moderadamente maior permite mais
+  // retriggers reais e situações de 2 torres com suspense. Nunca altera
+  // a distribuição do jogo base nem força o resultado do quinto tambor.
+  const FREE_WEIGHTS = Object.freeze({...WEIGHTS,TOMB:6.5});
   const PAYS = {
     '10':{3:5,4:20,5:80}, J:{3:5,4:20,5:80}, Q:{3:5,4:20,5:80},
     K:{3:5,4:30,5:120}, A:{3:5,4:30,5:120},
@@ -153,5 +157,5 @@
     return feature;
   }
   const upperLimit = (bet) => bet*5000;
-  return { NORMAL, ALL, WEIGHTS, PAYS, LINES, LEGACY_LINES, PAYLINES_VERSION, randomFloat, pickWeighted, makeGrid, countScatters, lineCandidate, evaluate, startFeature, retrigger, upperLimit };
+  return { NORMAL, ALL, WEIGHTS, FREE_WEIGHTS, PAYS, LINES, LEGACY_LINES, PAYLINES_VERSION, randomFloat, pickWeighted, makeGrid, countScatters, lineCandidate, evaluate, startFeature, retrigger, upperLimit };
 });
