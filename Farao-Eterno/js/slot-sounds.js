@@ -288,6 +288,16 @@
     }catch(_){wildPaam(count);}
   };
 
+  // Alerta curto de sequência vencedora confirmada enquanto os
+  // tambores param. Identidade diferente do click e do gong do Wild.
+  // Um só toque por jogada; sem sirenes nem coros.
+  audio.sequenceAlert=function(){
+    if(!ready())return;
+    note(392,452,.16,.047,0,'triangle');
+    note(523.25,596,.20,.055,.09,'sine');
+    note(659.25,718,.26,.040,.17,'sine');
+  };
+
   audio.paylineChime=function(index){
     const tones=[392,440,493.88,523.25,587.33],f=tones[index%tones.length];
     note(f,f*.90,.25,.013);
@@ -310,5 +320,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.4.1',original:true,realReelStopSample:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.4.2',original:true,realReelStopSample:true,sequenceAlert:true,dynamicReelSpeed:true};
 })();
