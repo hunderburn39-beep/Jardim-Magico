@@ -950,7 +950,8 @@ class Game {
   }
 
   drawActivePayline(t,left,top,cw,gh,interval){
-   if(this.spinning || !this.lastResult?.lineWins?.length || this.featureIntro&&t<this.featureIntro.end)return;
+   if(this.spinning || !this.lastResult?.lineWins?.length ||
+      this.featureIntro&&t>=this.featureIntro.start&&t<this.featureIntro.end)return;
    const focus=this.sequenceFocusAt(t);
    if(this.reveal&&t<this.reveal.end&&!focus)return;
    // Linha azul completa do tambor 1 ao 5, mesmo se apenas 2/3/4 peças pagarem.
@@ -1134,7 +1135,8 @@ class Game {
  }
 
  overlay(t){
-  if(t>this.messageUntil || this.featureIntro&&t>=this.featureIntro.start&&t<=this.featureIntro.end)return;
+  if(t>this.messageUntil || this.sequenceFocusAt?.(t) ||
+     this.featureIntro&&t>=this.featureIntro.start&&t<=this.featureIntro.end)return;
   const left=clamp((this.messageUntil-t)/270,0,1);
   const isExpansion=this.reveal&&t<this.reveal.end;
   const y=isExpansion?673:380,h=isExpansion?52:112;
