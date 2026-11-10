@@ -14,6 +14,13 @@ const start=`<svg xmlns="http://www.w3.org/2000/svg" width="312" height="348" vi
 <linearGradient id="plaque" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#512c57"/><stop offset=".55" stop-color="#30192f"/><stop offset="1" stop-color="#1a1023"/></linearGradient>
 <filter id="depth" x="-42%" y="-38%" width="185%" height="185%"><feDropShadow dx="1.5" dy="5" stdDeviation="3" flood-color="#0e0920" flood-opacity=".85"/><feDropShadow dx="-.8" dy="-1.2" stdDeviation=".8" flood-color="#f9dfa4" flood-opacity=".35"/></filter>
 <filter id="glimmer" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="2.3"/></filter>
+<filter id="volumeSide" x="-26%" y="-24%" width="152%" height="158%" color-interpolation-filters="sRGB">
+  <feColorMatrix type="matrix" values="0 0 0 0 .09  0 0 0 0 .04  0 0 0 0 .15  0 0 0 1 0"/>
+</filter>
+<linearGradient id="metalEdge" x1="0" y1="0" x2=".9" y2="1">
+  <stop stop-color="#fff6c8"/><stop offset=".22" stop-color="#efc96e"/>
+  <stop offset=".55" stop-color="#a46a39"/><stop offset=".8" stop-color="#ffe6a1"/><stop offset="1" stop-color="#6a3c30"/>
+</linearGradient>
 </defs>`;
 const end=`</svg>`;
 const pics={
@@ -51,15 +58,27 @@ for(const [id,markup] of Object.entries(pics)){
   const aura=glow[id];
   const base=start.replaceAll("AURA",aura);
   const sparkle=`<ellipse cx="77" cy="94" rx="75" ry="74" fill="url(#aura)"/>
-    <ellipse cx="80" cy="143" rx="47" ry="7" fill="#0e1024" opacity=".4" filter="url(#glimmer)"/>
-    <g fill="#ffedb7" opacity=".75"><circle cx="27" cy="61" r="1.8"/><circle cx="131" cy="93" r="1.7"/><circle cx="124" cy="22" r="1.6"/></g>`;
-  const label=`<g><rect x="18" y="149" width="120" height="23" rx="8" fill="#100d23" opacity=".55"/>
-    <rect x="21" y="151" width="114" height="20" rx="7" fill="url(#plaque)" stroke="#f1bd60" stroke-width="1.3"/>
-    <path d="M28 154h100" stroke="#fff1b0" stroke-opacity=".55" stroke-width="1"/>
-    <text x="78" y="165" stroke="#25182e" stroke-width=".6" fill="#ffe5a0" text-anchor="middle"
-      font-family="Georgia,serif" font-size="10" font-weight="900" letter-spacing=".45">${names[id]}</text></g>`;
-  art[id]=base+sparkle+`<g filter="url(#depth)" stroke="#302331" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round">`+
-    markup+`</g><g stroke-linejoin="round" stroke-linecap="round">`+accents[id]+`</g>`+label+end;
+    <ellipse cx="81" cy="148" rx="52" ry="9" fill="#0b071b" opacity=".43" filter="url(#glimmer)"/>
+    <ellipse cx="78" cy="146" rx="42" ry="3" fill="#fff4d7" opacity=".16"/>
+    <g fill="#fff1bf" opacity=".85"><circle cx="27" cy="61" r="2.1"/><circle cx="131" cy="93" r="1.7"/><circle cx="124" cy="22" r="1.6"/></g>`;
+  const label=`<g filter="url(#depth)">
+    <rect x="18" y="154" width="120" height="18" rx="7" fill="#130c21" stroke="#392237" stroke-width="1.5"/>
+    <rect x="18" y="148" width="120" height="20" rx="7" fill="url(#metalEdge)" stroke="#4d2631" stroke-width="1.8"/>
+    <rect x="22" y="151" width="112" height="13" rx="5" fill="url(#plaque)" stroke="#ffe7a1" stroke-opacity=".78" stroke-width=".9"/>
+    <path d="M28 152h100" stroke="#fff3cd" stroke-opacity=".85" stroke-width="1"/>
+    <text x="78" y="161.8" stroke="#24111b" stroke-width="1.2" paint-order="stroke fill"
+      fill="#ffedbd" text-anchor="middle" font-family="Georgia,serif"
+      font-size="9.8" font-weight="900" letter-spacing=".5">${names[id]}</text>
+    </g>`;
+  // Duas camadas deslocadas formam a espessura visível da figura;
+  // a face conserva as cores originais e recebe reflexos desenhados à mão.
+  art[id]=base+sparkle+
+    `<g transform="translate(0 8)" filter="url(#volumeSide)" stroke="#1d0e2d" stroke-width="3" stroke-linejoin="round">`+markup+`</g>`+
+    `<g transform="translate(0 4)" filter="url(#volumeSide)" stroke="#27142e" stroke-width="2.5" stroke-linejoin="round">`+markup+`</g>`+
+    `<g filter="url(#depth)" stroke="#302331" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round">`+
+    markup+`</g><g stroke-linejoin="round" stroke-linecap="round">`+accents[id]+`</g>`+
+    `<path d="M32 34l5-9m79 4 4-7M21 121l-4 8" fill="none" stroke="#fff8d8" stroke-width="2" opacity=".45"/>`+
+    label+end;
 }
 root.HalloweenArt=Object.freeze(art);
 })(typeof globalThis!=="undefined"?globalThis:this);
