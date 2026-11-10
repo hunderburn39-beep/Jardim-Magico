@@ -423,8 +423,15 @@ class Game {
    this.winCount={start:finishedAt+75,duration:cursor-finishedAt,amount:prize,stages:counted};
    this.nextActionAt=Math.max(this.nextActionAt,cursor+260);
   }else{
-   this.reveal=null;
-   this.winCount={start:finishedAt+80,duration:this.turbo?450:820,amount:prize};
+   // Conservar o movimento aprovado quando só uma figura é expansiva.
+   const reels=item.free?Object.keys(this.expanded).map(Number).sort((a,b)=>a-b):[];
+   const animationEnd=reels.length?360+reels.length*(this.turbo?140:230)+300:0;
+   for(let k=0;k<reels.length;k++)this.emitBurst(83+reels[k]*101,444,16,'#83ffef',
+    finishedAt+(this.turbo?190:360)+k*(this.turbo?140:230));
+   this.reveal=reels.length?{start:finishedAt,reels,preDelay:this.turbo?190:360,
+    perReel:this.turbo?140:230,end:finishedAt+animationEnd}:null;
+   this.winCount={start:finishedAt+(this.reveal?animationEnd-280:80),
+    duration:this.turbo?450:820,amount:prize};
    this.nextActionAt=Math.max(this.nextActionAt,this.winCount.start+this.winCount.duration+250);
   }
   if(item.free){
