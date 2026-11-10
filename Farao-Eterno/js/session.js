@@ -20,7 +20,7 @@
     if(!s.stats||!['paid','free','stakeU','winU','features'].every(k=>integer(s.stats[k])))throw Error('Estatísticas inválidas');
     if(s.feature&&s.feature.totalU>units(E.upperLimit(stake(s))))throw Error('Bónus inválido');
     if(s.pending){const p=s.pending;
-      if(!gridOK(p.grid)||(p.paylinesVersion!==undefined&&p.paylinesVersion!==2)||p.id!==s.sequence||Math.abs(p.bet-stake(s))>1e-8||p.lines!==s.lines||typeof p.free!=='boolean'||(p.free&&!s.feature)||(!p.free&&s.feature)||!(p.nextSymbol===null||E.NORMAL.includes(p.nextSymbol)))throw Error('Jogada pendente inválida');
+      if(!gridOK(p.grid)||(p.paylinesVersion!==undefined&&p.paylinesVersion!==2)||(p.expansionPayVersion!==undefined&&p.expansionPayVersion!==2)||p.id!==s.sequence||Math.abs(p.bet-stake(s))>1e-8||p.lines!==s.lines||typeof p.free!=='boolean'||(p.free&&!s.feature)||(!p.free&&s.feature)||!(p.nextSymbol===null||E.NORMAL.includes(p.nextSymbol)))throw Error('Jogada pendente inválida');
       const triggered=E.countScatters(p.grid)>=3,choices=p.free?E.NORMAL.filter(x=>!s.feature.symbols.includes(x)):E.NORMAL;
       if(triggered&&choices.length&&!choices.includes(p.nextSymbol)||!triggered&&p.nextSymbol!==null)throw Error('Seleção de bónus inválida');
     }
@@ -71,13 +71,14 @@
       if(choices.length)nextSymbol=choices[Math.floor(rng()*choices.length)];}
     if(free){s.feature.left--;s.feature.played++;s.stats.free++;}
     else{s.balanceU-=units(bet);s.gambles=0;s.lastBaseWinU=0;s.stats.paid++;s.stats.stakeU+=units(bet);}
-    s.pending={id:++s.sequence,grid,free,bet,lines:s.lines,nextSymbol,paylinesVersion:E.PAYLINES_VERSION};
+    s.pending={id:++s.sequence,grid,free,bet,lines:s.lines,nextSymbol,paylinesVersion:E.PAYLINES_VERSION,expansionPayVersion:2};
     return {pending:s.pending,result};
   }
   function settle(s,now=new Date().toISOString()){
     if(!s.pending)return null;validate(s);
     const p=s.pending,result=E.evaluate(p.grid,p.bet,p.lines,p.free?s.feature.symbols:[],
-      p.paylinesVersion===E.PAYLINES_VERSION?E.LINES:E.LEGACY_LINES);
+      p.paylinesVersion===E.PAYLINES_VERSION?E.LINES:E.LEGACY_LINES,
+      p.expansionPayVersion===2?'separate':'legacy');
     const limitU=units(E.upperLimit(p.bet));
     const prizeU=Math.max(0,Math.min(units(result.total),p.free?limitU-s.feature.totalU:limitU));
     s.balanceU+=prizeU;s.stats.winU+=prizeU;s.lastWinU=prizeU;s.lastBet=p.bet;s.lastWasFree=p.free;
@@ -90,7 +91,7 @@
       if(s.feature.left===0){bonusDone=clone(s.feature);s.feature=null;}
     }else if(result.trigger){s.feature={left:8,played:0,totalU:0,symbols:[p.nextSymbol],retriggers:0};s.stats.features++;}
     const outcome={id:p.id,free:p.free,result,prizeU,bonusDone,nextSymbol:p.nextSymbol,bet:p.bet};
-    s.last=clone(outcome);s.history.unshift({id:p.id,t:now,kind:p.free?'free':'spin',bet:p.free?0:p.bet,win:credits(prizeU),scatters:result.scatterCount,bonus:p.free,grid:clone(p.grid),lines:p.lines,lineWins:clone(result.lineWins),scatterWin:result.scatterWin,paylinesVersion:p.paylinesVersion??1});s.history=s.history.slice(0,100);
+    s.last=clone(outcome);s.history.unshift({id:p.id,t:now,kind:p.free?'free':'spin',bet:p.free?0:p.bet,win:credits(prizeU),scatters:result.scatterCount,bonus:p.free,grid:clone(p.grid),lines:p.lines,lineWins:clone(result.lineWins),scatterWin:result.scatterWin,paylinesVersion:p.paylinesVersion??1,expansionPayVersion:p.expansionPayVersion??1});s.history=s.history.slice(0,100);
     s.pending=null;return outcome;
   }
   function gamble(s,guess,rng=E.randomFloat,now=new Date().toISOString()){
