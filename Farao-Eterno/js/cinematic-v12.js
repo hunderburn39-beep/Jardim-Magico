@@ -266,8 +266,16 @@
       const wins = this.lastResult.lineWins || [];
       let label = '';
       let tint = '#ffe5a3';
+      const focus=this.sequenceFocusAt?.(t)||null;
       const phase=this.expansionView?.(t)?.stage;
-      if(phase){
+      if(focus){
+        const count=this.sequencePlayback?.stages?.filter(g=>g.kind!=='scatter').length||1;
+        const order=this.sequencePlayback?.stages?.slice(0,focus.index+1)
+          .filter(g=>g.kind!=='scatter').length||1;
+        label=focus.kind==='scatter'?'TORRES · '+format(focus.amount):
+          'SEQUÊNCIA '+order+' / '+count+' · '+format(focus.amount);
+        tint='#ffeab0';
+      }else if(phase){
         label='EXPANSÃO '+phase.symbol+' · ACUMULADO '+format(this.displayWinAt?.(t)??0);
         tint='#80deff';
       } else if(!(this.reveal && t<this.reveal.end) && wins.length){
@@ -286,6 +294,21 @@
         ctx.shadowColor=tint; ctx.shadowBlur=reduced ? 0 : 8;
         ctx.strokeText(label, 280, 714);
         ctx.fillStyle=tint; ctx.fillText(label, 280, 714);
+        ctx.restore();
+      }
+      // Depois da leitura descendente, a quantia da sequência surge
+      // isolada, sem caixa, e o saldo já a recebeu nessa altura.
+      if(focus && t>=focus.creditAt-140){
+        const p=clamp((t-focus.creditAt+140)/340,0,1);
+        const pop=1+.09*(1-p);
+        const y=R.top+R.gh*3-42;
+        ctx.save();ctx.translate(280,y);ctx.scale(pop,pop);
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.font='900 35px Georgia,serif';ctx.lineJoin='round';
+        ctx.lineWidth=6;ctx.strokeStyle='#20140c';
+        ctx.shadowColor='#edb750';ctx.shadowBlur=reduced?0:19;
+        ctx.strokeText(format(focus.amount),0,0);
+        ctx.fillStyle='#ffe2a2';ctx.fillText(format(focus.amount),0,0);
         ctx.restore();
       }
     }
