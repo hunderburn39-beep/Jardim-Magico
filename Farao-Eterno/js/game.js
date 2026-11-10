@@ -427,6 +427,36 @@ class Game {
   this.paused=false;this.auto=this.auto?0:20;this.notice(this.auto?'20 GIROS AUTOMÁTICOS':'AUTOJOGO DESLIGADO',1100);}
  changeBet(d){if(this.spinning||this.feature||this.superseded)return;this.ledger.betIndex=clamp(this.betIndex+d,0,bets.length-1);this.syncLedger();this.save();}
  changeLines(d){if(this.spinning||this.feature||this.superseded)return;this.ledger.lines=clamp(this.lines+d,1,10);this.syncLedger();this.save();}
+
+ openBuyBonus(){
+  if(this.superseded||!this.ready||this.spinning||this.feature||this.ledger.pending||
+     this.pendingSummary||performance.now()<this.nextActionAt)return;
+  const priceU=S.units(this.bet)*100;
+  const enough=this.ledger.balanceU>=priceU;
+  this.openModal('COMPRAR BÓNUS',`<div class="bonus-summary"><p class="eyebrow">8 FREE SPINS</p><p>Compra direta de 8 Free Spins com um símbolo expansivo inicial aleatório.</p><strong>${money(S.credits(priceU))}</strong><p>Custo = <b>100 × aposta total</b> (${money(this.bet)}). Saldo atual: ${money(this.balance)}.</p>${enough?'':'<p style="color:#b12323;font-weight:800">Créditos insuficientes para esta compra.</p>'}<div class="actions"><button class="btn" id="buy-bonus-confirm" ${enough?'':'disabled'}>Confirmar compra</button><button class="btn" id="buy-bonus-cancel">Cancelar</button></div></div>`);
+  $('buy-bonus-confirm').onclick=()=>this.confirmBuyBonus();
+  $('buy-bonus-cancel').onclick=()=>this.closeModal();
+ }
+ confirmBuyBonus(){
+  if(this.superseded||!this.ready||this.spinning||this.feature||this.ledger.pending||this.pendingSummary||
+     mod.classList.contains('hidden'))return;
+  // Duplo toque nunca pode desencadear uma segunda compra.
+  const confirm=$('buy-bonus-confirm');
+  if(!confirm||confirm.disabled)return;
+  confirm.disabled=true;
+  let purchase;
+  try{purchase=S.buyBonus(this.ledger,this.rng);}
+  catch(e){confirm.disabled=false;this.notice(e.message||'Compra não disponível',1700,'red');return;}
+  this.auto=0;this.paused=false;this.reveal=null;this.featureIntro=null;
+  this.winCount=null;this.lastResult=null;this.lastWin=0;this.lastWasFree=false;
+  this.expanded={};this.winCells=[];this.pendingSummary=null;
+  this.syncLedger();this.save();this.closeModal();
+  const t=performance.now();
+  this.audio.init();this.audio.startMusic?.();this.audio.extra();
+  this.notice('BÓNUS COMPRADO · 8 FREE SPINS',1850,'cyan');
+  this.queueIntro(purchase.symbol,t+320);
+ }
+
  closeModal(){
   mod.classList.add('hidden');mod.setAttribute('aria-hidden','true');$('touch-controls').inert=false;
   this.nextActionAt=Math.max(this.nextActionAt,performance.now()+350);this.focusBeforeModal?.focus();
@@ -519,12 +549,15 @@ class Game {
    const entry=h=>{
     const hasId=Number.isSafeInteger(h.id)&&h.id>0;
     const canOpen=hasId&&!!h.grid;
-    const kind=h.kind==='reset'?'Reposição de créditos':h.kind==='gamble'?'Carta':h.bonus?'Free Spin':'Giro';
+    const kind=h.kind==='reset'?'Reposição de créditos':h.kind==='gamble'?'Carta':h.kind==='bonus-buy'?'Compra de bónus':h.bonus?'Free Spin':'Giro';
     const number=hasId?' #'+h.id:'';
     const date=esc(new Date(h.t).toLocaleString('pt-PT'));
+    const amounts=h.kind==='bonus-buy'
+      ?'Custo <strong>'+money(h.cost||0)+'</strong> · 8 Free Spins'
+      :'Aposta '+money(h.bet||0)+' · Prémio <strong>'+money(h.win||0)+'</strong>';
     const details='<span class="farao-history-kind">'+esc(kind)+number+'</span>'+
       '<span class="farao-history-date">'+date+'</span>'+
-      '<span class="farao-history-money">Aposta '+money(h.bet||0)+' · Prémio <strong>'+money(h.win||0)+'</strong></span>';
+      '<span class="farao-history-money">'+amounts+'</span>';
     if(canOpen)return '<button type="button" class="farao-history-row" data-history-open="'+h.id+'" data-history-id="'+h.id+'" aria-label="Abrir imagens da jogada '+h.id+'">'+details+'<span class="farao-history-open">Ver jogada ›</span></button>';
     return '<div class="farao-history-row farao-history-static"'+(hasId?' data-history-id="'+h.id+'"':'')+'>'+details+(hasId?'<span class="farao-history-date">Imagens indisponíveis</span>':'')+'</div>';
    };
