@@ -25,7 +25,7 @@ class Classica extends Phaser.Scene{
        this.load.image("h-win-"+id,"./assets-original/sprites/"+id+"-win.webp");
      }else{
        const binary=Array.from(new TextEncoder().encode(svg),b=>String.fromCharCode(b)).join("");
-       this.load.svg("h-"+id,"data:image/svg+xml;base64,"+btoa(binary),{width:156,height:174});
+       this.load.svg("h-"+id,"data:image/svg+xml;base64,"+btoa(binary),{width:312,height:348});
      }
    }
    if(this.originalMode){
