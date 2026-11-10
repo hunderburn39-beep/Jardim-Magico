@@ -14,7 +14,7 @@
   const integer=n=>Number.isSafeInteger(n)&&n>=0;
   const gridOK=g=>Array.isArray(g)&&g.length===5&&g.every(c=>Array.isArray(c)&&c.length===3&&c.every(s=>E.ALL.includes(s))&&c.filter(s=>s==='TOMB').length<=1);
   const featureOK=f=>f===null||(f&&integer(f.left)&&integer(f.played)&&integer(f.retriggers)&&integer(f.totalU)&&Array.isArray(f.symbols)&&f.symbols.length>0&&f.symbols.length<=9&&new Set(f.symbols).size===f.symbols.length&&f.symbols.every(s=>E.NORMAL.includes(s)));
-  function fresh(){return {version:2,balanceU:units(300),betIndex:4,lines:10,grid:[['10','J','Q'],['HORUS','MASK','K'],['A','TOMB','10'],['ANUBIS','K','J'],['KING','A','Q']],feature:null,pending:null,sequence:0,lastWinU:0,lastBaseWinU:0,lastBet:1,gambles:0,lastWasFree:false,history:[],stats:{paid:0,free:0,stakeU:0,winU:0,features:0},settings:{sound:true,music:true,turbo:false},last:null};}
+  function fresh(){return {version:2,balanceU:units(300),betIndex:4,lines:10,grid:[['10','J','Q'],['HORUS','MASK','K'],['A','TOMB','10'],['ANUBIS','K','J'],['KING','A','Q']],feature:null,pending:null,payout:null,sequence:0,lastWinU:0,lastBaseWinU:0,lastBet:1,gambles:0,lastWasFree:false,history:[],stats:{paid:0,free:0,stakeU:0,winU:0,features:0},settings:{sound:true,music:true,turbo:false},last:null};}
   function validate(s){
     if(!s||s.version!==2||!integer(s.balanceU)||!integer(s.sequence)||!Number.isInteger(s.betIndex)||s.betIndex<0||s.betIndex>=BETS.length||!Number.isInteger(s.lines)||s.lines<1||s.lines>10||!gridOK(s.grid)||!featureOK(s.feature)||!integer(s.lastWinU)||!integer(s.lastBaseWinU)||!(Number.isFinite(s.lastBet)&&s.lastBet>0&&s.lastBet<=10)||!integer(s.gambles)||s.gambles>5||!Array.isArray(s.history)||s.history.length>100)throw Error('Sessão inválida');
     if(!s.stats||!['paid','free','stakeU','winU','features'].every(k=>integer(s.stats[k])))throw Error('Estatísticas inválidas');
@@ -23,6 +23,18 @@
       if(!gridOK(p.grid)||(p.paylinesVersion!==undefined&&p.paylinesVersion!==2)||(p.expansionPayVersion!==undefined&&p.expansionPayVersion!==2)||p.id!==s.sequence||Math.abs(p.bet-stake(s))>1e-8||p.lines!==s.lines||typeof p.free!=='boolean'||(p.free&&!s.feature)||(!p.free&&s.feature)||!(p.nextSymbol===null||E.NORMAL.includes(p.nextSymbol)))throw Error('Jogada pendente inválida');
       const triggered=E.countScatters(p.grid)>=3,choices=p.free?E.NORMAL.filter(x=>!s.feature.symbols.includes(x)):E.NORMAL;
       if(triggered&&choices.length&&!choices.includes(p.nextSymbol)||!triggered&&p.nextSymbol!==null)throw Error('Seleção de bónus inválida');
+    }
+    // Prémios de uma rodada podem aguardar revelação visual, mas nunca
+    // podem ser creditados duas vezes, mesmo após fechar o Safari.
+    if(s.payout!==undefined&&s.payout!==null){
+      const p=s.payout;
+      if(!integer(p.id)||p.id!==s.sequence||!integer(p.totalU)||
+         !integer(p.next)||!Array.isArray(p.groups)||p.groups.length<2||
+         p.groups.length>64||p.next>=p.groups.length||
+         !p.groups.every(g=>integer(g.amountU)&&g.amountU>0&&
+           ['line','expansion','scatter'].includes(g.kind))||
+         p.groups.reduce((v,g)=>v+g.amountU,0)!==p.totalU||
+         s.pending)throw Error('Liquidação progressiva inválida');
     }
     if(s.feature&&s.feature.left===0&&!s.pending)throw Error('Bónus terminado pendente');
     return s;
@@ -45,7 +57,7 @@
   // A operação é atómica e recuperável no mesmo armazenamento das jogadas.
   function buyBonus(s,rng=E.randomFloat,now=new Date().toISOString()){
     validate(s);
-    if(s.pending)throw Error('Existe uma jogada por terminar');
+    if(s.pending||s.payout)throw Error('Existe uma jogada por terminar');
     if(s.feature)throw Error('Já tens um bónus ativo');
     const bet=stake(s),costU=units(bet)*100;
     if(s.balanceU<costU)throw Error('Créditos insuficientes para comprar o bónus');
@@ -61,7 +73,7 @@
     return {costU,bet,symbol,spins:8};
   }
   function begin(s,rng=E.randomFloat){
-    validate(s);if(s.pending)throw Error('Existe uma jogada por terminar');
+    validate(s);if(s.pending||s.payout)throw Error('Existe uma jogada por terminar');
     const bet=stake(s),free=!!s.feature;
     if(!free&&s.balanceU<units(bet))throw Error('Créditos insuficientes');
     // Commit the entire outcome, including feature selection, before animation.
@@ -74,14 +86,77 @@
     s.pending={id:++s.sequence,grid,free,bet,lines:s.lines,nextSymbol,paylinesVersion:E.PAYLINES_VERSION,expansionPayVersion:2};
     return {pending:s.pending,result};
   }
-  function settle(s,now=new Date().toISOString()){
+  // Plano de sequências calculado exclusivamente a partir do resultado
+  // já sorteado. A distribuição é inteira e limitada ao prémio aprovado.
+  function sequencePayouts(result,prizeU){
+    if(prizeU<=0)return [];
+    const groups=[],separate=result.expansionMode==='separate';
+    for(const w of result.lineWins||[]){
+      if(separate&&w.expanded)continue;
+      if(w.expanded){
+        const existing=groups.find(g=>g.kind==='expansion'&&g.symbol===w.symbol);
+        if(existing){existing.raw+=w.amount;continue;}
+        const ex=result.expanders?.find(e=>e.symbol===w.symbol);
+        groups.push({kind:'expansion',symbol:w.symbol,reels:[...(ex?.reels||[])],raw:w.amount});
+      }else{
+        groups.push({kind:'line',symbol:w.symbol,line:w.line,rows:[...w.rows],
+          count:w.count,reels:Array.from({length:w.count},(_,i)=>i),raw:w.amount});
+      }
+    }
+    if(separate)for(const x of result.expansionAwards||[]){
+      groups.push({kind:'expansion',symbol:x.symbol,reels:[...x.reels],raw:x.amount});
+    }
+    if(result.scatterWin>0)groups.push({kind:'scatter',symbol:'TOMB',reels:[],raw:result.scatterWin});
+    groups.sort((a,b)=>{
+      const rank=k=>k==='scatter'?0:k==='line'?1:2;
+      const d=rank(a.kind)-rank(b.kind);if(d)return d;
+      if(a.kind==='expansion')return E.NORMAL.indexOf(a.symbol)-E.NORMAL.indexOf(b.symbol);
+      return (a.line??0)-(b.line??0);
+    });
+    const rawSum=groups.reduce((sum,g)=>sum+g.raw,0);
+    if(!groups.length||rawSum<=0)return [];
+    let credited=0;
+    return groups.map((g,i)=>{
+      const amountU=i===groups.length-1?prizeU-credited:
+        Math.max(0,Math.min(prizeU-credited,
+         Math.floor(prizeU*g.raw/rawSum)));
+      credited+=amountU;
+      const {raw,...rest}=g;return {...rest,amountU};
+    }).filter(g=>g.amountU>0);
+  }
+  function creditNext(s,id,index){
+    validate(s);
+    const payout=s.payout;
+    if(!payout||payout.id!==id||payout.next!==index)return null;
+    const amountU=payout.groups[index].amountU;
+    s.balanceU+=amountU;s.stats.winU+=amountU;
+    payout.next++;
+    if(payout.next>=payout.groups.length)s.payout=null;
+    return {amountU,remaining:s.payout?s.payout.groups.length-s.payout.next:0};
+  }
+  function finishPayout(s){
+    let added=0;
+    while(s.payout){
+      const {id,next}=s.payout;
+      const result=creditNext(s,id,next);
+      if(!result)throw Error('Crédito pendente inválido');
+      added+=result.amountU;
+    }
+    return added;
+  }
+  function settle(s,now=new Date().toISOString(),options={}){
     if(!s.pending)return null;validate(s);
     const p=s.pending,result=E.evaluate(p.grid,p.bet,p.lines,p.free?s.feature.symbols:[],
       p.paylinesVersion===E.PAYLINES_VERSION?E.LINES:E.LEGACY_LINES,
       p.expansionPayVersion===2?'separate':'legacy');
     const limitU=units(E.upperLimit(p.bet));
     const prizeU=Math.max(0,Math.min(units(result.total),p.free?limitU-s.feature.totalU:limitU));
-    s.balanceU+=prizeU;s.stats.winU+=prizeU;s.lastWinU=prizeU;s.lastBet=p.bet;s.lastWasFree=p.free;
+    const groups=p.free&&options?.defer?sequencePayouts(result,prizeU):[];
+    // Pelo menos duas sequências distintas para a animação/pagamento gradual.
+    const progressive=groups.filter(g=>g.kind!=='scatter').length>=2;
+    if(progressive)s.payout={id:p.id,totalU:prizeU,next:0,groups};
+    else{s.balanceU+=prizeU;s.stats.winU+=prizeU;}
+    s.lastWinU=prizeU;s.lastBet=p.bet;s.lastWasFree=p.free;
     s.lastBaseWinU=!p.free&&!result.trigger?prizeU:0;s.grid=clone(p.grid);
     let bonusDone=null;
     if(p.free){
@@ -92,11 +167,11 @@
     }else if(result.trigger){s.feature={left:8,played:0,totalU:0,symbols:[p.nextSymbol],retriggers:0};s.stats.features++;}
     const outcome={id:p.id,free:p.free,result,prizeU,bonusDone,nextSymbol:p.nextSymbol,bet:p.bet};
     s.last=clone(outcome);s.history.unshift({id:p.id,t:now,kind:p.free?'free':'spin',bet:p.free?0:p.bet,win:credits(prizeU),scatters:result.scatterCount,bonus:p.free,grid:clone(p.grid),lines:p.lines,lineWins:clone(result.lineWins),scatterWin:result.scatterWin,paylinesVersion:p.paylinesVersion??1,expansionPayVersion:p.expansionPayVersion??1});s.history=s.history.slice(0,100);
-    s.pending=null;return outcome;
+    s.pending=null;return {...outcome,payout:s.payout?clone(s.payout):null};
   }
   function gamble(s,guess,rng=E.randomFloat,now=new Date().toISOString()){
     validate(s);if(!['red','black','hearts','diamonds','clubs','spades'].includes(guess))throw Error('Escolha inválida');
-    if(s.pending||s.feature||s.lastBaseWinU<=0||s.gambles>=5||s.balanceU<s.lastBaseWinU)throw Error('Prémio indisponível');
+    if(s.pending||s.payout||s.feature||s.lastBaseWinU<=0||s.gambles>=5||s.balanceU<s.lastBaseWinU)throw Error('Prémio indisponível');
     const card=['hearts','diamonds','clubs','spades'][Math.floor(rng()*4)],red=card==='hearts'||card==='diamonds';
     const won=guess===card||(guess==='red'&&red)||(guess==='black'&&!red),multiplier=guess==='red'||guess==='black'?2:4;
     const stakeU=s.lastBaseWinU,prizeU=won?Math.min(stakeU*multiplier,units(E.upperLimit(s.lastBet))):0;
@@ -105,9 +180,9 @@
     return {card,won,prizeU};
   }
   function reset(s,now=new Date().toISOString()){
-    validate(s);if(s.pending||s.feature)throw Error('Termina o bónus primeiro');
+    validate(s);if(s.pending||s.payout||s.feature)throw Error('Termina o bónus primeiro');
     s.balanceU=units(300);s.lastWinU=0;s.lastBaseWinU=0;s.gambles=0;s.last=null;
     s.history.unshift({t:now,kind:'reset',bet:0,win:0});s.history=s.history.slice(0,100);
   }
-  return {UNIT,BETS,units,credits,stake,fresh,validate,restore,migrate,buyBonus,begin,settle,gamble,reset,gridOK};
+  return {UNIT,BETS,units,credits,stake,fresh,validate,restore,migrate,buyBonus,begin,settle,creditNext,finishPayout,sequencePayouts,gamble,reset,gridOK};
 });
