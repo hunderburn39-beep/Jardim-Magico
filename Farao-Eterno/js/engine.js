@@ -95,7 +95,7 @@
     // Em Free Spins, todos os expansivos elegíveis pagam individualmente.
     // Nunca pagar duas vezes uma figura que já foi coberta pela sua expansão.
     // A opção legacy conserva exatamente a matemática de jogadas antigas.
-    const separate=expansionMode==='separate' && expanders.length>0;
+    const separate=expansionMode==='separate' && expanders.length>1;
     const expandedSymbols=new Set(expanders.map(x=>x.symbol));
     for(let i=0;i<activeLines;i++) {
       const rows=paylines[i];
