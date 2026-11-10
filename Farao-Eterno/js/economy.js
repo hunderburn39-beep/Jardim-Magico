@@ -99,8 +99,10 @@
      const grid=E.makeGrid(rng,weights);
      const result=E.evaluate(grid,bet,s.lines,free?s.feature.symbols:[],E.LINES,
        'separate',free?'free-anywhere':'base');
-     const awardU=Math.max(0,Math.min(U(result.total),Math.max(0,maxBonus)));
-     if(awardU<=limit){chosen=grid;break;}
+     // Nunca escolher uma grelha com uma promessa bruta acima do fundo.
+     // O teto de 5000× continua a aplicar-se à liquidação depois do sorteio.
+     const rawAwardU=U(result.total);
+     if(rawAwardU<=limit){chosen=grid;break;}
    }
    // Apenas uma grelha matematicamente válida e sem prémio pode ser usada
    // quando a amostra aleatória não encontrou outra suportada pelo cofre.
@@ -109,7 +111,7 @@
        ['A','10','J'],['Q','K','A']];
      const evaluated=E.evaluate(zero,bet,s.lines,free?s.feature.symbols:[],E.LINES,
        'separate',free?'free-anywhere':'base');
-     if(U(Math.min(evaluated.total,Math.max(0,maxBonus)))<=limit)chosen=zero;
+     if(U(evaluated.total)<=limit)chosen=zero;
    }
    if(!chosen)throw Error('Fundo de prémios insuficiente para continuar. Adiciona créditos no painel de administração.');
    // Reutilizar a transação original, preservando sorteio de novo expansivo,
