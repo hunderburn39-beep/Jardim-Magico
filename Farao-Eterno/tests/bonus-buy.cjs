@@ -22,7 +22,7 @@ test('compra de bónus custa exatamente 100x a aposta TOTAL ativa',()=>{
 });
 test('créditos insuficientes não alteram o saldo nem o histórico',()=>{
  const s=make(7,10);const before=JSON.stringify(s);
- a.throws(()=>S.buyBonus(s,()=>0),/insuficientes/i);
+ a.throws(()=>S.buyBonus(s,()=>0),/insuficiente/i);
  a.equal(JSON.stringify(s),before);
 });
 test('não permite comprar outra vez durante um bónus',()=>{
