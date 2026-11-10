@@ -210,7 +210,7 @@ class Classica extends Phaser.Scene{
    this.roundButton(520,1192,48,"AUTO",21,()=>this.toggleAuto());
    this.roundButton(634,1192,48,"SOM",21,()=>this.toggleSound());
    this.autoText=txt(this,520,1252,"",18,"#fbdeb4");
-   txt(this,66,1255,"V0.13",17,"#d6a65c",{stroke:"#160d23",strokeThickness:3}).setAlpha(.85);
+   txt(this,66,1255,"V0.14",17,"#d6a65c",{stroke:"#160d23",strokeThickness:3}).setAlpha(.85);
    this.roundButton(671,272,29,"?",33,()=>this.togglePaytable());
  }
  roundButton(x,y,r,caption,size,callback,main=false){
