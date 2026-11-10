@@ -48,6 +48,7 @@ jobs:
             node --check "$file"
           done
           node tests/wild-audio-position.cjs
+          node tests/sequence-alert.cjs
 
       - name: Testar matemática e recuperação de sessão
         run: npm test
