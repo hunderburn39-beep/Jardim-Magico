@@ -14,7 +14,7 @@
   const integer=n=>Number.isSafeInteger(n)&&n>=0;
   const gridOK=g=>Array.isArray(g)&&g.length===5&&g.every(c=>Array.isArray(c)&&c.length===3&&c.every(s=>E.ALL.includes(s))&&c.filter(s=>s==='TOMB').length<=1);
   const featureOK=f=>f===null||(f&&integer(f.left)&&integer(f.played)&&integer(f.retriggers)&&integer(f.totalU)&&Array.isArray(f.symbols)&&f.symbols.length>0&&f.symbols.length<=9&&new Set(f.symbols).size===f.symbols.length&&f.symbols.every(s=>E.NORMAL.includes(s)));
-  function fresh(){return {version:2,balanceU:units(300),betIndex:4,betMultiplier:1,lines:10,grid:[['10','J','Q'],['HORUS','MASK','K'],['A','TOMB','10'],['ANUBIS','K','J'],['KING','A','Q']],feature:null,pending:null,payout:null,sequence:0,lastWinU:0,lastBaseWinU:0,lastBet:1,gambles:0,lastWasFree:false,history:[],stats:{paid:0,free:0,stakeU:0,winU:0,features:0},settings:{sound:true,music:true,turbo:false},last:null};}
+  function fresh(){return {version:2,balanceU:0,betIndex:4,betMultiplier:1,lines:10,grid:[['10','J','Q'],['HORUS','MASK','K'],['A','TOMB','10'],['ANUBIS','K','J'],['KING','A','Q']],feature:null,pending:null,payout:null,sequence:0,lastWinU:0,lastBaseWinU:0,lastBet:1,gambles:0,lastWasFree:false,history:[],stats:{paid:0,free:0,stakeU:0,winU:0,features:0},settings:{sound:true,music:true,turbo:false},last:null};}
   function validate(s){
     if(!s||s.version!==2||!integer(s.balanceU)||!integer(s.sequence)||!Number.isInteger(s.betIndex)||s.betIndex<0||s.betIndex>=BETS.length||!(s.betMultiplier===undefined||Number.isInteger(s.betMultiplier)&&s.betMultiplier>=1&&s.betMultiplier<=5)||!Number.isFinite(stake(s))||stake(s)>10||!Number.isInteger(s.lines)||s.lines<1||s.lines>10||!gridOK(s.grid)||!featureOK(s.feature)||!integer(s.lastWinU)||!integer(s.lastBaseWinU)||!(Number.isFinite(s.lastBet)&&s.lastBet>0&&s.lastBet<=10)||!integer(s.gambles)||s.gambles>5||!Array.isArray(s.history)||s.history.length>100)throw Error('Sessão inválida');
     if(!s.stats||!['paid','free','stakeU','winU','features'].every(k=>integer(s.stats[k])))throw Error('Estatísticas inválidas');
@@ -91,7 +91,7 @@
     if(s.pending||s.payout)throw Error('Existe uma jogada por terminar');
     if(s.feature)throw Error('Já tens um bónus ativo');
     const bet=stake(s),costU=units(bet)*100;
-    if(s.balanceU<costU)throw Error('Créditos insuficientes para comprar o bónus');
+    if(s.balanceU<costU)throw Error('Saldo insuficiente para comprar o bónus');
     // Selecionar o símbolo antes de debitar créditos. Nunca criar um giro falso.
     const symbol=E.NORMAL[Math.min(E.NORMAL.length-1,Math.max(0,Math.floor(rng()*E.NORMAL.length)))];
     s.balanceU-=costU;
@@ -106,7 +106,7 @@
   function begin(s,rng=E.randomFloat){
     validate(s);if(s.pending||s.payout)throw Error('Existe uma jogada por terminar');
     const bet=stake(s),free=!!s.feature;
-    if(!free&&s.balanceU<units(bet))throw Error('Créditos insuficientes');
+    if(!free&&s.balanceU<units(bet))throw Error('Saldo insuficiente');
     // Commit the entire outcome, including feature selection, before animation.
     const grid=E.makeGrid(rng,free?E.FREE_WEIGHTS:E.WEIGHTS),
       result=E.evaluate(grid,bet,s.lines,free?s.feature.symbols:[],E.LINES,
@@ -247,7 +247,7 @@
     if(!Number.isInteger(multiplier)||multiplier<1||multiplier>5)
       throw Error('Multiplicador inválido');
     const proposed=Math.round(units(BETS[s.betIndex])*s.lines*multiplier/10)/UNIT;
-    if(proposed>10)throw Error('Aposta máxima de 10 créditos por jogada');
+    if(proposed>10)throw Error('Aposta máxima de 10 € por jogada');
     s.betMultiplier=multiplier;
     validate(s);
     return proposed;
@@ -259,11 +259,11 @@
     if(!['deposit','withdraw'].includes(operation))throw Error('Operação inválida');
     const amount=Math.round(Number(value)*100)/100;
     if(!Number.isFinite(amount)||amount<=0||amount>10000)
-      throw Error('Indica um valor entre 0,01 e 10 000 créditos');
+      throw Error('Indica um valor entre 0,01 € e 10 000 €');
     const changeU=units(amount);
     if(operation==='withdraw'&&changeU>s.balanceU)throw Error('Saldo insuficiente');
     if(operation==='deposit'&&s.balanceU+changeU>units(10000000))
-      throw Error('Limite de créditos atingido');
+      throw Error('Limite de saldo atingido');
     s.balanceU+=operation==='deposit'?changeU:-changeU;
     s.history.unshift({kind:operation,t:now,amount,bet:0,win:0});
     s.history=s.history.slice(0,100);
@@ -271,7 +271,7 @@
   }
   function reset(s,now=new Date().toISOString()){
     validate(s);if(s.pending||s.payout||s.feature)throw Error('Termina o bónus primeiro');
-    s.balanceU=units(300);s.lastWinU=0;s.lastBaseWinU=0;s.gambles=0;s.last=null;
+    s.balanceU=0;s.lastWinU=0;s.lastBaseWinU=0;s.gambles=0;s.last=null;
     s.history.unshift({t:now,kind:'reset',bet:0,win:0});s.history=s.history.slice(0,100);
   }
   return {UNIT,BETS,units,credits,stake,fresh,validate,restore,migrate,buyBonus,begin,settle,creditNext,finishPayout,sequencePayouts,setBetMultiplier,adjustCredits,gamble,reset,gridOK};
