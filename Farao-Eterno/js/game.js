@@ -669,6 +669,8 @@ class Game {
     const date=esc(new Date(h.t).toLocaleString('pt-PT'));
     const amounts=h.kind==='bonus-buy'
       ?'Custo <strong>'+money(h.cost||0)+'</strong> · 8 Free Spins'
+      :h.kind==='deposit'||h.kind==='withdraw'
+      ?'Movimento <strong>'+money(h.amount||0)+'</strong>'
       :'Aposta '+money(h.bet||0)+' · Prémio <strong>'+money(h.win||0)+'</strong>';
     const details='<span class="farao-history-kind">'+esc(kind)+number+'</span>'+
       '<span class="farao-history-date">'+date+'</span>'+
