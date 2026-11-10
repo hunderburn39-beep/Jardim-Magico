@@ -398,8 +398,8 @@
     const ready=!!focus||!this.reveal||t>=this.reveal.end-100;
     for(let r=0;r<3;r++){
      const yy=top+r*gh,win=ready&&pulseCells.has(c+'-'+r);
-     const scan=expanding?clamp(progress*3.18-r*.93,0,1):0;
-     const ease=scan*scan*(3-2*scan);
+     // Todas as três posições mudam juntas, sem leitura de cima para baixo.
+     const ease=expanding?progress:0;
      if(ease<1){
       ctx.save();ctx.globalAlpha=1-ease;
       tileAt(grid[c][r],rx,yy+bounce,t,win&&!expanding);ctx.restore();
@@ -411,15 +411,14 @@
       tileAt(phaseExpanded[c].symbol,rx,yy,t,win);ctx.restore();
       ctx.save();ctx.shadowColor='#68ffe5';ctx.shadowBlur=10;ctx.strokeStyle='rgba(133,255,225,'+(.35+.55*ease)+')';ctx.lineWidth=2;
       rounded(ctx,rx+3,yy+10,cw-6,gh-20,8,null,ctx.strokeStyle,2);
-      if(scan<.99){ctx.fillStyle='rgba(203,255,237,'+(.65-ease*.35)+')';ctx.fillRect(rx+7,yy+gh*scan-1,cw-14,3);}
       ctx.restore();
      }
     }
     // Desenhar as torres por último para sobreporem os quadrados acima e abaixo.
     for(let r=0;r<3;r++){
      const yy=top+r*gh;
-     const scan=expanding?clamp(progress*3.18-r*.93,0,1):0;
-     const ease=scan*scan*(3-2*scan);
+     // Todas as três posições mudam juntas, sem leitura de cima para baixo.
+     const ease=expanding?progress:0;
      const showBase=grid[c][r]==='TOMB'&&ease<1;
      const showExpanded=expanding&&phaseExpanded[c].symbol==='TOMB'&&ease>0;
      if(showBase||showExpanded){
@@ -427,10 +426,6 @@
       this.drawIcon('TOMB',rx,yy+(gh-96)/2+(showExpanded?0:bounce),cw,96,ready&&pulseCells.has(c+'-'+r),t);
       ctx.restore();
      }
-    }
-    if(expanding&&phaseReveal&&progress<1){
-     ctx.save();ctx.shadowColor='#7afbe5';ctx.shadowBlur=16;ctx.fillStyle='#8affebad';
-     ctx.fillRect(rx+5,top+gh*3*progress-4,cw-10,8);ctx.restore();
     }
    }
    // A very short transient glow when the real reel stops.
@@ -446,22 +441,7 @@
   for(let c=0;c<5;c++)drawReelShell(c);
   this.drawReelSeparators(R.left,R.top,R.step,R.gh);
   this.drawActivePayline(t,R.left,R.top,R.cw,R.gh,R.step);
-  // Nas linhas normais, fazer a leitura dos tambores lentamente de cima
-  // para baixo, sem alterar as figuras ou o resultado sorteado.
-  if(focus?.kind==='line'&&focus.win){
-   for(let k=0;k<focus.reels.length;k++){
-    const reel=focus.reels[k],rx=R.left+reel*R.step;
-    const stamp=focus.start+focus.preDelay+k*focus.perReel;
-    const p=clamp((t-stamp)/focus.perReel,0,1);
-    if(p<=0||p>=1)continue;
-    const beamY=R.top+R.gh*3*p;
-    ctx.save();ctx.beginPath();ctx.rect(rx,R.top,R.cw,R.gh*3);ctx.clip();
-    ctx.shadowColor='#8dfbe7';ctx.shadowBlur=21;
-    ctx.fillStyle='#9cffe6';ctx.globalAlpha=.48;
-    ctx.fillRect(rx+5,beamY-4,R.cw-10,8);
-    ctx.restore();
-   }
-  }
+  // Mostrar os prémios pelo brilho das peças, sem qualquer linha de varrimento.
   drawTitle3D(t); // Sempre à frente da moldura e atrás dos ícones de prémio.
   ctx.save();ctx.shadowColor='#ffdd84';ctx.shadowBlur=7;
   rounded(ctx,23,R.top+R.gh*3+8,514,9,4,
@@ -519,7 +499,7 @@
     for(let i=0;i<keys.length;i++)
       this.drawMiniSymbol(keys[i],294+i*step,bonusesY+(35-size)/2,size);
   }
-  txt('V1.3.38',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.39',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
