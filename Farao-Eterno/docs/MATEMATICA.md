@@ -1,4 +1,4 @@
-# Matemática — Faraó Eterno V1.3.22
+# Matemática — Faraó Eterno V1.3.28
 
 ## Origem e limites da referência
 
@@ -42,7 +42,7 @@ Multiplicadores da aposta **por linha**, exceto os pagamentos Scatter descritos 
 | Faraó / KING | 10 | 100 | 1000 | 5000 | 3 |
 | Santuário / TOMB | 10 | 100 | 1000 | 5000 | 3,85 |
 
-As combinações normais começam no primeiro tambor, em tambores consecutivos. O santuário substitui os nove símbolos normais. Avaliam-se todos os candidatos e paga-se apenas o maior prémio por linha. Empates mantêm o primeiro candidato na ordem do motor; o valor é o mesmo.
+As combinações normais começam no primeiro tambor, em tambores consecutivos. O santuário substitui os nove símbolos normais. Sem vários expansivos elegíveis, avaliam-se todos os candidatos e paga-se apenas o maior prémio por linha. Em Free Spins com duas ou mais figuras expansivas elegíveis, cada figura expansiva paga separadamente por linha, segundo as regras seguintes. Os multiplicadores individuais não mudaram.
 
 
 > **Nota V1.3.22:** a alteração das linhas muda as combinações elegíveis e pode alterar a frequência de prémios e o RTP global. Os resultados de simulações anteriores à V1.3.22, quando referidos abaixo, não constituem uma medição da nova geometria. É necessária uma simulação específica para atualizar essas estimativas.
@@ -63,7 +63,7 @@ Um dos nove símbolos normais é sorteado uniformemente à entrada. Cada nova at
 
 Conta-se o número de **tambores distintos** que contêm cada expansivo. Se a respetiva entrada da tabela pagar, o símbolo expande nas três posições dos seus tambores. Pode pagar com intervalos e sem começar no tambor esquerdo. Santuários não substituem expansivos nesta contagem. Três cópias no mesmo tambor contam apenas uma vez. Cartas precisam de três tambores; os quatro símbolos premium, de dois.
 
-**Não há soma de pagamentos normal + expansivo numa linha.** Para cada linha ativa, o motor compara a combinação normal e cada expansão qualificada e paga apenas a maior. Isto é a regra aprovada da V0.6, preservada mesmo quando difere de outras implementações comerciais. Se coexistirem expansivos no mesmo tambor, a apresentação usa o de maior prémio; os contornos e o detalhe da linha identificam o candidato pago. Não há pagamento novo por cada quadro da animação.
+**V1.3.28 — várias figuras expansivas na mesma Free Spin.** Quando duas ou mais figuras distintas estão qualificadas para expandir, o motor atribui os respetivos prémios **a cada figura**, por cada linha ativa, e soma-os. A contagem e animação seguem a ordem `10 → J → Q → K → A → HORUS → MASK → ANUBIS → KING` e só terminam após a última figura. Uma combinação normal de símbolo não expansivo também pode pagar na mesma linha; não se duplica uma combinação normal de um símbolo já pago como expansivo. Com zero ou um expansivo elegível, conserva-se a avaliação anterior de maior prémio por linha. O limite de 5.000× do total de cada bónus continua obrigatório; os passos visuais somam exatamente o crédito efetivamente atribuído, mesmo quando o limite reduz o resultado. Cada figura em expansão pode aparecer nos mesmos tambores em momentos diferentes; a animação não cria prémios adicionais. Jogadas pendentes anteriores a esta versão são pagas pela matemática anterior.
 
 ## Tetos e precisão
 
@@ -72,6 +72,8 @@ O teto preservado da V0.6 é **5.000× por jogada base**, e **5.000× para o tot
 Um crédito = 252.000 unidades inteiras. Este fator representa exatamente todas as apostas aprovadas divididas por 1–10 linhas. O saldo guarda as frações válidas; a interface apresenta duas casas decimais. A conta não acumula erros de ponto flutuante. Grelha e escolha de bónus são guardadas com a aposta descontada, antes da animação. Liquidar remove a transação pendente, de forma idempotente.
 
 Arriscar: cor = 50% para 2×; naipe = 25% para 4×; cinco tentativas máximas. Apenas sobre o último prémio base elegível, com teto de 5.000× da aposta **original**, mesmo se a aposta seguinte for alterada. Sem teto, o retorno esperado isolado desta escolha seria 100%; o teto pode reduzi-lo. Não faz parte da simulação abaixo.
+
+> **Atenção:** a alteração de V1.3.28 muda os prémios nas Free Spins com múltiplos expansivos e, portanto, pode alterar o RTP e a volatilidade. A simulação histórica abaixo é apenas da versão anterior e **não** constitui RTP medido para V1.3.28. Não foi ainda executada aqui uma simulação de 1.000.000 de rondas para esta versão.
 
 ## Simulação reproduzível de 1.000.000 de rondas
 
