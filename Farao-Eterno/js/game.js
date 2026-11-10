@@ -582,8 +582,32 @@ class Game {
   mod.classList.remove('hidden');mod.setAttribute('aria-hidden','false');$('touch-controls').inert=true;
   $('close-modal').focus();
  }
- showHistoricSpin(id,selectedWin=null){
-  const h=this.history.find(x=>x.id===id&&x.grid);if(!h)return;
+ showBonusHistory(id){
+  const h=this.history.find(row=>row.kind==='free-bonus'&&row.id===id);
+  if(!h)return;
+  const rounds=Array.isArray(h.rounds)?h.rounds:[];
+  const rows=rounds.map((r,i)=>'<button type="button" class="btn farao-bonus-history-round" data-bonus-round="'+r.id+'">'+
+    '<span>RODADA '+(i+1)+' · JOGADA #'+r.id+'</span>'+
+    '<strong>'+money(r.win||0)+'</strong></button>').join('');
+  this.openModal('FREE SPINS #'+id,'<div class="farao-ceremony">'+
+    '<p class="farao-spins-label">TOTAL GANHO NO BÓNUS</p>'+
+    '<strong class="farao-spins-number">'+money(h.win||0)+'</strong>'+
+    '<p class="farao-bonus-rounds">'+(h.played||rounds.length)+' RODADAS · '+
+     (h.retriggers||0)+' REATIVAÇÕES</p>'+
+    '<p class="farao-note">Toca numa rodada para consultar os símbolos e prémios.</p>'+
+    '</div><div class="farao-bonus-history-rounds">'+rows+
+    '</div><button type="button" class="btn" id="back-history">VOLTAR AO HISTÓRICO</button>',true);
+  $('back-history').onclick=()=>this.openInfo('history');
+  modalContent.querySelectorAll('[data-bonus-round]').forEach(b=>b.onclick=()=>{
+    const spinId=Number(b.dataset.bonusRound);
+    if(Number.isSafeInteger(spinId))this.showHistoricSpin(spinId,null,id);
+  });
+ }
+ showHistoricSpin(id,selectedWin=null,bonusId=null){
+  const h=bonusId===null?this.history.find(x=>x.id===id&&x.grid):
+    this.history.find(x=>x.kind==='free-bonus'&&x.id===bonusId)
+      ?.rounds?.find(x=>x.id===id&&x.grid);
+  if(!h)return;
   // Jogadas antigas conservam a geometria de linhas usada quando pagaram.
   const historicLines=h.paylinesVersion===E.PAYLINES_VERSION?E.LINES:E.LEGACY_LINES;
   const wins=Array.isArray(h.lineWins)?h.lineWins:[],valid=wins.filter(w=>Number.isInteger(w.line)&&w.line>=0&&w.line<historicLines.length);
@@ -606,8 +630,8 @@ class Game {
   const board='<div style="position:relative;max-width:500px;margin:12px auto"><div style="display:grid;gap:3px">'+rows+'</div><svg viewBox="0 0 500 300" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible">'+paths+'</svg></div>';
   const choices=valid.map((w,i)=>'<button type="button" class="btn" data-history-win="'+i+'" style="margin:3px;'+(selected===i?'border-color:#fff1a5;':'')+'">'+(w.expanded?'EXP '+w.symbol+' · ':'')+'Linha '+(w.line+1)+' · '+money(w.amount||0)+'</button>').join('');
   this.openModal('JOGADA #'+id,'<p>'+new Date(h.t).toLocaleString('pt-PT')+' · Aposta '+money(h.bet)+' · Prémio '+money(h.win)+'</p>'+board+'<p>'+valid.length+' linhas vencedoras. '+(valid.length?'Escolhe o símbolo e a linha para os destacar.':'Sem linhas vencedoras nesta jogada.')+'</p><div style="text-align:center">'+choices+'</div><button class="btn" id="back-history">Voltar ao histórico</button>');
-  $('back-history').onclick=()=>this.openInfo('history');
-  modalContent.querySelectorAll('[data-history-win]').forEach(b=>b.onclick=()=>this.showHistoricSpin(id,Number(b.dataset.historyWin)));
+  $('back-history').onclick=()=>bonusId===null?this.openInfo('history'):this.showBonusHistory(bonusId);
+  modalContent.querySelectorAll('[data-history-win]').forEach(b=>b.onclick=()=>this.showHistoricSpin(id,Number(b.dataset.historyWin),bonusId));
  }
 
  showSymbolPay(symbol){
@@ -663,11 +687,14 @@ class Game {
    const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
    const entry=h=>{
     const hasId=Number.isSafeInteger(h.id)&&h.id>0;
-    const canOpen=hasId&&!!h.grid;
-    const kind=h.kind==='deposit'?'Depósito':h.kind==='withdraw'?'Levantamento':h.kind==='reset'?'Reposição de créditos':h.kind==='gamble'?'Carta':h.kind==='bonus-buy'?'Compra de bónus':h.bonus?'Free Spin':'Giro';
+    const isBonus=h.kind==='free-bonus';
+    const canOpen=hasId&&(isBonus?Array.isArray(h.rounds)&&h.rounds.length>0:!!h.grid);
+    const kind=isBonus?'Free Spins':h.kind==='deposit'?'Depósito':h.kind==='withdraw'?'Levantamento':h.kind==='reset'?'Reposição de créditos':h.kind==='gamble'?'Carta':h.kind==='bonus-buy'?'Compra de bónus':h.bonus?'Free Spin':'Giro';
     const number=hasId?' #'+h.id:'';
     const date=esc(new Date(h.t).toLocaleString('pt-PT'));
-    const amounts=h.kind==='bonus-buy'
+    const amounts=isBonus
+      ?(h.played||h.rounds?.length||0)+' rodadas · Total <strong>'+money(h.win||0)+'</strong>'
+      :h.kind==='bonus-buy'
       ?'Custo <strong>'+money(h.cost||0)+'</strong> · 8 Free Spins'
       :h.kind==='deposit'||h.kind==='withdraw'
       ?'Movimento <strong>'+money(h.amount||0)+'</strong>'
@@ -675,6 +702,7 @@ class Game {
     const details='<span class="farao-history-kind">'+esc(kind)+number+'</span>'+
       '<span class="farao-history-date">'+date+'</span>'+
       '<span class="farao-history-money">'+amounts+'</span>';
+    if(isBonus&&canOpen)return '<button type="button" class="farao-history-row" data-bonus-open="'+h.id+'" data-history-id="'+h.id+'" data-round-ids="'+h.rounds.map(r=>r.id).join(',')+'" aria-label="Consultar Free Spins do bónus '+h.id+'">'+details+'<span class="farao-history-open">Ver rodadas ›</span></button>';
     if(canOpen)return '<button type="button" class="farao-history-row" data-history-open="'+h.id+'" data-history-id="'+h.id+'" aria-label="Abrir imagens da jogada '+h.id+'">'+details+'<span class="farao-history-open">Ver jogada ›</span></button>';
     return '<div class="farao-history-row farao-history-static"'+(hasId?' data-history-id="'+h.id+'"':'')+'>'+details+(hasId?'<span class="farao-history-date">Imagens indisponíveis</span>':'')+'</div>';
    };
@@ -693,7 +721,8 @@ class Game {
     const exact=raw&&/^\d+$/.test(raw)?Number(raw):null;
     let visible=0;
     for(const row of rows){
-     const same=!raw||(Number.isSafeInteger(exact)&&exact>0&&row.dataset.historyId===String(exact));
+     const same=!raw||(Number.isSafeInteger(exact)&&exact>0&&
+       (row.dataset.historyId===String(exact)||row.dataset.roundIds?.split(',').includes(String(exact))));
      row.hidden=!same;
      if(same)visible++;
     }
@@ -709,6 +738,10 @@ class Game {
    modalContent.querySelectorAll('[data-history-open]').forEach(b=>b.onclick=()=>{
     const id=Number(b.dataset.historyOpen);
     if(Number.isSafeInteger(id)&&id>0)this.showHistoricSpin(id);
+   });
+   modalContent.querySelectorAll('[data-bonus-open]').forEach(b=>b.onclick=()=>{
+    const id=Number(b.dataset.bonusOpen);
+    if(Number.isSafeInteger(id)&&id>0)this.showBonusHistory(id);
    });
    update();
   }
