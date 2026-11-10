@@ -12,6 +12,8 @@ const url='http://127.0.0.1:8123/index.html?qa=expansion-order';
    await page.waitForFunction(()=>window.__faraoGame?.ready===true,null,{timeout:10000});
    const state=await page.evaluate(()=>{
     const g=window.__faraoGame,E=window.TombEngine,S=window.FaraoSession;
+    // Exclusivamente teste: o cofre real de novas sessões começa vazio.
+    window.FaraoEconomy.adjustFund(g.ledger,'add',5000);
     const grid=[['10','J','ANUBIS'],['KING','A','10'],['J','ANUBIS','K'],
       ['A','10','J'],['KING','K','A']];
     const symbols=['KING','ANUBIS','J','10'];
