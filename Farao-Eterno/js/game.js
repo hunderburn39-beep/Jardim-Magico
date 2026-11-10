@@ -528,8 +528,20 @@ class Game {
  autoSpin(){if(this.feature || this.auto>0)this.startSpin();}
  setAuto(){if(this.spinning){this.auto=0;this.notice('AUTOJOGO DESLIGADO',900);return;}
   this.paused=false;this.auto=this.auto?0:20;this.notice(this.auto?'20 GIROS AUTOMÁTICOS':'AUTOJOGO DESLIGADO',1100);}
- changeBet(d){if(this.spinning||this.feature||this.superseded)return;this.ledger.betIndex=clamp(this.betIndex+d,0,bets.length-1);this.syncLedger();this.save();}
- changeLines(d){if(this.spinning||this.feature||this.superseded)return;this.ledger.lines=clamp(this.lines+d,1,10);this.syncLedger();this.save();}
+ changeBet(d){if(this.spinning||this.feature||this.superseded)return;
+  this.ledger.betIndex=clamp(this.betIndex+d,0,bets.length-1);
+  const base=bets[this.ledger.betIndex]*this.ledger.lines/10;
+  this.ledger.betMultiplier=Math.min(this.ledger.betMultiplier||1,
+   Math.max(1,Math.floor(10/base)));
+  this.syncLedger();this.save();
+ }
+ changeLines(d){if(this.spinning||this.feature||this.superseded)return;
+  this.ledger.lines=clamp(this.lines+d,1,10);
+  const base=bets[this.ledger.betIndex]*this.ledger.lines/10;
+  this.ledger.betMultiplier=Math.min(this.ledger.betMultiplier||1,
+   Math.max(1,Math.floor(10/base)));
+  this.syncLedger();this.save();
+ }
 
  openBuyBonus(){
   if(this.superseded||!this.ready||this.spinning||this.feature||this.ledger.pending||
@@ -652,7 +664,7 @@ class Game {
    const entry=h=>{
     const hasId=Number.isSafeInteger(h.id)&&h.id>0;
     const canOpen=hasId&&!!h.grid;
-    const kind=h.kind==='reset'?'Reposição de créditos':h.kind==='gamble'?'Carta':h.kind==='bonus-buy'?'Compra de bónus':h.bonus?'Free Spin':'Giro';
+    const kind=h.kind==='deposit'?'Depósito':h.kind==='withdraw'?'Levantamento':h.kind==='reset'?'Reposição de créditos':h.kind==='gamble'?'Carta':h.kind==='bonus-buy'?'Compra de bónus':h.bonus?'Free Spin':'Giro';
     const number=hasId?' #'+h.id:'';
     const date=esc(new Date(h.t).toLocaleString('pt-PT'));
     const amounts=h.kind==='bonus-buy'
@@ -699,8 +711,14 @@ class Game {
    update();
   }
   if(tab==='menu'){
-   $('bet-slider').oninput=e=>{this.ledger.betIndex=Number(e.target.value);this.syncLedger();this.save();$('bet-display').textContent=money(this.bet);$('bet-total').textContent=money(this.bet);};
-   $('lines-slider').oninput=e=>{this.ledger.lines=Number(e.target.value);this.syncLedger();this.save();$('lines-display').textContent=this.lines;$('bet-display').textContent=money(this.bet);$('bet-total').textContent=money(this.bet);};
+   $('bet-slider').oninput=e=>{this.ledger.betIndex=Number(e.target.value);
+    this.ledger.betMultiplier=Math.min(this.ledger.betMultiplier||1,
+     Math.max(1,Math.floor(10/(bets[this.ledger.betIndex]*this.ledger.lines/10))));
+    this.syncLedger();this.save();$('bet-display').textContent=money(this.bet);$('bet-total').textContent=money(this.bet);};
+   $('lines-slider').oninput=e=>{this.ledger.lines=Number(e.target.value);
+    this.ledger.betMultiplier=Math.min(this.ledger.betMultiplier||1,
+     Math.max(1,Math.floor(10/(bets[this.ledger.betIndex]*this.ledger.lines/10))));
+    this.syncLedger();this.save();$('lines-display').textContent=this.lines;$('bet-display').textContent=money(this.bet);$('bet-total').textContent=money(this.bet);};
    $('auto-slider').oninput=e=>{this.autoChoice=Number(e.target.value);$('auto-display').textContent=this.autoChoice;};
    $('toggle-auto').onclick=()=>{const wasAuto=this.auto>0;this.closeModal();if(wasAuto){this.auto=0;this.notice('AUTOJOGO DESLIGADO',900);}else{this.auto=this.autoChoice||20;this.paused=false;this.notice(this.auto+' GIROS AUTOMÁTICOS',1100);}};
   }else if(tab==='settings'){
