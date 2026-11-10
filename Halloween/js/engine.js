@@ -60,13 +60,24 @@
     [0,0,1,0,0], [2,2,1,2,2], [1,0,0,0,1], [1,2,2,2,1], [0,1,1,1,0],
     [2,1,1,1,2], [1,0,1,0,1], [1,2,1,2,1], [0,1,0,1,0], [2,1,2,1,2],
     [1,1,0,1,1], [1,1,2,1,1], [0,2,0,2,0], [2,0,2,0,2], [0,2,2,2,0],
-    [2,0,0,0,2], [1,0,2,0,1], [1,2,0,2,1], [0,0,2,0,0], [2,2,0,2,2]
+    // As imagens 26–30 do APK mostram, por esta ordem, descida/subida,
+    // V central, pico central, pico no 2.º tambor e descida final.
+    // Os índices discretos 0/1/2 são ainda uma aproximação dos
+    // cruzamentos dos símbolos, não extração da matemática Dalvik.
+    [0,1,1,2,1], [0,0,1,0,0], [1,1,0,1,1], [1,0,1,1,1], [0,1,1,1,2]
   ].map(a => Object.freeze(a)));
   const VERTICAL_LINES = Object.freeze(Array.from({length:REELS},(_,col)=>
     Object.freeze(Array.from({length:ROWS},(_,row)=>Object.freeze([col,row])))));
-  // As entradas 0–24 são trajetos horizontais (um índice de linha por tambor).
-  // As entradas 25–29 são trajetos verticais (três coordenadas [tambor, linha]).
-  const LINES = Object.freeze([...HORIZONTAL_LINES,...VERTICAL_LINES]);
+  // CONFIRMADO VISUALMENTE no APK: linhas 1–20 e 26–30 são
+  // horizontais; linhas 21–25 são verticais (um tambor por linha).
+  // LNH1 + 01_linhas.webp reconstituem exatamente os 30 desenhos.
+  const FIRST_HORIZONTAL_COUNT=20;
+  const isVerticalIndex=index=>index>=20 && index<25;
+  const LINES=Object.freeze([
+    ...HORIZONTAL_LINES.slice(0,FIRST_HORIZONTAL_COUNT),
+    ...VERTICAL_LINES,
+    ...HORIZONTAL_LINES.slice(FIRST_HORIZONTAL_COUNT)
+  ]);
   // Pagamentos experimentais para 3, 4 e 5 símbolos. Não reproduzem a matemática proprietária.
   const PAY = Object.freeze({
     pumpkin: [0,0,0,2,6,16], ghost: [0,0,0,3,8,22],
@@ -167,7 +178,7 @@
     const hits = [];
     let total = 0;
     for (let lineNo = 0; lineNo < activeLines; lineNo++) {
-      const vertical=lineNo>=HORIZONTAL_LINES.length;
+      const vertical=isVerticalIndex(lineNo);
       const route=LINES[lineNo];
       const cells=vertical
         ? route
@@ -214,7 +225,7 @@
         verticalScatterColumns.push(col);
     }
     const bonusHits=verticalScatterColumns.map(col=>({
-      line:HORIZONTAL_LINES.length+col+1,count:3,symbol:"scatter",
+      line:FIRST_HORIZONTAL_COUNT+col+1,count:3,symbol:"scatter",
       amount:0,bonus:true,direction:"vertical",
       cells:VERTICAL_LINES[col].map(cell=>[...cell])
     }));
@@ -316,7 +327,8 @@
     // O gatilho da máquina comercial continua por confirmar no APK.
     // Só as linhas da esquerda para a direita podem ativar a
     // roleta por cinco abóboras; uma vertical tem apenas três peças.
-    const wheelEligible=HORIZONTAL_LINES.slice(0,Math.min(state.lines,25))
+    const wheelEligible=LINES.slice(0,state.lines)
+      .filter((_,index)=>!isVerticalIndex(index))
       .some(route=>route.every((row,col)=>grid[col][row]==="pumpkin"));
     if (wheelEligible) {
       const sectorIndex=Math.floor(validRng(rng)*WHEEL_SECTORS.length);
@@ -381,6 +393,7 @@
     return {ok:true,state,awarded:payout,sectorIndex,label:sector.label};
   }
   const api = Object.freeze({ SYMBOLS, LINES, HORIZONTAL_LINES, VERTICAL_LINES,
+    FIRST_HORIZONTAL_COUNT, isVerticalIndex,
     PAY, BET_LEVELS, PUMPKINS_FOR_BONUS,
     WHEEL_SECTORS, STRAWBERRY_CHOICES, DICE_CHOICES, createState, sanitize, setBet, setLines, pick, evaluateGrid,
     spin, choosePot, chooseStrawberry, chooseDice, resolveWheel });
