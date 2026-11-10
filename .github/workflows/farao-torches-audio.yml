@@ -1,0 +1,64 @@
+name: Faraó Eterno - publicar crepitar das tochas
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/farao-torches-audio.yml
+permissions:
+  contents: write
+jobs:
+  fire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Encontrar original autorizado na Pixabay
+        run: |
+          python3 - <<'PY'
+          import html, re, urllib.request
+          page='https://pixabay.com/sound-effects/nature-warm-camp-fire-high-quality-176816/'
+          req=urllib.request.Request(page,headers={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/125.0 Safari/537.36'})
+          with urllib.request.urlopen(req,timeout=30) as r:
+              source=r.read().decode('utf-8','replace')
+          source=html.unescape(source).replace('\\/','/').replace('\\u002F','/')
+          options=re.findall(r'https?://(?:cdn\\.)?pixabay\\.com/(?:download/audio|audio)/[^"\\s<>]+?\\.mp3(?:\\?[^"\\s<>]+)?',source)
+          options=list(dict.fromkeys(options))
+          print('URLs candidatas:',len(options))
+          if not options:
+              raise SystemExit('MP3 da Pixabay não encontrado no HTML. Não publicar arquivo diferente.')
+          preferred=[s for s in options if '176816' in s or 'warm-camp-fire' in s]
+          urls=preferred or options
+          for link in urls:
+              link=link.replace('\\u0026','&')
+              try:
+                  req=urllib.request.Request(link,headers={'User-Agent':'Mozilla/5.0','Referer':page})
+                  with urllib.request.urlopen(req,timeout=50) as r:
+                      kind=r.headers.get('content-type','')
+                      print('Tipo recebido:',kind)
+                      data=r.read()
+                  if len(data)>120000 and (data[:3]==b'ID3' or data[:2]==bytes.fromhex('fffb') or data[:2]==bytes.fromhex('fff3')):
+                      open('/tmp/torch-source.mp3','wb').write(data)
+                      print('Original obtido:',len(data),'bytes')
+                      break
+              except Exception as exc:
+                  print('URL indisponível:',type(exc).__name__)
+          else:
+              raise SystemExit('Não foi possível descarregar o original correto do som.')
+          PY
+      - name: Otimizar 45 segundos para Safari/Android
+        run: |
+          mkdir -p Farao-Eterno/assets
+          ffmpeg -hide_banner -loglevel error -y -ss 3 -i /tmp/torch-source.mp3 -t 45 -vn -ac 1 -ar 24000 -b:a 56k -af "highpass=f=70,volume=3dB" Farao-Eterno/assets/torches-fire.mp3
+          ffprobe -v error -show_entries format=duration,size -of default=noprint_wrappers=1 Farao-Eterno/assets/torches-fire.mp3
+      - name: Publicar somente o efeito sonoro no GitHub
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Farao-Eterno/assets/torches-fire.mp3
+          if git diff --cached --quiet; then
+            echo "Ficheiro já publicado"
+          else
+            git commit -m "Faraó Eterno: publicar amostra real do fogo das tochas"
+            git push
+          fi
