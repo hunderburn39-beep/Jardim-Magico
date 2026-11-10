@@ -163,19 +163,19 @@ test("Botões − e + percorrem os cinco escalões sem separar aposta e linhas",
   assert.ok(s.stake.text.includes("€"));
 });
 
-test("Cinco linhas verticais são numeradas de 26 a 30, só ativas no escalão máximo",()=>{
+test("Cinco verticais são numeradas 21–25 e já ativas com 25 linhas",()=>{
   const {scene:s}=sceneFixture().mount();
-  assert.deepEqual(Array.from(s.lineMarkers.slice(25),m=>String(m.t.text)).join(","),
-    "26,27,28,29,30");
-  assert.ok(s.lineMarkers.slice(25).every(m=>!m.t.visible));
-  s.state=s.state&&{...s.state,bet:20,lines:30};
+  assert.deepEqual(Array.from(s.lineMarkers.slice(20,25),m=>String(m.t.text)).join(","),
+    "21,22,23,24,25");
+  assert.ok(s.lineMarkers.slice(20,25).every(m=>!m.t.visible));
+  s.state=s.state&&{...s.state,bet:15,lines:25};
   s.renderState();
-  assert.ok(s.lineMarkers.slice(25).every(m=>m.t.visible));
-  s.highlight([{line:28,symbol:"witch",direction:"vertical",count:3,
+  assert.ok(s.lineMarkers.slice(20,25).every(m=>m.t.visible));
+  s.highlight([{line:23,symbol:"witch",direction:"vertical",count:3,
     amount:6,cells:[[2,0],[2,1],[2,2]]}]);
-  assert.match(s.winLabel.text,/VERTICAL 28/);
+  assert.match(s.winLabel.text,/VERTICAL 23/);
   assert.match(s.winLabel.text,/WITCH/);
-  s.highlight([{line:28,symbol:"scatter",direction:"vertical",count:3,
+  s.highlight([{line:23,symbol:"scatter",direction:"vertical",count:3,
     amount:0,bonus:true,cells:[[2,0],[2,1],[2,2]]}]);
   assert.match(s.winLabel.text,/BÓNUS VERTICAL · TAMBOR 3/);
 });
