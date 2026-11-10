@@ -438,11 +438,13 @@ class Game {
  }
  showHistoricSpin(id,selectedLine=null){
   const h=this.history.find(x=>x.id===id&&x.grid);if(!h)return;
-  const wins=Array.isArray(h.lineWins)?h.lineWins:[],valid=wins.filter(w=>Number.isInteger(w.line)&&w.line>=0&&w.line<E.LINES.length);
+  // Jogadas antigas conservam a geometria de linhas usada quando pagaram.
+  const historicLines=h.paylinesVersion===E.PAYLINES_VERSION?E.LINES:E.LEGACY_LINES;
+  const wins=Array.isArray(h.lineWins)?h.lineWins:[],valid=wins.filter(w=>Number.isInteger(w.line)&&w.line>=0&&w.line<historicLines.length);
   const selected=selectedLine===null?null:valid.find(w=>w.line===selectedLine)?.line??null;
   const cells=new Set();
   for(const w of valid)if(selected===null||selected===w.line){
-   const line=E.LINES[w.line];
+   const line=historicLines[w.line];
    if(w.expanded){for(let c=0;c<5;c++)if(h.grid[c]?.includes(w.symbol))for(let row=0;row<3;row++)cells.add(c+'-'+row);}
    else for(let c=0;c<Math.min(w.count,5);c++)cells.add(c+'-'+line[c]);
   }
@@ -451,9 +453,9 @@ class Game {
    return '<div style="aspect-ratio:1;border:2px solid '+(highlight?'#ffe18a':'#775d3c')+';background:#13202b"><img alt="Símbolo" src="'+(img?.src||'')+'" style="display:block;width:100%;height:100%;object-fit:contain"></div>';
   }).join('')+'</div>').join('');
   const paths=valid.filter(w=>selected===null||selected===w.line).map((w,i)=>{
-   const points=E.LINES[w.line].map((row,col)=>(col*100+50)+','+(row*100+50)).join(' ');
+   const points=historicLines[w.line].map((row,col)=>(col*100+50)+','+(row*100+50)).join(' ');
    const color=['#ffdc75','#6af8e5','#ff8fa2','#b9a2ff'][i%4];
-   return '<polyline points="'+points+'" fill="none" stroke="#0b1324" stroke-width="8" stroke-linejoin="round" stroke-linecap="round" opacity=".85"/><polyline points="'+points+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/><circle cx="50" cy="'+(E.LINES[w.line][0]*100+50)+'" r="17" fill="#14212b" stroke="'+color+'" stroke-width="3"/><text x="50" y="'+(E.LINES[w.line][0]*100+56)+'" font-size="18" font-weight="bold" fill="'+color+'" text-anchor="middle">'+(w.line+1)+'</text>';
+   return '<polyline points="'+points+'" fill="none" stroke="#0b1324" stroke-width="8" stroke-linejoin="round" stroke-linecap="round" opacity=".85"/><polyline points="'+points+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/><circle cx="50" cy="'+(historicLines[w.line][0]*100+50)+'" r="17" fill="#14212b" stroke="'+color+'" stroke-width="3"/><text x="50" y="'+(historicLines[w.line][0]*100+56)+'" font-size="18" font-weight="bold" fill="'+color+'" text-anchor="middle">'+(w.line+1)+'</text>';
   }).join('');
   const board='<div style="position:relative;max-width:500px;margin:12px auto"><div style="display:grid;gap:3px">'+rows+'</div><svg viewBox="0 0 500 300" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible">'+paths+'</svg></div>';
   const choices=valid.map(w=>'<button type="button" class="btn" data-history-line="'+w.line+'" style="margin:3px;'+(selected===w.line?'border-color:#fff1a5;':'')+'">Linha '+(w.line+1)+' · '+money(w.amount||0)+'</button>').join('');
