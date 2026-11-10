@@ -81,7 +81,7 @@
     }
     return n;
   }
-  function evaluate(grid, bet = 1, activeLines = 10, special = [], paylines = LINES, expansionMode = 'separate') {
+  function evaluate(grid, bet = 1, activeLines = 10, special = [], paylines = LINES, expansionMode = 'separate', towerPayMode = 'base') {
     if(!Array.isArray(grid) || grid.length !== 5 || grid.some(col=>!Array.isArray(col)||col.length!==3||col.some(symbol=>!ALL.includes(symbol)))) throw new Error('Grelha 5x3 inválida');
     if(!Number.isFinite(bet)||bet<=0)throw new Error('Aposta inválida');
     if (!Number.isInteger(activeLines) || activeLines < 1 || activeLines > 10) throw new Error('Linhas devem ser 1–10');
@@ -140,8 +140,14 @@
       amount:candidate.award*bet
     })):[];
     const scatterCount=countScatters(grid);
+    // Nas Free Spins NOVAS, as torres pagam em qualquer posição,
+    // incluindo 2 torres, segundo a tabela TOMB por aposta por linha.
+    // A quantia substitui (não acumula com) o Scatter do jogo base.
+    // O modo 'base' mantém pagamentos antigos e jogadas pendentes.
     const scatterMult=scatterCount>=5?200:scatterCount===4?20:scatterCount===3?2:0;
-    const scatterWin=scatterMult*bet;
+    const scatterWin=towerPayMode==='free-anywhere'
+      ?(PAYS.TOMB[scatterCount]||0)*lineStake
+      :scatterMult*bet;
     const total=paylinesTotal+scatterWin;
     const outcome={total, paylinesTotal, scatterWin, scatterCount, trigger:scatterCount>=3, lineWins, expanders};
     return separate?{...outcome, expansionAwards, baseTotal, expansionMode:'separate'}:outcome;
