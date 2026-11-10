@@ -539,8 +539,8 @@ class Game {
    const counter=$('history-search-count');
    const rows=[...modalContent.querySelectorAll('[data-history-id],.farao-history-static:not([data-history-id])')];
    const update=()=>{
-    const raw=search.value.trim().replace(/^(?:jogada\\s*)?#?\\s*/i,'');
-    const exact=raw&&/^\\d+$/.test(raw)?Number(raw):null;
+    const raw=search.value.trim().replace(/^(?:jogada\s*)?#?\s*/i,'');
+    const exact=raw&&/^\d+$/.test(raw)?Number(raw):null;
     let visible=0;
     for(const row of rows){
      const same=!raw||(Number.isSafeInteger(exact)&&exact>0&&row.dataset.historyId===String(exact));
