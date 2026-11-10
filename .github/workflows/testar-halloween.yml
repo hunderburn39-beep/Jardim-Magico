@@ -63,13 +63,13 @@ jobs:
           cp -a Halloween/. dist/Halloween/
           cp jardim-phaser/vendor/phaser-3.90.0.min.js dist/jardim-phaser/vendor/
           (cd dist && zip -q -r ../Halloween-V0.14.zip Halloween jardim-phaser)
-          test -s Halloween-V0.13.zip
+          test -s Halloween-V0.14.zip
 
       - name: Guardar pacote para testes
         uses: actions/upload-artifact@v4
         with:
-          name: Halloween-V0.13
-          path: Halloween-V0.13.zip
+          name: Halloween-V0.14
+          path: Halloween-V0.14.zip
           if-no-files-found: error
 
       - name: Instalar Playwright para Chromium e Safari/WebKit
@@ -89,7 +89,9 @@ jobs:
           exit 1
 
       - name: Testar interface, giro e bónus em Chromium e WebKit
-        run: node Halloween/tests/browser.cjs
+        run: |
+          node Halloween/tests/browser.cjs
+          node Halloween/tests/original-launcher.cjs
 
       - name: Guardar capturas visuais
         if: always()
