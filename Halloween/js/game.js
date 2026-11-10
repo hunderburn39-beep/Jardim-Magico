@@ -135,12 +135,14 @@ class Classica extends Phaser.Scene{
    this.winPath=this.add.graphics();
    this.winLabel=txt(this,360,299,"",21,"#ffe9a0");
    this.lineMarkers=[];
-   // 25 marcadores de percurso lateral + cinco números por baixo do
-   // tambor respetivo para as combinações verticais (26 a 30).
+   // Numeração original descodificada do LNH1:
+   // 1–20 e 26–30 laterais; 21–25 na vertical, um em cada tambor.
    for(let i=0;i<30;i++){
-     const vertical=i>=25;
-     const col=i-25;
-     const left=i<13,rank=left?i:i-13;
+     const vertical=i>=20 && i<25;
+     const col=i-20;
+     const horizontalIndex=i<20?i:i-5;
+     const left=horizontalIndex<13;
+     const rank=left?horizontalIndex:horizontalIndex-13;
      const x=vertical?X+(col+.5)*CW:left?32:688;
      const y=vertical?Y+BH+18:Y+17+rank*38;
      const palette=[0xf4c43a,0xdd4d5c,0x78bf55,0x5cc1de,0xd48edb];
