@@ -3,6 +3,12 @@
   "use strict";
   const ROWS = 3, REELS = 5, MAX_BALANCE = 1e12;
   const PUMPKINS_FOR_BONUS = 5;
+  // Modo recreativo da reconstrução: suaviza secas longas de bónus.
+  // Não é uma regra, probabilidade ou garantia extraída do APK original.
+  const BONUS_MAX_DRY_SPINS=48;
+  const verticalBonusChance=dry=>
+    dry>=BONUS_MAX_DRY_SPINS ? 1 :
+    dry>=30 ? .12 : dry>=20 ? .07 : dry>=8 ? .035 : 0;
   // Valores guardados em cêntimos fictícios, não dinheiro real.
   // Aposta total por jogada e linhas formam um escalão indivisível.
   const BET_LEVELS=Object.freeze([
@@ -86,7 +92,7 @@
     return SYMBOLS[SYMBOLS.length - 1].id;
   }
   function createState() {
-    return { balance: 1000, bet: 1, lines: 1, jackpots: [350,750,1500,3000], jackpotRemainders:[0,0,0,0], freeSpins: 0, pumpkins: 0, spins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null, pendingStrawberry: null, pendingDice: null };
+    return { balance: 1000, bet: 1, lines: 1, jackpots: [350,750,1500,3000], jackpotRemainders:[0,0,0,0], freeSpins: 0, pumpkins: 0, spins: 0, bonusDrySpins: 0, lastWin: 0, lastGrid: null, pendingPot: null, pendingWheel: null, pendingStrawberry: null, pendingDice: null };
   }
   function sanitize(s) {
     const d = createState();
@@ -107,6 +113,11 @@
       freeSpins: Number.isInteger(s.freeSpins) ? Math.max(0, Math.min(1000,s.freeSpins)) : 0,
       pumpkins: Number.isInteger(s.pumpkins) ? Math.max(0, Math.min(4,s.pumpkins)) : 0,
       spins: Number.isInteger(s.spins) ? Math.max(0,s.spins) : 0,
+      // Sessões antigas não guardavam este contador. Aproveitar um
+      // máximo de 25 giros anteriores, sem zerar saldo ou bónus ativos.
+      bonusDrySpins: Number.isInteger(s.bonusDrySpins) ?
+        Math.max(0,Math.min(BONUS_MAX_DRY_SPINS,s.bonusDrySpins)) :
+        Number.isInteger(s.spins) ? Math.max(0,Math.min(25,s.spins)) : 0,
       lastWin: Number.isFinite(s.lastWin) ? Math.max(0,Math.min(MAX_BALANCE,round(s.lastWin))) : 0,
       lastGrid: Array.isArray(s.lastGrid) && s.lastGrid.length===REELS &&
         s.lastGrid.every(col=>Array.isArray(col) && col.length===ROWS &&
@@ -224,6 +235,22 @@
         ? [...new Set(heldColumns)].filter(c=>Number.isInteger(c) && c>=0 && c<REELS).slice(0,REELS-1) : [];
     const grid = Array.from({length: REELS}, (_,col) =>
       holds.includes(col) ? [...previousGrid[col]] : Array.from({length: ROWS}, () => pick(rng)));
+    // Na reconstrução recreativa, um atraso prolongado pode gerar
+    // uma coluna com três caldeirões. Respeita os tambores presos.
+    // O sorteio é determinado antes da avaliação e guardado na grelha.
+    let boostedVertical=false;
+    const naturalVertical=grid.some(column=>column.every(id=>id==="scatter"));
+    const scattered=grid.reduce((n,col)=>n+col.filter(id=>id==="scatter").length,0);
+    const chance=verticalBonusChance(state.bonusDrySpins);
+    if(!free&&!naturalVertical&&scattered<5&&chance>0&&validRng(rng)<chance){
+      const available=Array.from({length:REELS},(_,col)=>col)
+        .filter(col=>!holds.includes(col));
+      if(available.length){
+        const chosen=available[Math.floor(validRng(rng)*available.length)];
+        grid[chosen]=["scatter","scatter","scatter"];
+        boostedVertical=true;
+      }
+    }
     const result = evaluateGrid(grid, state.bet, free, state.lines);
     if (free) state.freeSpins--;
     else {
@@ -260,6 +287,9 @@
     // É uma interpretação de teste; fórmula comercial não confirmada.
     const verticalBonus=result.verticalScatterColumns.length>0;
     const bonusEligible=verticalBonus || result.scatter>=5;
+    if(bonusEligible)state.bonusDrySpins=0;
+    else if(!free)state.bonusDrySpins=Math.min(BONUS_MAX_DRY_SPINS,state.bonusDrySpins+1);
+    result.boostedVertical=boostedVertical;
     if(bonusEligible) {
       // No APK existem rotinas distintas para caldeirões e morangos.
       // A seleção de qual bónus surge permanece experimental.
@@ -299,7 +329,7 @@
       strawberryTriggered:Boolean(state.pendingStrawberry),
       diceTriggered:Boolean(state.pendingDice),
       wheelTriggered:Boolean(state.pendingWheel), wheelEligible,
-      verticalBonus, bonusEligible };
+      verticalBonus, bonusEligible, boostedVertical };
   }
   function choosePot(input, index) {
     const state = sanitize(input);
