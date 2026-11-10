@@ -68,6 +68,7 @@
     <p class="farao-bonus-rounds">${b.played} RODADAS</p>
     <button type="button" class="btn farao-gold-btn" id="collect-bonus">CONTINUAR</button>
    </div>`,true);
+   this.audio?.fanfare?.(3);
    const acknowledged=()=>{
      this.ledger.lastSummarySeenId=this.ledger.last?.id;
      this.save();this.closeModal();
@@ -192,6 +193,7 @@
  const oldSync=g.syncLedger.bind(g);
  g.syncLedger=function(){
    oldSync();
+   if(!this._freeTurbo)this._savedTurbo=!!this.ledger.settings.turbo;
    if(this._freeTurbo)this.turbo=true;
  };
  const oldSave=g.save.bind(g);
@@ -199,6 +201,7 @@
    const active=this.turbo;
    if(this._freeTurbo)this.turbo=this._savedTurbo;
    oldSave();
+   if(!this._freeTurbo)this._savedTurbo=!!this.ledger.settings.turbo;
    this.turbo=active;
  };
  const oldStart=g.startSpin.bind(g);
@@ -220,6 +223,7 @@
      this._awaitBonusStart=false;this._freeStarted=true;
      return oldStart();
    }
+   if(manual&&this.paused){oldStart();return;}
    if(this.feature&&manual&&(this._freeStarted||this.feature.played>0)){
      this._freeTurbo=!this._freeTurbo;
      this.turbo=this._freeTurbo||this._savedTurbo;
