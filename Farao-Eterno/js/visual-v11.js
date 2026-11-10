@@ -468,10 +468,7 @@
    grad(ctx,0,R.top+R.gh*3+8,0,R.top+R.gh*3+17,
    [[0,'#ffefaf'],[.43,'#ae782c'],[1,'#452d22']]),'#ffe09a',1.5);
   ctx.restore();
-  if(this.feature?.symbols?.length){
-   txt('EXPANSIVOS',105,676,11,'#eed19b',800,'Arial');
-   for(let i=0;i<this.feature.symbols.length;i++)this.drawMiniSymbol(this.feature.symbols[i],163+i*34,659,32);
-  }
+  // Os expansivos ficam na faixa inferior, junto ao botão COMPRAR BÓNUS.
  };
  // Remove the duplicate full-width prize rectangle. Only these three meters remain.
  game.statusBar=function(t){
@@ -493,17 +490,36 @@
  };
  game.controls=function(){
   const disabled=this.spinning||!!this.feature||this.superseded;
-  const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
+  const label=this.pendingSummary?'VER TOTAL':
+    this.feature&&this._freeStarted?'TURBO':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
+  if(this.pendingSummary||this.feature&&this._freeStarted){
+    txt(this.pendingSummary?'VER TOTAL DAS FREE SPINS':
+      this._freeTurbo?'TURBO ATIVO · TOCA PARA DESLIGAR':'TOCA PARA ATIVAR TURBO',
+      280,963,12,'#ffe2a2',850,'Arial');
+  }
   // Botão pequeno diretamente sob o painel SALDO (fim do painel y=757).
   // Mantém distância do botão de rodar e bloqueia compras em jogadas/bónus.
   const bonusDisabled=!this.ready||this.superseded||this.spinning||
    !!this.feature||!!this.ledger?.pending||!!this.pendingSummary||
    performance.now()<this.nextActionAt;
-  this.drawControl(28,R.top+R.gh*3+95,164,35,'COMPRAR BÓNUS',
+  const bonusesY=R.top+R.gh*3+95;
+  this.drawControl(28,bonusesY,164,35,'COMPRAR BÓNUS',
    ()=>this.openBuyBonus(),{size:12,disabled:bonusDisabled});
-  txt('V1.3.32',38,985,10,'#e5c68d',850,'Arial');
+  if(this.feature?.symbols?.length){
+    ctx.save();ctx.shadowColor='#0009';ctx.shadowBlur=7;
+    rounded(ctx,202,bonusesY,330,35,9,
+      grad(ctx,202,bonusesY,532,bonusesY+35,[[0,'#182636'],[.52,'#192f42'],[1,'#102032']]),
+      '#d4aa65',1.5);
+    ctx.restore();
+    txt('EXPANSIVOS',248,bonusesY+18,10,'#f1d392',850,'Arial');
+    const keys=this.feature.symbols;
+    const size=keys.length>7?25:28,step=keys.length>7?25:31;
+    for(let i=0;i<keys.length;i++)
+      this.drawMiniSymbol(keys[i],294+i*step,bonusesY+(35-size)/2,size);
+  }
+  txt('V1.3.34',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
