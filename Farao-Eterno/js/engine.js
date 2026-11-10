@@ -139,7 +139,8 @@
     const scatterMult=scatterCount>=5?200:scatterCount===4?20:scatterCount===3?2:0;
     const scatterWin=scatterMult*bet;
     const total=paylinesTotal+scatterWin;
-    return {total, paylinesTotal, scatterWin, scatterCount, trigger:scatterCount>=3, lineWins, expanders, expansionAwards, baseTotal, expansionMode:separate?'separate':'legacy'};
+    const outcome={total, paylinesTotal, scatterWin, scatterCount, trigger:scatterCount>=3, lineWins, expanders};
+    return separate?{...outcome, expansionAwards, baseTotal, expansionMode:'separate'}:outcome;
   }
   function startFeature(rng = randomFloat) {
     return {left:8, played:0, total:0, symbols:[NORMAL[Math.floor(rng()*NORMAL.length)]], retriggers:0};
