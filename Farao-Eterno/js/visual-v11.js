@@ -175,16 +175,21 @@
  game.drawIcon=function(sym,x,y,w,h,win=false,t=performance.now()){
   const img=this.images[sym],size=Math.min(w-4,h-4)*(sym==='TOMB'?1.05:1);
   ctx.save();
-  // O símbolo premiado respira com um pulso de escala, sem mexer no resultado.
+  // As peças que efetivamente pagam brilham com uma aura azul-branca forte.
+  // A aura é exclusivamente aplicada às células do conjunto premiado.
   if(win&&!reducedMotion){
-   const pulse=1.025+.045*Math.sin(t*.012);
+   const pulse=1.055+.055*Math.sin(t*.012);
    ctx.translate(x+w/2,y+h/2);ctx.scale(pulse,pulse);ctx.translate(-x-w/2,-y-h/2);
   }
   if(win){
-   const alpha=.20+.14*Math.sin(t*.009);
-   ctx.fillStyle=radial(ctx,x+w/2,y+h/2,size*.62,[[0,'rgba(255,235,161,'+alpha+')'],[1,'rgba(255,211,101,0)']]);
-   ctx.beginPath();ctx.arc(x+w/2,y+h/2,size*.59,0,TAU);ctx.fill();
-   ctx.shadowColor='#f4c76b';ctx.shadowBlur=10;
+   const wave=reducedMotion?1:.75+.25*Math.sin(t*.014);
+   const alpha=.43+.22*wave;
+   ctx.save();ctx.globalCompositeOperation='screen';
+   ctx.fillStyle=radial(ctx,x+w/2,y+h/2,size*.72,
+    [[0,'rgba(225,250,255,'+alpha+')'],[.49,'rgba(62,170,255,'+(.29*wave)+')'],[1,'rgba(30,117,255,0)']]);
+   ctx.beginPath();ctx.arc(x+w/2,y+h/2,size*.70,0,TAU);ctx.fill();
+   ctx.restore();
+   ctx.shadowColor='#8ddaff';ctx.shadowBlur=26+12*wave;
   }
   if(img&&img.complete&&img.naturalWidth>0&&img.naturalHeight>0){
    const lowSymbol=['10','J','Q','K','A'].includes(sym);
@@ -247,6 +252,15 @@
    ctx.restore();
    const low=['10','J','Q','K','A'].includes(sym);
    txt(low?sym:'✦',x+w/2,y+h/2,low?30:36,color.bright);
+  }
+  if(win){
+   // Reflexo azul intenso nas bordas, sem iluminar figuras fora do prémio.
+   const flicker=reducedMotion?1:.76+.24*Math.sin(t*.014);
+   ctx.save();ctx.lineJoin='round';
+   ctx.strokeStyle='rgba(195,239,255,'+(.80+.20*flicker)+')';
+   ctx.shadowColor='#40adff';ctx.shadowBlur=reducedMotion?0:22;
+   rounded(ctx,x+4,y+8,w-8,h-16,9,null,ctx.strokeStyle,2.6);
+   ctx.restore();
   }
   ctx.restore();
  };
@@ -451,7 +465,7 @@
   const label=this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  txt('V1.3.25',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.26',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
