@@ -137,8 +137,9 @@
   line(ctx,xx+11,bot+16,xx+R.cw-11,bot+16,'#bb8f49',1.1);
  }
  function tileAt(sym,x,y,t,win){
-  // Os novos PNG já incluem os seus contornos dourados em relevo.
-  // Não desenhar quadrados, fundos ou molduras por cima.
+  // As pirâmides são desenhadas depois dos restantes símbolos,
+  // numa camada única que permite sobrepor as imagens vizinhas.
+  if(sym==='TOMB')return;
   game.drawIcon(sym,x,y,R.cw,R.gh,win,t);
  }
  game.visualV11={layout:R,tile,medallion,version:'1.1'};
@@ -177,7 +178,7 @@
   ctx.save();
   // As peças que efetivamente pagam brilham com uma aura azul-branca forte.
   // A aura é exclusivamente aplicada às células do conjunto premiado.
-  if(win&&!reducedMotion){
+  if(win&&!reducedMotion&&sym!=='TOMB'){
    const pulse=1.055+.055*Math.sin(t*.012);
    ctx.translate(x+w/2,y+h/2);ctx.scale(pulse,pulse);ctx.translate(-x-w/2,-y-h/2);
   }
@@ -200,15 +201,17 @@
     const iw=b.w*factor,ih=b.h*factor;
     ctx.drawImage(img,b.x,b.y,b.w,b.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
    }else if(sym==='TOMB'){
-    // A pirâmide já é dourada e tem transparência própria.
-    // Desenhar o ficheiro apenas uma vez, sem fundo, aura, sombra nem filtros.
-    // Exatamente mais 3% relativamente à imagem da versão anterior.
+    // Pulsação permanente e suave: 100%-108% da V1.3.43.
+    // A luz dourada segue o alfa da pirâmide; nunca cria fundo quadrado.
     const bounds=visibleBounds(img);
-    const scale=1.03*Math.min((w*1.12)/bounds.w,(h*1.42)/bounds.h);
+    const wave=.5+.5*Math.sin(t*.0035);
+    const pulse=1+.08*wave;
+    const scale=1.03*pulse*Math.min((w*1.12)/bounds.w,(h*1.42)/bounds.h);
     const iw=bounds.w*scale,ih=bounds.h*scale;
     ctx.save();
-    ctx.filter='none';
-    ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+    ctx.filter='none';ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+    ctx.shadowColor='rgba(255,198,68,'+(.56+.32*wave)+')';
+    ctx.shadowBlur=12+16*wave;
     ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,
       x+(w-iw)/2,y+(h-ih)/2,iw,ih);
     ctx.restore();
@@ -397,19 +400,7 @@
       ctx.restore();
      }
     }
-    // Desenhar as torres por último para sobreporem os quadrados acima e abaixo.
-    for(let r=0;r<3;r++){
-     const yy=top+r*gh;
-     // Todas as três posições mudam juntas, sem leitura de cima para baixo.
-     const ease=expanding?progress:0;
-     const showBase=grid[c][r]==='TOMB'&&ease<1;
-     const showExpanded=expanding&&phaseExpanded[c].symbol==='TOMB'&&ease>0;
-     if(showBase||showExpanded){
-      ctx.save();ctx.globalAlpha=showExpanded?ease:1-ease;
-      this.drawIcon('TOMB',rx,yy+(gh-96)/2+(showExpanded?0:bounce),cw,96,ready&&pulseCells.has(c+'-'+r),t);
-      ctx.restore();
-     }
-    }
+    // As pirâmides são desenhadas depois de todos os tambores.
    }
    // A very short transient glow when the real reel stops.
    const since=t-this.landings[c];
@@ -423,6 +414,39 @@
   // Fixed carved metal outside the spinning tiles. No stationary square overlays.
   for(let c=0;c<5;c++)drawReelShell(c);
   this.drawReelSeparators(R.left,R.top,R.step,R.gh);
+  // Sobreposição real: uma única camada por cima das 15 imagens.
+  // Limitar só à moldura exterior, nunca a cada casa ou tambor.
+  ctx.save();ctx.beginPath();
+  ctx.rect(R.left-2,R.top-5,4*R.step+R.cw+4,R.gh*3+10);
+  ctx.clip();
+  for(let c=0;c<5;c++){
+   const item=this.spinObject;
+   if(this.spinning&&item&&!item.stopped[c])continue;
+   const grid=item&&item.stopped[c]?item.grid:this.grid;
+   const idx=phaseReveal?phaseReveal.reels.indexOf(c):-1;
+   const stamp=phaseReveal?phaseReveal.start+phaseReveal.preDelay+idx*phaseReveal.perReel:0;
+   const raw=phaseReveal&&idx>=0?clamp((t-stamp)/phaseReveal.perReel,0,1):1;
+   const progress=raw*raw*(3-2*raw);
+   const expanding=!!(phaseExpanded[c]&&(phaseReveal?idx>=0&&progress>0:this.lastWasFree));
+   const ease=expanding?progress:0;
+   const ready=!!focus||!this.reveal||t>=this.reveal.end-100;
+   const since=this.landings[c]&&t-this.landings[c];
+   const bounce=this.landings[c]&&since>=0&&since<300
+     ?-8*Math.pow(1-since/300,2)*Math.cos(since*.033):0;
+   for(let r=0;r<3;r++){
+    const base=grid[c][r]==='TOMB';
+    const expanded=expanding&&phaseExpanded[c].symbol==='TOMB';
+    if(!base&&!expanded)continue;
+    const alpha=expanded?ease:1-ease;
+    if(alpha<=0)continue;
+    const yy=R.top+r*R.gh;
+    ctx.save();ctx.globalAlpha=alpha;
+    this.drawIcon('TOMB',R.left+c*R.step,yy+(R.gh-96)/2+
+     (expanded?0:bounce),R.cw,96,ready&&pulseCells.has(c+'-'+r),t);
+    ctx.restore();
+   }
+  }
+  ctx.restore();
   this.drawActivePayline(t,R.left,R.top,R.cw,R.gh,R.step);
   // Mostrar os prémios pelo brilho das peças, sem qualquer linha de varrimento.
   drawTitle3D(t); // Sempre à frente da moldura e atrás dos ícones de prémio.
@@ -482,7 +506,7 @@
     for(let i=0;i<keys.length;i++)
       this.drawMiniSymbol(keys[i],294+i*step,bonusesY+(35-size)/2,size);
   }
-  txt('V1.3.43',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.44',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
