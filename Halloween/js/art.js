@@ -1,4 +1,4 @@
-/* Ilustrações vetoriais originais, desenhadas para Halloween — estilo arcade clássico. */
+/* Halloween V0.14 — restaurar e polir os DESENHOS originais da V0.12, sem substituir as figuras. */
 (function(root){
 "use strict";
 /* Camada de luz independente por símbolo: transparência total em redor da figura.
@@ -14,8 +14,21 @@ const start=`<svg xmlns="http://www.w3.org/2000/svg" width="312" height="348" vi
 <linearGradient id="plaque" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#512c57"/><stop offset=".55" stop-color="#30192f"/><stop offset="1" stop-color="#1a1023"/></linearGradient>
 <filter id="depth" x="-42%" y="-38%" width="185%" height="185%"><feDropShadow dx="1.5" dy="5" stdDeviation="3" flood-color="#0e0920" flood-opacity=".85"/><feDropShadow dx="-.8" dy="-1.2" stdDeviation=".8" flood-color="#f9dfa4" flood-opacity=".35"/></filter>
 <filter id="glimmer" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="2.3"/></filter>
-<filter id="volumeSide" x="-26%" y="-24%" width="152%" height="158%" color-interpolation-filters="sRGB">
-  <feColorMatrix type="matrix" values="0 0 0 0 .09  0 0 0 0 .04  0 0 0 0 .15  0 0 0 1 0"/>
+<!-- Espessura abaixo da ilustração original, sem fantasmas duplos nos olhos/contornos. -->
+<filter id="volumeSide" x="-36%" y="-32%" width="174%" height="175%" color-interpolation-filters="sRGB">
+  <feMorphology in="SourceAlpha" operator="dilate" radius="1.2" result="outline"/>
+  <feFlood flood-color="#241328" flood-opacity=".94" result="dark"/>
+  <feComposite in="dark" in2="outline" operator="in"/>
+</filter>
+<!-- Luz rasante sobre a própria imagem: mantém a cor, silhueta e expressão originais. -->
+<filter id="heroLight" x="-28%" y="-24%" width="156%" height="158%" color-interpolation-filters="sRGB">
+  <feGaussianBlur in="SourceAlpha" stdDeviation="2.1" result="rounded"/>
+  <feSpecularLighting in="rounded" surfaceScale="4.0" specularConstant=".46"
+    specularExponent="18" lighting-color="#ffe7bd" result="shine">
+    <feDistantLight azimuth="225" elevation="55"/>
+  </feSpecularLighting>
+  <feComposite in="shine" in2="SourceAlpha" operator="in" result="shineMask"/>
+  <feBlend in="SourceGraphic" in2="shineMask" mode="screen"/>
 </filter>
 <linearGradient id="metalEdge" x1="0" y1="0" x2=".9" y2="1">
   <stop stop-color="#fff6c8"/><stop offset=".22" stop-color="#efc96e"/>
@@ -53,6 +66,19 @@ const accents={
   wild:`<path d="M14 63l4 10 10 3-10 4-4 10-4-10-10-4 10-3zM137 24l4 10 10 3-10 4-4 10-4-10-10-4 10-3z" fill="#fff5bd" stroke="none"/><circle cx="17" cy="46" r="5" fill="#bd9bff"/><path d="M52 127q26 16 51-1" fill="none" stroke="#c4adff" stroke-width="3"/><circle cx="49" cy="97" r="11" fill="none" stroke="#fce19a" stroke-width="2"/>`,
   scatter:`<path d="M28 78q51 19 103 0" fill="none" stroke="#e2d1a6" stroke-width="4"/><path d="M44 113q15 24 38 24" fill="none" stroke="#dcad67" stroke-width="3" opacity=".6"/><circle cx="41" cy="47" r="4" fill="#c9ffd2"/><circle cx="78" cy="28" r="5" fill="#b8ffcc"/><circle cx="122" cy="45" r="3" fill="#a5ffbd"/><path d="M71 35l7-12 8 12" fill="none" stroke="#d3ffc5" stroke-width="2.5"/>`
 };
+// Acabamentos individualizados por cima dos mesmos desenhos da V0.12.
+const finish={
+  pumpkin:`<path d="M55 71q-15 17-14 44m32-47q-8 25-5 48m27-46q14 23 9 48" fill="none" stroke="#ffe39a" stroke-width="2.7" opacity=".48"/><path d="M45 129q13 20 34 21" fill="none" stroke="#9d321d" stroke-width="3" opacity=".53"/><ellipse cx="56" cy="73" rx="10" ry="3" transform="rotate(-37 56 73)" fill="#fff9be" opacity=".37"/>`,
+  witch_green:`<path d="M45 58q19-7 46-5" fill="none" stroke="#fff0bc" stroke-width="2.5" opacity=".8"/><path d="M49 100q-5 11 5 21" fill="none" stroke="#d8ffae" stroke-width="3" opacity=".6"/><circle cx="63" cy="84" r="2.6" fill="#fff" opacity=".95"/><circle cx="95" cy="84" r="2.6" fill="#fff" opacity=".95"/>`,
+  devil:`<path d="M47 49q9-11 21-14m30 1q11 3 19 13" stroke="#ffb397" stroke-width="2.8" opacity=".7" fill="none"/><path d="M51 104q-3 9 4 17" stroke="#ffd2a0" stroke-width="3" opacity=".48" fill="none"/><circle cx="63" cy="81" r="2.6" fill="#fff" opacity=".9"/><circle cx="95" cy="81" r="2.6" fill="#fff" opacity=".9"/>`,
+  ghost:`<path d="M42 67q5-28 30-30" fill="none" stroke="#fff" stroke-width="6" opacity=".67" stroke-linecap="round"/><path d="M42 119l-1 16 9-6m48-70q9 25 7 56" fill="none" stroke="#b3d6e1" stroke-width="3" opacity=".62"/><ellipse cx="57" cy="78" rx="4" ry="6" fill="#fff" opacity=".43"/>`,
+  bat:`<path d="M49 49l21-25 13 22" fill="none" stroke="#d7afdd" stroke-width="2.3" opacity=".5"/><path d="M48 83q5-10 14-12" fill="none" stroke="#edffcd" stroke-width="3" opacity=".72"/><ellipse cx="84" cy="34" rx="24" ry="7" transform="rotate(-24 84 34)" fill="#fff2ba" opacity=".12"/>`,
+  cat:`<path d="M51 52q11-16 26-12" stroke="#fff1e7" stroke-width="2.6" opacity=".56" fill="none"/><path d="M51 92q4 9 15 11m45-10q-4 9-14 11" fill="none" stroke="#fff4d7" stroke-width="2.4" opacity=".43"/><path d="M34 144l7-24" fill="none" stroke="#f37b91" stroke-width="2.4" opacity=".56"/>`,
+  skull:`<path d="M42 65q-4 11-3 19m8-53q21-8 42-1" fill="none" stroke="#e7ffc7" stroke-width="2.7" opacity=".63"/><path d="M48 110q-2 20 10 28" fill="none" stroke="#cce0a9" stroke-width="3" opacity=".55"/><circle cx="66" cy="92" r="1.8" fill="#fff7b2"/><circle cx="98" cy="92" r="1.8" fill="#fff7b2"/>`,
+  witch:`<path d="M52 51L80 19l18 29" fill="none" stroke="#dca5fc" stroke-width="2.5" opacity=".44"/><path d="M46 90q-4 16 6 25" fill="none" stroke="#d4ffb0" stroke-width="3" opacity=".61"/><circle cx="66" cy="85" r="2.4" fill="#fff" opacity=".91"/><circle cx="96" cy="85" r="2.4" fill="#fff" opacity=".91"/>`,
+  wild:`<path d="M51 57L78 21l21 31" fill="none" stroke="#e9cbff" stroke-width="3" opacity=".54"/><path d="M47 119q-5 17 1 29" fill="none" stroke="#c5a5ff" stroke-width="3" opacity=".58"/><circle cx="66" cy="82" r="2.5" fill="#fff"/><path d="M126 93l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#ffeeb8" opacity=".84"/>`,
+  scatter:`<path d="M31 96q2 30 23 40" fill="none" stroke="#ffdfae" stroke-width="4" opacity=".43"/><path d="M41 78q32-7 77 0" stroke="#e9ffa8" stroke-width="3" opacity=".62" fill="none"/><circle cx="59" cy="56" r="4" fill="#f1ffe1" opacity=".65"/><circle cx="101" cy="57" r="3" fill="#f1ffe1" opacity=".7"/><path d="M40 110q5 19 17 25" fill="none" stroke="#5d3b3b" stroke-width="3" opacity=".57"/>`
+};
 const art={};
 for(const [id,markup] of Object.entries(pics)){
   const aura=glow[id];
@@ -70,14 +96,13 @@ for(const [id,markup] of Object.entries(pics)){
       fill="#ffedbd" text-anchor="middle" font-family="Georgia,serif"
       font-size="9.8" font-weight="900" letter-spacing=".5">${names[id]}</text>
     </g>`;
-  // Duas camadas deslocadas formam a espessura visível da figura;
-  // a face conserva as cores originais e recebe reflexos desenhados à mão.
+  // Reutiliza a figura V0.12 intacta: só uma espessura escura,
+  // uma face iluminada e pequenos reflexos adicionais.
   art[id]=base+sparkle+
-    `<g transform="translate(0 8)" filter="url(#volumeSide)" stroke="#1d0e2d" stroke-width="3" stroke-linejoin="round">`+markup+`</g>`+
-    `<g transform="translate(0 4)" filter="url(#volumeSide)" stroke="#27142e" stroke-width="2.5" stroke-linejoin="round">`+markup+`</g>`+
-    `<g filter="url(#depth)" stroke="#302331" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round">`+
-    markup+`</g><g stroke-linejoin="round" stroke-linecap="round">`+accents[id]+`</g>`+
-    `<path d="M32 34l5-9m79 4 4-7M21 121l-4 8" fill="none" stroke="#fff8d8" stroke-width="2" opacity=".45"/>`+
+    `<g transform="translate(0 5.5)" filter="url(#volumeSide)" stroke="#211226" stroke-width="3.1" stroke-linejoin="round">`+markup+`</g>`+
+    `<g filter="url(#depth)" stroke="#302331" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">`+
+      `<g filter="url(#heroLight)">`+markup+`</g></g>`+
+    `<g stroke-linejoin="round" stroke-linecap="round">`+accents[id]+finish[id]+`</g>`+
     label+end;
 }
 root.HalloweenArt=Object.freeze(art);
