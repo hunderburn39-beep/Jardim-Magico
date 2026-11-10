@@ -503,7 +503,7 @@
    performance.now()<this.nextActionAt;
   this.drawControl(28,R.top+R.gh*3+95,164,35,'COMPRAR BÓNUS',
    ()=>this.openBuyBonus(),{size:12,disabled:bonusDisabled});
-  txt('V1.3.31',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.32',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
