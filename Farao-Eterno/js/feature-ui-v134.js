@@ -8,7 +8,7 @@
  const modal=$('modal'),body=$('modal-content');
  if(!g||!S||!modal)return;
  const fmt=value=>Number(value).toLocaleString('pt-PT',
-   {minimumFractionDigits:2,maximumFractionDigits:2})+' cr';
+   {minimumFractionDigits:2,maximumFractionDigits:2})+' €';
  const now=()=>performance.now();
  const starting=!!(g.feature&&g.feature.played===0);
  g._awaitBonusStart=starting;
@@ -94,7 +94,7 @@
      <button class="btn farao-gold-btn" id="credit-deposit" ${locked?'disabled':''}>DEPÓSITO</button>
      <button class="btn farao-gold-btn" id="credit-withdraw" ${locked?'disabled':''}>LEVANTAMENTO</button>
     </div>
-    ${locked?'<p class="farao-note">Termina o bónus para movimentar os créditos.</p>':''}
+    ${locked?'<p class="farao-note">Termina o bónus para movimentar o saldo.</p>':''}
    </div>`,true);
    $('credit-deposit').onclick=()=>this.showCreditAction('deposit');
    $('credit-withdraw').onclick=()=>this.showCreditAction('withdraw');
@@ -103,9 +103,9 @@
    if(this.feature||this.spinning||this.ledger.pending||this.ledger.payout||this.pendingSummary)return;
    const deposit=operation==='deposit';
    this.openModal(deposit?'DEPÓSITO':'LEVANTAMENTO',`<div class="farao-ceremony">
-    <p class="farao-spins-label">CRÉDITOS DO JOGO</p>
+    <p class="farao-spins-label">VALORES DO JOGO</p>
     <p>Saldo: <b>${fmt(this.balance)}</b></p>
-    <label class="farao-credit-label" for="credit-amount">Valor em créditos</label>
+    <label class="farao-credit-label" for="credit-amount">Montante em euros (€)</label>
     <input id="credit-amount" class="farao-credit-input" type="number"
        inputmode="decimal" min="0.01" step="0.01"
        max="${deposit?10000:Math.min(10000,this.balance)}" placeholder="10,00">
@@ -137,7 +137,7 @@
     <p class="farao-spins-label">APOSTA ATUAL</p>
     <strong class="farao-spins-number">${fmt(this.bet)}</strong>
     <div class="farao-multipliers">${options}</div>
-    <p class="farao-note">Aposta máxima: 10 créditos por jogada.
+    <p class="farao-note">Aposta máxima: 10 € por jogada.
       ${locked?'Alterações indisponíveis durante as Free Spins.':''}</p>
    </div>`,true);
    body.querySelectorAll('[data-multi]').forEach(b=>b.onclick=()=>{
