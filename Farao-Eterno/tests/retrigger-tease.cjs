@@ -33,7 +33,7 @@ test('as Free Spins usam mesmo pesos reforçados; o jogo base não',()=>{
  const referenceFree=E.makeGrid(rng(1059),E.FREE_WEIGHTS);
  const b=S.begin(free,rng(1059));
  assert.deepEqual(b.pending.grid,referenceFree);
- const base=S.fresh();
+ const base=S.fresh();base.balanceU=S.units(300);
  const referenceBase=E.makeGrid(rng(1059),E.WEIGHTS);
  const ordinary=S.begin(base,rng(1059));
  assert.deepEqual(ordinary.pending.grid,referenceBase);
