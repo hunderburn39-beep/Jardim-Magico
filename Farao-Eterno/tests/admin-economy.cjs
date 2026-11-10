@@ -4,9 +4,10 @@ const E=require('../js/engine.js'),S=require('../js/session.js');
 const A=require('../js/economy.js');
 const U=S.units,CR=S.credits;
 function rng(seed=20261110){return()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
-test('cofres com 5000 créditos iniciais, PINs 12345 e 100% de comissões',()=>{
+test('cofres inicialmente vazios, PINs 12345 e 100% de comissões',()=>{
  const s=S.fresh(),e=s.economy;
- assert.equal(e.prizeU,U(5000));
+ assert.equal(e.prizeU,0);
+ assert.equal(s.balanceU,0);
  assert.deepEqual([e.level,e.technicianPercent,e.merchantPercent],[90,50,50]);
  for(const type of ['admin','deposit','withdraw'])assert.equal(A.checkPin(s,type,'12345'),true);
  assert.equal(A.checkPin(s,'admin','1234'),false);
@@ -19,7 +20,7 @@ test('depósitos e levantamentos guardam totais sem criar lucros artificiais',()
  assert.equal(s.economy.totals.depositsU,U(123.45));
  assert.equal(s.economy.totals.withdrawalsU,U(23.45));
  assert.equal(s.economy.prizeU,bank);
- assert.equal(s.balanceU,U(400));
+ assert.equal(s.balanceU,U(100));
  assert.deepEqual(s.history.slice(0,2).map(x=>x.kind),['withdraw','deposit']);
  const restored=S.restore(JSON.parse(JSON.stringify(s)));
  assert.equal(restored.economy.totals.depositsU,U(123.45));
@@ -49,7 +50,8 @@ test('PINs de administrador, depósito e levantamento mudam individualmente',()=
  assert.equal(A.checkPin(restored,'admin','93421'),true);
 });
 test('aposta partilha receita e o fundo nunca paga mais que disponível',()=>{
- const s=S.fresh();A.setLevel(s,85);A.setSplit(s,40);
+ const s=S.fresh();S.adjustCredits(s,'deposit',20);A.adjustFund(s,'add',100);
+ A.setLevel(s,85);A.setSplit(s,40);
  const before=s.economy.prizeU,betU=U(S.stake(s));
  const next=S.begin(s,rng());
  assert.equal(next.pending.economyVersion,1);
@@ -65,7 +67,7 @@ test('aposta partilha receita e o fundo nunca paga mais que disponível',()=>{
 });
 test('fundo vazio: rejeita sequências acima do prémio disponível',()=>{
  const s=S.fresh();
- A.adjustFund(s,'remove',5000);
+ S.adjustCredits(s,'deposit',20);
  assert.equal(s.economy.prizeU,0);
  const next=S.begin(s,rng(27));
  assert.ok(U(next.result.total)<=Math.floor(U(S.stake(s))*.9));
@@ -75,7 +77,6 @@ test('fundo vazio: rejeita sequências acima do prémio disponível',()=>{
 });
 test('fundos insuficientes durante bónus não permitem jogada impossível',()=>{
  const s=S.fresh();
- A.adjustFund(s,'remove',5000);
  s.feature={left:8,played:0,totalU:0,symbols:[...E.NORMAL],retriggers:0};
  const pendingBefore=s.pending,sequenceBefore=s.sequence,leftBefore=s.feature.left;
  // Com todos os símbolos como expansivos e 0 créditos, nenhuma grelha pode
@@ -93,7 +94,8 @@ test('fundos insuficientes durante bónus não permitem jogada impossível',()=>
  }
 });
 test('técnico e comerciante podem levantar apenas a sua parte de lucros',()=>{
- const s=S.fresh();S.begin(s,rng(40));S.settle(s);
+ const s=S.fresh();S.adjustCredits(s,'deposit',10);A.adjustFund(s,'add',100);
+ S.begin(s,rng(40));S.settle(s);
  const e=s.economy,tech=e.techDueU,merchant=e.merchantDueU;
  assert.ok(tech>0&&merchant>0);
  A.collect(s,'technician',CR(tech));
@@ -111,7 +113,7 @@ test('85 a 95 alteram o peso de símbolos premium e a verba das apostas',()=>{
  assert.throws(()=>A.setLevel(S.fresh(),96),/85% e 95%/);
 });
 test('cofres não mudam durante jogo ou Free Spins',()=>{
- const s=S.fresh();S.begin(s,rng(32));
+ const s=S.fresh();S.adjustCredits(s,'deposit',10);A.adjustFund(s,'add',100);S.begin(s,rng(32));
  assert.throws(()=>A.setLevel(s,95),/Termina/);
  assert.throws(()=>A.adjustFund(s,'remove',1),/Termina/);
  assert.throws(()=>A.setSplit(s,30),/Termina/);
