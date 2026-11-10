@@ -386,18 +386,47 @@ class Game {
   this.announce(`${item.free?'Free Spin':'Jogada'}: prémio ${money(prize)}. Saldo ${money(this.balance)}.`);
   if(result.lineWins.length || result.scatterWin) this.audio.win(Boolean(item.free));
   this.spinObject=null;this.nextActionAt=finishedAt+(this.turbo?320:690);
-  // The reels land first. During free spins, qualified symbols then expand one
-  // reel at a time. Credits are awarded immediately, but the HUD counts up only
-  // after the animation. All timings are visual; the result is already final.
-  const expansionReels = item.free ? Object.keys(this.expanded).map(Number).sort((a,b)=>a-b) : [];
-  const animationEnd = expansionReels.length ? 360+expansionReels.length*(this.turbo?140:230)+300 : 0;
-  for(let k=0;k<expansionReels.length;k++)this.emitBurst(83+expansionReels[k]*101,444,16,'#83ffef',finishedAt+(this.turbo?190:360)+k*(this.turbo?140:230));
-  this.reveal = expansionReels.length ? {
-    start:finishedAt, reels:expansionReels, preDelay:this.turbo?190:360,
-    perReel:this.turbo?140:230, end:finishedAt+animationEnd,
-  } : null;
-  this.winCount={start:finishedAt+(this.reveal?animationEnd-280:80),duration:this.turbo?450:820,amount:prize};
-  this.nextActionAt=Math.max(this.nextActionAt,this.winCount.start+this.winCount.duration+250);
+  // Pagamentos de vários símbolos expansivos animados do mais baixo
+  // para o mais alto, sem efetuar de novo o crédito já pago por S.settle().
+  const expansions=item.free?(result.expansionAwards||[]):[];
+  if(expansions.length){
+   let cursor=finishedAt+90;
+   const visualStages=[],rawGroups=[{symbol:null,amount:result.baseTotal+result.scatterWin}];
+   for(const candidate of expansions){
+    const start=cursor,preDelay=this.turbo?140:280,perReel=this.turbo?135:245;
+    const end=start+preDelay+candidate.reels.length*perReel+(this.turbo?200:390);
+    const stage={symbol:candidate.symbol,reels:[...candidate.reels],start,end,preDelay,perReel,
+     amount:candidate.amount};
+    visualStages.push(stage);
+    rawGroups.push({symbol:candidate.symbol,amount:candidate.amount,stage});
+    candidate.reels.forEach((reel,k)=>this.emitBurst(83+reel*101,444,14,'#83ffef',
+     start+preDelay+k*perReel));
+    cursor=end+(this.turbo?105:240);
+   }
+   this.reveal={start:finishedAt,end:visualStages.at(-1).end,stages:visualStages};
+   // Valor real, limitado a 5000× no conjunto das Free Spins. Sem arredondar
+   // repetidamente: todos os passos somam exatamente o prémio liquidado.
+   const rawSum=rawGroups.reduce((sum,x)=>sum+x.amount,0);
+   let assigned=0;
+   const counted=[];
+   for(let i=0;i<rawGroups.length;i++){
+    const x=rawGroups[i],last=i===rawGroups.length-1;
+    const units=last?settled.prizeU-assigned:
+     Math.max(0,Math.min(settled.prizeU-assigned,
+      Math.floor(settled.prizeU*(rawSum?x.amount/rawSum:0))));
+    assigned+=units;
+    if(units<=0)continue;
+    counted.push({symbol:x.symbol,amount:S.credits(units),
+     start:x.stage?x.stage.start+x.stage.preDelay:finishedAt+75,
+     end:x.stage?x.stage.end:Math.max(finishedAt+360,visualStages[0].start+110)});
+   }
+   this.winCount={start:finishedAt+75,duration:cursor-finishedAt,amount:prize,stages:counted};
+   this.nextActionAt=Math.max(this.nextActionAt,cursor+260);
+  }else{
+   this.reveal=null;
+   this.winCount={start:finishedAt+80,duration:this.turbo?450:820,amount:prize};
+   this.nextActionAt=Math.max(this.nextActionAt,this.winCount.start+this.winCount.duration+250);
+  }
   if(item.free){
    if(result.trigger&&this.feature){
     this.audio.extra();this.notice(settled.nextSymbol?'+8 FREE SPINS · NOVO SÍMBOLO':'+8 FREE SPINS',this.turbo?1100:1850,'cyan');
@@ -414,6 +443,26 @@ class Game {
   const duration=this.turbo?1050:1650;
   this.featureIntro={symbol,start:from,end:from+duration};
   this.nextActionAt=Math.max(this.nextActionAt,from+duration+200);
+ }
+ expansionView(t){
+  if(!this.reveal?.stages?.length||t>=this.reveal.end)return null;
+  const stage=this.reveal.stages.find(x=>t<x.end);
+  if(!stage)return null;
+  return {stage,reveal:stage,expanded:Object.fromEntries(stage.reels.map(reel=>[reel,stage]))};
+ }
+ displayWinAt(t){
+  const counter=this.winCount;
+  if(!counter)return this.lastWin;
+  if(!counter.stages)return counter.amount*(1-Math.pow(1-clamp((t-counter.start)/counter.duration,0,1),3));
+  let value=0;
+  for(const stage of counter.stages){
+   if(t>=stage.end)value+=stage.amount;
+   else if(t>stage.start){
+    const p=clamp((t-stage.start)/Math.max(1,stage.end-stage.start),0,1);
+    value+=stage.amount*(1-Math.pow(1-p,3));
+   }
+  }
+  return Math.min(counter.amount,value);
  }
  computeWinners(result){
   const map=new Map();
