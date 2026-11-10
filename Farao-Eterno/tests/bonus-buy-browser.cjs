@@ -38,7 +38,14 @@ const url='http://127.0.0.1:8123/index.html?qa=bonus-buy';
    assert.equal(state.history[0].kind,'bonus-buy');
    assert.equal(state.history[0].cost,100);
    assert.equal(state.seq,0,'A compra não cria jogada sem girar');
-   assert.equal(state.modalClosed,true);
+   assert.equal(state.modalClosed,false,'O bónus começa pela mensagem de parabéns');
+   assert.equal(await page.locator('#modal-title').innerText(),'PARABÉNS!');
+   assert.match(await page.locator('#modal-content').innerText(),/acesso ao cofre do Faraó Eterno/i);
+   assert.match(await page.locator('#modal-content').innerText(),/FREE SPINS/);
+   await page.locator('#reveal-feature').click();
+   assert.equal(await page.evaluate(()=>document.getElementById('modal').classList.contains('hidden')),true,
+     'A carta pode ser revelada sem iniciar automaticamente o giro');
+   assert.equal(await page.evaluate(()=>window.__faraoGame.ledger.sequence),0);
    await page.reload({waitUntil:'domcontentloaded'});
    await page.waitForFunction(()=>window.__faraoGame?.ready===true,null,{timeout:8500});
    state=await page.evaluate(()=>({balance:window.__faraoGame.ledger.balanceU,
