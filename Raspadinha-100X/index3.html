@@ -46,6 +46,27 @@ h2{font-size:clamp(11px,3.3vw,15px);margin:5px 0 6px;text-align:center;letter-sp
 #status{margin:0;min-height:35px;text-align:center;display:grid;place-items:center;border-radius:9px;background:#03162ea8;color:#fff8c6;font-size:13px;padding:5px;flex:none}
 footer{text-align:center;color:#b5c9e1;font-size:10px;line-height:1.2;flex:none}
 @media(max-height:700px){header{height:53px}.logo{font-size:29px}.brand{font-size:18px}main{height:calc(100dvh - 53px);padding-top:5px;gap:5px}.lucky{height:43px}h2{margin:2px 0 4px}.actions button{min-height:40px;padding:7px}.ticket{padding:5px}.summary{padding:5px 9px}#status{min-height:27px}footer{font-size:9px}}
+
+/* Celebração: quatro lançamentos de fogos, com prémio sempre ao centro. */
+.celebration-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden;isolation:isolate}
+.celebration-overlay[hidden]{display:none!important}
+.celebration-overlay::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at center,#240d0180 0%,#0106169c 78%);animation:celebrationFade .22s ease-out}
+.celebration-stage{position:relative;width:min(100%,500px);height:270px;display:flex;align-items:center;justify-content:center}
+.celebration-center{position:relative;z-index:4;text-align:center;padding:12px 4px;filter:drop-shadow(0 4px 8px #180000)}
+.celebration-title{font-weight:1000;letter-spacing:1.6px;color:#fff1b1;font-size:clamp(21px,6vw,31px);text-shadow:0 2px 2px #780000,0 0 14px #ffb92e}
+.celebration-amount{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:clamp(42px,11vw,64px);font-weight:1000;color:#ffe881;-webkit-text-stroke:1px #e77c0c;text-shadow:0 2px #8d1200,0 0 9px #f44322,0 0 25px #ffcf45;animation:prizeBounce .55s ease-out both}
+.celebration-fireworks{position:absolute;top:50%;width:1px;height:1px;z-index:2}
+.celebration-fireworks.left{left:14%}
+.celebration-fireworks.right{right:14%}
+.firework-spark{position:absolute;left:0;top:0;width:7px;height:7px;border-radius:50%;background:#ffe36a;box-shadow:0 0 9px 3px #ffc12e;opacity:0;animation:fireworkBurst 1.06s cubic-bezier(.15,.4,.42,1) forwards;will-change:transform,opacity}
+.firework-spark.red{background:#ff4545;box-shadow:0 0 10px 3px #ff1818}
+.firework-core{position:absolute;width:26px;height:26px;border-radius:50%;left:-13px;top:-13px;background:#fff6c5;box-shadow:0 0 20px 10px #ffa824;animation:fireworkCore .75s ease-out forwards;pointer-events:none}
+@keyframes fireworkBurst{0%{transform:translate(0,0) scale(.2);opacity:1}35%{opacity:1}100%{transform:translate(var(--x),var(--y)) scale(.08);opacity:0}}
+@keyframes fireworkCore{0%{opacity:1;transform:scale(.2)}100%{opacity:0;transform:scale(3)}}
+@keyframes prizeBounce{0%{transform:scale(.5);opacity:0}65%{transform:scale(1.13);opacity:1}100%{transform:scale(1)}}
+@keyframes celebrationFade{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.celebration-amount{animation:none}.firework-spark,.firework-core{animation-duration:.15s}}
+
 </style>
 </head>
 <body>
@@ -63,6 +84,17 @@ footer{text-align:center;color:#b5c9e1;font-size:10px;line-height:1.2;flex:none}
   <p id="status" role="status" aria-live="polite"></p>
   <footer>Protótipo de teste local. Sem depósitos ou pagamentos reais.</footer>
 </main>
+
+<div id="celebration" class="celebration-overlay" aria-hidden="true" hidden>
+  <div class="celebration-stage">
+    <div class="celebration-fireworks left" id="fireworks-left"></div>
+    <div class="celebration-center">
+      <div class="celebration-title">GANHASTE!</div>
+      <div class="celebration-amount" id="celebration-amount">0 €</div>
+    </div>
+    <div class="celebration-fireworks right" id="fireworks-right"></div>
+  </div>
+</div>
 <script>
 "use strict";
 // Valores em cêntimos: 1 € por bilhete; prémio mínimo vencedor 1 € e máximo 100 €.
@@ -105,6 +137,7 @@ function buy(){
   if(state.ticket && !state.ticket.completed){status("Raspa ou revela primeiro o bilhete atual.");return}
   if(state.balance<PRICE){status("Saldo insuficiente para comprar outro bilhete.");return}
   stopScratchSound();
+  clearCelebration();
   state.balance-=PRICE;
   state.technician+=10;
   state.merchant+=20;
@@ -153,7 +186,7 @@ function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
   function reveal(){
     if(!canvas.isConnected)return;
     canvas.remove();active=false;stopScratchSound();
-    if(isWinner){cell.classList.add("revealed");flashWinningCell(cell);}
+    if(isWinner){cell.classList.add("revealed");flashWinningCell(cell);celebrateWinningTicket();}
     if(!state.ticket.revealed.includes(id))state.ticket.revealed.push(id);
     if(state.ticket.revealed.length===25)finish();
     else save();
@@ -213,7 +246,59 @@ function revealAll(){
   // Em bilhetes sem prémio, não se assinala nenhum quadrado como vencedor.
   const winner=el("play").querySelector(".cell.winning.revealed");
   flashWinningCell(winner);
+  celebrateWinningTicket();
 }
+
+let celebrationTimeouts=[];
+function clearCelebration(){
+  for(const timer of celebrationTimeouts)clearTimeout(timer);
+  celebrationTimeouts=[];
+  const overlay=el("celebration");
+  if(overlay){overlay.hidden=true;overlay.setAttribute("aria-hidden","true")}
+  el("fireworks-left").replaceChildren();
+  el("fireworks-right").replaceChildren();
+}
+function launchFirework(container){
+  const burst=document.createElement("div");
+  burst.className="firework-core";
+  container.append(burst);
+  const count=24;
+  for(let i=0;i<count;i++){
+    const angle=(2*Math.PI*i/count)+(Math.random()-.5)*.16;
+    const radius=46+Math.random()*48;
+    const particle=document.createElement("i");
+    particle.className="firework-spark"+(i%2?" red":"");
+    particle.style.setProperty("--x",(Math.cos(angle)*radius).toFixed(2)+"px");
+    particle.style.setProperty("--y",(Math.sin(angle)*radius).toFixed(2)+"px");
+    particle.style.animationDelay=(Math.random()*85)+"ms";
+    container.append(particle);
+  }
+  celebrationTimeouts.push(setTimeout(()=>{burst.remove();container.replaceChildren()},1170));
+}
+function showCelebration(prizeCents){
+  if(!Number.isFinite(prizeCents)||prizeCents<=0)return;
+  clearCelebration();
+  const overlay=el("celebration");
+  el("celebration-amount").textContent=eur(prizeCents);
+  overlay.hidden=false;
+  overlay.setAttribute("aria-hidden","false");
+  // Quatro lançamentos sincronizados à esquerda e à direita do valor.
+  for(let i=0;i<4;i++){
+    celebrationTimeouts.push(setTimeout(()=>{
+      launchFirework(el("fireworks-left"));
+      launchFirework(el("fireworks-right"));
+    },i*850+130));
+  }
+  celebrationTimeouts.push(setTimeout(clearCelebration,4*850+1150));
+}
+function celebrateWinningTicket(){
+  const t=state.ticket;
+  if(!t||t.prize<=0||t.celebrated)return;
+  t.celebrated=true; // impede celebrar novamente no mesmo bilhete
+  save();
+  showCelebration(t.prize);
+}
+
 function ensureAudio(){
   if(!state.sound)return null;
   try{
