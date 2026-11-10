@@ -22,7 +22,7 @@ jobs:
           with urllib.request.urlopen(req,timeout=30) as r:
               source=r.read().decode('utf-8','replace')
           source=html.unescape(source).replace('\\/','/').replace('\\u002F','/')
-          options=re.findall(r'https?://(?:cdn\\.)?pixabay\\.com/(?:download/audio|audio)/[^"\\s<>]+?\\.mp3(?:\\?[^"\\s<>]+)?',source)
+          options=re.findall(r'https?://(?:cdn[.])?pixabay[.]com/(?:download/audio|audio)/[^"<> ]+[.]mp3(?:[?][^"<> ]+)?',source)
           options=list(dict.fromkeys(options))
           print('URLs candidatas:',len(options))
           if not options:
