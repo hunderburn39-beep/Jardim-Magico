@@ -1,1 +1,245 @@
-<!doctype html><html lang="pt-PT"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Raspadinha 100X - Teste</title><style>*{box-sizing:border-box}body{margin:0;background:#063a67;font-family:Arial;color:white;text-align:center}header{background:linear-gradient(120deg,#ed8e04,#ffda31,#f48b08);color:#16355b;padding:15px;font-size:30px;font-weight:900;text-shadow:1px 2px white}main{max-width:430px;margin:auto;padding:12px}.panel{background:#efad13;border:5px solid #fce369;border-radius:16px;padding:13px;color:#153967}h2{margin:10px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:12px 0}.cell{position:relative;background:#fff1a3;color:#133c64;border:2px solid #b87a13;border-radius:7px;min-height:62px;display:flex;flex-direction:column;justify-content:center;font-weight:900}.cell small{font-size:10px}.cell canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}.controls{display:flex;gap:8px;justify-content:center;margin:12px}button{background:#ffd02a;color:#173c66;font-weight:bold;border:0;padding:13px;border-radius:9px}#status{padding:12px;background:#092a4b;border-radius:9px}footer{font-size:11px;opacity:.8;padding:12px}</style><header>100X O DINHEIRO</header><main><p id="saldo"></p><section class="panel"><h2>NÚMEROS DA SORTE</h2><div class="grid" id="lucky"></div><h2>OS TEUS NÚMEROS</h2><div class="grid" id="play"></div></section><div class="controls"><button onclick="novo()">Novo bilhete · 10 créditos</button><button onclick="revelar()">Raspar tudo</button></div><p id="status"></p><footer>Jogo recreativo não oficial com créditos virtuais. Protótipo online: não representa a distribuição oficial nem um cofre central.</footer></main><script>let saldo=100,cofre=0,restantes=0,ganho=0,canvasList=[],acertos=[];const $=id=>document.getElementById(id);function rand(n){return Math.floor(Math.random()*n)}function embaralhar(a){for(let i=a.length-1;i>0;i--){let j=rand(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}function atualizar(){$('saldo').textContent='Saldo: '+saldo+' créditos'}function bloco(parent,n,p,win){let d=document.createElement('div');d.className='cell';d.innerHTML='<b>'+n+'</b>'+(p?'<small>'+p+' CR</small>':'');let cv=document.createElement('canvas');cv.width=140;cv.height=100;d.append(cv);$(parent).append(d);let ctx=cv.getContext('2d');ctx.fillStyle='#b3bcc4';ctx.fillRect(0,0,140,100);ctx.fillStyle='#53616b';ctx.font='bold 19px Arial';ctx.textAlign='center';ctx.fillText('RASPA',70,54);let down=false,steps=0;function erase(e){let r=cv.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*140,y=(e.clientY-r.top)/r.height*100;ctx.globalCompositeOperation='destination-out';ctx.beginPath();ctx.arc(x,y,21,0,7);ctx.fill();if(++steps>12)reveal()}function reveal(){if(!cv.isConnected)return;cv.remove();restantes--;if(!restantes){saldo+=ganho;atualizar();$('status').textContent=ganho?'Ganhaste '+ganho+' créditos!':'Bilhete sem prémio.'}}cv.addEventListener('pointerdown',e=>{down=true;cv.setPointerCapture(e.pointerId);erase(e)});cv.addEventListener('pointermove',e=>{if(down)erase(e)});cv.addEventListener('pointerup',()=>down=false);canvasList.push(reveal);restantes++}function novo(){if(saldo<10){$('status').textContent='Saldo insuficiente para novo bilhete.';return}saldo-=10;cofre+=6;atualizar();$('lucky').innerHTML='';$('play').innerHTML='';canvasList=[];restantes=0;ganho=0;let a=embaralhar(Array.from({length:70},(_,i)=>i+1)),l=a.slice(0,5),p=a.slice(5,25);let premios=[10,20,50,100,200,500];let possiveis=premios.filter(x=>x<=cofre);if(possiveis.length&&Math.random()<.3){ganho=possiveis[rand(possiveis.length)];p[rand(20)]=l[rand(5)];cofre-=ganho}for(let n of l)bloco('lucky',n,0,false);for(let n of p)bloco('play',n,l.includes(n)?ganho:10,l.includes(n));$('status').textContent='Raspa com o dedo para revelar os números.'}function revelar(){for(let fn of [...canvasList])fn()}atualizar();novo();</script></html>
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#071b43">
+<title>Raspadinha 100X — 1 € por bilhete</title>
+<style>
+:root{color-scheme:dark;--gold:#ffd34a;--blue:#0b3268;--light:#fff2b8}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{position:fixed;inset:0;width:100%;height:100%;height:100dvh;margin:0;overflow:hidden;overscroll-behavior:none;touch-action:none}
+body{background:radial-gradient(ellipse at 50% 18%,#1767a6 0,#0a2a62 45%,#05132e 100%);color:#fff;font:600 15px/1.2 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button{appearance:none;border:0;font:inherit;cursor:pointer;touch-action:manipulation;-webkit-touch-callout:none}
+header{height:65px;display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 14px;background:linear-gradient(160deg,#d57a0d 0%,#ffcc3c 35%,#fff19b 50%,#d9840a 90%);box-shadow:0 4px 12px #0005;color:#092754}
+.logo{font-size:clamp(30px,8vw,42px);font-weight:1000;line-height:1;text-shadow:1px 2px #fff6}
+.brand{font-weight:950;font-size:clamp(18px,5vw,26px);line-height:.97;letter-spacing:.7px}
+.brand small{display:block;font-size:11px;letter-spacing:1.8px;margin-top:3px}
+main{width:min(100%,460px);height:calc(100dvh - 65px);margin:0 auto;padding:9px 12px max(9px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden}
+.summary{display:flex;align-items:center;justify-content:space-between;background:#05182ac9;border:1px solid #7ab3f45e;padding:8px 12px;border-radius:12px;flex:none}
+.summary strong{color:#ffe77e;font-size:19px;font-variant-numeric:tabular-nums}
+.summary button{background:#183e65;color:#fff;border:1px solid #7eafca70;border-radius:8px;padding:6px 9px;font-size:12px}
+.ticket{background:linear-gradient(130deg,#ffa515,#ffdd4b 37%,#e89716 100%);border:4px solid #fff0a4;border-radius:18px;color:#0a315c;display:flex;flex:1;min-height:0;flex-direction:column;padding:8px;box-shadow:0 5px 16px #0007,inset 0 0 15px #fff6}
+.tickettop{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:900;padding:0 2px 3px}
+.tickettop span:last-child{background:#103a6a;color:#fff7bf;padding:4px 8px;border-radius:14px}
+h2{font-size:clamp(11px,3.3vw,15px);margin:5px 0 6px;text-align:center;letter-spacing:.6px;font-weight:1000}
+.numgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;touch-action:none;min-width:0}
+.lucky{height:clamp(43px,9vh,72px);flex:none}
+.play{grid-template-rows:repeat(4,minmax(0,1fr));flex:1;min-height:0}
+.cell{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;border-radius:8px;border:2px solid #c7861b;background:linear-gradient(160deg,#fff6cd,#fff3a2);color:#0b3563;box-shadow:inset 0 1px 4px #fff,0 1px 3px #7d480a70}
+.cell b{font-size:clamp(18px,5vw,26px);line-height:1.05}
+.cell small{font-weight:900;font-size:clamp(9px,2.4vw,12px);margin-top:3px;white-space:nowrap}
+.cell.winning{background:linear-gradient(130deg,#fffcc6,#b5ffb9);border-color:#40ac62}
+.cell canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.actions{display:flex;gap:8px;flex:none}
+.actions button{border-radius:10px;padding:12px 8px;min-height:46px;font-size:clamp(11px,3.1vw,14px);font-weight:950}
+#new{background:linear-gradient(#ffe46c,#ffb718);color:#17395f;flex:1.45;box-shadow:0 3px #b47800}
+#reveal{background:#e2edff;color:#123967;flex:.8;box-shadow:0 3px #8695ad}
+#status{margin:0;min-height:35px;text-align:center;display:grid;place-items:center;border-radius:9px;background:#03162ea8;color:#fff8c6;font-size:13px;padding:5px;flex:none}
+footer{text-align:center;color:#b5c9e1;font-size:10px;line-height:1.2;flex:none}
+@media(max-height:700px){header{height:53px}.logo{font-size:29px}.brand{font-size:18px}main{height:calc(100dvh - 53px);padding-top:5px;gap:5px}.lucky{height:43px}h2{margin:2px 0 4px}.actions button{min-height:40px;padding:7px}.ticket{padding:5px}.summary{padding:5px 9px}#status{min-height:27px}footer{font-size:9px}}
+</style>
+</head>
+<body>
+<header><div class="logo">100X</div><div class="brand">O DINHEIRO<small>RASPADINHA</small></div></header>
+<main>
+  <div class="summary"><div>SALDO <strong id="balance">100,00 €</strong></div><button id="sound" type="button" aria-label="Desligar som">🔊 Som ligado</button></div>
+  <section class="ticket" aria-label="Bilhete de raspadinha">
+    <div class="tickettop"><span id="ticketid">BILHETE Nº 1</span><span>1 € → ATÉ 100 €</span></div>
+    <h2>NÚMEROS DA SORTE</h2>
+    <div class="numgrid lucky" id="lucky"></div>
+    <h2>OS TEUS NÚMEROS</h2>
+    <div class="numgrid play" id="play"></div>
+  </section>
+  <div class="actions"><button id="new" type="button">NOVA RASPADINHA · 1 €</button><button id="reveal" type="button">RASPAR TUDO</button></div>
+  <p id="status" role="status" aria-live="polite"></p>
+  <footer>Protótipo de teste local. Sem depósitos ou pagamentos reais.</footer>
+</main>
+<script>
+"use strict";
+// Valores em cêntimos: 1 € por bilhete; prémio mínimo vencedor 1 € e máximo 100 €.
+// Divisão de cada bilhete: técnico 10%, comerciante 20%, fundo 10%, cofre de prémios 60%.
+// O jogo nunca compromete prémios superiores ao montante disponível no cofre.
+const KEY="raspadinha100x_v2";
+const PRICE=100;
+const PRIZES=[
+  {value:100, weight:700},{value:200, weight:250},{value:500, weight:30},
+  {value:1000, weight:10},{value:2000, weight:6},{value:5000, weight:3},
+  {value:10000, weight:1}
+];
+const el=id=>document.getElementById(id);
+const eur=c=>(c/100).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
+const money=c=>(c/100).toLocaleString("pt-PT",{maximumFractionDigits:0})+" €";
+const randomInt=max=>Math.floor(Math.random()*max);
+function shuffle(items){for(let i=items.length-1;i>0;i--){const j=randomInt(i+1);[items[i],items[j]]=[items[j],items[i]]}return items}
+function fresh(){return{balance:10000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true}}
+function load(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(KEY));
+    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0))return saved;
+  }catch(_){}
+  return fresh();
+}
+let state=load(),scratchAudio=null,audioContext=null;
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(_){}}
+function status(msg){el("status").textContent=msg}
+function paintBalance(){el("balance").textContent=eur(state.balance);el("sound").textContent=state.sound?"🔊 Som ligado":"🔇 Som desligado";el("sound").setAttribute("aria-label",state.sound?"Desligar som":"Ligar som")}
+function selectPrize(bank){
+  if(bank<PRICE || Math.random()>=0.30)return 0;
+  const eligible=PRIZES.filter(p=>p.value<=bank);
+  if(!eligible.length)return 0;
+  const total=eligible.reduce((s,p)=>s+p.weight,0);
+  let draw=Math.random()*total;
+  for(const p of eligible){draw-=p.weight;if(draw<0)return p.value}
+  return eligible[eligible.length-1].value;
+}
+function buy(){
+  if(state.ticket && !state.ticket.completed){status("Raspa ou revela primeiro o bilhete atual.");return}
+  if(state.balance<PRICE){status("Saldo insuficiente para comprar outro bilhete.");return}
+  stopScratchSound();
+  state.balance-=PRICE;
+  state.technician+=10;
+  state.merchant+=20;
+  state.reserve+=10;
+  state.prizeBank+=60;
+  const prize=selectPrize(state.prizeBank);
+  state.prizeBank-=prize; // reserva contabilística antes de revelar, evitando ultrapassar o cofre
+  const nums=shuffle(Array.from({length:70},(_,i)=>i+1));
+  const lucky=nums.slice(0,5),play=nums.slice(5,25);
+  const winAt=prize>0?randomInt(20):-1;
+  if(winAt>=0)play[winAt]=lucky[randomInt(5)];
+  state.cards++;
+  state.ticket={id:state.cards,lucky,play,prize,winAt,revealed:[],completed:false};
+  save();render();
+  status("Raspa com o dedo. Cada bilhete custa 1 €.");
+}
+function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
+  const cell=document.createElement("div");
+  cell.className="cell"+(isWinner?" winning":"");
+  const number=document.createElement("b");number.textContent=String(num).padStart(2,"0");cell.append(number);
+  if(label){const amount=document.createElement("small");amount.textContent=label;cell.append(amount)}
+  el(parent).append(cell);
+  if(alreadyRevealed)return;
+  const canvas=document.createElement("canvas");
+  cell.append(canvas);
+  const rect=cell.getBoundingClientRect();
+  const scale=Math.min(window.devicePixelRatio||1,2);
+  const w=Math.max(1,Math.round(rect.width*scale)),h=Math.max(1,Math.round(rect.height*scale));
+  canvas.width=w;canvas.height=h;
+  const ctx=canvas.getContext("2d");
+  ctx.fillStyle="#9ca8b8";ctx.fillRect(0,0,w,h);
+  ctx.fillStyle="#e2e6ed";
+  for(let i=0;i<7;i++){ctx.globalAlpha=.12;ctx.fillRect(0,(i*23)%h,w,2)}
+  ctx.globalAlpha=1;ctx.font="900 "+Math.max(12,Math.round(w*.23))+"px system-ui";
+  ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("RASPA",w/2,h/2);
+  let active=false,last=null,travel=0;
+  function xy(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*w,y:(e.clientY-r.top)/r.height*h}}
+  function clear(from,to){
+    ctx.globalCompositeOperation="destination-out";
+    ctx.strokeStyle="#000";ctx.fillStyle="#000";
+    ctx.lineWidth=Math.max(17,Math.min(w,h)*.47);
+    ctx.lineCap="round";ctx.lineJoin="round";
+    ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.lineTo(to.x,to.y);ctx.stroke();
+    ctx.beginPath();ctx.arc(to.x,to.y,ctx.lineWidth*.5,0,Math.PI*2);ctx.fill();
+  }
+  function reveal(){
+    if(!canvas.isConnected)return;
+    canvas.remove();active=false;stopScratchSound();
+    if(!state.ticket.revealed.includes(id))state.ticket.revealed.push(id);
+    if(state.ticket.revealed.length===25)finish();
+    else save();
+  }
+  canvas.addEventListener("pointerdown",e=>{
+    if(e.cancelable)e.preventDefault();
+    active=true;canvas.setPointerCapture(e.pointerId);
+    last=xy(e);clear(last,last);startScratchSound();
+  });
+  canvas.addEventListener("pointermove",e=>{
+    if(!active)return;
+    if(e.cancelable)e.preventDefault();
+    const now=xy(e),step=Math.hypot(now.x-last.x,now.y-last.y);
+    if(step>0){clear(last,now);travel+=step;updateScratchSound(step);last=now}
+    if(travel>Math.max(w*1.5,h*1.7))reveal();
+  });
+  for(const eventName of ["pointerup","pointercancel","lostpointercapture"]){
+    canvas.addEventListener(eventName,()=>{active=false;stopScratchSound()});
+  }
+}
+function render(){
+  paintBalance();
+  el("lucky").replaceChildren();el("play").replaceChildren();
+  const ticket=state.ticket;
+  if(!ticket){el("ticketid").textContent="PRONTO A JOGAR";return}
+  el("ticketid").textContent="BILHETE Nº "+ticket.id;
+  for(let i=0;i<5;i++)makeCell("lucky",ticket.lucky[i],"","l"+i,false,ticket.revealed.includes("l"+i));
+  for(let i=0;i<20;i++){
+    const winning=i===ticket.winAt;
+    const amount=winning?ticket.prize:PRIZES[randomInt(5)].value;
+    makeCell("play",ticket.play[i],money(amount),"p"+i,winning,ticket.revealed.includes("p"+i));
+  }
+  if(ticket.completed)status(ticket.prize?"Ganhaste "+eur(ticket.prize)+"!":"Bilhete sem prémio. Tenta novamente!");
+}
+function finish(){
+  const ticket=state.ticket;
+  if(!ticket || ticket.completed)return;
+  ticket.completed=true;
+  state.balance+=ticket.prize; // apenas uma vez, inclusive depois de recarregar a página
+  save();paintBalance();
+  status(ticket.prize?"🎉 GANHASTE "+eur(ticket.prize)+"!":"Bilhete sem prémio. Boa sorte no próximo!");
+}
+function revealAll(){
+  if(!state.ticket || state.ticket.completed)return;
+  stopScratchSound();
+  state.ticket.revealed=Array.from({length:5},(_,i)=>"l"+i).concat(Array.from({length:20},(_,i)=>"p"+i));
+  finish();render();
+}
+function ensureAudio(){
+  if(!state.sound)return null;
+  try{
+    if(!audioContext)audioContext=new(window.AudioContext||window.webkitAudioContext)();
+    if(audioContext.state==="suspended")audioContext.resume();
+    return audioContext;
+  }catch(_){return null}
+}
+function startScratchSound(){
+  stopScratchSound();
+  const ac=ensureAudio();
+  if(!ac)return;
+  // Som gerado localmente: ruído filtrado, semelhante ao atrito da moeda no cartão.
+  const length=Math.floor(ac.sampleRate*.24),buffer=ac.createBuffer(1,length,ac.sampleRate);
+  const data=buffer.getChannelData(0);
+  let previous=0;
+  for(let i=0;i<length;i++){const noise=(Math.random()*2-1);previous=.52*previous+.48*noise;data[i]=previous}
+  const source=ac.createBufferSource(),filter=ac.createBiquadFilter(),gain=ac.createGain();
+  source.buffer=buffer;source.loop=true;
+  filter.type="bandpass";filter.frequency.value=1700;filter.Q.value=.48;
+  gain.gain.value=.0001;
+  source.connect(filter);filter.connect(gain);gain.connect(ac.destination);
+  source.start();
+  gain.gain.setTargetAtTime(.08,ac.currentTime,.023);
+  scratchAudio={source,filter,gain,ac};
+}
+function updateScratchSound(step){
+  if(!scratchAudio)return;
+  const a=scratchAudio;
+  a.filter.frequency.setTargetAtTime(1100+Math.random()*1800,a.ac.currentTime,.025);
+  a.gain.gain.setTargetAtTime(Math.min(.17,.045+step/450),a.ac.currentTime,.018);
+}
+function stopScratchSound(){
+  if(!scratchAudio)return;
+  const a=scratchAudio;scratchAudio=null;
+  a.gain.gain.setTargetAtTime(.0001,a.ac.currentTime,.015);
+  try{a.source.stop(a.ac.currentTime+.09)}catch(_){}
+}
+el("new").addEventListener("click",buy);
+el("reveal").addEventListener("click",revealAll);
+el("sound").addEventListener("click",()=>{state.sound=!state.sound;stopScratchSound();save();paintBalance()});
+["contextmenu","selectstart","dragstart","copy","cut"].forEach(n=>document.addEventListener(n,e=>e.preventDefault()));
+document.addEventListener("touchmove",e=>{if(e.cancelable)e.preventDefault()},{passive:false});
+document.addEventListener("gesturestart",e=>{if(e.cancelable)e.preventDefault()},{passive:false});
+window.addEventListener("blur",stopScratchSound);
+if(state.ticket){render();status(state.ticket.completed?(state.ticket.prize?"Ganhaste "+eur(state.ticket.prize)+"!":"Bilhete sem prémio."):"Continua a raspar o teu bilhete.");}
+else{buy()}
+</script>
+</body>
+</html>
