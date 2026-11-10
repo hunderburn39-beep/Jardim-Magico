@@ -315,83 +315,83 @@
     note(659.25,718,.26,.040,.17,'sine');
   };
 
-  // Varrimento místico egípcio: scanner suave + ressonância de cristal.
-  // É áudio sintetizado, não um novo prémio nem um novo resultado aleatório.
-  audio.expansionLaserScan=function(seconds,reel=2){
-    if(!ready())return;
-    const d=clamp(seconds*.88,.22,.69);
+  // Scanner egípcio contínuo, em vez de vários 'pew' por posição.
+  // Um único varrimento atravessa todos os tambores de cada expansão.
+  audio.stopExpansionScan=function(){
+    const active=this._expansionScan;this._expansionScan=null;
+    if(!active||!this.ctx)return;
     try{
-      const ac=this.ctx,t=ac.currentTime+.008;
-      const pan=typeof ac.createStereoPanner==='function'
-        ?ac.createStereoPanner():null;
-      if(pan){pan.pan.value=clamp((reel-2)*.25,-.5,.5);pan.connect(output());}
-      const bus=ac.createGain();
-      bus.gain.value=.86;bus.connect(pan||output());
+      const now=this.ctx.currentTime;
+      active.envelopes.forEach(env=>{
+        env.gain.cancelScheduledValues(now);
+        env.gain.setTargetAtTime(.0001,now,.025);
+      });
+      active.sources.forEach(src=>{try{src.stop(now+.17);}catch(_){}});
+    }catch(_){}
+  };
 
-      // Scanner a deslizar do topo para a base: descida de frequência.
-      const beam=ac.createOscillator(),filter=ac.createBiquadFilter(),
-        beamEnv=ac.createGain();
-      beam.type='triangle';
-      beam.frequency.setValueAtTime(1280,t);
-      beam.frequency.exponentialRampToValueAtTime(830,t+d*.48);
-      beam.frequency.exponentialRampToValueAtTime(370,t+d);
-      filter.type='bandpass';filter.Q.value=.75;
-      filter.frequency.setValueAtTime(1800,t);
-      filter.frequency.exponentialRampToValueAtTime(1320,t+d*.5);
-      filter.frequency.exponentialRampToValueAtTime(700,t+d);
-      beamEnv.gain.setValueAtTime(.0001,t);
-      beamEnv.gain.exponentialRampToValueAtTime(.037,t+.027);
-      beamEnv.gain.setValueAtTime(.031,t+d*.38);
-      beamEnv.gain.exponentialRampToValueAtTime(.0001,t+d);
-      beam.connect(filter);filter.connect(beamEnv);beamEnv.connect(bus);
-      beam.start(t);beam.stop(t+d+.02);
-      beam.onended=()=>{try{beam.disconnect();filter.disconnect();beamEnv.disconnect();}catch(_){}};
-
-      // Cristal egípcio subtil: escala com segunda menor e terça maior.
-      // Varia com a posição do tambor, da esquerda para a direita.
-      const scale=[440,466.16,554.37,659.25,698.46];
-      const pitch=scale[Math.max(0,Math.min(4,Math.floor(reel)))];
-      const halo=ac.createOscillator(),haloEnv=ac.createGain();
-      halo.type='sine';
-      halo.frequency.setValueAtTime(pitch*1.5,t);
-      halo.frequency.exponentialRampToValueAtTime(pitch*1.9,t+d*.6);
-      halo.frequency.exponentialRampToValueAtTime(pitch*1.55,t+d+.25);
-      haloEnv.gain.setValueAtTime(.0001,t);
-      haloEnv.gain.exponentialRampToValueAtTime(.011,t+d*.22);
-      haloEnv.gain.exponentialRampToValueAtTime(.0001,t+d+.30);
-      halo.connect(haloEnv);haloEnv.connect(bus);
-      halo.start(t);halo.stop(t+d+.32);
-      halo.onended=()=>{try{halo.disconnect();haloEnv.disconnect();bus.disconnect();pan?.disconnect();}catch(_){}};
-
-      // Três pequenos brilhos seguem as três linhas, de cima para baixo.
-      const crystal=[1174.66,1108.73,932.33];
-      for(let row=0;row<3;row++){
-        const delay=d*(.10+row*.29);
-        note(crystal[row],crystal[row]*.93,Math.min(.13,d*.26),
-          .0062,delay,'sine');
+  audio.expansionLaserScan=function(seconds,firstReel=0,lastReel=4){
+    if(!ready())return;
+    this.stopExpansionScan();
+    try{
+      const ac=this.ctx,t=ac.currentTime+.008,d=clamp(seconds,.55,3.4);
+      const pan=typeof ac.createStereoPanner==='function'?ac.createStereoPanner():null;
+      const bus=ac.createGain();bus.gain.value=.85;
+      bus.connect(pan||output());
+      if(pan){
+        pan.connect(output());
+        pan.pan.setValueAtTime(clamp((firstReel-2)*.16,-.38,.38),t);
+        pan.pan.linearRampToValueAtTime(clamp((lastReel-2)*.16,-.38,.38),t+d);
       }
-      friction(d*.56,.003,1750);
-    }catch(_){/* Sem áudio nunca bloquear a animação. */}
+
+      // Sopro luminoso e contínuo: brilho sem assobios nem disparos repetidos.
+      const breath=ac.createBufferSource(),filter=ac.createBiquadFilter(),
+        breathEnv=ac.createGain();
+      breath.buffer=noiseBuffer();breath.loop=true;
+      filter.type='bandpass';filter.Q.value=.55;
+      filter.frequency.setValueAtTime(520,t);
+      filter.frequency.exponentialRampToValueAtTime(1350,t+d*.48);
+      filter.frequency.exponentialRampToValueAtTime(460,t+d);
+      breathEnv.gain.setValueAtTime(.0001,t);
+      breathEnv.gain.linearRampToValueAtTime(.052,t+d*.22);
+      breathEnv.gain.setValueAtTime(.046,t+d*.67);
+      breathEnv.gain.exponentialRampToValueAtTime(.0001,t+d+.12);
+      breath.connect(filter);filter.connect(breathEnv);breathEnv.connect(bus);
+      breath.start(t);breath.stop(t+d+.15);
+      breath.onended=()=>{try{breath.disconnect();filter.disconnect();breathEnv.disconnect();}catch(_){}};
+
+      // Ressonância discreta de templo/cristal, sem notas curtas em cada linha.
+      const resonance=ac.createOscillator(),resEnv=ac.createGain();
+      resonance.type='sine';
+      resonance.frequency.setValueAtTime(196,t);
+      resonance.frequency.linearRampToValueAtTime(215,t+d);
+      resEnv.gain.setValueAtTime(.0001,t);
+      resEnv.gain.linearRampToValueAtTime(.018,t+d*.34);
+      resEnv.gain.exponentialRampToValueAtTime(.0001,t+d+.2);
+      resonance.connect(resEnv);resEnv.connect(bus);
+      resonance.start(t);resonance.stop(t+d+.23);
+      resonance.onended=()=>{try{resonance.disconnect();resEnv.disconnect();bus.disconnect();pan?.disconnect();}catch(_){}};
+      this._expansionScan={sources:[breath,resonance],envelopes:[breathEnv,resEnv]};
+    }catch(_){/* Nunca impedir a expansão se o áudio falhar. */}
   };
 
   audio.updateExpansionLaser=function(t,gameState){
-    if(!ready()||gameState.spinning||!gameState.lastWasFree||
-       gameState.paused||gameState.superseded)return;
+    if(!ready()||gameState.paused||gameState.superseded){
+      this.stopExpansionScan();return;
+    }
+    if(gameState.spinning||!gameState.lastWasFree)return;
     const reveal=gameState.reveal;
     if(!reveal||t>=reveal.end)return;
     const stages=Array.isArray(reveal.stages)?reveal.stages:
       Array.isArray(reveal.reels)?[reveal]:[];
     for(const stage of stages){
       if(stage.kind&&stage.kind!=='expansion')continue;
-      if(!stage.reels?.length||!stage.perReel)continue;
-      for(let i=0;i<stage.reels.length;i++){
-        const at=stage.start+stage.preDelay+i*stage.perReel;
-        if(t<at||t>=at+Math.min(160,stage.perReel*.45))continue;
-        if(!stage._laserPlayedReels)stage._laserPlayedReels=new Set();
-        if(stage._laserPlayedReels.has(i))continue;
-        stage._laserPlayedReels.add(i);
-        this.expansionLaserScan(stage.perReel/1000,stage.reels[i]);
-      }
+      if(!stage.reels?.length||!stage.perReel||stage._laserPlayed)continue;
+      const at=stage.start+stage.preDelay;
+      if(t<at||t>=at+Math.max(160,stage.perReel*.55))continue;
+      stage._laserPlayed=true;
+      const reels=stage.reels;
+      this.expansionLaserScan(stage.perReel*reels.length/1000+.18,reels[0],reels[reels.length-1]);
     }
   };
 
@@ -418,5 +418,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.4.5',original:true,realReelStopSample:true,sequenceAlert:true,retriggerTease:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.4.6',original:true,realReelStopSample:true,sequenceAlert:true,retriggerTease:true,dynamicReelSpeed:true};
 })();
