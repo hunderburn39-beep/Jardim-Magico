@@ -239,18 +239,21 @@
     const spin = this.spinObject;
     // Legenda sem retângulo, por baixo da moldura. O índice é o mesmo
     // usado pela linha desenhada pelo motor (alternância a cada 1600 ms).
-    if (!this.spinning && this.lastResult && !(this.featureIntro && t < this.featureIntro.end) &&
-        !(this.reveal && t < this.reveal.end)) {
+    if (!this.spinning && this.lastResult && !(this.featureIntro && t < this.featureIntro.end)) {
       const wins = this.lastResult.lineWins || [];
       let label = '';
       let tint = '#ffe5a3';
-      if (wins.length) {
-        const w = wins[Math.floor(t/1600) % wins.length];
-        label = (w.expanded ? 'EXPANSÃO · ' : 'LINHA ') + (w.line+1) + ' · ' + format(w.amount);
-        if (w.expanded) tint = '#8affec';
-      } else if (this.lastResult.scatterWin > 0) {
-        label = 'SCATTER · ' + format(this.lastResult.scatterWin);
-        tint = '#a2fff0';
+      const phase=this.expansionView?.(t)?.stage;
+      if(phase){
+        label='EXPANSÃO '+phase.symbol+' · ACUMULADO '+format(this.displayWinAt?.(t)??0);
+        tint='#80deff';
+      } else if(!(this.reveal && t<this.reveal.end) && wins.length){
+        const w=wins[Math.floor(t/1600)%wins.length];
+        label=(w.expanded?'EXPANSÃO '+w.symbol+' · LINHA ':'LINHA ')+(w.line+1)+' · '+format(w.amount);
+        if(w.expanded)tint='#8affec';
+      } else if(!(this.reveal && t<this.reveal.end) && this.lastResult.scatterWin>0){
+        label='SCATTER · '+format(this.lastResult.scatterWin);
+        tint='#a2fff0';
       }
       if (label) {
         ctx.save();
