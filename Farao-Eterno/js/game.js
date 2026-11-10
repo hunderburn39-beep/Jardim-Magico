@@ -53,7 +53,7 @@ class Game {
  constructor(){
   this.ledger=S.fresh();this.paused=false;this.superseded=false;this.storageOK=true;this.pendingSummary=null;this.owner=(crypto.randomUUID?.()||String(Math.random()));
   this.audio=new AudioFx();this.images={};this.ready=false;this.targets=[];this.temple=null;this.landings=Array(5).fill(0);this.fxParticles=[];
-  this.balance=300;this.betIndex=4;this.lines=10;this.grid=E.makeGrid(rnd);
+  this.balance=0;this.betIndex=4;this.lines=10;this.grid=E.makeGrid(rnd);
   this.spinObject=null;this.spinning=false;this.lastResult=null;this.lastWin=0;this.feature=null;this.lastBaseWin=0;this.lastWasFree=false;
   this.currentRound=0;this.winCells=[];this.expanded={};this.auto=0;this.turbo=false;this.sound=true;
   this.reveal=null;this.featureIntro=null;this.winCount=null;
@@ -793,7 +793,7 @@ class Game {
  openReset(){
   if(this.feature||this.spinning)return;
   this.openModal('REPOR SALDO',`<p>Saldo atual: ${money(this.balance)}.</p><p>Repor o saldo para 0,00 €?</p><div class="actions"><button class="btn" id="reset-go">Repor saldo a zero</button><button class="btn" id="reset-cancel">Voltar</button></div>`);
-  $('reset-go').onclick=()=>{S.reset(this.ledger);this.auto=0;this.syncLedger();this.winCount=null;this.save();this.closeModal();this.notice('SALDO REPÔSTO A ZERO · NOVO LEGADO',1300);};
+  $('reset-go').onclick=()=>{S.reset(this.ledger);this.auto=0;this.syncLedger();this.winCount=null;this.save();this.closeModal();this.notice('SALDO REPOSTO A ZERO · NOVO LEGADO',1300);};
   $('reset-cancel').onclick=()=>this.openInfo();
  }
  openGamble(){
