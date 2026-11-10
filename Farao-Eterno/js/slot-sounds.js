@@ -291,6 +291,23 @@
   // Alerta curto de sequência vencedora confirmada enquanto os
   // tambores param. Identidade diferente do click e do gong do Wild.
   // Um só toque por jogada; sem sirenes nem coros.
+  // Tease com duas torres já paradas: batida curta e crescente, sem
+  // competir com o PAAAMMM do Wild. Não é sinal de vitória garantida.
+  audio.tease=function(){
+    if(!ready())return;
+    note(174.6,196,.22,.021,0,'triangle');
+    note(220,247,.23,.022,.18,'triangle');
+    note(261.6,293.7,.26,.019,.40,'sine');
+  };
+  // A vitória do retrigger é diferente do tease: chama a atenção
+  // apenas após a 3.ª torre confirmar realmente as +8 Free Spins.
+  audio.retrigger=function(){
+    if(!ready())return;
+    note(329.63,392,.28,.044,0,'triangle');
+    note(493.88,587.33,.31,.048,.12,'sine');
+    note(659.25,783.99,.45,.042,.27,'sine');
+  };
+
   audio.sequenceAlert=function(){
     if(!ready())return;
     note(392,452,.16,.047,0,'triangle');
@@ -320,5 +337,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.4.2',original:true,realReelStopSample:true,sequenceAlert:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.4.3',original:true,realReelStopSample:true,sequenceAlert:true,retriggerTease:true,dynamicReelSpeed:true};
 })();
