@@ -23,7 +23,27 @@
    log:[{at:date(),kind:'opening',amountU:U(5000)}]
  });
  function ensure(s){
-   if(!s.economy)s.economy=freshEco();
+   if(!s.economy){
+     const initial=freshEco();
+     // Preservar os totais conhecidos ao atualizar uma sessão antiga.
+     // Movimentos anteriores a 100 registos podem já não estar disponíveis.
+     if(s.stats){
+       if(int(s.stats.stakeU))initial.totals.stakesU=s.stats.stakeU;
+       if(int(s.stats.winU))initial.totals.winsU=s.stats.winU;
+     }
+     for(const item of (Array.isArray(s.history)?s.history:[])){
+       if(item.kind==='deposit'||item.kind==='withdraw'){
+         const amount=Number(item.amount);
+         if(Number.isFinite(amount)&&amount>0){
+           const field=item.kind==='deposit'?'depositsU':'withdrawalsU';
+           initial.totals[field]+=U(amount);
+         }
+       }
+     }
+     initial.log.unshift({at:date(),kind:'history-migration',amountU:0,
+       detail:'Movimentos recuperáveis das últimas 100 ações'});
+     s.economy=initial;
+   }
    // Uma jogada anterior à implementação do cofre tem de poder terminar
    // com a matemática e a aposta que já estavam guardadas.
    if(s.pending&&s.pending.economyVersion!==1){
