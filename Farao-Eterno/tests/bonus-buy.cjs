@@ -2,7 +2,7 @@
 const test=require('node:test'),a=require('node:assert/strict');
 const S=require('../js/session.js');
 const E=require('../js/engine.js');
-const make=(betIndex=4,lines=10)=>{const s=S.fresh();s.betIndex=betIndex;s.lines=lines;return s;};
+const make=(betIndex=4,lines=10)=>{const s=S.fresh();s.betIndex=betIndex;s.lines=lines;s.balanceU=S.units(300);return s;};
 test('compra de bónus custa exatamente 100x a aposta TOTAL ativa',()=>{
  for(const [betIndex,lines] of [[0,1],[0,10],[4,5],[4,10],[7,1],[7,10]]){
   const s=make(betIndex,lines);s.balanceU=S.units(10000);
