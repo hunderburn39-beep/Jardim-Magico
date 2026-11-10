@@ -17,13 +17,23 @@
     ANUBIS:{2:5,3:30,4:300,5:1600}, KING:{2:10,3:100,4:1000,5:5000},
     TOMB:{2:10,3:100,4:1000,5:5000}
   };
-  // Line 1 middle, lines 2/3 upper/lower. Rows are indexed 0,1,2.
+  // Geometria aprovada na tabela do utilizador (0=cima, 1=meio, 2=baixo).
+  // Só as linhas mudam nesta versão: valores da tabela, pesos e RNG mantêm-se.
   const LINES = [
+    [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2],
+    [0,1,2,1,0], [2,1,0,1,2],
+    [1,0,0,0,1], [1,2,2,2,1],
+    [0,0,1,2,2], [2,2,1,0,0], [1,0,1,2,1]
+  ];
+  // Geometria anterior: necessária para liquidar jogadas pendentes e
+  // consultar resultados históricos sem reescrever prémios antigos.
+  const LEGACY_LINES = [
     [1,1,1,1,1], [0,0,0,0,0], [2,2,2,2,2],
     [0,1,2,1,0], [2,1,0,1,2],
     [0,0,1,2,2], [2,2,1,0,0],
     [1,0,1,2,1], [1,2,1,0,1], [0,1,1,1,2]
   ];
+  const PAYLINES_VERSION = 2;
   const randomFloat = () => {
     if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
       const arr = new Uint32Array(1); crypto.getRandomValues(arr); return arr[0] / 4294967296;
@@ -67,7 +77,7 @@
     }
     return n;
   }
-  function evaluate(grid, bet = 1, activeLines = 10, special = []) {
+  function evaluate(grid, bet = 1, activeLines = 10, special = [], paylines = LINES) {
     if(!Array.isArray(grid) || grid.length !== 5 || grid.some(col=>!Array.isArray(col)||col.length!==3||col.some(symbol=>!ALL.includes(symbol)))) throw new Error('Grelha 5x3 inválida');
     if(!Number.isFinite(bet)||bet<=0)throw new Error('Aposta inválida');
     if (!Number.isInteger(activeLines) || activeLines < 1 || activeLines > 10) throw new Error('Linhas devem ser 1–10');
@@ -82,7 +92,7 @@
     const lineWins=[];
     let paylinesTotal=0;
     for(let i=0;i<activeLines;i++) {
-      const rows=LINES[i];
+      const rows=paylines[i];
       let best={symbol:null,count:0,payCoins:0,expanded:false};
       for(const symbol of ALL) {
         const count=lineCandidate(grid,rows,symbol);
@@ -115,5 +125,5 @@
     return feature;
   }
   const upperLimit = (bet) => bet*5000;
-  return { NORMAL, ALL, WEIGHTS, PAYS, LINES, randomFloat, pickWeighted, makeGrid, countScatters, lineCandidate, evaluate, startFeature, retrigger, upperLimit };
+  return { NORMAL, ALL, WEIGHTS, PAYS, LINES, LEGACY_LINES, PAYLINES_VERSION, randomFloat, pickWeighted, makeGrid, countScatters, lineCandidate, evaluate, startFeature, retrigger, upperLimit };
 });
