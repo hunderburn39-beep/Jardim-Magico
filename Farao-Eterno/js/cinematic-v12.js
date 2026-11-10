@@ -262,7 +262,7 @@
     const spin = this.spinObject;
     // Legenda sem retângulo, por baixo da moldura. O índice é o mesmo
     // usado pela linha desenhada pelo motor (alternância a cada 1600 ms).
-    if (!this.spinning && this.lastResult && !(this.featureIntro && t < this.featureIntro.end)) {
+    if (!this.spinning && this.lastResult && !(this.featureIntro && t >= this.featureIntro.start && t < this.featureIntro.end)) {
       const wins = this.lastResult.lineWins || [];
       let label = '';
       let tint = '#ffe5a3';
