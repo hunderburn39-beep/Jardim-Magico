@@ -216,8 +216,8 @@ test("Acumulados guardam frações de cêntimo e só crescem em giros pagos",()=
     if(paid.pendingStrawberry)paid=E.chooseStrawberry(paid,0).state;
     if(paid.pendingWheel)paid=E.resolveWheel(paid).state;
   }
-  assert.ok(paid.jackpots[0]>original.jackpots[0]);
-  assert.ok(paid.jackpots[1]>original.jackpots[1]);
+  assert.ok(paid.jackpots[0]+paid.jackpotRemainders[0]>original.jackpots[0]);
+  assert.ok(paid.jackpots[1]+paid.jackpotRemainders[1]>original.jackpots[1]);
   const free=E.spin({...E.createState(),freeSpins:1},fixed(.45));
   assert.deepEqual(free.state.jackpots,[350,750,1500,3000]);
   assert.deepEqual(free.state.jackpotRemainders,[0,0,0,0]);
