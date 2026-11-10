@@ -78,11 +78,30 @@ class Classica extends Phaser.Scene{
    const roof=this.add.graphics().fillStyle(0x100e29,.6);
    roof.fillTriangle(0,315,128,207,264,315).fillRect(42,279,168,80);
    roof.fillTriangle(420,315,565,215,720,315).fillRect(472,271,180,80);
-   this.add.text(360,182,"Halloween",{
-       fontFamily:"Georgia,serif",fontSize:"88px",fontStyle:"italic bold",color:"#ec9c44",
-       stroke:"#381b29",strokeThickness:10,shadow:{color:"#ff8a2b",blur:12}
+   // Logótipo 3D em camadas, com espessura metálica e luz superior.
+   const halo=this.add.graphics();
+   halo.fillStyle(0xffa447,.09).fillEllipse(360,178,610,155);
+   halo.fillStyle(0x10061b,.50).fillEllipse(360,195,610,115);
+   halo.lineStyle(2,0xbc783b,.48).strokeRoundedRect(77,120,566,144,35);
+   const logoBase={fontFamily:"Georgia,serif",fontSize:"88px",fontStyle:"italic bold"};
+   for(let depth=8;depth>=1;depth--){
+     this.add.text(361+depth*.22,171+depth*2,"Halloween",{
+       ...logoBase,color:depth>4?"#492016":"#965025",
+       stroke:"#210f1d",strokeThickness:9
      }).setOrigin(.5);
-   txt(this,360,240,"III",50,"#ffd277",{stroke:"#641b2d",strokeThickness:8});
+   }
+   this.add.text(360,170,"Halloween",{
+     ...logoBase,color:"#ffd677",stroke:"#57251c",strokeThickness:9,
+     shadow:{offsetX:-2,offsetY:-3,color:"#fff1ad",blur:5,fill:true}
+   }).setOrigin(.5);
+   for(let depth=5;depth>=1;depth--)
+     txt(this,360,241+depth*1.8,"III",49,"#583022",{stroke:"#22101b",strokeThickness:7});
+   txt(this,360,239,"III",49,"#ffe4a0",{stroke:"#8d461e",strokeThickness:7,
+     shadow:{offsetX:-1,offsetY:-2,color:"#fff6cc",blur:4,fill:true}});
+   const trim=this.add.graphics();
+   trim.lineStyle(3,0xf9c570,.85).lineBetween(275,282,445,282);
+   trim.fillStyle(0xffe4a0,1).fillCircle(360,282,5);
+   trim.fillStyle(0xffc56c,.70).fillCircle(273,282,3).fillCircle(447,282,3);
  }
  hud(){
    const g=this.add.graphics();
@@ -101,17 +120,23 @@ class Classica extends Phaser.Scene{
  }
  grid(){
    const frame=this.add.graphics();
-   frame.fillStyle(0x071329,.95).fillRoundedRect(X-9,Y-9,BW+18,BH+18,10);
-   frame.lineStyle(7,0xdb9d55,1).strokeRoundedRect(X-8,Y-8,BW+16,BH+16,9);
-   frame.fillStyle(0xe9edf1,1).fillRect(X,Y,BW,BH);
+   // Moldura fundida em bronze: sombra lateral, friso e encaixe dos rolos.
+   frame.fillStyle(0x080815,.84).fillRoundedRect(X-16,Y-5,BW+32,BH+26,13);
+   frame.fillStyle(0x48291d,1).fillRoundedRect(X-13,Y-13,BW+26,BH+26,12);
+   frame.lineStyle(5,0x17101c,1).strokeRoundedRect(X-14,Y-14,BW+28,BH+28,12);
+   frame.lineStyle(6,0xffd28a,1).strokeRoundedRect(X-11,Y-11,BW+22,BH+22,9);
+   frame.lineStyle(2,0x784123,1).strokeRoundedRect(X-7,Y-7,BW+14,BH+14,6);
+   frame.fillStyle(0x10192b,1).fillRect(X-2,Y-2,BW+4,BH+4);
    this.symbols=[];
    this.reelBands=[];
    for(let col=0;col<5;col++){
      const sx=X+CW*col;
      for(let row=0;row<3;row++){
        const sy=Y+CH*row;
-       frame.fillGradientStyle(0xf5f9fa,0xdce7ee,0xf3f6f9,0xcbd9e0,1)
+       frame.fillGradientStyle(0xeaf0f0,0xb8c0d0,0xf7f0e6,0xc2c9d5,1)
          .fillRect(sx+2,sy+2,CW-4,CH-4);
+       frame.fillStyle(0x15233c,.14).fillRect(sx+3,sy+3,CW-6,8);
+       frame.fillStyle(0xffffff,.22).fillRect(sx+3,sy+CH-12,CW-6,7);
      }
      // Cada rolo tem cinco sprites: 1 fora da janela no topo, 3
      // visíveis e outro em baixo. A máscara recorta o movimento real.
@@ -128,7 +153,7 @@ class Classica extends Phaser.Scene{
      this.reelBands[col]=band;
      this.symbols[col]=band.slice(1,4);
    }
-   const lines=this.add.graphics().lineStyle(4,0x0e1324,1);
+   const lines=this.add.graphics().lineStyle(4,0x1f2033,1);
    for(let c=1;c<5;c++)lines.lineBetween(X+c*CW,Y,X+c*CW,Y+BH);
    for(let r=1;r<3;r++)lines.lineBetween(X,Y+r*CH,X+BW,Y+r*CH);
    this.winGlow=this.add.graphics();
@@ -185,20 +210,32 @@ class Classica extends Phaser.Scene{
    this.roundButton(520,1192,48,"AUTO",21,()=>this.toggleAuto());
    this.roundButton(634,1192,48,"SOM",21,()=>this.toggleSound());
    this.autoText=txt(this,520,1252,"",18,"#fbdeb4");
-   const help=this.add.graphics();
-   help.fillStyle(0x541b37,.96).fillCircle(671,272,28);
-   help.lineStyle(3,0xfbd68b).strokeCircle(671,272,28);
-   txt(this,671,272,"?",35,"#fff0cb");
-   this.add.zone(671,272,65,65).setInteractive({useHandCursor:true})
-     .on("pointerdown",()=>this.togglePaytable());
+   txt(this,66,1255,"V0.13",17,"#d6a65c",{stroke:"#160d23",strokeThickness:3}).setAlpha(.85);
+   this.roundButton(671,272,29,"?",33,()=>this.togglePaytable());
  }
  roundButton(x,y,r,caption,size,callback,main=false){
+   // Botão físico 3D: sombra, aro fundido, centro convexo e reflexos.
    const g=this.add.graphics();
-   g.fillStyle(0x130b1c,.84).fillCircle(x,y+5,r+4);
-   g.fillStyle(main?0xb82b1d:0x8b1324,1).fillCircle(x,y,r);
-   g.lineStyle(5,main?0xffc866:0xeebc94).strokeCircle(x,y,r-3);
-   txt(this,x,y,caption,size,"#ffe5c7",{stroke:"#651f19",strokeThickness:3});
-   this.add.zone(x,y,2*r,2*r).setInteractive({useHandCursor:true}).on("pointerdown",callback);
+   g.fillStyle(0x050413,.72).fillEllipse(x+3,y+10,r*2+19,r+18);
+   g.fillStyle(0x49241d,1).fillCircle(x,y+7,r+5);
+   g.fillStyle(0x9b602e,1).fillCircle(x,y+3,r+3);
+   g.fillStyle(0xffe4a0,1).fillCircle(x,y,r+1);
+   g.fillStyle(0x8d542f,1).fillCircle(x,y,r-3);
+   g.fillStyle(main?0x9b211e:0x69223e,1).fillCircle(x,y-2,r-7);
+   g.fillStyle(main?0xec6040:0xb44f75,.76).fillEllipse(x-r*.11,y-r*.33,r*1.25,r*.77);
+   g.fillStyle(0xfff1bf,.32).fillEllipse(x-r*.32,y-r*.55,r*.76,r*.18);
+   g.lineStyle(2,0xffd68b,.68).strokeCircle(x,y-2,r-8);
+   g.fillStyle(0xffffff,.4).fillCircle(x-r*.47,y-r*.34,Math.max(2,r*.055));
+   const label=txt(this,x,y-2,caption,size,main?"#fff0c9":"#ffeac2",{
+     stroke:"#421726",strokeThickness:4,
+     shadow:{offsetX:1,offsetY:3,color:"#170917",blur:3,fill:true}
+   });
+   this.add.zone(x,y,2*r,2*r).setInteractive({useHandCursor:true})
+     .on("pointerdown",()=>{
+       g.setAlpha(.78);label.setAlpha(.78);
+       this.time.delayedCall(95,()=>{g.setAlpha(1);label.setAlpha(1);});
+       callback();
+     });
  }
  shortcuts(){
    this.input.keyboard?.on("keydown-SPACE",()=>this.spin());
