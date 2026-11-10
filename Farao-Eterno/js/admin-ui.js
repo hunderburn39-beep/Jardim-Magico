@@ -7,7 +7,7 @@
  if(!g||!S||!E)return;
  const $=id=>document.getElementById(id);
  const fmt=amount=>Number(amount).toLocaleString('pt-PT',
-   {minimumFractionDigits:2,maximumFractionDigits:2})+' cr';
+   {minimumFractionDigits:2,maximumFractionDigits:2})+' €';
  const val=key=>fmt(S.credits(key||0));
  const number=raw=>Number(String(raw).trim().replace(',','.'));
  const errors=message=>{const el=$('farao-admin-error');if(el)el.textContent=message||'';};
@@ -16,7 +16,7 @@
    '<label class="farao-admin-field" for="'+id+'"><span>'+label+'</span>'+
    '<input id="'+id+'" type="'+type+'" value="'+value+'" '+extra+'></label>';
  const button=(id,text)=>'<button type="button" class="btn farao-gold-btn" id="'+id+'">'+text+'</button>';
- const note='<p class="farao-admin-disclaimer">Apenas créditos locais de simulação. Estes códigos não protegem uma caixa real: quem tiver acesso aos ficheiros do navegador pode alterá-los.</p>';
+ const note='<p class="farao-admin-disclaimer">Simulação local sem movimentar dinheiro real. Os códigos não protegem valores financeiros: podem ser consultados ou alterados no navegador.</p>';
  const status=()=>g.ledger?.economy||E.ensure(g.ledger);
  const save=()=>{g.syncLedger();g.save();};
  const guard=action=>{try{if(!g._adminAuthenticated)throw Error('Entra primeiro com o código de administrador');if(!active())throw Error('A jogada tem de terminar');action();save();return true;}catch(err){errors(err.message||'Operação não permitida');return false;}};
@@ -50,12 +50,12 @@
      '<p class="farao-admin-note">85%: prémios altos menos frequentes. 95%: mais frequentes. O valor também determina a parcela das apostas enviada ao fundo de prémios. Não é RTP garantido.</p>'+
      button('admin-save-level','GUARDAR TAXA')+
      heading('Fundo de prémios')+
-     field('admin-fund','Valor a colocar ou retirar (créditos)','', 'text',
+     field('admin-fund','Valor a colocar ou retirar (€)','', 'text',
        'inputmode="decimal" placeholder="Ex.: 100,00"')+
      '<div class="farao-admin-actions">'+button('admin-fund-add','ADICIONAR FUNDO')+
        button('admin-fund-remove','RETIRAR FUNDO')+'</div>'+
      heading('Levantamento dos lucros')+
-     field('admin-profit-amount','Valor a levantar (créditos)','', 'text',
+     field('admin-profit-amount','Valor a levantar (€)','', 'text',
        'inputmode="decimal" placeholder="Ex.: 10,50"')+
      '<div class="farao-admin-actions">'+button('admin-tech-collect','LEVANTAR TÉCNICO')+
        button('admin-merchant-collect','LEVANTAR COMERCIANTE')+'</div>'+
