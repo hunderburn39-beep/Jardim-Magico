@@ -799,62 +799,40 @@ class Game {
   }
 
   drawActivePayline(t,left,top,cw,gh,interval){
-  if(this.spinning || !this.lastResult?.lineWins?.length || this.featureIntro&&t<this.featureIntro.end)return;
-  if(this.reveal&&t<this.reveal.end)return;
-  // Follow the exact same 1.6 second rotation as the information under the reels.
-  const wins=this.lastResult.lineWins;
-  const chosen=wins[Math.floor(t/1600)%wins.length];
-  const alpha=.60+.24*Math.sin(t*.006);
-  const hue=chosen.expanded?'#7affeb':'#ffe2a0';
-  const soften=Boolean(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-  cx.save();cx.beginPath();cx.rect(left,top,5*interval-2,3*gh);cx.clip();
-  cx.lineJoin='round';cx.lineCap='round';
-  if(chosen.expanded){
-   // Expansion pays from a set of reels, even if they are not consecutive.
-   const found=this.lastResult.expanders.find(e=>e.symbol===chosen.symbol);
-   const reels=found?found.reels:[];
-   cx.strokeStyle=hue;cx.shadowColor='#64ffe5';cx.shadowBlur=soften?0:11;
-   cx.lineWidth=3;cx.globalAlpha=alpha;
-   for(const c of reels){
-    const xx=left+c*interval;
-    cx.strokeRect(xx+5,top+5,cw-10,3*gh-10);
-    // Three discreet guides show that the entire reel is active.
-    for(let r=0;r<3;r++){
-     const yy=top+(r+.86)*gh;
-     cx.beginPath();cx.moveTo(xx+19,yy);cx.lineTo(xx+cw-19,yy);cx.stroke();
-    }
-   }
-   // Dotted bridge denotes non-consecutive winning reels, not an extra payline.
-   if(reels.length>=2){
-    cx.globalAlpha=.37;cx.lineWidth=2;cx.setLineDash([5,8]);
-    cx.lineDashOffset=soften?0:-t*.014;
-    const yy=top+gh*3-12;
-    cx.beginPath();cx.moveTo(left+reels[0]*interval+cw/2,yy);
-    cx.lineTo(left+reels[reels.length-1]*interval+cw/2,yy);cx.stroke();
-    cx.setLineDash([]);
-   }
-  } else {
-   const coords=Array.from({length:chosen.count},(_,c)=>({
+   if(this.spinning || !this.lastResult?.lineWins?.length || this.featureIntro&&t<this.featureIntro.end)return;
+   if(this.reveal&&t<this.reveal.end)return;
+   // Linha azul completa do tambor 1 ao 5, mesmo se apenas 2/3/4 peças pagarem.
+   // Só as peças da combinação têm pontos de destaque.
+   const wins=this.lastResult.lineWins;
+   const chosen=wins[Math.floor(t/1600)%wins.length];
+   if(!Array.isArray(chosen.rows)||chosen.rows.length!==5)return;
+   const soften=Boolean(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+   const alpha=soften?.92:.86+.12*Math.sin(t*.006);
+   const coords=chosen.rows.map((row,c)=>({
      x:left+c*interval+cw/2,
-     y:top+chosen.rows[c]*gh+gh*.81,
-     bx:left+c*interval,
-     by:top+chosen.rows[c]*gh
+     y:top+row*gh+gh*.80
    }));
-   if(coords.length){
-    cx.strokeStyle=hue;cx.lineWidth=3.3;cx.shadowColor='#ffca63';
-    cx.shadowBlur=soften?0:12;cx.globalAlpha=alpha;
-    cx.beginPath();coords.forEach((p,i)=>i?cx.lineTo(p.x,p.y):cx.moveTo(p.x,p.y));cx.stroke();
-    coords.forEach(p=>{
-     cx.globalAlpha=.25+.12*Math.sin(t*.005);
-     cx.lineWidth=1.7;cx.strokeRect(p.bx+5,p.by+6,cw-10,gh-12);
-     cx.globalAlpha=.92;
-     cx.beginPath();cx.arc(p.x,p.y,3.5,0,Math.PI*2);
-     cx.fillStyle='#fff5c9';cx.fill();
-    });
+   const expander=chosen.expanded?this.lastResult.expanders?.find(e=>e.symbol===chosen.symbol):null;
+   const paidReels=chosen.expanded
+     ?new Set(expander?.reels||[])
+     :new Set(Array.from({length:Math.min(5,chosen.count)},(_,i)=>i));
+   cx.save();cx.beginPath();cx.rect(left,top,5*interval-2,3*gh);cx.clip();
+   cx.lineJoin='round';cx.lineCap='round';
+   cx.beginPath();
+   coords.forEach((p,i)=>i?cx.lineTo(p.x,p.y):cx.moveTo(p.x,p.y));
+   // Traço azul ligeiramente mais espesso, com contorno para contraste.
+   cx.globalAlpha=.82;cx.shadowBlur=0;cx.strokeStyle='#041d3f';cx.lineWidth=10;cx.stroke();
+   cx.globalAlpha=alpha;cx.strokeStyle='#299cff';cx.shadowColor='#42bcff';
+   cx.shadowBlur=soften?0:19;cx.lineWidth=5.6;cx.stroke();
+   cx.shadowBlur=0;cx.strokeStyle='#b1efff';cx.globalAlpha=.79;cx.lineWidth=1.4;cx.stroke();
+   for(const c of paidReels){
+     const p=coords[c];if(!p)continue;
+     cx.globalAlpha=.92;cx.fillStyle='#e2faff';cx.shadowColor='#64d0ff';
+     cx.shadowBlur=soften?0:15;
+     cx.beginPath();cx.arc(p.x,p.y,4.2,0,Math.PI*2);cx.fill();
    }
+   cx.restore();
   }
-  cx.restore();
- }
  drawIcon(sym,x,y,w,h,win=false,t=performance.now()){
   cx.save();
   // Contain all original image proportions in one centred square: no crop or stretch.
