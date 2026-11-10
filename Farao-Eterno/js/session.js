@@ -65,7 +65,7 @@
     const bet=stake(s),free=!!s.feature;
     if(!free&&s.balanceU<units(bet))throw Error('Créditos insuficientes');
     // Commit the entire outcome, including feature selection, before animation.
-    const grid=E.makeGrid(rng),result=E.evaluate(grid,bet,s.lines,free?s.feature.symbols:[]);
+    const grid=E.makeGrid(rng,free?E.FREE_WEIGHTS:E.WEIGHTS),result=E.evaluate(grid,bet,s.lines,free?s.feature.symbols:[]);
     let nextSymbol=null;
     if(result.trigger){const choices=free?E.NORMAL.filter(x=>!s.feature.symbols.includes(x)):E.NORMAL;
       if(choices.length)nextSymbol=choices[Math.floor(rng()*choices.length)];}
