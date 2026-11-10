@@ -396,16 +396,23 @@ class Game {
    const stages=stagedPayout.map((group,index)=>{
     // O tempo de cada imagem cresce de cima para baixo; pausa antes da próxima.
     const reels=[...group.reels];
-    const perReel=this.turbo?355:700,preDelay=this.turbo?170:340;
+    // Nas Free Spins, revelar depressa cada sequência; os créditos continuam
+    // a ser pagos uma só vez, na ordem e no momento creditAt.
+    const isLine=group.kind==='line';
+    const perReel=item.free?(this.turbo?(isLine?40:100):(isLine?70:155))
+      :(this.turbo?355:700);
+    const preDelay=item.free?(this.turbo?45:75):(this.turbo?170:340);
     const creditAt=cursor+preDelay+Math.max(1,reels.length)*perReel;
-    const end=creditAt+(this.turbo?670:1250);
+    const end=creditAt+(item.free
+      ?(this.turbo?(isLine?85:160):(isLine?120:300))
+      :(this.turbo?670:1250));
     const stage={...group,index,start:cursor,preDelay,perReel,
      reels,creditAt,end,amount:S.credits(group.amountU),
      win:group.kind==='line'?result.lineWins.find(w=>!w.expanded&&
        w.line===group.line&&w.symbol===group.symbol):null};
     if(group.kind==='expansion')reels.forEach((reel,k)=>
      this.emitBurst(83+reel*101,444,13,'#83ffef',cursor+preDelay+(k+1)*perReel));
-    cursor=end+(this.turbo?380:840);
+    cursor=end+(item.free?(this.turbo?40:85):(this.turbo?380:840));
     return stage;
    });
    const end=stages.at(-1).end;
@@ -414,22 +421,22 @@ class Game {
    // O prémio mostrado apenas soma parcelas efetivamente creditadas.
    this.winCount={start:finishedAt,duration:end-finishedAt,amount:prize,
     stages:stages.map(g=>({amount:g.amount,start:g.creditAt,end:g.creditAt}))};
-   this.nextActionAt=Math.max(this.nextActionAt,end+(this.turbo?340:750));
+   this.nextActionAt=Math.max(this.nextActionAt,end+(item.free?(this.turbo?90:150):(this.turbo?340:750)));
   }else{
   const expansions=item.free?(result.expansionAwards||[]):[];
   if(expansions.length){
    let cursor=finishedAt+90;
    const visualStages=[],rawGroups=[{symbol:null,amount:result.baseTotal+result.scatterWin}];
    for(const candidate of expansions){
-    const start=cursor,preDelay=this.turbo?140:280,perReel=this.turbo?135:245;
-    const end=start+preDelay+candidate.reels.length*perReel+(this.turbo?200:390);
+    const start=cursor,preDelay=this.turbo?95:130,perReel=this.turbo?110:165;
+    const end=start+preDelay+candidate.reels.length*perReel+(this.turbo?135:240);
     const stage={symbol:candidate.symbol,reels:[...candidate.reels],start,end,preDelay,perReel,
      amount:candidate.amount};
     visualStages.push(stage);
     rawGroups.push({symbol:candidate.symbol,amount:candidate.amount,stage});
     candidate.reels.forEach((reel,k)=>this.emitBurst(83+reel*101,444,14,'#83ffef',
      start+preDelay+k*perReel));
-    cursor=end+(this.turbo?105:240);
+    cursor=end+(this.turbo?70:125);
    }
    this.reveal={start:finishedAt,end:visualStages.at(-1).end,stages:visualStages};
    // Valor real, limitado a 5000× no conjunto das Free Spins. Sem arredondar
@@ -449,18 +456,18 @@ class Game {
      end:x.stage?x.stage.end:Math.max(finishedAt+360,visualStages[0].start+110)});
    }
    this.winCount={start:finishedAt+75,duration:cursor-finishedAt,amount:prize,stages:counted};
-   this.nextActionAt=Math.max(this.nextActionAt,cursor+260);
+   this.nextActionAt=Math.max(this.nextActionAt,cursor+135);
   }else{
    // Conservar o movimento aprovado quando só uma figura é expansiva.
    const reels=item.free?Object.keys(this.expanded).map(Number).sort((a,b)=>a-b):[];
-   const animationEnd=reels.length?360+reels.length*(this.turbo?140:230)+300:0;
+   const animationEnd=reels.length?200+reels.length*(this.turbo?110:165)+220:0;
    for(let k=0;k<reels.length;k++)this.emitBurst(83+reels[k]*101,444,16,'#83ffef',
-    finishedAt+(this.turbo?190:360)+k*(this.turbo?140:230));
-   this.reveal=reels.length?{start:finishedAt,reels,preDelay:this.turbo?190:360,
-    perReel:this.turbo?140:230,end:finishedAt+animationEnd}:null;
+    finishedAt+(this.turbo?110:200)+k*(this.turbo?110:165));
+   this.reveal=reels.length?{start:finishedAt,reels,preDelay:this.turbo?110:200,
+    perReel:this.turbo?110:165,end:finishedAt+animationEnd}:null;
    this.winCount={start:finishedAt+(this.reveal?animationEnd-280:80),
-    duration:this.turbo?450:820,amount:prize};
-   this.nextActionAt=Math.max(this.nextActionAt,this.winCount.start+this.winCount.duration+250);
+    duration:this.turbo?300:540,amount:prize};
+   this.nextActionAt=Math.max(this.nextActionAt,this.winCount.start+this.winCount.duration+(item.free?130:250));
   }
   }
   if(item.free){
@@ -482,8 +489,8 @@ class Game {
   // Resultado já fixado pelo motor antes da animação: as páginas são visuais.
   // Cada novo retrigger apresenta um novo símbolo até esgotar os nove.
   if(!E.NORMAL.includes(symbol))return;
-  const duration=this.turbo?4400:6000;
-  const turns=this.turbo?4:6;
+  const duration=this.turbo?1900:2900;
+  const turns=this.turbo?3:4;
   const owned=this.feature?.symbols||this.ledger.last?.bonusDone?.symbols||[symbol];
   const number=Math.max(1,owned.indexOf(symbol)+1);
   const alternatives=E.NORMAL.filter(candidate=>candidate!==symbol);
@@ -823,7 +830,18 @@ class Game {
   }
   if(this.spinning&&!this.paused&&!document.hidden){
    const item=this.spinObject;
-   for(let c=0;c<5;c++) if(!item.stopped[c] && t>=(item.stopAt?.[c]??(item.start+item.duration+c*item.reelGap))){item.stopped[c]=true;this.landings[c]=t;this.audio.tick(c);}
+   // Nunca deixar um tambor posterior parar antes do anterior, mesmo
+   // com suspenses, frames atrasados ou alterações de velocidade.
+   // No máximo uma paragem por frame para a sequência 1→2→3→4→5
+   // ser visualmente inequívoca.
+   for(let c=0;c<5;c++){
+    if(item.stopped[c])continue;
+    if(c>0&&!item.stopped[c-1])break;
+    if(t>=(item.stopAt?.[c]??(item.start+item.duration+c*item.reelGap))){
+     item.stopped[c]=true;this.landings[c]=t;this.audio.tick(c);
+    }
+    break;
+   }
    if(item.stopped.every(Boolean))this.finishSpin();
   }else if(!this.spinning&&!this.paused&&!this.superseded&&!document.hidden&&t>this.nextActionAt&&mod.classList.contains('hidden')){
    if(this.pendingSummary)this.showSummary();else if(this.feature||this.auto>0)this.autoSpin();
