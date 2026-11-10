@@ -41,6 +41,25 @@
     if(Array.isArray(old.history))s.history=old.history.filter(h=>h&&typeof h.t==='string'&&Number.isFinite(h.bet)&&Number.isFinite(h.win)).slice(0,100).map(h=>({...h,kind:h.bonus?'free':'spin'}));
     s.settings.sound=old.sound!==false;return validate(s);
   }
+  // Compra voluntária por 100× a aposta TOTAL atual; apenas créditos do jogo.
+  // A operação é atómica e recuperável no mesmo armazenamento das jogadas.
+  function buyBonus(s,rng=E.randomFloat,now=new Date().toISOString()){
+    validate(s);
+    if(s.pending)throw Error('Existe uma jogada por terminar');
+    if(s.feature)throw Error('Já tens um bónus ativo');
+    const bet=stake(s),costU=units(bet)*100;
+    if(s.balanceU<costU)throw Error('Créditos insuficientes para comprar o bónus');
+    // Selecionar o símbolo antes de debitar créditos. Nunca criar um giro falso.
+    const symbol=E.NORMAL[Math.min(E.NORMAL.length-1,Math.max(0,Math.floor(rng()*E.NORMAL.length)))];
+    s.balanceU-=costU;
+    s.feature={left:8,played:0,totalU:0,symbols:[symbol],retriggers:0};
+    s.gambles=0;s.lastBaseWinU=0;s.lastWinU=0;s.last=null;
+    s.stats.features++;
+    s.stats.stakeU+=costU;
+    s.history.unshift({t:now,kind:'bonus-buy',bet,cost:credits(costU),win:0,symbol});
+    s.history=s.history.slice(0,100);
+    return {costU,bet,symbol,spins:8};
+  }
   function begin(s,rng=E.randomFloat){
     validate(s);if(s.pending)throw Error('Existe uma jogada por terminar');
     const bet=stake(s),free=!!s.feature;
@@ -89,5 +108,5 @@
     s.balanceU=units(300);s.lastWinU=0;s.lastBaseWinU=0;s.gambles=0;s.last=null;
     s.history.unshift({t:now,kind:'reset',bet:0,win:0});s.history=s.history.slice(0,100);
   }
-  return {UNIT,BETS,units,credits,stake,fresh,validate,restore,migrate,begin,settle,gamble,reset,gridOK};
+  return {UNIT,BETS,units,credits,stake,fresh,validate,restore,migrate,buyBonus,begin,settle,gamble,reset,gridOK};
 });
