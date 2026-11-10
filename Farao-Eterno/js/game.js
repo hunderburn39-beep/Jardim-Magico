@@ -613,6 +613,10 @@ class Game {
   const wins=Array.isArray(h.lineWins)?h.lineWins:[],valid=wins.filter(w=>Number.isInteger(w.line)&&w.line>=0&&w.line<historicLines.length);
   const selected=Number.isSafeInteger(selectedWin)&&selectedWin>=0&&selectedWin<valid.length?selectedWin:null;
   const cells=new Set();
+  if(selected===null&&h.scatterWin>0){
+   for(let col=0;col<5;col++)for(let row=0;row<3;row++)
+    if(h.grid[col]?.[row]==='TOMB')cells.add(col+'-'+row);
+  }
   for(const [index,w] of valid.entries())if(selected===null||selected===index){
    const line=historicLines[w.line];
    if(w.expanded){for(let c=0;c<5;c++)if(h.grid[c]?.includes(w.symbol))for(let row=0;row<3;row++)cells.add(c+'-'+row);}
@@ -629,7 +633,17 @@ class Game {
   }).join('');
   const board='<div style="position:relative;max-width:500px;margin:12px auto"><div style="display:grid;gap:3px">'+rows+'</div><svg viewBox="0 0 500 300" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible">'+paths+'</svg></div>';
   const choices=valid.map((w,i)=>'<button type="button" class="btn" data-history-win="'+i+'" style="margin:3px;'+(selected===i?'border-color:#fff1a5;':'')+'">'+(w.expanded?'EXP '+w.symbol+' · ':'')+'Linha '+(w.line+1)+' · '+money(w.amount||0)+'</button>').join('');
-  this.openModal('JOGADA #'+id,'<p>'+new Date(h.t).toLocaleString('pt-PT')+' · Aposta '+money(h.bet)+' · Prémio '+money(h.win)+'</p>'+board+'<p>'+valid.length+' linhas vencedoras. '+(valid.length?'Escolhe o símbolo e a linha para os destacar.':'Sem linhas vencedoras nesta jogada.')+'</p><div style="text-align:center">'+choices+'</div><button class="btn" id="back-history">Voltar ao histórico</button>');
+  const towerInfo=h.scatterWin>0?
+   '<p style="color:#ffe19d;font-weight:800">'+(h.towerPayVersion===1?'TORRES EM QUALQUER POSIÇÃO':'SCATTER')+
+   ': '+(h.scatters||0)+' · Parcela calculada '+money(h.scatterWin)+
+   (h.towerPayVersion===1?' (sujeita ao limite do bónus)':'')+'</p>':'';
+  this.openModal('JOGADA #'+id,'<p>'+new Date(h.t).toLocaleString('pt-PT')+
+   ' · Aposta '+money(h.bet)+' · Prémio '+money(h.win)+'</p>'+board+towerInfo+
+   '<p>'+valid.length+' linhas vencedoras. '+(valid.length?
+   'Escolhe o símbolo e a linha para os destacar.':
+   (h.scatterWin>0?'Prémio das torres sem precisar de linha.':'Sem linhas vencedoras nesta jogada.'))+
+   '</p><div style="text-align:center">'+choices+
+   '</div><button class="btn" id="back-history">Voltar ao histórico</button>');
   $('back-history').onclick=()=>bonusId===null?this.openInfo('history'):this.showBonusHistory(bonusId);
   modalContent.querySelectorAll('[data-history-win]').forEach(b=>b.onclick=()=>this.showHistoricSpin(id,Number(b.dataset.historyWin),bonusId));
  }
