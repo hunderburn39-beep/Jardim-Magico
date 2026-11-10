@@ -18,7 +18,7 @@ test("25 linhas da esquerda para a direita e cinco verticais, uma por tambor",()
   }
   E.VERTICAL_LINES.forEach((line,col)=>{
     assert.deepEqual(line,[[col,0],[col,1],[col,2]]);
-    assert.deepEqual(E.LINES[25+col],line);
+    assert.deepEqual(E.LINES[20+col],line);
   });
 });
 test("Aposta limitada aos valores previstos", () => {
@@ -482,14 +482,16 @@ test("Sessões antigas convertem 20, 25 e 30 linhas sem pares inválidos",()=>{
   }),[[15,25],[15,25],[20,30]]);
 });
 
-test("Três símbolos iguais na vertical pagam só com 30 linhas ativas",()=>{
+test("Três símbolos iguais na vertical pagam com 25 ou 30 linhas ativas",()=>{
   const grid=Array.from({length:5},()=>["ghost","ghost","ghost"]);
   grid[2]=["witch","witch","witch"];
+  const r15=E.evaluateGrid(grid,20,false,15);
   const r25=E.evaluateGrid(grid,20,false,25);
   const r30=E.evaluateGrid(grid,20,false,30);
-  assert.ok(!r25.hits.some(h=>h.direction==="vertical"));
-  const hit=r30.hits.find(h=>h.line===28 && h.direction==="vertical");
-  assert.ok(hit,"A linha 28 deveria pagar no terceiro tambor");
+  assert.ok(!r15.hits.some(h=>h.direction==="vertical"));
+  const hit=r25.hits.find(h=>h.line===23 && h.direction==="vertical");
+  assert.ok(hit,"A linha original 23 deveria pagar no terceiro tambor");
+  assert.ok(r30.hits.some(h=>h.line===23 && h.direction==="vertical"));
   assert.equal(hit.count,3);
   assert.equal(hit.symbol,"witch");
   assert.deepEqual(hit.cells,[[2,0],[2,1],[2,2]]);
@@ -499,10 +501,10 @@ test("MAGIC substitui na vertical mas não substitui caldeirões",()=>{
   const grid=Array.from({length:5},()=>["ghost","ghost","ghost"]);
   grid[4]=["wild","witch","witch"];
   const withWild=E.evaluateGrid(grid,20,false,30);
-  assert.ok(withWild.hits.some(h=>h.line===30&&h.symbol==="witch"&&h.count===3));
+  assert.ok(withWild.hits.some(h=>h.line===25&&h.symbol==="witch"&&h.count===3));
   grid[4]=["wild","scatter","scatter"];
   const excluded=E.evaluateGrid(grid,20,false,30);
-  assert.ok(!excluded.hits.some(h=>h.line===30));
+  assert.ok(!excluded.hits.some(h=>h.line===25));
 });
 test("Três caldeirões empilhados abrem bónus vertical e Free Spins",()=>{
   let draw=0;
@@ -517,7 +519,7 @@ test("Três caldeirões empilhados abrem bónus vertical e Free Spins",()=>{
   assert.equal(r.bonusEligible,true);
   assert.equal(r.earnedSpins,10);
   assert.equal(r.result.bonusHits.length,1);
-  assert.equal(r.result.bonusHits[0].line,29);
+  assert.equal(r.result.bonusHits[0].line,24);
   assert.deepEqual(r.result.bonusHits[0].cells,[[3,0],[3,1],[3,2]]);
   assert.equal([r.potTriggered,r.strawberryTriggered,r.diceTriggered].filter(Boolean).length,1);
 });
@@ -624,4 +626,22 @@ test("Regressão: mini-bónus verticais frequentes, sem secas de milhares de gir
   assert.ok(vertical/bonuses>=.9,"Mini-bónus verticais abaixo de 90%");
   assert.ok(longestWait<=49,"Espera excessiva de "+longestWait+" giros pagos");
   assert.ok(paid>1000);
+});
+
+test("A ordem visual autêntica LNH1 é 1–20 horizontal, 21–25 vertical e 26–30 horizontal",()=>{
+  assert.equal(E.LINES.length,30);
+  assert.equal(E.HORIZONTAL_LINES.length,25);
+  assert.equal(E.VERTICAL_LINES.length,5);
+  for(let i=0;i<30;i++){
+    const vertical=i>=20&&i<25;
+    assert.equal(E.isVerticalIndex(i),vertical);
+    assert.equal(E.LINES[i].length,vertical?3:5);
+  }
+  // Nos escalões de 25 linhas já entram as cinco linhas verticais.
+  // As cinco horizontais finais só entram quando há 30 linhas ativas.
+  const top=Array.from({length:5},()=>["ghost","ghost","ghost"]);
+  const win25=E.evaluateGrid(top,20,false,25);
+  assert.equal(win25.hits.filter(h=>h.direction==="vertical").length,5);
+  const win30=E.evaluateGrid(top,20,false,30);
+  assert.equal(win30.hits.filter(h=>h.direction==="vertical").length,5);
 });
