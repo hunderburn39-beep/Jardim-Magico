@@ -52,7 +52,7 @@ test('três Scatters reais dentro das Free Spins dão +8 e um novo expansivo',()
  assert.equal(s.feature.left,8);
  assert.equal(s.feature.retriggers,1);
  assert.deepEqual(s.feature.symbols,['10','J']);
- assert.equal(s.history[0].scatters,3);
+ assert.equal(s.history[0].rounds[0].scatters,3);
  assert.equal(s.history[0].id,1);
  S.validate(s);
  const restored=S.restore(JSON.parse(JSON.stringify(s)));
