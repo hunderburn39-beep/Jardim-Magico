@@ -206,7 +206,6 @@
     const reel = Math.round((x - R.left) / R.step);
     const onReel = reel >= 0 && reel < 5 && y >= R.top - R.gh * 1.1 && y < R.top + R.gh * 4.2;
     const moving = onReel && this.spinning && spin && !spin.stopped[reel];
-    const visibleTomb = symbol === 'TOMB' && onReel && !moving;
     // Os símbolos dos tambores já parados desvanecem; as torres WILD e
     // os tambores ainda em movimento mantêm-se bem visíveis.
     const fade = onReel && !moving && symbol !== 'TOMB' && spin?.stopped?.[reel]
@@ -215,30 +214,13 @@
       ctx.save();
       ctx.globalAlpha *= 1 - fade;
     }
-    if (visibleTomb && !reduced) {
-      const wave = .55 + .45 * Math.sin((t || 0) * .007 + reel);
-      const halo = ctx.createRadialGradient(x+w/2, y+h/2, 8, x+w/2, y+h/2, w * .63);
-      halo.addColorStop(0, 'rgba(255,236,146,' + (.13 + .11 * wave) + ')');
-      halo.addColorStop(1, 'rgba(255,190,71,0)');
-      ctx.save(); ctx.fillStyle = halo; ctx.fillRect(x, y, w, h); ctx.restore();
-    }
-    if (moving && !reduced) {
+    if (moving && !reduced && symbol!=='TOMB') {
       ctx.save();
       ctx.globalAlpha *= .89;
       if ('filter' in ctx) ctx.filter = 'blur(0.7px)';
       baseIcon(symbol, x, y, w, h, win, t);
       ctx.restore();
     } else baseIcon(symbol, x, y, w, h, win, t);
-    if (visibleTomb && !reduced) {
-      const wave = .5 + .5 * Math.sin((t || 0) * .008 + x * .03);
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255,218,121,' + (.18 + .17 * wave) + ')';
-      ctx.shadowColor = '#ffdc92'; ctx.shadowBlur = 10;
-      ctx.lineWidth = 1.6;
-      ctx.beginPath();
-      ctx.ellipse(x+w/2, y+h/2, w*.42, h*.39, 0, 0, Math.PI*2);
-      ctx.stroke(); ctx.restore();
-    }
     if (fade > 0) ctx.restore();
   };
 
