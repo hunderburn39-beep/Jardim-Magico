@@ -156,11 +156,11 @@
       .catch(()=>{stopSample=null;});
   }
   audio.tick=function(reel){
-    // Wild com gong próprio: sem sobreposição do "pop".
-    // Wild tardio (apenas tambor 4 ou 5): "pop" de paragem normal.
+    // O "pop" toca em TODAS as paragens, mesmo numa sequência vencedora
+    // ou com um Wild. O gong mantém-se bem mais forte e independente.
     const spin=game.spinObject;
-    if(spin?.grid?.[reel]?.includes('TOMB') &&
-       (game.shouldSoundWildLanding?.(reel,spin) ?? true))return;
+    const gongHere=!!(spin?.grid?.[reel]?.includes('TOMB') &&
+      (game.shouldSoundWildLanding?.(reel,spin) ?? true));
     if(!ready())return;
     prepareStopSample();
     if(stopSample){
@@ -168,16 +168,18 @@
         const ac=audio.ctx,t=ac.currentTime;
         const source=ac.createBufferSource(),vol=ac.createGain();
         source.buffer=stopSample;
-        vol.gain.value=.37;
+        // Aproximadamente 60% mais baixo que na versão anterior;
+        // na mesma paragem que o gong, baixar ainda mais para não o mascarar.
+        vol.gain.value=gongHere?.075:.145;
         source.connect(vol);vol.connect(output());
         source.start(t);
         source.onended=()=>{try{source.disconnect();vol.disconnect();}catch(_){}};
         return;
       }catch(_){}
     }
-    // Reserva segura se a ligação falhar; nunca bloquear a rotação.
-    friction(.042,.016,1360);
-    note(152-reel*4,79-reel*2,.13,.016);
+    // Reserva discreta quando o ficheiro ainda não estiver descodificado.
+    friction(.042,gongHere?.0028:.006,1360);
+    note(152-reel*4,79-reel*2,.13,gongHere?.0025:.005);
   };
 
   // Wild: DOOONG sólido em vez de "boing". O gong original fica apenas
@@ -308,5 +310,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.4.0',original:true,realReelStopSample:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.4.1',original:true,realReelStopSample:true,dynamicReelSpeed:true};
 })();
