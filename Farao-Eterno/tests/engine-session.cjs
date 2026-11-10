@@ -71,7 +71,7 @@ test('Free Spin em curso antes da atualização termina com a matemática histó
  const expected=E.evaluate(g,S.stake(s),s.lines,s.feature.symbols,E.LINES,'legacy');
  const outcome=S.settle(s);
  a.equal(outcome.result.total,expected.total);
- a.equal(s.history[0].expansionPayVersion,1);
+ a.equal(s.history[0].rounds[0].expansionPayVersion,1);
 });
 test('novos pagamentos múltiplos respeitam limite acumulado de 5000 vezes',()=>{
  const s=S.fresh(),g=quiet();
@@ -84,7 +84,8 @@ test('novos pagamentos múltiplos respeitam limite acumulado de 5000 vezes',()=>
  a.equal(outcome.prizeU,S.units(1));
  a.equal(outcome.result.expansionAwards.length,2);
  a.equal(outcome.bonusDone.totalU,S.units(5000));
- a.equal(s.history[0].win,1);
+ a.equal(s.history[0].rounds[0].win,1);
+ a.equal(s.history[0].win,5000,'A sessão completa já incluía 4999 créditos anteriores');
 });
 test('tomb is never an expanding normal symbol',()=>{a.equal(E.evaluate(quiet(),1,10,['TOMB']).expanders.length,0);});
 test('10000 more spins never repeat a symbol in one reel',()=>{const r=rng(11);for(let i=0;i<10000;i++)a.ok(E.makeGrid(r).every(c=>new Set(c).size===3));});
@@ -104,3 +105,48 @@ test('reset clears gamble eligibility and last prize',()=>{const s=S.fresh();s.l
 test('valid V0.6 credit session and bonus migrate',()=>{const s=S.migrate({balance:321.5,betIndex:2,lines:3,feature:{left:7,played:1,total:1.2,symbols:['ANUBIS'],retriggers:0},sound:false});a.equal(s.balanceU,S.units(321.5));a.equal(s.lines,3);a.equal(s.feature.left,7);a.equal(s.settings.sound,false);});
 test('corrupt saves, invalid grids and feature symbols are rejected',()=>{for(const mutate of [s=>s.balanceU=NaN,s=>s.feature={left:2,played:0,totalU:0,retriggers:0,symbols:['BOGUS']},s=>s.grid[0][0]='BOGUS',s=>s.lines=11,s=>s.betIndex=8]){const s=S.fresh();mutate(s);a.throws(()=>S.restore(s));}});
 test('2000 paid rounds and their complete bonuses maintain balance invariants',()=>{const s=S.fresh(),r=rng(1121);s.balanceU=S.units(100000);for(let i=0;i<2000;i++){s.betIndex=i%8;s.lines=i%10+1;do{const before=s.balanceU,free=!!s.feature,bet=S.stake(s);S.begin(s,r);const out=S.settle(s);a.equal(s.balanceU,before-(free?0:S.units(bet))+out.prizeU);a.ok(Number.isSafeInteger(s.balanceU));S.validate(s);}while(s.feature);}});
+
+test('Free Spins: 2, 3, 4 ou 5 torres pagam em qualquer posição, mesmo sem linha',()=>{
+ for(let n=2;n<=5;n++){
+  const grid=quiet();
+  // Torres desencontradas e no máximo uma por tambor, incluindo a última coluna.
+  const columns=n===2?[0,4]:Array.from({length:n},(_,i)=>i);
+  columns.forEach((column,i)=>{grid[column][(i*2+1)%3]='TOMB';});
+  const count=E.countScatters(grid),bet=2,lines=10;
+  a.equal(count,n);
+  const base=E.evaluate(grid,bet,lines);
+  const free=E.evaluate(grid,bet,lines,[],E.LINES,'separate','free-anywhere');
+  const expected=E.PAYS.TOMB[n]*(bet/lines);
+  a.equal(free.scatterWin,expected);
+  a.equal(free.total,free.paylinesTotal+expected,'Sem pagar o Scatter uma segunda vez');
+  a.equal(free.trigger,n>=3,'Só 3 ou mais torres ativam +8');
+  a.equal(base.scatterWin,n===2?0:bet*({3:2,4:20,5:200}[n]),
+    'Jogo base sem alterações');
+ }
+});
+test('Jogada Free Spin nova guarda a versão do pagamento das torres e o prémio no histórico',()=>{
+ const s=S.fresh(),grid=quiet();
+ grid[0][2]='TOMB';grid[4][0]='TOMB';
+ s.feature={left:1,played:1,totalU:0,symbols:['ANUBIS'],retriggers:0};
+ s.feature.left=0;s.feature.played++;
+ s.pending={id:++s.sequence,grid,free:true,bet:S.stake(s),lines:s.lines,
+  nextSymbol:null,paylinesVersion:E.PAYLINES_VERSION,expansionPayVersion:2,towerPayVersion:1};
+ const before=s.balanceU,outcome=S.settle(s);
+ a.equal(outcome.result.scatterWin,E.PAYS.TOMB[2]*(S.stake(s)/s.lines));
+ a.equal(s.history.length,1,'Um registo por sessão de Free Spins');
+ a.equal(s.history[0].rounds[0].towerPayVersion,1);
+ a.equal(s.history[0].rounds[0].scatterWin,outcome.result.scatterWin);
+ a.equal(s.balanceU,before+outcome.prizeU);
+ a.equal(S.settle(s),null,'Sem pagamentos duplicados');
+});
+test('Jogada antiga pendente conserva a tabela Scatter original ao recuperar sessão',()=>{
+ const s=S.fresh(),grid=quiet();
+ grid[0][2]='TOMB';grid[4][0]='TOMB';
+ s.feature={left:1,played:1,totalU:0,symbols:['ANUBIS'],retriggers:0};
+ s.feature.left=0;s.feature.played++;
+ s.pending={id:++s.sequence,grid,free:true,bet:S.stake(s),lines:s.lines,
+  nextSymbol:null,paylinesVersion:E.PAYLINES_VERSION,expansionPayVersion:2};
+ const restored=S.restore(JSON.parse(JSON.stringify(s))),outcome=S.settle(restored);
+ a.equal(outcome.result.scatterWin,0,'Sem recalcular rodadas antigas com as regras novas');
+ a.equal(restored.history[0].rounds[0].towerPayVersion,0);
+});
