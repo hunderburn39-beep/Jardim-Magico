@@ -63,6 +63,7 @@ jobs:
         run: |
           python3 -m http.server 8123 --bind 127.0.0.1 > /tmp/farao-http.log 2>&1 &
           node tests/history-search.cjs
+          node tests/bonus-buy-browser.cjs
           node tests/loading-fast.cjs
           node tests/playwright-ci.cjs
 
