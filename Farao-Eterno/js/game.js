@@ -13,7 +13,7 @@ const mod=$('modal'), modalContent=$('modal-content'), title=$('modal-title');
 const iconNames={TOMB:'WILD / SCATTER',KING:'Faraó',ANUBIS:'Anúbis',HORUS:'Hórus',MASK:'Máscara dourada',A:'A',K:'K',Q:'Q',J:'J','10':'10'};
 const bets=S.BETS;
 const PALETTE={gold:'#f3d389',bright:'#ffeeb1',dark:'#2a1715',teal:'#54d6ce',red:'#d85c63'};
-const money = val => (Math.round((val+Number.EPSILON)*100)/100).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' cr';
+const money = val => (Math.round((val+Number.EPSILON)*100)/100).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
 const euro = val => (Math.round((val+Number.EPSILON)*100)/100).toLocaleString('pt-PT',{style:'currency',currency:'EUR'});
 const nice = num=>num.toLocaleString('pt-PT',{maximumFractionDigits:0});
 const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
@@ -356,7 +356,7 @@ class Game {
   if(performance.now()<this.nextActionAt)return;
   const free=!!this.feature;
   let begun;
-  try{begun=S.begin(this.ledger,this.rng);}catch(e){this.auto=0;this.notice('CRÉDITOS INSUFICIENTES · MENU PARA REPOR',1900,'red');return;}
+  try{begun=S.begin(this.ledger,this.rng);}catch(e){this.auto=0;this.notice('SALDO INSUFICIENTE · FAZ UM DEPÓSITO',1900,'red');return;}
   this.syncLedger();if(!free&&this.auto>0)this.auto--;
   this.reveal=null;this.featureIntro=null;this.winCount=null;this.sequencePlayback=null;this.lastWin=0;this.lastResult=null;this.expanded={};this.winCells=[];
   this.spinning=true;this.landings.fill(0);this.fxParticles=[];
@@ -683,7 +683,7 @@ class Game {
   }else if(tab==='settings'){
    page=`<h3>Configurações</h3><div class="settings-grid"><button class="btn" id="toggle-sound">Efeitos sonoros: ${this.sound?'Ligados':'Desligados'}</button><button class="btn" id="toggle-music">Música: ${this.ledger.settings.music?'Ligada':'Desligada'}</button><button class="btn" id="toggle-turbo">Velocidade: ${this.turbo?'Turbo':'Normal'}</button></div><div class="actions"><button class="btn" id="menu-reset" ${this.feature?'disabled':''}>Repor créditos</button><button class="btn" id="menu-gamble" ${this.feature||!this.lastBaseWin||this.gambleTimes>=5?'disabled':''}>Arriscar último prémio</button></div>`;
   }else if(tab==='admin'){
-   page='<section class="farao-admin-entry"><p>Acesso reservado ao modo administrativo de créditos de simulação.</p><button type="button" class="btn farao-admin-entry-btn" id="admin-enter">ENTRAR NA ADMINISTRAÇÃO</button></section>';
+   page='<section class="farao-admin-entry"><p>Acesso reservado à administração da simulação.</p><button type="button" class="btn farao-admin-entry-btn" id="admin-enter">ENTRAR NA ADMINISTRAÇÃO</button></section>';
   }else if(tab==='pays'){
    // Mostrar o prémio em euros a partir da aposta atual por linha,
    // não os multiplicadores. Recalcular ao abrir o menu após alterar a aposta.
@@ -715,7 +715,7 @@ class Game {
     const hasId=Number.isSafeInteger(h.id)&&h.id>0;
     const isBonus=h.kind==='free-bonus';
     const canOpen=hasId&&(isBonus?Array.isArray(h.rounds)&&h.rounds.length>0:!!h.grid);
-    const kind=isBonus?'Free Spins':h.kind==='deposit'?'Depósito':h.kind==='withdraw'?'Levantamento':h.kind==='reset'?'Reposição de créditos':h.kind==='gamble'?'Carta':h.kind==='bonus-buy'?'Compra de bónus':h.bonus?'Free Spin':'Giro';
+    const kind=isBonus?'Free Spins':h.kind==='deposit'?'Depósito':h.kind==='withdraw'?'Levantamento':h.kind==='reset'?'Reposição de saldo':h.kind==='gamble'?'Carta':h.kind==='bonus-buy'?'Compra de bónus':h.bonus?'Free Spin':'Giro';
     const number=hasId?' #'+h.id:'';
     const date=esc(new Date(h.t).toLocaleString('pt-PT'));
     const amounts=isBonus
@@ -792,8 +792,8 @@ class Game {
  }
  openReset(){
   if(this.feature||this.spinning)return;
-  this.openModal('REPOR CRÉDITOS',`<p>Saldo atual: ${money(this.balance)}.</p><p>Repor o saldo para 300 créditos?</p><div class="actions"><button class="btn" id="reset-go">Repor 300 créditos</button><button class="btn" id="reset-cancel">Voltar</button></div>`);
-  $('reset-go').onclick=()=>{S.reset(this.ledger);this.auto=0;this.syncLedger();this.winCount=null;this.save();this.closeModal();this.notice('300 CRÉDITOS · UM NOVO LEGADO',1300);};
+  this.openModal('REPOR SALDO',`<p>Saldo atual: ${money(this.balance)}.</p><p>Repor o saldo para 0,00 €?</p><div class="actions"><button class="btn" id="reset-go">Repor saldo a zero</button><button class="btn" id="reset-cancel">Voltar</button></div>`);
+  $('reset-go').onclick=()=>{S.reset(this.ledger);this.auto=0;this.syncLedger();this.winCount=null;this.save();this.closeModal();this.notice('SALDO REPÔSTO A ZERO · NOVO LEGADO',1300);};
   $('reset-cancel').onclick=()=>this.openInfo();
  }
  openGamble(){
