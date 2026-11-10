@@ -436,7 +436,10 @@ class Game {
   }
   if(item.free){
    if(result.trigger&&this.feature){
-    this.audio.extra();this.notice(settled.nextSymbol?'+8 FREE SPINS · NOVO SÍMBOLO':'+8 FREE SPINS',this.turbo?1100:1850,'cyan');
+    // A terceira torre confirmou o retrigger real, não apenas o tease.
+    // Tocar uma fanfarra curta, mostrar +8 e a nova figura, se existir.
+    this.audio.retrigger?.();
+    this.notice(settled.nextSymbol?'RETRIGGER +8 · NOVO EXPANSIVO':'RETRIGGER +8 FREE SPINS',this.turbo?1400:2300,'cyan');
     if(settled.nextSymbol)this.queueIntro(settled.nextSymbol,Math.max(finishedAt+500,this.reveal?.end||0));
    }else if(Object.keys(this.expanded).length)this.notice('SÍMBOLO EXPANSIVO',this.turbo?450:1050,'cyan');
    if(settled.bonusDone){this.pendingSummary=settled.bonusDone;this.nextActionAt=Math.max(this.nextActionAt,finishedAt+2300);}
