@@ -1,8 +1,8 @@
-# Matemática — Faraó Eterno V1.0
+# Matemática — Faraó Eterno V1.3.22
 
 ## Origem e limites da referência
 
-Preserva a tabela, os pesos, as dez linhas e a lógica de avaliação da V0.6 publicada no commit `7222903bb4e780b6e5aa0e632d43adaad5eeab5b`. A cópia de referência executável encontra-se em `tests/engine-v06.cjs`; 10.000 comparações determinísticas verificam a equivalência de resultados. As alterações ao avaliador rejeitam apenas entradas inválidas.
+Preserva os **multiplicadores, símbolos, pesos e regras de avaliação** da V0.6 publicada no commit `7222903bb4e780b6e5aa0e632d43adaad5eeab5b`. **As 10 linhas foram ajustadas na V1.3.22 à fotografia enviada pelo utilizador.** A cópia anterior está em `tests/engine-v06.cjs` e em `LEGACY_LINES`; a comparação automática usa as linhas antigas para verificar que os pagamentos e as restantes regras continuam iguais. As jogadas iniciadas antes da atualização são liquidadas usando as suas linhas anteriores, sem alterar créditos nem prémios históricos.
 
 Legacy of Dead, da Play’n GO, é a referência de mecânicas: santuário que combina Wild e Scatter, Free Spins com expansivos e novas ativações. [Página oficial consultada](https://www.playngo.com/games/legacy-of-dead). A arte, os pesos e o gerador desta demonstração são independentes. Não se atribui a este jogo qualquer RTP do título de referência.
 
@@ -19,13 +19,13 @@ Filas: 0 = cima, 1 = centro, 2 = baixo. Cada coluna da lista representa um tambo
 | 3 | 2, 2, 2, 2, 2 |
 | 4 | 0, 1, 2, 1, 0 |
 | 5 | 2, 1, 0, 1, 2 |
-| 6 | 0, 0, 1, 2, 2 |
-| 7 | 2, 2, 1, 0, 0 |
-| 8 | 1, 0, 1, 2, 1 |
-| 9 | 1, 2, 1, 0, 1 |
-| 10 | 0, 1, 1, 1, 2 |
+| 6 | 1, 0, 0, 0, 1 |
+| 7 | 1, 2, 2, 2, 1 |
+| 8 | 0, 0, 1, 2, 2 |
+| 9 | 2, 2, 1, 0, 0 |
+| 10 | 1, 0, 1, 2, 1 |
 
-## Tabela preservada
+## Tabela de prémios aprovada (inalterada)
 
 Multiplicadores da aposta **por linha**, exceto os pagamentos Scatter descritos abaixo.
 
@@ -43,6 +43,9 @@ Multiplicadores da aposta **por linha**, exceto os pagamentos Scatter descritos 
 | Santuário / TOMB | 10 | 100 | 1000 | 5000 | 3,85 |
 
 As combinações normais começam no primeiro tambor, em tambores consecutivos. O santuário substitui os nove símbolos normais. Avaliam-se todos os candidatos e paga-se apenas o maior prémio por linha. Empates mantêm o primeiro candidato na ordem do motor; o valor é o mesmo.
+
+
+> **Nota V1.3.22:** a alteração das linhas muda as combinações elegíveis e pode alterar a frequência de prémios e o RTP global. Os resultados de simulações anteriores à V1.3.22, quando referidos abaixo, não constituem uma medição da nova geometria. É necessária uma simulação específica para atualizar essas estimativas.
 
 ## Geração da grelha e Scatter
 
