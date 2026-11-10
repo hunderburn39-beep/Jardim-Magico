@@ -396,16 +396,16 @@ class Game {
    const stages=stagedPayout.map((group,index)=>{
     // O tempo de cada imagem cresce de cima para baixo; pausa antes da próxima.
     const reels=[...group.reels];
-    const perReel=this.turbo?400:790,preDelay=this.turbo?190:390;
+    const perReel=this.turbo?355:700,preDelay=this.turbo?170:340;
     const creditAt=cursor+preDelay+Math.max(1,reels.length)*perReel;
-    const end=creditAt+(this.turbo?760:1450);
+    const end=creditAt+(this.turbo?670:1250);
     const stage={...group,index,start:cursor,preDelay,perReel,
      reels,creditAt,end,amount:S.credits(group.amountU),
      win:group.kind==='line'?result.lineWins.find(w=>!w.expanded&&
        w.line===group.line&&w.symbol===group.symbol):null};
     if(group.kind==='expansion')reels.forEach((reel,k)=>
      this.emitBurst(83+reel*101,444,13,'#83ffef',cursor+preDelay+(k+1)*perReel));
-    cursor=end+(this.turbo?430:950);
+    cursor=end+(this.turbo?380:840);
     return stage;
    });
    const end=stages.at(-1).end;
@@ -414,7 +414,7 @@ class Game {
    // O prémio mostrado apenas soma parcelas efetivamente creditadas.
    this.winCount={start:finishedAt,duration:end-finishedAt,amount:prize,
     stages:stages.map(g=>({amount:g.amount,start:g.creditAt,end:g.creditAt}))};
-   this.nextActionAt=Math.max(this.nextActionAt,end+(this.turbo?380:850));
+   this.nextActionAt=Math.max(this.nextActionAt,end+(this.turbo?340:750));
   }else{
   const expansions=item.free?(result.expansionAwards||[]):[];
   if(expansions.length){
