@@ -201,11 +201,11 @@
     const iw=b.w*factor,ih=b.h*factor;
     ctx.drawImage(img,b.x,b.y,b.w,b.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
    }else if(sym==='TOMB'){
-    // Pulsação permanente e suave: 100%-108% da V1.3.43.
+    // Pulsação permanente e suave: 100%-113% da V1.3.43.
     // A luz dourada segue o alfa da pirâmide; nunca cria fundo quadrado.
     const bounds=visibleBounds(img);
     const wave=.5+.5*Math.sin(t*.0035);
-    const pulse=1+.08*wave;
+    const pulse=1+.13*wave;
     const scale=1.03*pulse*Math.min((w*1.12)/bounds.w,(h*1.42)/bounds.h);
     const iw=bounds.w*scale,ih=bounds.h*scale;
     ctx.save();
@@ -506,7 +506,7 @@
     for(let i=0;i<keys.length;i++)
       this.drawMiniSymbol(keys[i],294+i*step,bonusesY+(35-size)/2,size);
   }
-  txt('V1.3.44',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.45',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
