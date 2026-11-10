@@ -13,7 +13,7 @@ test('prémios aprovados, pesos e símbolos preservados; dez linhas iguais à fo
  ]);
  a.deepEqual(E.startFeature(()=>0),V.startFeature(()=>0));
 });
-test('10000 unique reel grids preserve the V0.6 payout evaluator',()=>{const r=rng(0xE6);for(let n=0;n<10000;n++){const seed=(r()*0xffffffff)>>>0,g=E.makeGrid(rng(seed));a.ok(g.every(col=>new Set(col).size===3),'Repetição no tambor da ronda '+n);const special=E.NORMAL.filter(()=>r()<.35),bet=S.BETS[n%8],lines=n%10+1;a.deepEqual(E.evaluate(g,bet,lines,special,E.LEGACY_LINES),V.evaluate(g,bet,lines,special));}});
+test('10000 unique reel grids preserve the V0.6 payout evaluator',()=>{const r=rng(0xE6);for(let n=0;n<10000;n++){const seed=(r()*0xffffffff)>>>0,g=E.makeGrid(rng(seed));a.ok(g.every(col=>new Set(col).size===3),'Repetição no tambor da ronda '+n);const special=E.NORMAL.filter(()=>r()<.35),bet=S.BETS[n%8],lines=n%10+1;a.deepEqual(E.evaluate(g,bet,lines,special,E.LEGACY_LINES,'legacy'),V.evaluate(g,bet,lines,special));}});
 test('jogadas novas guardam versão 2; antigas são liquidadas pela geometria anterior',()=>{
  const s=S.fresh(),r=rng(217);
  S.begin(s,r);
@@ -39,7 +39,53 @@ test('all ten individual line geometries award their approved symbol pay',()=>{E
 test('wild substitution chooses only the largest win on each line',()=>{const g=quiet();['TOMB','TOMB','KING','KING','10'].forEach((v,i)=>g[i][1]=v);const win=E.evaluate(g,1,1).lineWins[0];a.equal(win.symbol,'KING');a.equal(win.count,4);a.equal(win.amount,1000);});
 test('3/4/5 scattered tombs award ×2/×20/×200 and activate',()=>{for(let n=3;n<=5;n++){const g=quiet();for(let c=0;c<n;c++)g[c][c%3]='TOMB';const r=E.evaluate(g,2,10);a.equal(r.scatterWin,2*({3:2,4:20,5:200}[n]));a.equal(r.trigger,true);}});
 test('premium expansion pays on separated reels; cards need three distinct reels',()=>{let g=quiet();g[1][2]='ANUBIS';g[4][0]='ANUBIS';let r=E.evaluate(g,1,10,['ANUBIS']);a.equal(r.expanders[0].count,2);a.ok(r.lineWins.every(w=>w.amount>=.5));g=quiet();g[0]=['KING','KING','KING'];a.equal(E.evaluate(g,1,10,['KING']).expanders.length,0);});
-test('simultaneous expanders never add together on the same line',()=>{const g=quiet();g[1][0]='KING';g[4][0]='KING';g[0][2]='ANUBIS';g[3][2]='ANUBIS';const r=E.evaluate(g,1,10,['KING','ANUBIS']);a.equal(r.expanders.length,2);a.ok(r.lineWins.every(w=>w.amount===1));a.equal(r.total,10);});
+test('vários expansivos pagam AMBOS na mesma Free Spin, do mais baixo ao mais alto',()=>{
+ const g=quiet();g[1][0]='KING';g[4][0]='KING';g[0][2]='ANUBIS';g[3][2]='ANUBIS';
+ const r=E.evaluate(g,1,10,['KING','ANUBIS']);
+ a.equal(r.expanders.length,2);
+ a.deepEqual(r.expansionAwards.map(w=>w.symbol),['ANUBIS','KING']);
+ a.deepEqual(r.expansionAwards.map(w=>w.amount),[5,10]);
+ a.equal(r.lineWins.filter(w=>w.expanded&&w.symbol==='ANUBIS').length,10);
+ a.equal(r.lineWins.filter(w=>w.expanded&&w.symbol==='KING').length,10);
+ a.equal(r.total,15);
+ a.equal(r.total,r.lineWins.reduce((sum,w)=>sum+w.amount,0)+r.scatterWin);
+ const legacy=E.evaluate(g,1,10,['KING','ANUBIS'],E.LINES,'legacy');
+ a.equal(legacy.total,10);
+});
+test('ordem fixa: 10, J, Q, K, A e figuras superiores, independente da ordem dos símbolos guardados',()=>{
+ const g=quiet();g[0][2]='ANUBIS';g[2][1]='ANUBIS';g[1][0]='KING';g[4][0]='KING';
+ const r=E.evaluate(g,1,10,['KING','ANUBIS','J','10']);
+ a.deepEqual(r.expansionAwards.map(w=>w.symbol),['10','J','ANUBIS','KING']);
+ a.equal(r.expansionAwards.length,4);
+ for(const win of r.lineWins.filter(w=>w.expanded))a.ok(win.amount>0);
+ const single=E.evaluate(g,1,10,['KING']);
+ const old=E.evaluate(g,1,10,['KING'],E.LINES,'legacy');
+ a.deepEqual(single,old,'Uma só figura continua com os pagamentos anteriores');
+});
+test('Free Spin em curso antes da atualização termina com a matemática histórica',()=>{
+ const s=S.fresh(),g=quiet();
+ g[1][0]='KING';g[4][0]='KING';g[0][2]='ANUBIS';g[3][2]='ANUBIS';
+ s.feature={left:0,played:1,totalU:0,symbols:['KING','ANUBIS'],retriggers:0};
+ s.pending={id:++s.sequence,grid:g,free:true,bet:S.stake(s),lines:s.lines,
+  nextSymbol:null,paylinesVersion:2};
+ const expected=E.evaluate(g,S.stake(s),s.lines,s.feature.symbols,E.LINES,'legacy');
+ const outcome=S.settle(s);
+ a.equal(outcome.result.total,expected.total);
+ a.equal(s.history[0].expansionPayVersion,1);
+});
+test('novos pagamentos múltiplos respeitam limite acumulado de 5000 vezes',()=>{
+ const s=S.fresh(),g=quiet();
+ s.feature={left:1,played:0,totalU:S.units(4999),symbols:['KING','ANUBIS'],retriggers:0};
+ g[0][2]='ANUBIS';g[2][1]='ANUBIS';g[1][0]='KING';g[4][0]='KING';
+ s.pending={id:++s.sequence,grid:g,free:true,bet:S.stake(s),lines:s.lines,
+  nextSymbol:null,paylinesVersion:2,expansionPayVersion:2};
+ s.feature.left=0;s.feature.played++;
+ const outcome=S.settle(s);
+ a.equal(outcome.prizeU,S.units(1));
+ a.equal(outcome.result.expansionAwards.length,2);
+ a.equal(outcome.bonusDone.totalU,S.units(5000));
+ a.equal(s.history[0].win,1);
+});
 test('tomb is never an expanding normal symbol',()=>{a.equal(E.evaluate(quiet(),1,10,['TOMB']).expanders.length,0);});
 test('10000 more spins never repeat a symbol in one reel',()=>{const r=rng(11);for(let i=0;i<10000;i++)a.ok(E.makeGrid(r).every(c=>new Set(c).size===3));});
 test('constant RNG still yields three distinct symbols per reel',()=>{const g=E.makeGrid(()=>0);a.ok(g.every(c=>new Set(c).size===3));a.deepEqual(g[0],['10','J','Q']);});
