@@ -340,6 +340,15 @@
     for(const reel of expander?.reels||[])for(let row=0;row<3;row++)pulseCells.add(reel+'-'+row);
    }else for(let reel=0;reel<chosen.count;reel++)pulseCells.add(reel+'-'+chosen.rows[reel]);
   }
+  // Mostrar uma figura expansiva de cada vez, pelo valor crescente.
+  const phase=this.expansionView?.(t);
+  const phaseReveal=phase?.reveal||(this.reveal?.stages?null:this.reveal);
+  let phaseExpanded=phase?.expanded||this.expanded;
+  if(this.reveal?.stages?.length && !phase && !this.spinning){
+   const shown=wins?.length?wins[Math.floor(t/1600)%wins.length]:null;
+   const candidate=shown?.expanded?this.lastResult.expanders?.find(e=>e.symbol===shown.symbol):null;
+   phaseExpanded=candidate?Object.fromEntries(candidate.reels.map(reel=>[reel,candidate])):{};
+  }
   const x=20,y=R.top-2,w=520,h=R.top+3*R.gh-y+10;
   ctx.save();ctx.shadowColor='#000c';ctx.shadowBlur=16;ctx.shadowOffsetY=6;
   rounded(ctx,x-5,y-7,w+10,h+10,15,null,'#deb56b',3.7);ctx.restore();
@@ -376,11 +385,11 @@
     const ms=t-this.landings[c];
     const landing=this.landings[c]&&ms>=0&&ms<300;
     const bounce=landing?-8*Math.pow(1-ms/300,2)*Math.cos(ms*.033):0;
-    const idx=this.reveal?this.reveal.reels.indexOf(c):-1;
-    const stamp=this.reveal?this.reveal.start+this.reveal.preDelay+idx*this.reveal.perReel:0;
-    const raw=this.reveal&&idx>=0?clamp((t-stamp)/this.reveal.perReel,0,1):1;
+    const idx=phaseReveal?phaseReveal.reels.indexOf(c):-1;
+    const stamp=phaseReveal?phaseReveal.start+phaseReveal.preDelay+idx*phaseReveal.perReel:0;
+    const raw=phaseReveal&&idx>=0?clamp((t-stamp)/phaseReveal.perReel,0,1):1;
     const progress=raw*raw*(3-2*raw);
-    const expanding=!!(this.expanded[c]&&(this.reveal?idx>=0&&progress>0:this.lastWasFree));
+    const expanding=!!(phaseExpanded[c]&&(phaseReveal?idx>=0&&progress>0:this.lastWasFree));
     const ready=!this.reveal||t>=this.reveal.end-100;
     for(let r=0;r<3;r++){
      const yy=top+r*gh,win=ready&&pulseCells.has(c+'-'+r);
@@ -394,7 +403,7 @@
       ctx.save();ctx.globalAlpha=ease;
       const pulse=1+.035*Math.sin(Math.PI*ease);
       ctx.translate(rx+cw/2,yy+gh/2);ctx.scale(pulse,pulse);ctx.translate(-rx-cw/2,-yy-gh/2);
-      tileAt(this.expanded[c].symbol,rx,yy,t,win);ctx.restore();
+      tileAt(phaseExpanded[c].symbol,rx,yy,t,win);ctx.restore();
       ctx.save();ctx.shadowColor='#68ffe5';ctx.shadowBlur=10;ctx.strokeStyle='rgba(133,255,225,'+(.35+.55*ease)+')';ctx.lineWidth=2;
       rounded(ctx,rx+3,yy+10,cw-6,gh-20,8,null,ctx.strokeStyle,2);
       if(scan<.99){ctx.fillStyle='rgba(203,255,237,'+(.65-ease*.35)+')';ctx.fillRect(rx+7,yy+gh*scan-1,cw-14,3);}
@@ -407,14 +416,14 @@
      const scan=expanding?clamp(progress*3.18-r*.93,0,1):0;
      const ease=scan*scan*(3-2*scan);
      const showBase=grid[c][r]==='TOMB'&&ease<1;
-     const showExpanded=expanding&&this.expanded[c].symbol==='TOMB'&&ease>0;
+     const showExpanded=expanding&&phaseExpanded[c].symbol==='TOMB'&&ease>0;
      if(showBase||showExpanded){
       ctx.save();ctx.globalAlpha=showExpanded?ease:1-ease;
       this.drawIcon('TOMB',rx,yy+(gh-96)/2+(showExpanded?0:bounce),cw,96,ready&&pulseCells.has(c+'-'+r),t);
       ctx.restore();
      }
     }
-    if(expanding&&this.reveal&&progress<1){
+    if(expanding&&phaseReveal&&progress<1){
      ctx.save();ctx.shadowColor='#7afbe5';ctx.shadowBlur=16;ctx.fillStyle='#8affebad';
      ctx.fillRect(rx+5,top+gh*3*progress-4,cw-10,8);ctx.restore();
     }
@@ -445,9 +454,10 @@
  };
  // Remove the duplicate full-width prize rectangle. Only these three meters remain.
  game.statusBar=function(t){
-  const progress=this.winCount?clamp((t-this.winCount.start)/this.winCount.duration,0,1):1;
-  const amount=this.winCount?this.winCount.amount*(1-Math.pow(1-progress,3)):this.lastWin;
-  const meters=[['SALDO',format(this.balance)],['APOSTA',format(this.bet)],['PRÉMIO',format(this.feature?this.feature.total:amount)]];
+  // A contagem acompanha cada figura, nunca antecipa o prémio final.
+  const amount=this.displayWinAt?.(t)??this.lastWin;
+  const displayTotal=this.feature?Math.max(0,this.feature.total-this.lastWin)+amount:amount;
+  const meters=[['SALDO',format(this.balance)],['APOSTA',format(this.bet)],['PRÉMIO',format(displayTotal)]];
   for(let i=0;i<3;i++){
    const x=28+i*170,y=R.top+R.gh*3+14,w=164,h=72;
    ctx.save();ctx.shadowColor='#000d';ctx.shadowBlur=12;ctx.shadowOffsetY=5;
@@ -472,7 +482,7 @@
    performance.now()<this.nextActionAt;
   this.drawControl(28,R.top+R.gh*3+95,164,35,'COMPRAR BÓNUS',
    ()=>this.openBuyBonus(),{size:12,disabled:bonusDisabled});
-  txt('V1.3.27',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.28',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
