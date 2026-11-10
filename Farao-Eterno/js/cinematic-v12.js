@@ -13,7 +13,7 @@
   const ease = v => 1 - Math.pow(1 - clamp(v, 0, 1), 3);
   const reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const format = n => (Math.round((n + Number.EPSILON) * 100) / 100)
-    .toLocaleString('pt-PT', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' cr';
+    .toLocaleString('pt-PT', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' €';
   const events = { spins: 0, landings: 0, sanctuaries: 0, paylineChimes: 0 };
   game.cinematicV12 = { version: '1.6', events, mathUnchanged: false };
 
