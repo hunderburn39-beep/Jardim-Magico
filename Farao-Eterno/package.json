@@ -4,7 +4,7 @@
   "private": true,
   "description": "Jogo original de créditos fictícios — matemática V0.6 preservada",
   "scripts": {
-    "test": "node --test tests/engine-session.cjs tests/bonus-buy.cjs tests/retrigger-tease.cjs tests/free-spin-stop-order.cjs",
+    "test": "node --test tests/engine-session.cjs tests/bonus-buy.cjs tests/retrigger-tease.cjs tests/free-spin-stop-order.cjs tests/admin-economy.cjs",
     "simulate": "node tests/simulate.cjs 1000000 20261109 docs/simulation-1000000.json"
   }
 }
