@@ -53,7 +53,7 @@ No jogo base, a soma dos pesos é 106,85. Nas Free Spins V1.3.29, apenas o peso 
 
 `crypto.getRandomValues` fornece o sorteio no navegador; há fallback para `Math.random` em ambientes sem Web Crypto. O simulador usa uma sequência determinística com semente publicada. Nenhum sorteio depende do saldo, dos prémios anteriores ou da animação.
 
-3/4/5 santuários em qualquer posição pagam respetivamente 2×/20×/200× a aposta **total**, além das linhas, e iniciam 8 Free Spins. Com p = 3,85 / 106,85, a probabilidade de um tambor conter um santuário é q = 1 − (1 − p)³. A probabilidade exata de ativação é:
+No **jogo base**, 3/4/5 santuários em qualquer posição pagam respetivamente 2×/20×/200× a aposta **total**, além das linhas, e iniciam 8 Free Spins. Com p = 3,85 / 106,85, a probabilidade de um tambor conter um santuário é q = 1 − (1 − p)³. A probabilidade exata de ativação é:
 
 `10q³(1−q)² + 5q⁴(1−q) + q⁵ = 0,009631424776602065`, cerca de **0,96314%**, ou 1 em 103,83 giros. Esta probabilidade não depende da aposta nem das linhas.
 
@@ -65,13 +65,21 @@ Conta-se o número de **tambores distintos** que contêm cada expansivo. Se a re
 
 **V1.3.28 — várias figuras expansivas na mesma Free Spin.** Quando duas ou mais figuras distintas estão qualificadas para expandir, o motor atribui os respetivos prémios **a cada figura**, por cada linha ativa, e soma-os. A contagem e animação seguem a ordem `10 → J → Q → K → A → HORUS → MASK → ANUBIS → KING` e só terminam após a última figura. Uma combinação normal de símbolo não expansivo também pode pagar na mesma linha; não se duplica uma combinação normal de um símbolo já pago como expansivo. Com zero ou um expansivo elegível, conserva-se a avaliação anterior de maior prémio por linha. O limite de 5.000× do total de cada bónus continua obrigatório; os passos visuais somam exatamente o crédito efetivamente atribuído, mesmo quando o limite reduz o resultado. Cada figura em expansão pode aparecer nos mesmos tambores em momentos diferentes; a animação não cria prémios adicionais. Jogadas pendentes anteriores a esta versão são pagas pela matemática anterior.
 
+## Torres pagas pela quantidade nas Free Spins — V1.3.38
+
+Nas **novas** Free Spins, os cinco tambores são verificados pela contagem total de torres `TOMB`, **sem precisar de uma linha nem de posição específica**. A tabela `PAYS.TOMB` já existente define 2 torres = 10×, 3 = 100×, 4 = 1000× e 5 = 5000× a **aposta por linha** (`aposta total ÷ linhas ativas`). Uma só torre não dá prémio Scatter. Os valores são pagos **uma única vez por rodada** e **substituem**, não acumulam, a anterior tabela Scatter 2×/20×/200× da aposta total. As torres continuam a funcionar como Wild nas combinações normais, sem duplicar o prémio específico das torres.
+
+Em qualquer posição, 3 ou mais torres continuam a ativar **+8 Free Spins** e um expansivo adicional elegível. Os créditos somam-se ao histórico da sessão única de Free Spins e obedecem ao limite acumulado de **5000×** do bónus. Esta alteração não muda os pagamentos no jogo base nem reavalia jogadas iniciadas anteriormente: as transações pendentes guardam `towerPayVersion`, e a ausência desse campo significa a matemática anterior.
+
+**Estimativas anteriores de RTP e volatilidade não são válidas para a nova modalidade até haver simulação atualizada.**
+
 ## Retriggers e teases nas Free Spins — V1.3.29
 
 A partir desta versão, o peso do símbolo `TOMB` nas Free Spins é **6,5** (jogo base: **3,85**), tornando os retriggers de três ou mais Scatters mais frequentes, **sem nunca os garantir**. O sorteio continua independente, com três símbolos diferentes por tambor e no máximo um Scatter por tambor. Os valores da tabela de prémios e as probabilidades do jogo base não foram alterados nesta atualização.
 
 Numa amostra determinística de **12.000 grelhas por modo**, registaram-se 198 ativações no jogo base (1,65%) e 677 retriggers nas Free Spins (5,64%), com 2.373 resultados de exatamente dois Scatters nas Free Spins. Estes são resultados de amostra, **não** probabilidades exatas nem uma nova medição de RTP.
 
-O **tease** só começa se dois Scatters já tiverem parado e ainda restar pelo menos um tambor em movimento. Nesse momento, os tambores restantes abrandam ligeiramente, surge a mensagem «FALTA 1 SCATTER!» e toca um aviso de suspense. Se aparecer o terceiro, os resultados reais somam **+8 Free Spins** e, quando ainda houver símbolos disponíveis, acrescentam um novo expansivo sem repetição. A contagem do prémio e o histórico são guardados normalmente; um tease sem terceiro Scatter não adiciona giros nem paga qualquer prémio extra.
+O **tease** só começa se dois Scatters já tiverem parado e ainda restar pelo menos um tambor em movimento. Nesse momento, os tambores restantes abrandam ligeiramente, surge a mensagem «FALTA 1 SCATTER!» e toca um aviso de suspense. Se aparecer o terceiro, os resultados reais somam **+8 Free Spins** e, quando ainda houver símbolos disponíveis, acrescentam um novo expansivo sem repetição. A contagem do prémio e o histórico são guardados normalmente; um tease sem terceiro Scatter não adiciona giros, mas **duas torres continuam a pagar** o prémio por quantidade nas novas Free Spins.
 
 Esta mudança pode alterar significativamente o RTP e a duração média do bónus; a simulação histórica de 1.000.000 de rondas apresentada abaixo **não é válida para estimar a V1.3.29**.
 
