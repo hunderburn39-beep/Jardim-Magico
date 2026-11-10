@@ -435,7 +435,7 @@ class Game {
    this.nextActionAt=Math.max(this.nextActionAt,this.winCount.start+this.winCount.duration+250);
   }
   if(item.free){
-   if(result.trigger&&this.feature){
+   if(result.trigger){
     // A terceira torre confirmou o retrigger real, não apenas o tease.
     // Tocar uma fanfarra curta, mostrar +8 e a nova figura, se existir.
     this.audio.retrigger?.();
@@ -450,9 +450,19 @@ class Game {
   this.save();
  }
  queueIntro(symbol,from){
-  const duration=this.turbo?1050:1650;
-  this.featureIntro={symbol,start:from,end:from+duration};
-  this.nextActionAt=Math.max(this.nextActionAt,from+duration+200);
+  // Resultado já fixado pelo motor antes da animação: as páginas são visuais.
+  // Cada novo retrigger apresenta um novo símbolo até esgotar os nove.
+  if(!E.NORMAL.includes(symbol))return;
+  const duration=this.turbo?4400:6000;
+  const turns=this.turbo?4:6;
+  const owned=this.feature?.symbols||this.ledger.last?.bonusDone?.symbols||[symbol];
+  const number=Math.max(1,owned.indexOf(symbol)+1);
+  const alternatives=E.NORMAL.filter(candidate=>candidate!==symbol);
+  const pages=Array.from({length:turns},(_,i)=>
+   alternatives[(i*3+number+this.currentRound)%alternatives.length]);
+  pages.push(symbol);
+  this.featureIntro={symbol,start:from,end:from+duration,pages,turns,number};
+  this.nextActionAt=Math.max(this.nextActionAt,from+duration+250);
  }
  expansionView(t){
   if(!this.reveal?.stages?.length||t>=this.reveal.end)return null;
@@ -1088,22 +1098,90 @@ class Game {
   introOverlay(t){
   const intro=this.featureIntro;
   if(!intro||t<intro.start||t>intro.end)return;
-  const p=clamp((t-intro.start)/(intro.end-intro.start),0,1);
-  const fade=clamp(p*7,0,1)*clamp((1-p)*8,0,1);
-  cx.save();cx.globalAlpha=fade;
-  cx.shadowColor='#000b';cx.shadowBlur=32;
-  rect(40,323,480,288,'#061a2aed','#ffdb83',17,4);cx.shadowBlur=0;
-  rect(48,332,464,270,'#122738ee','#48cbbd',10,2);
-  const halo=cx.createRadialGradient(280,469,15,280,469,156);
-  halo.addColorStop(0,'#f9d88a8b');halo.addColorStop(.48,'#53e7d344');halo.addColorStop(1,'#3cc6c200');
-  ellipse(280,469,153,153,halo);
-  cx.save();cx.translate(280,460);cx.rotate((t-intro.start)*.00042);
-  for(let i=0;i<18;i++){cx.rotate(Math.PI/9);line(0,-120,0,-153,'#efcd84',2);}
+  const clamp01=v=>Math.max(0,Math.min(1,v));
+  const elapsed=t-intro.start,duration=intro.end-intro.start;
+  const reduced=Boolean(window.matchMedia&&
+   window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const fade=clamp01(elapsed/270)*clamp01((duration-elapsed)/360);
+  const left=106,spine=280,right=454,top=355,pageH=222,pageW=166;
+  const turns=intro.turns||6,lead=600,hold=1250;
+  const turnLength=(duration-lead-hold)/turns;
+  const progress=reduced?turns:clamp01((elapsed-lead)/(turnLength*turns))*turns;
+  const index=Math.min(turns,Math.floor(progress));
+  const phase=index===turns?1:progress-index;
+  const pages=intro.pages||[intro.symbol];
+  const current=pages[Math.min(index,pages.length-1)];
+  const next=pages[Math.min(index+1,pages.length-1)];
+  const previous=pages[Math.max(0,index-1)];
+  const parchment=(x,y,w,h,symbol,flip=false)=>{
+   cx.save();
+   const shade=cx.createLinearGradient(x,y,x+w,y+h);
+   shade.addColorStop(0,flip?'#e6ba74':'#f9e8b4');
+   shade.addColorStop(.48,flip?'#ffe4a1':'#fff3c7');
+   shade.addColorStop(1,'#bc8c4a');
+   rect(x,y,w,h,shade,'#946b38',flip?1:4,1.6);
+   rect(x+9,y+10,w-18,h-20,null,'#9c713b73',3,1);
+   for(let j=0;j<3;j++){
+    line(x+18,y+19+j*5,x+w-18,y+19+j*5,'#a67b453b',1);
+    line(x+18,y+h-18-j*5,x+w-18,y+h-18-j*5,'#a67b453b',1);
+   }
+   const img=this.images[symbol],size=126;
+   if(img&&img.complete&&img.naturalWidth){
+    cx.shadowColor='#a46e27';cx.shadowBlur=11;
+    cx.drawImage(img,x+(w-size)/2,y+(h-size)/2-3,size,size);
+    cx.shadowBlur=0;
+   }else{
+    // Evitar nomes/letras como substituto da imagem durante o sorteio.
+    ellipse(x+w/2,y+h/2,42,42,'#cb9a4d');
+    ellipse(x+w/2,y+h/2,29,29,'#ffdf8c');
+   }
+   cx.restore();
+  };
+  cx.save();
+  cx.globalAlpha=fade;
+  cx.shadowColor='#000b';cx.shadowBlur=30;
+  rect(41,302,478,340,'#061421f4','#e9c37c',18,3);
+  cx.shadowBlur=0;
+  text('SÍMBOLO EXPANSIVO',280,330,18,'#ffe4a9','center','Georgia',900,4);
+  // Livro encadernado com lombada, páginas douradas e duas folhas visíveis.
+  cx.save();cx.shadowColor='#000b';cx.shadowBlur=14;
+  rect(93,343,374,244,'#3b2017','#c99c57',11,5);
   cx.restore();
-  text('NOVO SÍMBOLO EXPANSIVO',280,367,20,'#ffe5a4','center','Georgia',900,6);
-  const float=Math.sin(p*Math.PI*4)*4;
-  this.drawMiniSymbol(intro.symbol,198,393+float,164);
-  text(iconNames[intro.symbol]||intro.symbol,280,568,19,'#8bffea','center','Georgia',850,4);
+  for(let k=0;k<4;k++)rect(102+k,350+k,356-k*2,229-k*2,null,'#d4ad6d66',5,1);
+  parchment(left,top,pageW,pageH,previous);
+  parchment(spine+5,top,pageW,pageH,next);
+  if(index<turns){
+   const factor=Math.max(.018,Math.abs(Math.cos(Math.PI*phase)));
+   const width=pageW*factor;
+   cx.save();
+   if(phase<.5){
+    cx.translate(spine+4,0);
+    cx.scale(factor,1);
+    parchment(0,top,pageW,pageH,current,true);
+   }else{
+    cx.translate(spine+4-width,0);
+    cx.scale(factor,1);
+    parchment(0,top,pageW,pageH,current,true);
+   }
+   cx.restore();
+   cx.save();cx.globalAlpha=.17*(1-factor);
+   rect(spine-5,top,10,pageH,'#39200f');
+   cx.restore();
+  }
+  const binding=cx.createLinearGradient(spine-9,0,spine+9,0);
+  binding.addColorStop(0,'#68401f');binding.addColorStop(.5,'#fbe2a0');
+  binding.addColorStop(1,'#693a1c');
+  rect(spine-5,top-2,10,pageH+4,binding,'#754722',3,1);
+  // Sem nome da figura: a arte selecionada fica a brilhar na última página.
+  if(index===turns){
+   const glow=clamp01((elapsed-(lead+turnLength*turns))/350);
+   cx.save();cx.globalAlpha=glow*.7;
+   cx.shadowColor='#ffe3a2';cx.shadowBlur=32;
+   rect(spine+15,top+12,pageW-21,pageH-24,null,'#ffe6a6',7,3);
+   cx.restore();
+  }
+  const count=Math.max(1,intro.number||1);
+  text('SÍMBOLO '+count+' / 9',280,613,15,'#ffe1a0','center','Georgia',800);
   cx.restore();
  }
 
