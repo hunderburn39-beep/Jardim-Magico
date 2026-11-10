@@ -20,7 +20,7 @@ fs.mkdirSync(output,{recursive:true});
    page.on('response',res=>{if(res.status()>=400)resources.push(res.status()+' '+res.url());});
    await page.goto(base+'/tests/browser.html',{waitUntil:'domcontentloaded',timeout:30000});
    await page.getByRole('button',{name:'Executar testes'}).click();
-   await page.waitForFunction(()=>Array.isArray(window.FARAO_QA_RESULTS),{timeout:120000});
+   await page.waitForFunction(()=>Array.isArray(window.FARAO_QA_RESULTS),null,{timeout:120000});
    const rows=await page.evaluate(()=>window.FARAO_QA_RESULTS);
    await page.screenshot({path:path.join(output,'farao-'+name+'-qa.png'),fullPage:true});
    const bad=rows.filter(r=>!r.pass);
