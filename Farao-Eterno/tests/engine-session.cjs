@@ -2,9 +2,38 @@ const test=require('node:test'),a=require('node:assert/strict');
 const E=require('../js/engine.js'),V=require('./engine-v06.cjs'),S=require('../js/session.js');
 function rng(seed=42){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 const quiet=()=>[['10','J','Q'],['K','A','10'],['J','Q','K'],['A','10','J'],['Q','K','A']];
-function fixture(s,grid,{free=false,nextSymbol=null}={}){s.pending={id:++s.sequence,grid,free,bet:S.BETS[s.betIndex],lines:s.lines,nextSymbol};return s;}
-test('exact V0.6 paytable, weights, ten lines and feature rules',()=>{for(const k of ['PAYS','WEIGHTS','LINES','NORMAL','ALL'])a.deepEqual(E[k],V[k]);a.deepEqual(E.startFeature(()=>0),V.startFeature(()=>0));});
-test('10000 unique reel grids preserve the V0.6 payout evaluator',()=>{const r=rng(0xE6);for(let n=0;n<10000;n++){const seed=(r()*0xffffffff)>>>0,g=E.makeGrid(rng(seed));a.ok(g.every(col=>new Set(col).size===3),'Repetição no tambor da ronda '+n);const special=E.NORMAL.filter(()=>r()<.35),bet=S.BETS[n%8],lines=n%10+1;a.deepEqual(E.evaluate(g,bet,lines,special),V.evaluate(g,bet,lines,special));}});
+function fixture(s,grid,{free=false,nextSymbol=null,paylinesVersion=E.PAYLINES_VERSION}={}){s.pending={id:++s.sequence,grid,free,bet:S.BETS[s.betIndex],lines:s.lines,nextSymbol,paylinesVersion};return s;}
+test('prémios aprovados, pesos e símbolos preservados; dez linhas iguais à foto',()=>{
+ for(const k of ['PAYS','WEIGHTS','NORMAL','ALL'])a.deepEqual(E[k],V[k]);
+ a.deepEqual(E.LEGACY_LINES,V.LINES);
+ a.equal(E.PAYLINES_VERSION,2);
+ a.deepEqual(E.LINES,[
+  [1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],
+  [1,0,0,0,1],[1,2,2,2,1],[0,0,1,2,2],[2,2,1,0,0],[1,0,1,2,1]
+ ]);
+ a.deepEqual(E.startFeature(()=>0),V.startFeature(()=>0));
+});
+test('10000 unique reel grids preserve the V0.6 payout evaluator',()=>{const r=rng(0xE6);for(let n=0;n<10000;n++){const seed=(r()*0xffffffff)>>>0,g=E.makeGrid(rng(seed));a.ok(g.every(col=>new Set(col).size===3),'Repetição no tambor da ronda '+n);const special=E.NORMAL.filter(()=>r()<.35),bet=S.BETS[n%8],lines=n%10+1;a.deepEqual(E.evaluate(g,bet,lines,special,E.LEGACY_LINES),V.evaluate(g,bet,lines,special));}});
+test('jogadas novas guardam versão 2; antigas são liquidadas pela geometria anterior',()=>{
+ const s=S.fresh(),r=rng(217);
+ S.begin(s,r);
+ a.equal(s.pending.paylinesVersion,2);
+ const newId=s.pending.id;
+ S.settle(s);
+ a.equal(s.history[0].id,newId);
+ a.equal(s.history[0].paylinesVersion,2);
+ // Simular uma jogada pendente antes da atualização: sem campo de versão.
+ const old=S.fresh();
+ const grid=quiet();grid[0][1]='KING';grid[1][2]='KING';
+ const bet=S.stake(old),before=old.balanceU;
+ old.pending={id:++old.sequence,grid,free:false,bet,lines:10,nextSymbol:null};
+ S.validate(old);
+ const expected=E.evaluate(grid,bet,10,[],E.LEGACY_LINES);
+ const out=S.settle(old);
+ a.equal(out.result.total,expected.total);
+ a.equal(old.balanceU,before-S.units(bet)+out.prizeU);
+ a.equal(old.history[0].paylinesVersion,1);
+});
 test('all ten individual line geometries award their approved symbol pay',()=>{E.LINES.forEach((line,i)=>{const g=quiet();line.forEach((r,c)=>g[c][r]='KING');const win=E.evaluate(g,1,10).lineWins.find(w=>w.line===i);a.equal(win.count,5);a.equal(win.amount,500);});});
 test('wild substitution chooses only the largest win on each line',()=>{const g=quiet();['TOMB','TOMB','KING','KING','10'].forEach((v,i)=>g[i][1]=v);const win=E.evaluate(g,1,1).lineWins[0];a.equal(win.symbol,'KING');a.equal(win.count,4);a.equal(win.amount,1000);});
 test('3/4/5 scattered tombs award ×2/×20/×200 and activate',()=>{for(let n=3;n<=5;n++){const g=quiet();for(let c=0;c<n;c++)g[c][c%3]='TOMB';const r=E.evaluate(g,2,10);a.equal(r.scatterWin,2*({3:2,4:20,5:200}[n]));a.equal(r.trigger,true);}});
