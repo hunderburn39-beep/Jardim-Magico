@@ -39,7 +39,38 @@
     if(s.feature&&s.feature.left===0&&!s.pending)throw Error('Bónus terminado pendente');
     return s;
   }
-  function restore(raw){const s=clone(raw);validate(s);s.betMultiplier=s.betMultiplier||1;s.settings={sound:s.settings?.sound!==false,music:s.settings?.music!==false,turbo:!!s.settings?.turbo};return s;}
+  // Converter registos antigos (uma linha por Free Spin) em sessões.
+  // A conversão não altera montantes, grelhas, prémios ou número de jogada.
+  function compactFreeHistory(s){
+    if(!Array.isArray(s.history)||!s.history.some(h=>h.kind==='free'))return s;
+    const compact=[];
+    for(let i=0;i<s.history.length;){
+      const h=s.history[i];
+      if(h.kind!=='free'){compact.push(h);i++;continue;}
+      const segment=[];
+      while(i<s.history.length&&s.history[i].kind==='free'){
+        segment.push(s.history[i++]);
+      }
+      const rounds=segment.reverse(),first=rounds[0],last=rounds.at(-1);
+      const total=rounds.reduce((v,r)=>v+(Number.isFinite(r.win)?r.win:0),0);
+      const group={
+        kind:'free-bonus',id:first.id,t:first.t,updatedAt:last.t,
+        bet:0,win:Math.round(total*100)/100,played:rounds.length,
+        retriggers:rounds.filter(r=>r.scatters>=3).length,
+        rounds,completed:!s.feature||compact.length>0
+      };
+      // Se o histórico mais recente pertence a um bónus em curso,
+      // conservar o identificador para anexar os próximos giros.
+      if(s.feature&&compact.length===0) {
+        group.completed=false;
+        s.feature.historyId=group.id;
+      }
+      compact.push(group);
+    }
+    s.history=compact.slice(0,100);
+    return s;
+  }
+  function restore(raw){const s=clone(raw);validate(s);s.betMultiplier=s.betMultiplier||1;s.settings={sound:s.settings?.sound!==false,music:s.settings?.music!==false,turbo:!!s.settings?.turbo};compactFreeHistory(s);return validate(s);}
   function migrate(old){
     const s=fresh();if(!old||typeof old!=='object')return s;
     if(Number.isFinite(old.balance)&&old.balance>=0)s.balanceU=units(Math.min(old.balance,10000000));
@@ -51,7 +82,7 @@
       if(featureOK(candidate)&&candidate.totalU<units(E.upperLimit(stake(s))))s.feature=clone(candidate);
     }
     if(Array.isArray(old.history))s.history=old.history.filter(h=>h&&typeof h.t==='string'&&Number.isFinite(h.bet)&&Number.isFinite(h.win)).slice(0,100).map(h=>({...h,kind:h.bonus?'free':'spin'}));
-    s.betMultiplier=1;s.settings.sound=old.sound!==false;return validate(s);
+    s.betMultiplier=1;s.settings.sound=old.sound!==false;compactFreeHistory(s);return validate(s);
   }
   // Compra voluntária por 100× a aposta TOTAL atual; apenas créditos do jogo.
   // A operação é atómica e recuperável no mesmo armazenamento das jogadas.
@@ -81,7 +112,8 @@
     let nextSymbol=null;
     if(result.trigger){const choices=free?E.NORMAL.filter(x=>!s.feature.symbols.includes(x)):E.NORMAL;
       if(choices.length)nextSymbol=choices[Math.floor(rng()*choices.length)];}
-    if(free){s.feature.left--;s.feature.played++;s.stats.free++;}
+    if(free){if(!Number.isSafeInteger(s.feature.historyId))s.feature.historyId=s.sequence+1;
+      s.feature.left--;s.feature.played++;s.stats.free++;}
     else{s.balanceU-=units(bet);s.gambles=0;s.lastBaseWinU=0;s.stats.paid++;s.stats.stakeU+=units(bet);}
     s.pending={id:++s.sequence,grid,free,bet,lines:s.lines,nextSymbol,paylinesVersion:E.PAYLINES_VERSION,expansionPayVersion:2};
     return {pending:s.pending,result};
@@ -166,7 +198,32 @@
       if(s.feature.left===0){bonusDone=clone(s.feature);s.feature=null;}
     }else if(result.trigger){s.feature={left:8,played:0,totalU:0,symbols:[p.nextSymbol],retriggers:0};s.stats.features++;}
     const outcome={id:p.id,free:p.free,result,prizeU,bonusDone,nextSymbol:p.nextSymbol,bet:p.bet};
-    s.last=clone(outcome);s.history.unshift({id:p.id,t:now,kind:p.free?'free':'spin',bet:p.free?0:p.bet,win:credits(prizeU),scatters:result.scatterCount,bonus:p.free,grid:clone(p.grid),lines:p.lines,lineWins:clone(result.lineWins),scatterWin:result.scatterWin,paylinesVersion:p.paylinesVersion??1,expansionPayVersion:p.expansionPayVersion??1});s.history=s.history.slice(0,100);
+    s.last=clone(outcome);
+    const record={id:p.id,t:now,kind:p.free?'free':'spin',bet:p.free?0:p.bet,
+      win:credits(prizeU),scatters:result.scatterCount,bonus:p.free,
+      grid:clone(p.grid),lines:p.lines,lineWins:clone(result.lineWins),
+      scatterWin:result.scatterWin,paylinesVersion:p.paylinesVersion??1,
+      expansionPayVersion:p.expansionPayVersion??1};
+    if(p.free){
+      const f=s.feature||bonusDone;
+      const groupId=f.historyId||p.id;
+      let group=s.history.find(h=>h.kind==='free-bonus'&&h.id===groupId);
+      if(!group){
+        group={kind:'free-bonus',id:groupId,t:now,updatedAt:now,bet:0,win:0,
+          played:0,retriggers:0,symbols:[],rounds:[],completed:false};
+        s.history.unshift(group);
+      }
+      group.rounds.push(record);
+      group.played=f.played;
+      group.win=credits(f.totalU);
+      group.retriggers=f.retriggers;
+      group.symbols=[...f.symbols];
+      group.updatedAt=now;
+      group.completed=!!bonusDone;
+    }else{
+      s.history.unshift(record);
+    }
+    s.history=s.history.slice(0,100);
     s.pending=null;return {...outcome,payout:s.payout?clone(s.payout):null};
   }
   function gamble(s,guess,rng=E.randomFloat,now=new Date().toISOString()){
