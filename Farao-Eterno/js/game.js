@@ -670,7 +670,7 @@ class Game {
  }
 
  openInfo(tab='menu'){
-  const tabs=`<div class="header-tabs">${[['menu','APOSTA'],['settings','CONFIGURAÇÕES'],['pays','PAGAMENTOS'],['history','HISTÓRICO']].map(([key,label])=>`<button data-page="${key}" class="${tab===key?'active':''}">${label}</button>`).join('')}</div>`;
+  const tabs=`<div class="header-tabs">${[['menu','APOSTA'],['settings','CONFIGURAÇÕES'],['pays','PAGAMENTOS'],['history','HISTÓRICO'],['admin','ADMINISTRAÇÃO']].map(([key,label])=>`<button data-page="${key}" class="${tab===key?'active':''}">${label}</button>`).join('')}</div>`;
   let page='';
   if(tab==='menu'){
    page=`<div class="bet-summary"><span>Aposta total</span><strong id="bet-total">${money(this.bet)}</strong></div>
@@ -682,6 +682,8 @@ class Game {
    <p class="hint">A aposta e as linhas só podem ser alteradas com os tambores parados.</p>`;
   }else if(tab==='settings'){
    page=`<h3>Configurações</h3><div class="settings-grid"><button class="btn" id="toggle-sound">Efeitos sonoros: ${this.sound?'Ligados':'Desligados'}</button><button class="btn" id="toggle-music">Música: ${this.ledger.settings.music?'Ligada':'Desligada'}</button><button class="btn" id="toggle-turbo">Velocidade: ${this.turbo?'Turbo':'Normal'}</button></div><div class="actions"><button class="btn" id="menu-reset" ${this.feature?'disabled':''}>Repor créditos</button><button class="btn" id="menu-gamble" ${this.feature||!this.lastBaseWin||this.gambleTimes>=5?'disabled':''}>Arriscar último prémio</button></div>`;
+  }else if(tab==='admin'){
+   page='<section class="farao-admin-entry"><p>Acesso reservado ao modo administrativo de créditos de simulação.</p><button type="button" class="btn farao-admin-entry-btn" id="admin-enter">ENTRAR NA ADMINISTRAÇÃO</button></section>';
   }else if(tab==='pays'){
    // Mostrar o prémio em euros a partir da aposta atual por linha,
    // não os multiplicadores. Recalcular ao abrir o menu após alterar a aposta.
@@ -769,6 +771,7 @@ class Game {
    });
    update();
   }
+  if(tab==='admin') $('admin-enter').onclick=()=>this.openAdminLogin?.();
   if(tab==='menu'){
    $('bet-slider').oninput=e=>{this.ledger.betIndex=Number(e.target.value);
     this.ledger.betMultiplier=Math.min(this.ledger.betMultiplier||1,
