@@ -20,7 +20,7 @@
     if(!s.stats||!['paid','free','stakeU','winU','features'].every(k=>integer(s.stats[k])))throw Error('Estatísticas inválidas');
     if(s.feature&&s.feature.totalU>units(E.upperLimit(stake(s))))throw Error('Bónus inválido');
     if(s.pending){const p=s.pending;
-      if(!gridOK(p.grid)||(p.paylinesVersion!==undefined&&p.paylinesVersion!==2)||(p.expansionPayVersion!==undefined&&p.expansionPayVersion!==2)||p.id!==s.sequence||Math.abs(p.bet-stake(s))>1e-8||p.lines!==s.lines||typeof p.free!=='boolean'||(p.free&&!s.feature)||(!p.free&&s.feature)||!(p.nextSymbol===null||E.NORMAL.includes(p.nextSymbol)))throw Error('Jogada pendente inválida');
+      if(!gridOK(p.grid)||(p.paylinesVersion!==undefined&&p.paylinesVersion!==2)||(p.expansionPayVersion!==undefined&&p.expansionPayVersion!==2)||(p.towerPayVersion!==undefined&&p.towerPayVersion!==1)||p.id!==s.sequence||Math.abs(p.bet-stake(s))>1e-8||p.lines!==s.lines||typeof p.free!=='boolean'||(p.free&&!s.feature)||(!p.free&&s.feature)||!(p.nextSymbol===null||E.NORMAL.includes(p.nextSymbol)))throw Error('Jogada pendente inválida');
       const triggered=E.countScatters(p.grid)>=3,choices=p.free?E.NORMAL.filter(x=>!s.feature.symbols.includes(x)):E.NORMAL;
       if(triggered&&choices.length&&!choices.includes(p.nextSymbol)||!triggered&&p.nextSymbol!==null)throw Error('Seleção de bónus inválida');
     }
@@ -108,14 +108,16 @@
     const bet=stake(s),free=!!s.feature;
     if(!free&&s.balanceU<units(bet))throw Error('Créditos insuficientes');
     // Commit the entire outcome, including feature selection, before animation.
-    const grid=E.makeGrid(rng,free?E.FREE_WEIGHTS:E.WEIGHTS),result=E.evaluate(grid,bet,s.lines,free?s.feature.symbols:[]);
+    const grid=E.makeGrid(rng,free?E.FREE_WEIGHTS:E.WEIGHTS),
+      result=E.evaluate(grid,bet,s.lines,free?s.feature.symbols:[],E.LINES,
+        'separate',free?'free-anywhere':'base');
     let nextSymbol=null;
     if(result.trigger){const choices=free?E.NORMAL.filter(x=>!s.feature.symbols.includes(x)):E.NORMAL;
       if(choices.length)nextSymbol=choices[Math.floor(rng()*choices.length)];}
     if(free){if(!Number.isSafeInteger(s.feature.historyId))s.feature.historyId=s.sequence+1;
       s.feature.left--;s.feature.played++;s.stats.free++;}
     else{s.balanceU-=units(bet);s.gambles=0;s.lastBaseWinU=0;s.stats.paid++;s.stats.stakeU+=units(bet);}
-    s.pending={id:++s.sequence,grid,free,bet,lines:s.lines,nextSymbol,paylinesVersion:E.PAYLINES_VERSION,expansionPayVersion:2};
+    s.pending={id:++s.sequence,grid,free,bet,lines:s.lines,nextSymbol,paylinesVersion:E.PAYLINES_VERSION,expansionPayVersion:2,...(free?{towerPayVersion:1}:{})};
     return {pending:s.pending,result};
   }
   // Plano de sequências calculado exclusivamente a partir do resultado
@@ -180,7 +182,8 @@
     if(!s.pending)return null;validate(s);
     const p=s.pending,result=E.evaluate(p.grid,p.bet,p.lines,p.free?s.feature.symbols:[],
       p.paylinesVersion===E.PAYLINES_VERSION?E.LINES:E.LEGACY_LINES,
-      p.expansionPayVersion===2?'separate':'legacy');
+      p.expansionPayVersion===2?'separate':'legacy',
+      p.free&&p.towerPayVersion===1?'free-anywhere':'base');
     const limitU=units(E.upperLimit(p.bet));
     const prizeU=Math.max(0,Math.min(units(result.total),p.free?limitU-s.feature.totalU:limitU));
     const groups=p.free&&options?.defer?sequencePayouts(result,prizeU):[];
@@ -203,7 +206,7 @@
       win:credits(prizeU),scatters:result.scatterCount,bonus:p.free,
       grid:clone(p.grid),lines:p.lines,lineWins:clone(result.lineWins),
       scatterWin:result.scatterWin,paylinesVersion:p.paylinesVersion??1,
-      expansionPayVersion:p.expansionPayVersion??1};
+      expansionPayVersion:p.expansionPayVersion??1,towerPayVersion:p.towerPayVersion??0};
     if(p.free){
       const f=s.feature||bonusDone;
       const groupId=f.historyId||p.id;
