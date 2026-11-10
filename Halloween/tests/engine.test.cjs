@@ -209,6 +209,12 @@ test("Acumulados guardam frações de cêntimo e só crescem em giros pagos",()=
     const result=E.spin(paid,fixed(.45));
     assert.equal(result.ok,true);
     paid=result.state;
+    // Um bónus pode surgir durante a medição dos progressivos;
+    // é necessário resolvê-lo para prosseguir com novos giros.
+    if(paid.pendingPot)paid=E.choosePot(paid,0).state;
+    if(paid.pendingDice)paid=E.chooseDice(paid,0).state;
+    if(paid.pendingStrawberry)paid=E.chooseStrawberry(paid,0).state;
+    if(paid.pendingWheel)paid=E.resolveWheel(paid).state;
   }
   assert.ok(paid.jackpots[0]>original.jackpots[0]);
   assert.ok(paid.jackpots[1]>original.jackpots[1]);
@@ -550,4 +556,72 @@ test("Quatro caldeirões dispersos não abrem mini-jogo (bónus sobretudo vertic
   assert.equal(result.verticalBonus,false);
   assert.equal(result.bonusEligible,false);
   assert.equal(result.potTriggered||result.diceTriggered||result.strawberryTriggered,false);
+});
+
+test("Depois de 48 giros pagos sem mini-bónus surge combinação vertical recreativa",()=>{
+  const seed={...E.createState(),balance:1000,bonusDrySpins:48};
+  const result=E.spin(seed,()=>.45);
+  assert.equal(result.ok,true);
+  assert.equal(result.verticalBonus,true);
+  assert.equal(result.boostedVertical,true);
+  assert.equal(result.bonusEligible,true);
+  assert.equal(result.result.verticalScatterColumns.length,1);
+  const col=result.result.verticalScatterColumns[0];
+  assert.deepEqual(result.grid[col],["scatter","scatter","scatter"]);
+  assert.equal(result.state.bonusDrySpins,0);
+  assert.equal(result.earnedSpins,10);
+  assert.equal([result.potTriggered,result.diceTriggered,result.strawberryTriggered].filter(Boolean).length,1);
+});
+test("Forçar bónus vertical não pode alterar um tambor travado",()=>{
+  const grid=Array.from({length:5},()=>["ghost","ghost","ghost"]);
+  const old={...E.createState(),balance:2000,bonusDrySpins:48};
+  const result=E.spin(old,()=>.45,grid,new Set([0,1,2,3]));
+  assert.equal(result.ok,true);
+  assert.deepEqual(result.heldReels,[0,1,2,3]);
+  for(let col=0;col<4;col++)assert.deepEqual(result.grid[col],grid[col]);
+  assert.deepEqual(result.grid[4],["scatter","scatter","scatter"]);
+});
+test("Os Free Spins não disparam um reforço vertical artificial",()=>{
+  const state={...E.createState(),freeSpins:1,bonusDrySpins:48};
+  const result=E.spin(state,()=>.45);
+  assert.equal(result.ok,true);
+  assert.equal(result.boostedVertical,false);
+  assert.equal(result.verticalBonus,false);
+  assert.equal(result.state.bonusDrySpins,48);
+});
+test("O contador de espera recupera sessões antigas e não altera os créditos",()=>{
+  const legacy={...E.createState(),spins:100,balance:723};
+  delete legacy.bonusDrySpins;
+  const restored=E.sanitize(legacy);
+  assert.equal(restored.bonusDrySpins,25);
+  assert.equal(restored.balance,723);
+  const next=E.sanitize({...restored,bonusDrySpins:12});
+  assert.equal(next.bonusDrySpins,12);
+  assert.equal(E.sanitize({...restored,bonusDrySpins:10000}).bonusDrySpins,48);
+});
+test("Regressão: mini-bónus verticais frequentes, sem secas de milhares de giros",()=>{
+  let seed=117;
+  const rng=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
+  let state={...E.createState(),balance:100000};
+  let paid=0,bonuses=0,vertical=0,wait=0,longestWait=0;
+  for(let i=0;i<4000;i++){
+    const r=E.spin(state,rng);
+    assert.equal(r.ok,true);
+    state=r.state;
+    if(!r.free){paid++;wait++;}
+    if(r.bonusEligible){
+      bonuses++;
+      if(r.verticalBonus)vertical++;
+      longestWait=Math.max(longestWait,wait);
+      wait=0;
+    }
+    if(state.pendingPot)state=E.choosePot(state,0).state;
+    if(state.pendingDice)state=E.chooseDice(state,0).state;
+    if(state.pendingStrawberry)state=E.chooseStrawberry(state,0).state;
+    if(state.pendingWheel)state=E.resolveWheel(state).state;
+  }
+  assert.ok(bonuses>=50,"Poucos mini-bónus: "+bonuses);
+  assert.ok(vertical/bonuses>=.9,"Mini-bónus verticais abaixo de 90%");
+  assert.ok(longestWait<=49,"Espera excessiva de "+longestWait+" giros pagos");
+  assert.ok(paid>1000);
 });
