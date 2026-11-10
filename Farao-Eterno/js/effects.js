@@ -77,7 +77,13 @@
   game.finishSpin = function () {
     if (!this.spinObject) return;
     finishSpin();
-    const prize = this.lastWin;
+    const staged=this.sequencePlayback?.stages||[];
+    const paidSequences=staged.filter(g=>g.kind!=='scatter');
+    const informational=paidSequences.length>=2;
+    // A celebração mostra a SOMA das sequências já pagas; não credita nada.
+    // SCATTER é contabilizado à parte, não entra neste subtítulo.
+    const prize=informational
+      ?paidSequences.reduce((n,g)=>n+g.amount,0):this.lastWin;
     const factor = this.bet > 0 ? prize / this.bet : 0;
     if (!Number.isFinite(factor) || factor < 10) return;
     const tier = factor >= 100 ? 3 : factor >= 30 ? 2 : 1;
@@ -86,6 +92,7 @@
     const messages = { 1: 'GRANDE PRÉMIO', 2: 'PRÉMIO ÉPICO', 3: 'TESOURO LENDÁRIO' };
     this.v04Celebration = {
       start, end: start + duration, prize, tier, label: messages[tier],
+      informational,fanPlayed:false,
       coins: Array.from({ length: reduceMotion ? 0 : tier * 13 + 17 }, (_, i) => ({
         x: 50 + Math.random() * 460,
         y: 650 + Math.random() * 120,
@@ -99,7 +106,7 @@
     this.messageUntil = 0; // evita dois avisos sobrepostos ao prémio especial
     this.nextActionAt = Math.max(this.nextActionAt, this.v04Celebration.end + 140);
     this.v04Events.celebrations++;
-    audio.fanfare(tier);
+    if(!informational){audio.fanfare(tier);this.v04Celebration.fanPlayed=true;}
   };
 
   const frame = game.frame.bind(game);
@@ -157,6 +164,9 @@
     }
     const celebration = this.v04Celebration;
     if (!celebration || t < celebration.start || t > celebration.end) return;
+    if(!celebration.fanPlayed&&!this.paused){
+      celebration.fanPlayed=true;audio.fanfare(celebration.tier);
+    }
     const p = clamp((t - celebration.start) / (celebration.end - celebration.start), 0, 1);
     const alpha = Math.min(1, p * 8, (1 - p) * 8);
     const amount = celebration.prize * ease(clamp(p * 1.28, 0, 1));
@@ -186,7 +196,9 @@
     ctx.fillStyle = '#fff0a8'; ctx.fillText(shown, 280, 456);
     ctx.shadowBlur = 0;
     ctx.font = '800 14px Arial'; ctx.fillStyle = '#89e8d8';
-    ctx.fillText('TESOUROS DO TEMPLO', 280, 514);
+    ctx.fillText(celebration.informational
+      ?'TOTAL DAS SEQUÊNCIAS · JÁ CREDITADO'
+      :'TESOUROS DO TEMPLO', 280, 514);
     ctx.restore();
     if (!reduceMotion) {
       ctx.save(); ctx.beginPath(); ctx.rect(28, 253, 504, 405); ctx.clip();
