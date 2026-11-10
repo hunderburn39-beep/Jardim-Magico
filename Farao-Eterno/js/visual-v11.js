@@ -173,7 +173,7 @@
  }
  // Larger icons, strictly preserving their source aspect ratio.
  game.drawIcon=function(sym,x,y,w,h,win=false,t=performance.now()){
-  const img=this.images[sym],size=Math.min(w-4,h-4)*(sym==='TOMB'?1.05:1);
+  const img=this.images[sym],size=Math.min(w-4,h-4)*(sym==='TOMB'?1.0815:1);
   ctx.save();
   // As peças que efetivamente pagam brilham com uma aura azul-branca forte.
   // A aura é exclusivamente aplicada às células do conjunto premiado.
@@ -181,7 +181,7 @@
    const pulse=1.055+.055*Math.sin(t*.012);
    ctx.translate(x+w/2,y+h/2);ctx.scale(pulse,pulse);ctx.translate(-x-w/2,-y-h/2);
   }
-  if(win){
+  if(win&&sym!=='TOMB'){
    const wave=reducedMotion?1:.75+.25*Math.sin(t*.014);
    const alpha=.43+.22*wave;
    ctx.save();ctx.globalCompositeOperation='screen';
@@ -200,41 +200,17 @@
     const iw=b.w*factor,ih=b.h*factor;
     ctx.drawImage(img,b.x,b.y,b.w,b.h,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
    }else if(sym==='TOMB'){
-    // Torre maior, sem moldura individual; pode atravessar as divisões horizontais.
+    // A pirâmide já é dourada e tem transparência própria.
+    // Desenhar o ficheiro apenas uma vez, sem fundo, aura, sombra nem filtros.
+    // Exatamente mais 3% relativamente à imagem da versão anterior.
     const bounds=visibleBounds(img);
-    const scale=Math.min((w*1.12)/bounds.w,(h*1.42)/bounds.h);
+    const scale=1.03*Math.min((w*1.12)/bounds.w,(h*1.42)/bounds.h);
     const iw=bounds.w*scale,ih=bounds.h*scale;
-    const centerX=x+w/2,centerY=y+h/2;
     ctx.save();
-    const dx=centerX-iw/2,dy=centerY-ih/2;
-    // Profundidade por camadas: sombra projetada, lateral escura e relevo dourado.
-    ctx.globalAlpha=.58;
-    ctx.filter='brightness(0.18) sepia(1) saturate(1.8)';
-    ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,dx+11,dy+13,iw,ih);
     ctx.filter='none';
-    ctx.globalAlpha=.96;
-    ctx.filter='brightness(0.34) sepia(1) saturate(1.5)';
-    ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,dx+7,dy+4,iw,ih);
-    ctx.filter='none';
-    ctx.globalAlpha=1;
-    ctx.shadowColor='#ffd477';ctx.shadowBlur=23;
-    ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,dx,dy,iw,ih);
-    ctx.shadowBlur=0;
-    // Banho dourado recortado à silhueta da torre, preservando detalhes e sombras 3D.
-    ctx.globalCompositeOperation='source-atop';
-    const gold=ctx.createLinearGradient(dx,dy,dx+iw,dy+ih);
-    gold.addColorStop(0,'#fff3bb80');
-    gold.addColorStop(.35,'#ffcf5380');
-    gold.addColorStop(.7,'#d38a2080');
-    gold.addColorStop(1,'#f8c04c70');
-    ctx.fillStyle=gold;ctx.fillRect(dx-2,dy-2,iw+4,ih+4);
-    // Reflexo direcional dourado, recortado à silhueta da própria torre.
-    const light=ctx.createLinearGradient(dx,dy,dx+iw,dy+ih*.25);
-    light.addColorStop(0,'#fff0bc91');
-    light.addColorStop(.32,'#ffe5a938');
-    light.addColorStop(.68,'#24110800');
-    light.addColorStop(1,'#080b2288');
-    ctx.fillStyle=light;ctx.fillRect(dx-2,dy-2,iw+4,ih+4);
+    ctx.shadowBlur=0;ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+    ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,
+      x+(w-iw)/2,y+(h-ih)/2,iw,ih);
     ctx.restore();
    }else{
     const scale=Math.min(size/img.naturalWidth,size/img.naturalHeight);
@@ -253,7 +229,7 @@
    const low=['10','J','Q','K','A'].includes(sym);
    txt(low?sym:'✦',x+w/2,y+h/2,low?30:36,color.bright);
   }
-  if(win){
+  if(win&&sym!=='TOMB'){
    // Reflexo azul intenso nas bordas, sem iluminar figuras fora do prémio.
    const flicker=reducedMotion?1:.76+.24*Math.sin(t*.014);
    ctx.save();ctx.lineJoin='round';
@@ -381,7 +357,14 @@
      if('filter' in ctx)ctx.filter='blur('+(5+velocity*11).toFixed(1)+'px)';
      for(let r=-1;r<4;r++){
       const sym=item.show[c][item.steps[c]+3+r-step]||item.grid[c][clamp(r,0,2)];
-      this.drawIcon(sym,rx,top+(r+fraction)*gh+offset,R.cw,R.gh,false,t);
+      // A pirâmide também se mantém nítida durante o giro: uma única
+      // passagem central sem os rastos e o filtro de movimento.
+      if(sym==='TOMB'){
+       if(offset!==0)continue;
+       ctx.save();ctx.filter='none';ctx.globalAlpha=1;
+       this.drawIcon(sym,rx,top+(r+fraction)*gh,R.cw,R.gh,false,t);
+       ctx.restore();
+      }else this.drawIcon(sym,rx,top+(r+fraction)*gh+offset,R.cw,R.gh,false,t);
      }
      ctx.restore();
     }
@@ -499,7 +482,7 @@
     for(let i=0;i<keys.length;i++)
       this.drawMiniSymbol(keys[i],294+i*step,bonusesY+(35-size)/2,size);
   }
-  txt('V1.3.42',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.43',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
