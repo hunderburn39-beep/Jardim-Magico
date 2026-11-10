@@ -1,4 +1,4 @@
-# Matemática — Faraó Eterno V1.3.28
+# Matemática — Faraó Eterno V1.3.29
 
 ## Origem e limites da referência
 
@@ -49,7 +49,7 @@ As combinações normais começam no primeiro tambor, em tambores consecutivos. 
 
 ## Geração da grelha e Scatter
 
-Soma dos pesos = 106,85. Cada posição recebe uma escolha proporcional ao peso. Existe no máximo um santuário em cada tambor: se outro santuário for sorteado no mesmo tambor, há uma nova escolha, excluindo esse símbolo. Os tambores são independentes; as posições de um mesmo tambor não são independentes devido a esta restrição. Não são usadas tiras privadas de outro jogo. As tiras do efeito visual não determinam o resultado.
+No jogo base, a soma dos pesos é 106,85. Nas Free Spins V1.3.29, apenas o peso do Scatter muda de 3,85 para 6,5; os pesos das outras figuras mantêm-se. Cada posição recebe uma escolha proporcional ao peso. Existe no máximo um santuário em cada tambor: se outro santuário for sorteado no mesmo tambor, há uma nova escolha, excluindo esse símbolo. Os tambores são independentes; as posições de um mesmo tambor não são independentes devido a esta restrição. Não são usadas tiras privadas de outro jogo. As tiras do efeito visual não determinam o resultado.
 
 `crypto.getRandomValues` fornece o sorteio no navegador; há fallback para `Math.random` em ambientes sem Web Crypto. O simulador usa uma sequência determinística com semente publicada. Nenhum sorteio depende do saldo, dos prémios anteriores ou da animação.
 
@@ -64,6 +64,16 @@ Um dos nove símbolos normais é sorteado uniformemente à entrada. Cada nova at
 Conta-se o número de **tambores distintos** que contêm cada expansivo. Se a respetiva entrada da tabela pagar, o símbolo expande nas três posições dos seus tambores. Pode pagar com intervalos e sem começar no tambor esquerdo. Santuários não substituem expansivos nesta contagem. Três cópias no mesmo tambor contam apenas uma vez. Cartas precisam de três tambores; os quatro símbolos premium, de dois.
 
 **V1.3.28 — várias figuras expansivas na mesma Free Spin.** Quando duas ou mais figuras distintas estão qualificadas para expandir, o motor atribui os respetivos prémios **a cada figura**, por cada linha ativa, e soma-os. A contagem e animação seguem a ordem `10 → J → Q → K → A → HORUS → MASK → ANUBIS → KING` e só terminam após a última figura. Uma combinação normal de símbolo não expansivo também pode pagar na mesma linha; não se duplica uma combinação normal de um símbolo já pago como expansivo. Com zero ou um expansivo elegível, conserva-se a avaliação anterior de maior prémio por linha. O limite de 5.000× do total de cada bónus continua obrigatório; os passos visuais somam exatamente o crédito efetivamente atribuído, mesmo quando o limite reduz o resultado. Cada figura em expansão pode aparecer nos mesmos tambores em momentos diferentes; a animação não cria prémios adicionais. Jogadas pendentes anteriores a esta versão são pagas pela matemática anterior.
+
+## Retriggers e teases nas Free Spins — V1.3.29
+
+A partir desta versão, o peso do símbolo `TOMB` nas Free Spins é **6,5** (jogo base: **3,85**), tornando os retriggers de três ou mais Scatters mais frequentes, **sem nunca os garantir**. O sorteio continua independente, com três símbolos diferentes por tambor e no máximo um Scatter por tambor. Os valores da tabela de prémios e as probabilidades do jogo base não foram alterados nesta atualização.
+
+Numa amostra determinística de **12.000 grelhas por modo**, registaram-se 198 ativações no jogo base (1,65%) e 677 retriggers nas Free Spins (5,64%), com 2.373 resultados de exatamente dois Scatters nas Free Spins. Estes são resultados de amostra, **não** probabilidades exatas nem uma nova medição de RTP.
+
+O **tease** só começa se dois Scatters já tiverem parado e ainda restar pelo menos um tambor em movimento. Nesse momento, os tambores restantes abrandam ligeiramente, surge a mensagem «FALTA 1 SCATTER!» e toca um aviso de suspense. Se aparecer o terceiro, os resultados reais somam **+8 Free Spins** e, quando ainda houver símbolos disponíveis, acrescentam um novo expansivo sem repetição. A contagem do prémio e o histórico são guardados normalmente; um tease sem terceiro Scatter não adiciona giros nem paga qualquer prémio extra.
+
+Esta mudança pode alterar significativamente o RTP e a duração média do bónus; a simulação histórica de 1.000.000 de rondas apresentada abaixo **não é válida para estimar a V1.3.29**.
 
 ## Tetos e precisão
 
