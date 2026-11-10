@@ -108,7 +108,7 @@ footer{text-align:center;color:#b5c9e1;font-size:10px;line-height:1.2;flex:none}
     <div class="celebration-fireworks right" id="fireworks-right"></div><button id="celebration-close" type="button">CONTINUAR ▶</button>
   </div>
 </div>
-<audio id="fireworks-audio" preload="auto" src="./fireworks.mp3"></audio>
+<audio id="fireworks-audio" preload="auto" src="./Fireworks.mp3"></audio>
 <script>
 "use strict";
 // Valores em cêntimos: 1 € por bilhete; prémio mínimo vencedor 1 € e máximo 100 €.
@@ -309,7 +309,7 @@ function showCelebration(prizeCents){
     celebrationTimeouts.push(setTimeout(()=>{
       launchFirework(el("fireworks-left"));
       launchFirework(el("fireworks-right"));
-      // As explosões utilizam a gravação fireworks.mp3.
+      // As explosões utilizam a gravação Fireworks.mp3.
     },i*850+130));
   }
   // A celebração permanece visível até o jogador tocar em Continuar.
