@@ -329,12 +329,17 @@
   ctx.drawImage(royalLogo,0,238,560,46);
  }
  game.reelBoard=function(t){
-  // Só pulsam os símbolos da linha apresentada, alternada de 1,6 em 1,6 s.
+  // Durante a apresentação, apenas a sequência em curso pode brilhar.
   const pulseCells=new Set();
+  const focus=this.sequenceFocusAt?.(t)||null;
   const wins=!this.spinning&&(!this.reveal||t>=this.reveal.end)&&(!this.featureIntro||t>=this.featureIntro.end)
    ?this.lastResult?.lineWins:null;
-  if(wins?.length){
-   const chosen=wins[Math.floor(t/1600)%wins.length];
+  const chosen=focus
+    ?focus.kind==='line'?focus.win:
+      focus.kind==='expansion'?this.lastResult?.lineWins?.find(w=>w.expanded&&w.symbol===focus.symbol):
+      null
+    :wins?.length?wins[Math.floor(t/1600)%wins.length]:null;
+  if(chosen){
    if(chosen.expanded){
     const expander=this.lastResult.expanders.find(e=>e.symbol===chosen.symbol);
     for(const reel of expander?.reels||[])for(let row=0;row<3;row++)pulseCells.add(reel+'-'+row);
@@ -390,7 +395,7 @@
     const raw=phaseReveal&&idx>=0?clamp((t-stamp)/phaseReveal.perReel,0,1):1;
     const progress=raw*raw*(3-2*raw);
     const expanding=!!(phaseExpanded[c]&&(phaseReveal?idx>=0&&progress>0:this.lastWasFree));
-    const ready=!this.reveal||t>=this.reveal.end-100;
+    const ready=!!focus||!this.reveal||t>=this.reveal.end-100;
     for(let r=0;r<3;r++){
      const yy=top+r*gh,win=ready&&pulseCells.has(c+'-'+r);
      const scan=expanding?clamp(progress*3.18-r*.93,0,1):0;
@@ -441,6 +446,22 @@
   for(let c=0;c<5;c++)drawReelShell(c);
   this.drawReelSeparators(R.left,R.top,R.step,R.gh);
   this.drawActivePayline(t,R.left,R.top,R.cw,R.gh,R.step);
+  // Nas linhas normais, fazer a leitura dos tambores lentamente de cima
+  // para baixo, sem alterar as figuras ou o resultado sorteado.
+  if(focus?.kind==='line'&&focus.win){
+   for(let k=0;k<focus.reels.length;k++){
+    const reel=focus.reels[k],rx=R.left+reel*R.step;
+    const stamp=focus.start+focus.preDelay+k*focus.perReel;
+    const p=clamp((t-stamp)/focus.perReel,0,1);
+    if(p<=0||p>=1)continue;
+    const beamY=R.top+R.gh*3*p;
+    ctx.save();ctx.beginPath();ctx.rect(rx,R.top,R.cw,R.gh*3);ctx.clip();
+    ctx.shadowColor='#8dfbe7';ctx.shadowBlur=21;
+    ctx.fillStyle='#9cffe6';ctx.globalAlpha=.48;
+    ctx.fillRect(rx+5,beamY-4,R.cw-10,8);
+    ctx.restore();
+   }
+  }
   drawTitle3D(t); // Sempre à frente da moldura e atrás dos ícones de prémio.
   ctx.save();ctx.shadowColor='#ffdd84';ctx.shadowBlur=7;
   rounded(ctx,23,R.top+R.gh*3+8,514,9,4,
@@ -482,7 +503,7 @@
    performance.now()<this.nextActionAt;
   this.drawControl(28,R.top+R.gh*3+95,164,35,'COMPRAR BÓNUS',
    ()=>this.openBuyBonus(),{size:12,disabled:bonusDisabled});
-  txt('V1.3.29',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.31',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
