@@ -1074,7 +1074,7 @@ class Game {
   cx.save();
   // Contain all original image proportions in one centred square: no crop or stretch.
   const box=Math.min(w-6,h-6),bx=x+(w-box)/2,by=y+(h-box)/2;
-  if(win){
+  if(win&&sym!=='TOMB'){
    const glow=.6+.4*Math.sin(t*.008+x*.2);
    cx.shadowColor='#f8d875';cx.shadowBlur=16+11*glow;
    const aura=cx.createRadialGradient(x+w*.5,y+h*.5,5,x+w*.5,y+h*.5,box*.58);
@@ -1082,36 +1082,21 @@ class Game {
    aura.addColorStop(1,'rgba(247,194,89,0)');
    rect(bx,by,box,box,aura);
   }
-  // The TOMB (tower/sanctuary) symbol has its own continuously breathing gold light.
-  // Keep the effect inside the cell, with no effect on reel outcomes or payouts.
-  if(sym==='TOMB'){
-   const beat=.5+.5*Math.sin(t*.0037+x*.009+y*.005);
-   const strength=win?.54:.25;
-   cx.save();
-   const radial=cx.createRadialGradient(x+w/2,y+h/2,box*.08,x+w/2,y+h/2,box*.53);
-   radial.addColorStop(0,`rgba(255,242,173,${strength+.17*beat})`);
-   radial.addColorStop(.52,`rgba(255,191,66,${.12+.17*beat})`);
-   radial.addColorStop(1,'rgba(255,171,42,0)');
-   cx.fillStyle=radial;cx.fillRect(bx,by,box,box);
-   cx.restore();
-  }
+  // A pirâmide usa apenas os píxeis transparentes do ficheiro original.
   const img=this.images[sym];
   if(img?.complete&&img?.naturalWidth&&img.naturalHeight){
    const premium=E.NORMAL.slice(5).includes(sym)||sym==='TOMB';
-   const maxSide=box*(premium?.97:.92);
+   const maxSide=box*(sym==='TOMB'?.97*1.03:premium?.97:.92);
    const scale=Math.min(maxSide/img.naturalWidth,maxSide/img.naturalHeight);
    const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
    if(sym==='TOMB'){
-    const beat=.5+.5*Math.sin(t*.0037+x*.009+y*.005);
-    cx.save();cx.shadowColor='#ffd36b';cx.shadowBlur=9+19*beat+(win?9:0);
+    cx.save();cx.filter='none';cx.shadowBlur=0;
     cx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
     cx.restore();
-    cx.save();cx.globalCompositeOperation='screen';cx.globalAlpha=.055+.18*beat+(win?.08:0);
-    cx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);cx.restore();
    }else cx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
   }else{text(sym,x+w/2,y+h/2,26,'#fce8b4');}
   cx.restore();
-  if(win){
+  if(win&&sym!=='TOMB'){
    cx.save();cx.globalAlpha=.52+.33*Math.sin(t*.009);
    cx.shadowColor='#ffe79c';cx.shadowBlur=10;
    rect(bx+2,by+2,box-4,box-4,null,'#ffdfa0',5,2);
