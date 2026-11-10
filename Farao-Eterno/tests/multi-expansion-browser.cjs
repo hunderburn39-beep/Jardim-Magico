@@ -27,13 +27,15 @@ const url='http://127.0.0.1:8123/index.html?qa=expansion-order';
     const start=g.winCount.start-1,end=g.reveal.end+10;
     const values=[g.displayWinAt(start),...stages.map(stage=>
       g.displayWinAt(stage.end+5)),g.displayWinAt(end)];
-    const total=g.ledger.history[0].win;
-    const number=g.ledger.history[0].id;
+    const grouped=g.ledger.history[0];
+    const round=grouped.kind==='free-bonus'?grouped.rounds[0]:grouped;
+    const total=grouped.win;
+    const number=round.id;
     return {order:stages.map(s=>s.symbol),startTimes:stages.map(s=>s.start),
       endTimes:stages.map(s=>s.end),values,total,oldTotal:old.total,
       engineTotal:expected.total,featureEnded:!g.ledger.feature,
-      historyId:number,version:g.ledger.history[0].expansionPayVersion,
-      savedSymbols:g.ledger.history[0].lineWins.filter(w=>w.expanded).map(w=>w.symbol)};
+      historyId:number,version:round.expansionPayVersion,
+      savedSymbols:round.lineWins.filter(w=>w.expanded).map(w=>w.symbol)};
    });
    assert.deepEqual(state.order,['10','J','ANUBIS','KING'],'Figuras devem ser mostradas por valor crescente');
    assert(state.engineTotal>state.oldTotal,'As quatro figuras têm de contribuir para o prémio');
