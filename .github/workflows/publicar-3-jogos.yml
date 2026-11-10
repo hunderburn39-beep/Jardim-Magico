@@ -29,7 +29,8 @@ permissions:
 
 concurrency:
   group: publicar-quatro-jogos-pages
-  cancel-in-progress: false
+  # Uma publicação nova substitui automaticamente a anterior que ficou presa.
+  cancel-in-progress: true
 
 jobs:
   preparar:
