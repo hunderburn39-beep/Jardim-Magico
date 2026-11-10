@@ -73,3 +73,19 @@ test('Free Spins usam tempos curtos nas sequências, preservando crédito fasead
  assert.match(gameSrc,/const creditAt=cursor\+preDelay/);
  assert.match(gameSrc,/this\.audio\.paylineChime\?\.\(stage\.index\)/);
 });
+
+test('pirâmides WILD pulsam sempre acima de 5%, com brilho dourado e sobreposição',()=>{
+ assert.match(visual,/const pulse=1\+\.08\*wave;/);
+ assert.match(visual,/ctx\.shadowColor='rgba\(255,198,68,/);
+ assert.match(visual,/ctx\.shadowBlur=12\+16\*wave;/);
+ assert.match(visual,/if\(sym==='TOMB'\)return;/,
+   'Não desenhar a pirâmide duas vezes, uma delas debaixo dos símbolos');
+ const overlay=visual.indexOf('Sobreposição real: uma única camada por cima');
+ const reels=visual.indexOf('drawReelSeparators(R.left,R.top,R.step,R.gh)');
+ const paylines=visual.indexOf('this.drawActivePayline(t,R.left');
+ assert.ok(overlay>reels&&overlay<paylines,
+   'Desenhar as pirâmides depois dos tambores e antes das linhas');
+ assert.match(visual,/ctx\.rect\(R\.left-2,R\.top-5,4\*R\.step\+R\.cw\+4,R\.gh\*3\+10\)/);
+ assert.doesNotMatch(visual,/ctx\.globalCompositeOperation='source-atop'/,
+   'Sem banho dourado que preencha o fundo transparente');
+});
