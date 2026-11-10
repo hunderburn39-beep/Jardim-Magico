@@ -513,13 +513,55 @@ class Game {
   }else if(tab==='rules'){
    page=`<h3>O santuário é WILD e SCATTER</h3><p>5 tambores × 3 posições, com 1 a 10 linhas. As combinações normais começam no tambor da esquerda, sem intervalos. O santuário substitui os restantes símbolos. Hórus, Máscara e Anúbis pagam desde 2; o Faraó e o santuário também. As cartas pagam desde 3.</p><h3>8 Free Spins e símbolos expansivos</h3><p>3 ou mais santuários em qualquer posição dão 8 giros grátis. Um símbolo normal é sorteado. Quando está em tambores suficientes para pagar, expande nas três posições desses tambores, mesmo separados. Os santuários não substituem o símbolo especial no cálculo da expansão.</p><p>Em cada linha vence o maior pagamento entre a combinação normal e todos os expansivos ativos; os prémios não se somam dentro da mesma linha. Novos 3 ou mais santuários dão +8 giros e outro símbolo, sem repetir, até 9 símbolos. Depois de desbloquear os nove, as novas ativações continuam a dar +8 giros.</p><h3>Limites preservados da V0.6</h3><p>Aposta de 0,10 a 10 créditos. Limite de 5.000× numa jogada base e de 5.000× no total de uma série de Free Spins. O prémio da jogada que ativa o bónus é pago à parte. O bónus termina ao atingir o seu limite. Não há limite artificial de novas ativações.</p><h3>Arriscar e sessão</h3><p>Cor: 50% para ×2; naipe: 25% para ×4. Até cinco tentativas. Arrisca apenas o último prémio base e o limite mantém a aposta da jogada original. O saldo e os resultados pendentes são guardados neste navegador. Ao regressar de outra aplicação, toca em Retomar.</p><p><a href="docs/MATEMATICA.md" target="_blank" rel="noopener">Consultar a matemática e probabilidades</a> · <a href="docs/VALIDACAO.md" target="_blank" rel="noopener">Consultar a validação</a></p><p class="hint">Matemática independente. O RTP deste jogo é medido pelo seu próprio simulador; não é o RTP do Legacy of Dead. Não existe certificação de jogo a dinheiro.</p>`;
   }else{
+   // Histórico compacto: nunca incluir imagens na lista. As figuras e
+   // linhas premiadas aparecem apenas quando se abre a jogada pelo seu ID.
    const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const preview=h=>h.grid?'<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;max-width:270px;margin:9px auto;border:2px solid #bd9658;padding:4px;background:#0d1b27">'+Array.from({length:15},(_,i)=>{const c=i%5,row=Math.floor(i/5),sym=h.grid[c]?.[row],img=this.images[sym];return '<img src="'+(img?.src||'')+'" alt="" style="display:block;width:100%;aspect-ratio:1;object-fit:contain;background:#18222c" />'}).join('')+'</div>':'<small style="color:#d8ba80">Sem imagem: jogada anterior à atualização.</small>';
-    page=`<p>Últimas ${this.history.length} ações. Toca na miniatura para ampliar.</p><div class="history">`+(this.history.length?this.history.map(h=>`<div style="border-bottom:1px solid #98774766;padding:10px 0"><b>${h.kind==='reset'?'Reposição de créditos':h.kind==='gamble'?'Carta':h.bonus?'★ Free Spin':'Giro'} ${Number.isInteger(h.id)?'#'+h.id:''}</b> · aposta ${money(h.bet)} · prémio <b>${money(h.win)}</b><br><small>${esc(new Date(h.t).toLocaleString('pt-PT'))}</small>${h.grid?`<button type="button" data-replay="${h.id}" style="display:block;width:100%;border:0;background:transparent;padding:0;cursor:pointer" aria-label="Ver imagem da jogada ${h.id}">${preview(h)}</button>`:h.kind==='spin'||h.kind==='free'?preview(h):''}</div>`).join(''):'<p>O teu legado começa no primeiro giro.</p>')+'</div>';
+   const entry=h=>{
+    const hasId=Number.isSafeInteger(h.id)&&h.id>0;
+    const canOpen=hasId&&!!h.grid;
+    const kind=h.kind==='reset'?'Reposição de créditos':h.kind==='gamble'?'Carta':h.bonus?'Free Spin':'Giro';
+    const number=hasId?' #'+h.id:'';
+    const date=esc(new Date(h.t).toLocaleString('pt-PT'));
+    const details='<span class="farao-history-kind">'+esc(kind)+number+'</span>'+
+      '<span class="farao-history-date">'+date+'</span>'+
+      '<span class="farao-history-money">Aposta '+money(h.bet||0)+' · Prémio <strong>'+money(h.win||0)+'</strong></span>';
+    if(canOpen)return '<button type="button" class="farao-history-row" data-history-open="'+h.id+'" data-history-id="'+h.id+'" aria-label="Abrir imagens da jogada '+h.id+'">'+details+'<span class="farao-history-open">Ver jogada ›</span></button>';
+    return '<div class="farao-history-row farao-history-static"'+(hasId?' data-history-id="'+h.id+'"':'')+'>'+details+(hasId?'<span class="farao-history-date">Imagens indisponíveis</span>':'')+'</div>';
+   };
+   page=`<section class="farao-history-search"><label for="history-search-number">PROCURAR N.º DA JOGADA</label><div class="farao-history-search-controls"><input id="history-search-number" type="search" inputmode="numeric" autocomplete="off" enterkeyhint="search" placeholder="Ex.: 125" aria-describedby="history-search-count"><button type="button" class="btn" id="history-search-go">Procurar</button><button type="button" class="btn" id="history-search-clear">Limpar</button></div><p id="history-search-count" role="status" aria-live="polite"></p></section><div class="history farao-history-list" id="history-results">`+
+    (this.history.length?this.history.map(entry).join(''):'<p class="farao-history-empty">Ainda não existem jogadas guardadas.</p>')+
+    '</div><p class="farao-history-note">Pesquisa por número exato nas últimas '+this.history.length+' ações guardadas neste dispositivo (limite de 100).</p>';
   }
   this.openModal('FARAÓ ETERNO',tabs+page);
   modalContent.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>this.openInfo(b.dataset.page));
-  modalContent.querySelectorAll('[data-replay]').forEach(b=>b.onclick=()=>this.showHistoricSpin(Number(b.dataset.replay)));
+  if(tab==='history'){
+   const search=$('history-search-number'),clear=$('history-search-clear'),go=$('history-search-go');
+   const counter=$('history-search-count');
+   const rows=[...modalContent.querySelectorAll('[data-history-id],.farao-history-static:not([data-history-id])')];
+   const update=()=>{
+    const raw=search.value.trim().replace(/^(?:jogada\\s*)?#?\\s*/i,'');
+    const exact=raw&&/^\\d+$/.test(raw)?Number(raw):null;
+    let visible=0;
+    for(const row of rows){
+     const same=!raw||(Number.isSafeInteger(exact)&&exact>0&&row.dataset.historyId===String(exact));
+     row.hidden=!same;
+     if(same)visible++;
+    }
+    counter.textContent=raw?
+      (visible?visible+' registo(s) para a jogada #'+raw:'Jogada #'+raw+' não encontrada entre as ações guardadas.'):
+      this.history.length+' ações guardadas · toca numa jogada para ver as imagens.';
+   };
+   search.value=this.historyLookup||'';
+   search.addEventListener('input',()=>{this.historyLookup=search.value;update();});
+   search.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();update();search.blur();}});
+   go.onclick=()=>{this.historyLookup=search.value;update();search.blur();};
+   clear.onclick=()=>{search.value='';this.historyLookup='';update();search.focus();};
+   modalContent.querySelectorAll('[data-history-open]').forEach(b=>b.onclick=()=>{
+    const id=Number(b.dataset.historyOpen);
+    if(Number.isSafeInteger(id)&&id>0)this.showHistoricSpin(id);
+   });
+   update();
+  }
   if(tab==='menu'){
    $('bet-slider').oninput=e=>{this.ledger.betIndex=Number(e.target.value);this.syncLedger();this.save();$('bet-display').textContent=money(this.bet);$('bet-total').textContent=money(this.bet);};
    $('lines-slider').oninput=e=>{this.ledger.lines=Number(e.target.value);this.syncLedger();this.save();$('lines-display').textContent=this.lines;$('bet-display').textContent=money(this.bet);$('bet-total').textContent=money(this.bet);};
