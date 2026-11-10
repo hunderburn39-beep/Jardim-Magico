@@ -108,6 +108,7 @@ footer{text-align:center;color:#b5c9e1;font-size:10px;line-height:1.2;flex:none}
     <div class="celebration-fireworks right" id="fireworks-right"></div><button id="celebration-close" type="button">CONTINUAR ▶</button>
   </div>
 </div>
+<audio id="fireworks-audio" preload="auto" src="./fireworks.mp3"></audio>
 <script>
 "use strict";
 // Valores em cêntimos: 1 € por bilhete; prémio mínimo vencedor 1 € e máximo 100 €.
@@ -263,11 +264,14 @@ function revealAll(){
 }
 
 let celebrationTimeouts=[];
+function playFireworksRecording(){if(!state.sound)return;const a=el("fireworks-audio");if(!a)return;try{a.pause();a.currentTime=0;const p=a.play();if(p&&p.catch)p.catch(()=>{});}catch(_){}}
+function stopFireworksRecording(){const a=el("fireworks-audio");if(a){a.pause();try{a.currentTime=0}catch(_){}}}
 function fireworkSound(){const ac=ensureAudio();if(!ac)return;const now=ac.currentTime;const buffer=ac.createBuffer(1,Math.floor(ac.sampleRate*.65),ac.sampleRate);const d=buffer.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/d.length*6);const src=ac.createBufferSource(),filter=ac.createBiquadFilter(),gain=ac.createGain();src.buffer=buffer;filter.type="lowpass";filter.frequency.setValueAtTime(1700,now);filter.frequency.exponentialRampToValueAtTime(160,now+.55);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.27,now+.025);gain.gain.exponentialRampToValueAtTime(.0001,now+.63);src.connect(filter);filter.connect(gain);gain.connect(ac.destination);src.start(now);src.stop(now+.65);}
 el("celebration-close").addEventListener("click",clearCelebration);
 function clearCelebration(){
   for(const timer of celebrationTimeouts)clearTimeout(timer);
   celebrationTimeouts=[];
+  stopFireworksRecording();
   const overlay=el("celebration");
   if(overlay){overlay.hidden=true;overlay.setAttribute("aria-hidden","true")}
   el("fireworks-left").replaceChildren();
@@ -299,12 +303,13 @@ function showCelebration(prizeCents){
   el("celebration-amount").textContent=eur(prizeCents);
   overlay.hidden=false;
   overlay.setAttribute("aria-hidden","false");
+  playFireworksRecording();
   // Quatro lançamentos sincronizados à esquerda e à direita do valor.
   for(let i=0;i<4;i++){
     celebrationTimeouts.push(setTimeout(()=>{
       launchFirework(el("fireworks-left"));
       launchFirework(el("fireworks-right"));
-      fireworkSound();
+      // As explosões utilizam a gravação fireworks.mp3.
     },i*850+130));
   }
   // A celebração permanece visível até o jogador tocar em Continuar.
