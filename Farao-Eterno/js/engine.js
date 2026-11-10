@@ -87,9 +87,9 @@
     const expanders = activeSpecial.map(symbol => {
       const reelIndices = grid.map((col,i)=>col.includes(symbol)?i:-1).filter(x=>x>=0);
       const award=PAYS[symbol][reelIndices.length] || 0;
-      return {symbol, reels:reelIndices, count:reelIndices.length, award,
-        amount:award * bet};
-    }).filter(s=>s.award>0).sort((a,b)=>NORMAL.indexOf(a.symbol)-NORMAL.indexOf(b.symbol));
+      return {symbol, reels:reelIndices, count:reelIndices.length, award};
+    }).filter(s=>s.award>0);
+    const orderedExpanders=[...expanders].sort((a,b)=>NORMAL.indexOf(a.symbol)-NORMAL.indexOf(b.symbol));
     const lineWins=[];
     let paylinesTotal=0,baseTotal=0;
     // Em Free Spins, todos os expansivos elegíveis pagam individualmente.
@@ -116,7 +116,7 @@
         paylinesTotal+=amount;baseTotal+=amount;
         lineWins.push({...best,line:i,rows:[...rows],amount});
       }
-      if(separate)for(const candidate of expanders){
+      if(separate)for(const candidate of orderedExpanders){
         const amount=candidate.award*lineStake;
         paylinesTotal+=amount;
         lineWins.push({symbol:candidate.symbol,count:candidate.count,payCoins:candidate.award,
@@ -131,7 +131,7 @@
         if(diff)return diff;}
       return a.line-b.line;
     });
-    const expansionAwards=separate?expanders.map(candidate=>({
+    const expansionAwards=separate?orderedExpanders.map(candidate=>({
       symbol:candidate.symbol,count:candidate.count,reels:[...candidate.reels],
       amount:candidate.award*bet
     })):[];
