@@ -16,11 +16,11 @@
  const freshEco=()=>({
    v:1,level:90,technicianPercent:50,merchantPercent:50,
    pin:{admin:DEFAULT_PIN,deposit:DEFAULT_PIN,withdraw:DEFAULT_PIN},
-   prizeU:U(5000),techDueU:0,merchantDueU:0,
+   prizeU:0,techDueU:0,merchantDueU:0,
    totals:{depositsU:0,withdrawalsU:0,stakesU:0,bonusesU:0,
      winsU:0,techCollectedU:0,merchantCollectedU:0,
      prizeAddedU:0,prizeRemovedU:0},
-   log:[{at:date(),kind:'opening',amountU:U(5000)}]
+   log:[{at:date(),kind:'opening',amountU:0}]
  });
  function ensure(s){
    if(!s.economy){
@@ -108,7 +108,7 @@
    S.validate(s);
    if(s.pending||s.payout)throw Error('Existe uma jogada por terminar');
    const free=!!s.feature,bet=S.stake(s),stakeU=U(bet),e=s.economy;
-   if(!free&&s.balanceU<stakeU)throw Error('Créditos insuficientes');
+   if(!free&&s.balanceU<stakeU)throw Error('Saldo insuficiente');
    const incomingPrize=free?0:Math.floor(stakeU*e.level/100);
    const available=e.prizeU+incomingPrize;
    const maxBonus=U(E.upperLimit(bet))-(free?s.feature.totalU:0);
@@ -133,7 +133,7 @@
        'separate',free?'free-anywhere':'base');
      if(U(evaluated.total)<=limit)chosen=zero;
    }
-   if(!chosen)throw Error('Fundo de prémios insuficiente para continuar. Adiciona créditos no painel de administração.');
+   if(!chosen)throw Error('Fundo de prémios insuficiente para continuar. Abastece o fundo de prémios no painel de administração.');
    // Reutilizar a transação original, preservando sorteio de novo expansivo,
    // contador de giros, saldo e recuperação de sessões no Safari.
    const normalMake=E.makeGrid;
