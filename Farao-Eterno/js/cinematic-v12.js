@@ -15,7 +15,7 @@
   const format = n => (Math.round((n + Number.EPSILON) * 100) / 100)
     .toLocaleString('pt-PT', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' cr';
   const events = { spins: 0, landings: 0, sanctuaries: 0, paylineChimes: 0 };
-  game.cinematicV12 = { version: '1.5', events, mathUnchanged: true };
+  game.cinematicV12 = { version: '1.6', events, mathUnchanged: false };
 
   // A fita gráfica é determinística e NÃO consome o RNG dos prémios.
   function stripFor(reel, stepCount, prior, final, round) {
@@ -54,11 +54,12 @@
     if (!this.spinning || !spin || spin === old) return;
     spin.wildFadeAt = null;
     spin.wildRestoreAt = null;
+    spin.teaseAt = null;
+    spin.teaseEndAt = null;
+    spin.teasePlayed = false;
     const round = (this._cinemaRound || 0) + 1;
     this._cinemaRound = round;
     spin.duration = this.turbo ? 520 : 1040;
-    const showTwo = spin.grid.slice(0, 4)
-      .reduce((count, col) => count + col.filter(s => s === 'TOMB').length, 0) >= 2;
     spin.reelGap = this.turbo ? 72 : 170;
     // Suspense progressivo: depois de duas torres WILD, abrandar todos os
     // tambores seguintes, incluindo o quinto se o terceiro e quarto falharem.
@@ -67,7 +68,10 @@
     let seen = 0, suspenseEnd = false;
     spin.stopAt = baseStop.map((stop, c) => {
       const slow = seen >= 2 && !suspenseEnd;
-      const adjusted = stop + (slow ? (this.turbo ? 700 : 2200) : 0);
+      // Nas Free Spins, prolongar um pouco o suspense após dois Scatters
+      // realmente visíveis. A grelha sorteada nunca é alterada.
+      const suspenseMs=this.turbo?(spin.free?1050:700):(spin.free?2650:2200);
+      const adjusted = stop + (slow ? suspenseMs : 0);
       if (spin.grid[c].includes('TOMB')) {
         seen++;
         if (seen >= 3) suspenseEnd = true;
@@ -78,7 +82,6 @@
     spin.steps = Array.from({length: 5}, (_, c) => 27 + 4 * c);
     spin.show = spin.steps.map((steps, c) => stripFor(c, steps, prior[c], spin.grid[c], round));
     spin.cinematicPrior = prior;
-    spin.cinematicSuspense = showTwo;
     events.spins++;
     this.audio.startReelWhirr?.();
   };
@@ -236,6 +239,26 @@
   const baseReelBoard = game.reelBoard.bind(game);
   game.reelBoard = function (t) {
     baseReelBoard(t);
+    // Tease apenas quando nas Free Spins já pararam 2 torres e outro tambor
+    // ainda está em movimento. Não prever o terceiro Scatter.
+    const active=this.spinObject;
+    const showTease=active?.free && this.spinning &&
+      Number.isFinite(active.teaseAt) && active.teaseAt>0 &&
+      active.stopped.some(done=>!done) && active.teaseEndAt===null;
+    if(showTease){
+      const wave=reduced?1:.76+.24*Math.sin(t*.011);
+      const y=R.top+R.gh*1.45;
+      ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.font='900 19px Georgia,serif';
+      ctx.lineWidth=5;ctx.strokeStyle='#091827';
+      ctx.shadowColor='#ffc45d';ctx.shadowBlur=reduced?0:14+10*wave;
+      ctx.strokeText('FALTA 1 SCATTER!',280,y);
+      ctx.fillStyle='#fff1ac';ctx.fillText('FALTA 1 SCATTER!',280,y);
+      ctx.font='800 13px Arial,sans-serif';ctx.lineWidth=3;
+      ctx.strokeText('+8 FREE SPINS',280,y+29);
+      ctx.fillStyle='#a4f4ff';ctx.fillText('+8 FREE SPINS',280,y+29);
+      ctx.restore();
+    }
     const spin = this.spinObject;
     // Legenda sem retângulo, por baixo da moldura. O índice é o mesmo
     // usado pela linha desenhada pelo motor (alternância a cada 1600 ms).
@@ -334,10 +357,17 @@
               this.spinning && this.spinObject === spin &&
               spin.stopped.some(stopped => !stopped)) {
             spin.wildFadeAt = t;
+            if(spin.free && !spin.teasePlayed){
+              spin.teaseAt=t;
+              spin.teasePlayed=true;
+              this.audio.tease?.();
+              events.teases=(events.teases||0)+1;
+            }
           }
           // A terceira torre revela o desfecho e devolve a imagem ao normal.
           if (count >= 3 && spin.wildFadeAt !== null && spin.wildRestoreAt === null) {
             spin.wildRestoreAt = t;
+            spin.teaseEndAt=t;
           }
         }
       }
