@@ -1,17 +1,17 @@
-# Faraó Eterno — Administração V1.3.40
+# Faraó Eterno — Administração V1.3.41
 
 ## Natureza dos créditos e limitações
-Este jogo funciona **apenas com créditos de simulação**, guardados no armazenamento local do navegador em `farao-eterno-v2`. Não transfere dinheiro real, não tem servidor de contas, banco de dados partilhado, autenticação segura nem certificação de jogo. Os códigos PIN estão gravados no dispositivo e podem ser vistos ou alterados por quem tenha acesso aos ficheiros/armazenamento; **não usar para dinheiro real**.
+Este jogo apresenta **valores em euros (€), exclusivamente numa simulação local**, guardados no armazenamento local do navegador em `farao-eterno-v2`. Não transfere dinheiro real, não tem servidor de contas, banco de dados partilhado, autenticação segura nem certificação de jogo. Os códigos PIN estão gravados no dispositivo e podem ser vistos ou alterados por quem tenha acesso aos ficheiros/armazenamento; **não usar para dinheiro real**.
 
 ## Acesso e códigos
 Na janela Menu, abrir a aba **ADMINISTRAÇÃO** e carregar no único botão **ENTRAR NA ADMINISTRAÇÃO**. Código inicial: **12345**.
 
-No cofre associado ao saldo do jogador, os botões **DEPÓSITO** e **LEVANTAMENTO** solicitam primeiro os respetivos códigos, ambos inicialmente **12345**. Só depois é apresentado o campo de valor, editável, em créditos, com vírgula ou ponto decimal.
+No cofre associado ao saldo do jogador, os botões **DEPÓSITO** e **LEVANTAMENTO** solicitam primeiro os respetivos códigos, ambos inicialmente **12345**. Só depois é apresentado o campo de valor, editável, em euros (€), com vírgula ou ponto decimal.
 
 No painel de administração é possível alterar o código do administrador, o código de depósito e o código de levantamento (4–12 algarismos), confirmando o código atual de administrador. O painel disponibiliza um botão **SAIR DA ADMINISTRAÇÃO**.
 
 ## Valores e cofres separados
-- **Fundo de prémios:** inicia com 5.000 créditos virtuais de capital de simulação. O administrador pode adicionar ou retirar créditos, desde que não haja giros, créditos progressivos ou Free Spins em curso. Nunca é permitido retirar mais do que o saldo do fundo.
+- **Fundo de prémios:** inicia com 0,00 € de saldo, sem capital atribuído automaticamente. O administrador pode adicionar ou retirar montantes, desde que não haja giros, créditos progressivos ou Free Spins em curso. Nunca é permitido retirar mais do que o saldo do fundo.
 - **Cofre de lucros:** recebe a parcela das apostas ou das compras de bónus não destinada aos prémios. É repartido entre técnico e comerciante; cada um tem o seu valor acumulado disponível e respetivo registo de levantamentos virtuais. Levantar lucro nunca aumenta os créditos do jogador nem movimenta o fundo de prémios.
 - **Depósitos e levantamentos:** adicionam/retiram saldo virtual do jogador e são contabilizados separadamente. Não geram automaticamente lucros nem creditam o fundo de prémios. Os totais históricos anteriores à atualização só podem ser recuperados enquanto ainda existirem no histórico local disponível (últimas 100 ações).
 
@@ -21,7 +21,7 @@ A comissão do técnico é ajustável entre 0 e 100%, em unidades de 1 ponto. A 
 ## Perfil da máquina 85%–95%
 A **taxa da máquina** é um perfil de distribuição de créditos entre prémios e lucros, ajustável entre 85% e 95%, de 1 em 1%.
 
-Por cada aposta de 1 crédito, a parcela que entra no fundo de prémios é `taxa/100`, ficando o resto para o cofre de lucros. Os pesos relativos de figuras premium e de torres também sobem com o nível: **85% dá figuras de prémio alto menos frequentes; 95% mais frequentes** antes de aplicar o limite do fundo. Estes níveis **não representam RTP medido nem uma garantia de retorno de 85–95%**. A seleção condicionada ao fundo altera a distribuição real dos resultados.
+Por cada aposta de 1,00 €, a parcela que entra no fundo de prémios é `taxa/100`, ficando o resto para o cofre de lucros. Os pesos relativos de figuras premium e de torres também sobem com o nível: **85% dá figuras de prémio alto menos frequentes; 95% mais frequentes** antes de aplicar o limite do fundo. Estes níveis **não representam RTP medido nem uma garantia de retorno de 85–95%**. A seleção condicionada ao fundo altera a distribuição real dos resultados.
 
 ## Prémios suportados pelo fundo
 1. Antes de animar cada giro, o motor gera candidatos e calcula o seu prémio bruto com a tabela aprovada, as linhas e os símbolos expansivos das Free Spins.
@@ -40,3 +40,6 @@ Por cada aposta de 1 crédito, a parcela que entra no fundo de prémios é `taxa
 - Testes: `tests/admin-economy.cjs`
 
 Um painel com utilizadores distintos e saldos reais exigiria base de dados, API protegida, autenticação no servidor, controlo de operações concorrentes, trilho de auditoria inviolável, conformidade legal e certificação de matemática/RTP. A página estática GitHub Pages **não oferece esses requisitos**.
+
+## Sessões novas e anteriores — V1.3.41
+Nas sessões novas, o saldo do jogador e o fundo de prémios começam ambos a **0,00 €**. Não são atribuídos 300 ou 5.000 unidades iniciais. Os montantes são apresentados em euros mas continuam a ser apenas valores da simulação, sem dinheiro real. As sessões antigas preservam os montantes guardados; nenhuma é zerada automaticamente.
