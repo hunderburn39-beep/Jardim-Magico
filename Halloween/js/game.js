@@ -329,7 +329,11 @@ class Classica extends Phaser.Scene{
    this.store();
    this.spinning=true;this.canHold=false;this.highlight([]);
    this.message.setText(this.held.size?"A GIRAR TAMBORES LIVRES...":"A GIRAR...");
-   if(!this.playOriginalSound("h-spin"))this.tone(320,.09);
+   // Rotação mecânica com som por tambor; não duplicar o som antigo de arranque.
+   if(globalThis.HalloweenReelAudio){
+     this.reelSound??=new globalThis.HalloweenReelAudio(this);
+     this.reelSound.start();
+   }else if(!this.playOriginalSound("h-spin"))this.tone(320,.09);
    let count=0;
    const active=[0,1,2,3,4].filter(col=>!outcome.heldReels?.includes(col));
    if(!active.length){
@@ -362,6 +366,8 @@ class Classica extends Phaser.Scene{
          const candidate=E.SYMBOLS[Math.floor(Math.random()*E.SYMBOLS.length)].id;
          band[0].setTexture("h-"+candidate);
          for(let i=0;i<5;i++)band[i].y=Y+(i-.5)*CH;
+         if(step<maxSteps && this.reelSound && (step%3===0 ||portion>.74))
+           this.reelSound.tick(col,portion);
          if(step>=maxSteps){
            for(let row=0;row<3;row++)
              band[row+1].setTexture("h-"+finalColumn[row]).setAlpha(1);
@@ -369,7 +375,8 @@ class Classica extends Phaser.Scene{
    const sy=(CH-14)/(this.symbols[col][0].height||174);
            this.tweens.add({targets:this.symbols[col],scaleX:{from:sx*.94,to:sx},
              scaleY:{from:sy*.94,to:sy},duration:175,ease:"Back.Out"});
-           this.tone(180+col*72,.075);
+           if(this.reelSound)this.reelSound.stop(col);
+           else this.tone(180+col*72,.075);
            done();
          }else tick();
        }
