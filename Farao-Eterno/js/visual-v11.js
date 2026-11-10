@@ -490,8 +490,8 @@
  };
  game.controls=function(){
   const disabled=this.spinning||!!this.feature||this.superseded;
-  const label=this.pendingSummary?'VER TOTAL':
-    this.feature&&this._freeStarted?'TURBO':'GIRAR';
+  const label=this.pendingSummary?'VER TOTAL':this.paused?'RETOMAR':
+    this.feature&&this._freeStarted?'TURBO':this.spinning?'PARAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,performance.now());
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
   if(this.pendingSummary||this.feature&&this._freeStarted){
