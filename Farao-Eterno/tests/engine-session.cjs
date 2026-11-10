@@ -26,6 +26,7 @@ test('jogadas novas guardam versão 2; antigas são liquidadas pela geometria an
  const old=S.fresh();
  const grid=quiet();grid[0][1]='KING';grid[1][2]='KING';
  const bet=S.stake(old),before=old.balanceU;
+ old.balanceU-=S.units(bet); // Simular o débito já feito ao iniciar a jogada antiga.
  old.pending={id:++old.sequence,grid,free:false,bet,lines:10,nextSymbol:null};
  S.validate(old);
  const expected=E.evaluate(grid,bet,10,[],E.LEGACY_LINES);
