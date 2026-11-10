@@ -1090,8 +1090,14 @@ class Game {
    const scale=Math.min(maxSide/img.naturalWidth,maxSide/img.naturalHeight);
    const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
    if(sym==='TOMB'){
-    cx.save();cx.filter='none';cx.shadowBlur=0;
-    cx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
+    // O renderizador de reserva segue a mesma pulsação de 8% e
+    // iluminação dourada da pirâmide, sem placa de fundo.
+    const wave=.5+.5*Math.sin(t*.0035),pulse=1+.08*wave;
+    const pw=iw*pulse,ph=ih*pulse;
+    cx.save();cx.filter='none';
+    cx.shadowColor='rgba(255,198,68,'+(.56+.32*wave)+')';
+    cx.shadowBlur=12+16*wave;cx.shadowOffsetX=0;cx.shadowOffsetY=0;
+    cx.drawImage(img,x+(w-pw)/2,y+(h-ph)/2,pw,ph);
     cx.restore();
    }else cx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);
   }else{text(sym,x+w/2,y+h/2,26,'#fce8b4');}
