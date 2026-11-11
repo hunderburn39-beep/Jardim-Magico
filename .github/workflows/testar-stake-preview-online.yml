@@ -22,6 +22,7 @@ jobs:
           node stake-preview/tests/hold-probabilities.mjs
           node stake-preview/tests/visual-events.mjs
           node stake-preview/tests/history-replay.mjs
+          node stake-preview/tests/audio-assets.mjs
       - name: Confirmar GitHub Pages independente das outras publicações
         run: |
           set -euo pipefail
@@ -29,24 +30,25 @@ jobs:
           echo "A verificar $url"
           for n in {1..12}; do
             if curl -fLsS --max-time 10 --connect-timeout 5 "$url" -o /tmp/stake-preview.html; then
-              if grep -q 'Stake Preview V0.8' /tmp/stake-preview.html \
+              if grep -q 'Stake Preview V0.9' /tmp/stake-preview.html \
                  && grep -q 'id="skipBtn"' /tmp/stake-preview.html \
                  && grep -q 'id="paylineSvg"' /tmp/stake-preview.html \
                  && grep -q 'id="freePanel"' /tmp/stake-preview.html \
                  && grep -q 'id="historyBtn"' /tmp/stake-preview.html \
                  && grep -q 'id="historyOverlay"' /tmp/stake-preview.html \
                  && grep -q 'id="detailBoard"' /tmp/stake-preview.html \
-                 && grep -q 'id="historySearch"' /tmp/stake-preview.html; then
+                 && grep -q 'id="historySearch"' /tmp/stake-preview.html \
+                 && grep -q 'id="musicBtn"' /tmp/stake-preview.html; then
                 curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/assets/imagens/jm38-caracol.svg" -o /tmp/caracol.svg
                 test -s /tmp/caracol.svg
-                echo 'CONFIRMADO: Stake Preview V0.8 online, PASSAR, linhas e caracol.'
+                echo 'CONFIRMADO: Stake Preview V0.9 online, PASSAR, linhas e caracol.'
                 exit 0
               fi
-              echo "Página ainda não atualizada para V0.8 ($n/12)."
+              echo "Página ainda não atualizada para V0.9 ($n/12)."
             else
               echo "Página indisponível ($n/12)."
             fi
             sleep 5
           done
-          echo '::error::Não foi possível confirmar a página V0.8.'
+          echo '::error::Não foi possível confirmar a página V0.9.'
           exit 1
