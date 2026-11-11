@@ -611,13 +611,20 @@
  };
  game.controls=function(){
   const disabled=this.spinning||!!this.feature||this.superseded;
+  const now=performance.now();
+  const presenting=!!(this.spinning||this.ledger.payout||
+    (this.sequencePlayback&&now<this.sequencePlayback.end)||
+    (this.basePaylineDisplay?.length&&now<this.basePaylineDisplay.at(-1).end)||
+    (this.featureIntro&&now<this.featureIntro.end)||
+    (this.reveal&&now<this.reveal.end)||
+    (this.winCount&&now<this.winCount.start+this.winCount.duration));
   const label=this.pendingSummary?'VER TOTAL':this.paused?'RETOMAR':
-    this.feature&&this._freeStarted?'TURBO':this.spinning?'PARAR':'GIRAR';
-  drawMedallion(label,!this.ready||this.superseded,performance.now());
-  if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.startSpin(),label);
-  if(this.pendingSummary||this.feature&&this._freeStarted){
+    presenting?'AVANÇAR':'GIRAR';
+  drawMedallion(label,!this.ready||this.superseded,now);
+  if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.advanceStage(),label);
+  if(this.pendingSummary||this.feature&&this._freeStarted||presenting){
     txt(this.pendingSummary?'VER TOTAL DAS FREE SPINS':
-      this._freeTurbo?'TURBO ATIVO · TOCA PARA DESLIGAR':'TOCA PARA ATIVAR TURBO',
+      'TOCA PARA AVANÇAR A ETAPA',
       280,963,12,'#ffe2a2',850,'Arial');
   }
   // Botão pequeno diretamente sob o painel SALDO (fim do painel y=757).
@@ -640,7 +647,7 @@
     for(let i=0;i<keys.length;i++)
       this.drawMiniSymbol(keys[i],294+i*step,bonusesY+(35-size)/2,size);
   }
-  txt('V1.3.55',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.56',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
