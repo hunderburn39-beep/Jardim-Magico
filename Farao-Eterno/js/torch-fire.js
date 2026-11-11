@@ -11,7 +11,7 @@
  let next=[0,0],timer=null,voices=new Set();
  // A gravação tem RMS ~-40 dBFS; compensar no WebAudio com limitação no compressor existente.
  const paths=[-.62,.62],volume=5.0;
- const allowed=()=>!!(fx.ctx&&fx.on&&(game.sound||game.ledger?.settings?.music)&&!game.paused&&!game.superseded&&!document.hidden&&fx.ctx.state==='running');
+ const allowed=()=>!!(fx.ctx&&(game.sound||game.ledger?.settings?.music)&&!game.paused&&!game.superseded&&!document.hidden&&fx.ctx.state==='running');
  function getBytes(){
   if(!bytesPromise)bytesPromise=fetch(new URL(url,document.baseURI),{cache:'force-cache'})
    .then(r=>{if(!r.ok)throw Error('Ficheiro das tochas em falta: '+r.status);return r.arrayBuffer();})
