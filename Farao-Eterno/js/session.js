@@ -14,7 +14,7 @@
   const integer=n=>Number.isSafeInteger(n)&&n>=0;
   const gridOK=g=>Array.isArray(g)&&g.length===5&&g.every(c=>Array.isArray(c)&&c.length===3&&c.every(s=>E.ALL.includes(s))&&c.filter(s=>s==='TOMB').length<=1);
   const featureOK=f=>f===null||(f&&integer(f.left)&&integer(f.played)&&integer(f.retriggers)&&integer(f.totalU)&&Array.isArray(f.symbols)&&f.symbols.length>0&&f.symbols.length<=9&&new Set(f.symbols).size===f.symbols.length&&f.symbols.every(s=>E.NORMAL.includes(s)));
-  function fresh(){return {version:2,balanceU:0,betIndex:4,betMultiplier:1,lines:10,grid:[['10','J','Q'],['HORUS','MASK','K'],['A','TOMB','10'],['ANUBIS','K','J'],['KING','A','Q']],feature:null,pending:null,payout:null,sequence:0,lastWinU:0,lastBaseWinU:0,lastBet:1,gambles:0,lastWasFree:false,history:[],stats:{paid:0,free:0,stakeU:0,winU:0,features:0},settings:{sound:true,music:true,turbo:false},last:null};}
+  function fresh(){return {version:2,balanceU:0,betIndex:4,betMultiplier:1,lines:10,grid:[['10','J','Q'],['HORUS','MASK','K'],['A','TOMB','10'],['ANUBIS','K','J'],['KING','A','Q']],feature:null,pending:null,payout:null,sequence:0,lastWinU:0,lastBaseWinU:0,lastBet:1,gambles:0,lastWasFree:false,history:[],stats:{paid:0,free:0,stakeU:0,winU:0,features:0},settings:{sound:true,music:true,soundMode:'all',turbo:false},last:null};}
   function validate(s){
     if(!s||s.version!==2||!integer(s.balanceU)||!integer(s.sequence)||!Number.isInteger(s.betIndex)||s.betIndex<0||s.betIndex>=BETS.length||!(s.betMultiplier===undefined||Number.isInteger(s.betMultiplier)&&s.betMultiplier>=1&&s.betMultiplier<=5)||!Number.isFinite(stake(s))||stake(s)>10||!Number.isInteger(s.lines)||s.lines<1||s.lines>10||!gridOK(s.grid)||!featureOK(s.feature)||!integer(s.lastWinU)||!integer(s.lastBaseWinU)||!(Number.isFinite(s.lastBet)&&s.lastBet>0&&s.lastBet<=10)||!integer(s.gambles)||s.gambles>5||!Array.isArray(s.history)||s.history.length>100)throw Error('Sessão inválida');
     if(!s.stats||!['paid','free','stakeU','winU','features'].every(k=>integer(s.stats[k])))throw Error('Estatísticas inválidas');
@@ -70,7 +70,10 @@
     s.history=compact.slice(0,100);
     return s;
   }
-  function restore(raw){const s=clone(raw);validate(s);s.betMultiplier=s.betMultiplier||1;s.settings={sound:s.settings?.sound!==false,music:s.settings?.music!==false,turbo:!!s.settings?.turbo};compactFreeHistory(s);return validate(s);}
+  function restore(raw){const s=clone(raw);validate(s);s.betMultiplier=s.betMultiplier||1;const prior=s.settings||{},sound=prior.sound!==false,music=prior.music!==false;
+    const inferred=sound&&music?'all':sound?'effects':'mute';
+    const soundMode=['all','effects','mute'].includes(prior.soundMode)?prior.soundMode:inferred;
+    s.settings={sound:soundMode!=='mute',music:soundMode==='all',soundMode,turbo:!!prior.turbo};compactFreeHistory(s);return validate(s);}
   function migrate(old){
     const s=fresh();if(!old||typeof old!=='object')return s;
     if(Number.isFinite(old.balance)&&old.balance>=0)s.balanceU=units(Math.min(old.balance,10000000));
@@ -82,7 +85,7 @@
       if(featureOK(candidate)&&candidate.totalU<units(E.upperLimit(stake(s))))s.feature=clone(candidate);
     }
     if(Array.isArray(old.history))s.history=old.history.filter(h=>h&&typeof h.t==='string'&&Number.isFinite(h.bet)&&Number.isFinite(h.win)).slice(0,100).map(h=>({...h,kind:h.bonus?'free':'spin'}));
-    s.betMultiplier=1;s.settings.sound=old.sound!==false;compactFreeHistory(s);return validate(s);
+    s.betMultiplier=1;s.settings.sound=old.sound!==false;s.settings.soundMode=s.settings.sound?'all':'mute';s.settings.music=s.settings.sound;compactFreeHistory(s);return validate(s);
   }
   // Compra voluntária por 100× a aposta TOTAL atual; apenas créditos do jogo.
   // A operação é atómica e recuperável no mesmo armazenamento das jogadas.
