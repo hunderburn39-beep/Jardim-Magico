@@ -23,8 +23,8 @@
  };
  const volume=.75, normalBusGain=2.5, sampleGain=volume/normalBusGain;
  let activeTrack=null;
- const canPlay=()=>!!(audio.ctx&&game.soundMode==='all'&&game.ledger?.settings?.music&&!game.paused&&!game.superseded&&!document.hidden);
- const inBonus=()=>!!(game.feature||game.pendingSummary||game._summaryAck);
+ const canPlay=()=>!!(audio.ctx&&game.soundMode==='all'&&game.ledger?.settings?.music&&(!game.paused||game._introCoverVisible)&&!game.superseded&&!document.hidden);
+ const inBonus=()=>!!(!game._introCoverVisible&&(game.feature||game.pendingSummary||game._summaryAck));
  const desired=()=>inBonus()?'bonus':'normal';
  function fetchTrack(name){
    const s=states[name];
