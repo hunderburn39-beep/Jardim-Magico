@@ -55,7 +55,7 @@ class Game {
   this.audio=new AudioFx();this.images={};this.ready=false;this.targets=[];this.temple=null;this.landings=Array(5).fill(0);this.fxParticles=[];
   this.balance=0;this.betIndex=4;this.lines=10;this.grid=E.makeGrid(rnd);
   this.spinObject=null;this.spinning=false;this.lastResult=null;this.lastWin=0;this.feature=null;this.lastBaseWin=0;this.lastWasFree=false;
-  this.currentRound=0;this.winCells=[];this.expanded={};this.auto=0;this.turbo=false;this.sound=true;
+  this.currentRound=0;this.winCells=[];this.expanded={};this.auto=0;this.turbo=false;this.sound=true;this.soundMode='all';
   this.reveal=null;this.featureIntro=null;this.winCount=null;
   this.started=false;this.message='PRIME GIRAR PARA ENTRAR NO TEMPLO';this.messageUntil=0;
   this.flashUntil=0;this.flashKind='';this.nextActionAt=0;this.rng=rnd;this.history=[];this.gambleTimes=0;
@@ -96,16 +96,45 @@ class Game {
   this.feature=s.feature?{...s.feature,total:S.credits(s.feature.totalU)}:null;
   this.grid=s.grid;this.lastWin=S.credits(s.lastWinU);this.lastBaseWin=S.credits(s.lastBaseWinU);
   this.lastWasFree=s.lastWasFree;this.gambleTimes=s.gambles;this.history=s.history;
-  this.sound=s.settings.sound;this.audio.on=this.sound;this.turbo=s.settings.turbo;
+  this.soundMode=s.settings.soundMode||'all';this.sound=this.soundMode!=='mute';this.audio.on=this.sound;this.turbo=s.settings.turbo;
   if(s.last)this.lastResult=s.last.result;
  }
  save(){
   if(this.superseded)return;
-  this.ledger.settings={sound:this.sound,music:this.ledger.settings.music,turbo:this.turbo};
+  this.ledger.settings={sound:this.sound,music:this.soundMode==='all',soundMode:this.soundMode,turbo:this.turbo};
   this.ledger.owner=this.owner;
   try{localStorage.setItem(STORE_KEY,JSON.stringify(this.ledger));this.storageOK=true;}catch(_){this.storageOK=false;}
  }
 
+ get soundModeLabel(){return {all:'Som completo',effects:'Só tambores e símbolos',mute:'Tudo desligado'}[this.soundMode]||'Som completo';}
+ cycleSoundMode(){
+  const modes=['all','effects','mute'];
+  this.setSoundMode(modes[(modes.indexOf(this.soundMode)+1)%modes.length]);
+ }
+ setSoundMode(mode){
+  if(!['all','effects','mute'].includes(mode)||this.superseded)return;
+  this.soundMode=mode;
+  this.sound=mode!=='mute';
+  this.audio.on=this.sound;
+  this.ledger.settings.music=mode==='all';
+  this.ledger.settings.sound=this.sound;
+  this.ledger.settings.soundMode=mode;
+  this.audio.setMasterMuted?.(mode==='mute');
+  if(mode==='all'){
+   this.audio.init();
+   if(!this.paused)this.audio.startMusic?.();
+  }else{
+   this.audio.stopMusic?.();
+   this.torchFire?.stop?.();
+  }
+  if(mode==='mute'){
+   this.audio.stopReelWhirr?.();
+   this.audio.stopExpansionScan?.();
+  }
+  this.save();
+  this.notice('ÁUDIO · '+this.soundModeLabel.toUpperCase(),1250,'gold');
+  this._primaryButtons?.sound?.setAttribute('aria-label','Áudio: '+this.soundModeLabel+'. Toque para mudar.');
+ }
  announce(s){$('screen-msg').textContent=s;}
  notice(s,time=1750,kind='gold'){this.message=s;this.messageUntil=performance.now()+time;this.flashUntil=this.messageUntil;this.flashKind=kind;this.announce(s);}
  initInputs(){
@@ -308,7 +337,7 @@ class Game {
      if(!mod.classList.contains('hidden')||this.superseded)return;
      this.audio.init();
      if(key==='menu')this.openInfo();
-     else if(key==='sound'){this.sound=!this.sound;this.audio.on=this.sound;this.save();}
+     else if(key==='sound')this.cycleSoundMode();
      else this.startSpin();
     };
     b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();invoke();},{passive:false});
@@ -323,6 +352,7 @@ class Game {
    b.style.left=(ox+x*sc)+'px';b.style.top=(oy+y*scY)+'px';
    b.style.width=(w*sc)+'px';b.style.height=(h*scY)+'px';
    b.style.pointerEvents=this.superseded||!mod.classList.contains('hidden')?'none':'auto';
+   if(key==='sound')b.setAttribute('aria-label','Áudio: '+this.soundModeLabel+'. Toque para mudar.');
   }
     const root=$('touch-controls');
   while(root.children.length>this.targets.length)root.lastChild.remove();
@@ -715,7 +745,7 @@ class Game {
    <button class="btn auto-start" id="toggle-auto" ${this.feature?'disabled':''}>${this.auto?'PARAR AUTOJOGO':'INICIAR AUTOJOGO'}</button>
    <p class="hint">A aposta e as linhas só podem ser alteradas com os tambores parados.</p>`;
   }else if(tab==='settings'){
-   page=`<h3>Configurações</h3><div class="settings-grid"><button class="btn" id="toggle-sound">Efeitos sonoros: ${this.sound?'Ligados':'Desligados'}</button><button class="btn" id="toggle-music">Música: ${this.ledger.settings.music?'Ligada':'Desligada'}</button><button class="btn" id="toggle-turbo">Velocidade: ${this.turbo?'Turbo':'Normal'}</button></div><div class="actions"><button class="btn" id="menu-reset" ${this.feature?'disabled':''}>Repor créditos</button><button class="btn" id="menu-gamble" ${this.feature||!this.lastBaseWin||this.gambleTimes>=5?'disabled':''}>Arriscar último prémio</button></div>`;
+   page=`<h3>Configurações</h3><div class="settings-grid"><button class="btn" id="cycle-sound-mode">Som: ${this.soundModeLabel}</button><p class="hint">Toca para alternar: som completo → só tambores e símbolos → tudo desligado.</p><button class="btn" id="toggle-turbo">Velocidade: ${this.turbo?'Turbo':'Normal'}</button></div><div class="actions"><button class="btn" id="menu-reset" ${this.feature?'disabled':''}>Repor créditos</button><button class="btn" id="menu-gamble" ${this.feature||!this.lastBaseWin||this.gambleTimes>=5?'disabled':''}>Arriscar último prémio</button></div>`;
   }else if(tab==='admin'){
    page='<section class="farao-admin-entry"><p>Acesso reservado à administração da simulação.</p><button type="button" class="btn farao-admin-entry-btn" id="admin-enter">ENTRAR NA ADMINISTRAÇÃO</button></section>';
   }else if(tab==='pays'){
@@ -818,8 +848,7 @@ class Game {
    $('auto-slider').oninput=e=>{this.autoChoice=Number(e.target.value);$('auto-display').textContent=this.autoChoice;};
    $('toggle-auto').onclick=()=>{const wasAuto=this.auto>0;this.closeModal();if(wasAuto){this.auto=0;this.notice('AUTOJOGO DESLIGADO',900);}else{this.auto=this.autoChoice||20;this.paused=false;this.notice(this.auto+' GIROS AUTOMÁTICOS',1100);}};
   }else if(tab==='settings'){
-   $('toggle-sound').onclick=()=>{this.sound=!this.sound;this.audio.on=this.sound;this.audio.init();this.save();this.openInfo('settings');};
-   $('toggle-music').onclick=()=>{this.ledger.settings.music=!this.ledger.settings.music;if(this.ledger.settings.music){this.audio.init();this.audio.startMusic?.();}else this.audio.stopMusic?.();this.save();this.openInfo('settings');};
+   $('cycle-sound-mode').onclick=()=>{this.cycleSoundMode();this.openInfo('settings');};
    $('toggle-turbo').onclick=()=>{this.turbo=!this.turbo;this.save();this.openInfo('settings');};
    $('menu-reset').onclick=()=>this.openReset();$('menu-gamble').onclick=()=>this.openGamble();
   }
@@ -946,9 +975,7 @@ class Game {
   // A inscrição 3D é colocada sobre a moldura em visual-v11.js.
   // Não desenhar o título duas vezes nem ocultar o cenário ao fundo.
   this.smallButton(49,66,68,'☰',()=>this.openInfo());
-  this.smallButton(511,66,68,this.sound?'♫':'♪',()=>{
-   this.sound=!this.sound;this.audio.on=this.sound;this.save();
-  });
+  this.smallButton(511,66,68,this.soundMode==='all'?'♫':this.soundMode==='effects'?'♪':'×',()=>this.cycleSoundMode());
   if(this.feature)text('FREE SPINS  '+this.feature.left+' RESTANTES',
    280,212,13,'#a7fff0','center','Arial',900);
  }
