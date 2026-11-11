@@ -12,7 +12,7 @@ assert.match(source,/async function animateReelStop/);
 assert.match(source,/async function animateCascade/);
 assert.match(source,/async function playback/);
 assert.match(html, /data-bet="7\.5"/);
-assert.match(html, /V0\.5/);
+assert.match(html, /V0\.6/);
 const elements=new Map();
 function el(id) {
   if(!elements.has(id)) {
@@ -59,11 +59,16 @@ Object.defineProperty(el('paylineSvg'),'innerHTML',{
   get(){return this._lineHtml||''},
   set(value){this._lineHtml=value;if(value)linesShown.push(value)}
 });
-context.lineEvent={lines:[{line:1,amount:150,cells:[]}],multi:2};
+context.lineEvent={lines:[{line:1,amount:150,cells:[[0,1],[1,1],[2,1]]}],multi:2,free:false};
 await vm.runInContext('highlightLines(lineEvent)',context);
 assert.ok(linesShown.some(x=>x.includes('polyline')),'Traçado da linha premiada desenhado');
+assert.ok(linesShown.some(x=>x.includes('250,150')),'Linha de três peças termina no terceiro tambor');
+assert.ok(linesShown.every(x=>!x.includes('450,150')),'Linha de três peças não marca o quinto tambor');
 assert.equal(el('linePrize').hidden,true,'Linha desvanece depois de apresentada');
 assert.equal(el('linePrize').textContent,'LINHA 1 · +22,50','Valor da linha multiplicado pela aposta 7,50');
+context.lineEvent.free=true;
+await vm.runInContext('highlightLines(lineEvent)',context);
+assert.equal(el('linePrize').textContent,'LINHA 1 · BRUTO 11,25','Linha de Free Spins mostra bruto, não pagamento antecipado');
 const initial=vm.runInContext('board()',context);
 context.initial=initial;
 await vm.runInContext('animateReelStop(initial)',context);
@@ -83,6 +88,14 @@ const base=vm.runInContext('generate("base")',context);
 context.base=base;
 await vm.runInContext('playback(base)',context);
 assert.ok(el('reels').innerHTML.includes('class="column"'));
+const free=vm.runInContext('generate("free")',context);
+context.free=free;
+vm.runInContext('skipAnimations=true',context);
+await vm.runInContext('playback(free)',context);
+assert.equal(el('freePanel').hidden,true,'HUD Free Spins fecha depois de pagar o bónus');
+assert.equal(el('freeRemaining').textContent,'0','Contagem de Free Spins concluída');
+assert.match(el('freeRaw').textContent,/\d+,\d{2}/,'Total bruto de Free Spins mostrado');
+assert.match(el('freeMult').textContent,/^×\d+/,'Multiplicador de Free Spins mostrado');
 vm.runInContext('skipAnimations=true',context);
 const preBalance=vm.runInContext('balance',context);
 await vm.runInContext('play("hold")',context);
@@ -91,4 +104,6 @@ const paid=vm.runInContext('lastWin',context);
 assert.ok(Math.abs(postBalance-(preBalance-225+paid))<1e-6,'Saltar animações não altera custo nem pagamento do Hold');
 assert.equal(el('skipBtn').hidden,true,'Botão PASSAR esconde-se após terminar');
 assert.equal(el('paylineSvg').innerHTML,'','Linha SVG desaparece após vitória');
-console.log('Jardim Stake Preview V0.5: tambores, cascatas, linhas luminosas, 7,50, Hold e passar animações verificados.');
+assert.equal(vm.runInContext('finalWinTier(750,7.5)',context),'SENSACIONAL');
+assert.equal(vm.runInContext('finalWinTier(75,7.5)',context),'BIG WIN');
+console.log('Jardim Stake Preview V0.6: tambores, linhas até prémio real, Free Spins, Hold, 7,50 e passar animações validados.');
