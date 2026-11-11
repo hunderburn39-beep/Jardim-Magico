@@ -6,11 +6,12 @@
  'use strict';
  const game=window.__faraoGame,fx=game?.audio;
  if(!game||!fx)return;
- const url='assets/torches-fire.mp3?v=1';
+ const url='assets/torches-fire.mp3?v=2';
  let bytesPromise=null,bufferPromise=null,buffer=null,active=false;
  let next=[0,0],timer=null,voices=new Set();
- const paths=[-.55,.55],volume=.24;
- const allowed=()=>!!(fx.ctx&&fx.on&&game.sound&&!game.paused&&!game.superseded&&!document.hidden&&fx.ctx.state==='running');
+ // A gravação tem RMS ~-40 dBFS; compensar no WebAudio com limitação no compressor existente.
+ const paths=[-.62,.62],volume=5.0;
+ const allowed=()=>!!(fx.ctx&&fx.on&&(game.sound||game.ledger?.settings?.music)&&!game.paused&&!game.superseded&&!document.hidden&&fx.ctx.state==='running');
  function getBytes(){
   if(!bytesPromise)bytesPromise=fetch(new URL(url,document.baseURI),{cache:'force-cache'})
    .then(r=>{if(!r.ok)throw Error('Ficheiro das tochas em falta: '+r.status);return r.arrayBuffer();})
@@ -82,5 +83,5 @@
  document.addEventListener('visibilitychange',sync);
  window.addEventListener('pagehide',stop);
  const watcher=setInterval(sync,1100);
- game.torchFire={version:'1.0',sample:'Warm Camp Fire - (High Quality)',artist:'Prem_Adhikary',source:'Pixabay 176816',get ready(){return !!buffer;},stop};
+ game.torchFire={version:'1.1-loud',sample:'Warm Camp Fire - (High Quality)',artist:'Prem_Adhikary',source:'Pixabay 176816',get ready(){return !!buffer;},stop};
 })();
