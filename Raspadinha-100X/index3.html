@@ -711,8 +711,8 @@ function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
       save();
       if(isWinner){
         const matches=state.ticket.wins.filter(win=>state.ticket.revealed.includes("p"+win.pos));
-        const last=matches[matches.length-1];
-        status("Prémio encontrado: "+eur(last.amount)+"! Já descobriste "+matches.length+" de "+state.ticket.wins.length+".");
+        const current=state.ticket.wins.find(win=>"p"+win.pos===id);
+        status("Prémio encontrado: "+eur(current.amount)+"! Já descobriste "+matches.length+" de "+state.ticket.wins.length+".");
       }else status("Casas raspadas: "+state.ticket.revealed.length+"/21. Continua a deslizar o dedo.");
     }
   }
@@ -754,7 +754,7 @@ function render(){
     const amount=ticket.cellPrizes[i];
     makeCell("play",ticket.play[i],money(amount),"p"+i,winning,ticket.revealed.includes("p"+i));
   }
-  if(ticket.completed)status(ticket.prize?"Ganhaste "+eur(ticket.prize)+"!":"Bilhete sem prémio. Tenta novamente!");
+  if(ticket.completed)status(ticket.prize?"Ganhaste "+ticket.wins.length+" prémio(s)! Total: "+eur(ticket.prize):"Bilhete sem prémio. Tenta novamente!");
 }
 function finish(){
   const ticket=state.ticket;
@@ -762,7 +762,7 @@ function finish(){
   ticket.completed=true;
   state.balance+=ticket.prize; // apenas uma vez, inclusive depois de recarregar a página
   save();paintBalance();
-  status(ticket.prize?"🎉 GANHASTE "+eur(ticket.prize)+"!":"Bilhete sem prémio. Boa sorte no próximo!");
+  status(ticket.prize?"🎉 "+ticket.wins.length+" prémio(s)! TOTAL: "+eur(ticket.prize)+"!":"Bilhete sem prémio. Boa sorte no próximo!");
 }
 function revealAll(){
   if(!state.ticket || state.ticket.completed)return;
