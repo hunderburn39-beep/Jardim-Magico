@@ -411,6 +411,55 @@
     // Brilho cristalino curto no fim — perceptível em altifalantes de telemóvel.
     note(1568,1760,.18,.022,.335,'sine');
   };
+  // V1.3.55 — impacto de blocos de pedra na revelação dos símbolos.
+  // Efeitos originais de síntese: batida baixa + textura de pedra breve.
+  audio.freeBlockDrop=function(reel,ordinal=0){
+    if(!ready())return;
+    const depth=126-ordinal*5,weight=.052+Math.min(4,ordinal)*.005;
+    friction(.115,.070,740+reel*80,0);
+    note(depth,57,.145,weight,0,'triangle');
+    note(74,53,.11,.021,.035,'sine');
+  };
+  // Dó-ré-mi-fá-sol-lá-si-dó em crescente de tensão e volume.
+  // Cada linha premiada repete a escala, com mais intensidade se houver
+  // várias linhas; sem gravações externas nem volume excessivo.
+  audio.freeLineCrescendo=function(lineIndex=0,linesTotal=1,spanSeconds=1.2){
+    if(!ready())return;
+    const notes=[261.63,293.66,329.63,349.23,392,440,493.88,523.25];
+    const span=clamp(spanSeconds,1.05,1.7);
+    const boost=1+Math.min(6,Math.max(0,lineIndex))*.105;
+    notes.forEach((freq,i)=>{
+      const rise=i/7;
+      const offset=span*(i/7)*(1-.17*rise);
+      const level=Math.min(.128,(.035+.046*rise)*boost);
+      note(freq,freq*1.035,.19-level*.29,level,offset,'triangle');
+      note(freq*2,freq*2*.995,.105,level*.18,offset+.018,'sine');
+    });
+  };
+  audio.updateFreeLineSounds=function(t,gameState){
+    if(!ready()||gameState.superseded||gameState.spinning||!gameState.lastWasFree)return;
+    const stages=gameState.sequencePlayback?.stages;
+    if(!stages?.length)return;
+    const stage=stages.find(x=>x.kind==='line'&&x.win&&t>=x.start&&t<x.end);
+    if(!stage)return;
+    const revealAt=stage.start+stage.preDelay;
+    if(t>=revealAt&&!stage._freeRisePlayed){
+      stage._freeRisePlayed=true;
+      // Não recuperar música antiga se o Safari esteve em pausa.
+      if(t-revealAt<320){
+        const lineIndex=stages.slice(0,stage.index).filter(x=>x.kind==='line').length;
+        const total=stages.filter(x=>x.kind==='line').length;
+        this.freeLineCrescendo(lineIndex,total,stage.perReel*stage.reels.length/1000);
+      }
+    }
+    if(!stage._blockSounds)stage._blockSounds=new Set();
+    stage.reels.forEach((reel,ordinal)=>{
+      const reveal=revealAt+(ordinal+1)*stage.perReel;
+      if(t<reveal||stage._blockSounds.has(ordinal))return;
+      stage._blockSounds.add(ordinal);
+      if(t-reveal<Math.max(220,stage.perReel*.8))this.freeBlockDrop(reel,ordinal);
+    });
+  };
   audio.win=function(bonus=false){
     const tones=bonus?[293.66,440,587.33,698.46]:[329.63,440,523.25];
     tones.forEach((f,i)=>note(f,f*.91,.30,bonus?.020:.015,i*.11));
@@ -425,9 +474,10 @@
     baseFrame(t);
     this.audio.updateReelWhirr?.(t,this.spinObject);
     this.audio.updateExpansionLaser?.(t,this);
+    this.audio.updateFreeLineSounds?.(t,this);
   };
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.4.7',original:true,realReelStopSample:true,sequenceAlert:true,retriggerTease:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'1.4.9',original:true,realReelStopSample:true,sequenceAlert:true,retriggerTease:true,dynamicReelSpeed:true};
 })();
