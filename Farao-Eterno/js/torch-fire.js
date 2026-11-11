@@ -10,7 +10,9 @@
  let bytesPromise=null,bufferPromise=null,buffer=null,active=false;
  let next=[0,0],timer=null,voices=new Set();
  // A gravação tem RMS ~-40 dBFS; compensar no WebAudio com limitação no compressor existente.
- const paths=[-.62,.62],volume=4.2;
+ // 20% do nível compensado original das tochas (mantém-se audível em telemóveis).
+ const torchVolume=0.20;
+ const paths=[-.62,.62],volume=4.2*torchVolume;
  const allowed=()=>!!(fx.ctx&&game.soundMode==='all'&&game.ledger?.settings?.music&&!game.paused&&!game.superseded&&!document.hidden&&fx.ctx.state==='running');
  function getBytes(){
   if(!bytesPromise)bytesPromise=fetch(new URL(url,document.baseURI),{cache:'force-cache'})
@@ -83,5 +85,5 @@
  document.addEventListener('visibilitychange',sync);
  window.addEventListener('pagehide',stop);
  const watcher=setInterval(sync,1100);
- game.torchFire={version:'1.2-balanced',sample:'Warm Camp Fire - (High Quality)',artist:'Prem_Adhikary',source:'Pixabay 176816',get ready(){return !!buffer;},stop};
+ game.torchFire={version:'1.3-torch20',sample:'Warm Camp Fire - (High Quality)',artist:'Prem_Adhikary',source:'Pixabay 176816',get ready(){return !!buffer;},stop};
 })();
