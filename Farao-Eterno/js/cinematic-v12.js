@@ -261,12 +261,14 @@
         const order=this.sequencePlayback?.stages?.slice(0,focus.index+1)
           .filter(g=>g.kind!=='scatter').length||1;
         label=focus.kind==='scatter'?'TORRES · '+format(focus.amount):
-          'SEQUÊNCIA '+order+' / '+count+' · '+format(focus.amount);
+          (!this.lastWasFree&&focus.kind==='line'
+            ?'LINHA '+(focus.win?.line+1||focus.line+1)
+            :'SEQUÊNCIA '+order+' / '+count+' · '+format(focus.amount));
         tint='#ffeab0';
       }else if(phase){
         label='EXPANSÃO '+phase.symbol+' · ACUMULADO '+format(this.displayWinAt?.(t)??0);
         tint='#80deff';
-      } else if(!(this.reveal && t<this.reveal.end) && wins.length){
+      } else if(this.lastWasFree && !(this.reveal && t<this.reveal.end) && wins.length){
         const w=wins[Math.floor(t/1600)%wins.length];
         label=(w.expanded?'EXPANSÃO '+w.symbol+' · LINHA ':'LINHA ')+(w.line+1)+' · '+format(w.amount);
         if(w.expanded)tint='#8affec';
@@ -286,7 +288,7 @@
       }
       // Depois da leitura descendente, a quantia da sequência surge
       // isolada, sem caixa, e o saldo já a recebeu nessa altura.
-      if(focus && t>=focus.creditAt-140){
+      if(focus && t>=focus.creditAt-140 && (this.lastWasFree || focus.kind!=='line')){
         const p=clamp((t-focus.creditAt+140)/340,0,1);
         const pop=1+.09*(1-p);
         const y=R.top+R.gh*3-42;
