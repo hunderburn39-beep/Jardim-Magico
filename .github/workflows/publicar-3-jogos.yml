@@ -204,26 +204,26 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Confirmar Stake Preview V0.5 na página pública
+      - name: Confirmar Stake Preview (sem bloquear futuras versões)
         shell: bash
         env:
           SITE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
           set -euo pipefail
-          url="${SITE_URL%/}/stake-preview/?v=0.5&sha=${GITHUB_SHA}"
+          url="${SITE_URL%/}/stake-preview/?sha=${GITHUB_SHA}"
           for tentativa in {1..8}; do
             if curl -fLsS --max-time 15 --connect-timeout 8 "$url" -o /tmp/jm-stake-preview-public.html \
-               && grep -q 'Stake Preview V0.5' /tmp/jm-stake-preview-public.html \
+               && grep -Eq 'Stake Preview V0\.[0-9]+' /tmp/jm-stake-preview-public.html \
                && grep -q 'id="skipBtn"' /tmp/jm-stake-preview-public.html \
                && grep -q 'id="paylineSvg"' /tmp/jm-stake-preview-public.html \
                && curl -fLsS --max-time 15 "${SITE_URL%/}/assets/imagens/jm38-caracol.svg" -o /tmp/jm-stake-simbolo.svg; then
-              echo "JARDIM STAKE V0.5 CONFIRMADO no GitHub Pages: HTML, PASSAR, linhas e símbolo original."
+              echo "JARDIM STAKE CONFIRMADO no GitHub Pages: HTML, PASSAR, linhas e símbolo original."
               exit 0
             fi
             echo "Stake Preview: verificação ${tentativa}/8..."
             sleep 5
           done
-          echo "::error::Stake Preview V0.5 não disponível ou desatualizado."
+          echo "::error::Stake Preview indisponível ou sem elementos essenciais."
           exit 1
 
       - name: Confirmar que Halloween deixou de apresentar 404
