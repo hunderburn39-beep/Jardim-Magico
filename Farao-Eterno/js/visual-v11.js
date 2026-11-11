@@ -509,13 +509,20 @@
     const progress=raw*raw*(3-2*raw);
     const expanding=!!(phaseExpanded[c]&&(phaseReveal?idx>=0&&progress>0:this.lastWasFree));
     const ready=!!focus||!this.reveal||t>=this.reveal.end-100;
+    const lineStage=this.lastWasFree&&focus?.kind==='line'&&focus.win?focus:null;
     for(let r=0;r<3;r++){
      const yy=top+r*gh,win=ready&&pulseCells.has(c+'-'+r);
-     // Todas as três posições mudam juntas, sem leitura de cima para baixo.
+     // Nas linhas das Free Spins cada peça vencedora cai na sua casa
+     // quando é revelada; a pedra assenta com um ressalto suave.
+     const hitAt=lineStage?.win&&c<lineStage.win.count&&r===lineStage.win.rows[c]
+       ?lineStage.start+lineStage.preDelay+(c+1)*lineStage.perReel:-1;
+     const elapsed=hitAt>=0?t-hitAt:-1;
+     const settling=elapsed>=0&&elapsed<290;
+     const drop=settling?-25*Math.pow(1-elapsed/290,2)*Math.cos(elapsed*.032):0;
      const ease=expanding?progress:0;
      if(ease<1){
       ctx.save();ctx.globalAlpha=1-ease;
-      tileAt(grid[c][r],rx,yy+bounce,t,win&&!expanding);ctx.restore();
+      tileAt(grid[c][r],rx,yy+bounce+drop,t,win&&!expanding);ctx.restore();
      }
      if(expanding&&ease>0){
       ctx.save();ctx.globalAlpha=ease;
