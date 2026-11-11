@@ -304,8 +304,43 @@
   // Filete inferior: separa o emblema do aro superior dos tambores.
   line(c,128,42,432,42,'#efd38d99',1.1);
  });
- function drawTitle3D(){
+ // Reflexo animado estritamente recortado pelas letras do logótipo.
+ // Reutiliza uma pequena máscara (560×46) para evitar filtros caros no Safari.
+ const titleShineMask=asset(560,46,c=>{
+  c.save();c.translate(280,23);
+  c.textAlign='center';c.textBaseline='middle';
+  c.font='900 32px Georgia,serif';
+  const label='FARAÓ ETERNO',width=c.measureText(label).width;
+  c.scale(Math.min(1,293/Math.max(1,width)),1);
+  c.fillStyle='#fff';c.fillText(label,0,0);c.restore();
+ });
+ const titleShineLayer=document.createElement('canvas');
+ titleShineLayer.width=1120;titleShineLayer.height=92;
+ const titleShineCtx=titleShineLayer.getContext('2d',{alpha:true});
+ titleShineCtx.scale(2,2);
+ function drawTitle3D(t){
   ctx.drawImage(royalLogo,0,238,560,46);
+  if(reducedMotion || !Number.isFinite(t))return;
+  // Uma passagem de esquerda para direita a cada 5 s, com repouso entre ciclos.
+  const phase=t%5000;
+  if(phase>=1550)return;
+  const progress=phase/1550;
+  const centre=111+338*progress;
+  const g=titleShineCtx;
+  g.clearRect(0,0,560,46);
+  g.globalCompositeOperation='source-over';
+  g.drawImage(titleShineMask,0,0,560,46);
+  g.globalCompositeOperation='source-in';
+  const sheen=grad(g,centre-48,0,centre+48,0,[
+   [0,'#fff5c800'],[.22,'#fff2c91a'],[.4,'#fffce8ab'],
+   [.5,'#fffffffa'],[.6,'#fffbe6b8'],[.78,'#ffefb32a'],[1,'#fff6c800']
+  ]);
+  g.fillStyle=sheen;g.fillRect(0,0,560,46);
+  g.globalCompositeOperation='source-over';
+  ctx.save();
+  ctx.globalAlpha=.92;
+  ctx.drawImage(titleShineLayer,0,238,560,46);
+  ctx.restore();
  }
  game.reelBoard=function(t){
   // Durante a apresentação, apenas a sequência em curso pode brilhar.
@@ -507,7 +542,7 @@
     for(let i=0;i<keys.length;i++)
       this.drawMiniSymbol(keys[i],294+i*step,bonusesY+(35-size)/2,size);
   }
-  txt('V1.3.47',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.48',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
