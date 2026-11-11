@@ -582,8 +582,12 @@ class Game {
   if(this.superseded||!this.ready||this.spinning||this.feature||this.ledger.pending||
      this.pendingSummary||performance.now()<this.nextActionAt)return;
   const priceU=S.units(this.bet)*100;
+  const hasTenLines=this.lines===10;
   const enough=this.ledger.balanceU>=priceU;
-  this.openModal('COMPRAR BÓNUS',`<div class="bonus-summary"><p class="eyebrow">8 FREE SPINS</p><p>Compra direta de 8 Free Spins com um símbolo expansivo inicial aleatório.</p><strong>${money(S.credits(priceU))}</strong><p>Custo = <b>100 × aposta total</b> (${money(this.bet)}). Saldo atual: ${money(this.balance)}.</p>${enough?'':'<p style="color:#b12323;font-weight:800">Créditos insuficientes para esta compra.</p>'}<div class="actions"><button class="btn" id="buy-bonus-confirm" ${enough?'':'disabled'}>Confirmar compra</button><button class="btn" id="buy-bonus-cancel">Cancelar</button></div></div>`);
+  const allowed=hasTenLines&&enough;
+  const reason=!hasTenLines?'Ativa as 10 linhas no menu APOSTA para comprar o bónus.':
+   !enough?'Créditos insuficientes para esta compra.':'';
+  this.openModal('COMPRAR BÓNUS',`<div class="bonus-summary"><p class="eyebrow">8 FREE SPINS</p><p>Compra direta de 8 Free Spins com um símbolo expansivo inicial aleatório.</p><strong>${money(S.credits(priceU))}</strong><p>Custo = <b>100 × aposta total</b> (${money(this.bet)}). <b>10 linhas ativas obrigatórias.</b> Saldo atual: ${money(this.balance)}.</p>${reason?'<p style="color:#b12323;font-weight:800">'+reason+'</p>':''}<div class="actions"><button class="btn" id="buy-bonus-confirm" ${allowed?'':'disabled'}>Confirmar compra</button><button class="btn" id="buy-bonus-cancel">Cancelar</button></div></div>`);
   $('buy-bonus-confirm').onclick=()=>this.confirmBuyBonus();
   $('buy-bonus-cancel').onclick=()=>this.closeModal();
  }
