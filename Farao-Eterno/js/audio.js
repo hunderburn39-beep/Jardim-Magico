@@ -4,10 +4,25 @@
  const g=window.__faraoGame,a=g.audio,init=a.init.bind(a);
  a.init=function(){
   try{const enabled=this.on;this.on=true;init();this.on=enabled;
-   if(this.ctx&&!this.compressor){this.compressor=this.ctx.createDynamicsCompressor();this.compressor.threshold.value=-18;this.compressor.ratio.value=5;this.compressor.connect(this.ctx.destination);this.out=this.compressor;}
+   // Ganho mestre: cala imediatamente todos os sons, incluindo áudio já agendado.
+   if(this.ctx&&!this.masterGain){
+    this.masterGain=this.ctx.createGain();
+    this.masterGain.gain.value=g.soundMode==='mute'?0:1;
+    this.masterGain.connect(this.ctx.destination);
+   }
+   if(this.ctx&&!this.compressor){this.compressor=this.ctx.createDynamicsCompressor();this.compressor.threshold.value=-18;this.compressor.ratio.value=5;this.compressor.connect(this.masterGain||this.ctx.destination);this.out=this.compressor;}
    if(this.ctx&&!this.musicBus){this.musicBus=this.ctx.createGain();this.musicBus.gain.value=2.5;this.musicBus.connect(this.out||this.ctx.destination);}
+   if(this.ctx&&this.masterGain)this.masterGain.gain.setTargetAtTime(g.soundMode==='mute'?0:1,this.ctx.currentTime,.012);
    if(!document.hidden&&!g.paused&&g.ledger.settings.music)this.startMusic();
   }catch(_){/* Blocked audio never blocks play. */}
+ };
+ a.setMasterMuted=function(muted){
+  if(!this.ctx)return;
+  const gain=this.masterGain?.gain;
+  if(!gain)return;
+  const t=this.ctx.currentTime;
+  gain.cancelScheduledValues(t);
+  gain.setTargetAtTime(muted?0:1,t,.012);
  };
  a.musicNodes=new Set();
  a.stopMusic=function(){clearInterval(this.musicTimer);this.musicTimer=null;for(const o of this.musicNodes){try{o.stop();}catch(_){}}this.musicNodes.clear();this.musicStep=0;};
