@@ -25,7 +25,7 @@ main{width:min(100%,460px);height:calc(100dvh - 65px);margin:0 auto;padding:9px 
 h2{font-size:clamp(11px,3.3vw,15px);margin:5px 0 6px;text-align:center;letter-spacing:.6px;font-weight:1000}
 .numgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;touch-action:none;min-width:0}
 .lucky{height:clamp(43px,9vh,72px);flex:none}
-.play{grid-template-rows:repeat(4,minmax(0,1fr));flex:1;min-height:0}
+.play{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));flex:1;min-height:0}
 .cell{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;border-radius:8px;border:2px solid #c7861b;background:linear-gradient(160deg,#fff6cd,#fff3a2);color:#0b3563;box-shadow:inset 0 1px 4px #fff,0 1px 3px #7d480a70}
 .cell b{font-size:clamp(18px,5vw,26px);line-height:1.05}
 .cell small{font-weight:900;font-size:clamp(9px,2.4vw,12px);margin-top:3px;white-space:nowrap}
@@ -179,7 +179,7 @@ main{position:relative;z-index:1;height:calc(100dvh - 74px);width:min(100%,480px
 .ticket h2::after{transform:rotate(180deg)}
 .numgrid{gap:6px}
 .lucky{height:clamp(49px,8.2vh,71px)}
-.play{grid-template-rows:repeat(4,minmax(0,1fr));min-height:0;flex:1}
+.play{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));min-height:0;flex:1}
 .cell{
   border:1.5px solid #cfa65d;border-radius:10px;
   background:
@@ -395,10 +395,34 @@ const money=c=>(c/100).toLocaleString("pt-PT",{maximumFractionDigits:0})+" €";
 const randomInt=max=>Math.floor(Math.random()*max);
 function shuffle(items){for(let i=items.length-1;i>0;i--){const j=randomInt(i+1);[items[i],items[j]]=[items[j],items[i]]}return items}
 function fresh(){return{balance:100000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true,bet:100}}
+// Preserva os prémios e o progresso dos bilhetes antigos com 20 casas.
+function migrateOldTicket(saved){
+  const t=saved.ticket;
+  if(!t||!Array.isArray(t.play)||t.play.length!==20||!Array.isArray(t.lucky)||t.lucky.length!==5)return;
+  if(!Array.isArray(t.revealed))t.revealed=[];
+  const wonOutside=t.prize>0&&Number.isInteger(t.winAt)&&t.winAt>=16&&t.winAt<20;
+  if(wonOutside){
+    const wasRevealed=t.revealed.includes("p"+t.winAt);
+    const candidates=Array.from({length:16},(_,i)=>i);
+    let target=candidates.find(i=>t.revealed.includes("p"+i)===wasRevealed);
+    if(target===undefined)target=15;
+    t.play[target]=t.play[t.winAt];
+    t.winAt=target;
+    if(wasRevealed&&!t.revealed.includes("p"+target))t.revealed.push("p"+target);
+    if(!wasRevealed)t.revealed=t.revealed.filter(k=>k!=="p"+target);
+  }
+  t.play=t.play.slice(0,16);
+  t.revealed=[...new Set(t.revealed.filter(k=>/^l[0-4]$/.test(k)||/^p(?:[0-9]|1[0-5])$/.test(k)))];
+  if(t.revealed.length===21&&!t.completed){
+    t.completed=true;
+    saved.balance+=t.prize; // pagamento único do bilhete já todo revelado
+  }
+  try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(_){}
+}
 function load(){
   try{
     const saved=JSON.parse(localStorage.getItem(KEY));
-    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0)){saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;return saved;}
+    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0)){saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;migrateOldTicket(saved);return saved;}
   }catch(_){}
   return fresh();
 }
@@ -504,8 +528,8 @@ function buy(){
   const prize=selectPrize(state.prizeBank,bet);
   state.prizeBank-=prize; // reserva contabilística antes de revelar, evitando ultrapassar o cofre
   const nums=shuffle(Array.from({length:70},(_,i)=>i+1));
-  const lucky=nums.slice(0,5),play=nums.slice(5,25);
-  const winAt=prize>0?randomInt(20):-1;
+  const lucky=nums.slice(0,5),play=nums.slice(5,21);
+  const winAt=prize>0?randomInt(16):-1;
   if(winAt>=0)play[winAt]=lucky[randomInt(5)];
   state.cards++;
   state.ticket={id:state.cards,lucky,play,prize,bet,winAt,revealed:[],completed:false};
@@ -513,7 +537,7 @@ function buy(){
   status("Desliza o dedo pelas casas, sem levantar, até raspares tudo.");
 }
 
-// Raspagem contínua: camada fixa independente das 25 películas.
+// Raspagem contínua: camada fixa independente das 21 películas (5 sorte + 16 jogo).
 // Uso de touch events no iPhone, sem depender de pointer capture de uma casa removida.
 const scratchHandlers=new Map();
 let scratchGesture=null;
@@ -644,8 +668,8 @@ function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
     canvas.remove();
     if(isWinner){cell.classList.add("revealed");flashWinningCell(cell);}
     if(!state.ticket.revealed.includes(id))state.ticket.revealed.push(id);
-    if(state.ticket.revealed.length===25)finish();
-    else{save();status("Casas raspadas: "+state.ticket.revealed.length+"/25. Continua a deslizar o dedo.");}
+    if(state.ticket.revealed.length===21)finish();
+    else{save();status("Casas raspadas: "+state.ticket.revealed.length+"/21. Continua a deslizar o dedo.");}
   }
   // Cada célula tem a sua própria película, mas o gesto é partilhado pelo bilhete.
   // É possível atravessar vários quadrados sem retirar o dedo do ecrã.
@@ -680,7 +704,7 @@ function render(){
   el("ticketid").textContent="BILHETE Nº "+ticket.id;
   el("ticket-top-prize").textContent=money(ticketBet(ticket))+" → ATÉ "+money(ticketBet(ticket)*100);
   for(let i=0;i<5;i++)makeCell("lucky",ticket.lucky[i],"","l"+i,false,ticket.revealed.includes("l"+i));
-  for(let i=0;i<20;i++){
+  for(let i=0;i<16;i++){
     const winning=i===ticket.winAt;
     const amount=winning?ticket.prize:PRIZES[randomInt(5)].mult*ticketBet(ticket);
     makeCell("play",ticket.play[i],money(amount),"p"+i,winning,ticket.revealed.includes("p"+i));
@@ -698,7 +722,7 @@ function finish(){
 function revealAll(){
   if(!state.ticket || state.ticket.completed)return;
   stopScratchSound();
-  state.ticket.revealed=Array.from({length:5},(_,i)=>"l"+i).concat(Array.from({length:20},(_,i)=>"p"+i));
+  state.ticket.revealed=Array.from({length:5},(_,i)=>"l"+i).concat(Array.from({length:16},(_,i)=>"p"+i));
   finish();render();
   // Após revelar tudo, realçar explicitamente o quadrado com o prémio.
   // Em bilhetes sem prémio, não se assinala nenhum quadrado como vencedor.
