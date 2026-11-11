@@ -102,36 +102,40 @@ def free_feature(rng: random.Random, trigger: str = "scatter") -> dict:
 
 
 def hold_feature(rng: random.Random, trigger: str = "coins") -> dict:
+    """Stateless 4x4 Hold: independent 8% chance per EMPTY cell per try.
+
+    Fixed weights: same at every bet size; no relation to history, bankroll,
+    session or player. Any newly landed coins reset attempts to three.
+    """
     cells = [0] * 16
     places = rng.sample(range(16), 6)
     for place in places:
-        cells[place] = rng.choice((1, 2, 3, 5, 10))
+        cells[place] = rng.choices((1, 2, 3, 5, 10),
+                                  weights=(46, 28, 16, 8, 2))[0]
     events = [{"type": "holdStart", "trigger": trigger, "grid": cells.copy(),
                "tries": 3}]
     tries, turns = 3, 0
     while tries > 0 and any(value == 0 for value in cells):
         turns += 1
-        empty = [i for i, value in enumerate(cells) if value == 0]
         new_coins = []
-        if rng.random() < .72:
-            count = min(len(empty), 2 if rng.random() < .18 else 1)
-            for place in rng.sample(empty, count):
-                value = rng.choice((1, 2, 3, 5, 10, 20))
+        for place in range(16):
+            if cells[place] == 0 and rng.random() < 0.08:
+                value = rng.choices((1, 2, 3, 5, 10, 20),
+                                    weights=(42, 30, 16, 8, 3, 1))[0]
                 cells[place] = value
                 new_coins.append({"cell": place, "value": value})
         tries = 3 if new_coins else tries - 1
         events.append({"type": "holdTurn", "turn": turns,
                        "newCoins": new_coins, "grid": cells.copy(), "tries": tries})
     filled = all(value != 0 for value in cells)
-    # The 250x completion award is fixed and fully resolved in this one bet,
-    # NOT progressive and NOT called a jackpot. Needs reviewer sign-off.
+    # The 250x completion award remains an experimental fixed prize;
+    # approval requires explicit signoff and RTP auditing.
     completion = 25000 if filled else 0
     amount = 100 * sum(cells) + completion
     events.append({"type": "holdEnd", "grid": cells.copy(), "filled": filled,
                    "coinTotal": 100 * sum(cells),
                    "completionAward": completion, "amount": amount})
     return {"events": events, "amount": amount, "filled": filled, "turns": turns}
-
 
 def round_book(round_id: int, seed: int, mode: str = "base") -> dict:
     if mode not in MODES:
