@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#090f29">
-<title>Raspadinha 100X — Edição Premium</title>
+<title>Raspadinha 10X — Edição Premium</title>
 <style>
 :root{color-scheme:dark;--gold:#ffd34a;--blue:#0b3268;--light:#fff2b8}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -460,13 +460,45 @@ footer{color:#a1a9bb;font-size:9px;line-height:1.3;padding:2px 0}
   background:radial-gradient(circle at 32% 22%,#7e8eb0 0%,#30466d 26%,#172543 65%,#080f27 100%);
   box-shadow:inset 0 3px 5px #ffffff66,inset 0 -5px 8px #030a1b,0 2px 0 #a96e24,0 0 9px #e4b45f55;
 }
+
+/* 4 modalidades: escolha clara, cada logótipo com uma paleta própria. */
+.stake-bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:5px 7px;min-height:54px}
+.stake-bar .mode-choice{
+  width:100%;min-width:0;height:auto;min-height:44px;padding:4px 2px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  background:linear-gradient(150deg,#263653,#0a1731);border:1px solid #9b835c;border-radius:10px;
+  box-shadow:inset 0 1px #fff2,0 2px #0005;color:#c9d2e0;line-height:1.05;
+}
+.stake-bar .mode-choice strong{font-size:clamp(13px,4vw,18px);font-weight:1000;color:#f0dca1}
+.stake-bar .mode-choice span{font-size:clamp(10px,2.8vw,13px);color:#e4d5b5;font-weight:850}
+.stake-bar .mode-choice.selected{border:2px solid #fff1b6;background:linear-gradient(#dfb263,#844425);box-shadow:inset 0 2px #fff7cf88,0 0 12px #ffc45b77}
+.stake-bar .mode-choice.selected strong,.stake-bar .mode-choice.selected span{color:#291b2e}
+.stake-bar .mode-choice:focus-visible{outline:2px solid #fff9da;outline-offset:2px}
+body[data-mode="10"] header{background:linear-gradient(112deg,#6a3927,#d98d49 38%,#ffe0a6 52%,#8a4a29)}
+body[data-mode="20"] header{background:linear-gradient(112deg,#193d74,#388bb3 38%,#b6eafb 52%,#225a91)}
+body[data-mode="50"] header{background:linear-gradient(112deg,#3d265e,#9863be 38%,#eed0ff 52%,#59318c)}
+body[data-mode="100"] header{background:linear-gradient(112deg,#865018,#ffcb54 38%,#fff1a1 52%,#a95c16)}
+body[data-mode="10"] .logo{background:linear-gradient(#ffdda1,#9e4f26);color:#fff3cb}
+body[data-mode="20"] .logo{background:linear-gradient(#d6f5ff,#1862a6);color:#fff}
+body[data-mode="50"] .logo{background:linear-gradient(#f1cbff,#7d3ba4);color:#fff}
+body[data-mode="100"] .logo{background:linear-gradient(#fff7c4,#bd7021);color:#fff6c9}
+body[data-mode="10"] .ticket{border-color:#e5a366}
+body[data-mode="20"] .ticket{border-color:#99d8ff}
+body[data-mode="50"] .ticket{border-color:#dbacff}
+body[data-mode="100"] .ticket{border-color:#fff0a4}
+@media(max-height:740px){.stake-bar{min-height:44px;padding:3px 6px;gap:4px}.stake-bar .mode-choice{min-height:37px;padding:2px}}
 </style>
 </head>
 <body>
-<header><div class="logo">100X</div><div class="brand">O DINHEIRO<small>RASPADINHA</small></div></header>
+<header><div class="logo" id="logo-mult">10X</div><div class="brand">O DINHEIRO<small>RASPADINHA <span id="header-mode">10X</span></small></div></header>
 <main>
   <div class="summary"><button id="wallet-open" type="button" class="wallet-trigger" aria-haspopup="dialog" aria-controls="wallet-modal" aria-label="Abrir saldo para depósito ou levantamento"><span class="wallet-caption">SALDO <span class="wallet-arrow">⌄</span></span><strong id="balance">100,00 €</strong></button><button id="sound" type="button" aria-label="Desligar som">🔊 Som ligado</button></div>
-  <div class="stake-bar" role="group" aria-label="Valor da aposta"><span class="stake-label">APOSTA</span><button id="bet-down" type="button" aria-label="Diminuir aposta">−</button><strong id="bet-value">1 €</strong><button id="bet-up" type="button" aria-label="Aumentar aposta">+</button><span class="stake-mult">ATÉ <b>100×</b></span></div>
+  <div class="stake-bar" role="group" aria-label="Escolher modalidade de raspadinha">
+  <button type="button" class="mode-choice selected" data-mode-bet="100" aria-pressed="true"><strong>10X</strong><span>1 €</span></button>
+  <button type="button" class="mode-choice" data-mode-bet="200" aria-pressed="false"><strong>20X</strong><span>2 €</span></button>
+  <button type="button" class="mode-choice" data-mode-bet="500" aria-pressed="false"><strong>50X</strong><span>5 €</span></button>
+  <button type="button" class="mode-choice" data-mode-bet="1000" aria-pressed="false"><strong>100X</strong><span>10 €</span></button>
+</div>
   <section class="ticket" aria-label="Bilhete de raspadinha">
     <div class="tickettop"><span id="ticketid">BILHETE Nº 1</span><span id="ticket-top-prize">1 € → ATÉ 100 €</span></div>
     <h2>NÚMEROS DA SORTE</h2>
@@ -510,7 +542,7 @@ footer{color:#a1a9bb;font-size:9px;line-height:1.3;padding:2px 0}
   <div class="celebration-stage">
     <div class="celebration-fireworks left" id="fireworks-left"></div>
     <div class="celebration-center">
-      <div class="celebration-brand">RASPADINHA <strong>100X</strong></div><div class="celebration-title">PARABÉNS!</div><div class="celebration-subtitle" id="celebration-subtitle">GANHASTE</div>
+      <div class="celebration-brand">RASPADINHA <strong id="celebration-logo-mult">10X</strong></div><div class="celebration-title">PARABÉNS!</div><div class="celebration-subtitle" id="celebration-subtitle">GANHASTE</div>
       <div class="celebration-amount" id="celebration-amount">0 €</div>
       <div class="celebration-breakdown" id="celebration-breakdown"></div>
     </div>
@@ -520,15 +552,23 @@ footer{color:#a1a9bb;font-size:9px;line-height:1.3;padding:2px 0}
 <audio id="fireworks-audio" preload="auto" src="./Fireworks.mp3"></audio>
 <script>
 "use strict";
-// Aposta mínima 1 €; valores em cêntimos e prémio máximo 100 vezes a aposta.
+// 4 raspadinhas fixas: 10X/1 €, 20X/2 €, 50X/5 € e 100X/10 €; valores em cêntimos.
 // Divisão: técnico 10%, comerciante 20%, fundo 10%, cofre de prémios 60%.
 // Chave antiga mantida para preservar saldos de sessões anteriores.
 const KEY="raspadinha100x_v3_10eur";
-const BET_LEVELS=[100,200,500,1000];
-// Novos escalões de prémio: apenas 2×, 10×, 25×, 50× e 100× a aposta.
+const CARD_MODES=[
+  {mult:10,bet:100},
+  {mult:20,bet:200},
+  {mult:50,bet:500},
+  {mult:100,bet:1000}
+];
+const BET_LEVELS=CARD_MODES.map(mode=>mode.bet);
+const modeForBet=bet=>CARD_MODES.find(mode=>mode.bet===bet)||CARD_MODES[0];
+const maxForTicket=ticket=>(ticket&&[10,20,50,100].includes(ticket.maxMult))?ticket.maxMult:100;
+// Prémios instantâneos e números da sorte; cada modalidade usa apenas valores até ao seu teto.
 const PRIZES=[
-  {mult:2,weight:825},{mult:10,weight:125},{mult:25,weight:35},
-  {mult:50,weight:12},{mult:100,weight:3}
+  {mult:2,weight:800},{mult:10,weight:115},{mult:20,weight:49},
+  {mult:25,weight:24},{mult:50,weight:10},{mult:100,weight:2}
 ];
 const el=id=>document.getElementById(id);
 const eur=c=>(c/100).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
@@ -540,6 +580,8 @@ function fresh(){return{balance:100000,prizeBank:0,reserve:0,technician:0,mercha
 function migrateOldTicket(saved){
   const t=saved.ticket;
   if(!t||!Array.isArray(t.play)||![16,20].includes(t.play.length)||!Array.isArray(t.lucky)||t.lucky.length!==5)return;
+  // Bilhetes anteriores às modalidades tinham teto de 100X, independentemente da aposta.
+  if(![10,20,50,100].includes(t.maxMult))t.maxMult=100;
   if(!Array.isArray(t.revealed))t.revealed=[];
   const wonOutside=t.play.length===20&&t.prize>0&&Number.isInteger(t.winAt)&&t.winAt>=16&&t.winAt<20;
   if(wonOutside){
@@ -652,14 +694,27 @@ el("wallet-amount").addEventListener("keydown",e=>{if(e.key==="Enter"){e.prevent
 document.addEventListener("keydown",e=>{if(e.key==="Escape" && !el("wallet-modal").hidden)closeWallet();});
 
 function paintBet(){
-  el("bet-value").textContent=money(state.bet);
-  el("bet-down").disabled=state.bet===BET_LEVELS[0];
-  el("bet-up").disabled=state.bet===BET_LEVELS[BET_LEVELS.length-1];
-  el("new").textContent="NOVA RASPADINHA · "+money(state.bet);
+  const mode=modeForBet(state.bet);
+  document.body.dataset.mode=String(mode.mult);
+  document.title="Raspadinha "+mode.mult+"X — Edição Premium";
+  el("logo-mult").textContent=mode.mult+"X";
+  el("header-mode").textContent=mode.mult+"X";
+  el("celebration-logo-mult").textContent=mode.mult+"X";
+  el("new").textContent="NOVA RASPADINHA "+mode.mult+"X · "+money(mode.bet);
+  for(const button of document.querySelectorAll("[data-mode-bet]")){
+    const selected=Number(button.dataset.modeBet)===mode.bet;
+    button.classList.toggle("selected",selected);
+    button.setAttribute("aria-pressed",String(selected));
+  }
 }
-function adjustBet(direction){
-  const next=Math.max(0,Math.min(BET_LEVELS.length-1,BET_LEVELS.indexOf(state.bet)+direction));
-  state.bet=BET_LEVELS[next];save();paintBet();
+function selectCardMode(bet){
+  if(!BET_LEVELS.includes(bet)||revealAllRunning)return;
+  state.bet=bet;
+  save();paintBet();
+  const mode=modeForBet(bet);
+  status(state.ticket&&!state.ticket.completed
+    ?"Escolhida "+mode.mult+"X por "+money(mode.bet)+". Termina a raspadinha atual para começares esta."
+    :"Selecionada raspadinha "+mode.mult+"X por "+money(mode.bet)+", prémio máximo "+money(mode.bet*mode.mult)+".");
 }
 function ticketBet(ticket){return BET_LEVELS.includes(ticket.bet)?ticket.bet:1000}
 function weightedPick(options){
@@ -669,10 +724,10 @@ function weightedPick(options){
   return options[options.length-1];
 }
 // Cada número da sorte encontrado dá um prémio independente.
-// O total de todos os prémios nunca excede 100x a aposta nem o cofre.
-function selectWinnings(bank,bet){
+// O total nunca excede o teto da modalidade (10X/20X/50X/100X) nem o cofre.
+function selectWinnings(bank,bet,maxMult){
   if(bank<2*bet || Math.random()>=0.30)return [];
-  const cap=Math.min(bank,bet*100);
+  const cap=Math.min(bank,bet*maxMult);
   const maxMatches=Math.min(5,Math.floor(cap/(2*bet)));
   const counts=[{n:1,weight:25},{n:2,weight:48},{n:3,weight:19},{n:4,weight:7},{n:5,weight:1}]
     .filter(item=>item.n<=maxMatches);
@@ -699,7 +754,8 @@ function buy(){
   state.merchant+=bet*0.20;
   state.reserve+=bet*0.10;
   state.prizeBank+=bet*0.60;
-  const awards=selectWinnings(state.prizeBank,bet);
+  const maxMult=modeForBet(bet).mult;
+  const awards=selectWinnings(state.prizeBank,bet,maxMult);
   const prize=awards.reduce((sum,amount)=>sum+amount,0);
   state.prizeBank-=prize; // reserva antecipada da SOMA dos prémios
   const nums=shuffle(Array.from({length:70},(_,i)=>i+1));
@@ -707,7 +763,7 @@ function buy(){
   const positions=shuffle(Array.from({length:16},(_,i)=>i)).slice(0,awards.length);
   const luckyIndices=shuffle([0,1,2,3,4]);
   let nextLucky=0;
-  // Os símbolos X2/X10/X25/X50/X100 pagam ao revelar e não têm número.
+  // Os símbolos X2/X10/X20/X25/X50/X100 pagam ao revelar e não têm número.
   // Os prémios por correspondência mantêm os números das 5 estrelas.
   const wins=awards.map((amount,i)=>({
     pos:positions[i],amount,mult:amount/bet,type:Math.random()<.50?"instant":"match"
@@ -721,7 +777,7 @@ function buy(){
     return award?award.amount:PRIZES[randomInt(PRIZES.length)].mult*bet;
   });
   state.cards++;
-  state.ticket={id:state.cards,lucky,play,prize,bet,wins,cellPrizes,paidWins:[],revealed:[],completed:false};
+  state.ticket={id:state.cards,lucky,play,prize,bet,maxMult,wins,cellPrizes,paidWins:[],revealed:[],completed:false};
   save();render();
   status("Desliza o dedo pelas casas, sem levantar, até raspares tudo.");
 }
@@ -926,9 +982,9 @@ function render(){
   scratchHandlers.clear();
   el("lucky").replaceChildren();el("play").replaceChildren();
   const ticket=state.ticket;
-  if(!ticket){el("ticketid").textContent="PRONTO A JOGAR";el("ticket-top-prize").textContent=money(state.bet)+" → ATÉ "+money(state.bet*100);return}
+  if(!ticket){const mode=modeForBet(state.bet);el("ticketid").textContent="PRONTO A JOGAR";el("ticket-top-prize").textContent=money(mode.bet)+" → ATÉ "+money(mode.bet*mode.mult);return}
   el("ticketid").textContent="BILHETE Nº "+ticket.id;
-  el("ticket-top-prize").textContent=money(ticketBet(ticket))+" → ATÉ "+money(ticketBet(ticket)*100);
+  el("ticket-top-prize").textContent=money(ticketBet(ticket))+" → ATÉ "+money(ticketBet(ticket)*maxForTicket(ticket));
   for(let i=0;i<5;i++)makeCell("lucky",ticket.lucky[i],"","l"+i,false,ticket.revealed.includes("l"+i));
   for(let i=0;i<16;i++){
     const revealed=ticket.revealed.includes("p"+i);
@@ -937,7 +993,7 @@ function render(){
     const matched=win&&isWinningCellReady(ticket,win);
     const amount=ticket.cellPrizes[i];
     if(instant){
-      // Na casa instantânea não surge número: apenas 2×/10×/25×/50×/100×.
+      // Na casa instantânea não surge número: só o multiplicador permitido pela modalidade.
       makeCell("play",win.mult+"×","","p"+i,matched,revealed,"",true);
     }else{
       // Nas outras casas mantém o número e o respetivo valor da aposta.
@@ -1228,8 +1284,7 @@ function stopScratchSound(){
   try{a.source.stop(a.ac.currentTime+.09)}catch(_){}
 }
 el("new").addEventListener("click",buy);
-el("bet-down").addEventListener("click",()=>adjustBet(-1));
-el("bet-up").addEventListener("click",()=>adjustBet(1));
+document.querySelectorAll("[data-mode-bet]").forEach(button=>button.addEventListener("click",()=>selectCardMode(Number(button.dataset.modeBet))));
 el("reveal").addEventListener("click",revealAll);
 el("sound").addEventListener("click",()=>{state.sound=!state.sound;stopScratchSound();save();paintBalance()});
 ["contextmenu","selectstart","dragstart","copy","cut"].forEach(n=>document.addEventListener(n,e=>e.preventDefault()));
