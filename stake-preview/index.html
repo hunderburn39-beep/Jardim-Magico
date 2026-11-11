@@ -188,7 +188,7 @@ async function animateReelStop(boardFinal){
   for(let i=0;i<turns;i++){
     preview=board();draw(preview,[]);
     document.querySelectorAll(".cell").forEach(cell=>cell.classList.add("spinning"));
-    await sleep(turbo?35:90);
+    await pause(turbo?35:90);
   }
   for(let col=0;col<5;col++){
     preview[col]=boardFinal[col].slice();
@@ -198,7 +198,7 @@ async function animateReelStop(boardFinal){
       else if(index===col)column.querySelectorAll(".cell").forEach(cell=>cell.classList.add("landing"));
     });
     beep(370+col*65);
-    await sleep(turbo?20:80);
+    await pause(turbo?20:80);
   }
   draw(boardFinal,[]);
 }
@@ -209,7 +209,7 @@ async function animateCascade(boardFinal,oldRemoved){
   document.querySelectorAll(".column").forEach((column,c)=>{
     Array.from(column.children).slice(0,totals[c]).forEach(cell=>cell.classList.add("cascade-in"));
   });
-  await sleep(turbo?85:350);
+  await pause(turbo?85:350);
 }
 async function playback(book){
   let previousRemoved=[],lastHoldGrid=[];clearPayline();
