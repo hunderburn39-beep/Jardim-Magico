@@ -1,148 +1,111 @@
-/* Faraó Eterno — banda sonora normal e música exclusiva do bónus.
- * Áudio fornecido pelo utilizador; música normal 75%; transição suave entre faixas.
- * A faixa normal retoma do ponto onde ficou após as Free Spins.
+/* Faraó Eterno: faixa normal desde a capa, música de bónus nas Free Spins.
+ * Elementos HTMLAudio são pré-carregados ao abrir o site e iniciados na primeira
+ * interação permitida pelo navegador (ou por autoplay, quando autorizado).
+ * A primeira jogada nunca cria outra instância nem reinicia a faixa.
+ * A mudança de tema pausa a faixa anterior, preservando currentTime.
  */
 (()=>{
- 'use strict';
- const game=window.__faraoGame, audio=game?.audio;
- if(!game||!audio)return;
- const originalStart=audio.startMusic.bind(audio);
- const originalStop=audio.stopMusic.bind(audio);
- const descriptors={
-   normal:[
-     {url:'assets/pharaohs-ritual.mp3?v=1436a1f8',name:"Pharaoh's Ritual",artist:'Áudio fornecido pelo utilizador'},
-     {url:'assets/dark-pyramid-ambience.mp3?v=1.0',name:'Dark Pyramid Night Ambience Loop',artist:'szegvari'}
-   ],
-   bonus:[
-     {url:'assets/bonus-ritual.mp3?v=1.0',name:'Faraó Eterno — Bonus Ritual',artist:'Áudio fornecido pelo utilizador'}
-   ]
- };
- const states={
-   normal:{raw:null,loading:null,decoding:null,buffer:null,offset:0,source:null,gain:null,startedAt:0,selected:descriptors.normal[0],failedAt:0},
-   bonus:{raw:null,loading:null,decoding:null,buffer:null,offset:0,source:null,gain:null,startedAt:0,selected:descriptors.bonus[0],failedAt:0}
- };
- const volume=.75, normalBusGain=2.5, sampleGain=volume/normalBusGain;
- let activeTrack=null;
- const canPlay=()=>!!(audio.ctx&&game.soundMode==='all'&&game.ledger?.settings?.music&&(!game.paused||game._introCoverVisible)&&!game.superseded&&!document.hidden);
- const inBonus=()=>!!(!game._introCoverVisible&&(game.feature||game.pendingSummary||game._summaryAck));
- const desired=()=>inBonus()?'bonus':'normal';
- function fetchTrack(name){
-   const s=states[name];
-   if(s.raw)return Promise.resolve(s.raw);
-   if(s.loading)return s.loading;
-   if(s.failedAt&&Date.now()-s.failedAt<60000)return Promise.resolve(null);
-   s.loading=(async()=>{
-     for(const option of descriptors[name]){
-       try{
-         const res=await fetch(new URL(option.url,document.baseURI),{cache:'no-store'});
-         if(!res.ok)continue;
-         const raw=await res.arrayBuffer();
-         if(!raw.byteLength)continue;
-         s.selected=option;s.raw=raw;return raw;
-       }catch(_){}
-     }
-     throw Error('Faixa '+name+' indisponível');
-   })().catch(()=>{s.failedAt=Date.now();return null;}).finally(()=>{s.loading=null;});
-   return s.loading;
- }
- function loadTrack(name){
-   const s=states[name];
-   if(s.buffer)return Promise.resolve(s.buffer);
-   if(!audio.ctx)return Promise.resolve(null);
-   if(s.decoding)return s.decoding;
-   s.decoding=fetchTrack(name).then(raw=>raw?audio.ctx.decodeAudioData(raw.slice(0)):null)
-     .then(buffer=>{if(buffer)s.buffer=buffer;return buffer;})
-     .catch(()=>null).finally(()=>{s.decoding=null;});
-   return s.decoding;
- }
- function fadeOut(name,seconds){
-   const s=states[name],src=s.source;
-   if(!src||!audio.ctx)return;
-   const now=audio.ctx.currentTime;
-   if(s.buffer?.duration){
-     s.offset=(s.offset+Math.max(0,now-s.startedAt))%s.buffer.duration;
-   }
-   if(s.gain){
-     const p=s.gain.gain;
-     p.cancelScheduledValues(now);p.setValueAtTime(Math.max(.0001,p.value),now);
-     p.linearRampToValueAtTime(.0001,now+seconds);
-   }
-   try{src.stop(now+seconds+.03);}catch(_){}
-   s.source=null;s.gain=null;
- }
- function fadeIn(name,seconds){
-   const s=states[name],ctx=audio.ctx;
-   if(!s.buffer||!ctx||s.source)return;
-   const src=ctx.createBufferSource(),gn=ctx.createGain();
-   src.buffer=s.buffer;src.loop=true;
-   const now=ctx.currentTime,offset=s.offset%s.buffer.duration;
-   gn.gain.setValueAtTime(.0001,now);
-   gn.gain.linearRampToValueAtTime(sampleGain,now+seconds);
-   src.connect(gn);gn.connect(audio.musicBus||audio.out||ctx.destination);
-   s.source=src;s.gain=gn;s.startedAt=now;
-   src.onended=()=>{if(s.source===src){s.source=null;s.gain=null;}try{src.disconnect();gn.disconnect();}catch(_){}};
-   src.start(now,offset);
- }
- function silence(){
-   fadeOut('normal',.10);fadeOut('bonus',.10);
-   activeTrack=null;originalStop();
- }
- function sync(){
-   if(!canPlay())return;
-   const target=desired(),s=states[target];
-   if(!s.buffer){
-     // Se a gravação do bónus não existir no servidor, manter a música normal.
-     loadTrack(target).then(()=>{if(canPlay()&&states[target].buffer)sync();});
-     if(target==='bonus'&&!states.bonus.buffer&&states.normal.buffer){
-       if(!states.normal.source)fadeIn('normal',.35);
-       activeTrack='normal';originalStop();
-     }else if(!states.normal.buffer&&!states.bonus.buffer){
-       originalStart();
-     }
-     return;
-   }
-   if(s.source&&activeTrack===target)return;
-   originalStop();
-   const fade=target==='bonus'?.80:1.05;
-   fadeIn(target,fade);
-   fadeOut(target==='normal'?'bonus':'normal',fade);
-   activeTrack=target;
- }
- // Pré-carrega as duas gravações sem desbloquear automaticamente o áudio do Safari.
- fetchTrack('normal');
- fetchTrack('bonus');
- audio.startMusic=function(){
-   if(!canPlay())return;
-   sync();
- };
- audio.stopMusic=function(){silence();};
- const previousInit=audio.init.bind(audio);
- audio.init=function(...args){
-   const response=previousInit(...args);
-   if(audio.ctx){
-     loadTrack('normal').then(()=>{if(canPlay())sync();});
-     loadTrack('bonus').then(()=>{if(canPlay())sync();});
-   }
-   return response;
- };
- // A sessão e a transição de Free Spins são geridas pelo motor; sem alterar pagamentos.
- const watcher=setInterval(()=>{
-   if(!audio.ctx)return;
-   if(!canPlay()){if(states.normal.source||states.bonus.source)silence();return;}
-   if(activeTrack!==desired()||!states[desired()].source)sync();
- },400);
- document.addEventListener('visibilitychange',()=>{
-   if(document.hidden)audio.stopMusic();
-   else if(audio.ctx&&canPlay())audio.startMusic();
- });
- game.ambientLoop={
-   version:'1.5-bonus-switch',
-   get source(){return states[activeTrack||'normal'].selected.name;},
-   get normalReady(){return !!states.normal.buffer;},
-   get bonusReady(){return !!states.bonus.buffer;},
-   get activeTrack(){return activeTrack;},
-   get ready(){return !!states.normal.buffer;},
-   crossfade:true,
-   stopWatcher(){clearInterval(watcher);}
- };
+'use strict';
+const game=window.__faraoGame, fx=game?.audio;
+if(!game||!fx)return;
+const normalURL='assets/pharaohs-ritual.mp3?v=1436a1f8';
+const bonusURL='assets/bonus-ritual.mp3?v=1.0';
+function makeTrack(url,volume){
+  const element=document.createElement('audio');
+  element.preload='auto';
+  element.loop=true;
+  element.controls=false;
+  element.setAttribute('playsinline','');
+  element.src=url;
+  element.volume=volume;
+  element.load();
+  return element;
+}
+const tracks={
+ normal:makeTrack(normalURL,.75),
+ bonus:makeTrack(bonusURL,.75)
+};
+let activeTrack=null;
+let loadingTarget=null;
+let requestId=0;
+let lastRequested=null;
+const inBonus=()=>!!(!game._introCoverVisible&&(game.feature||game.pendingSummary||game._summaryAck));
+const desired=()=>inBonus()?'bonus':'normal';
+const allowed=()=>!!(game.soundMode==='all'&&game.ledger?.settings?.music&&
+ !game.superseded&&!document.hidden&&(!game.paused||game._introCoverVisible));
+function silence(){
+  requestId++;
+  loadingTarget=null;
+  for(const a of Object.values(tracks))a.pause();
+  activeTrack=null;
+}
+function sync(){
+  if(!allowed())return;
+  const target=desired(),next=tracks[target];
+  if(!next)return;
+  if(activeTrack===target&&!next.paused)return;
+  if(loadingTarget===target)return;
+  // play() é chamado imediatamente, dentro do pointerdown quando existir.
+  // Não aguardar por fetch/decodeAudioData antes de tentar iniciar o som.
+  const currentRequest=++requestId;
+  loadingTarget=target;
+  lastRequested=target;
+  let attempt;
+  try{attempt=next.play();}
+  catch(_){loadingTarget=null;return;}
+  const success=()=>{
+    if(currentRequest!==requestId||!allowed()||desired()!==target){
+      next.pause();
+      return;
+    }
+    loadingTarget=null;
+    for(const [name,el] of Object.entries(tracks)){
+      if(name!==target)el.pause();
+    }
+    activeTrack=target;
+  };
+  const failure=()=>{
+    if(currentRequest===requestId)loadingTarget=null;
+  };
+  if(attempt&&typeof attempt.then==='function')attempt.then(success).catch(failure);
+  else success();
+}
+fx.startMusic=function(){sync();};
+fx.stopMusic=function(){silence();};
+// O jogo inicializa o contexto WebAudio para os sons dos tambores;
+// a música gravada, pelo contrário, não espera pelo decodeAudioData.
+const oldInit=fx.init.bind(fx);
+fx.init=function(...args){
+  const result=oldInit(...args);
+  sync();
+  return result;
+};
+const watcher=setInterval(()=>{
+  if(allowed()){
+    if(loadingTarget!==desired()&&(activeTrack!==desired()||tracks[desired()].paused))sync();
+  }else if(activeTrack||loadingTarget){
+    silence();
+  }
+},320);
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden)silence();
+  else if(allowed())sync();
+});
+game.ambientLoop={
+  version:'1.7-instant-html-audio',
+  get source(){return desired()==='bonus'?'Faraó Eterno — Bonus Ritual':"Pharaoh's Ritual";},
+  get normalReady(){return tracks.normal.readyState>=2;},
+  get bonusReady(){return tracks.bonus.readyState>=2;},
+  get activeTrack(){return activeTrack;},
+  get ready(){return tracks.normal.readyState>=2;},
+  get normalPosition(){return tracks.normal.currentTime;},
+  get bonusPosition(){return tracks.bonus.currentTime;},
+  get loadingTarget(){return loadingTarget;},
+  get lastRequested(){return lastRequested;},
+  crossfade:false,
+  stopWatcher(){clearInterval(watcher);}
+};
+// O carregamento da apresentação deve tentar começar a música logo.
+// O Safari iOS só liberta a reprodução após um toque do utilizador.
+sync();
 })();
