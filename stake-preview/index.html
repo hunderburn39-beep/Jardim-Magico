@@ -188,7 +188,7 @@ const TYPES=[
 const WEIGHTS=[10,13,11,10,4,11,10,9,10,4,12,7], LINES=[[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,1,2],[1,2,2,1,0],[0,1,1,1,2]],COEFS=[3,4,8,5,10,7,4,4,7,0,0,0],PAY=[0,0,0,7,25,80];
 const BETS=[.05,.10,.20,.40,.60,.80,1,1.50,2,3,5,7.5,10];
 let betIndex=2,balance=1000,lastWin=0,busy=false,turbo=false,sound=true,autoLeft=0,toastTimer=0,skipAnimations=false;
-let historyRecords=[],serial=0,replayBet=null,detailRoundId=null,detailFrameIndex=0;
+let historyRecords=[],serial=0,replayBet=null,detailRoundId=null,detailFrameIndex=0,pendingRound=null,recoveredRoundId=null;
 const SESSION_KEY="jardim_stake_preview_v07";
 function rand(){if(globalThis.crypto?.getRandomValues){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296;}return Math.random()}
 function pick(values,weights){let x=rand()*weights.reduce((a,b)=>a+b,0);for(let i=0;i<values.length;i++){x-=weights[i];if(x<0)return values[i]}return values.at(-1)}
@@ -212,22 +212,48 @@ function loadSession(){
     if(Number.isInteger(state.betIndex)&&state.betIndex>=0&&state.betIndex<BETS.length)betIndex=state.betIndex;
     if(Number.isFinite(state.lastWin)&&state.lastWin>=0)lastWin=state.lastWin;
     if(Number.isSafeInteger(state.serial)&&state.serial>=0)serial=state.serial;
-    if(Array.isArray(state.historyRecords))historyRecords=state.historyRecords.slice(0,20).filter(record=>
-      record&&Number.isSafeInteger(record.id)&&record.id>0&&["base","free","hold"].includes(record.mode)
-      &&BETS.includes(record.bet)&&Number.isFinite(record.cost)&&record.cost>=0
-      &&Number.isFinite(record.payout)&&record.payout>=0
-      &&record.book&&Array.isArray(record.book.events)&&record.book.events.length<2000
-      &&Number.isInteger(record.book.payout)&&record.book.payout>=0);
+    if(Array.isArray(state.historyRecords))historyRecords=state.historyRecords.slice(0,20).filter(validRound);
+    // A pending round was already paid for and its complete outcome generated.
+    // Settle it exactly once if Safari was closed during the animation.
+    if(validRound(state.pendingRound)){
+      pendingRound=state.pendingRound;
+      serial=Math.max(serial,pendingRound.id);
+      settlePendingRound();
+      recoveredRoundId=serial;
+    }
   }catch(error){console.warn("Sessão de testes não recuperada:",error)}
 }
-function saveSession(){
-  try{localStorage.setItem(SESSION_KEY,JSON.stringify({balance,betIndex,lastWin,serial,historyRecords}))}
-  catch(error){console.warn("Histórico apenas nesta sessão:",error)}
+function validRound(record){
+  return Boolean(record&&Number.isSafeInteger(record.id)&&record.id>0
+    &&["base","free","hold"].includes(record.mode)
+    &&BETS.includes(record.bet)&&Number.isFinite(record.cost)&&record.cost>=0
+    &&Number.isFinite(record.payout)&&record.payout>=0
+    &&record.book&&Array.isArray(record.book.events)&&record.book.events.length<2000
+    &&Number.isInteger(record.book.payout)&&record.book.payout>=0);
 }
-function recordRound(mode,stake,cost,payout,book){
+function saveSession(){
+  try{localStorage.setItem(SESSION_KEY,JSON.stringify({balance,betIndex,lastWin,serial,historyRecords,pendingRound}));return true}
+  catch(error){console.warn("Sessão de testes apenas em memória:",error);return false}
+}
+function commitRound(mode,stake,cost,payout,book){
+  if(pendingRound)throw Error("Já existe uma jogada em processamento");
+  if(!Number.isFinite(cost)||cost<=0||balance+1e-7<cost)throw Error("Saldo de teste insuficiente");
   const record={id:++serial,mode,bet:stake,cost,payout,book,time:new Date().toISOString()};
-  historyRecords.unshift(record);
-  if(historyRecords.length>20)historyRecords.length=20;
+  pendingRound=record;
+  balance=Math.round((balance-cost)*100)/100;
+  saveSession();
+  return record;
+}
+function settlePendingRound(){
+  if(!pendingRound)return null;
+  const record=pendingRound;
+  if(!historyRecords.some(r=>r.id===record.id)){
+    balance=Math.round((balance+record.payout)*100)/100;
+    lastWin=record.payout;
+    historyRecords.unshift(record);
+    if(historyRecords.length>20)historyRecords.length=20;
+  }
+  pendingRound=null;
   saveSession();
   return record;
 }
@@ -412,7 +438,49 @@ async function playback(book){
     }
   }
 }
-async function play(mode="base"){if(busy)return;const bet=BETS[betIndex],cost=bet*(mode==="free"?20:mode==="hold"?30:1);if(balance+1e-7<cost){say("Saldo de teste insuficiente: usa o botão + no topo.");return}busy=true;skipAnimations=false;clearFreeHud();controls();const balanceBefore=balance,lastBefore=lastWin;try{balance=Math.round((balance-cost)*100)/100;display();const b=generate(mode);const payout=+(b.payout/100*bet).toFixed(2);await playback(b);balance=+(balance+payout).toFixed(2);lastWin=payout;recordRound(mode,bet,cost,payout,b);display();$("hud").textContent="✦ RONDA CONCLUÍDA ✦";$("dropNum").textContent="0";$("multiNum").textContent="×1";if(payout>0){const tier=finalWinTier(payout,bet);toast(tier,format(payout),payout>=bet*10?"big":"normal");say(tier+": "+format(payout)+" créditos","good");beep(910)}else say("Sem prémio nesta jogada. Experimenta novamente.")}catch(e){console.error(e);balance=balanceBefore;lastWin=lastBefore;autoLeft=0;display();$("holdOverlay").classList.remove("show");say("Erro na simulação. Os créditos desta jogada foram devolvidos.")}finally{busy=false;skipAnimations=false;clearPayline();clearFreeHud();controls();if(autoLeft){autoLeft--;controls();if(autoLeft&&balance>=BETS[betIndex]){await sleep(190);play("base")}else{autoLeft=0;controls()}}}}
+async function play(mode="base"){
+  if(busy)return;
+  const bet=BETS[betIndex],cost=bet*(mode==="free"?20:mode==="hold"?30:1);
+  if(balance+1e-7<cost){say("Saldo de teste insuficiente: usa o botão + no topo.");return}
+  busy=true;skipAnimations=false;clearFreeHud();controls();
+  let committed=false;
+  try{
+    // Each full outcome is resolved before the round is committed and animated.
+    // The resulting record is stored with the debited balance in one localStorage write.
+    const book=generate(mode);
+    const payout=+(book.payout/100*bet).toFixed(2);
+    const record=commitRound(mode,bet,cost,payout,book);
+    committed=true;display();
+    await playback(record.book);
+    settlePendingRound();
+    display();
+    $("hud").textContent="✦ RONDA #"+record.id+" CONCLUÍDA ✦";
+    $("dropNum").textContent="0";$("multiNum").textContent="×1";
+    if(payout>0){
+      const tier=finalWinTier(payout,bet);
+      toast(tier,format(payout),payout>=bet*10?"big":"normal");
+      say(tier+": "+format(payout)+" créditos","good");beep(910);
+    }else say("Sem prémio nesta jogada. Experimenta novamente.");
+  }catch(error){
+    console.error(error);
+    autoLeft=0;
+    if(committed){
+      // Visual errors never cancel or redraw a precommitted, fully resolved outcome.
+      const record=settlePendingRound();
+      if(record)say("A animação falhou; o prémio "+format(record.payout)+" foi creditado e guardado na jogada #"+record.id+".","bonus");
+      else say("A jogada já tinha sido contabilizada. Consulta o histórico.","bonus");
+    }else say("Não foi possível iniciar a jogada. Não foram retirados créditos.");
+    $("holdOverlay").classList.remove("show");
+    display();
+  }finally{
+    busy=false;skipAnimations=false;clearPayline();clearFreeHud();controls();
+    if(autoLeft){
+      autoLeft--;controls();
+      if(autoLeft&&balance>=BETS[betIndex]){await sleep(190);play("base")}
+      else{autoLeft=0;controls()}
+    }
+  }
+}
 $("spin").addEventListener("click",()=>play("base"));
 $("skipBtn").addEventListener("click",()=>{if(!busy)return;skipAnimations=true;controls();say("A apresentar o resultado final desta jogada…","bonus")});
 $("minus").addEventListener("click",()=>{betIndex=Math.max(0,betIndex-1);display();saveSession()});
@@ -440,7 +508,7 @@ $("closeInfo").addEventListener("click",()=>$("infoOverlay").classList.remove("s
 $("infoOverlay").addEventListener("click",e=>{if(e.target===$("infoOverlay"))$("infoOverlay").classList.remove("show")});
 loadSession();
 const requestedBet=typeof location==="undefined"?null:Number(new URLSearchParams(location.search).get("bet"));if(requestedBet!==null&&BETS.includes(requestedBet))betIndex=BETS.indexOf(requestedBet);
-draw(board());display();controls();
+draw(board());display();controls();if(recoveredRoundId!==null)say("Jogada #"+recoveredRoundId+" recuperada e prémio creditado após reabrir a página.","bonus");
 </script>
 </body>
 </html>
