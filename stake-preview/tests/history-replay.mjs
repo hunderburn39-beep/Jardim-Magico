@@ -5,7 +5,7 @@ import {dirname,join} from 'node:path';
 import vm from 'node:vm';
 
 const html=readFileSync(join(dirname(fileURLToPath(import.meta.url)),'..','index.html'),'utf8');
-assert.match(html,/Stake Preview V0\.8/);
+assert.match(html,/Stake Preview V0\.9/);
 assert.match(html,/id="historyBtn"/);
 assert.match(html,/id="historyOverlay"/);
 assert.match(html,/id="historySearch"/);
