@@ -416,7 +416,7 @@ footer{color:#a1a9bb;font-size:9px;line-height:1.3;padding:2px 0}
 .lucky .cell:not(.revealed) b{z-index:1}
 
 
-/* Mostra em cada medalhão o multiplicador e o valor correspondente à aposta. */
+/* Medalhões com números e prémios em euros ou símbolos instantâneos de multiplicador. */
 .play .cell b{line-height:1}
 .play .cell small{
   font-size:clamp(10px,2.7vw,13px);
@@ -436,6 +436,24 @@ footer{color:#a1a9bb;font-size:9px;line-height:1.3;padding:2px 0}
   text-shadow:0 1px 2px #000a;
 }
 .play .cell.winning .prize-value,.play .cell.winning small{color:#fff5c7}
+
+/* Símbolo instantâneo: sem número, só o multiplicador em destaque. */
+.play .cell.instant-symbol {
+  border:2px solid #ffdb78;
+  background:radial-gradient(circle at 38% 25%,#936442 0%,#532d46 33%,#211a40 70%,#0b1333 100%);
+  box-shadow:inset 0 3px 7px #ffe19b66,inset 0 -5px 10px #05091f,0 0 11px #ffc25f5c;
+}
+.play .cell.instant-symbol b {
+  font-size:clamp(23px,6.5vw,35px);
+  line-height:1;
+  font-weight:1000;
+  color:#ffe18c;
+  text-shadow:0 2px 2px #521428,0 0 10px #ffae4b;
+}
+.play .cell.instant-symbol.winning{
+  background:radial-gradient(circle at 40% 15%,#ff966d,#dc1742 54%,#750d26);
+}
+.play .cell.instant-symbol.winning b{color:#fff5c3;text-shadow:0 0 12px #fff0a9}
 </style>
 </head>
 <body>
@@ -542,9 +560,13 @@ function migrateOldTicket(saved){
       return award?award.amount:PRIZES[randomInt(PRIZES.length)].mult*bet;
     });
   }
+  // Os bilhetes de versões anteriores já foram pagos integralmente se terminados.
+  // Os novos guardam individualmente cada prémio creditado, impedindo pagamentos repetidos.
+  if(!Array.isArray(t.paidWins))t.paidWins=t.completed?t.wins.map(win=>win.pos):[];
   if(t.revealed.length===21&&!t.completed){
     t.completed=true;
-    saved.balance+=t.prize; // pagamento único do bilhete já todo revelado
+    saved.balance+=t.wins.filter(win=>!t.paidWins.includes(win.pos)).reduce((sum,win)=>sum+win.amount,0);
+    t.paidWins=t.wins.map(win=>win.pos); // sem créditos duplicados ao retomar um bilhete
   }
   try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(_){}
 }
@@ -677,15 +699,23 @@ function buy(){
   const nums=shuffle(Array.from({length:70},(_,i)=>i+1));
   const lucky=nums.slice(0,5),play=nums.slice(5,21);
   const positions=shuffle(Array.from({length:16},(_,i)=>i)).slice(0,awards.length);
-  const luckyIndices=shuffle([0,1,2,3,4]).slice(0,awards.length);
-  const wins=awards.map((amount,i)=>({pos:positions[i],amount}));
-  for(let i=0;i<wins.length;i++)play[wins[i].pos]=lucky[luckyIndices[i]];
+  const luckyIndices=shuffle([0,1,2,3,4]);
+  let nextLucky=0;
+  // Os símbolos X2/X10/X25/X50/X100 pagam ao revelar e não têm número.
+  // Os prémios por correspondência mantêm os números das 5 estrelas.
+  const wins=awards.map((amount,i)=>({
+    pos:positions[i],amount,mult:amount/bet,type:Math.random()<.50?"instant":"match"
+  }));
+  for(const win of wins){
+    if(win.type==="instant")play[win.pos]=null;
+    else play[win.pos]=lucky[luckyIndices[nextLucky++]];
+  }
   const cellPrizes=Array.from({length:16},(_,i)=>{
     const award=wins.find(w=>w.pos===i);
     return award?award.amount:PRIZES[randomInt(PRIZES.length)].mult*bet;
   });
   state.cards++;
-  state.ticket={id:state.cards,lucky,play,prize,bet,wins,cellPrizes,revealed:[],completed:false};
+  state.ticket={id:state.cards,lucky,play,prize,bet,wins,cellPrizes,paidWins:[],revealed:[],completed:false};
   save();render();
   status("Desliza o dedo pelas casas, sem levantar, até raspares tudo.");
 }
@@ -769,11 +799,11 @@ scratchLayer.addEventListener("pointerup",e=>{
 scratchLayer.addEventListener("pointercancel",e=>{
   if(scratchGesture?.id==="pointer-"+e.pointerId)endScratch();
 });
-function makeCell(parent,num,label,id,isWinner,alreadyRevealed,valueLabel=""){
+function makeCell(parent,num,label,id,isWinner,alreadyRevealed,valueLabel="",isInstant=false){
   const cell=document.createElement("div");
-  cell.className="cell"+(isWinner?" winning":"")+(isWinner&&alreadyRevealed?" revealed":"");
-  const number=document.createElement("b");number.textContent=String(num).padStart(2,"0");cell.append(number);
-  if(label){const multiplier=document.createElement("small");multiplier.textContent=label;cell.append(multiplier);}
+  cell.className="cell"+(isInstant?" instant-symbol":"")+(isWinner?" winning":"")+(isWinner&&alreadyRevealed?" revealed":"");
+  const number=document.createElement("b");number.textContent=isInstant?String(num):String(num).padStart(2,"0");cell.append(number);
+  if(label){const sub=document.createElement("small");sub.textContent=label;cell.append(sub);}
   if(valueLabel){const amount=document.createElement("span");amount.className="prize-value";amount.textContent=valueLabel;cell.append(amount);}
   el(parent).append(cell);
   if(alreadyRevealed)return;
@@ -821,13 +851,15 @@ function makeCell(parent,num,label,id,isWinner,alreadyRevealed,valueLabel=""){
     scratchHandlers.delete(canvas);
     canvas.remove();
     if(!state.ticket.revealed.includes(id))state.ticket.revealed.push(id);
-    playRevealSound(id.startsWith("l")?"lucky":"play");
+    const instant=state.ticket.wins.some(win=>win.type==="instant"&&id==="p"+win.pos);
+    if(!instant)playRevealSound(id.startsWith("l")?"lucky":"play");
     const prizes=highlightRevealedWinners();
     if(state.ticket.revealed.length===21)finish();
     else{
       save();
       if(prizes.length){
-        status(prizes.length+" correspondência(s)! Prémio(s): "+prizes.map(w=>eur(w.amount)).join(" + ")+".");
+        const isInstant=prizes.some(win=>win.type==="instant");
+        status((isInstant?"🪙 PRÉMIO INSTANTÂNEO! ":"⭐ NÚMERO DA SORTE! ")+prizes.map(w=>eur(w.amount)).join(" + ")+" · saldo "+eur(state.balance));
       }else status("Casas raspadas: "+state.ticket.revealed.length+"/21. Continua a deslizar o dedo.");
     }
   }
@@ -847,23 +879,34 @@ function makeCell(parent,num,label,id,isWinner,alreadyRevealed,valueLabel=""){
   });
   // O gesto começa na camada fixa do bilhete; não no canvas de uma casa.
 }
-// Só revela o prémio quando a casa E o número da sorte estão descobertos.
-function highlightRevealedWinners(){
+// X é instantâneo: basta revelar o medalhão. Os números normais precisam
+// da respetiva estrela revelada. Paga cada prémio no máximo uma vez.
+function isWinningCellReady(ticket,win){
+  if(!ticket.revealed.includes("p"+win.pos))return false;
+  if(win.type==="instant")return true;
+  const index=ticket.lucky.indexOf(ticket.play[win.pos]);
+  return index>=0&&ticket.revealed.includes("l"+index);
+}
+function highlightRevealedWinners(animate=true){
   const t=state.ticket;
-  if(!t || !Array.isArray(t.wins))return [];
-  const newlyMatched=[];
+  if(!t||!Array.isArray(t.wins))return [];
+  if(!Array.isArray(t.paidWins))t.paidWins=t.completed?t.wins.map(win=>win.pos):[];
+  const newlyPaid=[];
   for(const win of t.wins){
-    if(!t.revealed.includes("p"+win.pos))continue;
-    const index=t.lucky.indexOf(t.play[win.pos]);
-    if(index<0||!t.revealed.includes("l"+index))continue;
+    if(!isWinningCellReady(t,win))continue;
     const cell=el("play").children[win.pos];
-    if(!cell||cell.classList.contains("winning"))continue;
-    cell.classList.add("winning","revealed");
-    flashWinningCell(cell);
-    newlyMatched.push(win);
+    if(cell)cell.classList.add("winning","revealed");
+    if(t.paidWins.includes(win.pos))continue;
+    t.paidWins.push(win.pos);
+    state.balance+=win.amount;
+    if(animate)flashWinningCell(cell);
+    newlyPaid.push(win);
   }
-  if(newlyMatched.length)playCoinsShower();
-  return newlyMatched;
+  if(newlyPaid.length){
+    save();paintBalance();
+    if(animate)playCoinsShower();
+  }
+  return newlyPaid;
 }
 function flashWinningCell(cell){
   if(!cell)return;
@@ -883,20 +926,32 @@ function render(){
   for(let i=0;i<5;i++)makeCell("lucky",ticket.lucky[i],"","l"+i,false,ticket.revealed.includes("l"+i));
   for(let i=0;i<16;i++){
     const revealed=ticket.revealed.includes("p"+i);
-    const luckyIndex=ticket.lucky.indexOf(ticket.play[i]);
-    const matched=ticket.wins.some(win=>win.pos===i)&&revealed&&luckyIndex>=0&&ticket.revealed.includes("l"+luckyIndex);
+    const win=ticket.wins.find(item=>item.pos===i);
+    const instant=win?.type==="instant";
+    const matched=win&&isWinningCellReady(ticket,win);
     const amount=ticket.cellPrizes[i];
-    const bet=ticketBet(ticket);
-    const multiplier=amount/bet;
-    makeCell("play",ticket.play[i],(Number.isInteger(multiplier)?multiplier.toString():multiplier.toFixed(2))+"×","p"+i,matched,revealed,money(amount));
+    if(instant){
+      // Na casa instantânea não surge número: apenas 2×/10×/25×/50×/100×.
+      makeCell("play",win.mult+"×","","p"+i,matched,revealed,"",true);
+    }else{
+      // Nas outras casas mantém o número e o respetivo valor da aposta.
+      makeCell("play",ticket.play[i],money(amount),"p"+i,matched,revealed);
+    }
   }
+  highlightRevealedWinners(false); // retoma sessões sem pagar valores repetidos
   if(ticket.completed)status(ticket.prize?"Ganhaste "+ticket.wins.length+" prémio(s)! Total: "+eur(ticket.prize):"Bilhete sem prémio. Tenta novamente!");
 }
 function finish(){
   const ticket=state.ticket;
   if(!ticket || ticket.completed)return;
+  if(!Array.isArray(ticket.paidWins))ticket.paidWins=[];
+  // Redundância de segurança: finaliza apenas prémios ainda não pagos.
+  for(const win of ticket.wins){
+    if(ticket.paidWins.includes(win.pos))continue;
+    ticket.paidWins.push(win.pos);
+    state.balance+=win.amount;
+  }
   ticket.completed=true;
-  state.balance+=ticket.prize; // apenas uma vez, inclusive depois de recarregar a página
   save();paintBalance();
   status(ticket.prize?"🎉 "+ticket.wins.length+" prémio(s)! TOTAL: "+eur(ticket.prize)+"!":"Bilhete sem prémio. Boa sorte no próximo!");
 }
@@ -911,7 +966,8 @@ function revealCellInPlace(group,index){
   if(foil){scratchHandlers.delete(foil);foil.remove();}
   ticket.revealed.push(id);
   cell.classList.add("revealed");
-  playRevealSound(group);
+  const instant=group==="play"&&ticket.wins.some(win=>win.type==="instant"&&win.pos===index);
+  if(!instant)playRevealSound(group);
   save();
   return true;
 }
@@ -934,8 +990,10 @@ async function revealAll(){
       if(state.ticket!==ticket)break;
       const revealedNow=revealCellInPlace("play",i);
       if(!revealedNow)continue;
-      const matches=highlightRevealedWinners(); // pode haver sorte já raspada à mão
-      status("A revelar os teus números: "+(i+1)+"/16");
+      const matches=highlightRevealedWinners();
+      if(matches.length){
+        status((matches.some(w=>w.type==="instant")?"🪙 PRÉMIO INSTANTÂNEO! ":"⭐ NÚMERO DA SORTE! ")+matches.map(w=>eur(w.amount)).join(" + ")+" · saldo "+eur(state.balance));
+      }else status("A revelar os teus números: "+(i+1)+"/16");
       await pauseReveal(matches.length?850:145);
     }
     // 2. Só depois as cinco estrelas douradas da sorte.
@@ -945,7 +1003,7 @@ async function revealAll(){
       if(!revealedNow)continue;
       const matches=highlightRevealedWinners();
       if(matches.length){
-        status("⭐ "+matches.length+" prémio(s) encontrado(s): "+matches.map(w=>eur(w.amount)).join(" + "));
+        status("⭐ "+matches.length+" prémio(s) da sorte: "+matches.map(w=>eur(w.amount)).join(" + ")+" · saldo "+eur(state.balance));
         await pauseReveal(1050); // mantém o pulsar e a chuva de moedas visíveis
       }else{
         status("Números da sorte: "+(i+1)+"/5");
