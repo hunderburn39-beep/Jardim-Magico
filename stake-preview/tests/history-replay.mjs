@@ -145,4 +145,4 @@ vm.runInContext('historyRecords=[];saveSession();renderHistory()',context);
 assert.match(elem('historyList').innerHTML,/Ainda não há jogadas/);
 assert.equal(vm.runInContext('historyRecords.length',context),0);
 
-console.log('Stake Preview V0.8: Hold @7,50, exact ID search, symbol inspector, immutable replay and interrupted-round recovery passed.');
+console.log('Stake Preview V0.9: Hold @7,50, exact ID search, symbol inspector, immutable replay and interrupted-round recovery passed.');
