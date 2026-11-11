@@ -395,10 +395,21 @@
     }
   };
 
-  audio.paylineChime=function(index){
-    const tones=[392,440,493.88,523.25,587.33],f=tones[index%tones.length];
-    note(f,f*.90,.25,.013);
-    note(f*1.5,f*1.34,.19,.004,.065);
+  // V1.3.54: prémio de linha — "ouro a tilintar" em três passos,
+  // com ataque rápido, subida harmoniosa e brilho final. Mais audível
+  // que o toque anterior, sem recorrer a sons de terceiros.
+  audio.paylineChime=function(index=0){
+    if(!ready())return;
+    const shift=Math.max(0,index%4)*.018;
+    const sequence=[523.25,659.25,783.99,1046.5];
+    // Corpo metálico quente + pequeno suporte grave para dar presença.
+    note(261.63,293.66,.21,.036,0,'triangle');
+    note(sequence[0],sequence[0]*1.07,.155,.062,0,'triangle');
+    note(sequence[1],sequence[1]*1.09,.19,.061,.095,'sine');
+    note(sequence[2],sequence[2]*1.10,.23,.056,.205,'triangle');
+    note(sequence[3]+shift*70,sequence[3]*1.035,.34,.041,.315,'sine');
+    // Brilho cristalino curto no fim — perceptível em altifalantes de telemóvel.
+    note(1568,1760,.18,.022,.335,'sine');
   };
   audio.win=function(bonus=false){
     const tones=bonus?[293.66,440,587.33,698.46]:[329.63,440,523.25];
