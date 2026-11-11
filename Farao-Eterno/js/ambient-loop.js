@@ -18,8 +18,8 @@
    ]
  };
  const states={
-   normal:{raw:null,loading:null,decoding:null,buffer:null,offset:0,source:null,gain:null,startedAt:0,selected:descriptors.normal[0]},
-   bonus:{raw:null,loading:null,decoding:null,buffer:null,offset:0,source:null,gain:null,startedAt:0,selected:descriptors.bonus[0]}
+   normal:{raw:null,loading:null,decoding:null,buffer:null,offset:0,source:null,gain:null,startedAt:0,selected:descriptors.normal[0],failedAt:0},
+   bonus:{raw:null,loading:null,decoding:null,buffer:null,offset:0,source:null,gain:null,startedAt:0,selected:descriptors.bonus[0],failedAt:0}
  };
  const volume=.75, normalBusGain=2.5, sampleGain=volume/normalBusGain;
  let activeTrack=null;
@@ -30,6 +30,7 @@
    const s=states[name];
    if(s.raw)return Promise.resolve(s.raw);
    if(s.loading)return s.loading;
+   if(s.failedAt&&Date.now()-s.failedAt<60000)return Promise.resolve(null);
    s.loading=(async()=>{
      for(const option of descriptors[name]){
        try{
@@ -41,7 +42,7 @@
        }catch(_){}
      }
      throw Error('Faixa '+name+' indisponível');
-   })().catch(()=>null).finally(()=>{s.loading=null;});
+   })().catch(()=>{s.failedAt=Date.now();return null;}).finally(()=>{s.loading=null;});
    return s.loading;
  }
  function loadTrack(name){
