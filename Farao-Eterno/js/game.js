@@ -358,7 +358,7 @@ class Game {
   let begun;
   try{begun=S.begin(this.ledger,this.rng);}catch(e){this.auto=0;this.notice('SALDO INSUFICIENTE · FAZ UM DEPÓSITO',1900,'red');return;}
   this.syncLedger();if(!free&&this.auto>0)this.auto--;
-  this.reveal=null;this.featureIntro=null;this.winCount=null;this.sequencePlayback=null;this.lastWin=0;this.lastResult=null;this.expanded={};this.winCells=[];
+  this.reveal=null;this.featureIntro=null;this.winCount=null;this.sequencePlayback=null;this.basePaylineDisplay=[];this.lastWin=0;this.lastResult=null;this.expanded={};this.winCells=[];
   this.spinning=true;this.landings.fill(0);this.fxParticles=[];
   const t=performance.now(),duration=this.turbo?520:1180,reelGap=this.turbo?90:175;
   this.spinObject={grid:begun.pending.grid,result:begun.result,free,start:t,duration,reelGap,stopped:Array(5).fill(false),show:Array.from({length:5},()=>Array.from({length:14},()=>choose(E.ALL)))};
@@ -483,6 +483,30 @@ class Game {
    this.audio.extra();this.notice('8 FREE SPINS DESBLOQUEADAS',this.turbo?1450:2250,'cyan');
    this.queueIntro(this.feature.symbols[0],finishedAt+380);
   }else if(prize>=this.bet*20)this.notice('PRÉMIO ESPECIAL  '+money(prize),this.turbo?650:1550,'gold');
+  // No jogo base a sessão credita diretamente o prémio (sem grupos
+  // de payout). Criar uma sequência só VISUAL para as linhas premiadas.
+  // Não modifica créditos, RNG, pagamentos, RTP ou histórico.
+  if(!item.free && prize>0 && result.lineWins?.length){
+   const lines=result.lineWins.filter(w=>w.amount>0&&Array.isArray(w.rows)&&w.rows.length===5);
+   const rawLines=lines.reduce((sum,w)=>sum+w.amount,0);
+   const total=Math.max(rawLines,Number(result.total)||0);
+   const wonUnits=S.units(prize);
+   const lineUnits=total>0?Math.min(wonUnits,Math.max(0,Math.round(wonUnits*rawLines/total))):0;
+   let assigned=0;
+   const t0=finishedAt+(this.turbo?100:180),step=2450;
+   this.basePaylineDisplay=lines.map((win,i)=>{
+    const remaining=lineUnits-assigned;
+    const units=i===lines.length-1?remaining:
+     Math.min(remaining,Math.max(0,Math.floor(lineUnits*win.amount/rawLines)));
+    assigned+=units;
+    const start=t0+i*step;
+    return {win,amount:S.credits(units),start,end:start+2450};
+   }).filter(entry=>entry.amount>0);
+   if(this.basePaylineDisplay.length){
+    const last=this.basePaylineDisplay.at(-1);
+    this.nextActionAt=Math.max(this.nextActionAt,last.end+100);
+   }
+  }
   this.save();
  }
  queueIntro(symbol,from){
@@ -499,6 +523,10 @@ class Game {
   pages.push(symbol);
   this.featureIntro={symbol,start:from,end:from+duration,pages,turns,number};
   this.nextActionAt=Math.max(this.nextActionAt,from+duration+250);
+ }
+ activeBasePaylineAt(t){
+  if(this.spinning||this.lastWasFree||!this.basePaylineDisplay?.length)return null;
+  return this.basePaylineDisplay.find(item=>t>=item.start&&t<item.end)||null;
  }
  sequenceFocusAt(t){
   const playing=this.sequencePlayback;
@@ -1035,9 +1063,7 @@ class Game {
    const focus=this.sequenceFocusAt(t);
    // No jogo base, mostrar somente o prémio efetivamente liquidado para
    // cada linha durante 2 s e desvanecer nos 450 ms seguintes.
-   const paidLine=!this.lastWasFree&&this.sequencePlayback?.stages
-     ?.filter(g=>g.kind==='line'&&g.win&&g.amount>0&&
-       t>=g.creditAt&&t<g.creditAt+2450).at(-1);
+   const paidLine=this.activeBasePaylineAt(t);
    if(this.reveal&&t<this.reveal.end&&!focus&&!paidLine)return;
    // Evita deixar a linha antiga a piscar indefinidamente no jogo base.
    if(!this.lastWasFree&&!focus&&!paidLine)return;
@@ -1051,8 +1077,7 @@ class Game {
      :wins[Math.floor(t/1600)%wins.length]);
    if(!chosen||!Array.isArray(chosen.rows)||chosen.rows.length!==5)return;
    const soften=Boolean(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-   const labelAge=paidLine?t-paidLine.creditAt:0;
-   const labelAlpha=paidLine?clamp((2450-labelAge)/450,0,1):1;
+   const labelAlpha=paidLine?clamp((paidLine.end-t)/450,0,1):1;
    const alpha=(soften?.92:.86+.12*Math.sin(t*.006))*labelAlpha;
    const coords=chosen.rows.map((row,c)=>({
      x:left+c*interval+cw/2,
