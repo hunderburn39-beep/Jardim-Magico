@@ -10,7 +10,7 @@
  const asset='assets/dark-pyramid-ambience.mp3?v=1.0';
  let rawPromise=null,buffer=null,decodePromise=null,playing=false,timer=null,nextStart=0;
  let sources=new Set();
- const allowed=()=>audio.ctx&&game.ledger?.settings?.music&&!game.paused&&!game.superseded&&!document.hidden;
+ const allowed=()=>audio.ctx&&game.soundMode==='all'&&game.ledger?.settings?.music&&!game.paused&&!game.superseded&&!document.hidden;
  const fetchAudio=()=>{
    if(!rawPromise){
      rawPromise=fetch(new URL(asset,document.baseURI),{cache:'force-cache'})
