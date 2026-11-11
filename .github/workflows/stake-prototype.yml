@@ -21,22 +21,25 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Prepare compression without apt full upgrade
+      - name: Prepare compression
         run: |
           if command -v zstd >/dev/null; then
             zstd --version
           else
             python -m pip install --disable-pip-version-check zstandard
           fi
-      - name: Test base + free + hold math and libraries
+      - name: Test base, features, library and static weighting
         working-directory: stake-engine/jardim-magico
         run: |
           python -m unittest discover -s tests -v
           python math/prototype.py --rounds 300 --seed 20261111 --out build/base-prototype
           python math/complete.py --rounds 300 --seed 20261111 --out build/features-prototype
-      - name: Save experimental RTP report and library
+          python math/reweight.py --source build/features-prototype --out build/tuned-prototype --target-percent 96
+      - name: Save experimental math outputs
         uses: actions/upload-artifact@v4
         with:
           name: jardim-stake-math-experimental
-          path: stake-engine/jardim-magico/build/features-prototype/
+          path: |
+            stake-engine/jardim-magico/build/features-prototype/
+            stake-engine/jardim-magico/build/tuned-prototype/
           retention-days: 7
