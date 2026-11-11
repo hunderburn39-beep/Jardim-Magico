@@ -205,14 +205,17 @@
     drum('triangle',286,182,.095,.27);
     friction(.075,.035*weight,1200);
   };
+  // Prémios: redução muito ligeira e curta, sem sobressaltos na música.
+  // Ganho normal 2.5 (música definida em 75% no ambient-loop);
+  // 2.30 equivale a 92% desse nível enquanto soa o gong.
   function lowerAmbience(ac,t){
     const music=audio.musicBus?.gain;
     if(!music)return;
     try{
       music.cancelScheduledValues(t);
       music.setValueAtTime(Math.max(.001,music.value),t);
-      music.setTargetAtTime(.10,t,.025);
-      music.setTargetAtTime(2.5,t+2.0,.30);
+      music.setTargetAtTime(2.30,t,.14);
+      music.setTargetAtTime(2.5,t+.55,.30);
     }catch(_){}
   }
   function wildPaam(count){
