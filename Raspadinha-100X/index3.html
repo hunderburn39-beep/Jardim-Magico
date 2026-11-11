@@ -780,6 +780,7 @@ function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
     scratchHandlers.delete(canvas);
     canvas.remove();
     if(!state.ticket.revealed.includes(id))state.ticket.revealed.push(id);
+    playRevealSound(id.startsWith("l")?"lucky":"play");
     const prizes=highlightRevealedWinners();
     if(state.ticket.revealed.length===21)finish();
     else{
@@ -867,6 +868,7 @@ function revealCellInPlace(group,index){
   if(foil){scratchHandlers.delete(foil);foil.remove();}
   ticket.revealed.push(id);
   cell.classList.add("revealed");
+  playRevealSound(group);
   save();
   return true;
 }
@@ -904,7 +906,7 @@ async function revealAll(){
         await pauseReveal(1050); // mantém o pulsar e a chuva de moedas visíveis
       }else{
         status("Números da sorte: "+(i+1)+"/5");
-        await pauseReveal(220);
+        await pauseReveal(480);
       }
     }
     if(state.ticket===ticket&&ticket.revealed.length===21){
@@ -991,29 +993,101 @@ function ensureAudio(){
     return audioContext;
   }catch(_){return null}
 }
-// Chuva de moedas sintetizada no navegador: sem depender de ficheiros externos.
-// Volume vivo mas limitado para não distorcer em altifalantes de telemóvel.
-function playCoinsShower(){
-  const ac=ensureAudio();
-  if(!ac)return;
-  const start=ac.currentTime+.015;
-  for(let i=0;i<19;i++){
-    const t=start+i*.039+Math.random()*.014;
-    const base=850+Math.random()*1350;
-    for(let harmonic=0;harmonic<2;harmonic++){
-      const osc=ac.createOscillator();
-      const gain=ac.createGain();
-      osc.type=harmonic?"sine":"triangle";
-      osc.frequency.setValueAtTime(base*(harmonic?1.82:1),t);
-      osc.frequency.exponentialRampToValueAtTime(base*(harmonic?1.37:.72),t+.13);
-      const volume=harmonic?.028:.085;
-      gain.gain.setValueAtTime(.0001,t);
-      gain.gain.exponentialRampToValueAtTime(volume,t+.008);
-      gain.gain.exponentialRampToValueAtTime(.0001,t+.16);
-      osc.connect(gain);
-      gain.connect(ac.destination);
-      osc.start(t);osc.stop(t+.17);
+// Novos efeitos próprios: "pliiim" suave nas estrelas e moedas a cair nos números.
+// O compressor controla os picos quando vários prémios surgem de seguida.
+let effectMix=null,coinNoise=null;
+function effectBus(ac){
+  if(effectMix?.context===ac)return effectMix.input;
+  const limiter=ac.createDynamicsCompressor();
+  limiter.threshold.value=-17;
+  limiter.knee.value=12;
+  limiter.ratio.value=5;
+  limiter.attack.value=.004;
+  limiter.release.value=.19;
+  const output=ac.createGain();
+  output.gain.value=.78;
+  limiter.connect(output);
+  output.connect(ac.destination);
+  effectMix={context:ac,input:limiter};
+  return limiter;
+}
+function coinNoiseSample(ac){
+  if(coinNoise?.context===ac)return coinNoise.buffer;
+  const length=Math.floor(ac.sampleRate*.065);
+  const buffer=ac.createBuffer(1,length,ac.sampleRate);
+  const d=buffer.getChannelData(0);
+  for(let i=0;i<length;i++){
+    const decay=Math.pow(1-i/length,2.3);
+    d[i]=(Math.random()*2-1)*decay;
+  }
+  coinNoise={context:ac,buffer};
+  return buffer;
+}
+// Um impacto metálico curto, com timbre variável e um pequeno ruído de colisão.
+function coinClink(ac,when,level){
+  const bus=effectBus(ac);
+  const variation=.83+Math.random()*.36;
+  const pitches=[570,940,1430];
+  for(let i=0;i<pitches.length;i++){
+    const o=ac.createOscillator();
+    const g=ac.createGain();
+    o.type="sine";
+    const hz=pitches[i]*variation;
+    o.frequency.setValueAtTime(hz,when);
+    o.frequency.exponentialRampToValueAtTime(hz*(.94+Math.random()*.04),when+.13);
+    g.gain.setValueAtTime(.0001,when);
+    g.gain.exponentialRampToValueAtTime(level*[.60,.32,.12][i],when+.004);
+    g.gain.exponentialRampToValueAtTime(.0001,when+.15+i*.028);
+    o.connect(g);g.connect(bus);
+    o.start(when);o.stop(when+.23);
+  }
+  const impact=ac.createBufferSource();
+  const filter=ac.createBiquadFilter();
+  const g=ac.createGain();
+  impact.buffer=coinNoiseSample(ac);
+  filter.type="bandpass";
+  filter.frequency.value=1700+Math.random()*650;
+  filter.Q.value=.52;
+  g.gain.setValueAtTime(level*.34,when);
+  g.gain.exponentialRampToValueAtTime(.0001,when+.055);
+  impact.connect(filter);filter.connect(g);g.connect(bus);
+  impact.start(when);impact.stop(when+.065);
+}
+function playCoinDrop(){
+  const ac=ensureAudio();if(!ac)return;
+  const t=ac.currentTime+.012;
+  coinClink(ac,t,.13);
+  coinClink(ac,t+.082,.077);
+}
+// Pliiim longo e macio, com duas notas de sino e cauda suave.
+function playStarChime(){
+  const ac=ensureAudio();if(!ac)return;
+  const bus=effectBus(ac);
+  const t=ac.currentTime+.012;
+  for(const [offset,freq,level] of [[0,740,.105],[.075,988,.073]]){
+    for(const [harmonic,mult] of [[1,1],[2,.14]]){
+      const osc=ac.createOscillator(),gain=ac.createGain();
+      osc.type="sine";
+      osc.frequency.setValueAtTime(freq*harmonic,t+offset);
+      osc.frequency.exponentialRampToValueAtTime(freq*harmonic*.985,t+offset+.57);
+      gain.gain.setValueAtTime(.0001,t+offset);
+      gain.gain.exponentialRampToValueAtTime(level*mult,t+offset+.015);
+      gain.gain.exponentialRampToValueAtTime(.0001,t+offset+.62);
+      osc.connect(gain);gain.connect(bus);
+      osc.start(t+offset);osc.stop(t+offset+.64);
     }
+  }
+}
+function playRevealSound(group){
+  if(group==="lucky")playStarChime();
+  else playCoinDrop();
+}
+// Chuva de moedas bem mais cheia num prémio, sem o antigo som estridente.
+function playCoinsShower(){
+  const ac=ensureAudio();if(!ac)return;
+  const t=ac.currentTime+.11;
+  for(let i=0;i<14;i++){
+    coinClink(ac,t+i*.054+Math.random()*.018,.105);
   }
 }
 function startScratchSound(){
@@ -1027,18 +1101,18 @@ function startScratchSound(){
   for(let i=0;i<length;i++){const noise=(Math.random()*2-1);previous=.52*previous+.48*noise;data[i]=previous}
   const source=ac.createBufferSource(),filter=ac.createBiquadFilter(),gain=ac.createGain();
   source.buffer=buffer;source.loop=true;
-  filter.type="bandpass";filter.frequency.value=1700;filter.Q.value=.48;
+  filter.type="bandpass";filter.frequency.value=1050;filter.Q.value=.43;
   gain.gain.value=.0001;
   source.connect(filter);filter.connect(gain);gain.connect(ac.destination);
   source.start();
-  gain.gain.setTargetAtTime(.08,ac.currentTime,.023);
+  gain.gain.setTargetAtTime(.032,ac.currentTime,.028);
   scratchAudio={source,filter,gain,ac};
 }
 function updateScratchSound(step){
   if(!scratchAudio)return;
   const a=scratchAudio;
-  a.filter.frequency.setTargetAtTime(1100+Math.random()*1800,a.ac.currentTime,.025);
-  a.gain.gain.setTargetAtTime(Math.min(.17,.045+step/450),a.ac.currentTime,.018);
+  a.filter.frequency.setTargetAtTime(900+Math.random()*800,a.ac.currentTime,.035);
+  a.gain.gain.setTargetAtTime(Math.min(.065,.025+step/900),a.ac.currentTime,.035);
 }
 function stopScratchSound(){
   if(!scratchAudio)return;
