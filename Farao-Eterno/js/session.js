@@ -29,7 +29,7 @@
     if(s.payout!==undefined&&s.payout!==null){
       const p=s.payout;
       if(!integer(p.id)||p.id!==s.sequence||!integer(p.totalU)||
-         !integer(p.next)||!Array.isArray(p.groups)||p.groups.length<2||
+         !integer(p.next)||!Array.isArray(p.groups)||p.groups.length<1||
          p.groups.length>64||p.next>=p.groups.length||
          !p.groups.every(g=>integer(g.amountU)&&g.amountU>0&&
            ['line','expansion','scatter'].includes(g.kind))||
