@@ -8,7 +8,7 @@
  if(!game||!audio)return;
  const originalStart=audio.startMusic.bind(audio),originalStop=audio.stopMusic.bind(audio);
  const assets=[
-   {url:'assets/pharaohs-ritual.mp3?v=1.0',name:"Pharaoh's Ritual",artist:'Áudio fornecido pelo utilizador',license:'Não especificada'},
+   {url:'assets/pharaohs-ritual.mp3?v=1436a1f8',name:"Pharaoh's Ritual",artist:'Áudio fornecido pelo utilizador',license:'Não especificada'},
    {url:'assets/dark-pyramid-ambience.mp3?v=1.0',name:'Dark Pyramid Night Ambience Loop',artist:'szegvari',license:'CC0'}
  ];
  let selected=assets[0];
@@ -20,7 +20,7 @@
      rawPromise=(async()=>{
        for(const candidate of assets){
          try{
-           const response=await fetch(new URL(candidate.url,document.baseURI),{cache:'force-cache'});
+           const response=await fetch(new URL(candidate.url,document.baseURI),{cache:'no-store'});
            if(!response.ok)continue;
            const bytes=await response.arrayBuffer();
            if(!bytes.byteLength)continue;
@@ -108,5 +108,5 @@
    if(document.hidden)audio.stopMusic();
    else if(audio.ctx&&allowed())audio.startMusic();
  });
- game.ambientLoop={version:'1.2',get source(){return selected.name;},get artist(){return selected.artist;},get license(){return selected.license;},crossfade:true,get ready(){return !!buffer;}};
+ game.ambientLoop={version:'1.3',get source(){return selected.name;},get artist(){return selected.artist;},get license(){return selected.license;},crossfade:true,get ready(){return !!buffer;}};
 })();
