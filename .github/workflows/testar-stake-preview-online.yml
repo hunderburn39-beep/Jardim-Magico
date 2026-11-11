@@ -25,26 +25,28 @@ jobs:
       - name: Confirmar GitHub Pages independente das outras publicações
         run: |
           set -euo pipefail
-          url="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=0.7"
+          url="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=0.8"
           echo "A verificar $url"
           for n in {1..12}; do
             if curl -fLsS --max-time 10 --connect-timeout 5 "$url" -o /tmp/stake-preview.html; then
-              if grep -q 'Stake Preview V0.7' /tmp/stake-preview.html \
+              if grep -q 'Stake Preview V0.8' /tmp/stake-preview.html \
                  && grep -q 'id="skipBtn"' /tmp/stake-preview.html \
                  && grep -q 'id="paylineSvg"' /tmp/stake-preview.html \
                  && grep -q 'id="freePanel"' /tmp/stake-preview.html \
                  && grep -q 'id="historyBtn"' /tmp/stake-preview.html \
-                 && grep -q 'id="historyOverlay"' /tmp/stake-preview.html; then
+                 && grep -q 'id="historyOverlay"' /tmp/stake-preview.html \
+                 && grep -q 'id="detailBoard"' /tmp/stake-preview.html \
+                 && grep -q 'id="historySearch"' /tmp/stake-preview.html; then
                 curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/assets/imagens/jm38-caracol.svg" -o /tmp/caracol.svg
                 test -s /tmp/caracol.svg
-                echo 'CONFIRMADO: Stake Preview V0.7 online, PASSAR, linhas e caracol.'
+                echo 'CONFIRMADO: Stake Preview V0.8 online, PASSAR, linhas e caracol.'
                 exit 0
               fi
-              echo "Página ainda não atualizada para V0.7 ($n/12)."
+              echo "Página ainda não atualizada para V0.8 ($n/12)."
             else
               echo "Página indisponível ($n/12)."
             fi
             sleep 5
           done
-          echo '::error::Não foi possível confirmar a página V0.7.'
+          echo '::error::Não foi possível confirmar a página V0.8.'
           exit 1
