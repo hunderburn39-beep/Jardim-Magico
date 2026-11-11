@@ -93,7 +93,7 @@ context.free=free;
 vm.runInContext('skipAnimations=true',context);
 await vm.runInContext('playback(free)',context);
 assert.equal(el('freePanel').hidden,true,'HUD Free Spins fecha depois de pagar o bónus');
-assert.equal(el('freeRemaining').textContent,'0','Contagem de Free Spins concluída');
+assert.equal(String(el('freeRemaining').textContent),'0','Contagem de Free Spins concluída');
 assert.match(el('freeRaw').textContent,/\d+,\d{2}/,'Total bruto de Free Spins mostrado');
 assert.match(el('freeMult').textContent,/^×\d+/,'Multiplicador de Free Spins mostrado');
 vm.runInContext('skipAnimations=true',context);
