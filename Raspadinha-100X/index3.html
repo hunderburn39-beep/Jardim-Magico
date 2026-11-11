@@ -371,8 +371,54 @@ function buy(){
   state.cards++;
   state.ticket={id:state.cards,lucky,play,prize,bet,winAt,revealed:[],completed:false};
   save();render();
-  status("Raspa com o dedo. Prémio máximo: 100× a aposta.");
+  status("Desliza o dedo pelas casas, sem levantar, até raspares tudo.");
 }
+
+// Captura num elemento fixo: o dedo não fica preso ao primeiro quadrado.
+// Interpola pontos do trajeto para não falhar casas em movimentos rápidos.
+const scratchHandlers=new WeakMap();
+let scratchGesture=null;
+function scratchAtPoint(x,y){
+  if(!scratchGesture)return;
+  const target=document.elementFromPoint(x,y);
+  const canvas=target instanceof HTMLCanvasElement?target:null;
+  const handler=canvas?scratchHandlers.get(canvas):null;
+  if(!handler){
+    scratchGesture.lastCanvas=null;
+    scratchGesture.lastPoint=null;
+    return;
+  }
+  const previous=scratchGesture.lastCanvas===canvas?scratchGesture.lastPoint:null;
+  handler(x,y,previous);
+  scratchGesture.lastCanvas=canvas.isConnected?canvas:null;
+  scratchGesture.lastPoint=canvas.isConnected?{x,y}:null;
+}
+function startScratchGesture(e){
+  if(scratchGesture || (e.pointerType==="mouse" && e.button!==0))return;
+  if(e.cancelable)e.preventDefault();
+  scratchGesture={pointerId:e.pointerId,x:e.clientX,y:e.clientY,lastCanvas:null,lastPoint:null};
+  try{document.querySelector(".ticket").setPointerCapture(e.pointerId)}catch(_){}
+  startScratchSound();
+  scratchAtPoint(e.clientX,e.clientY);
+}
+document.addEventListener("pointermove",e=>{
+  const g=scratchGesture;
+  if(!g||e.pointerId!==g.pointerId)return;
+  if(e.cancelable)e.preventDefault();
+  const dx=e.clientX-g.x,dy=e.clientY-g.y;
+  const steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)/5));
+  for(let i=1;i<=steps;i++)scratchAtPoint(g.x+dx*i/steps,g.y+dy*i/steps);
+  g.x=e.clientX;g.y=e.clientY;
+},{passive:false});
+function endScratchGesture(e){
+  if(!scratchGesture || (e&&e.pointerId!==scratchGesture.pointerId))return;
+  scratchGesture=null;
+  stopScratchSound();
+  if(state.ticket && state.ticket.completed)celebrateWinningTicket();
+}
+document.addEventListener("pointerup",endScratchGesture);
+document.addEventListener("pointercancel",endScratchGesture);
+
 function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
   const cell=document.createElement("div");
   cell.className="cell"+(isWinner?" winning":"")+(isWinner&&alreadyRevealed?" revealed":"");
@@ -406,8 +452,11 @@ function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
   ctx.font="1000 "+Math.max(10,Math.round(w*.19))+"px system-ui";
   ctx.fillText("RASPA",w/2,h/2);
   ctx.shadowBlur=0;
-  let active=false,last=null,travel=0;
-  function xy(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*w,y:(e.clientY-r.top)/r.height*h}}
+  let travel=0;
+  function xy(clientX,clientY){
+    const r=canvas.getBoundingClientRect();
+    return{x:(clientX-r.left)/r.width*w,y:(clientY-r.top)/r.height*h};
+  }
   function clear(from,to){
     ctx.globalCompositeOperation="destination-out";
     ctx.strokeStyle="#000";ctx.fillStyle="#000";
@@ -418,27 +467,28 @@ function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
   }
   function reveal(){
     if(!canvas.isConnected)return;
-    canvas.remove();active=false;stopScratchSound();
-    if(isWinner){cell.classList.add("revealed");flashWinningCell(cell);celebrateWinningTicket();}
+    scratchHandlers.delete(canvas);
+    canvas.remove();
+    if(isWinner){cell.classList.add("revealed");flashWinningCell(cell);}
     if(!state.ticket.revealed.includes(id))state.ticket.revealed.push(id);
     if(state.ticket.revealed.length===25)finish();
-    else save();
+    else{save();status("Casas raspadas: "+state.ticket.revealed.length+"/25. Continua a deslizar o dedo.");}
   }
-  canvas.addEventListener("pointerdown",e=>{
-    if(e.cancelable)e.preventDefault();
-    active=true;canvas.setPointerCapture(e.pointerId);
-    last=xy(e);clear(last,last);startScratchSound();
+  // Cada célula tem a sua própria película, mas o gesto é partilhado pelo bilhete.
+  // É possível atravessar vários quadrados sem retirar o dedo do ecrã.
+  scratchHandlers.set(canvas,(clientX,clientY,previous)=>{
+    if(!canvas.isConnected)return;
+    const now=xy(clientX,clientY);
+    const from=previous?xy(previous.x,previous.y):now;
+    clear(from,now);
+    if(previous){
+      const distance=Math.hypot(now.x-from.x,now.y-from.y);
+      travel+=distance;updateScratchSound(distance);
+    }
+    // Uma passagem horizontal firme revela a casa; passagens parciais acumulam.
+    if(travel>=Math.max(w*.58,h*.65))reveal();
   });
-  canvas.addEventListener("pointermove",e=>{
-    if(!active)return;
-    if(e.cancelable)e.preventDefault();
-    const now=xy(e),step=Math.hypot(now.x-last.x,now.y-last.y);
-    if(step>0){clear(last,now);travel+=step;updateScratchSound(step);last=now}
-    if(travel>Math.max(w*1.5,h*1.7))reveal();
-  });
-  for(const eventName of ["pointerup","pointercancel","lostpointercapture"]){
-    canvas.addEventListener(eventName,()=>{active=false;stopScratchSound()});
-  }
+  canvas.addEventListener("pointerdown",startScratchGesture);
 }
 // Dispara o brilho também no botão "Raspar tudo", depois de desenhar o bilhete.
 function flashWinningCell(cell){
@@ -588,7 +638,7 @@ el("sound").addEventListener("click",()=>{state.sound=!state.sound;stopScratchSo
 ["contextmenu","selectstart","dragstart","copy","cut"].forEach(n=>document.addEventListener(n,e=>e.preventDefault()));
 document.addEventListener("touchmove",e=>{if(e.cancelable)e.preventDefault()},{passive:false});
 document.addEventListener("gesturestart",e=>{if(e.cancelable)e.preventDefault()},{passive:false});
-window.addEventListener("blur",stopScratchSound);
+window.addEventListener("blur",()=>{scratchGesture=null;stopScratchSound()});
 if(state.ticket){render();status(state.ticket.completed?(state.ticket.prize?"Ganhaste "+eur(state.ticket.prize)+"!":"Bilhete sem prémio."):"Continua a raspar o teu bilhete.");}
 else{buy()}
 </script>
