@@ -175,8 +175,9 @@ class Game {
    timers.set(key,setTimeout(()=>{
     if(finished.has(key))return;
     // Não substituir a arte original por SVG só por demora de rede.
-    // A imagem mantém a transferência e pode surgir após o timeout.
-    done(key,false);
+    // Só o SVG de reserva é dado como falhado depois do timeout.
+    // A imagem HD pode terminar de carregar mesmo após abrir o jogo.
+    if(im.fallback)done(key,false);
    },8500));
   };
   const fallback=(key,im)=>{
