@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'stake-preview/**'
       - '.github/workflows/testar-stake-preview-online.yml'
   workflow_dispatch:
 
