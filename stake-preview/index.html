@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V0.5</title>
+<title>Jardim Mágico | Edição Stake Preview V0.6</title>
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -38,6 +38,18 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .cell.landing{animation:landingFlash .24s ease-out}
 .payline-visual{position:absolute;inset:3px;width:calc(100% - 6px);height:calc(100% - 6px);z-index:4;pointer-events:none;overflow:visible}
 .line-prize{position:absolute;left:50%;top:48%;z-index:5;transform:translate(-50%,-50%);background:linear-gradient(145deg,#39244ce8,#211833ee);border:1px solid #ffe9ab;box-shadow:0 0 20px #101027,0 0 15px #f5c46c88;color:#fff4ce;font-size:clamp(13px,3.3vw,18px);font-weight:900;padding:9px 14px;border-radius:28px;white-space:nowrap;pointer-events:none;text-shadow:0 1px #000}
+.free-panel{display:grid;grid-template-columns:.9fr 1.2fr 1fr;gap:5px;margin:6px 5px 4px;padding:5px;border:1px solid #c9a26d;box-shadow:0 0 15px #d3ad6e24,inset 0 1px #ffffff15;background:linear-gradient(105deg,#302048e8,#40345deb,#302048e8);border-radius:12px}
+.free-panel>div{text-align:center;min-width:0}
+.free-panel small{display:block;font-size:9px;letter-spacing:.035em;color:#ecce9f;font-weight:750}
+.free-panel strong{display:block;font-size:clamp(12px,3.4vw,16px);color:#e7ffc9;white-space:nowrap}
+.free-panel.celebrate{animation:bonusGlow .85s ease-in-out 2}
+@keyframes bonusGlow{50%{box-shadow:0 0 24px #fbe08aad,inset 0 0 15px #fbe08a66}}
+.jackpot-free{color:#fff0ba!important}
+.logo-wrap img{animation:logoBreathe 7s ease-in-out infinite}
+@keyframes logoBreathe{50%{filter:drop-shadow(0 3px 2px #150a12) drop-shadow(0 0 20px #ffe6a977) brightness(1.12)}}
+.toast.big-celebration{border-color:#fff3bd;background:radial-gradient(circle at 30% 15%,#93613b,#5b2f65 45%,#251840);box-shadow:0 0 60px #ffdb81ba,0 20px 35px #000b}
+.toast.big-celebration strong{font-size:clamp(32px,10vw,44px);color:#fff3b7}
+
 .skip-btn{position:absolute;z-index:6;right:5px;top:10px;border:1px solid #f6d699;background:#362545e8;border-radius:13px;color:#ffe7ae;padding:5px 9px;font-size:11px;font-weight:900;box-shadow:0 3px 8px #0009}
 [hidden]{display:none!important}
 @keyframes lineGlow{0%{opacity:0;stroke-width:4}30%{opacity:1;stroke-width:9}100%{opacity:1;stroke-width:7}}
@@ -102,6 +114,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
   <div><small>ÚLTIMO PRÉMIO</small><strong id="lastWin">0,00</strong></div>
  </div>
  <div class="frame"><div class="hud"><span id="hud">✦ RODADAS DE TESTE ✦</span></div><div class="reels" id="reels" aria-label="Cinco tambores, três linhas"></div><svg id="paylineSvg" class="payline-visual" viewBox="0 0 500 300" preserveAspectRatio="none" aria-hidden="true"></svg><output id="linePrize" class="line-prize" hidden aria-live="off"></output><button id="skipBtn" class="skip-btn" type="button" hidden>PASSAR ⏩</button></div>
+ <div id="freePanel" class="free-panel" hidden aria-live="off"><div><small>FREE SPINS</small><strong id="freeRemaining">15</strong></div><div><small>BRUTO ACUMULADO</small><strong id="freeRaw">0,00</strong></div><div><small>MULTI</small><strong id="freeMult">×1</strong></div></div>
  <div class="notice" id="notice" aria-live="polite">Prime RODAR para entrar no bosque!</div>
  <div class="money-row">
    <div class="money"><label>SALDO · CRÉDITOS</label><strong id="balance">1 000,00</strong></div>
@@ -117,7 +130,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V0.5 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
+ <footer class="foot"><b>V0.6 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="holdOverlay"><div class="modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-grid" id="holdGrid"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin">0,00</span></div><button class="modal-close" id="closeHold" hidden>CONTINUAR</button></div></div>
  <div class="overlay" id="infoOverlay"><div class="modal"><h2>Jardim Mágico</h2><p>Pré-visualização técnica independente com símbolos do jogo original, cinco tambores, dez linhas, WILD, SCATTER, cascatas, Free Spins e Hold & Win. Cada jogada e cada bónus são calculados inteiramente antes da animação. Os resultados são simulados neste navegador para teste visual, não são resultados certificados do Stake Engine.</p><p>Os créditos servem apenas para experimentar. Não existe dinheiro real, carteira ou casino associado.</p><button class="modal-close" id="closeInfo">FECHAR</button></div></div>
@@ -151,7 +164,7 @@ function count(b,id){return b.flat().filter(v=>v===id).length}
 function evaluate(b){let lines=[],used=new Map();for(let j=0;j<LINES.length;j++){const line=LINES[j],chain=line.map((r,c)=>b[c][r]);const first=chain.find(s=>s!==4)??4;const pair=chain[0]===4&&chain[1]===4;let amount=pair?55:0,matched=pair?2:0;if(![9,10,11].includes(first)){let n=0;for(const s of chain){if(s!==first&&s!==4)break;n++}if(n>=3){amount+=(COEFS[first]||0)*PAY[n];matched=n}}if(amount){const cells=line.slice(0,matched).map((r,c)=>[c,r]);cells.forEach(([c,r])=>used.set(c+":"+r,[c,r]));lines.push({line:j+1,amount,cells})}}return {lines,removed:[...used.values()]}}
 function collapse(b,removed,free){const gone=new Set(removed.map(x=>x.join(":")));const w=WEIGHTS.map((x,i)=>free&&i===9?2:x);return b.map((column,c)=>{const kept=column.filter((_,r)=>!gone.has(c+":"+r));return Array.from({length:3-kept.length},()=>pick(TYPES.map((_,i)=>i),w)).concat(kept)})}
 function stages(free=false){let b=board(free),raw=0,paid=0,wild=0,maxSc=0,maxCo=0,events=[];for(let n=0;n<1000;n++){const {lines,removed}=evaluate(b);const scatters=count(b,9),coins=count(b,11);maxSc=Math.max(maxSc,scatters);maxCo=Math.max(maxCo,coins);let awards=removed.filter(([c,r])=>b[c][r]===4).map(()=>1+Math.floor(rand()*5));wild+=awards.reduce((a,b)=>a+b,0);const lineRaw=lines.reduce((sum,entry)=>sum+entry.amount,0),p=lineRaw*Math.max(1,wild);raw+=lineRaw;paid+=p;events.push({kind:"reels",board:b,lines,removed,drop:n+1,win:p,multi:Math.max(1,wild),free});if(!removed.length)return {events,raw,paid,wild,scatter:maxSc,coins:maxCo};b=collapse(b,removed,free)}throw Error("Limite de segurança de teste atingido")}
-function freeFeature(){let events=[{kind:"message",text:"✦ 15 FREE SPINS ✦"}],left=15,played=0,raw=0,multi=1;while(left>0){left--;played++;const s=stages(true);events.push(...s.events.map(e=>({...e,freeSpin:played})));raw+=s.raw;if(s.wild)multi=Math.min(1000,multi+Math.max(0,s.wild-1));let retrig=s.scatter>=3?15:s.scatter>=2?8:0,add=Math.min(retrig,Math.max(0,60-played-left));left+=add;events.push({kind:"progress",played,left,add,multi,raw});if(played>60)throw Error("Limite de Free Spins inválido")}let amount=raw*multi;events.push({kind:"message",text:"FREE SPINS TERMINADAS · ×"+multi});return {events,amount}}
+function freeFeature(){let events=[{kind:"freeStart",remaining:15,raw:0,multi:1},{kind:"message",text:"✦ 15 FREE SPINS ✦"}],left=15,played=0,raw=0,multi=1;while(left>0){left--;played++;const s=stages(true);events.push(...s.events.map(e=>({...e,freeSpin:played})));raw+=s.raw;if(s.wild)multi=Math.min(1000,multi+Math.max(0,s.wild-1));let retrig=s.scatter>=3?15:s.scatter>=2?8:0,add=Math.min(retrig,Math.max(0,60-played-left));left+=add;events.push({kind:"progress",played,left,add,multi,raw});if(played>60)throw Error("Limite de Free Spins inválido")}let amount=raw*multi;events.push({kind:"freeEnd",raw,multi,amount,played},{kind:"message",text:"FREE SPINS TERMINADAS · ×"+multi});return {events,amount}}
 function holdFeature(){// Seis moedas iniciais; depois cada casa vazia tem probabilidade independente de receber moeda.
 // Probabilidade fixa por casa: nao varia com aposta, saldo, numero de rondas ou premio.
 const chancePerEmpty=.08,initial=[46,28,16,8,2],extra=[42,30,16,8,3,1];let grid=Array(16).fill(0),positions=Array.from({length:16},(_,i)=>i);for(let i=0;i<6;i++){let n=Math.floor(rand()*positions.length);grid[positions.splice(n,1)[0]]=pick([1,2,3,5,10],initial)}let events=[{kind:"hold",grid:[...grid],tries:3,turn:0}],tries=3,turn=0;while(tries&&grid.some(x=>!x)){turn++;let newCoins=0;for(let i=0;i<16;i++){if(!grid[i]&&rand()<chancePerEmpty){grid[i]=pick([1,2,3,5,10,20],extra);newCoins++}}tries=newCoins?3:tries-1;events.push({kind:"hold",grid:[...grid],tries,turn})}const filled=grid.every(Boolean),amount=100*grid.reduce((a,b)=>a+b,0)+(filled?25000:0);events.push({kind:"holdEnd",grid:[...grid],amount,filled});return {events,amount}}
@@ -162,18 +175,23 @@ function draw(b,wins=[]){const keys=new Set(wins.map(([c,r])=>c+":"+r));$("reels
 function display(){ $("balance").textContent=format(balance);$("bet").textContent=format(BETS[betIndex]);$("lastWin").textContent=format(lastWin);document.querySelectorAll("[data-bet]").forEach(button=>{const active=Number(button.dataset.bet)===BETS[betIndex];button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});const freeText=$("buyFree").querySelector?.("span"),holdText=$("buyHold").querySelector?.("span");if(freeText)freeText.textContent="20× · "+format(20*BETS[betIndex])+" créditos";if(holdText)holdText.textContent="30× · "+format(30*BETS[betIndex])+" créditos"}
 function say(s,kind=""){$("notice").className="notice "+kind;$("notice").textContent=s}
 function beep(freq=660){if(!sound)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ctx=beep.ctx||(beep.ctx=new C());if(ctx.state==="suspended")ctx.resume();const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.setValueAtTime(freq,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(freq*.7,ctx.currentTime+.12);g.gain.setValueAtTime(.045,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.14);o.connect(g).connect(ctx.destination);o.start();o.stop(ctx.currentTime+.15)}catch(e){}}
-function toast(title,value){$("toastTitle").textContent=title;$("toastValue").textContent=value;$("toast").classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").classList.remove("visible"),1450)}
+function toast(title,value,level="normal"){const panel=$("toast");$("toastTitle").textContent=title;$("toastValue").textContent=value;panel.classList.toggle("big-celebration",level==="big");panel.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>{panel.classList.remove("visible");panel.classList.remove("big-celebration")},level==="big"?2200:1450)}
+function updateFreeHud(remaining,raw,multi){$("freePanel").hidden=false;$("freeRemaining").textContent=remaining;$("freeRaw").textContent=money(raw);$("freeMult").textContent="×"+multi}
+function clearFreeHud(){$("freePanel").hidden=true;$("freePanel").classList.remove("celebrate")}
+function finalWinTier(payout,stake){const ratio=payout/stake;return ratio>=100?"SENSACIONAL":ratio>=25?"MEGA WIN":ratio>=10?"BIG WIN":"PRÉMIO TOTAL"}
 function controls(){["spin","minus","plus","buyFree","buyHold","reloadBtn","auto"].forEach(id=>$(id).disabled=busy);$("skipBtn").hidden=!busy||skipAnimations;document.querySelectorAll("[data-bet]").forEach(button=>button.disabled=busy);$("turboLabel").textContent=turbo?"LIGADO":"DESL.";$("autoLabel").textContent=autoLeft?autoLeft+" GIROS":"5 GIROS"}
 function renderHold(grid,tries,previous=[]){$("holdGrid").innerHTML=grid.map((x,i)=>'<div class="coin-slot '+(x?"filled":"")+(x&&!previous[i]?" new-coin":"")+'">'+(x?'×'+x:'✦')+'</div>').join("");$("holdTries").textContent="Tentativas: "+tries;$("holdWin").textContent=money(100*grid.reduce((a,b)=>a+b,0))+" créditos"}
 function clearPayline(){$("paylineSvg").innerHTML="";$("linePrize").hidden=true}
 async function highlightLines(evt){
   if(!evt.lines.length){clearPayline();return}
-  // Paths cross the centres of the five reel columns and selected rows.
+  // Stop exactly at the final winning reel, never mark unrelated symbols.
   // A single winning cell shared between several lines is never double-animated.
   for(const line of evt.lines){
-    const rows=LINES[line.line-1],points=rows.map((r,c)=>(50+100*c)+","+(50+100*r)).join(" ");
+    const cells=line.cells || [];
+    const points=cells.map(([c,r])=>(50+100*c)+","+(50+100*r)).join(" ");
+    if(!points)continue;
     $("paylineSvg").innerHTML='<polyline points="'+points+'" fill="none" stroke="#10172d" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" opacity=".75"/><polyline points="'+points+'" fill="none" stroke="#77e4ff" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 5px #fff0ad);animation:lineGlow .3s ease-out both"/>';
-    $("linePrize").textContent="LINHA "+line.line+" · +"+money(line.amount*evt.multi);
+    $("linePrize").textContent="LINHA "+line.line+" · "+(evt.free?"BRUTO ":"+")+money(line.amount*(evt.free?1:evt.multi));
     $("linePrize").hidden=false;
     await pause(turbo?50:evt.lines.length>=5?190:390);
     if(skipAnimations)break;
@@ -214,7 +232,18 @@ async function animateCascade(boardFinal,oldRemoved){
 async function playback(book){
   let previousRemoved=[],lastHoldGrid=[];clearPayline();
   for(const evt of book.events){
-    if(evt.kind==="reels"){
+    if(evt.kind==="freeStart"){
+      updateFreeHud(evt.remaining,evt.raw,evt.multi);
+      $("freePanel").classList.add("celebrate");
+      await pause(turbo?90:260);
+      $("freePanel").classList.remove("celebrate");
+    }else if(evt.kind==="freeEnd"){
+      updateFreeHud(0,evt.raw,evt.multi);
+      $("freePanel").classList.add("celebrate");
+      say("FREE SPINS FINALIZADAS · "+money(evt.amount)+" créditos","bonus");
+      await pause(turbo?120:430);
+      clearFreeHud();
+    }else if(evt.kind==="reels"){
       if(evt.drop===1){await animateReelStop(evt.board);previousRemoved=[]}
       else await animateCascade(evt.board,previousRemoved);
       draw(evt.board,evt.removed);
@@ -223,16 +252,17 @@ async function playback(book){
       $("multiNum").textContent="×"+evt.multi;
       $("hud").textContent=evt.freeSpin?"FREE SPIN "+evt.freeSpin:evt.free?"FREE SPINS":"✦ QUEDA "+evt.drop;
       if(evt.lines.length){
-        const value=money(evt.win);
-        say(evt.lines.length+" LINHA(S) · +"+value+" créditos","good");beep(760);
+        const value=money(evt.free?evt.lines.reduce((sum,line)=>sum+line.amount,0):evt.win);
+        say(evt.free?evt.lines.length+" LINHA(S) · BRUTO "+value+" créditos":evt.lines.length+" LINHA(S) · +"+value+" créditos","good");beep(760);
         await highlightLines(evt);
       }else if(evt.drop===1){clearPayline();say("Os tambores pararam.")}
       await pause(turbo?100:evt.lines.length?370:175);
     }else if(evt.kind==="message"){
       say(evt.text,"bonus");toast("BÓNUS",evt.text);beep(850);await pause(turbo?260:750);
     }else if(evt.kind==="progress"){
+      updateFreeHud(evt.left,evt.raw,evt.multi);
       $("multiNum").textContent="×"+evt.multi;$("hud").textContent="FREE SPINS · "+evt.left+" RESTANTES";
-      if(evt.add){say("RETRIGGER · +"+evt.add+" FREE SPINS","bonus");beep(950)}else say("FREE SPINS: "+evt.played+" realizadas · ACUMULADO "+money(evt.raw*evt.multi)+" créditos","bonus")
+      if(evt.add){say("RETRIGGER · +"+evt.add+" FREE SPINS","bonus");$("freePanel").classList.add("celebrate");beep(950)}else{say("FREE SPINS: "+evt.played+" realizadas · BRUTO "+money(evt.raw)+" · ×"+evt.multi,"bonus");$("freePanel").classList.remove("celebrate")}
       await pause(turbo?30:100);
     }else if(evt.kind==="hold"){
       $("holdOverlay").classList.add("show");
@@ -252,7 +282,7 @@ async function playback(book){
     }
   }
 }
-async function play(mode="base"){if(busy)return;const bet=BETS[betIndex],cost=bet*(mode==="free"?20:mode==="hold"?30:1);if(balance+1e-7<cost){say("Saldo de teste insuficiente: usa o botão + no topo.");return}busy=true;skipAnimations=false;controls();try{balance=Math.round((balance-cost)*100)/100;display();const b=generate(mode);const payout=+(b.payout/100*bet).toFixed(2);await playback(b);balance=+(balance+payout).toFixed(2);lastWin=payout;display();$("hud").textContent="✦ RONDA CONCLUÍDA ✦";$("dropNum").textContent="0";$("multiNum").textContent="×1";if(payout>0){toast("PRÉMIO TOTAL",format(payout));say("PRÉMIO TOTAL: "+format(payout)+" créditos","good");beep(910)}else say("Sem prémio nesta jogada. Experimenta novamente.")}catch(e){console.error(e);say("Erro na simulação: "+e.message)}finally{busy=false;skipAnimations=false;clearPayline();controls();if(autoLeft){autoLeft--;controls();if(autoLeft&&balance>=BETS[betIndex]){await sleep(190);play("base")}else{autoLeft=0;controls()}}}}
+async function play(mode="base"){if(busy)return;const bet=BETS[betIndex],cost=bet*(mode==="free"?20:mode==="hold"?30:1);if(balance+1e-7<cost){say("Saldo de teste insuficiente: usa o botão + no topo.");return}busy=true;skipAnimations=false;clearFreeHud();controls();try{balance=Math.round((balance-cost)*100)/100;display();const b=generate(mode);const payout=+(b.payout/100*bet).toFixed(2);await playback(b);balance=+(balance+payout).toFixed(2);lastWin=payout;display();$("hud").textContent="✦ RONDA CONCLUÍDA ✦";$("dropNum").textContent="0";$("multiNum").textContent="×1";if(payout>0){const tier=finalWinTier(payout,bet);toast(tier,format(payout),payout>=bet*10?"big":"normal");say(tier+": "+format(payout)+" créditos","good");beep(910)}else say("Sem prémio nesta jogada. Experimenta novamente.")}catch(e){console.error(e);say("Erro na simulação: "+e.message)}finally{busy=false;skipAnimations=false;clearPayline();clearFreeHud();controls();if(autoLeft){autoLeft--;controls();if(autoLeft&&balance>=BETS[betIndex]){await sleep(190);play("base")}else{autoLeft=0;controls()}}}}
 $("spin").addEventListener("click",()=>play("base"));
 $("skipBtn").addEventListener("click",()=>{if(!busy)return;skipAnimations=true;controls();say("A apresentar o resultado final desta jogada…","bonus")});
 $("minus").addEventListener("click",()=>{betIndex=Math.max(0,betIndex-1);display()});
