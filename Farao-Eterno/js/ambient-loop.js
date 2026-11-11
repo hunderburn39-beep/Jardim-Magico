@@ -1,21 +1,35 @@
-/* Faraó Eterno — Dark Pyramid Night Ambience Loop (szegvari, CC0).
- * Substitui APENAS a música ambiente, nunca o gong do Wild ou os sons dos tambores.
- * Entrada/saída cruzadas entre repetições para um loop contínuo no Safari/iPhone.
+/* Faraó Eterno — música do utilizador (Pharaoh's Ritual) com reserva CC0.
+ * Substitui apenas a música ambiente, preservando o gong do Wild e os tambores.
+ * Crossfade entre repetições, compatível com Safari/iPhone.
  */
 (()=>{
  'use strict';
  const game=window.__faraoGame, audio=game?.audio;
  if(!game||!audio)return;
  const originalStart=audio.startMusic.bind(audio),originalStop=audio.stopMusic.bind(audio);
- const asset='assets/dark-pyramid-ambience.mp3?v=1.0';
+ const assets=[
+   {url:'assets/pharaohs-ritual.mp3?v=1.0',name:"Pharaoh's Ritual",artist:'Áudio fornecido pelo utilizador',license:'Não especificada'},
+   {url:'assets/dark-pyramid-ambience.mp3?v=1.0',name:'Dark Pyramid Night Ambience Loop',artist:'szegvari',license:'CC0'}
+ ];
+ let selected=assets[0];
  let rawPromise=null,buffer=null,decodePromise=null,playing=false,timer=null,nextStart=0;
  let sources=new Set();
  const allowed=()=>audio.ctx&&game.soundMode==='all'&&game.ledger?.settings?.music&&!game.paused&&!game.superseded&&!document.hidden;
  const fetchAudio=()=>{
    if(!rawPromise){
-     rawPromise=fetch(new URL(asset,document.baseURI),{cache:'force-cache'})
-       .then(r=>{if(!r.ok)throw Error('Ambiente não publicado: '+r.status);return r.arrayBuffer();})
-       .catch(e=>{rawPromise=null;throw e;});
+     rawPromise=(async()=>{
+       for(const candidate of assets){
+         try{
+           const response=await fetch(new URL(candidate.url,document.baseURI),{cache:'force-cache'});
+           if(!response.ok)continue;
+           const bytes=await response.arrayBuffer();
+           if(!bytes.byteLength)continue;
+           selected=candidate;
+           return bytes;
+         }catch(_){/* Segue para a faixa de reserva sem bloquear o jogo. */}
+       }
+       throw Error('Nenhuma faixa ambiente disponível');
+     })().catch(e=>{rawPromise=null;throw e;});
    }
    return rawPromise;
  };
@@ -51,8 +65,8 @@
      const source=ctx.createBufferSource(),gain=ctx.createGain();
      source.buffer=buffer;source.loop=false;
      gain.gain.setValueAtTime(.0001,t);
-     gain.gain.linearRampToValueAtTime(.145,t+blend);
-     gain.gain.setValueAtTime(.145,t+D-blend);
+     gain.gain.linearRampToValueAtTime(.105,t+blend);
+     gain.gain.setValueAtTime(.105,t+D-blend);
      gain.gain.linearRampToValueAtTime(.0001,t+D);
      source.connect(gain);gain.connect(audio.musicBus||audio.out||ctx.destination);
      const item={source,gain};sources.add(item);
@@ -94,5 +108,5 @@
    if(document.hidden)audio.stopMusic();
    else if(audio.ctx&&allowed())audio.startMusic();
  });
- game.ambientLoop={version:'1.0',source:'Dark Pyramid Night Ambience Loop',artist:'szegvari',license:'CC0',crossfade:true,get ready(){return !!buffer;}};
+ game.ambientLoop={version:'1.2',get source(){return selected.name;},get artist(){return selected.artist;},get license(){return selected.license;},crossfade:true,get ready(){return !!buffer;}};
 })();
