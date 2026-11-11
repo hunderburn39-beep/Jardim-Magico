@@ -26,7 +26,7 @@ jobs:
       - name: Confirmar GitHub Pages independente das outras publicações
         run: |
           set -euo pipefail
-          url="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=0.8"
+          url="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=0.9"
           echo "A verificar $url"
           for n in {1..12}; do
             if curl -fLsS --max-time 10 --connect-timeout 5 "$url" -o /tmp/stake-preview.html; then
