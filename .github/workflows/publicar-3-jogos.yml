@@ -15,6 +15,7 @@ on:
       - 'js/**'
       - 'assets/**'
       - 'jardim-phaser/**'
+      - 'stake-preview/**'
       - 'jardim-3d/**'
       - 'templo-do-trovao/**'
       - 'Farao-Eterno/**'
@@ -101,6 +102,7 @@ jobs:
           test -s Sugar-Rush-1000/standalone/game.js
           test -s Sugar-Rush-1000/standalone/style.css
           test -s jardim-phaser/index.html
+          test -s stake-preview/index.html
           test -s jardim-phaser/vendor/phaser-3.90.0.min.js
           test -s templo-do-trovao/index.html
           test -s Farao-Eterno/index.html
@@ -123,6 +125,7 @@ jobs:
           cp index2.html public/index2.html
           cp -a css js assets public/
           cp -a jardim-phaser jardim-3d public/
+          cp -a stake-preview public/
           cp -a templo-do-trovao Farao-Eterno Halloween Raspadinha-100X public/
           mkdir -p public/Sugar-Rush-1000
           cp -a Sugar-Rush-1000/standalone public/Sugar-Rush-1000/
@@ -145,6 +148,7 @@ jobs:
           touch public/.nojekyll
           test -s public/index.html
           test -s public/jardim-phaser/index.html
+          test -s public/stake-preview/index.html
           test -s public/templo-do-trovao/index.html
           test -s public/Farao-Eterno/index.html
           test -s public/Halloween/index.html
@@ -159,6 +163,22 @@ jobs:
           echo "Halloween: /Halloween/"
           echo "Raspadinha 100X: /Raspadinha-100X/index3.html"
           echo "Sugar Rush original Phaser offline: /index2.html"
+
+      - name: Validar JavaScript do Stake Preview sem mexer nos outros jogos
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          text = Path('stake-preview/index.html').read_text()
+          script = text.split('<script>', 1)[1].split('</script>', 1)[0]
+          assert 'function generate(mode)' in script
+          assert 'function holdFeature()' in script
+          assert 'function freeFeature()' in script
+          Path('/tmp/jardim-stake-preview.js').write_text(script)
+          PY
+          node --check /tmp/jardim-stake-preview.js
+          echo 'Stake preview: JavaScript sintaticamente válido.'
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
