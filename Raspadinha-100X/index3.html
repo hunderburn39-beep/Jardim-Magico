@@ -415,6 +415,27 @@ footer{color:#a1a9bb;font-size:9px;line-height:1.3;padding:2px 0}
 }
 .lucky .cell:not(.revealed) b{z-index:1}
 
+
+/* Mostra em cada medalhão o multiplicador e o valor correspondente à aposta. */
+.play .cell b{line-height:1}
+.play .cell small{
+  font-size:clamp(10px,2.7vw,13px);
+  margin-top:2px;
+  line-height:1;
+  font-weight:1000;
+  color:#ffdd8c;
+}
+.play .cell .prize-value{
+  display:block;
+  font-size:clamp(8px,2.15vw,10px);
+  line-height:1.05;
+  color:#f8dba3;
+  font-weight:850;
+  margin-top:2px;
+  white-space:nowrap;
+  text-shadow:0 1px 2px #000a;
+}
+.play .cell.winning .prize-value,.play .cell.winning small{color:#fff5c7}
 </style>
 </head>
 <body>
@@ -480,10 +501,10 @@ footer{color:#a1a9bb;font-size:9px;line-height:1.3;padding:2px 0}
 // Chave antiga mantida para preservar saldos de sessões anteriores.
 const KEY="raspadinha100x_v3_10eur";
 const BET_LEVELS=[100,200,500,1000];
+// Novos escalões de prémio: apenas 2×, 10×, 25×, 50× e 100× a aposta.
 const PRIZES=[
-  {mult:1,weight:700},{mult:2,weight:250},{mult:5,weight:30},
-  {mult:10,weight:10},{mult:20,weight:6},{mult:50,weight:3},
-  {mult:100,weight:1}
+  {mult:2,weight:825},{mult:10,weight:125},{mult:25,weight:35},
+  {mult:50,weight:12},{mult:100,weight:3}
 ];
 const el=id=>document.getElementById(id);
 const eur=c=>(c/100).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
@@ -518,7 +539,7 @@ function migrateOldTicket(saved){
     const bet=BET_LEVELS.includes(t.bet)?t.bet:1000;
     t.cellPrizes=Array.from({length:16},(_,i)=>{
       const award=t.wins.find(w=>w.pos===i);
-      return award?award.amount:PRIZES[randomInt(5)].mult*bet;
+      return award?award.amount:PRIZES[randomInt(PRIZES.length)].mult*bet;
     });
   }
   if(t.revealed.length===21&&!t.completed){
@@ -622,16 +643,16 @@ function weightedPick(options){
 // Cada número da sorte encontrado dá um prémio independente.
 // O total de todos os prémios nunca excede 100x a aposta nem o cofre.
 function selectWinnings(bank,bet){
-  if(bank<bet || Math.random()>=0.30)return [];
+  if(bank<2*bet || Math.random()>=0.30)return [];
   const cap=Math.min(bank,bet*100);
-  const maxMatches=Math.min(5,Math.floor(cap/bet));
+  const maxMatches=Math.min(5,Math.floor(cap/(2*bet)));
   const counts=[{n:1,weight:25},{n:2,weight:48},{n:3,weight:19},{n:4,weight:7},{n:5,weight:1}]
     .filter(item=>item.n<=maxMatches);
   const count=weightedPick(counts).n;
   const wins=[];
   let used=0;
   for(let i=0;i<count;i++){
-    const remainingMin=(count-i-1)*bet;
+    const remainingMin=(count-i-1)*2*bet;
     const eligible=PRIZES.filter(item=>item.mult*bet<=cap-used-remainingMin);
     const amount=weightedPick(eligible).mult*bet;
     wins.push(amount);
@@ -661,7 +682,7 @@ function buy(){
   for(let i=0;i<wins.length;i++)play[wins[i].pos]=lucky[luckyIndices[i]];
   const cellPrizes=Array.from({length:16},(_,i)=>{
     const award=wins.find(w=>w.pos===i);
-    return award?award.amount:PRIZES[randomInt(5)].mult*bet;
+    return award?award.amount:PRIZES[randomInt(PRIZES.length)].mult*bet;
   });
   state.cards++;
   state.ticket={id:state.cards,lucky,play,prize,bet,wins,cellPrizes,revealed:[],completed:false};
@@ -748,11 +769,12 @@ scratchLayer.addEventListener("pointerup",e=>{
 scratchLayer.addEventListener("pointercancel",e=>{
   if(scratchGesture?.id==="pointer-"+e.pointerId)endScratch();
 });
-function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
+function makeCell(parent,num,label,id,isWinner,alreadyRevealed,valueLabel=""){
   const cell=document.createElement("div");
   cell.className="cell"+(isWinner?" winning":"")+(isWinner&&alreadyRevealed?" revealed":"");
   const number=document.createElement("b");number.textContent=String(num).padStart(2,"0");cell.append(number);
-  if(label){const amount=document.createElement("small");amount.textContent=label;cell.append(amount)}
+  if(label){const multiplier=document.createElement("small");multiplier.textContent=label;cell.append(multiplier);}
+  if(valueLabel){const amount=document.createElement("span");amount.className="prize-value";amount.textContent=valueLabel;cell.append(amount);}
   el(parent).append(cell);
   if(alreadyRevealed)return;
   const canvas=document.createElement("canvas");
@@ -864,7 +886,9 @@ function render(){
     const luckyIndex=ticket.lucky.indexOf(ticket.play[i]);
     const matched=ticket.wins.some(win=>win.pos===i)&&revealed&&luckyIndex>=0&&ticket.revealed.includes("l"+luckyIndex);
     const amount=ticket.cellPrizes[i];
-    makeCell("play",ticket.play[i],money(amount),"p"+i,matched,revealed);
+    const bet=ticketBet(ticket);
+    const multiplier=amount/bet;
+    makeCell("play",ticket.play[i],(Number.isInteger(multiplier)?multiplier.toString():multiplier.toFixed(2))+"×","p"+i,matched,revealed,money(amount));
   }
   if(ticket.completed)status(ticket.prize?"Ganhaste "+ticket.wins.length+" prémio(s)! Total: "+eur(ticket.prize):"Bilhete sem prémio. Tenta novamente!");
 }
