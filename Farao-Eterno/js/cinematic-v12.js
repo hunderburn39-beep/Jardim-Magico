@@ -398,7 +398,10 @@
     const ready = !this.spinning && !(this.reveal && t < this.reveal.end) &&
       !(this.featureIntro && t < this.featureIntro.end) &&
       !(this.v04Celebration && t < this.v04Celebration.end);
-    if (ready && this._cinemaPayAt && wins.length && this._cinemaPaySeen &&
+    // As Free Spins já têm a escala musical sincronizada com a sequência,
+    // e o jogo base já toca um som por linha. Evitar chimes duplicados.
+    if (ready && !this.lastWasFree && !this.basePaylineDisplay?.length &&
+        this._cinemaPayAt && wins.length && this._cinemaPaySeen &&
         t-this._cinemaPayAt < Math.min(9000, (wins.length+1)*1600)) {
       const i = Math.floor(t / 1600) % wins.length;
       if (!this._cinemaPaySeen.has(i)) {
