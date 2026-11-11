@@ -11,7 +11,19 @@
     this.masterGain.connect(this.ctx.destination);
    }
    if(this.ctx&&!this.compressor){this.compressor=this.ctx.createDynamicsCompressor();this.compressor.threshold.value=-18;this.compressor.ratio.value=5;this.compressor.connect(this.masterGain||this.ctx.destination);this.out=this.compressor;}
-   if(this.ctx&&!this.musicBus){this.musicBus=this.ctx.createGain();this.musicBus.gain.value=2.5;this.musicBus.connect(this.out||this.ctx.destination);}
+   // Música e efeitos usam compressores separados. O impacto do Wild deixa de
+   // comprimir a música de fundo, mantendo o timbre/nível anterior da faixa.
+   if(this.ctx&&!this.musicCompressor){
+    this.musicCompressor=this.ctx.createDynamicsCompressor();
+    this.musicCompressor.threshold.value=-18;
+    this.musicCompressor.ratio.value=5;
+    this.musicCompressor.connect(this.masterGain||this.ctx.destination);
+   }
+   if(this.ctx&&!this.musicBus){
+    this.musicBus=this.ctx.createGain();
+    this.musicBus.gain.value=2.5;
+    this.musicBus.connect(this.musicCompressor||this.out||this.ctx.destination);
+   }
    if(this.ctx&&this.masterGain)this.masterGain.gain.setTargetAtTime(g.soundMode==='mute'?0:1,this.ctx.currentTime,.012);
    if(!document.hidden&&!g.paused&&g.ledger.settings.music)this.startMusic();
   }catch(_){/* Blocked audio never blocks play. */}
