@@ -219,7 +219,9 @@
        return;
      }
      if(this.featureIntro&&now()<this.featureIntro.end)return;
-     if(!manual||now()<this.nextActionAt)return;
+     // O livro inicia as Free Spins automaticamente no fim da revelação.
+     // Não exigir um segundo toque no botão GIRAR.
+     if(now()<this.nextActionAt)return;
      this._awaitBonusStart=false;this._freeStarted=true;
      return oldStart();
    }
@@ -235,11 +237,20 @@
  };
  const originalAuto=g.autoSpin.bind(g);
  g.autoSpin=function(){
-   if(this.pendingSummary||this._awaitBonusStart)return;
+   if(this.pendingSummary)return;
+   if(this._awaitBonusStart){
+     // Enquanto a carta roda, aguardar; depois iniciar sem toque manual.
+     if(this._welcome||this.paused||this.spinning||
+        (this.featureIntro&&now()<this.featureIntro.end)||
+        now()<this.nextActionAt)return;
+     this._autoDispatch=true;
+     try{this.startSpin();}finally{this._autoDispatch=false;}
+     return;
+   }
    this._autoDispatch=true;
    try{originalAuto();}finally{this._autoDispatch=false;}
  };
  // Em modo retrigger, continuar a mostrar a carta automaticamente.
  // Após o último giro, só o botão central abre o resumo do bónus.
- document.documentElement.dataset.faraoFeatureUi='1.3.4';
+ document.documentElement.dataset.faraoFeatureUi='1.3.55';
 })();
