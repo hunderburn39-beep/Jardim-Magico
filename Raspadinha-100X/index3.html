@@ -263,20 +263,30 @@ footer{color:#a1a9bb;font-size:9px;line-height:1.3;padding:2px 0}
 @media(max-width:360px){.numgrid{gap:4px}.tickettop span:last-child{font-size:10px}.actions button{font-size:11px}.ticket h2{letter-spacing:.5px}}
 @media(prefers-reduced-motion:reduce){.actions button{transition:none}}
 
+
+.stake-bar{flex:none;min-height:40px;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 9px;border:1px solid #d5a54e;border-radius:12px;background:linear-gradient(115deg,#101b35,#30213d 55%,#101a32);box-shadow:inset 0 1px #fff3,0 3px 12px #0005}
+.stake-label{font-size:10px;letter-spacing:1.3px;font-weight:1000;color:#f2d293}
+.stake-bar button{flex:none;width:30px;height:29px;border:1px solid #fff0ac;border-radius:9px;color:#fff4bf;background:linear-gradient(#a65b34,#6a2732);font-size:23px;line-height:1;box-shadow:0 2px #3c1726}
+.stake-bar button:disabled{opacity:.35;box-shadow:none}
+#bet-value{text-align:center;min-width:47px;font-size:19px;color:#fff3b7;text-shadow:0 0 12px #ffb84683;font-variant-numeric:tabular-nums}
+.stake-mult{margin-left:auto;font-size:10px;font-weight:1000;color:#e7c582;white-space:nowrap}.stake-mult b{color:#fff4a9;font-size:16px}
+@media(max-height:740px){.stake-bar{min-height:33px;padding:2px 7px;gap:6px}.stake-bar button{height:24px;width:27px;font-size:19px}.stake-mult{font-size:9px}.stake-mult b{font-size:13px}#bet-value{font-size:16px}}
+@media(max-width:355px){.stake-bar{gap:4px;padding-inline:5px}.stake-label{font-size:9px}.stake-mult{font-size:9px}}
 </style>
 </head>
 <body>
 <header><div class="logo">100X</div><div class="brand">O DINHEIRO<small>RASPADINHA</small></div></header>
 <main>
   <div class="summary"><div>SALDO <strong id="balance">100,00 €</strong></div><button id="sound" type="button" aria-label="Desligar som">🔊 Som ligado</button></div>
+  <div class="stake-bar" role="group" aria-label="Valor da aposta"><span class="stake-label">APOSTA</span><button id="bet-down" type="button" aria-label="Diminuir aposta">−</button><strong id="bet-value">1 €</strong><button id="bet-up" type="button" aria-label="Aumentar aposta">+</button><span class="stake-mult">ATÉ <b>100×</b></span></div>
   <section class="ticket" aria-label="Bilhete de raspadinha">
-    <div class="tickettop"><span id="ticketid">BILHETE Nº 1</span><span>10 € → ATÉ 1.000 €</span></div>
+    <div class="tickettop"><span id="ticketid">BILHETE Nº 1</span><span id="ticket-top-prize">1 € → ATÉ 100 €</span></div>
     <h2>NÚMEROS DA SORTE</h2>
     <div class="numgrid lucky" id="lucky"></div>
     <h2>OS TEUS NÚMEROS</h2>
     <div class="numgrid play" id="play"></div>
   </section>
-  <div class="actions"><button id="new" type="button">NOVA RASPADINHA · 10 €</button><button id="reveal" type="button">RASPAR TUDO</button></div>
+  <div class="actions"><button id="new" type="button">NOVA RASPADINHA · 1 €</button><button id="reveal" type="button">RASPAR TUDO</button></div>
   <p id="status" role="status" aria-live="polite"></p>
   <footer>Protótipo de teste local. Sem depósitos ou pagamentos reais.</footer>
 </main>
@@ -294,26 +304,26 @@ footer{color:#a1a9bb;font-size:9px;line-height:1.3;padding:2px 0}
 <audio id="fireworks-audio" preload="auto" src="./Fireworks.mp3"></audio>
 <script>
 "use strict";
-// Valores em cêntimos: 1 € por bilhete; prémio mínimo vencedor 1 € e máximo 100 €.
-// Divisão de cada bilhete: técnico 10%, comerciante 20%, fundo 10%, cofre de prémios 60%.
-// O jogo nunca compromete prémios superiores ao montante disponível no cofre.
+// Aposta mínima 1 €; valores em cêntimos e prémio máximo 100 vezes a aposta.
+// Divisão: técnico 10%, comerciante 20%, fundo 10%, cofre de prémios 60%.
+// Chave antiga mantida para preservar saldos de sessões anteriores.
 const KEY="raspadinha100x_v3_10eur";
-const PRICE=1000;
+const BET_LEVELS=[100,200,500,1000];
 const PRIZES=[
-  {value:1000, weight:700},{value:2000, weight:250},{value:5000, weight:30},
-  {value:10000, weight:10},{value:20000, weight:6},{value:50000, weight:3},
-  {value:100000, weight:1}
+  {mult:1,weight:700},{mult:2,weight:250},{mult:5,weight:30},
+  {mult:10,weight:10},{mult:20,weight:6},{mult:50,weight:3},
+  {mult:100,weight:1}
 ];
 const el=id=>document.getElementById(id);
 const eur=c=>(c/100).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
 const money=c=>(c/100).toLocaleString("pt-PT",{maximumFractionDigits:0})+" €";
 const randomInt=max=>Math.floor(Math.random()*max);
 function shuffle(items){for(let i=items.length-1;i>0;i--){const j=randomInt(i+1);[items[i],items[j]]=[items[j],items[i]]}return items}
-function fresh(){return{balance:100000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true}}
+function fresh(){return{balance:100000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true,bet:100}}
 function load(){
   try{
     const saved=JSON.parse(localStorage.getItem(KEY));
-    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0))return saved;
+    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0)){saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;return saved;}
   }catch(_){}
   return fresh();
 }
@@ -321,35 +331,47 @@ let state=load(),scratchAudio=null,audioContext=null;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(_){}}
 function status(msg){el("status").textContent=msg}
 function paintBalance(){el("balance").textContent=eur(state.balance);el("sound").textContent=state.sound?"🔊 Som ligado":"🔇 Som desligado";el("sound").setAttribute("aria-label",state.sound?"Desligar som":"Ligar som")}
-function selectPrize(bank){
-  if(bank<PRICE || Math.random()>=0.30)return 0;
-  const eligible=PRIZES.filter(p=>p.value<=bank);
+function paintBet(){
+  el("bet-value").textContent=money(state.bet);
+  el("bet-down").disabled=state.bet===BET_LEVELS[0];
+  el("bet-up").disabled=state.bet===BET_LEVELS[BET_LEVELS.length-1];
+  el("new").textContent="NOVA RASPADINHA · "+money(state.bet);
+}
+function adjustBet(direction){
+  const next=Math.max(0,Math.min(BET_LEVELS.length-1,BET_LEVELS.indexOf(state.bet)+direction));
+  state.bet=BET_LEVELS[next];save();paintBet();
+}
+function ticketBet(ticket){return BET_LEVELS.includes(ticket.bet)?ticket.bet:1000}
+function selectPrize(bank,bet){
+  if(bank<bet || Math.random()>=0.30)return 0;
+  const eligible=PRIZES.filter(p=>p.mult*bet<=bank);
   if(!eligible.length)return 0;
   const total=eligible.reduce((s,p)=>s+p.weight,0);
   let draw=Math.random()*total;
-  for(const p of eligible){draw-=p.weight;if(draw<0)return p.value}
-  return eligible[eligible.length-1].value;
+  for(const p of eligible){draw-=p.weight;if(draw<0)return p.mult*bet}
+  return eligible[eligible.length-1].mult*bet;
 }
 function buy(){
   if(state.ticket && !state.ticket.completed){status("Raspa ou revela primeiro o bilhete atual.");return}
-  if(state.balance<PRICE){status("Saldo insuficiente para comprar outro bilhete.");return}
+  const bet=state.bet;
+  if(state.balance<bet){status("Saldo insuficiente para comprar outro bilhete.");return}
   stopScratchSound();
   clearCelebration();
-  state.balance-=PRICE;
-  state.technician+=100;
-  state.merchant+=200;
-  state.reserve+=100;
-  state.prizeBank+=600;
-  const prize=selectPrize(state.prizeBank);
+  state.balance-=bet;
+  state.technician+=bet*0.10;
+  state.merchant+=bet*0.20;
+  state.reserve+=bet*0.10;
+  state.prizeBank+=bet*0.60;
+  const prize=selectPrize(state.prizeBank,bet);
   state.prizeBank-=prize; // reserva contabilística antes de revelar, evitando ultrapassar o cofre
   const nums=shuffle(Array.from({length:70},(_,i)=>i+1));
   const lucky=nums.slice(0,5),play=nums.slice(5,25);
   const winAt=prize>0?randomInt(20):-1;
   if(winAt>=0)play[winAt]=lucky[randomInt(5)];
   state.cards++;
-  state.ticket={id:state.cards,lucky,play,prize,winAt,revealed:[],completed:false};
+  state.ticket={id:state.cards,lucky,play,prize,bet,winAt,revealed:[],completed:false};
   save();render();
-  status("Raspa com o dedo. Cada bilhete custa 10 €.");
+  status("Raspa com o dedo. Prémio máximo: 100× a aposta.");
 }
 function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
   const cell=document.createElement("div");
@@ -427,15 +449,16 @@ function flashWinningCell(cell){
   cell.classList.add("flash-win");
 }
 function render(){
-  paintBalance();
+  paintBalance();paintBet();
   el("lucky").replaceChildren();el("play").replaceChildren();
   const ticket=state.ticket;
-  if(!ticket){el("ticketid").textContent="PRONTO A JOGAR";return}
+  if(!ticket){el("ticketid").textContent="PRONTO A JOGAR";el("ticket-top-prize").textContent=money(state.bet)+" → ATÉ "+money(state.bet*100);return}
   el("ticketid").textContent="BILHETE Nº "+ticket.id;
+  el("ticket-top-prize").textContent=money(ticketBet(ticket))+" → ATÉ "+money(ticketBet(ticket)*100);
   for(let i=0;i<5;i++)makeCell("lucky",ticket.lucky[i],"","l"+i,false,ticket.revealed.includes("l"+i));
   for(let i=0;i<20;i++){
     const winning=i===ticket.winAt;
-    const amount=winning?ticket.prize:PRIZES[randomInt(5)].value;
+    const amount=winning?ticket.prize:PRIZES[randomInt(5)].mult*ticketBet(ticket);
     makeCell("play",ticket.play[i],money(amount),"p"+i,winning,ticket.revealed.includes("p"+i));
   }
   if(ticket.completed)status(ticket.prize?"Ganhaste "+eur(ticket.prize)+"!":"Bilhete sem prémio. Tenta novamente!");
@@ -558,6 +581,8 @@ function stopScratchSound(){
   try{a.source.stop(a.ac.currentTime+.09)}catch(_){}
 }
 el("new").addEventListener("click",buy);
+el("bet-down").addEventListener("click",()=>adjustBet(-1));
+el("bet-up").addEventListener("click",()=>adjustBet(1));
 el("reveal").addEventListener("click",revealAll);
 el("sound").addEventListener("click",()=>{state.sound=!state.sound;stopScratchSound();save();paintBalance()});
 ["contextmenu","selectstart","dragstart","copy","cut"].forEach(n=>document.addEventListener(n,e=>e.preventDefault()));
