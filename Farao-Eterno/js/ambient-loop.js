@@ -8,6 +8,8 @@
 'use strict';
 const game=window.__faraoGame, fx=game?.audio;
 if(!game||!fx)return;
+// A apresentação existe mesmo em sessões retomadas a meio de um bónus.
+if(game._introCoverVisible===undefined)game._introCoverVisible=true;
 const normalURL='assets/pharaohs-ritual.mp3?v=1436a1f8';
 const bonusURL='assets/bonus-ritual.mp3?v=1.0';
 function makeTrack(url,volume){
