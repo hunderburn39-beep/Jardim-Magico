@@ -374,6 +374,28 @@ footer{color:#a1a9bb;font-size:9px;line-height:1.3;padding:2px 0}
   .lucky .cell b {font-size:clamp(15px,4vw,21px)}
 }
 
+
+/* Revelação cinematográfica: os medalhões vencedores pulsam por cima da grelha. */
+.play .cell.win-pop{
+  position:relative;
+  z-index:35;
+  transform-origin:center center;
+  animation:coinPrizePulse .64s cubic-bezier(.22,.85,.27,1.1) 2 both!important;
+  will-change:transform,filter;
+  overflow:visible;
+}
+.play .cell.winning.win-pop{
+  box-shadow:0 0 0 3px #fff5c0,0 0 19px 5px #ff4c3a,0 0 36px 10px #ffd35b,inset 0 0 18px #fff0a0!important;
+}
+@keyframes coinPrizePulse{
+  0%{transform:scale(1);filter:brightness(1)}
+  24%{transform:scale(1.27);filter:brightness(1.7)}
+  49%{transform:scale(.98);filter:brightness(1.05)}
+  72%{transform:scale(1.34);filter:brightness(1.9)}
+  100%{transform:scale(1);filter:brightness(1)}
+}
+#reveal:disabled{opacity:.72;cursor:progress;filter:saturate(.85)}
+@media(prefers-reduced-motion:reduce){.play .cell.win-pop{animation:none!important}}
 </style>
 </head>
 <body>
@@ -757,15 +779,13 @@ function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
     if(!canvas.isConnected)return;
     scratchHandlers.delete(canvas);
     canvas.remove();
-    if(isWinner){cell.classList.add("revealed");flashWinningCell(cell);}
     if(!state.ticket.revealed.includes(id))state.ticket.revealed.push(id);
+    const prizes=highlightRevealedWinners();
     if(state.ticket.revealed.length===21)finish();
     else{
       save();
-      if(isWinner){
-        const matches=state.ticket.wins.filter(win=>state.ticket.revealed.includes("p"+win.pos));
-        const current=state.ticket.wins.find(win=>"p"+win.pos===id);
-        status("Prémio encontrado: "+eur(current.amount)+"! Já descobriste "+matches.length+" de "+state.ticket.wins.length+".");
+      if(prizes.length){
+        status(prizes.length+" correspondência(s)! Prémio(s): "+prizes.map(w=>eur(w.amount)).join(" + ")+".");
       }else status("Casas raspadas: "+state.ticket.revealed.length+"/21. Continua a deslizar o dedo.");
     }
   }
@@ -785,13 +805,30 @@ function makeCell(parent,num,label,id,isWinner,alreadyRevealed){
   });
   // O gesto começa na camada fixa do bilhete; não no canvas de uma casa.
 }
-// Dispara o brilho também no botão "Raspar tudo", depois de desenhar o bilhete.
+// Só revela o prémio quando a casa E o número da sorte estão descobertos.
+function highlightRevealedWinners(){
+  const t=state.ticket;
+  if(!t || !Array.isArray(t.wins))return [];
+  const newlyMatched=[];
+  for(const win of t.wins){
+    if(!t.revealed.includes("p"+win.pos))continue;
+    const index=t.lucky.indexOf(t.play[win.pos]);
+    if(index<0||!t.revealed.includes("l"+index))continue;
+    const cell=el("play").children[win.pos];
+    if(!cell||cell.classList.contains("winning"))continue;
+    cell.classList.add("winning","revealed");
+    flashWinningCell(cell);
+    newlyMatched.push(win);
+  }
+  if(newlyMatched.length)playCoinsShower();
+  return newlyMatched;
+}
 function flashWinningCell(cell){
   if(!cell)return;
   cell.classList.add("revealed");
-  cell.classList.remove("flash-win");
-  void cell.offsetWidth; // reinicia a animação mesmo se a classe já estava presente
-  cell.classList.add("flash-win");
+  cell.classList.remove("flash-win","win-pop");
+  void cell.offsetWidth;
+  cell.classList.add("flash-win","win-pop");
 }
 function render(){
   paintBalance();paintBet();
@@ -803,9 +840,11 @@ function render(){
   el("ticket-top-prize").textContent=money(ticketBet(ticket))+" → ATÉ "+money(ticketBet(ticket)*100);
   for(let i=0;i<5;i++)makeCell("lucky",ticket.lucky[i],"","l"+i,false,ticket.revealed.includes("l"+i));
   for(let i=0;i<16;i++){
-    const winning=ticket.wins.some(win=>win.pos===i);
+    const revealed=ticket.revealed.includes("p"+i);
+    const luckyIndex=ticket.lucky.indexOf(ticket.play[i]);
+    const matched=ticket.wins.some(win=>win.pos===i)&&revealed&&luckyIndex>=0&&ticket.revealed.includes("l"+luckyIndex);
     const amount=ticket.cellPrizes[i];
-    makeCell("play",ticket.play[i],money(amount),"p"+i,winning,ticket.revealed.includes("p"+i));
+    makeCell("play",ticket.play[i],money(amount),"p"+i,matched,revealed);
   }
   if(ticket.completed)status(ticket.prize?"Ganhaste "+ticket.wins.length+" prémio(s)! Total: "+eur(ticket.prize):"Bilhete sem prémio. Tenta novamente!");
 }
@@ -817,15 +856,69 @@ function finish(){
   save();paintBalance();
   status(ticket.prize?"🎉 "+ticket.wins.length+" prémio(s)! TOTAL: "+eur(ticket.prize)+"!":"Bilhete sem prémio. Boa sorte no próximo!");
 }
-function revealAll(){
-  if(!state.ticket || state.ticket.completed)return;
+let revealAllRunning=false;
+const pauseReveal=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+function revealCellInPlace(group,index){
+  const ticket=state.ticket;
+  const id=(group==="play"?"p":"l")+index;
+  const cell=el(group).children[index];
+  if(!cell||ticket.revealed.includes(id))return false;
+  const foil=cell.querySelector("canvas");
+  if(foil){scratchHandlers.delete(foil);foil.remove();}
+  ticket.revealed.push(id);
+  cell.classList.add("revealed");
+  save();
+  return true;
+}
+async function revealAll(){
+  if(revealAllRunning||!state.ticket||state.ticket.completed)return;
+  revealAllRunning=true;
+  endScratch();
   stopScratchSound();
-  state.ticket.revealed=Array.from({length:5},(_,i)=>"l"+i).concat(Array.from({length:16},(_,i)=>"p"+i));
-  finish();render();
-  // Após revelar tudo, realçar explicitamente o quadrado com o prémio.
-  // Em bilhetes sem prémio, não se assinala nenhum quadrado como vencedor.
-  el("play").querySelectorAll(".cell.winning.revealed").forEach(flashWinningCell);
-  celebrateWinningTicket();
+  ensureAudio(); // desbloqueia o som no gesto real do botão, necessário em iPhone
+  const ticket=state.ticket;
+  const button=el("reveal");
+  const layer=el("scratch-layer");
+  button.disabled=true;
+  button.textContent="A REVELAR...";
+  layer.style.pointerEvents="none";
+  layer.setAttribute("aria-busy","true");
+  try{
+    // 1. Os 16 medalhões, sempre da esquerda para a direita e linha a linha.
+    for(let i=0;i<16;i++){
+      if(state.ticket!==ticket)break;
+      const revealedNow=revealCellInPlace("play",i);
+      if(!revealedNow)continue;
+      const matches=highlightRevealedWinners(); // pode haver sorte já raspada à mão
+      status("A revelar os teus números: "+(i+1)+"/16");
+      await pauseReveal(matches.length?850:145);
+    }
+    // 2. Só depois as cinco estrelas douradas da sorte.
+    for(let i=0;i<5;i++){
+      if(state.ticket!==ticket)break;
+      const revealedNow=revealCellInPlace("lucky",i);
+      if(!revealedNow)continue;
+      const matches=highlightRevealedWinners();
+      if(matches.length){
+        status("⭐ "+matches.length+" prémio(s) encontrado(s): "+matches.map(w=>eur(w.amount)).join(" + "));
+        await pauseReveal(1050); // mantém o pulsar e a chuva de moedas visíveis
+      }else{
+        status("Números da sorte: "+(i+1)+"/5");
+        await pauseReveal(220);
+      }
+    }
+    if(state.ticket===ticket&&ticket.revealed.length===21){
+      finish(); // soma os prémios e credita o saldo uma única vez
+      await pauseReveal(380);
+      celebrateWinningTicket();
+    }
+  }finally{
+    revealAllRunning=false;
+    button.disabled=false;
+    button.textContent="RASPAR TUDO";
+    layer.style.pointerEvents="";
+    layer.removeAttribute("aria-busy");
+  }
 }
 
 let celebrationTimeouts=[];
@@ -897,6 +990,31 @@ function ensureAudio(){
     if(audioContext.state==="suspended")audioContext.resume();
     return audioContext;
   }catch(_){return null}
+}
+// Chuva de moedas sintetizada no navegador: sem depender de ficheiros externos.
+// Volume vivo mas limitado para não distorcer em altifalantes de telemóvel.
+function playCoinsShower(){
+  const ac=ensureAudio();
+  if(!ac)return;
+  const start=ac.currentTime+.015;
+  for(let i=0;i<19;i++){
+    const t=start+i*.039+Math.random()*.014;
+    const base=850+Math.random()*1350;
+    for(let harmonic=0;harmonic<2;harmonic++){
+      const osc=ac.createOscillator();
+      const gain=ac.createGain();
+      osc.type=harmonic?"sine":"triangle";
+      osc.frequency.setValueAtTime(base*(harmonic?1.82:1),t);
+      osc.frequency.exponentialRampToValueAtTime(base*(harmonic?1.37:.72),t+.13);
+      const volume=harmonic?.028:.085;
+      gain.gain.setValueAtTime(.0001,t);
+      gain.gain.exponentialRampToValueAtTime(volume,t+.008);
+      gain.gain.exponentialRampToValueAtTime(.0001,t+.16);
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.start(t);osc.stop(t+.17);
+    }
+  }
 }
 function startScratchSound(){
   stopScratchSound();
