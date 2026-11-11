@@ -1,0 +1,30 @@
+name: Jardim Magico Stake Math Prototype
+
+on:
+  push:
+    branches: [feature/jardim-magico-stake-engine]
+    paths:
+      - 'stake-engine/jardim-magico/**'
+      - '.github/workflows/stake-prototype.yml'
+  pull_request:
+    paths:
+      - 'stake-engine/jardim-magico/**'
+      - '.github/workflows/stake-prototype.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-prototype:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install zstd
+        run: sudo apt-get update -qq && sudo apt-get install -y zstd
+      - name: Test independent math and library
+        working-directory: stake-engine/jardim-magico
+        run: |
+          python -m unittest discover -s tests -v
+          python math/prototype.py --rounds 300 --seed 20261111 --out build/base-prototype
