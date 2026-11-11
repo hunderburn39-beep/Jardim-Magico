@@ -155,7 +155,7 @@ class Game {
    for(const target of [...this.targets].reverse()){const {x:bx,y:by,w,h,action}=target;if(x>=bx&&y>=by&&x<=bx+w&&y<=by+h){this.audio.click();action();break;}}
   },{passive:false});
   document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){this.closeModal();return;}if(mod.classList.contains('hidden')===false)return;
-   if(ev.code==='Space'&&!ev.repeat&&!['BUTTON','INPUT','SELECT','A'].includes(ev.target.tagName)){ev.preventDefault();this.audio.init();this.startSpin();}
+   if(ev.code==='Space'&&!ev.repeat&&!['BUTTON','INPUT','SELECT','A'].includes(ev.target.tagName)){ev.preventDefault();this.audio.init();this.advanceStage();}
   });
   $('close-modal').addEventListener('click',()=>this.closeModal());
   window.addEventListener('storage',ev=>{if(ev.key===STORE_KEY&&ev.newValue){this.superseded=true;this.auto=0;this.paused=true;this.audio.stopMusic?.();$('session-lock').classList.remove('hidden');}});
@@ -338,7 +338,7 @@ class Game {
      this.audio.init();
      if(key==='menu')this.openInfo();
      else if(key==='sound')this.cycleSoundMode();
-     else this.startSpin();
+     else this.advanceStage();
     };
     b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();invoke();},{passive:false});
     b.addEventListener('click',e=>{if(e.detail===0)invoke();});
@@ -376,6 +376,108 @@ class Game {
     });
    }
   });
+ }
+
+ // O botão GIRAR é também AVANÇAR: salta apenas a apresentação
+ // da etapa atual. Nenhum resultado é alterado; créditos diferidos
+ // continuam a ser liquidados exclusivamente por creditNext() no frame.
+ shiftPresentation(delta){
+  if(!Number.isFinite(delta)||delta<=0)return;
+  const seen=new Set();
+  const shift=(item,keys)=>{
+   if(!item||seen.has(item))return;
+   seen.add(item);
+   for(const key of keys)if(Number.isFinite(item[key]))item[key]-=delta;
+  };
+  if(this.sequencePlayback){
+   shift(this.sequencePlayback,['start','end']);
+   this.sequencePlayback.stages?.forEach(st=>shift(st,['start','end','creditAt']));
+  }
+  if(this.reveal){
+   shift(this.reveal,['start','end']);
+   this.reveal.stages?.forEach(st=>shift(st,['start','end','creditAt']));
+  }
+  if(this.winCount){
+   shift(this.winCount,['start']);
+   this.winCount.stages?.forEach(st=>shift(st,['start','end']));
+  }
+  if(this.featureIntro)shift(this.featureIntro,['start','end']);
+  this.nextActionAt=Math.max(0,this.nextActionAt-delta);
+ }
+ advanceStage(){
+  if(this.superseded||!this.ready||!mod.classList.contains('hidden'))return;
+  this.audio.init();
+  const t=performance.now();
+  if(this.paused){
+   this.startSpin();
+   return;
+  }
+  // 1. Durante o giro, mostrar de imediato o resultado JÁ SORTEADO.
+  // O finishSpin normal (e os seus wrappers) tratam do pagamento único.
+  if(this.spinning&&this.spinObject){
+   const item=this.spinObject;
+   item.stopped.fill(true);
+   for(let i=0;i<5;i++)if(!this.landings[i])this.landings[i]=t;
+   this.audio.stopReelWhirr?.();
+   this.audio.tick?.(4);
+   this.finishSpin();
+   return;
+  }
+  // 2. Avançar uma linha/grupo do payout mantendo os seus créditos
+  // atómicos e sequenciais. O frame vai processar os grupos ultrapassados.
+  const play=this.sequencePlayback;
+  if(play?.stages?.length&&t<play.end){
+   const stages=play.stages;
+   const current=stages.findIndex(st=>t>=st.start&&t<=st.end);
+   const next=current>=0?stages[current+1]:stages.find(st=>st.start>t);
+   const dest=next?next.start+Math.min(65,next.preDelay*.30):play.end+15;
+   if(dest>t)this.shiftPresentation(dest-t);
+   return;
+  }
+  // Se o frame ainda não creditou todos os grupos, não iniciar outro giro.
+  if(this.ledger.payout)return;
+  // 3. No jogo base, avançar uma linha de cada vez até à última.
+  const lines=this.basePaylineDisplay;
+  if(lines?.length&&!this.lastWasFree&&t<lines.at(-1).end){
+   const current=lines.findIndex(st=>t>=st.start&&t<st.end);
+   const next=current>=0?lines[current+1]:lines.find(st=>st.start>t);
+   const dest=next?next.start+45:lines.at(-1).end+15;
+   const delta=dest-t;
+   if(delta>0){
+    for(const st of lines){st.start-=delta;st.end-=delta;}
+    this.nextActionAt=Math.max(0,this.nextActionAt-delta);
+   }
+   return;
+  }
+  // 4. Passar a página do livro sem pedir uma segunda confirmação.
+  if(this.featureIntro&&t<this.featureIntro.end){
+   const delta=this.featureIntro.end+15-t;
+   this.shiftPresentation(delta);
+   return;
+  }
+  // 5. Animações restantes (expansão / contagem / celebração).
+  if(this.reveal&&t<this.reveal.end){
+   const delta=this.reveal.end+15-t;
+   this.shiftPresentation(delta);
+   return;
+  }
+  if(this.winCount&&t<this.winCount.start+this.winCount.duration){
+   const delta=this.winCount.start+this.winCount.duration+15-t;
+   this.shiftPresentation(delta);
+   return;
+  }
+  // Aguardas após uma etapa podem ser ultrapassadas sem alterar RNG.
+  this.nextActionAt=Math.min(this.nextActionAt,t-1);
+  if(this.pendingSummary){
+   if(this.ledger.payout)return;
+   this._summaryRequested=true;
+   this.showSummary();
+   return;
+  }
+  // Nas Free Spins, não converter o toque em botão TURBO.
+  const prev=this._autoDispatch;
+  if(this.feature)this._autoDispatch=true;
+  try{this.startSpin();}finally{this._autoDispatch=prev;}
  }
 
  startSpin(){
