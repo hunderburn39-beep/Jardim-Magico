@@ -454,6 +454,12 @@ footer{color:#a1a9bb;font-size:9px;line-height:1.3;padding:2px 0}
   background:radial-gradient(circle at 40% 15%,#ff966d,#dc1742 54%,#750d26);
 }
 .play .cell.instant-symbol.winning b{color:#fff5c3;text-shadow:0 0 12px #fff0a9}
+/* Mesmo aspeto nas casas ainda tapadas, para não denunciar os prémios. */
+.play .cell.instant-symbol:not(.revealed){
+  border:2px solid #ffe1a0;
+  background:radial-gradient(circle at 32% 22%,#7e8eb0 0%,#30466d 26%,#172543 65%,#080f27 100%);
+  box-shadow:inset 0 3px 5px #ffffff66,inset 0 -5px 8px #030a1b,0 2px 0 #a96e24,0 0 9px #e4b45f55;
+}
 </style>
 </head>
 <body>
