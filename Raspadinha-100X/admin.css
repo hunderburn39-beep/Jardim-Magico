@@ -27,3 +27,29 @@
 .scratch-admin .scratch-admin-remove{background:linear-gradient(#ed7893,#a12945);color:#fff6e6}
 .scratch-admin-logout{width:100%;margin-top:7px}
 @media(max-width:365px){.scratch-admin-card{padding:6px}.scratch-admin-card>strong{font-size:17px}.scratch-admin-card h3{font-size:13px}.scratch-admin-card dl{font-size:9px}.summary .admin-trigger{font-size:9px;padding:6px}}
+
+
+/* Repartição das comissões e levantamentos independentes */
+.scratch-commission-section{margin-top:14px;border-top:1px solid #af9356;padding-top:12px}
+.scratch-commission-section h3{font-size:17px;margin:0 0 6px;color:#ffdc85;line-height:1.2}
+.scratch-commission-section h4{font-size:13px;color:#ffe5a7;margin:9px 0 6px}
+.scratch-commission-form{display:grid;grid-template-columns:1fr 1fr;gap:5px 9px;padding:10px;border:1px solid #9a844f;border-radius:11px;background:#0c1934}
+.scratch-commission-form label{font-size:11px!important;margin:0!important}
+.scratch-commission-form input{max-width:100%;text-align:center}
+.scratch-commission-form button{grid-column:1/-1}
+.scratch-commission-section #scratch-commission-note,.scratch-commission-section #scratch-commission-withdraw-note{font-size:11px;min-height:16px;color:#b4f6ce;line-height:1.3}
+.scratch-commission-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.scratch-commission-card{display:flex;min-width:0;flex-direction:column;gap:6px;padding:10px 8px;border:1px solid #c59f61;border-radius:12px;background:linear-gradient(145deg,#27344a,#111a33);box-shadow:inset 0 0 15px #d5a43b14}
+.scratch-commission-card h4{display:flex;justify-content:space-between;flex-wrap:wrap;gap:3px;font-size:14px;color:#ffdd87;margin:0 0 2px}
+.scratch-commission-card h4 span{color:#fff5c8}
+.scratch-commission-stat{display:flex;justify-content:space-between;flex-wrap:wrap;font-size:10px;color:#bfcbe0;gap:2px}
+.scratch-commission-stat strong{color:#fff5d8;font-size:12px;font-variant-numeric:tabular-nums}
+.scratch-commission-available{border-top:1px solid #a18c5a;padding-top:6px;font-size:10px;color:#ffdf93}
+.scratch-commission-available strong{display:block;color:#a6f6c8;font-size:19px;line-height:1.2;margin-top:4px;font-variant-numeric:tabular-nums}
+.scratch-commission-card label{font-size:10px!important;margin:3px 0 0!important}
+.scratch-commission-card input{font-size:16px;padding:8px}
+.scratch-commission-card button{font-size:10px;min-height:40px;padding:8px 5px}
+.scratch-commission-history{display:grid;gap:4px;border:1px solid #86744e;background:#0c1830;padding:9px;border-radius:10px;font-size:11px;color:#f7e8c4}
+.scratch-commission-history-item{border-bottom:1px solid #bba47b38;padding-bottom:4px;overflow-wrap:anywhere}
+.scratch-commission-history-item:last-child{border-bottom:0;padding-bottom:0}
+@media(max-width:355px){.scratch-commission-cards{gap:5px}.scratch-commission-card{padding:7px 5px}.scratch-commission-card h4{font-size:12px}.scratch-commission-card button{font-size:9px}}
