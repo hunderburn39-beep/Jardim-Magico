@@ -59,9 +59,13 @@
     spin.teasePlayed = false;
     const round = (this._cinemaRound || 0) + 1;
     this._cinemaRound = round;
-    // Free Spins mais rápidas; a mecânica e a grelha sorteada não mudam.
-    spin.duration = this.turbo ? 500 : spin.free ? 900 : 1040;
-    spin.reelGap = this.turbo ? 65 : spin.free ? 120 : 170;
+    // V1.3.58: Free Spins deliberadamente mais lentas do que o jogo base.
+    // Mesmo com Turbo guardado, os símbolos devem ser fáceis de seguir.
+    // Apenas tempo visual: resultado já está definido antes da animação.
+    spin.duration = spin.free ? (this.turbo ? 1350 : 1850)
+      : (this.turbo ? 500 : 1040);
+    spin.reelGap = spin.free ? (this.turbo ? 185 : 270)
+      : (this.turbo ? 65 : 170);
     // As paragens são estritamente sequenciais (1→2→3→4→5).
     // Duas torres acrescentam UMA pausa antes do próximo tambor; essa pausa
     // mantém-se nos seguintes, mesmo quando aparece a terceira torre.
