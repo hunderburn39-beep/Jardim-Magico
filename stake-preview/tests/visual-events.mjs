@@ -12,7 +12,7 @@ assert.match(source,/async function animateReelStop/);
 assert.match(source,/async function animateCascade/);
 assert.match(source,/async function playback/);
 assert.match(html, /data-bet="7\.5"/);
-assert.match(html, /V0\.8/);
+assert.match(html, /V0\.9/);
 const elements=new Map();
 function el(id) {
   if(!elements.has(id)) {
