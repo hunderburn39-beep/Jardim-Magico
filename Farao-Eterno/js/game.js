@@ -428,11 +428,21 @@ class Game {
   // atómicos e sequenciais. O frame vai processar os grupos ultrapassados.
   const play=this.sequencePlayback;
   if(play?.stages?.length&&t<play.end){
+   // Depois de avançar para uma linha, deixar os seus símbolos aparecer:
+   // cliques rápidos nunca devem saltar a combinação seguinte (ex. AAA).
+   if(t<(this._lineAdvanceGuardUntil||0))return;
    const stages=play.stages;
    const current=stages.findIndex(st=>t>=st.start&&t<=st.end);
    const next=current>=0?stages[current+1]:stages.find(st=>st.start>t);
    const dest=next?next.start+Math.min(65,next.preDelay*.30):play.end+15;
-   if(dest>t)this.shiftPresentation(dest-t);
+   if(dest>t){
+    this.shiftPresentation(dest-t);
+    if(next?.kind==='line'&&next.win){
+     const endOfReveal=next.start+(next.preDelay||0)+
+       (next.reels?.length||next.count||3)*(next.perReel||390);
+     this._lineAdvanceGuardUntil=Math.max(t+600,endOfReveal+130);
+    }else this._lineAdvanceGuardUntil=0;
+   }
    return;
   }
   // Se o frame ainda não creditou todos os grupos, não iniciar outro giro.
@@ -493,7 +503,7 @@ class Game {
   let begun;
   try{begun=S.begin(this.ledger,this.rng);}catch(e){this.auto=0;this.notice('SALDO INSUFICIENTE · FAZ UM DEPÓSITO',1900,'red');return;}
   this.syncLedger();if(!free&&this.auto>0)this.auto--;
-  this.reveal=null;this.featureIntro=null;this.winCount=null;this.sequencePlayback=null;this.basePaylineDisplay=[];this.lastWin=0;this.lastResult=null;this.expanded={};this.winCells=[];
+  this.reveal=null;this.featureIntro=null;this.winCount=null;this.sequencePlayback=null;this.basePaylineDisplay=[];this._lineAdvanceGuardUntil=0;this.lastWin=0;this.lastResult=null;this.expanded={};this.winCells=[];
   this.spinning=true;this.landings.fill(0);this.fxParticles=[];
   const t=performance.now(),duration=this.turbo?520:1180,reelGap=this.turbo?90:175;
   this.spinObject={grid:begun.pending.grid,result:begun.result,free,start:t,duration,reelGap,stopped:Array(5).fill(false),show:Array.from({length:5},()=>Array.from({length:14},()=>choose(E.ALL)))};
@@ -1310,7 +1320,17 @@ class Game {
     cx.globalAlpha=alpha;cx.lineWidth=6;
     cx.strokeStyle='#081625';cx.shadowColor='#ffdd83';cx.shadowBlur=17;
     cx.strokeText(prize,labelX,labelY);
-    cx.fillStyle='#fff0ad';cx.fillText(prize,labelX,labelY);cx.restore();
+    cx.fillStyle='#fff0ad';cx.fillText(prize,labelX,labelY);
+    if(freeLineStage){
+     // Confirmação visível da combinação de cada linha do bónus.
+     // Ex.: "3 × A" e "3 × 10" são mostrados separadamente.
+     const combination=chosen.count+' × '+chosen.symbol;
+     cx.font='900 16px Georgia,serif';
+     cx.lineWidth=4;cx.globalAlpha=alpha;
+     cx.strokeText(combination,labelX,labelY-27);
+     cx.fillText(combination,labelX,labelY-27);
+    }
+    cx.restore();
    }
   }
  drawIcon(sym,x,y,w,h,win=false,t=performance.now()){
