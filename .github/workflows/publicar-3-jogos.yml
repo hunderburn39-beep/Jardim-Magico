@@ -178,7 +178,8 @@ jobs:
           Path('/tmp/jardim-stake-preview.js').write_text(script)
           PY
           node --check /tmp/jardim-stake-preview.js
-          echo 'Stake preview: JavaScript sintaticamente válido.'
+          node stake-preview/tests/hold-probabilities.mjs
+          echo 'Stake preview: JS válido e 10 000 compras Hold verificadas.'
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
