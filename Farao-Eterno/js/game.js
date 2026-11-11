@@ -353,6 +353,7 @@ class Game {
    b.style.width=(w*sc)+'px';b.style.height=(h*scY)+'px';
    b.style.pointerEvents=this.superseded||!mod.classList.contains('hidden')?'none':'auto';
    if(key==='sound')b.setAttribute('aria-label','Áudio: '+this.soundModeLabel+'. Toque para mudar.');
+   if(key==='spin')b.setAttribute('aria-label','Girar ou avançar para a próxima etapa do jogo');
   }
     const root=$('touch-controls');
   while(root.children.length>this.targets.length)root.lastChild.remove();
