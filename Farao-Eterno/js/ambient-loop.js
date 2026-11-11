@@ -12,6 +12,9 @@
    {url:'assets/dark-pyramid-ambience.mp3?v=1.0',name:'Dark Pyramid Night Ambience Loop',artist:'szegvari',license:'CC0'}
  ];
  let selected=assets[0];
+ // Música a 75% do nível nominal; musicBus usa ganho-base 2.5 para o ducking dos Wilds.
+ const musicVolume=0.75, musicBusNormalGain=2.5;
+ const sampleGain=musicVolume/musicBusNormalGain;
  let rawPromise=null,buffer=null,decodePromise=null,playing=false,timer=null,nextStart=0;
  let sources=new Set();
  const allowed=()=>audio.ctx&&game.soundMode==='all'&&game.ledger?.settings?.music&&!game.paused&&!game.superseded&&!document.hidden;
@@ -65,8 +68,8 @@
      const source=ctx.createBufferSource(),gain=ctx.createGain();
      source.buffer=buffer;source.loop=false;
      gain.gain.setValueAtTime(.0001,t);
-     gain.gain.linearRampToValueAtTime(.105,t+blend);
-     gain.gain.setValueAtTime(.105,t+D-blend);
+     gain.gain.linearRampToValueAtTime(sampleGain,t+blend);
+     gain.gain.setValueAtTime(sampleGain,t+D-blend);
      gain.gain.linearRampToValueAtTime(.0001,t+D);
      source.connect(gain);gain.connect(audio.musicBus||audio.out||ctx.destination);
      const item={source,gain};sources.add(item);
@@ -108,5 +111,5 @@
    if(document.hidden)audio.stopMusic();
    else if(audio.ctx&&allowed())audio.startMusic();
  });
- game.ambientLoop={version:'1.3',get source(){return selected.name;},get artist(){return selected.artist;},get license(){return selected.license;},crossfade:true,get ready(){return !!buffer;}};
+ game.ambientLoop={version:'1.4-music75',get source(){return selected.name;},get artist(){return selected.artist;},get license(){return selected.license;},crossfade:true,get ready(){return !!buffer;}};
 })();
