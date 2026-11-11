@@ -525,14 +525,15 @@ class Game {
    const wonUnits=S.units(prize);
    const lineUnits=total>0?Math.min(wonUnits,Math.max(0,Math.round(wonUnits*rawLines/total))):0;
    let assigned=0;
-   const t0=finishedAt+(this.turbo?100:180),step=2450;
+   // 700 ms a desenhar até ao tambor 5 + 2 s de destaque + 450 ms de fade.
+   const t0=finishedAt+(this.turbo?100:180),step=3150;
    this.basePaylineDisplay=lines.map((win,i)=>{
     const remaining=lineUnits-assigned;
     const units=i===lines.length-1?remaining:
      Math.min(remaining,Math.max(0,Math.floor(lineUnits*win.amount/rawLines)));
     assigned+=units;
     const start=t0+i*step;
-    return {win,amount:S.credits(units),start,end:start+2450};
+    return {win,amount:S.credits(units),start,end:start+3150,_lineSoundPlayed:false};
    }).filter(entry=>entry.amount>0);
    if(this.basePaylineDisplay.length){
     const last=this.basePaylineDisplay.at(-1);
@@ -894,6 +895,15 @@ class Game {
     this.audio.paylineChime?.(stage.index);
    }
   }
+  // Cada linha do jogo base tem agora um som próprio, sincronizado
+  // com a caneta luminosa. Não credita nada: os prémios já foram pagos.
+  if(!this.spinning&&!this.paused&&!this.superseded&&!document.hidden){
+   const active=this.activeBasePaylineAt(t);
+   if(active&&!active._lineSoundPlayed){
+    active._lineSoundPlayed=true;
+    this.audio.paylineChime?.(Math.max(0,this.basePaylineDisplay.indexOf(active)));
+   }
+  }
   if(this.spinning&&!this.paused&&!document.hidden){
    const item=this.spinObject;
    // Nunca deixar um tambor posterior parar antes do anterior, mesmo
@@ -1094,66 +1104,101 @@ class Game {
    if(this.spinning || !this.lastResult?.lineWins?.length ||
       this.featureIntro&&t>=this.featureIntro.start&&t<this.featureIntro.end)return;
    const focus=this.sequenceFocusAt(t);
-   // No jogo base, mostrar somente o prémio efetivamente liquidado para
-   // cada linha durante 2 s e desvanecer nos 450 ms seguintes.
    const paidLine=this.activeBasePaylineAt(t);
    if(this.reveal&&t<this.reveal.end&&!focus&&!paidLine)return;
-   // Evita deixar a linha antiga a piscar indefinidamente no jogo base.
    if(!this.lastWasFree&&!focus&&!paidLine)return;
-   // Linha azul completa do tambor 1 ao 5, mesmo se apenas 2/3/4 peças pagarem.
-   // Só as peças da combinação têm pontos de destaque.
    const wins=this.lastResult.lineWins;
    const chosen=paidLine?.win||(focus
      ?focus.kind==='line'?focus.win:
-      focus.kind==='expansion'?wins.find(w=>w.expanded&&w.symbol===focus.symbol):
-      null
+      focus.kind==='expansion'?wins.find(w=>w.expanded&&w.symbol===focus.symbol):null
      :wins[Math.floor(t/1600)%wins.length]);
    if(!chosen||!Array.isArray(chosen.rows)||chosen.rows.length!==5)return;
-   const soften=Boolean(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-   const labelAlpha=paidLine?clamp((paidLine.end-t)/450,0,1):1;
-   const alpha=(soften?.92:.86+.12*Math.sin(t*.006))*labelAlpha;
+   const soften=Boolean(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+   const age=paidLine?Math.max(0,t-paidLine.start):0;
+   const penDuration=700; // da primeira imagem até ao tambor cinco
+   const progress=paidLine?clamp(age/penDuration,0,1):1;
+   const fade=paidLine?clamp((paidLine.end-t)/450,0,1):1;
+   if(fade<=0)return;
    const coords=chosen.rows.map((row,c)=>({
      x:left+c*interval+cw/2,
-     y:top+row*gh+gh*.80
+     y:top+row*gh+gh*.55
    }));
+   // O caminho completo vai sempre até ao 5.º tambor, mesmo quando
+   // apenas as primeiras 3 ou 4 figuras constituem a combinação.
+   const lengths=[];let length=0;
+   for(let i=1;i<coords.length;i++){
+    const segment=Math.hypot(coords[i].x-coords[i-1].x,coords[i].y-coords[i-1].y);
+    lengths.push(segment);length+=segment;
+   }
+   const covered=length*progress;
+   let travelled=0,tip={...coords[0]};
    const expander=chosen.expanded?this.lastResult.expanders?.find(e=>e.symbol===chosen.symbol):null;
    const paidReels=chosen.expanded
      ?new Set(expander?.reels||[])
      :new Set(Array.from({length:Math.min(5,chosen.count)},(_,i)=>i));
-   cx.save();cx.beginPath();cx.rect(left,top,5*interval-2,3*gh);cx.clip();
+   cx.save();
+   cx.beginPath();cx.rect(left,top,5*interval-2,3*gh);cx.clip();
    cx.lineJoin='round';cx.lineCap='round';
-   cx.beginPath();
-   coords.forEach((p,i)=>i?cx.lineTo(p.x,p.y):cx.moveTo(p.x,p.y));
-   // Traço azul ligeiramente mais espesso, com contorno para contraste.
-   cx.globalAlpha=.82*labelAlpha;cx.shadowBlur=0;cx.strokeStyle='#041d3f';cx.lineWidth=10;cx.stroke();
-   cx.globalAlpha=alpha;cx.strokeStyle='#299cff';cx.shadowColor='#42bcff';
-   cx.shadowBlur=soften?0:19;cx.lineWidth=5.6;cx.stroke();
-   cx.shadowBlur=0;cx.strokeStyle='#b1efff';cx.globalAlpha=.79*labelAlpha;cx.lineWidth=1.4;cx.stroke();
-   for(const c of paidReels){
-     const p=coords[c];if(!p)continue;
-     cx.globalAlpha=.92*labelAlpha;cx.fillStyle='#e2faff';cx.shadowColor='#64d0ff';
-     cx.shadowBlur=soften?0:15;
-     cx.beginPath();cx.arc(p.x,p.y,4.2,0,Math.PI*2);cx.fill();
+   cx.beginPath();cx.moveTo(coords[0].x,coords[0].y);
+   for(let i=1;i<coords.length;i++){
+    const seg=lengths[i-1];
+    if(covered>=travelled+seg){
+     cx.lineTo(coords[i].x,coords[i].y);tip=coords[i];
+    }else if(covered>travelled){
+     const u=(covered-travelled)/Math.max(1,seg);
+     tip={
+      x:coords[i-1].x+(coords[i].x-coords[i-1].x)*u,
+      y:coords[i-1].y+(coords[i].y-coords[i-1].y)*u
+     };
+     cx.lineTo(tip.x,tip.y);break;
+    }else break;
+    travelled+=seg;
+   }
+   // Contorno escuro + caneta azul luminosa com núcleo branco, bem visível
+   // nas imagens HD sem criar uma faixa ou retângulo de fundo.
+   cx.globalAlpha=.91*fade;
+   cx.shadowBlur=0;cx.strokeStyle='#051e38';cx.lineWidth=11;cx.stroke();
+   cx.globalAlpha=.98*fade;
+   cx.shadowColor='#46cfff';cx.shadowBlur=soften?10:21;
+   cx.strokeStyle='#218fff';cx.lineWidth=6.8;cx.stroke();
+   cx.shadowBlur=0;cx.globalAlpha=.96*fade;
+   cx.strokeStyle='#d9faff';cx.lineWidth=2.5;cx.stroke();
+   // Apenas os símbolos que pagam ficam com ponto luminoso, à medida
+   // que a ponta da caneta passa por cada um.
+   let distance=0;
+   for(let c=0;c<coords.length;c++){
+    if(c>0)distance+=lengths[c-1];
+    if(!paidReels.has(c)||distance>covered+1)continue;
+    const p=coords[c];
+    cx.globalAlpha=.95*fade;cx.shadowColor='#d4faff';cx.shadowBlur=14;
+    cx.fillStyle='#efffff';cx.beginPath();cx.arc(p.x,p.y,4.7,0,Math.PI*2);cx.fill();
+   }
+   // Ponta móvel — estrela azul/branca como uma caneta a escrever.
+   if(paidLine&&progress<1){
+    cx.globalAlpha=fade;
+    cx.fillStyle='#ffffff';cx.shadowColor='#9defff';cx.shadowBlur=23;
+    cx.beginPath();cx.arc(tip.x,tip.y,6.7,0,Math.PI*2);cx.fill();
+    cx.strokeStyle='#e8faff';cx.lineWidth=1.5;cx.shadowBlur=13;
+    cx.beginPath();cx.moveTo(tip.x-11,tip.y);cx.lineTo(tip.x+11,tip.y);
+    cx.moveTo(tip.x,tip.y-11);cx.lineTo(tip.x,tip.y+11);cx.stroke();
    }
    cx.restore();
-   if(paidLine&&labelAlpha>0){
-     // A quantia aparece junto ao último símbolo que pagou,
-     // mantendo-se dentro da moldura também quando há cinco símbolos.
-     const index=Math.min(4,Math.max(0,chosen.count-1));
-     const point=coords[index];
-     const prize=money(paidLine.amount);
-     cx.save();
-     cx.font='900 20px Georgia,serif';
-     cx.textAlign='left';cx.textBaseline='middle';cx.lineJoin='round';
-     const width=cx.measureText(prize).width;
-     const labelX=clamp(point.x+15,left+12,left+5*interval-10-width);
-     const labelY=clamp(point.y-33,top+22,top+3*gh-20);
-     cx.globalAlpha=labelAlpha;
-     cx.lineWidth=5.5;cx.strokeStyle='#0c1b29';
-     cx.shadowColor='#ffd981';cx.shadowBlur=13;
-     cx.strokeText(prize,labelX,labelY);
-     cx.fillStyle='#ffe9ae';cx.fillText(prize,labelX,labelY);
-     cx.restore();
+   if(paidLine&&progress>=.88){
+    // A quantia surge quando a caneta chega ao final do percurso.
+    // Visível ~2 s, seguida de 450 ms de desaparecimento suave.
+    const index=Math.min(4,Math.max(0,chosen.count-1));
+    const p=coords[index],prize=money(paidLine.amount);
+    const appear=clamp((age-penDuration*.88)/100,0,1);
+    const alpha=fade*appear;
+    cx.save();cx.font='900 21px Georgia,serif';
+    cx.textAlign='left';cx.textBaseline='middle';cx.lineJoin='round';
+    const width=cx.measureText(prize).width;
+    const labelX=clamp(p.x+15,left+12,left+5*interval-10-width);
+    const labelY=clamp(p.y-39,top+22,top+3*gh-20);
+    cx.globalAlpha=alpha;cx.lineWidth=6;
+    cx.strokeStyle='#081625';cx.shadowColor='#ffdd83';cx.shadowBlur=17;
+    cx.strokeText(prize,labelX,labelY);
+    cx.fillStyle='#fff0ad';cx.fillText(prize,labelX,labelY);cx.restore();
    }
   }
  drawIcon(sym,x,y,w,h,win=false,t=performance.now()){
