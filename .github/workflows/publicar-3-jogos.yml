@@ -179,7 +179,8 @@ jobs:
           PY
           node --check /tmp/jardim-stake-preview.js
           node stake-preview/tests/hold-probabilities.mjs
-          echo 'Stake preview: JS válido e 10 000 compras Hold verificadas.'
+          node stake-preview/tests/visual-events.mjs
+          echo 'Stake preview: JS válido, 10 000 compras Hold e animações verificadas.'
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
