@@ -772,9 +772,10 @@ function buy(){
     if(win.type==="instant")play[win.pos]=null;
     else play[win.pos]=lucky[luckyIndices[nextLucky++]];
   }
+  const visiblePrizes=PRIZES.filter(item=>item.mult<=maxMult);
   const cellPrizes=Array.from({length:16},(_,i)=>{
     const award=wins.find(w=>w.pos===i);
-    return award?award.amount:PRIZES[randomInt(PRIZES.length)].mult*bet;
+    return award?award.amount:visiblePrizes[randomInt(visiblePrizes.length)].mult*bet;
   });
   state.cards++;
   state.ticket={id:state.cards,lucky,play,prize,bet,maxMult,wins,cellPrizes,paidWins:[],revealed:[],completed:false};
@@ -1123,6 +1124,7 @@ function showCelebration(prizeCents){
   if(!Number.isFinite(prizeCents)||prizeCents<=0)return;
   clearCelebration();
   const overlay=el("celebration");
+  el("celebration-logo-mult").textContent=maxForTicket(state.ticket)+"X";
   const wins=state.ticket?.wins||[];
   el("celebration-subtitle").textContent=wins.length===1?"GANHASTE 1 PRÉMIO":"GANHASTE "+wins.length+" PRÉMIOS";
   el("celebration-breakdown").textContent=wins.length>1?wins.map(w=>money(w.amount)).join(" + "):"";
