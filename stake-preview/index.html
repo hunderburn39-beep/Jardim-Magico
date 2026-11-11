@@ -318,7 +318,7 @@ async function playback(book){
       previousRemoved=evt.removed;
       $("dropNum").textContent=evt.drop;
       $("multiNum").textContent="×"+evt.multi;
-      $("hud").textContent=evt.freeSpin?"FREE SPIN "+evt.freeSpin:evt.free?"FREE SPINS":"✦ QUEDA "+evt.drop;
+      $("hud").textContent=(replayBet!==null?"↺ REPLAY · ":"")+(evt.freeSpin?"FREE SPIN "+evt.freeSpin:evt.free?"FREE SPINS":"✦ QUEDA "+evt.drop);
       if(evt.lines.length){
         const value=money(evt.free?evt.lines.reduce((sum,line)=>sum+line.amount,0):evt.win);
         say(evt.free?evt.lines.length+" LINHA(S) · BRUTO "+value+" créditos":evt.lines.length+" LINHA(S) · +"+value+" créditos","good");beep(760);
@@ -350,7 +350,7 @@ async function playback(book){
     }
   }
 }
-async function play(mode="base"){if(busy)return;const bet=BETS[betIndex],cost=bet*(mode==="free"?20:mode==="hold"?30:1);if(balance+1e-7<cost){say("Saldo de teste insuficiente: usa o botão + no topo.");return}busy=true;skipAnimations=false;clearFreeHud();controls();try{const balanceBefore=balance,lastBefore=lastWin;balance=Math.round((balance-cost)*100)/100;display();const b=generate(mode);const payout=+(b.payout/100*bet).toFixed(2);await playback(b);balance=+(balance+payout).toFixed(2);lastWin=payout;recordRound(mode,bet,cost,payout,b);display();$("hud").textContent="✦ RONDA CONCLUÍDA ✦";$("dropNum").textContent="0";$("multiNum").textContent="×1";if(payout>0){const tier=finalWinTier(payout,bet);toast(tier,format(payout),payout>=bet*10?"big":"normal");say(tier+": "+format(payout)+" créditos","good");beep(910)}else say("Sem prémio nesta jogada. Experimenta novamente.")}catch(e){console.error(e);say("Erro na simulação: "+e.message)}finally{busy=false;skipAnimations=false;clearPayline();clearFreeHud();controls();if(autoLeft){autoLeft--;controls();if(autoLeft&&balance>=BETS[betIndex]){await sleep(190);play("base")}else{autoLeft=0;controls()}}}}
+async function play(mode="base"){if(busy)return;const bet=BETS[betIndex],cost=bet*(mode==="free"?20:mode==="hold"?30:1);if(balance+1e-7<cost){say("Saldo de teste insuficiente: usa o botão + no topo.");return}busy=true;skipAnimations=false;clearFreeHud();controls();const balanceBefore=balance,lastBefore=lastWin;try{balance=Math.round((balance-cost)*100)/100;display();const b=generate(mode);const payout=+(b.payout/100*bet).toFixed(2);await playback(b);balance=+(balance+payout).toFixed(2);lastWin=payout;recordRound(mode,bet,cost,payout,b);display();$("hud").textContent="✦ RONDA CONCLUÍDA ✦";$("dropNum").textContent="0";$("multiNum").textContent="×1";if(payout>0){const tier=finalWinTier(payout,bet);toast(tier,format(payout),payout>=bet*10?"big":"normal");say(tier+": "+format(payout)+" créditos","good");beep(910)}else say("Sem prémio nesta jogada. Experimenta novamente.")}catch(e){console.error(e);balance=balanceBefore;lastWin=lastBefore;autoLeft=0;display();$("holdOverlay").classList.remove("show");say("Erro na simulação. Os créditos desta jogada foram devolvidos.")}finally{busy=false;skipAnimations=false;clearPayline();clearFreeHud();controls();if(autoLeft){autoLeft--;controls();if(autoLeft&&balance>=BETS[betIndex]){await sleep(190);play("base")}else{autoLeft=0;controls()}}}}
 $("spin").addEventListener("click",()=>play("base"));
 $("skipBtn").addEventListener("click",()=>{if(!busy)return;skipAnimations=true;controls();say("A apresentar o resultado final desta jogada…","bonus")});
 $("minus").addEventListener("click",()=>{betIndex=Math.max(0,betIndex-1);display();saveSession()});
