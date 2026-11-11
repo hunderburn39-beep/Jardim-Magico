@@ -1,46 +1,49 @@
-# Jardim Mágico — edição experimental para Stake Engine
+# Jardim Mágico — edição experimental para Stake Engine (fase B)
 
-**Estado: protótipo de matemática base, não pronto para submissão.** A edição jogável existente em `jardim-phaser/` fica intocada. Este diretório é independente e **não** recebe depósitos, apostas reais ou pagamentos.
+**Estado: PROTÓTIPO TÉCNICO — NÃO SUBMETER / NÃO JOGAR COM DINHEIRO REAL.**
+Este projeto vive isolado em `stake-engine/jardim-magico/`, num ramo de desenvolvimento; a edição jogável `jardim-phaser/` **não foi modificada**.
 
-## Objetivo e fontes
+## Objetivo
 
-Preparar uma adaptação comercial original do Jardim Mágico (Phaser 3) às exigências do Stake Engine, mantendo os elementos de identidade que possam ser comprovadamente licenciados para utilização comercial.
+Adaptar a lógica do Jardim Mágico para livros de resultados independentes exigidos pelo Stake Engine, conservando o que fizer sentido da identidade original, sujeito à confirmação de direitos de utilização comercial.
 
-- Guia oficial: https://stakeengine.org/docs
-- Restrições: https://stakeengine.org/docs/approval-guidelines
-- Formato matemático: https://engineio.github.io/math-sdk/rgs_docs/data_format/
-- SDK oficial: https://github.com/engineio/math-sdk
+- Documentação oficial: https://stakeengine.org/docs
+- Diretrizes de aprovação: https://stake-engine.com/docs/approval-guidelines
+- Formato: https://github.com/engineio/docs/blob/main/src/routes/faq/math/what-files-are-required/%2Bpage.svx
+- Math SDK: https://github.com/engineio/math-sdk
 
-## Trabalho já feito (fase A)
+## Motor e versões
 
-- O `math/prototype.py` gera rondas **independentes** com a grelha 5×3, as dez linhas de prémio, WILD e cascatas. Começa em cada aposta sem consultar banca, saldo, depósitos, modo de administração ou jogadas anteriores.
-- Mantém os coeficientes nominais da edição Phaser em unidades inteiras de 1/100 aposta e emite eventos visuais por etapa.
-- Gera uma biblioteca comprimida `books_base.jsonl.zst`, a tabela CSV `lookUpTable_base_0.csv` e um `index.json` compatível com a **estrutura documental** exigida pelo Engine. Cada linha do CSV corresponde ao `id` e ao `payoutMultiplier` da biblioteca.
-- Inclui testes de pagamentos básicos, WILD, cascata, reprodução de rondas e consistência dos ficheiros.
+- `math/prototype.py`: prova de conceito antiga **apenas do jogo base**, preservada para comparação.
+- `math/complete.py`: novo gerador experimental com **3 modos**: `base` (custo 1×), `free_buy` (20×) e `hold_buy` (30×).
+- A base tem grelha 5×3, dez linhas, WILD e cascatas; 3 SCATTER em qualquer etapa ativam 15 Free Spins; se não houver SCATTER prioritário, 6 moedas ativam Hold & Win.
+- As Free Spins acontecem **inteiramente no mesmo livro de resultados** e podem ser prolongadas por 2/3 SCATTER, até 60 jogos (multiplicador acumulado até ×1000). O valor bruto acumula e paga uma vez no fim da série.
+- O Hold usa grelha 4×4, começa com seis moedas e reinicia as três tentativas quando recebe moedas novas. A grelha completa recebe, nesta versão experimental, uma **recompensa fixa de conclusão de 250×**. É um prémio fixo do mesmo resultado, **não** um jackpot progressivo; a interpretação para aprovação carece de confirmação.
+- Cada aposta produz um resultado fechado com **um único evento `finalWin`**. O motor não guarda estado de apostas anteriores, cofres, pagamentos, perfis ou saldos de jogador.
+- Cada modo cria `books_<modo>.jsonl.zst`, `lookUpTable_<modo>_0.csv` e entrada em `index.json`. A tabela CSV contém o ID, o peso inteiro positivo inicial 1 e o multiplicador inteiro idêntico ao respetivo livro. `payoutMultiplier = 100` corresponde a 1× da aposta base, independentemente do custo do modo.
 
-## Limitações **importantes**
+**Aviso:** isto é uma **aproximação inicial das regras aprovadas**, não uma cópia exata do motor anterior. O simulador em números inteiros tem de ser revisto para respeitar o arredondamento por linha e possíveis nuances dos pagamentos. Os resultados continuam sem garantia estatística de RTP; frequências, pesos e volatilidade não foram calibrados.
 
-**Não submeter estes ficheiros.** Só o modo base está implementado. SCATTER, Free Spins e Hold & Win estão deliberadamente inativos; não são pagos nem disparados neste protótipo e a sua integração matemática é trabalho futuro. Não há garantia de RTP alvo, volatilidade ou aceitação do Engine. O `sample-report.json` contém apenas o RTP empírico da amostra criada (em percentagem), não uma certificação ou RTP ajustado. A compatibilidade da estrutura dos ficheiros não equivale à validação oficial do RGS. Falta também um frontend ligado ao fluxo `/play` e testes no ambiente da plataforma.
+## Executar e testar
 
-O Engine exige independência total das apostas e **proíbe jackpots, continuation, gamble e cashout antecipado**. Por isso, os jackpots ilustrativos, o cofre e os perfis de administração da versão de demonstração não entram nesta edição. Os bónus terão de ser resultados completos numa única aposta (sem carry entre rondas).
-
-O cenário colorido e os símbolos podem ter de ser redesenhados numa direção artística claramente adulta. Antes de publicar, confirmar titularidade/licenças de todas as imagens, áudio e marca, e obter aprovação da equipa da plataforma.
-
-## Executar em ambiente local de desenvolvimento
-
-Requer Python >=3.10 e `zstd` no PATH ou o módulo `zstandard`.
+Requer Python >=3.10 e o executável `zstd` (ou o módulo Python `zstandard`).
 
 ```bash
 cd stake-engine/jardim-magico
-python3 -m unittest discover -s tests -v
-python3 math/prototype.py --rounds 1000 --seed 20261111 --out build/base-prototype
+python -m unittest discover -s tests -v
+python math/complete.py --rounds 1000 --seed 20261111 --out build/features-prototype
 ```
 
-`build/` é local, não deve ser incluído no Git. As simulações são pré-geradas para análise e validação; o servidor do operador, não o browser do jogador, selecionará os resultados ponderados depois da integração e aprovação.
+No GitHub, o workflow `.github/workflows/stake-prototype.yml` testa as duas implementações, produz 300 simulações de cada modo e disponibiliza os ficheiros experimentais temporariamente como artefactos.
 
-## Próximas etapas antes de qualquer submissão
+O relatório `sample-report.json` indica **RTP e taxa de acerto empíricos** da amostra, não uma previsão teórica fiável, nem um RTP aprovado para jogo comercial. Para cada modo, o cálculo percentual corrige o custo de compra, p. ex. 20× em `free_buy`.
 
-1. Definir matemática completa: ativação e pagamentos de SCATTER, Free Spins e Hold & Win, a terminar na mesma ronda; rever todas as regras e multiplicadores.
-2. Substituir o modelo experimental por integração com o Math SDK oficial (ou validar formalmente os ficheiros alternativos), gerar biblioteca grande e otimizar um RTP por modo, com testes estatísticos e de máximo prémio.
-3. Adaptar frontend Phaser a eventos vindos do RGS, sem geração de prémios no cliente; validar o modo de simulação no testnet.
-4. Auditar licenças e identidade visual; documentação de jogo responsável, acessibilidade, formatos móveis e revisão de aprovação.
+## Limitações e bloqueadores para aprovação
+
+1. **Matemática:** rever arredondamentos, regras exatas e hit rate, gerar grande amostra e ponderações, definir RTP teórico e intervalo de volatilidade, ensaiar prémios extremos; validar no RGS/Math SDK oficial.
+2. **Produto:** desenvolver um frontend Phaser independente, que apenas reproduz eventos fornecidos pela plataforma; integração de sessão, `/play`, `/end-round`, replays, erros e acessibilidade.
+3. **Direção artística adulta:** rever tema e símbolos para não atrair menores; confirmar os direitos de todos os ficheiros visuais e sons. Não usar marcas Stake/Kick nos assets.
+4. **Regras:** remover jackpots de qualquer apresentação e submeter a recompensa fixa de conclusão a revisão, documentar o pagamento integral de cada bónus na mesma aposta.
+5. **Segurança/compliance:** nenhuma conta, depósito, levantamento ou transação real neste protótipo; não existe certificação de RNG, RTP ou legislação aplicável.
+
+**Apenas demonstrativo e para revisão técnica.** Não há ligação à plataforma, publicação comercial nem aprovação.
