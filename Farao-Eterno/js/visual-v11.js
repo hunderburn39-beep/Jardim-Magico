@@ -172,6 +172,73 @@
   }catch(e){}
   letterBounds.set(img,box);return box;
  }
+ // V1.3.52 — figuras premium com vida, preservando os WebP HD aprovados.
+ // Máscara dourada pré-calculada por ficheiro: transparência original intacta
+ // e nenhum filtro pesado aplicado repetidamente aos 15 símbolos.
+ const livingFigures=new Set(['HORUS','MASK','ANUBIS','KING']);
+ const livingGoldMasks=new WeakMap();
+ function goldenSilhouette(img){
+  let mask=livingGoldMasks.get(img);
+  if(mask)return mask;
+  const f=Math.min(1,220/Math.max(img.naturalWidth,img.naturalHeight));
+  const w=Math.max(1,Math.round(img.naturalWidth*f));
+  const h=Math.max(1,Math.round(img.naturalHeight*f));
+  mask=document.createElement('canvas');mask.width=w;mask.height=h;
+  const g=mask.getContext('2d',{alpha:true});
+  g.drawImage(img,0,0,w,h);
+  g.globalCompositeOperation='source-in';
+  g.fillStyle='#ffe4a0';g.fillRect(0,0,w,h);
+  g.globalCompositeOperation='source-over';
+  livingGoldMasks.set(img,mask);
+  return mask;
+ }
+ function drawLivingFigure(img,sym,x,y,w,h,size,t,win,paused){
+  const scale=Math.min(size/img.naturalWidth,size/img.naturalHeight);
+  const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
+  const px=x+(w-iw)/2,py=y+(h-ih)/2;
+  // Movimento orgânico: não altera geometria nem a animação dos tambores.
+  const seed=({HORUS:.4,MASK:2.1,ANUBIS:3.7,KING:5.4})[sym]+x*.017+y*.004;
+  const animate=!paused&&!reducedMotion;
+  const breath=animate?1.013+.018*Math.sin(t*.0022+seed):1;
+  const floatY=animate?1.65*Math.sin(t*.00135+seed):0;
+  const shimmer=animate?.5+.5*Math.sin(t*.0025+seed):.45;
+  ctx.save();
+  ctx.translate(x+w/2,y+h/2);
+  ctx.scale(breath,breath);
+  ctx.translate(-x-w/2,-y-h/2);
+  // Aura dourada segue a silhueta da imagem, sem caixas nem fundos.
+  ctx.shadowColor=win?'rgba(159,224,255,.84)':'rgba(255,187,73,.70)';
+  ctx.shadowBlur=win?20:9+6*shimmer;
+  ctx.drawImage(img,px,py+floatY,iw,ih);
+  ctx.shadowBlur=0;
+  const mask=goldenSilhouette(img);
+  ctx.globalCompositeOperation='screen';
+  ctx.globalAlpha=.055+.11*shimmer;
+  ctx.drawImage(mask,px,py+floatY,iw,ih);
+  if(animate){
+   // Varre a figura com um feixe dourado, recortado à própria arte.
+   const phase=(t*.00031+seed*.13)%1;
+   const beamX=px+iw*(-.12+1.24*phase);
+   for(const [offset,width,alpha] of [[-12,12,.12],[-3,8,.47],[8,12,.12]]){
+    ctx.save();ctx.beginPath();ctx.rect(beamX+offset,py+floatY,Math.min(width,iw),ih);
+    ctx.clip();
+    ctx.globalAlpha=(win?1:.8)*alpha;
+    ctx.drawImage(mask,px,py+floatY,iw,ih);
+    ctx.restore();
+   }
+   // Reflexo pontual em forma de estrela: breve, com fase distinta por figura.
+   const glint=Math.max(0,1-Math.abs(phase-.52)/.18);
+   if(glint>.01){
+    const gx=px+iw*(.20+.60*phase),gy=py+floatY+ih*.32;
+    const a=glint*(win?.96:.72);
+    ctx.save();ctx.globalAlpha=a;ctx.shadowColor='#ffedac';ctx.shadowBlur=8;
+    ctx.strokeStyle='#fff9d2';ctx.lineWidth=1.45;ctx.beginPath();
+    ctx.moveTo(gx-5,gy);ctx.lineTo(gx+5,gy);
+    ctx.moveTo(gx,gy-7);ctx.lineTo(gx,gy+7);ctx.stroke();ctx.restore();
+   }
+  }
+  ctx.restore();
+ }
  // Larger icons, strictly preserving their source aspect ratio.
  game.drawIcon=function(sym,x,y,w,h,win=false,t=performance.now()){
   const img=this.images[sym],size=Math.min(w-4,h-4)*(sym==='TOMB'?1.0815:1);
@@ -215,6 +282,8 @@
     ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,
       x+(w-iw)/2,y+(h-ih)/2,iw,ih);
     ctx.restore();
+   }else if(livingFigures.has(sym)){
+    drawLivingFigure(img,sym,x,y,w,h,size,t,win,this.spinning);
    }else{
     const scale=Math.min(size/img.naturalWidth,size/img.naturalHeight);
     const iw=img.naturalWidth*scale,ih=img.naturalHeight*scale;
@@ -557,7 +626,7 @@
     for(let i=0;i<keys.length;i++)
       this.drawMiniSymbol(keys[i],294+i*step,bonusesY+(35-size)/2,size);
   }
-  txt('V1.3.51',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.52',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
