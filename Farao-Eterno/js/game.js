@@ -426,25 +426,27 @@ class Game {
   if(stagedPayout.length){
    let cursor=finishedAt+140;
    const stages=stagedPayout.map((group,index)=>{
-    // O tempo de cada imagem cresce de cima para baixo; pausa antes da próxima.
+    // A revelação das linhas vencedoras nas Free Spins deve permitir
+    // distinguir cada figura: batida por símbolo, seguida de pausa final.
+    // Estes tempos são APENAS visuais; a matemática mantém-se.
     const reels=[...group.reels];
-    // Nas Free Spins, revelar depressa cada sequência; os créditos continuam
-    // a ser pagos uma só vez, na ordem e no momento creditAt.
-    const isLine=group.kind==='line';
-    const perReel=item.free?(this.turbo?(isLine?40:100):(isLine?70:155))
-      :(this.turbo?355:700);
-    const preDelay=item.free?(this.turbo?45:75):(this.turbo?170:340);
+    const isLine=group.kind==='line'&&group.count>=3;
+    const freeLine=item.free&&isLine;
+    const perReel=freeLine?(this.turbo?280:390)
+      :item.free?(this.turbo?100:155):(this.turbo?355:700);
+    const preDelay=freeLine?(this.turbo?130:190)
+      :item.free?(this.turbo?45:75):(this.turbo?170:340);
     const creditAt=cursor+preDelay+Math.max(1,reels.length)*perReel;
-    const end=creditAt+(item.free
-      ?(this.turbo?(isLine?85:160):(isLine?120:300))
-      :(this.turbo?670:1250));
+    const end=creditAt+(freeLine?(this.turbo?540:850)
+      :item.free?(this.turbo?160:300):(this.turbo?670:1250));
     const stage={...group,index,start:cursor,preDelay,perReel,
      reels,creditAt,end,amount:S.credits(group.amountU),
      win:group.kind==='line'?result.lineWins.find(w=>!w.expanded&&
        w.line===group.line&&w.symbol===group.symbol):null};
     if(group.kind==='expansion')reels.forEach((reel,k)=>
      this.emitBurst(83+reel*101,444,13,'#83ffef',cursor+preDelay+(k+1)*perReel));
-    cursor=end+(item.free?(this.turbo?40:85):(this.turbo?380:840));
+    cursor=end+(freeLine?(this.turbo?160:240)
+      :item.free?(this.turbo?40:85):(this.turbo?380:840));
     return stage;
    });
    const end=stages.at(-1).end;
@@ -892,7 +894,9 @@ class Game {
     this.save();
     this.announce('Sequência '+(stage.index+1)+': '+money(stage.amount)+
       '. Saldo '+money(this.balance)+'.');
-    this.audio.paylineChime?.(stage.index);
+    // Nas linhas de Free Spins, a escala musical já acompanhou a
+    // revelação de cada figura; não repetir um chime por cima.
+    if(stage.kind!=='line')this.audio.paylineChime?.(stage.index);
    }
   }
   // Cada linha do jogo base tem agora um som próprio, sincronizado
@@ -1105,6 +1109,7 @@ class Game {
       this.featureIntro&&t>=this.featureIntro.start&&t<this.featureIntro.end)return;
    const focus=this.sequenceFocusAt(t);
    const paidLine=this.activeBasePaylineAt(t);
+   const freeLineStage=this.lastWasFree&&focus?.kind==='line'&&focus.win?focus:null;
    if(this.reveal&&t<this.reveal.end&&!focus&&!paidLine)return;
    if(!this.lastWasFree&&!focus&&!paidLine)return;
    const wins=this.lastResult.lineWins;
@@ -1116,8 +1121,11 @@ class Game {
    const soften=Boolean(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
    const age=paidLine?Math.max(0,t-paidLine.start):0;
    const penDuration=700; // da primeira imagem até ao tambor cinco
-   const progress=paidLine?clamp(age/penDuration,0,1):1;
-   const fade=paidLine?clamp((paidLine.end-t)/450,0,1):1;
+   const progress=paidLine?clamp(age/penDuration,0,1)
+     :freeLineStage?clamp((t-freeLineStage.start-freeLineStage.preDelay)/
+        Math.max(1,freeLineStage.reels.length*freeLineStage.perReel),0,1):1;
+   const fade=paidLine?clamp((paidLine.end-t)/450,0,1)
+     :freeLineStage?clamp((freeLineStage.end-t)/450,0,1):1;
    if(fade<=0)return;
    const coords=chosen.rows.map((row,c)=>({
      x:left+c*interval+cw/2,
@@ -1174,7 +1182,7 @@ class Game {
     cx.fillStyle='#efffff';cx.beginPath();cx.arc(p.x,p.y,4.7,0,Math.PI*2);cx.fill();
    }
    // Ponta móvel — estrela azul/branca como uma caneta a escrever.
-   if(paidLine&&progress<1){
+   if((paidLine||freeLineStage)&&progress<1){
     cx.globalAlpha=fade;
     cx.fillStyle='#ffffff';cx.shadowColor='#9defff';cx.shadowBlur=23;
     cx.beginPath();cx.arc(tip.x,tip.y,6.7,0,Math.PI*2);cx.fill();
@@ -1183,12 +1191,13 @@ class Game {
     cx.moveTo(tip.x,tip.y-11);cx.lineTo(tip.x,tip.y+11);cx.stroke();
    }
    cx.restore();
-   if(paidLine&&progress>=.88){
+   if((paidLine||freeLineStage)&&progress>=.88){
     // A quantia surge quando a caneta chega ao final do percurso.
     // Visível ~2 s, seguida de 450 ms de desaparecimento suave.
     const index=Math.min(4,Math.max(0,chosen.count-1));
-    const p=coords[index],prize=money(paidLine.amount);
-    const appear=clamp((age-penDuration*.88)/100,0,1);
+    const p=coords[index],prize=money((paidLine||freeLineStage).amount);
+    const appear=paidLine?clamp((age-penDuration*.88)/100,0,1)
+      :clamp((progress-.88)/.12,0,1);
     const alpha=fade*appear;
     cx.save();cx.font='900 21px Georgia,serif';
     cx.textAlign='left';cx.textBaseline='middle';cx.lineJoin='round';
