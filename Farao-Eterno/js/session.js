@@ -191,8 +191,11 @@
     const limitU=units(E.upperLimit(p.bet));
     const prizeU=Math.max(0,Math.min(units(result.total),p.free?limitU-s.feature.totalU:limitU));
     const groups=p.free&&options?.defer?sequencePayouts(result,prizeU):[];
-    // Pelo menos duas sequências distintas para a animação/pagamento gradual.
-    const progressive=groups.filter(g=>g.kind!=='scatter').length>=2;
+    // Cada linha vencedora nas Free Spins merece a sua apresentação,
+    // mesmo que seja a única combinação da jogada. Continuar a usar
+    // creditNext() exatamente uma vez por grupo, sem alterar prémios.
+    const progressive=groups.some(g=>g.kind==='line')||
+      groups.filter(g=>g.kind!=='scatter').length>=2;
     if(progressive)s.payout={id:p.id,totalU:prizeU,next:0,groups};
     else{s.balanceU+=prizeU;s.stats.winU+=prizeU;}
     s.lastWinU=prizeU;s.lastBet=p.bet;s.lastWasFree=p.free;
