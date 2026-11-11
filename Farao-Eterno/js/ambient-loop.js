@@ -39,12 +39,12 @@ function silence(){
   for(const a of Object.values(tracks))a.pause();
   activeTrack=null;
 }
-function sync(){
+function sync(forceGesture=false){
   if(!allowed())return;
   const target=desired(),next=tracks[target];
   if(!next)return;
   if(activeTrack===target&&!next.paused)return;
-  if(loadingTarget===target)return;
+  if(loadingTarget===target&&!forceGesture)return;
   // play() é chamado imediatamente, dentro do pointerdown quando existir.
   // Não aguardar por fetch/decodeAudioData antes de tentar iniciar o som.
   const currentRequest=++requestId;
@@ -71,6 +71,7 @@ function sync(){
   else success();
 }
 fx.startMusic=function(){sync();};
+fx.unlockMusic=function(){sync(true);};
 fx.stopMusic=function(){silence();};
 // O jogo inicializa o contexto WebAudio para os sons dos tambores;
 // a música gravada, pelo contrário, não espera pelo decodeAudioData.
