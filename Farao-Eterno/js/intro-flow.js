@@ -33,6 +33,7 @@ function enter(){
  if(entered)return;
  entered=true;
  g.audio.init();
+ g.audio.unlockMusic?.();
  g._introCoverVisible=false;
  if(!g.superseded)g.paused=false;
  g.audio.startMusic?.();
