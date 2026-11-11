@@ -1,0 +1,45 @@
+name: Stake Preview | Confirmar jogo online
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/testar-stake-preview-online.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar-online:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar ficheiros e simulações locais
+        run: |
+          node stake-preview/tests/hold-probabilities.mjs
+          node stake-preview/tests/visual-events.mjs
+      - name: Confirmar GitHub Pages independente das outras publicações
+        run: |
+          set -euo pipefail
+          url="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=0.5"
+          echo "A verificar $url"
+          for n in {1..12}; do
+            if curl -fLsS --max-time 10 --connect-timeout 5 "$url" -o /tmp/stake-preview.html; then
+              if grep -q 'Stake Preview V0.5' /tmp/stake-preview.html \
+                 && grep -q 'id="skipBtn"' /tmp/stake-preview.html \
+                 && grep -q 'id="paylineSvg"' /tmp/stake-preview.html; then
+                curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/assets/imagens/jm38-caracol.svg" -o /tmp/caracol.svg
+                test -s /tmp/caracol.svg
+                echo 'CONFIRMADO: Stake Preview V0.5 online, PASSAR, linhas e caracol.'
+                exit 0
+              fi
+              echo "Página ainda não atualizada para V0.5 ($n/12)."
+            else
+              echo "Página indisponível ($n/12)."
+            fi
+            sleep 5
+          done
+          echo '::error::Não foi possível confirmar a página V0.5.'
+          exit 1
