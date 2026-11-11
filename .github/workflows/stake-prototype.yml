@@ -15,7 +15,7 @@ on:
 jobs:
   validate-prototype:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -23,8 +23,15 @@ jobs:
           python-version: '3.12'
       - name: Install zstd
         run: sudo apt-get update -qq && sudo apt-get install -y zstd
-      - name: Test independent math and library
+      - name: Test base + free + hold math and libraries
         working-directory: stake-engine/jardim-magico
         run: |
           python -m unittest discover -s tests -v
           python math/prototype.py --rounds 300 --seed 20261111 --out build/base-prototype
+          python math/complete.py --rounds 300 --seed 20261111 --out build/features-prototype
+      - name: Save experimental RTP report and library
+        uses: actions/upload-artifact@v4
+        with:
+          name: jardim-stake-math-experimental
+          path: stake-engine/jardim-magico/build/features-prototype/
+          retention-days: 7
