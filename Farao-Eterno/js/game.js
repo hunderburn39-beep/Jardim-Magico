@@ -148,9 +148,9 @@ class Game {
  }
 
  loadArt(){
-  // Garantir que o ecrã de loading só termina depois de os 10 símbolos
-  // estarem realmente descodificados. Uma transferência bloqueada no Safari
-  // passa para o SVG de reserva, sem deixar uma espera infinita.
+  // Os símbolos HD aprovados devem permanecer como prioridade absoluta.
+  // Safari com ligação lenta não pode trocar PNG/WebP pelos SVG antigos.
+  // Apenas erros efetivos de carregamento ativam as imagens de reserva.
   this.artLoaded=0;this.artTotal=E.ALL.length;this.artFailed=[];
   this.ready=false;this.artTimedOut=false;
   const finished=new Set(),timers=new Map();
@@ -158,7 +158,7 @@ class Game {
   // As imagens atrasadas continuam a aparecer assim que forem carregadas.
   const openGame=setTimeout(()=>{
     if(!this.ready){this.artTimedOut=true;this.ready=true;}
-  },2800);
+  },10000);
   const done=(key,ok)=>{
    if(finished.has(key))return;
    finished.add(key);clearTimeout(timers.get(key));
@@ -174,16 +174,17 @@ class Game {
    clearTimeout(timers.get(key));
    timers.set(key,setTimeout(()=>{
     if(finished.has(key))return;
-    if(im.fallback)done(key,false);
-    else fallback(key,im);
-   },1650));
+    // Não substituir a arte original por SVG só por demora de rede.
+    // A imagem mantém a transferência e pode surgir após o timeout.
+    done(key,false);
+   },8500));
   };
   const fallback=(key,im)=>{
    if(finished.has(key))return;
    if(im.fallback){done(key,false);return;}
    im.fallback=true;
    // Os SVG de reserva existem no repositório e são leves.
-   im.src='assets/'+key.toLowerCase()+'.svg?v=loading-fallback-2';
+   im.src='assets/'+key.toLowerCase()+'.svg?v=loading-fallback-3';
    arm(key,im);
   };
   for(const key of E.ALL){
@@ -191,7 +192,7 @@ class Game {
    im.onload=()=>{if(im.naturalWidth>0)done(key,true);else fallback(key,im);};
    im.onerror=()=>fallback(key,im);
    this.images[key]=im;
-   im.src=key==='TOMB'?'assets/tomb.webp?v=piramide-dourada-1':'assets/'+(E.NORMAL.slice(0,5).includes(key)?key+'.png?v=novas-letras-1':key.toLowerCase()+(E.NORMAL.slice(5).includes(key)?'.webp':'.svg'));
+   im.src=key==='TOMB'?'assets/tomb.webp?v=originais-1.3.51':'assets/'+(E.NORMAL.slice(0,5).includes(key)?key+'.png?v=originais-1.3.51':key.toLowerCase()+(E.NORMAL.slice(5).includes(key)?'.webp?v=originais-1.3.51':'.svg?v=originais-1.3.51'));
    arm(key,im);
   }
   const img=new Image();
