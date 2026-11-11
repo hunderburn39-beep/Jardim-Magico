@@ -90,6 +90,7 @@
     validate(s);
     if(s.pending||s.payout)throw Error('Existe uma jogada por terminar');
     if(s.feature)throw Error('Já tens um bónus ativo');
+    if(s.lines!==10)throw Error('Para comprar o bónus tens de apostar nas 10 linhas');
     const bet=stake(s),costU=units(bet)*100;
     if(s.balanceU<costU)throw Error('Saldo insuficiente para comprar o bónus');
     // Selecionar o símbolo antes de debitar créditos. Nunca criar um giro falso.
