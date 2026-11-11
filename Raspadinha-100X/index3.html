@@ -488,11 +488,12 @@ body[data-mode="50"] .ticket{border-color:#dbacff}
 body[data-mode="100"] .ticket{border-color:#fff0a4}
 @media(max-height:740px){.stake-bar{min-height:44px;padding:3px 6px;gap:4px}.stake-bar .mode-choice{min-height:37px;padding:2px}}
 </style>
+<link rel="stylesheet" href="./admin.css">
 </head>
 <body>
 <header><div class="logo" id="logo-mult">10X</div><div class="brand">O DINHEIRO<small>RASPADINHA <span id="header-mode">10X</span></small></div></header>
 <main>
-  <div class="summary"><button id="wallet-open" type="button" class="wallet-trigger" aria-haspopup="dialog" aria-controls="wallet-modal" aria-label="Abrir saldo para depósito ou levantamento"><span class="wallet-caption">SALDO <span class="wallet-arrow">⌄</span></span><strong id="balance">100,00 €</strong></button><button id="sound" type="button" aria-label="Desligar som">🔊 Som ligado</button></div>
+  <div class="summary"><button id="wallet-open" type="button" class="wallet-trigger" aria-haspopup="dialog" aria-controls="wallet-modal" aria-label="Abrir saldo para depósito ou levantamento"><span class="wallet-caption">SALDO <span class="wallet-arrow">⌄</span></span><strong id="balance">100,00 €</strong></button><button id="sound" type="button" aria-label="Desligar som">🔊 Som ligado</button><button id="scratch-admin-open" class="admin-trigger" type="button" aria-haspopup="dialog" aria-controls="scratch-admin-modal">⚙ ADMIN</button></div>
   <div class="stake-bar" role="group" aria-label="Escolher modalidade de raspadinha">
   <button type="button" class="mode-choice selected" data-mode-bet="100" aria-pressed="true"><strong>10X</strong><span>1 €</span></button>
   <button type="button" class="mode-choice" data-mode-bet="200" aria-pressed="false"><strong>20X</strong><span>2 €</span></button>
@@ -538,6 +539,47 @@ body[data-mode="100"] .ticket{border-color:#fff0a4}
   </section>
 </div>
 
+
+<div id="scratch-admin-modal" class="scratch-admin" role="dialog" aria-modal="true" aria-labelledby="scratch-admin-title" aria-hidden="true" hidden>
+  <section id="scratch-admin-panel" class="scratch-admin-panel">
+    <button id="scratch-admin-close" class="scratch-admin-x" type="button" aria-label="Fechar administração">×</button>
+    <h2 id="scratch-admin-title">⚙ Administração</h2>
+    <div id="scratch-admin-login">
+      <p>Consulta os fundos e resultados de cada raspadinha.</p>
+      <form id="scratch-admin-login-form">
+        <label for="scratch-admin-pin">Código de administrador</label>
+        <input id="scratch-admin-pin" type="password" inputmode="numeric" maxlength="5" required autocomplete="off" placeholder="•••••">
+        <button type="submit">ENTRAR</button>
+      </form>
+      <p id="scratch-admin-error" class="scratch-admin-error" role="alert"></p>
+    </div>
+    <div id="scratch-admin-view" hidden>
+      <div class="scratch-admin-total">TOTAL DISPONÍVEL NOS 4 COFRES<strong id="scratch-admin-total">0,00 €</strong></div>
+      <div class="scratch-admin-cards" id="scratch-admin-cards"></div>
+      <div class="scratch-admin-tools">
+        <label for="scratch-admin-mode">GERIR FUNDO DE TESTE</label>
+        <div class="scratch-admin-row">
+          <select id="scratch-admin-mode">
+            <option value="10">10X · 1 €</option>
+            <option value="20">20X · 2 €</option>
+            <option value="50">50X · 5 €</option>
+            <option value="100">100X · 10 €</option>
+          </select>
+          <input id="scratch-admin-amount" type="text" inputmode="decimal" maxlength="11" value="10" aria-label="Valor em euros">
+        </div>
+        <div class="scratch-admin-row">
+          <button id="scratch-admin-add" type="button">+ Colocar fundo</button>
+          <button id="scratch-admin-remove" class="scratch-admin-remove" type="button">− Retirar fundo</button>
+        </div>
+        <p id="scratch-admin-note" role="status"></p>
+      </div>
+      <p id="scratch-admin-legacy"></p>
+      <p>Os bilhetes alimentam apenas o seu próprio cofre com 60% da aposta. Os prémios são reservados na compra. Estes são créditos locais de teste, não fundos reais; a proteção por PIN no navegador não é autenticação segura.</p>
+      <button id="scratch-admin-logout" class="scratch-admin-logout" type="button">SAIR DA ADMINISTRAÇÃO</button>
+    </div>
+  </section>
+</div>
+
 <div id="celebration" class="celebration-overlay" aria-hidden="true" hidden>
   <div class="celebration-stage">
     <div class="celebration-fireworks left" id="fireworks-left"></div>
@@ -575,10 +617,26 @@ const eur=c=>(c/100).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFrac
 const money=c=>(c/100).toLocaleString("pt-PT",{maximumFractionDigits:0})+" €";
 const randomInt=max=>Math.floor(Math.random()*max);
 function shuffle(items){for(let i=items.length-1;i>0;i--){const j=randomInt(i+1);[items[i],items[j]]=[items[j],items[i]]}return items}
-function fresh(){return{balance:100000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true,bet:100}}
+
+function blankPool(){return{available:0,sold:0,stakes:0,funded:0,awarded:0,paid:0,added:0,removed:0}}
+function initPools(saved){
+  if(!saved.pools||typeof saved.pools!=="object"||Array.isArray(saved.pools))saved.pools={};
+  for(const mode of CARD_MODES){
+    const key=String(mode.mult),p=saved.pools[key];
+    if(!p||["available","sold","stakes","funded","awarded","paid","added","removed"].some(k=>!Number.isSafeInteger(p[k])||p[k]<0))saved.pools[key]=blankPool();
+  }
+}
+function modePool(mult){return state.pools[String(mult)]}
+function accountPaidWin(ticket,win){
+  if(ticket.poolVersion!==1)return; // apenas bilhetes dos cofres individuais
+  modePool(ticket.maxMult).paid+=win.amount;
+}
+
+function fresh(){const state={balance:100000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true,bet:100};initPools(state);return state}
 // Preserva os prémios e o progresso dos bilhetes antigos com 20 casas.
 function migrateOldTicket(saved){
   const t=saved.ticket;
+  if(t?.poolVersion===1)return;
   if(!t||!Array.isArray(t.play)||![16,20].includes(t.play.length)||!Array.isArray(t.lucky)||t.lucky.length!==5)return;
   // Bilhetes anteriores às modalidades tinham teto de 100X, independentemente da aposta.
   if(![10,20,50,100].includes(t.maxMult))t.maxMult=100;
@@ -621,12 +679,12 @@ function migrateOldTicket(saved){
 function load(){
   try{
     const saved=JSON.parse(localStorage.getItem(KEY));
-    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0)){saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;migrateOldTicket(saved);return saved;}
+    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0)){saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;migrateOldTicket(saved);initPools(saved);return saved;}
   }catch(_){}
   return fresh();
 }
 let state=load(),scratchAudio=null,audioContext=null;
-function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(_){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(_){}if(typeof window.refreshScratchAdmin==="function")window.refreshScratchAdmin()}
 function status(msg){el("status").textContent=msg}
 function paintBalance(){el("balance").textContent=eur(state.balance);el("sound").textContent=state.sound?"🔊 Som ligado":"🔇 Som desligado";el("sound").setAttribute("aria-label",state.sound?"Desligar som":"Ligar som")}
 
@@ -753,11 +811,17 @@ function buy(){
   state.technician+=bet*0.10;
   state.merchant+=bet*0.20;
   state.reserve+=bet*0.10;
-  state.prizeBank+=bet*0.60;
   const maxMult=modeForBet(bet).mult;
-  const awards=selectWinnings(state.prizeBank,bet,maxMult);
+  const pool=modePool(maxMult);
+  const cofreEntrada=Math.round(bet*.60);
+  pool.available+=cofreEntrada;
+  pool.funded+=cofreEntrada;
+  pool.sold++;
+  pool.stakes+=bet;
+  const awards=selectWinnings(pool.available,bet,maxMult);
   const prize=awards.reduce((sum,amount)=>sum+amount,0);
-  state.prizeBank-=prize; // reserva antecipada da SOMA dos prémios
+  pool.available-=prize; // reservar prémios apenas neste cofre
+  pool.awarded+=prize;
   const nums=shuffle(Array.from({length:70},(_,i)=>i+1));
   const lucky=nums.slice(0,5),play=nums.slice(5,21);
   const positions=shuffle(Array.from({length:16},(_,i)=>i)).slice(0,awards.length);
@@ -778,7 +842,7 @@ function buy(){
     return award?award.amount:visiblePrizes[randomInt(visiblePrizes.length)].mult*bet;
   });
   state.cards++;
-  state.ticket={id:state.cards,lucky,play,prize,bet,maxMult,wins,cellPrizes,paidWins:[],revealed:[],completed:false};
+  state.ticket={id:state.cards,lucky,play,prize,bet,maxMult,poolVersion:1,wins,cellPrizes,paidWins:[],revealed:[],completed:false};
   save();render();
   status("Desliza o dedo pelas casas, sem levantar, até raspares tudo.");
 }
@@ -962,6 +1026,7 @@ function highlightRevealedWinners(animate=true){
     if(t.paidWins.includes(win.pos))continue;
     t.paidWins.push(win.pos);
     state.balance+=win.amount;
+    accountPaidWin(t,win);
     if(animate)flashWinningCell(cell);
     newlyPaid.push(win);
   }
@@ -1013,6 +1078,7 @@ function finish(){
     if(ticket.paidWins.includes(win.pos))continue;
     ticket.paidWins.push(win.pos);
     state.balance+=win.amount;
+    accountPaidWin(ticket,win);
   }
   ticket.completed=true;
   save();paintBalance();
@@ -1296,5 +1362,6 @@ window.addEventListener("blur",endScratch);
 if(state.ticket){render();status(state.ticket.completed?(state.ticket.prize?"Ganhaste "+eur(state.ticket.prize)+"!":"Bilhete sem prémio."):"Continua a raspar o teu bilhete.");}
 else{buy()}
 </script>
+<script src="./admin.js"></script>
 </body>
 </html>
