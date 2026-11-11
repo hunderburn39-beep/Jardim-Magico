@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#130f27">
+<meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
+<title>Jardim Mágico | Edição Stake Preview V0.3</title>
+<style>
+:root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;width:100%;min-height:100%;background:#0f1023;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overscroll-behavior:none}
+button{font:inherit;touch-action:manipulation;cursor:pointer;user-select:none}
+button:disabled{opacity:.48;cursor:not-allowed}
+.app{max-width:480px;min-height:100svh;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;position:relative;background:radial-gradient(ellipse at 50% 12%,#43375b77,transparent 55%),linear-gradient(180deg,#16152944,#110e26 80%),url('../assets/imagens/jm80-cenario-imersivo.svg') center/cover no-repeat;border-left:1px solid #5e4769;border-right:1px solid #5e4769;isolation:isolate;padding:env(safe-area-inset-top) 12px max(10px,env(safe-area-inset-bottom))}
+.app:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 34%,#10101b82 100%);z-index:-1}
+.top{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:36px}
+.mode-tag{font-size:10px;font-weight:850;letter-spacing:.12em;color:#111727;background:linear-gradient(#ffe4a3,#b9934d);border-radius:20px;padding:6px 10px;white-space:nowrap}
+.top-right{display:flex;align-items:center;gap:6px}
+.round{height:33px;width:33px;background:#342241df;border:1px solid #d7b77088;border-radius:50%;color:var(--gold);display:grid;place-items:center;font-size:19px}
+.logo-wrap{text-align:center;height:clamp(92px,13svh,134px);position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.logo-wrap img{width:min(80%,310px);height:calc(100% - 22px);object-fit:contain;filter:drop-shadow(0 3px 2px #150a12) drop-shadow(0 0 13px #d6af6f66);pointer-events:none}
+.logo-wrap small{display:block;position:absolute;bottom:0;font-size:10px;font-weight:900;letter-spacing:.17em;color:#fce9b5;text-shadow:0 2px 3px #12121b}
+.statline{display:flex;gap:7px;align-items:center;justify-content:center;margin:7px 2px 9px}
+.statline>div{min-width:0;flex:1;text-align:center;padding:7px 2px;border:1px solid #ffe2a853;border-radius:10px;background:linear-gradient(145deg,#241c39dc,#120e22b9);box-shadow:inset 0 1px #ffffff10}
+.statline small{font-size:9px;letter-spacing:.09em;color:#dcbfa7;display:block}
+.statline strong{font-size:clamp(13px,3.7vw,18px);color:#ffe6ad;display:block;white-space:nowrap}
+.frame{border:7px solid transparent;border-image:linear-gradient(145deg,#e9cd8d,#664528 22%,#f7d797 48%,#4b361b 80%,#deb65f) 1;position:relative;background:linear-gradient(90deg,#1d15376b,#1a27359c 50%,#211b376b);box-shadow:0 0 0 2px #a37d49,0 14px 32px #090918ac,0 0 28px #f9df9580,inset 0 0 23px #b6a36b38;margin:0 5px}
+.reels{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));height:clamp(260px,39svh,384px);min-height:0;overflow:hidden;gap:2px;padding:3px;background:linear-gradient(90deg,#1b1832b5,#39475566,#1c1835b5)}
+.column{display:grid;grid-template-rows:repeat(3,1fr);gap:2px;min-width:0;background:#1a173c60;border-left:1px solid #e4c48a33}
+.cell{position:relative;display:grid;place-items:center;min-width:0;min-height:0;background:radial-gradient(ellipse,#b9cbde17,#090d2c54);overflow:hidden;border-bottom:1px solid #dab45a17}
+.cell img{width:103%;height:93%;object-fit:contain;filter:drop-shadow(0 2px 3px #000b) drop-shadow(0 0 6px #f1d49442)}
+.cell .emoji{font-size:clamp(28px,9vw,48px);filter:drop-shadow(0 2px 3px #060b1a);line-height:1}
+.cell .orb{display:grid;place-items:center;width:80%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fffce0,#c7a7fb 25%,#7944bb 59%,#2c1e73);box-shadow:inset 0 0 10px #fff8cf,0 0 16px #bf87fa;color:#fff6c3;font-weight:1000;font-size:clamp(8px,2.5vw,13px);border:2px solid #ffda9b}
+.cell.winning{background:radial-gradient(#ffe8a680,#ffc03b26 60%,#26174a5c);box-shadow:inset 0 0 12px #ffef97;animation:winPulse .65s ease-in-out 2}
+.cell.spinning img,.cell.spinning .emoji,.cell.spinning .orb{animation:spinBlur .13s infinite alternate}
+@keyframes spinBlur{from{transform:translateY(-17%);filter:blur(1px)}to{transform:translateY(17%);filter:blur(2px)}}
+@keyframes winPulse{50%{filter:brightness(1.5);transform:scale(1.035)}}
+.hud{position:absolute;top:-20px;left:50%;transform:translateX(-50%);min-width:150px;text-align:center;background:linear-gradient(90deg,#211b36,#4d2e55,#211b36);border:1px solid #e6c18e;border-radius:24px;padding:4px 13px;box-shadow:0 3px 12px #000b}
+.hud span{font-size:11px;font-weight:900;color:#ffecc1;white-space:nowrap}
+.notice{min-height:39px;margin:7px 8px 2px;text-align:center;display:flex;justify-content:center;align-items:center;color:#f2e6db;text-shadow:0 2px 3px #000;font-size:13px;font-weight:750}
+.notice.good{color:#ffe39a}
+.notice.bonus{color:#a9ffca}
+.money-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 1px 9px}
+.money{background:linear-gradient(180deg,#332343d9,#170f29d9);border:1px solid #b79a69bb;border-radius:12px;min-height:55px;padding:6px 10px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.money label{display:block;font-size:10px;color:#d4bfa3;font-weight:800;letter-spacing:.07em}
+.money strong{font-size:19px;color:#fff0bb;font-variant-numeric:tabular-nums}
+.bet-controls{display:flex;align-items:center;justify-content:space-between;width:100%;gap:5px}
+.bet-controls button{border:1px solid #e5ca8e;background:#503b5b;color:#fbe6b9;border-radius:50%;width:27px;height:27px;font-size:18px;font-weight:900}
+.actions{display:grid;grid-template-columns:1fr 1.45fr 1fr;gap:8px;align-items:center;margin:2px 2px 9px}
+.action-small{border-radius:15px;padding:12px 4px;color:#fff8df;background:linear-gradient(#4c3770,#281b48);border:2px solid #d2a969;font-weight:850;font-size:11px;min-height:57px;text-shadow:0 1px 2px #000}
+.spin{height:74px;border-radius:50%;max-width:135px;width:100%;justify-self:center;border:5px solid #ffe3a5;color:#133023;background:radial-gradient(circle at 34% 20%,#dbffe3,#7eeab9 45%,#17865a 100%);box-shadow:0 5px #266144,0 8px 20px #000d,inset 0 2px 8px #f9ffe7;font-size:16px;font-weight:1000;letter-spacing:.02em;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.spin b{font-size:28px;line-height:1}
+.bonus-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 2px}
+.bonus-btn{padding:11px 4px;border:1px solid #f4d69e;border-radius:10px;background:linear-gradient(165deg,#6c386a,#34214f);color:#fff1c0;font-size:12px;font-weight:900}
+.bonus-btn span{font-size:10px;color:#d6c4dc;display:block}
+.foot{margin-top:auto;padding:9px 5px 2px;text-align:center;color:#e3d4d2;font-size:10px;line-height:1.45}
+.foot b{color:#f9d59e}
+.toast{position:absolute;z-index:6;left:50%;top:45%;transform:translate(-50%,-50%) scale(.95);padding:14px 20px;border:2px solid #eacf8d;border-radius:17px;min-width:210px;background:linear-gradient(150deg,#563368ed,#1e183af5);box-shadow:0 0 50px #f6cb808f,0 12px 30px #050415b0;text-align:center;pointer-events:none;opacity:0;transition:opacity .25s,transform .25s}
+.toast.visible{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.toast strong{display:block;font-size:28px;color:#ffe4a7}.toast small{color:#f5e8e1;font-weight:900;letter-spacing:.15em}
+.overlay{position:absolute;inset:0;z-index:10;background:#080614dc;display:none;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(7px)}
+.overlay.show{display:flex}
+.modal{width:min(100%,390px);padding:21px 16px;background:radial-gradient(ellipse at top,#5e3e6a,#211a3d 70%);border:3px solid #edcd87;border-radius:22px;box-shadow:0 15px 45px #070512}
+.modal h2{text-align:center;margin:0;color:#ffe29e;letter-spacing:.04em;font-size:27px}
+.modal p{text-align:center;color:#f5e9d7;font-size:13px;margin:9px 0 13px}
+.hold-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:14px auto}
+.coin-slot{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:radial-gradient(#34254c,#130f29);border:2px solid #a7835799;color:#bea17b;font-weight:900}
+.coin-slot.filled{background:radial-gradient(circle at 32% 23%,#fff7c9,#edc968 45%,#9e5c18 75%,#68401d);border:3px solid #fff0a9;color:#50230a;box-shadow:0 0 12px #ffdc7f80;font-size:18px}
+.hold-stats{display:flex;justify-content:space-between;gap:10px;color:#ffe1ad;font-weight:850;font-size:14px}
+.modal-close{display:block;margin:12px auto 0;border:1px solid #e5c489;background:#35264e;border-radius:12px;color:#fff;padding:10px 22px;font-weight:800}
+@media(max-height:750px){.logo-wrap{height:85px}.reels{height:clamp(240px,36svh,330px)}.statline{margin:4px 0 7px}.actions{margin-bottom:5px}.action-small{min-height:52px}.spin{height:63px}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<main class="app" id="app">
+ <div class="top"><div class="mode-tag">✦ EDIÇÃO STAKE · PREVIEW</div>
+  <div class="top-right"><button class="round" id="infoBtn" title="Informações" aria-label="Informações">ⓘ</button><button class="round" id="reloadBtn" title="Repor créditos de teste" aria-label="Repor créditos">＋</button><button class="round" id="soundBtn" title="Som" aria-label="Som">♫</button></div>
+ </div>
+ <div class="logo-wrap"><img src="../assets/imagens/jm77-logo-isolado.svg" alt="Jardim Mágico" onerror="this.style.display='none';this.parentNode.insertAdjacentHTML('afterbegin','<h1 style=&quot;color:#ffe6a4;font-size:30px&quot;>JARDIM MÁGICO</h1>')"><small>O BOSQUE ENCANTADO</small></div>
+ <div class="statline">
+  <div><small>QUEDAS</small><strong id="dropNum">0</strong></div>
+  <div><small>MULTI</small><strong id="multiNum">×1</strong></div>
+  <div><small>ÚLTIMO PRÉMIO</small><strong id="lastWin">0,00</strong></div>
+ </div>
+ <div class="frame"><div class="hud"><span id="hud">✦ RODADAS DE TESTE ✦</span></div><div class="reels" id="reels" aria-label="Cinco tambores, três linhas"></div></div>
+ <div class="notice" id="notice" aria-live="polite">Prime RODAR para entrar no bosque!</div>
+ <div class="money-row">
+   <div class="money"><label>SALDO · CRÉDITOS</label><strong id="balance">1 000,00</strong></div>
+   <div class="money"><label>APOSTA · CRÉDITOS</label><div class="bet-controls"><button id="minus" aria-label="Diminuir aposta">−</button><strong id="bet">0,20</strong><button id="plus" aria-label="Aumentar aposta">+</button></div></div>
+ </div>
+ <div class="actions">
+  <button class="action-small" id="turbo">⚡ TURBO<br><b id="turboLabel">DESL.</b></button>
+  <button class="spin" id="spin"><b>↻</b>RODAR</button>
+  <button class="action-small" id="auto">↻ AUTO<br><b id="autoLabel">5 GIROS</b></button>
+ </div>
+ <div class="bonus-row">
+  <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
+  <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
+ </div>
+ <footer class="foot"><b>V0.3 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
+ <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
+ <div class="overlay" id="holdOverlay"><div class="modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-grid" id="holdGrid"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin">0,00</span></div><button class="modal-close" id="closeHold" hidden>CONTINUAR</button></div></div>
+ <div class="overlay" id="infoOverlay"><div class="modal"><h2>Jardim Mágico</h2><p>Pré-visualização técnica independente com símbolos do jogo original, cinco tambores, dez linhas, WILD, SCATTER, cascatas, Free Spins e Hold & Win. Cada jogada e cada bónus são calculados inteiramente antes da animação. Os resultados são simulados neste navegador para teste visual, não são resultados certificados do Stake Engine.</p><p>Os créditos servem apenas para experimentar. Não existe dinheiro real, carteira ou casino associado.</p><button class="modal-close" id="closeInfo">FECHAR</button></div></div>
+</main>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const TYPES=[
+ {label:"CARACOL",image:"../assets/imagens/jm38-caracol.svg"},
+ {label:"JOANINHA",image:"../assets/imagens/jm38-joaninha.svg"},
+ {label:"FLOR AZUL",image:"../assets/imagens/jm38-flor-azul.svg"},
+ {label:"BULE",emoji:"🫖"},
+ {label:"WILD",image:"../assets/imagens/jm38-wild.svg"},
+ {label:"CRISTAL",emoji:"💎"},
+ {label:"COGUMELO",emoji:"🍄"},
+ {label:"CHAPÉU",emoji:"🎩"},
+ {label:"FLOR VERMELHA",image:"../assets/imagens/jm38-flor-vermelha.svg"},
+ {label:"SCATTER",orb:true},
+ {label:"PEDRA",image:"../assets/imagens/jm38-pedra.svg"},
+ {label:"MOEDA",image:"../assets/imagens/jm40-moeda-magica.svg"}
+];
+const WEIGHTS=[10,13,11,10,4,11,10,9,10,4,12,7], LINES=[[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,1,2],[1,2,2,1,0],[0,1,1,1,2]],COEFS=[3,4,8,5,10,7,4,4,7,0,0,0],PAY=[0,0,0,7,25,80];
+const BETS=[.05,.10,.20,.40,.60,.80,1,1.50,2,3,5,7.5,10];
+let betIndex=2,balance=1000,lastWin=0,busy=false,turbo=false,sound=true,autoLeft=0,toastTimer=0;
+function rand(){if(globalThis.crypto?.getRandomValues){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296;}return Math.random()}
+function pick(values,weights){let x=rand()*weights.reduce((a,b)=>a+b,0);for(let i=0;i<values.length;i++){x-=weights[i];if(x<0)return values[i]}return values.at(-1)}
+function board(free=false){const w=WEIGHTS.map((x,i)=>free&&i===9?2:x);return Array.from({length:5},()=>Array.from({length:3},()=>pick(TYPES.map((_,i)=>i),w)))}
+function count(b,id){return b.flat().filter(v=>v===id).length}
+function evaluate(b){let lines=[],used=new Map();for(let j=0;j<LINES.length;j++){const line=LINES[j],chain=line.map((r,c)=>b[c][r]);const first=chain.find(s=>s!==4)??4;const pair=chain[0]===4&&chain[1]===4;let amount=pair?55:0,matched=pair?2:0;if(![9,10,11].includes(first)){let n=0;for(const s of chain){if(s!==first&&s!==4)break;n++}if(n>=3){amount+=(COEFS[first]||0)*PAY[n];matched=n}}if(amount){const cells=line.slice(0,matched).map((r,c)=>[c,r]);cells.forEach(([c,r])=>used.set(c+":"+r,[c,r]));lines.push({line:j+1,amount,cells})}}return {lines,removed:[...used.values()]}}
+function collapse(b,removed,free){const gone=new Set(removed.map(x=>x.join(":")));const w=WEIGHTS.map((x,i)=>free&&i===9?2:x);return b.map((column,c)=>{const kept=column.filter((_,r)=>!gone.has(c+":"+r));return Array.from({length:3-kept.length},()=>pick(TYPES.map((_,i)=>i),w)).concat(kept)})}
+function stages(free=false){let b=board(free),raw=0,paid=0,wild=0,maxSc=0,maxCo=0,events=[];for(let n=0;n<1000;n++){const {lines,removed}=evaluate(b);const scatters=count(b,9),coins=count(b,11);maxSc=Math.max(maxSc,scatters);maxCo=Math.max(maxCo,coins);let awards=removed.filter(([c,r])=>b[c][r]===4).map(()=>1+Math.floor(rand()*5));wild+=awards.reduce((a,b)=>a+b,0);const lineRaw=lines.reduce((sum,entry)=>sum+entry.amount,0),p=lineRaw*Math.max(1,wild);raw+=lineRaw;paid+=p;events.push({kind:"reels",board:b,lines,removed,drop:n+1,win:p,multi:Math.max(1,wild),free});if(!removed.length)return {events,raw,paid,wild,scatter:maxSc,coins:maxCo};b=collapse(b,removed,free)}throw Error("Limite de segurança de teste atingido")}
+function freeFeature(){let events=[{kind:"message",text:"✦ 15 FREE SPINS ✦"}],left=15,played=0,raw=0,multi=1;while(left>0){left--;played++;const s=stages(true);events.push(...s.events.map(e=>({...e,freeSpin:played})));raw+=s.raw;if(s.wild)multi=Math.min(1000,multi+Math.max(0,s.wild-1));let retrig=s.scatter>=3?15:s.scatter>=2?8:0,add=Math.min(retrig,Math.max(0,60-played-left));left+=add;events.push({kind:"progress",played,left,add,multi});if(played>60)throw Error("Limite de Free Spins inválido")}let amount=raw*multi;events.push({kind:"message",text:"FREE SPINS TERMINADAS · ×"+multi});return {events,amount}}
+function holdFeature(){let grid=Array(16).fill(0),positions=Array.from({length:16},(_,i)=>i);for(let i=0;i<6;i++){let n=Math.floor(rand()*positions.length);grid[positions.splice(n,1)[0]]=pick([1,2,3,5,10],[1,1,1,1,1])}let events=[{kind:"hold",grid:[...grid],tries:3,turn:0}],tries=3,turn=0;while(tries&&grid.some(x=>!x)){turn++;const empty=grid.map((v,i)=>v?-1:i).filter(i=>i>=0);let newCoins=0;if(rand()<.72){let hits=Math.min(empty.length,rand()<.18?2:1);for(let k=0;k<hits;k++){let p=Math.floor(rand()*empty.length);grid[empty.splice(p,1)[0]]=pick([1,2,3,5,10,20],[1,1,1,1,1,1]);newCoins++}}tries=newCoins?3:tries-1;events.push({kind:"hold",grid:[...grid],tries,turn})}const amount=100*grid.reduce((a,b)=>a+b,0)+(grid.every(Boolean)?25000:0);events.push({kind:"holdEnd",grid:[...grid],amount,filled:grid.every(Boolean)});return {events,amount}}
+function generate(mode){const events=[],cost=mode==="base"?1:mode==="free"?20:30;let payout=0;if(mode==="base"){const s=stages(false);events.push(...s.events);payout+=s.paid;if(s.scatter>=3){const f=freeFeature();events.push(...f.events);payout+=f.amount}else if(s.coins>=6){const h=holdFeature();events.push(...h.events);payout+=h.amount}}else if(mode==="free"){const f=freeFeature();events.push(...f.events);payout=f.amount}else{const h=holdFeature();events.push(...h.events);payout=h.amount}return{cost,payout,events}}
+function format(x){return x.toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function money(v){return format(v/100)}
+function draw(b,wins=[]){const keys=new Set(wins.map(([c,r])=>c+":"+r));$("reels").innerHTML=Array.from({length:5},(_,c)=>'<div class="column">'+Array.from({length:3},(_,r)=>{const t=TYPES[b[c][r]],k=c+":"+r;let art=t.image?'<img alt="'+t.label+'" src="'+t.image+'" draggable="false">':t.orb?'<span class="orb">SCATTER</span>':'<span class="emoji" aria-label="'+t.label+'">'+t.emoji+'</span>';return '<div class="cell '+(keys.has(k)?"winning":"")+'">'+art+'</div>'}).join("")+"</div>").join("")}
+function display(){ $("balance").textContent=format(balance);$("bet").textContent=format(BETS[betIndex]);$("lastWin").textContent=format(lastWin)}
+function say(s,kind=""){$("notice").className="notice "+kind;$("notice").textContent=s}
+function beep(freq=660){if(!sound)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ctx=beep.ctx||(beep.ctx=new C());if(ctx.state==="suspended")ctx.resume();const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.setValueAtTime(freq,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(freq*.7,ctx.currentTime+.12);g.gain.setValueAtTime(.045,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.14);o.connect(g).connect(ctx.destination);o.start();o.stop(ctx.currentTime+.15)}catch(e){}}
+function toast(title,value){$("toastTitle").textContent=title;$("toastValue").textContent=value;$("toast").classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").classList.remove("visible"),1450)}
+function controls(){["spin","minus","plus","buyFree","buyHold","reloadBtn","auto"].forEach(id=>$(id).disabled=busy);$("turboLabel").textContent=turbo?"LIGADO":"DESL.";$("autoLabel").textContent=autoLeft?autoLeft+" GIROS":"5 GIROS"}
+function renderHold(grid,tries){$("holdGrid").innerHTML=grid.map(x=>'<div class="coin-slot '+(x?"filled":"")+'">'+(x?'×'+x:'✦')+'</div>').join("");$("holdTries").textContent="Tentativas: "+tries;$("holdWin").textContent=money(100*grid.reduce((a,b)=>a+b,0))+" créditos"}
+async function playback(book){let lastBoard;for(const evt of book.events){if(evt.kind==="reels"){lastBoard=evt.board;draw(evt.board,evt.removed);$("dropNum").textContent=evt.drop;$("multiNum").textContent="×"+evt.multi;$("hud").textContent=evt.freeSpin?"FREE SPIN "+evt.freeSpin:evt.free?"FREE SPINS":"✦ QUEDA "+evt.drop;if(evt.lines.length){const line=evt.lines[0],value=money(line.amount*evt.multi);say("LINHA "+line.line+" · +"+value+" créditos","good");beep(760)}else if(evt.drop===1){say("Os símbolos estão a rodar…")}await sleep(turbo?110:evt.lines.length?500:320)}else if(evt.kind==="message"){say(evt.text,"bonus");toast("BÓNUS",evt.text);beep(850);await sleep(turbo?270:900)}else if(evt.kind==="progress"){$("multiNum").textContent="×"+evt.multi;$("hud").textContent="FREE SPINS · "+evt.left+" RESTANTES";if(evt.add){say("RETRIGGER · +"+evt.add+" FREE SPINS","bonus");beep(950)}await sleep(turbo?30:110)}else if(evt.kind==="hold"){$("holdOverlay").classList.add("show");renderHold(evt.grid,evt.tries);$("holdText").textContent="RODADA "+evt.turn+" · "+evt.grid.filter(Boolean).length+"/16 MOEDAS";if(evt.turn)beep(460);await sleep(turbo?170:620)}else if(evt.kind==="holdEnd"){renderHold(evt.grid,0);$("holdText").textContent=evt.filled?"GRELHA COMPLETA! +250×":"HOLD & WIN TERMINADO";$("holdWin").textContent=money(evt.amount)+" créditos";$("closeHold").hidden=false;await sleep(turbo?600:1350);$("holdOverlay").classList.remove("show");$("closeHold").hidden=true}}}
+async function play(mode="base"){if(busy)return;const bet=BETS[betIndex],cost=bet*(mode==="free"?20:mode==="hold"?30:1);if(balance+1e-7<cost){say("Saldo de teste insuficiente: usa o botão + no topo.");return}busy=true;controls();try{balance=Math.round((balance-cost)*100)/100;display();const b=generate(mode);const payout=+(b.payout/100*bet).toFixed(2);await playback(b);balance=+(balance+payout).toFixed(2);lastWin=payout;display();$("hud").textContent="✦ RONDA CONCLUÍDA ✦";$("dropNum").textContent="0";$("multiNum").textContent="×1";if(payout>0){toast("PRÉMIO TOTAL",format(payout));say("PRÉMIO TOTAL: "+format(payout)+" créditos","good");beep(910)}else say("Sem prémio nesta jogada. Experimenta novamente.")}catch(e){console.error(e);say("Erro na simulação: "+e.message)}finally{busy=false;controls();if(autoLeft){autoLeft--;controls();if(autoLeft&&balance>=BETS[betIndex]){await sleep(190);play("base")}else{autoLeft=0;controls()}}}}
+$("spin").addEventListener("click",()=>play("base"));
+$("minus").addEventListener("click",()=>{betIndex=Math.max(0,betIndex-1);display()});
+$("plus").addEventListener("click",()=>{betIndex=Math.min(BETS.length-1,betIndex+1);display()});
+$("buyFree").addEventListener("click",()=>play("free"));
+$("buyHold").addEventListener("click",()=>play("hold"));
+$("reloadBtn").addEventListener("click",()=>{balance+=250;display();say("Adicionados 250 créditos de teste.","bonus")});
+$("turbo").addEventListener("click",()=>{turbo=!turbo;controls()});
+$("auto").addEventListener("click",()=>{autoLeft=5;controls();play("base")});
+$("soundBtn").addEventListener("click",()=>{sound=!sound;$("soundBtn").textContent=sound?"♫":"♪";$("soundBtn").style.opacity=sound?"1":".45"});
+$("infoBtn").addEventListener("click",()=>$("infoOverlay").classList.add("show"));
+$("closeInfo").addEventListener("click",()=>$("infoOverlay").classList.remove("show"));
+$("infoOverlay").addEventListener("click",e=>{if(e.target===$("infoOverlay"))$("infoOverlay").classList.remove("show")});
+draw(board());display();controls();
+</script>
+</body>
+</html>
