@@ -1,115 +1,147 @@
-/* Faraó Eterno — música do utilizador (Pharaoh's Ritual) com reserva CC0.
- * Substitui apenas a música ambiente, preservando o gong do Wild e os tambores.
- * Crossfade entre repetições, compatível com Safari/iPhone.
+/* Faraó Eterno — banda sonora normal e música exclusiva do bónus.
+ * Áudio fornecido pelo utilizador; música normal 75%; transição suave entre faixas.
+ * A faixa normal retoma do ponto onde ficou após as Free Spins.
  */
 (()=>{
  'use strict';
  const game=window.__faraoGame, audio=game?.audio;
  if(!game||!audio)return;
- const originalStart=audio.startMusic.bind(audio),originalStop=audio.stopMusic.bind(audio);
- const assets=[
-   {url:'assets/pharaohs-ritual.mp3?v=1436a1f8',name:"Pharaoh's Ritual",artist:'Áudio fornecido pelo utilizador',license:'Não especificada'},
-   {url:'assets/dark-pyramid-ambience.mp3?v=1.0',name:'Dark Pyramid Night Ambience Loop',artist:'szegvari',license:'CC0'}
- ];
- let selected=assets[0];
- // Música a 75% do nível nominal; musicBus usa ganho-base 2.5 para o ducking dos Wilds.
- const musicVolume=0.75, musicBusNormalGain=2.5;
- const sampleGain=musicVolume/musicBusNormalGain;
- let rawPromise=null,buffer=null,decodePromise=null,playing=false,timer=null,nextStart=0;
- let sources=new Set();
- const allowed=()=>audio.ctx&&game.soundMode==='all'&&game.ledger?.settings?.music&&!game.paused&&!game.superseded&&!document.hidden;
- const fetchAudio=()=>{
-   if(!rawPromise){
-     rawPromise=(async()=>{
-       for(const candidate of assets){
-         try{
-           const response=await fetch(new URL(candidate.url,document.baseURI),{cache:'no-store'});
-           if(!response.ok)continue;
-           const bytes=await response.arrayBuffer();
-           if(!bytes.byteLength)continue;
-           selected=candidate;
-           return bytes;
-         }catch(_){/* Segue para a faixa de reserva sem bloquear o jogo. */}
-       }
-       throw Error('Nenhuma faixa ambiente disponível');
-     })().catch(e=>{rawPromise=null;throw e;});
-   }
-   return rawPromise;
+ const originalStart=audio.startMusic.bind(audio);
+ const originalStop=audio.stopMusic.bind(audio);
+ const descriptors={
+   normal:[
+     {url:'assets/pharaohs-ritual.mp3?v=1436a1f8',name:"Pharaoh's Ritual",artist:'Áudio fornecido pelo utilizador'},
+     {url:'assets/dark-pyramid-ambience.mp3?v=1.0',name:'Dark Pyramid Night Ambience Loop',artist:'szegvari'}
+   ],
+   bonus:[
+     {url:'assets/bonus-ritual.mp3?v=1.0',name:'Faraó Eterno — Bonus Ritual',artist:'Áudio fornecido pelo utilizador'}
+   ]
  };
- const decode=()=>{
-   if(buffer)return Promise.resolve(buffer);
+ const states={
+   normal:{raw:null,loading:null,decoding:null,buffer:null,offset:0,source:null,gain:null,startedAt:0,selected:descriptors.normal[0]},
+   bonus:{raw:null,loading:null,decoding:null,buffer:null,offset:0,source:null,gain:null,startedAt:0,selected:descriptors.bonus[0]}
+ };
+ const volume=.75, normalBusGain=2.5, sampleGain=volume/normalBusGain;
+ let activeTrack=null;
+ const canPlay=()=>!!(audio.ctx&&game.soundMode==='all'&&game.ledger?.settings?.music&&!game.paused&&!game.superseded&&!document.hidden);
+ const inBonus=()=>!!(game.feature||game.pendingSummary||game._summaryAck);
+ const desired=()=>inBonus()?'bonus':'normal';
+ function fetchTrack(name){
+   const s=states[name];
+   if(s.raw)return Promise.resolve(s.raw);
+   if(s.loading)return s.loading;
+   s.loading=(async()=>{
+     for(const option of descriptors[name]){
+       try{
+         const res=await fetch(new URL(option.url,document.baseURI),{cache:'no-store'});
+         if(!res.ok)continue;
+         const raw=await res.arrayBuffer();
+         if(!raw.byteLength)continue;
+         s.selected=option;s.raw=raw;return raw;
+       }catch(_){}
+     }
+     throw Error('Faixa '+name+' indisponível');
+   })().catch(()=>null).finally(()=>{s.loading=null;});
+   return s.loading;
+ }
+ function loadTrack(name){
+   const s=states[name];
+   if(s.buffer)return Promise.resolve(s.buffer);
    if(!audio.ctx)return Promise.resolve(null);
-   if(!decodePromise){
-     decodePromise=fetchAudio()
-       .then(bytes=>audio.ctx.decodeAudioData(bytes.slice(0)))
-       .then(decoded=>{buffer=decoded;return decoded;})
-       .catch(()=>{decodePromise=null;return null;});
-   }
-   return decodePromise;
- };
- // Pré-carregamento da rede sem abrir o contexto áudio do telemóvel.
- fetchAudio().catch(()=>{});
- function stopOriginal(){originalStop();}
- function stopLoop(){
-   playing=false;
-   if(timer){clearInterval(timer);timer=null;}
-   const t=audio.ctx?.currentTime??0;
-   for(const item of sources){
-     try{item.gain.gain.cancelScheduledValues(t);item.gain.gain.setTargetAtTime(.0001,t,.035);item.source.stop(t+.15);}catch(_){}
-   }
-   sources.clear();
+   if(s.decoding)return s.decoding;
+   s.decoding=fetchTrack(name).then(raw=>raw?audio.ctx.decodeAudioData(raw.slice(0)):null)
+     .then(buffer=>{if(buffer)s.buffer=buffer;return buffer;})
+     .catch(()=>null).finally(()=>{s.decoding=null;});
+   return s.decoding;
  }
- function schedule(){
-   if(!playing||!allowed()||!buffer){stopLoop();return;}
-   const ctx=audio.ctx,D=buffer.duration,blend=Math.min(1.05,D*.12);
-   if(D<=2){stopLoop();return;}
-   while(nextStart<ctx.currentTime+2.5){
-     const t=Math.max(nextStart,ctx.currentTime+.025);
-     const source=ctx.createBufferSource(),gain=ctx.createGain();
-     source.buffer=buffer;source.loop=false;
-     gain.gain.setValueAtTime(.0001,t);
-     gain.gain.linearRampToValueAtTime(sampleGain,t+blend);
-     gain.gain.setValueAtTime(sampleGain,t+D-blend);
-     gain.gain.linearRampToValueAtTime(.0001,t+D);
-     source.connect(gain);gain.connect(audio.musicBus||audio.out||ctx.destination);
-     const item={source,gain};sources.add(item);
-     source.onended=()=>{
-       sources.delete(item);
-       try{source.disconnect();gain.disconnect();}catch(_){}
-     };
-     source.start(t);source.stop(t+D+.025);
-     nextStart=t+D-blend;
+ function fadeOut(name,seconds){
+   const s=states[name],src=s.source;
+   if(!src||!audio.ctx)return;
+   const now=audio.ctx.currentTime;
+   if(s.buffer?.duration){
+     s.offset=(s.offset+Math.max(0,now-s.startedAt))%s.buffer.duration;
    }
+   if(s.gain){
+     const p=s.gain.gain;
+     p.cancelScheduledValues(now);p.setValueAtTime(Math.max(.0001,p.value),now);
+     p.linearRampToValueAtTime(.0001,now+seconds);
+   }
+   try{src.stop(now+seconds+.03);}catch(_){}
+   s.source=null;s.gain=null;
  }
- function startLoop(){
-   if(playing||!allowed()||!buffer)return;
-   stopOriginal(); // não deixar a antiga música de sintetizador por baixo
-   playing=true;
-   nextStart=audio.ctx.currentTime+.045;
-   schedule();
-   timer=setInterval(schedule,650);
+ function fadeIn(name,seconds){
+   const s=states[name],ctx=audio.ctx;
+   if(!s.buffer||!ctx||s.source)return;
+   const src=ctx.createBufferSource(),gn=ctx.createGain();
+   src.buffer=s.buffer;src.loop=true;
+   const now=ctx.currentTime,offset=s.offset%s.buffer.duration;
+   gn.gain.setValueAtTime(.0001,now);
+   gn.gain.linearRampToValueAtTime(sampleGain,now+seconds);
+   src.connect(gn);gn.connect(audio.musicBus||audio.out||ctx.destination);
+   s.source=src;s.gain=gn;s.startedAt=now;
+   src.onended=()=>{if(s.source===src){s.source=null;s.gain=null;}try{src.disconnect();gn.disconnect();}catch(_){}};
+   src.start(now,offset);
  }
+ function silence(){
+   fadeOut('normal',.10);fadeOut('bonus',.10);
+   activeTrack=null;originalStop();
+ }
+ function sync(){
+   if(!canPlay())return;
+   const target=desired(),s=states[target];
+   if(!s.buffer){
+     // Se a gravação do bónus não existir no servidor, manter a música normal.
+     loadTrack(target).then(()=>{if(canPlay()&&states[target].buffer)sync();});
+     if(target==='bonus'&&!states.bonus.buffer&&states.normal.buffer){
+       if(!states.normal.source)fadeIn('normal',.35);
+       activeTrack='normal';originalStop();
+     }else if(!states.normal.buffer&&!states.bonus.buffer){
+       originalStart();
+     }
+     return;
+   }
+   if(s.source&&activeTrack===target)return;
+   originalStop();
+   const fade=target==='bonus'?.80:1.05;
+   fadeIn(target,fade);
+   fadeOut(target==='normal'?'bonus':'normal',fade);
+   activeTrack=target;
+ }
+ // Pré-carrega as duas gravações sem desbloquear automaticamente o áudio do Safari.
+ fetchTrack('normal');
+ fetchTrack('bonus');
  audio.startMusic=function(){
-   if(!allowed())return;
-   if(buffer){startLoop();return;}
-   originalStart(); // fallback enquanto carrega ou se o ficheiro não estiver disponível
-   decode().then(decoded=>{
-     if(decoded&&allowed())startLoop();
-   });
+   if(!canPlay())return;
+   sync();
  };
- audio.stopMusic=function(){
-   stopLoop();
-   stopOriginal();
- };
- const prevInit=audio.init.bind(audio);
+ audio.stopMusic=function(){silence();};
+ const previousInit=audio.init.bind(audio);
  audio.init=function(...args){
-   const result=prevInit(...args);
-   if(audio.ctx)decode().then(decoded=>{if(decoded&&allowed())startLoop();});
-   return result;
+   const response=previousInit(...args);
+   if(audio.ctx){
+     loadTrack('normal').then(()=>{if(canPlay())sync();});
+     loadTrack('bonus').then(()=>{if(canPlay())sync();});
+   }
+   return response;
  };
+ // A sessão e a transição de Free Spins são geridas pelo motor; sem alterar pagamentos.
+ const watcher=setInterval(()=>{
+   if(!audio.ctx)return;
+   if(!canPlay()){if(states.normal.source||states.bonus.source)silence();return;}
+   if(activeTrack!==desired()||!states[desired()].source)sync();
+ },400);
  document.addEventListener('visibilitychange',()=>{
    if(document.hidden)audio.stopMusic();
-   else if(audio.ctx&&allowed())audio.startMusic();
+   else if(audio.ctx&&canPlay())audio.startMusic();
  });
- game.ambientLoop={version:'1.4-music75',get source(){return selected.name;},get artist(){return selected.artist;},get license(){return selected.license;},crossfade:true,get ready(){return !!buffer;}};
+ game.ambientLoop={
+   version:'1.5-bonus-switch',
+   get source(){return states[activeTrack||'normal'].selected.name;},
+   get normalReady(){return !!states.normal.buffer;},
+   get bonusReady(){return !!states.bonus.buffer;},
+   get activeTrack(){return activeTrack;},
+   get ready(){return !!states.normal.buffer;},
+   crossfade:true,
+   stopWatcher(){clearInterval(watcher);}
+ };
 })();
