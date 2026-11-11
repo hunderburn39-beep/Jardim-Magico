@@ -442,7 +442,14 @@
    if(chosen.expanded){
     const expander=this.lastResult.expanders.find(e=>e.symbol===chosen.symbol);
     for(const reel of expander?.reels||[])for(let row=0;row<3;row++)pulseCells.add(reel+'-'+row);
-   }else for(let reel=0;reel<chosen.count;reel++)pulseCells.add(reel+'-'+chosen.rows[reel]);
+   }else for(let reel=0;reel<chosen.count;reel++){
+     // Nas Free Spins, a peça só começa a pulsar quando a sua posição
+     // é efetivamente revelada, sincronizada com o som da pedra.
+     const lineStage=this.lastWasFree&&focus?.kind==='line'?focus:null;
+     if(lineStage&&t<lineStage.start+lineStage.preDelay+
+        (reel+1)*lineStage.perReel)continue;
+     pulseCells.add(reel+'-'+chosen.rows[reel]);
+   }
   }
   // Mostrar uma figura expansiva de cada vez, pelo valor crescente.
   const phase=this.expansionView?.(t);
@@ -626,7 +633,7 @@
     for(let i=0;i<keys.length;i++)
       this.drawMiniSymbol(keys[i],294+i*step,bonusesY+(35-size)/2,size);
   }
-  txt('V1.3.54',38,985,10,'#e5c68d',850,'Arial');
+  txt('V1.3.55',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
