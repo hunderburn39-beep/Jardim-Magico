@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V0.6</title>
+<title>Jardim Mágico | Edição Stake Preview V0.7</title>
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -98,6 +98,17 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .coin-slot.filled{background:radial-gradient(circle at 32% 23%,#fff7c9,#edc968 45%,#9e5c18 75%,#68401d);border:3px solid #fff0a9;color:#50230a;box-shadow:0 0 12px #ffdc7f80;font-size:18px}
 .hold-stats{display:flex;justify-content:space-between;gap:10px;color:#ffe1ad;font-weight:850;font-size:14px}
 .modal-close{display:block;margin:12px auto 0;border:1px solid #e5c489;background:#35264e;border-radius:12px;color:#fff;padding:10px 22px;font-weight:800}
+.history-modal{max-height:83svh;overflow-y:auto}
+.history-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.history-head h2{font-size:22px;text-align:left}
+.history-empty{font-size:13px;color:#f3deb9;text-align:center;padding:20px 8px}
+.history-list{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+.history-item{border:1px solid #d7b57580;background:linear-gradient(105deg,#312544dd,#1b1934ed);border-radius:13px;padding:11px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.history-item strong{font-size:13px;color:#f9e9c1;display:block}
+.history-item small{font-size:11px;color:#d5c8cf;display:block;margin-top:3px}
+.history-item .amount{font-size:15px;color:#d5ffc1;display:block;font-weight:900;font-variant-numeric:tabular-nums}
+.history-item button{border:1px solid #e3c48e;color:#fff0cb;background:#51375f;border-radius:9px;padding:9px 10px;font-size:11px;font-weight:900;white-space:nowrap}
+.history-head button{min-width:34px;height:34px;color:#ffe9b6;background:#38234d;border:1px solid #d5b478;border-radius:50%;font-size:20px}
 @media(max-height:750px){.logo-wrap{height:85px}.reels{height:clamp(240px,36svh,330px)}.statline{margin:4px 0 7px}.actions{margin-bottom:5px}.action-small{min-height:52px}.spin{height:63px}}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
@@ -105,7 +116,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
 <body>
 <main class="app" id="app">
  <div class="top"><div class="mode-tag">✦ EDIÇÃO STAKE · PREVIEW</div>
-  <div class="top-right"><button class="round" id="infoBtn" title="Informações" aria-label="Informações">ⓘ</button><button class="round" id="reloadBtn" title="Repor créditos de teste" aria-label="Repor créditos">＋</button><button class="round" id="soundBtn" title="Som" aria-label="Som">♫</button></div>
+  <div class="top-right"><button class="round" id="historyBtn" title="Histórico e repetição" aria-label="Histórico de jogadas e repetição">☷</button><button class="round" id="infoBtn" title="Informações" aria-label="Informações">ⓘ</button><button class="round" id="reloadBtn" title="Repor créditos de teste" aria-label="Repor créditos">＋</button><button class="round" id="soundBtn" title="Som" aria-label="Som">♫</button></div>
  </div>
  <div class="logo-wrap"><img src="../assets/imagens/jm77-logo-isolado.svg" alt="Jardim Mágico" onerror="this.style.display='none';this.parentNode.insertAdjacentHTML('afterbegin','<h1 style=&quot;color:#ffe6a4;font-size:30px&quot;>JARDIM MÁGICO</h1>')"><small>O BOSQUE ENCANTADO</small></div>
  <div class="statline">
@@ -130,9 +141,10 @@ button:disabled{opacity:.48;cursor:not-allowed}
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V0.6 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
+ <footer class="foot"><b>V0.7 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="holdOverlay"><div class="modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-grid" id="holdGrid"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin">0,00</span></div><button class="modal-close" id="closeHold" hidden>CONTINUAR</button></div></div>
+ <div class="overlay" id="historyOverlay"><div class="modal history-modal"><div class="history-head"><h2>HISTÓRICO</h2><button type="button" id="closeHistory" aria-label="Fechar histórico">×</button></div><p>Últimas 20 jogadas, em créditos fictícios. REPETIR reproduz o resultado original sem cobrar nem pagar novamente.</p><div id="historyList" class="history-list"></div><button type="button" class="modal-close" id="clearHistory">LIMPAR HISTÓRICO</button></div></div>
  <div class="overlay" id="infoOverlay"><div class="modal"><h2>Jardim Mágico</h2><p>Pré-visualização técnica independente com símbolos do jogo original, cinco tambores, dez linhas, WILD, SCATTER, cascatas, Free Spins e Hold & Win. Cada jogada e cada bónus são calculados inteiramente antes da animação. Os resultados são simulados neste navegador para teste visual, não são resultados certificados do Stake Engine.</p><p>Os créditos servem apenas para experimentar. Não existe dinheiro real, carteira ou casino associado.</p><button class="modal-close" id="closeInfo">FECHAR</button></div></div>
 </main>
 <script>
@@ -157,6 +169,8 @@ const TYPES=[
 const WEIGHTS=[10,13,11,10,4,11,10,9,10,4,12,7], LINES=[[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,1,2],[1,2,2,1,0],[0,1,1,1,2]],COEFS=[3,4,8,5,10,7,4,4,7,0,0,0],PAY=[0,0,0,7,25,80];
 const BETS=[.05,.10,.20,.40,.60,.80,1,1.50,2,3,5,7.5,10];
 let betIndex=2,balance=1000,lastWin=0,busy=false,turbo=false,sound=true,autoLeft=0,toastTimer=0,skipAnimations=false;
+let historyRecords=[],serial=0,replayBet=null;
+const SESSION_KEY="jardim_stake_preview_v07";
 function rand(){if(globalThis.crypto?.getRandomValues){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296;}return Math.random()}
 function pick(values,weights){let x=rand()*weights.reduce((a,b)=>a+b,0);for(let i=0;i<values.length;i++){x-=weights[i];if(x<0)return values[i]}return values.at(-1)}
 function board(free=false){const w=WEIGHTS.map((x,i)=>free&&i===9?2:x);return Array.from({length:5},()=>Array.from({length:3},()=>pick(TYPES.map((_,i)=>i),w)))}
@@ -170,7 +184,61 @@ function holdFeature(){// Seis moedas iniciais; depois cada casa vazia tem proba
 const chancePerEmpty=.08,initial=[46,28,16,8,2],extra=[42,30,16,8,3,1];let grid=Array(16).fill(0),positions=Array.from({length:16},(_,i)=>i);for(let i=0;i<6;i++){let n=Math.floor(rand()*positions.length);grid[positions.splice(n,1)[0]]=pick([1,2,3,5,10],initial)}let events=[{kind:"hold",grid:[...grid],tries:3,turn:0}],tries=3,turn=0;while(tries&&grid.some(x=>!x)){turn++;let newCoins=0;for(let i=0;i<16;i++){if(!grid[i]&&rand()<chancePerEmpty){grid[i]=pick([1,2,3,5,10,20],extra);newCoins++}}tries=newCoins?3:tries-1;events.push({kind:"hold",grid:[...grid],tries,turn})}const filled=grid.every(Boolean),amount=100*grid.reduce((a,b)=>a+b,0)+(filled?25000:0);events.push({kind:"holdEnd",grid:[...grid],amount,filled});return {events,amount}}
 function generate(mode){const events=[],cost=mode==="base"?1:mode==="free"?20:30;let payout=0;if(mode==="base"){const s=stages(false);events.push(...s.events);payout+=s.paid;if(s.scatter>=3){const f=freeFeature();events.push(...f.events);payout+=f.amount}else if(s.coins>=6){const h=holdFeature();events.push(...h.events);payout+=h.amount}}else if(mode==="free"){const f=freeFeature();events.push(...f.events);payout=f.amount}else{const h=holdFeature();events.push(...h.events);payout=h.amount}return{cost,payout,events}}
 function format(x){return x.toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})}
-function money(v){return format(v/100*BETS[betIndex])}
+function money(v){return format(v/100*(replayBet??BETS[betIndex]))}
+function loadSession(){
+  try{
+    const state=JSON.parse(localStorage.getItem(SESSION_KEY)||"null");
+    if(!state||typeof state!=="object")return;
+    if(Number.isFinite(state.balance)&&state.balance>=0&&state.balance<=100000000)balance=state.balance;
+    if(Number.isInteger(state.betIndex)&&state.betIndex>=0&&state.betIndex<BETS.length)betIndex=state.betIndex;
+    if(Number.isFinite(state.lastWin)&&state.lastWin>=0)lastWin=state.lastWin;
+    if(Number.isSafeInteger(state.serial)&&state.serial>=0)serial=state.serial;
+    if(Array.isArray(state.historyRecords))historyRecords=state.historyRecords.slice(0,20).filter(record=>
+      record&&Number.isSafeInteger(record.id)&&record.id>0&&["base","free","hold"].includes(record.mode)
+      &&BETS.includes(record.bet)&&Number.isFinite(record.cost)&&record.cost>=0
+      &&Number.isFinite(record.payout)&&record.payout>=0
+      &&record.book&&Array.isArray(record.book.events)&&record.book.events.length<2000
+      &&Number.isInteger(record.book.payout)&&record.book.payout>=0);
+  }catch(error){console.warn("Sessão de testes não recuperada:",error)}
+}
+function saveSession(){
+  try{localStorage.setItem(SESSION_KEY,JSON.stringify({balance,betIndex,lastWin,serial,historyRecords}))}
+  catch(error){console.warn("Histórico apenas nesta sessão:",error)}
+}
+function recordRound(mode,stake,cost,payout,book){
+  const record={id:++serial,mode,bet:stake,cost,payout,book,time:new Date().toISOString()};
+  historyRecords.unshift(record);
+  if(historyRecords.length>20)historyRecords.length=20;
+  saveSession();
+  return record;
+}
+function historyModeName(mode){return mode==="free"?"FREE SPINS":mode==="hold"?"HOLD & WIN":"JOGO BASE"}
+function renderHistory(){
+  const list=$("historyList");
+  if(!historyRecords.length){list.innerHTML='<div class="history-empty">Ainda não há jogadas. Faz uma rotação ou compra um bónus de teste.</div>';return}
+  list.innerHTML=historyRecords.map(record=>
+    '<div class="history-item"><div><strong>#'+record.id+' · '+historyModeName(record.mode)+'</strong><small>APOSTA '+format(record.bet)+' · CUSTO '+format(record.cost)+'</small><span class="amount">PRÉMIO '+format(record.payout)+'</span></div><button type="button" data-replay="'+record.id+'">▶ REPETIR</button></div>'
+  ).join("");
+}
+function showHistory(){if(busy)return;autoLeft=0;controls();renderHistory();$("historyOverlay").classList.add("show")}
+function hideHistory(){$("historyOverlay").classList.remove("show")}
+async function replayRound(id){
+  if(busy)return false;
+  const saved=historyRecords.find(record=>record.id===id);
+  if(!saved)return false;
+  hideHistory();autoLeft=0;busy=true;skipAnimations=false;replayBet=saved.bet;controls();
+  const before=balance,last=lastWin;
+  try{
+    $("hud").textContent="REPETIÇÃO · JOGADA #"+saved.id;
+    say("A repetir a jogada #"+saved.id+" · Sem alterar o saldo.","bonus");
+    await playback(saved.book);
+    say("REPETIÇÃO #"+saved.id+" · PRÉMIO ORIGINAL "+format(saved.payout)+" créditos","good");
+    return true;
+  }finally{
+    replayBet=null;busy=false;skipAnimations=false;clearPayline();clearFreeHud();controls();display();
+    if(balance!==before||lastWin!==last)throw Error("A repetição alterou o saldo ou o último prémio");
+  }
+}
 function draw(b,wins=[]){const keys=new Set(wins.map(([c,r])=>c+":"+r));$("reels").innerHTML=Array.from({length:5},(_,c)=>'<div class="column">'+Array.from({length:3},(_,r)=>{const t=TYPES[b[c][r]],k=c+":"+r;let art=t.image?'<img alt="'+t.label+'" src="'+t.image+'" draggable="false">':t.orb?'<span class="orb">SCATTER</span>':'<span class="emoji" aria-label="'+t.label+'">'+t.emoji+'</span>';return '<div class="cell '+(keys.has(k)?"winning":"")+'">'+art+'</div>'}).join("")+"</div>").join("")}
 function display(){ $("balance").textContent=format(balance);$("bet").textContent=format(BETS[betIndex]);$("lastWin").textContent=format(lastWin);document.querySelectorAll("[data-bet]").forEach(button=>{const active=Number(button.dataset.bet)===BETS[betIndex];button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});const freeText=$("buyFree").querySelector?.("span"),holdText=$("buyHold").querySelector?.("span");if(freeText)freeText.textContent="20× · "+format(20*BETS[betIndex])+" créditos";if(holdText)holdText.textContent="30× · "+format(30*BETS[betIndex])+" créditos"}
 function say(s,kind=""){$("notice").className="notice "+kind;$("notice").textContent=s}
@@ -179,7 +247,7 @@ function toast(title,value,level="normal"){const panel=$("toast");$("toastTitle"
 function updateFreeHud(remaining,raw,multi){$("freePanel").hidden=false;$("freeRemaining").textContent=remaining;$("freeRaw").textContent=money(raw);$("freeMult").textContent="×"+multi}
 function clearFreeHud(){$("freePanel").hidden=true;$("freePanel").classList.remove("celebrate")}
 function finalWinTier(payout,stake){const ratio=payout/stake;return ratio>=100?"SENSACIONAL":ratio>=25?"MEGA WIN":ratio>=10?"BIG WIN":"PRÉMIO TOTAL"}
-function controls(){["spin","minus","plus","buyFree","buyHold","reloadBtn","auto"].forEach(id=>$(id).disabled=busy);$("skipBtn").hidden=!busy||skipAnimations;document.querySelectorAll("[data-bet]").forEach(button=>button.disabled=busy);$("turboLabel").textContent=turbo?"LIGADO":"DESL.";$("autoLabel").textContent=autoLeft?autoLeft+" GIROS":"5 GIROS"}
+function controls(){["spin","minus","plus","buyFree","buyHold","reloadBtn","auto","historyBtn"].forEach(id=>$(id).disabled=busy);$("skipBtn").hidden=!busy||skipAnimations;document.querySelectorAll("[data-bet]").forEach(button=>button.disabled=busy);$("turboLabel").textContent=turbo?"LIGADO":"DESL.";$("autoLabel").textContent=autoLeft?autoLeft+" GIROS":"5 GIROS"}
 function renderHold(grid,tries,previous=[]){$("holdGrid").innerHTML=grid.map((x,i)=>'<div class="coin-slot '+(x?"filled":"")+(x&&!previous[i]?" new-coin":"")+'">'+(x?'×'+x:'✦')+'</div>').join("");$("holdTries").textContent="Tentativas: "+tries;$("holdWin").textContent=money(100*grid.reduce((a,b)=>a+b,0))+" créditos"}
 function clearPayline(){$("paylineSvg").innerHTML="";$("linePrize").hidden=true}
 async function highlightLines(evt){
@@ -282,22 +350,29 @@ async function playback(book){
     }
   }
 }
-async function play(mode="base"){if(busy)return;const bet=BETS[betIndex],cost=bet*(mode==="free"?20:mode==="hold"?30:1);if(balance+1e-7<cost){say("Saldo de teste insuficiente: usa o botão + no topo.");return}busy=true;skipAnimations=false;clearFreeHud();controls();try{balance=Math.round((balance-cost)*100)/100;display();const b=generate(mode);const payout=+(b.payout/100*bet).toFixed(2);await playback(b);balance=+(balance+payout).toFixed(2);lastWin=payout;display();$("hud").textContent="✦ RONDA CONCLUÍDA ✦";$("dropNum").textContent="0";$("multiNum").textContent="×1";if(payout>0){const tier=finalWinTier(payout,bet);toast(tier,format(payout),payout>=bet*10?"big":"normal");say(tier+": "+format(payout)+" créditos","good");beep(910)}else say("Sem prémio nesta jogada. Experimenta novamente.")}catch(e){console.error(e);say("Erro na simulação: "+e.message)}finally{busy=false;skipAnimations=false;clearPayline();clearFreeHud();controls();if(autoLeft){autoLeft--;controls();if(autoLeft&&balance>=BETS[betIndex]){await sleep(190);play("base")}else{autoLeft=0;controls()}}}}
+async function play(mode="base"){if(busy)return;const bet=BETS[betIndex],cost=bet*(mode==="free"?20:mode==="hold"?30:1);if(balance+1e-7<cost){say("Saldo de teste insuficiente: usa o botão + no topo.");return}busy=true;skipAnimations=false;clearFreeHud();controls();try{const balanceBefore=balance,lastBefore=lastWin;balance=Math.round((balance-cost)*100)/100;display();const b=generate(mode);const payout=+(b.payout/100*bet).toFixed(2);await playback(b);balance=+(balance+payout).toFixed(2);lastWin=payout;recordRound(mode,bet,cost,payout,b);display();$("hud").textContent="✦ RONDA CONCLUÍDA ✦";$("dropNum").textContent="0";$("multiNum").textContent="×1";if(payout>0){const tier=finalWinTier(payout,bet);toast(tier,format(payout),payout>=bet*10?"big":"normal");say(tier+": "+format(payout)+" créditos","good");beep(910)}else say("Sem prémio nesta jogada. Experimenta novamente.")}catch(e){console.error(e);say("Erro na simulação: "+e.message)}finally{busy=false;skipAnimations=false;clearPayline();clearFreeHud();controls();if(autoLeft){autoLeft--;controls();if(autoLeft&&balance>=BETS[betIndex]){await sleep(190);play("base")}else{autoLeft=0;controls()}}}}
 $("spin").addEventListener("click",()=>play("base"));
 $("skipBtn").addEventListener("click",()=>{if(!busy)return;skipAnimations=true;controls();say("A apresentar o resultado final desta jogada…","bonus")});
-$("minus").addEventListener("click",()=>{betIndex=Math.max(0,betIndex-1);display()});
-$("plus").addEventListener("click",()=>{betIndex=Math.min(BETS.length-1,betIndex+1);display()});
-document.querySelectorAll("[data-bet]").forEach(button=>button.addEventListener("click",()=>{if(busy)return;const wanted=Number(button.dataset.bet),index=BETS.findIndex(v=>v===wanted);if(index!==-1){betIndex=index;display();say("Aposta selecionada: "+format(wanted)+" créditos.")}}));
+$("minus").addEventListener("click",()=>{betIndex=Math.max(0,betIndex-1);display();saveSession()});
+$("plus").addEventListener("click",()=>{betIndex=Math.min(BETS.length-1,betIndex+1);display();saveSession()});
+document.querySelectorAll("[data-bet]").forEach(button=>button.addEventListener("click",()=>{if(busy)return;const wanted=Number(button.dataset.bet),index=BETS.findIndex(v=>v===wanted);if(index!==-1){betIndex=index;display();saveSession();say("Aposta selecionada: "+format(wanted)+" créditos.")}}));
 $("buyFree").addEventListener("click",()=>play("free"));
 $("buyHold").addEventListener("click",()=>play("hold"));
-$("reloadBtn").addEventListener("click",()=>{balance+=250;display();say("Adicionados 250 créditos de teste.","bonus")});
+$("reloadBtn").addEventListener("click",()=>{balance+=250;display();saveSession();say("Adicionados 250 créditos de teste.","bonus")});
 $("turbo").addEventListener("click",()=>{turbo=!turbo;controls()});
 $("auto").addEventListener("click",()=>{autoLeft=5;controls();play("base")});
 $("soundBtn").addEventListener("click",()=>{sound=!sound;$("soundBtn").textContent=sound?"♫":"♪";$("soundBtn").style.opacity=sound?"1":".45"});
+$("historyBtn").addEventListener("click",showHistory);
+$("closeHistory").addEventListener("click",hideHistory);
+$("historyOverlay").addEventListener("click",event=>{if(event.target===$("historyOverlay"))hideHistory()});
+$("historyList").addEventListener("click",event=>{const button=event.target.closest?.("[data-replay]");if(button)replayRound(Number(button.dataset.replay))});
+$("clearHistory").addEventListener("click",()=>{if(busy)return;historyRecords=[];saveSession();renderHistory()});
 $("infoBtn").addEventListener("click",()=>$("infoOverlay").classList.add("show"));
 $("closeInfo").addEventListener("click",()=>$("infoOverlay").classList.remove("show"));
 $("infoOverlay").addEventListener("click",e=>{if(e.target===$("infoOverlay"))$("infoOverlay").classList.remove("show")});
-const requestedBet=typeof location==="undefined"?null:Number(new URLSearchParams(location.search).get("bet"));if(requestedBet!==null&&BETS.includes(requestedBet))betIndex=BETS.indexOf(requestedBet);draw(board());display();controls();
+loadSession();
+const requestedBet=typeof location==="undefined"?null:Number(new URLSearchParams(location.search).get("bet"));if(requestedBet!==null&&BETS.includes(requestedBet))betIndex=BETS.indexOf(requestedBet);
+draw(board());display();controls();
 </script>
 </body>
 </html>
