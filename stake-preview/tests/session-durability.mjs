@@ -52,7 +52,7 @@ function makeContext(){
 let {ctx,get,run}=makeContext();
 const chunky=Array.from({length:25},(_,i)=>({kind:'reels',drop:i+1,debug:'q'.repeat(2000)}));
 const rounds=Array.from({length:20},(_,i)=>({
-  id:i+1,mode:'base',bet:7.5,cost:7.5,payout:7.5,
+  id:20-i,mode:'base',bet:7.5,cost:7.5,payout:7.5,
   book:{payout:100,events:chunky},time:'2026-11-12T16:00:00.000Z'
 }));
 ctx.seedRounds=rounds;
@@ -60,10 +60,10 @@ run('historyRecords=seedRounds;serial=20;balance=1000;betIndex=BETS.indexOf(7.5)
 assert.equal(run('saveSession()'),true,'History should shrink to fit a realistic storage quota');
 const reduced=run('historyRecords.length');
 assert.ok(reduced>=1&&reduced<20,'Oldest history records were pruned, newest remain');
-assert.equal(run('historyRecords[0].id'),1,'Most recent history preserved in array order');
+assert.equal(run('historyRecords[0].id'),20,'Most recent history preserved in array order');
 const snap=JSON.parse(store.get('jardim_stake_preview_v07'));
 assert.equal(snap.historyRecords.length,reduced);
-assert.ok(snap.historyRecords.every(x=>x.id<=reduced));
+assert.ok(snap.historyRecords.every(x=>x.id>=21-reduced));
 assert.equal(snap.balance,1000);
 assert.equal(snap.serial,20,'Last spin number unchanged');
 assert.equal(snap.betIndex,run('betIndex'));
