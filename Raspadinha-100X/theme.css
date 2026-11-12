@@ -221,3 +221,158 @@ body[data-mode] .scratch-admin button:not(.scratch-admin-x):not(.scratch-admin-r
   border-color:var(--game-bright);
 }
 body[data-mode] .wallet-panel{border-color:var(--game-highlight)}
+
+
+/* CENARIOS DINAMICOS V2
+   Quatro ambientes animados sem videos, imagens externas nem JavaScript.
+   Todas as camadas sao decorativas e nao interceptam o toque na raspadinha. */
+body[data-mode] .scratch-ambience{
+  position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  isolation:isolate;contain:layout paint;
+}
+body[data-mode] .scratch-ambience>span{
+  position:absolute;display:block;pointer-events:none;
+  transform:translate3d(0,0,0);
+}
+body[data-mode] .ambience-haze{
+  inset:-38%;
+  background:
+    radial-gradient(ellipse at 24% 32%,color-mix(in srgb,var(--game-highlight) 43%,transparent),transparent 33%),
+    radial-gradient(ellipse at 82% 67%,color-mix(in srgb,var(--game-accent) 52%,transparent),transparent 35%),
+    radial-gradient(ellipse at 45% 84%,color-mix(in srgb,var(--game-bright) 17%,transparent),transparent 29%);
+  filter:blur(30px);
+  opacity:.53;
+  animation:ambienceBreathe 17s ease-in-out infinite alternate;
+}
+body[data-mode] .ambience-particles{
+  inset:-25%;
+  background-repeat:repeat;
+  opacity:.34;
+  animation:ambienceFloat 24s linear infinite;
+}
+body[data-mode] .ambience-trails{
+  inset:-30%;
+  opacity:.20;
+  background-repeat:repeat;
+  animation:ambienceSweep 20s ease-in-out infinite alternate;
+}
+
+/* 10X: azul tropical, reflexos de agua e bolhas luminosas. */
+body[data-mode="10"] .ambience-particles{
+  background-image:
+    radial-gradient(circle,#b5faff 0 1.5px,transparent 2.4px),
+    radial-gradient(circle,#62baffc9 0 2.4px,transparent 4px),
+    radial-gradient(circle,transparent 4px,#d7f9ff66 5px,transparent 6px);
+  background-size:83px 109px,173px 157px,209px 233px;
+  animation-duration:25s;
+}
+body[data-mode="10"] .ambience-trails{
+  background:
+    repeating-radial-gradient(ellipse at 30% 65%,transparent 0 25px,#a5e8ff39 27px 28px,transparent 30px 63px),
+    linear-gradient(125deg,transparent 40%,#b8edff35 49%,transparent 57%);
+  background-size:610px 500px,100% 100%;
+  animation-duration:23s;
+}
+
+/* 20X: verde esmeralda, pirilampos dourados e brilho de floresta. */
+body[data-mode="20"] .ambience-particles{
+  background-image:
+    radial-gradient(circle,#d6ffd7 0 1.3px,transparent 3px),
+    radial-gradient(circle,#edff9c 0 2px,transparent 5px),
+    radial-gradient(circle,#64ffe599 0 1.2px,transparent 3px);
+  background-size:107px 143px,191px 179px,77px 211px;
+  animation-duration:30s;animation-direction:reverse;
+}
+body[data-mode="20"] .ambience-trails{
+  background:
+    repeating-radial-gradient(ellipse at 7% 108%,transparent 0 55px,#b1ffd42e 57px 59px,transparent 62px 106px),
+    linear-gradient(137deg,transparent 32%,#c6ffbd38 52%,transparent 70%);
+  background-size:630px 660px,100% 100%;
+  animation-duration:27s;
+}
+
+/* 50X: purpura, constelacoes e poeira de estrelas. */
+body[data-mode="50"] .ambience-particles{
+  background-image:
+    radial-gradient(circle,#f9eaff 0 1.5px,transparent 2.6px),
+    radial-gradient(circle,#d6a5ff 0 1px,transparent 2px),
+    radial-gradient(circle,#ffc4e899 0 2px,transparent 4px);
+  background-size:93px 119px,131px 157px,207px 183px;
+  animation-duration:36s;
+}
+body[data-mode="50"] .ambience-trails{
+  background-image:
+    linear-gradient(125deg,transparent 0 45%,#f0c1ff55 49%,transparent 51% 100%),
+    repeating-linear-gradient(147deg,transparent 0 105px,#b988ff28 106px 107px,transparent 108px 193px);
+  background-size:310px 520px,100% 100%;
+  animation-duration:31s;
+}
+
+/* 100X: vermelho imperial com particulas douradas em suspensao. */
+body[data-mode="100"] .ambience-particles{
+  background-image:
+    radial-gradient(ellipse,#ffe8a4 0 1.4px,transparent 3.5px),
+    radial-gradient(ellipse,#ffc76d 0 2.1px,transparent 5px),
+    radial-gradient(circle,#ff9f7688 0 1.5px,transparent 4px);
+  background-size:97px 137px,167px 229px,61px 173px;
+  animation-duration:19s;animation-direction:reverse;
+}
+body[data-mode="100"] .ambience-trails{
+  background:
+    conic-gradient(from 0deg at 50% 56%,transparent 0deg,#ffc26825 9deg,transparent 17deg 48deg,#ffc26817 58deg,transparent 70deg 112deg,#ffe89e27 124deg,transparent 136deg 360deg);
+  background-size:100% 100%;
+  animation-duration:25s;
+}
+body[data-mode="100"] .ambience-haze{opacity:.63;animation-duration:13s}
+
+/* Brilho no proprio bilhete: sempre ATRAS das casas e da pelicula. */
+body[data-mode] .ticket{
+  background-size:160% 150%,145% 145%,auto,auto;
+  animation:ticketAmbientShift 19s ease-in-out infinite alternate;
+}
+body[data-mode] .ticket::before{
+  background-image:
+    linear-gradient(115deg,transparent 0%,transparent 41%,
+      color-mix(in srgb,var(--game-bright) 12%,transparent) 49%,
+      transparent 57%,transparent 100%);
+  background-size:240% 100%;
+  background-repeat:no-repeat;
+  background-position:115% 0;
+  animation:ticketFoilGlint 13s ease-in-out infinite;
+}
+body[data-mode] .ticket::after{
+  animation:ticketEmblemGlow 7s ease-in-out infinite alternate;
+}
+@keyframes ambienceBreathe{
+  from{transform:translate3d(-6%,-3%,0) scale(1);opacity:.37}
+  to{transform:translate3d(5%,5%,0) scale(1.1);opacity:.66}
+}
+@keyframes ambienceFloat{
+  from{transform:translate3d(-3%,7%,0)}
+  to{transform:translate3d(6%,-9%,0)}
+}
+@keyframes ambienceSweep{
+  from{transform:translate3d(-9%,-5%,0) rotate(-3deg);opacity:.13}
+  to{transform:translate3d(8%,6%,0) rotate(3deg);opacity:.27}
+}
+@keyframes ticketAmbientShift{
+  from{background-position:0% 0%,100% 90%,0 0,0 0}
+  to{background-position:100% 75%,0% 25%,0 0,0 0}
+}
+@keyframes ticketFoilGlint{
+  0%,33%,100%{background-position:115% 0}
+  53%,64%{background-position:-100% 0}
+}
+@keyframes ticketEmblemGlow{
+  from{opacity:.25;filter:brightness(.85)}
+  to{opacity:.68;filter:brightness(1.22)}
+}
+
+/* iPhone / acessibilidade: menos composicao e movimento quando solicitado. */
+@media(prefers-reduced-motion:reduce){
+  body[data-mode] .scratch-ambience>span,
+  body[data-mode] .ticket,
+  body[data-mode] .ticket::before,
+  body[data-mode] .ticket::after{animation:none!important}
+  body[data-mode] .ambience-trails{opacity:.10}
+}
