@@ -29,7 +29,7 @@ const url='http://127.0.0.1:8123/index.html?qa=bonus-buy';
    const balanceBefore=await page.evaluate(()=>window.__faraoGame.ledger.balanceU);
    await button.click();
    assert.equal(await page.locator('#modal-title').innerText(),'COMPRAR BÓNUS');
-   assert.match(await page.locator('#modal-content').innerText(),/100[,.]00\\s*€/);
+   assert.match(await page.locator('#modal-content').innerText(),/100[,.]00\s*€/);
    await page.locator('#buy-bonus-cancel').click();
    assert.equal(await page.evaluate(()=>window.__faraoGame.ledger.balanceU),balanceBefore,'Cancelar não debita');
    await button.click();
