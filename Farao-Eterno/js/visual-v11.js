@@ -622,11 +622,16 @@
     presenting?'AVANÇAR':'GIRAR';
   drawMedallion(label,!this.ready||this.superseded,now);
   if(this.ready&&!this.superseded)this.action(215,813,130,130,()=>this.advanceStage(),label);
-  if(this.pendingSummary||this.feature&&this._freeStarted||presenting){
-    txt(this.pendingSummary?'VER TOTAL DAS FREE SPINS':
-      'TOCA PARA AVANÇAR A ETAPA',
-      280,963,12,'#ffe2a2',850,'Arial');
-  }
+  // Nas Free Spins automáticas, não sugerir toques que não fazem nada.
+  // Quando a carta acaba de ser revelada, orientar o giro manual aprovado.
+  const manualBonusReady=!!(this.feature&&this._awaitBonusStart&&
+    !this._welcome&&!this.spinning&&!this.ledger.payout&&!this.paused&&
+    (!this.featureIntro||now>=this.featureIntro.end)&&
+    now>=this.nextActionAt);
+  const hint=this.pendingSummary?'VER TOTAL DAS FREE SPINS':
+    manualBonusReady?'TOCA EM GIRAR PARA CONTINUAR':
+    presenting&&!this.feature?'TOCA PARA AVANÇAR A ETAPA':'';
+  if(hint)txt(hint,280,963,12,'#ffe2a2',850,'Arial');
   // Botão pequeno diretamente sob o painel SALDO (fim do painel y=757).
   // Mantém distância do botão de rodar e bloqueia compras em jogadas/bónus.
   const bonusDisabled=!this.ready||this.superseded||this.spinning||
