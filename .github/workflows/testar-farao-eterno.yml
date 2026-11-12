@@ -18,7 +18,8 @@ permissions:
 
 concurrency:
   group: farao-testes-${{ github.ref }}
-  cancel-in-progress: false
+  # Revalidar apenas a versão mais recente após alterações rápidas.
+  cancel-in-progress: true
 
 jobs:
   verificar-farao:
