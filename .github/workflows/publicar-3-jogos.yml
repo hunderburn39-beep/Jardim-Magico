@@ -183,6 +183,7 @@ jobs:
           node stake-preview/tests/history-replay.mjs
           node stake-preview/tests/audio-assets.mjs
           node stake-preview/tests/intro-bonus.mjs
+          node stake-preview/tests/paytable.mjs
           echo 'Stake preview: JS válido, 10 000 compras Hold e animações verificadas.'
 
       - name: Configurar GitHub Pages
