@@ -44,7 +44,7 @@ function boot(){
   querySelector:()=>null
  };
  vm.runInNewContext(source,{window:{__faraoGame:game,matchMedia:()=>({matches:false})},
-  document,Math,console,WeakSet},{filename:'coin-celebrations.js'});
+  document,Math,console,WeakSet,performance:{now:()=>0}},{filename:'coin-celebrations.js'});
  return {game,nodes,document};
 }
 test('moedas saem uma vez por linha premiada, sem pagamentos adicionais',()=>{
