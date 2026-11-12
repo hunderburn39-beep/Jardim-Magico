@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V1.4</title>
+<title>Jardim Mágico | Edição Stake Preview V1.5</title>
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -65,7 +65,23 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .cell.cascade-in img,.cell.cascade-in .emoji,.cell.cascade-in .orb{animation:fallIn .38s cubic-bezier(.16,.8,.3,1.08) both}
 .cell.landing{animation:landingFlash .24s ease-out}
 .payline-visual{position:absolute;inset:3px;width:calc(100% - 6px);height:calc(100% - 6px);z-index:4;pointer-events:none;overflow:visible}
-.line-prize{position:absolute;left:50%;top:48%;z-index:5;transform:translate(-50%,-50%);background:linear-gradient(145deg,#39244ce8,#211833ee);border:1px solid #ffe9ab;box-shadow:0 0 20px #101027,0 0 15px #f5c46c88;color:#fff4ce;font-size:clamp(13px,3.3vw,18px);font-weight:900;padding:9px 14px;border-radius:28px;white-space:nowrap;pointer-events:none;text-shadow:0 1px #000}
+.line-prize{position:absolute;left:50%;top:48%;z-index:5;transform:translate(-50%,-50%);background:none;border:0;box-shadow:none;color:#fff6c7;font-size:clamp(15px,4.3vw,23px);font-weight:1000;padding:3px 8px;white-space:nowrap;pointer-events:none;text-shadow:0 0 6px #fff5a9,0 0 12px #ffcd63,2px 3px 2px #130c2b,-2px 3px 3px #130c2b;animation:linePrizePop .35s cubic-bezier(.21,1.5,.45,1) both}
+@keyframes linePrizePop{from{opacity:0;filter:blur(3px);transform:translate(-50%,-40%) scale(.72)}to{opacity:1;filter:blur(0);transform:translate(-50%,-50%) scale(1)}}
+.cascade-meter{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:center;margin:5px 7px 2px}
+.cascade-meter>div{min-width:0;border:1px solid #e4bd82a8;border-radius:13px;padding:6px 4px;background:linear-gradient(120deg,#39254ecc,#68406bad,#29244ecc);text-align:center;box-shadow:0 2px 12px #edba7b32;animation:meterGlow .35s ease-out}
+.cascade-meter small{font-size:clamp(9px,2.45vw,11px);font-weight:850;color:#ffdf9f;letter-spacing:.035em;display:block}
+.cascade-meter strong{display:block;font-size:clamp(14px,4vw,19px);color:#e4ffd0;font-variant-numeric:tabular-nums;white-space:nowrap}
+@keyframes meterGlow{from{filter:brightness(2)}to{filter:brightness(1)}}
+.frame.win-flash{box-shadow:0 0 0 2px #ffefb2,0 0 28px #f9d66c9e,inset 0 0 29px #ffe6a58f}
+.cell.winning img{animation:winSymbolGlow .6s ease-in-out 2;position:relative;z-index:1}
+@keyframes winSymbolGlow{0%,100%{filter:drop-shadow(0 0 5px #fff4b9) brightness(1)}50%{filter:drop-shadow(0 0 18px #fff7ba) brightness(1.8)}}
+.win-sparks{position:absolute;inset:2px;z-index:4;pointer-events:none;overflow:hidden}
+.win-spark{position:absolute;display:block;color:#fff6b5;text-shadow:0 0 9px #fff9cf,0 0 16px #ffe08d;font-size:clamp(14px,4.7vw,25px);line-height:1;animation:winSparkFloat .75s ease-out both}
+@keyframes winSparkFloat{0%{opacity:0;transform:translateY(12px) scale(.15) rotate(-35deg)}35%{opacity:1;transform:translateY(-6px) scale(1.4) rotate(18deg)}100%{opacity:0;transform:translateY(-23px) scale(.5) rotate(45deg)}}
+.toast.big-celebration:before{content:"✦ ✧ ✦";position:absolute;top:-30px;left:0;width:100%;color:#fff0aa;text-shadow:0 0 14px #fff8c6;font-size:24px;letter-spacing:26px;animation:celebrateStars 1.5s ease-out both;pointer-events:none}
+@keyframes celebrateStars{from{opacity:0;transform:translateY(22px) scale(.5)}35%{opacity:1;transform:translateY(-5px) scale(1.1)}to{opacity:.3;transform:translateY(-18px) scale(1.3)}}
+@media(prefers-reduced-motion:reduce){.win-spark,.cell.winning img,.line-prize,.cascade-meter>div,.toast.big-celebration:before{animation:none!important}}
+
 .free-panel{display:grid;grid-template-columns:.9fr 1.2fr 1fr;gap:5px;margin:6px 5px 4px;padding:5px;border:1px solid #c9a26d;box-shadow:0 0 15px #d3ad6e24,inset 0 1px #ffffff15;background:linear-gradient(105deg,#302048e8,#40345deb,#302048e8);border-radius:12px}
 .free-panel>div{text-align:center;min-width:0}
 .free-panel small{display:block;font-size:9px;letter-spacing:.035em;color:#ecce9f;font-weight:750}
@@ -222,7 +238,8 @@ button:disabled{opacity:.48;cursor:not-allowed}
   <div><small>ÚLTIMO PRÉMIO</small><strong id="lastWin">0,00</strong></div>
  </div>
  <div id="wildTally" class="wild-tally" hidden><span id="wildTallyText"></span></div>
- <div class="frame"><div class="hud"><span id="hud">✦ RODADAS DE TESTE ✦</span></div><div class="reels" id="reels" aria-label="Cinco tambores, três linhas"></div><svg id="paylineSvg" class="payline-visual" viewBox="0 0 500 300" preserveAspectRatio="none" aria-hidden="true"></svg><output id="linePrize" class="line-prize" hidden aria-live="off"></output><button id="skipBtn" class="skip-btn" type="button" hidden>PASSAR ⏩</button></div>
+ <div class="frame" id="reelFrame"><div class="hud"><span id="hud">✦ RODADAS DE TESTE ✦</span></div><div class="reels" id="reels" aria-label="Cinco tambores, três linhas"></div><svg id="paylineSvg" class="payline-visual" viewBox="0 0 500 300" preserveAspectRatio="none" aria-hidden="true"></svg><div id="winSparks" class="win-sparks" aria-hidden="true"></div><output id="linePrize" class="line-prize" hidden aria-live="off"></output><button id="skipBtn" class="skip-btn" type="button" hidden>PASSAR ⏩</button></div>
+ <div id="cascadeMeter" class="cascade-meter" hidden aria-live="off"><div><small id="cascadeWinLabel">PRÉMIO DA QUEDA</small><strong id="cascadeWinValue">0,00</strong></div><div><small id="cascadeTotalLabel">TOTAL DAS CASCATAS</small><strong id="cascadeTotalValue">0,00</strong></div></div>
  <div id="freePanel" class="free-panel" hidden aria-live="off"><div><small>RESTANTES</small><strong id="freeRemaining">15</strong></div><div><small>BRUTO ACUMULADO</small><strong id="freeRaw">0,00</strong></div><div><small>MULTI</small><strong id="freeMult">×1</strong></div></div>
  <div id="freeRetrigger" class="free-retrigger" hidden aria-live="polite">✦ RETRIGGER +8 FREE SPINS ✦</div>
  <div class="notice" id="notice" aria-live="polite">Prime RODAR para entrar no bosque!</div>
@@ -240,7 +257,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V1.4 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
+ <footer class="foot"><b>V1.5 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="freeResultOverlay" role="dialog" aria-modal="true" aria-label="Resultado final das Free Spins"><div class="modal free-result-modal"><h2>✦ FREE SPINS ✦</h2><p>O BÓNUS TERMINOU</p><div id="freeResultTotal" class="free-result-total">0,00</div><div class="free-result-math"><span>Jogadas realizadas</span><strong id="freeResultPlayed">15</strong><span>Prémio bruto</span><strong id="freeResultRaw">0,00</strong><span>Multiplicador</span><strong id="freeResultMulti">×1</strong></div><button class="free-continue" id="closeFree" type="button">▶ CONTINUAR</button></div></div>
  <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
@@ -525,7 +542,7 @@ async function replayRound(id){
     return true;
   }finally{
     acknowledgeHoldContinue();hideHoldResult();acknowledgeFreeContinue();hideFreeResult();
-    replayBet=null;busy=false;skipAnimations=false;clearPayline();clearFreeHud();hideWildTally();hideFreeResult();controls();display();
+    replayBet=null;busy=false;skipAnimations=false;clearPayline();clearFreeHud();hideWildTally();hideFreeResult();clearWinSparks();controls();display();
     if(balance!==before||lastWin!==last)throw Error("A repetição alterou o saldo ou o último prémio");
   }
 }
@@ -597,6 +614,31 @@ function waitHoldContinue(){
   if(pendingHoldContinue)throw Error("O bónus já está à espera de confirmação");
   return new Promise(resolve=>{pendingHoldContinue=resolve});
 }
+function cascadeAmount(evt){
+  // Free Spins accrue the unmultiplied line amounts for the final bonus multiplier.
+  // Ordinary spins use the amount already multiplied by paid WILDs.
+  return evt.free?(evt.lines||[]).reduce((sum,line)=>sum+line.amount,0):(evt.win||0);
+}
+function showCascadeMeter(evt,runningTotal){
+  const amount=cascadeAmount(evt),free=Boolean(evt.free);
+  if(!(amount>0)){hideCascadeMeter();return 0}
+  $("cascadeWinLabel").textContent=free?"BRUTO DA QUEDA":"PRÉMIO DA QUEDA";
+  $("cascadeTotalLabel").textContent=free?"BRUTO DO GIRO":"TOTAL EM CASCATAS";
+  $("cascadeWinValue").textContent=money(amount);
+  $("cascadeTotalValue").textContent=money(runningTotal);
+  $("cascadeMeter").hidden=false;
+  return amount;
+}
+function hideCascadeMeter(){$("cascadeMeter").hidden=true}
+const WIN_SPARK_POSITIONS=[[11,15],[29,57],[47,20],[71,65],[90,18],[18,80],[84,84],[60,45],[35,33],[54,77],[76,31],[8,49]];
+function showWinSparks(evt){
+  if(skipAnimations||!(evt.lines||[]).length){clearWinSparks();return false}
+  const coords=WIN_SPARK_POSITIONS.slice(0,evt.lines.length>=4?12:8);
+  $("winSparks").innerHTML=coords.map(([left,top],i)=>'<span class="win-spark" style="left:'+left+'%;top:'+top+'%;animation-delay:'+(i*35)+'ms">✦</span>').join("");
+  $("reelFrame").classList.add("win-flash");
+  return true;
+}
+function clearWinSparks(){$("winSparks").innerHTML="";$("reelFrame").classList.remove("win-flash")}
 function clearPayline(){$("paylineSvg").innerHTML="";$("linePrize").hidden=true}
 async function highlightLines(evt){
   if(!evt.lines.length){clearPayline();return}
@@ -649,7 +691,8 @@ async function animateCascade(boardFinal,oldRemoved){
   await pause(turbo?85:350);
 }
 async function playback(book){
-  let previousRemoved=[],lastHoldGrid=[];clearPayline();
+  let previousRemoved=[],lastHoldGrid=[],cascadeRunning=0;
+  clearPayline();hideCascadeMeter();clearWinSparks();
   for(const evt of book.events){
     if(evt.kind==="freeStart"){
       $("freeRetrigger").hidden=true;
@@ -672,8 +715,8 @@ async function playback(book){
       await waitFreeContinue();
       hideFreeResult();clearFreeHud();
     }else if(evt.kind==="reels"){
-      hideWildTally();
-      if(evt.drop===1){await animateReelStop(evt.board);previousRemoved=[]}
+      hideWildTally();clearWinSparks();
+      if(evt.drop===1){cascadeRunning=0;hideCascadeMeter();await animateReelStop(evt.board);previousRemoved=[]}
       else await animateCascade(evt.board,previousRemoved);
       draw(evt.board,evt.removed,evt.wildAwards||[]);
       showWildTally(evt);
@@ -684,11 +727,16 @@ async function playback(book){
       $("multiNum").textContent="×"+evt.multi;
       $("hud").textContent=(replayBet!==null?"↺ REPLAY · ":"")+(evt.freeSpin?"FREE SPIN "+evt.freeSpin:evt.free?"FREE SPINS":"✦ QUEDA "+evt.drop);
       if(evt.lines.length){
-        const value=money(evt.free?evt.lines.reduce((sum,line)=>sum+line.amount,0):evt.win);
+        const amount=cascadeAmount(evt);
+        cascadeRunning+=amount;
+        showCascadeMeter(evt,cascadeRunning);
+        showWinSparks(evt);
+        const value=money(amount);
         say(evt.free?evt.lines.length+" LINHA(S) · BRUTO "+value+" créditos":evt.lines.length+" LINHA(S) · +"+value+" créditos","good");beep(760);
         await highlightLines(evt);
-      }else if(evt.drop===1){clearPayline();say("Os tambores pararam.")}
+      }else if(evt.drop===1){clearPayline();hideCascadeMeter();say("Os tambores pararam.")}
       await pause(turbo?100:evt.lines.length?370:175);
+      clearWinSparks();
     }else if(evt.kind==="message"){
       say(evt.text,"bonus");toast("BÓNUS",evt.text);beep(850);await pause(turbo?260:750);
     }else if(evt.kind==="progress"){
@@ -732,7 +780,7 @@ async function play(mode="base"){
   activateAudio();
   const bet=BETS[betIndex],cost=bet*(mode==="free"?20:mode==="hold"?30:1);
   if(balance+1e-7<cost){say("Saldo de teste insuficiente: usa o botão + no topo.");return}
-  busy=true;skipAnimations=false;clearFreeHud();controls();
+  busy=true;skipAnimations=false;clearFreeHud();hideCascadeMeter();clearWinSparks();controls();
   let committed=false;
   try{
     // Each full outcome is resolved before the round is committed and animated.
@@ -764,7 +812,7 @@ async function play(mode="base"){
     $("bonusCurtain").classList.remove("visible");$("bonusCurtain").hidden=true;
     display();
   }finally{
-    busy=false;skipAnimations=false;clearPayline();clearFreeHud();hideWildTally();hideFreeResult();controls();
+    busy=false;skipAnimations=false;clearPayline();clearFreeHud();hideWildTally();hideFreeResult();clearWinSparks();controls();
     if(autoLeft){
       autoLeft--;controls();
       if(autoLeft&&balance>=BETS[betIndex]){await sleep(190);play("base")}
