@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 
 const html=readFileSync(join(dirname(fileURLToPath(import.meta.url)),'..','index.html'),'utf8');
-assert.match(html,/Stake Preview V1\.8/);
+assert.match(html,/Stake Preview V1\.8\.1/);
 for(const id of ['holdOverlay','holdGrid','holdLives','holdWin','holdSummary','holdSummaryValue','holdSummaryLabel','closeHold']){
   assert.ok(html.includes('id="'+id+'"'),'missing HOLD element '+id);
 }
@@ -109,4 +109,4 @@ assert.equal(vm.runInContext('pendingHoldContinue',context),null);
 assert.equal(el('holdOverlay').classList.contains('show'),false);
 assert.equal(vm.runInContext('historyRecords.length',context),2,'a second manual confirmation records exactly one new round');
 
-console.log('Stake Preview V1.8: Hold 4×4 values at 7,50, three lives, manual CONTINUAR and single settlement verified.');
+console.log('Stake Preview V1.8.1: Hold 4×4 values at 7,50, three lives, manual CONTINUAR and single settlement verified.');

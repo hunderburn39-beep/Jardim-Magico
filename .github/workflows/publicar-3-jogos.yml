@@ -237,7 +237,7 @@ jobs:
           url="${SITE_URL%/}/stake-preview/?sha=${GITHUB_SHA}"
           for tentativa in {1..8}; do
             if curl -fLsS --max-time 15 --connect-timeout 8 "$url" -o /tmp/jm-stake-preview-public.html \
-               && grep -Eq 'Stake Preview V0\.[0-9]+' /tmp/jm-stake-preview-public.html \
+               && grep -Eq 'Stake Preview V[0-9]+(\.[0-9]+)+' /tmp/jm-stake-preview-public.html \
                && grep -q 'id="skipBtn"' /tmp/jm-stake-preview-public.html \
                && grep -q 'id="paylineSvg"' /tmp/jm-stake-preview-public.html \
                && curl -fLsS --max-time 15 "${SITE_URL%/}/assets/imagens/jm38-caracol.svg" -o /tmp/jm-stake-simbolo.svg; then
