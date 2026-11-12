@@ -108,7 +108,8 @@
     this.messageUntil = 0; // evita dois avisos sobrepostos ao prémio especial
     this.nextActionAt = Math.max(this.nextActionAt, this.v04Celebration.end + 140);
     this.v04Events.celebrations++;
-    if(!informational){audio.fanfare(tier);this.v04Celebration.fanPlayed=true;}
+    // O som é lançado pelo drawFx no primeiro frame em que a chuva final é visível.
+    // Evita tocar antecipadamente, enquanto as linhas ainda estão a ser reveladas.
   };
 
   const frame = game.frame.bind(game);
