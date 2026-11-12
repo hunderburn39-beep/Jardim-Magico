@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V1.1</title>
+<title>Jardim Mágico | Edição Stake Preview V1.2</title>
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -53,6 +53,14 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .cell .emoji{font-size:clamp(28px,9vw,48px);filter:drop-shadow(0 2px 3px #060b1a);line-height:1}
 .cell .orb{display:grid;place-items:center;width:80%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fffce0,#c7a7fb 25%,#7944bb 59%,#2c1e73);box-shadow:inset 0 0 10px #fff8cf,0 0 16px #bf87fa;color:#fff6c3;font-weight:1000;font-size:clamp(8px,2.5vw,13px);border:2px solid #ffda9b}
 .cell.winning{background:radial-gradient(#ffe8a680,#ffc03b26 60%,#26174a5c);box-shadow:inset 0 0 12px #ffef97;animation:winPulse .65s ease-in-out 2}
+.cell.wild-awarded{overflow:visible;z-index:3}
+.wild-badge{position:absolute;z-index:5;right:0;top:0;transform:translate(7%,-10%);border:2px solid #fff4c0;border-radius:999px;min-width:28px;height:27px;display:grid;place-items:center;background:radial-gradient(circle at 25% 20%,#fff6b3,#e0a03f 70%,#8d4a1b);color:#3d1b09;font:1000 13px/1 system-ui;box-shadow:0 0 14px #ffd474aa,0 2px 8px #150b12;animation:wildPop .48s cubic-bezier(.17,1.8,.35,1)}
+.wild-tally{margin:-3px 8px 6px;padding:6px 7px;text-align:center;border:1px solid #ffd985;border-radius:12px;background:linear-gradient(110deg,#2a2148dd,#644166ee,#292145dd);font-size:12px;font-weight:900;color:#ffe8a5;box-shadow:0 0 15px #ffda7450;animation:wildTallyGlow .8s ease-out}
+@keyframes wildPop{from{opacity:0;transform:scale(.2) translateY(20px)}70%{transform:scale(1.18)}to{opacity:1;transform:scale(1)}}
+@keyframes wildTallyGlow{from{filter:brightness(1.8)}to{filter:brightness(1)}}
+.detail-cell{position:relative}
+.detail-cell .wild-badge{right:-4px;top:-3px;min-width:22px;height:21px;font-size:10px}
+
 .cell.spinning img,.cell.spinning .emoji,.cell.spinning .orb{animation:spinBlur .13s infinite alternate}
 .cell.cascade-in img,.cell.cascade-in .emoji,.cell.cascade-in .orb{animation:fallIn .38s cubic-bezier(.16,.8,.3,1.08) both}
 .cell.landing{animation:landingFlash .24s ease-out}
@@ -194,6 +202,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
   <div><small>MULTI</small><strong id="multiNum">×1</strong></div>
   <div><small>ÚLTIMO PRÉMIO</small><strong id="lastWin">0,00</strong></div>
  </div>
+ <div id="wildTally" class="wild-tally" hidden><span id="wildTallyText"></span></div>
  <div class="frame"><div class="hud"><span id="hud">✦ RODADAS DE TESTE ✦</span></div><div class="reels" id="reels" aria-label="Cinco tambores, três linhas"></div><svg id="paylineSvg" class="payline-visual" viewBox="0 0 500 300" preserveAspectRatio="none" aria-hidden="true"></svg><output id="linePrize" class="line-prize" hidden aria-live="off"></output><button id="skipBtn" class="skip-btn" type="button" hidden>PASSAR ⏩</button></div>
  <div id="freePanel" class="free-panel" hidden aria-live="off"><div><small>FREE SPINS</small><strong id="freeRemaining">15</strong></div><div><small>BRUTO ACUMULADO</small><strong id="freeRaw">0,00</strong></div><div><small>MULTI</small><strong id="freeMult">×1</strong></div></div>
  <div class="notice" id="notice" aria-live="polite">Prime RODAR para entrar no bosque!</div>
@@ -211,7 +220,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V1.1 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
+ <footer class="foot"><b>V1.2 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="holdOverlay"><div class="modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-grid" id="holdGrid"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin">0,00</span></div><button class="modal-close" id="closeHold" hidden>CONTINUAR</button></div></div>
  <div class="overlay" id="historyOverlay"><div class="modal history-modal"><div class="history-head"><h2>HISTÓRICO</h2><button type="button" id="closeHistory" aria-label="Fechar histórico">×</button></div><p>Últimas 20 jogadas, em créditos fictícios. Procura pelo número e abre os símbolos. REPETIR não cobra nem paga novamente.</p><input id="historySearch" class="history-search" type="search" inputmode="numeric" placeholder="Pesquisar nº da jogada" aria-label="Pesquisar pelo número da jogada"><small id="historyCount" class="history-counter"></small><div id="historyList" class="history-list"></div><button type="button" class="modal-close" id="clearHistory">LIMPAR HISTÓRICO</button></div></div>
@@ -314,8 +323,26 @@ function board(free=false){const w=WEIGHTS.map((x,i)=>free&&i===9?2:x);return Ar
 function count(b,id){return b.flat().filter(v=>v===id).length}
 function evaluate(b){let lines=[],used=new Map();for(let j=0;j<LINES.length;j++){const line=LINES[j],chain=line.map((r,c)=>b[c][r]);const first=chain.find(s=>s!==4)??4;const pair=chain[0]===4&&chain[1]===4;let amount=pair?55:0,matched=pair?2:0;if(![9,10,11].includes(first)){let n=0;for(const s of chain){if(s!==first&&s!==4)break;n++}if(n>=3){amount+=(COEFS[first]||0)*PAY[n];matched=n}}if(amount){const cells=line.slice(0,matched).map((r,c)=>[c,r]);cells.forEach(([c,r])=>used.set(c+":"+r,[c,r]));lines.push({line:j+1,amount,cells})}}return {lines,removed:[...used.values()]}}
 function collapse(b,removed,free){const gone=new Set(removed.map(x=>x.join(":")));const w=WEIGHTS.map((x,i)=>free&&i===9?2:x);return b.map((column,c)=>{const kept=column.filter((_,r)=>!gone.has(c+":"+r));return Array.from({length:3-kept.length},()=>pick(TYPES.map((_,i)=>i),w)).concat(kept)})}
-function stages(free=false){let b=board(free),raw=0,paid=0,wild=0,maxSc=0,maxCo=0,events=[];for(let n=0;n<1000;n++){const {lines,removed}=evaluate(b);const scatters=count(b,9),coins=count(b,11);maxSc=Math.max(maxSc,scatters);maxCo=Math.max(maxCo,coins);let awards=removed.filter(([c,r])=>b[c][r]===4).map(()=>1+Math.floor(rand()*5));wild+=awards.reduce((a,b)=>a+b,0);const lineRaw=lines.reduce((sum,entry)=>sum+entry.amount,0),p=lineRaw*Math.max(1,wild);raw+=lineRaw;paid+=p;events.push({kind:"reels",board:b,lines,removed,drop:n+1,win:p,multi:Math.max(1,wild),free});if(!removed.length)return {events,raw,paid,wild,scatter:maxSc,coins:maxCo};b=collapse(b,removed,free)}throw Error("Limite de segurança de teste atingido")}
-function freeFeature(){let events=[{kind:"freeStart",remaining:15,raw:0,multi:1},{kind:"message",text:"✦ 15 FREE SPINS ✦"}],left=15,played=0,raw=0,multi=1;while(left>0){left--;played++;const s=stages(true);events.push(...s.events.map(e=>({...e,freeSpin:played})));raw+=s.raw;if(s.wild)multi=Math.min(1000,multi+Math.max(0,s.wild-1));let retrig=s.scatter>=3?15:s.scatter>=2?8:0,add=Math.min(retrig,Math.max(0,60-played-left));left+=add;events.push({kind:"progress",played,left,add,multi,raw});if(played>60)throw Error("Limite de Free Spins inválido")}let amount=raw*multi;events.push({kind:"freeEnd",raw,multi,amount,played},{kind:"message",text:"FREE SPINS TERMINADAS · ×"+multi});return {events,amount}}
+function stages(free=false){
+  let b=board(free),raw=0,paid=0,wild=0,maxSc=0,maxCo=0,events=[];
+  for(let n=0;n<1000;n++){
+    const {lines,removed}=evaluate(b),scatters=count(b,9),coins=count(b,11);
+    maxSc=Math.max(maxSc,scatters);maxCo=Math.max(maxCo,coins);
+    // Values are fixed when the outcome is generated, not while showing animations.
+    // Keep one award per actual paid WILD cell, not per shared payline.
+    const wildAwards=removed.filter(([c,r])=>b[c][r]===4).map(([c,r])=>({c,r,value:1+Math.floor(rand()*5)}));
+    const multiBefore=Math.max(1,wild);
+    const wildAdded=wildAwards.reduce((a,x)=>a+x.value,0);
+    wild+=wildAdded;
+    const lineRaw=lines.reduce((sum,entry)=>sum+entry.amount,0),p=lineRaw*Math.max(1,wild);
+    raw+=lineRaw;paid+=p;
+    events.push({kind:"reels",board:b,lines,removed,drop:n+1,win:p,multi:Math.max(1,wild),multiBefore,wildAwards,wildAdded,free});
+    if(!removed.length)return {events,raw,paid,wild,scatter:maxSc,coins:maxCo};
+    b=collapse(b,removed,free);
+  }
+  throw Error("Limite de segurança de teste atingido");
+}
+function freeFeature(){let events=[{kind:"freeStart",remaining:15,raw:0,multi:1},{kind:"message",text:"✦ 15 FREE SPINS ✦"}],left=15,played=0,raw=0,multi=1;while(left>0){left--;played++;const s=stages(true);events.push(...s.events.map(e=>({...e,freeSpin:played})));raw+=s.raw;if(s.wild)multi=Math.min(1000,multi+Math.max(0,s.wild-1));let retrig=s.scatter>=3?15:s.scatter>=2?8:0,add=Math.min(retrig,Math.max(0,60-played-left));left+=add;events.push({kind:"progress",played,left,add,multi,raw,wildGain:s.wild?Math.max(0,s.wild-1):0,wildTotal:s.wild});if(played>60)throw Error("Limite de Free Spins inválido")}let amount=raw*multi;events.push({kind:"freeEnd",raw,multi,amount,played},{kind:"message",text:"FREE SPINS TERMINADAS · ×"+multi});return {events,amount}}
 function holdFeature(){// Seis moedas iniciais; depois cada casa vazia tem probabilidade independente de receber moeda.
 // Probabilidade fixa por casa: nao varia com aposta, saldo, numero de rondas ou premio.
 const chancePerEmpty=.08,initial=[46,28,16,8,2],extra=[42,30,16,8,3,1];let grid=Array(16).fill(0),positions=Array.from({length:16},(_,i)=>i);for(let i=0;i<6;i++){let n=Math.floor(rand()*positions.length);grid[positions.splice(n,1)[0]]=pick([1,2,3,5,10],initial)}let events=[{kind:"hold",grid:[...grid],tries:3,turn:0}],tries=3,turn=0;while(tries&&grid.some(x=>!x)){turn++;let newCoins=0;for(let i=0;i<16;i++){if(!grid[i]&&rand()<chancePerEmpty){grid[i]=pick([1,2,3,5,10,20],extra);newCoins++}}tries=newCoins?3:tries-1;events.push({kind:"hold",grid:[...grid],tries,turn})}const filled=grid.every(Boolean),amount=100*grid.reduce((a,b)=>a+b,0)+(filled?25000:0);events.push({kind:"holdEnd",grid:[...grid],amount,filled});return {events,amount}}
@@ -445,8 +472,16 @@ function renderRoundDetails(){
       cells.push('<div class="detail-cell" aria-label="'+type.label+'">'+art+'</div>');
     }
     boardEl.innerHTML=cells.join("");
+    const awards=frame.wildAwards||[];
+    // Full replay history keeps the numbers that were determined at generation time.
+    if(awards.length){
+      for(const award of awards){
+        const target=boardEl.children?.[award.r*5+award.c];
+        if(target)target.innerHTML+='<span class="wild-badge">+'+award.value+'</span>';
+      }
+    }
     const winning=(frame.lines||[]).length;
-    $("detailStats").textContent=(frame.freeSpin?"FREE SPIN "+frame.freeSpin+" · ":"")+"QUEDA "+frame.drop+" · "+winning+" linha(s) · "+(frame.free?"BRUTO ":"PRÉMIO ")+format((frame.free?(frame.lines||[]).reduce((sum,line)=>sum+line.amount,0):frame.win)/100*record.bet);
+    $("detailStats").textContent=(frame.freeSpin?"FREE SPIN "+frame.freeSpin+" · ":"")+"QUEDA "+frame.drop+" · "+winning+" linha(s) · "+(frame.free?"BRUTO ":"PRÉMIO ")+format((frame.free?(frame.lines||[]).reduce((sum,line)=>sum+line.amount,0):frame.win)/100*record.bet)+(awards.length?" · WILD "+awards.map(a=>"+"+a.value).join(" ")+" → ×"+frame.multi:"");
   }else if((frame.kind==="hold"||frame.kind==="holdEnd")&&Array.isArray(frame.grid)){
     boardEl.classList.add("hold-board");
     boardEl.innerHTML=frame.grid.slice(0,16).map(v=>'<div class="detail-cell '+(v?"coin":"")+'">'+(v?"×"+Number(v):"✦")+'</div>').join("");
@@ -467,11 +502,31 @@ async function replayRound(id){
     say("REPETIÇÃO #"+saved.id+" · PRÉMIO ORIGINAL "+format(saved.payout)+" créditos","good");
     return true;
   }finally{
-    replayBet=null;busy=false;skipAnimations=false;clearPayline();clearFreeHud();controls();display();
+    replayBet=null;busy=false;skipAnimations=false;clearPayline();clearFreeHud();hideWildTally();controls();display();
     if(balance!==before||lastWin!==last)throw Error("A repetição alterou o saldo ou o último prémio");
   }
 }
-function draw(b,wins=[]){const keys=new Set(wins.map(([c,r])=>c+":"+r));$("reels").innerHTML=Array.from({length:5},(_,c)=>'<div class="column">'+Array.from({length:3},(_,r)=>{const t=TYPES[b[c][r]],k=c+":"+r;let art=t.image?'<img alt="'+t.label+'" src="'+t.image+'" draggable="false">':t.orb?'<span class="orb">SCATTER</span>':'<span class="emoji" aria-label="'+t.label+'">'+t.emoji+'</span>';return '<div class="cell '+(keys.has(k)?"winning":"")+'">'+art+'</div>'}).join("")+"</div>").join("")}
+function draw(b,wins=[],wildAwards=[]){
+  const keys=new Set(wins.map(([c,r])=>c+":"+r));
+  const awarded=new Map((wildAwards||[]).map(item=>[item.c+":"+item.r,item.value]));
+  $("reels").innerHTML=Array.from({length:5},(_,c)=>'<div class="column">'+Array.from({length:3},(_,r)=>{
+    const t=TYPES[b[c][r]],k=c+":"+r;
+    const art=t.image?'<img alt="'+t.label+'" src="'+t.image+'" draggable="false">':t.orb?'<span class="orb">SCATTER</span>':'<span class="emoji" aria-label="'+t.label+'">'+t.emoji+'</span>';
+    const val=b[c][r]===4?awarded.get(k):null;
+    const badge=Number.isInteger(val)?'<span class="wild-badge" aria-label="WILD mais '+val+'">+'+val+'</span>':"";
+    return '<div class="cell '+(keys.has(k)?"winning ":"")+(badge?"wild-awarded":"")+'">'+art+badge+'</div>';
+  }).join("")+"</div>").join("");
+}
+function showWildTally(evt){
+  const awards=evt.wildAwards||[];
+  if(!awards.length){$("wildTally").hidden=true;return}
+  const gained=awards.reduce((sum,item)=>sum+item.value,0);
+  $("wildTallyText").textContent="WILD "+awards.map(a=>"+"+a.value).join(" · ")+"  →  MULTI ×"+evt.multi;
+  $("wildTally").hidden=false;
+  return gained;
+}
+function hideWildTally(){$("wildTally").hidden=true}
+
 function display(){ $("balance").textContent=format(balance);$("bet").textContent=format(BETS[betIndex]);$("lastWin").textContent=format(lastWin);document.querySelectorAll("[data-bet]").forEach(button=>{const active=Number(button.dataset.bet)===BETS[betIndex];button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});const freeText=$("buyFree").querySelector?.("span"),holdText=$("buyHold").querySelector?.("span");if(freeText)freeText.textContent="20× · "+format(20*BETS[betIndex])+" créditos";if(holdText)holdText.textContent="30× · "+format(30*BETS[betIndex])+" créditos"}
 function say(s,kind=""){$("notice").className="notice "+kind;$("notice").textContent=s}
 function beep(freq=660){
@@ -554,10 +609,12 @@ async function playback(book){
       await pause(turbo?120:430);
       clearFreeHud();
     }else if(evt.kind==="reels"){
+      hideWildTally();
       if(evt.drop===1){await animateReelStop(evt.board);previousRemoved=[]}
       else await animateCascade(evt.board,previousRemoved);
-      draw(evt.board,evt.removed);
-      if(evt.board.some(column=>column.includes(4))&&evt.lines.length)playRecorded("wild");
+      draw(evt.board,evt.removed,evt.wildAwards||[]);
+      showWildTally(evt);
+      if((evt.wildAwards||[]).length)playRecorded("wild");
       if(evt.board.flat().filter(x=>x===9).length>=2)playRecorded("scatter");
       previousRemoved=evt.removed;
       $("dropNum").textContent=evt.drop;
@@ -574,6 +631,7 @@ async function playback(book){
     }else if(evt.kind==="progress"){
       updateFreeHud(evt.left,evt.raw,evt.multi);
       $("multiNum").textContent="×"+evt.multi;$("hud").textContent="FREE SPINS · "+evt.left+" RESTANTES";
+      if(evt.wildGain) say("FREE SPINS · WILD acumulado +"+evt.wildGain+" → MULTI ×"+evt.multi,"bonus");
       if(evt.add){say("RETRIGGER · +"+evt.add+" FREE SPINS","bonus");$("freePanel").classList.add("celebrate");beep(950)}else{say("FREE SPINS: "+evt.played+" realizadas · BRUTO "+money(evt.raw)+" · ×"+evt.multi,"bonus");$("freePanel").classList.remove("celebrate")}
       await pause(turbo?30:100);
     }else if(evt.kind==="hold"){
@@ -634,7 +692,7 @@ async function play(mode="base"){
     $("bonusCurtain").classList.remove("visible");$("bonusCurtain").hidden=true;
     display();
   }finally{
-    busy=false;skipAnimations=false;clearPayline();clearFreeHud();controls();
+    busy=false;skipAnimations=false;clearPayline();clearFreeHud();hideWildTally();controls();
     if(autoLeft){
       autoLeft--;controls();
       if(autoLeft&&balance>=BETS[betIndex]){await sleep(190);play("base")}
