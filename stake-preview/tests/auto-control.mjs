@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 
 const html=readFileSync(join(dirname(fileURLToPath(import.meta.url)),'..','index.html'),'utf8');
-assert.match(html,/Stake Preview V1\.6/);
+assert.match(html,/Stake Preview V1\.7/);
 assert.match(html,/id="autoHeading"/);
 assert.match(html,/id="autoLabel"/);
 assert.match(html,/action-small\.auto-running/);
@@ -141,4 +141,4 @@ assert.match(el('notice').textContent,/Saldo insuficiente/);
 run('balance=1000;busy=true');
 assert.equal(run('toggleAuto()'),false,'AUTO cannot start while a manual spin or replay is running');
 run('busy=false');
-console.log('Stake Preview V1.6: immediate PASSAR, stop during spin/gap, restart safety, five spins, balance and records passed.');
+console.log('Stake Preview V1.7: immediate PASSAR, stop during spin/gap, restart safety, five spins, balance and records passed.');
