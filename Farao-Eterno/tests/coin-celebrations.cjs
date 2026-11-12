@@ -47,10 +47,11 @@ test('moedas saem uma vez por linha premiada, sem pagamentos adicionais',()=>{
  const line={count:3,rows:[1,1,1,1,1],expanded:false,line:0,amount:1};
  game.lastResult.lineWins=[line];
  game.baseStage={win:line,amount:1,start:100,end:1200};
- game.frame(210);assert.equal(game.coinCelebrations.events.sequences,1);
+ game.frame(210);assert.equal(game.coinCelebrations.events.sequences,0,'Não iniciar antes de a linha brilhar');
+ game.frame(790);assert.equal(game.coinCelebrations.events.sequences,1);
  assert(game.coinCelebrations.particles>=15);
  const before=nodes.oscillators;
- game.frame(290);assert.equal(game.coinCelebrations.events.sequences,1);
+ game.frame(850);assert.equal(game.coinCelebrations.events.sequences,1);
  assert.equal(nodes.oscillators,before);
  assert(nodes.coords.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)));
 });
