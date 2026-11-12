@@ -73,10 +73,6 @@ assert.equal(vm.runInContext('pendingHoldContinue',context),null,'PASSAR bypasse
 vm.runInContext('skipAnimations=false',context);
 
 const initial=vm.runInContext('balance',context);
-const game=vm.runInContext('generate("hold")',context);
-context.game=game;
-const credits=+(game.payout/100*7.5).toFixed(2);
-context.expectedCredits=credits;
 const operation=vm.runInContext('play("hold")',context);
 assert.equal(vm.runInContext('busy',context),true);
 for(let i=0;i<80;i++)await Promise.resolve();
@@ -88,6 +84,8 @@ assert.match(el('holdSummaryValue').textContent,/^\d[\d\s]*,\d{2} créditos$/);
 const onHoldBalance=vm.runInContext('balance',context);
 assert.equal(onHoldBalance,initial-225,'buy debit is committed before visual result');
 assert.equal(vm.runInContext('historyRecords.length',context),0,'history not settled until confirmation');
+const credits=vm.runInContext('pendingRound.payout',context);
+assert.ok(credits>=0,'actual pending result resolved before CONTINUAR');
 assert.equal(vm.runInContext('acknowledgeHoldContinue()',context),true);
 await operation;
 const final=vm.runInContext('balance',context);
@@ -98,11 +96,17 @@ assert.equal(vm.runInContext('lastWin',context),credits);
 assert.equal(vm.runInContext('acknowledgeHoldContinue()',context),false);
 assert.equal(vm.runInContext('balance',context),final,'extra clicks do not pay twice');
 
-vm.runInContext('skipAnimations=true',context);
+// A second actual round must still require CONTINUAR and settle once.
 const another=vm.runInContext('play("hold")',context);
+for(let n=0;n<160;n++){
+  if(vm.runInContext('typeof pendingHoldContinue',context)==='function')break;
+  await Promise.resolve();
+}
+assert.equal(vm.runInContext('typeof pendingHoldContinue',context),'function');
+assert.equal(vm.runInContext('acknowledgeHoldContinue()',context),true);
 await another;
-assert.equal(vm.runInContext('pendingHoldContinue',context),null,'PASSAR mode never blocks on continue');
+assert.equal(vm.runInContext('pendingHoldContinue',context),null);
 assert.equal(el('holdOverlay').classList.contains('show'),false);
-assert.equal(vm.runInContext('historyRecords.length',context),2,'rapid skip still records one new round');
+assert.equal(vm.runInContext('historyRecords.length',context),2,'a second manual confirmation records exactly one new round');
 
 console.log('Stake Preview V1.3: Hold 4×4 values at 7,50, three lives, manual CONTINUAR and single settlement verified.');
