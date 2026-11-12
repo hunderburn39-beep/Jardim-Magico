@@ -623,15 +623,15 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
     <div class="numgrid lucky" id="lucky"></div>
     <h2>OS TEUS NÚMEROS</h2>
     <div class="numgrid play" id="play"></div>
-    <div id="ticket-identification" class="ticket-identification" aria-label="Identificação da raspadinha de simulação">
-      <span id="ticket-identification-game">JOGO N.º 659 · SÉRIE DE TESTE 01</span>
-      <strong id="ticket-identification-number">BILHETE SIMULADO — AGUARDA COMPRA</strong>
+    <div id="ticket-identification" class="ticket-identification" aria-label="Identificação do bilhete">
+      <span id="ticket-identification-game">JOGO N.º 659 · SÉRIE 01</span>
+      <strong id="ticket-identification-number">BILHETE — AGUARDA COMPRA</strong>
     </div>
     <div id="scratch-layer" aria-label="Desliza o dedo para raspar as casas" role="group"></div>
   </section>
   <div class="actions"><button id="new" type="button">NOVA RASPADINHA · 1 €</button><button id="reveal" type="button">RASPAR TUDO</button></div>
   <p id="status" role="status" aria-live="polite"></p>
-  <footer>Protótipo de teste local. Sem depósitos ou pagamentos reais.</footer>
+  <footer>Jogo recreativo. Numeração própria, não emitida pela Santa Casa. Sem pagamentos reais.</footer>
 </main>
 
 <div class="wallet-modal" id="wallet-modal" role="dialog" aria-modal="true" aria-labelledby="wallet-title" aria-hidden="true" hidden>
@@ -1417,10 +1417,10 @@ function renderTicketIdentification(ticket){
   const mode=modeForBet(ticket?.bet||state.bet);
   const plan=officialPlan(mode.bet);
   const officialGameNumber=Number.isSafeInteger(plan?.game)?plan.game:"—";
-  el("ticket-identification-game").textContent="JOGO N.º "+officialGameNumber+" · SÉRIE DE TESTE 01";
+  el("ticket-identification-game").textContent="JOGO N.º "+officialGameNumber+" · SÉRIE 01";
   const number=el("ticket-identification-number");
   if(!ticket){
-    number.textContent="BILHETE SIMULADO · AGUARDA COMPRA";
+    number.textContent="BILHETE · AGUARDA COMPRA";
     return;
   }
   // A numeração é local e sequencial por jogo: não é um identificador
@@ -1428,8 +1428,8 @@ function renderTicketIdentification(ticket){
   const local=Number.isSafeInteger(ticket.simulatedTicketNumber)&&ticket.simulatedTicketNumber>0
     ?String(ticket.simulatedTicketNumber).padStart(8,"0")
     :null;
-  number.textContent=local?"BILHETE SIMULADO N.º "+local
-    :"BILHETE ANTERIOR DE TESTE N.º "+String(ticket.id||0).padStart(8,"0");
+  number.textContent=local?"BILHETE N.º "+local
+    :"BILHETE ANTERIOR N.º "+String(ticket.id||0).padStart(8,"0");
 }
 function render(){
   paintBalance();paintBet();
