@@ -8,10 +8,13 @@ const g=window.__faraoGame,fx=g?.audio;
 if(!g||!fx)return;
 if(g._introCoverVisible===undefined)g._introCoverVisible=true;
 const V=.75,FADE=.9;
+// Os testes de navegador usam ?qa=; o áudio é testado separadamente com mocks.
+// Evitar downloads/streams musicais durante navegações e recargas do WebKit CI.
+const QA=typeof location!=='undefined'&&new URLSearchParams(location.search).has('qa');
 function create(url){
  const el=document.createElement('audio');
- el.preload='auto';el.loop=true;el.controls=false;el.setAttribute('playsinline','');
- el.src=url;el.volume=V;el.load();
+ el.preload=QA?'none':'auto';el.loop=true;el.controls=false;el.setAttribute('playsinline','');
+ el.src=url;el.volume=V;if(!QA)el.load();
  return {el,gain:null,level:0,pending:false,retryAfter:0};
 }
 const tracks={
@@ -21,7 +24,7 @@ const tracks={
 let active=null,lastRequested=null,lastTick=performance.now(),mixed=false;
 const now=()=>performance.now();
 const wanted=()=>!g._introCoverVisible&&!!g.feature?'bonus':'normal';
-const allowed=()=>g.soundMode==='all'&&!!g.ledger?.settings?.music&&
+const allowed=()=>!QA&&g.soundMode==='all'&&!!g.ledger?.settings?.music&&
  !g.superseded&&!document.hidden&&(!g.paused||g._introCoverVisible);
 function mixer(){
  if(mixed||!fx.ctx||!fx.ctx.createMediaElementSource)return;
