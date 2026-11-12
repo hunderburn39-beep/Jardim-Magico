@@ -1451,7 +1451,7 @@ function render(){
     updateTicketTopPrize();
     return;
   }
-  el("ticketid").textContent="BILHETE Nº "+ticket.id;
+  el("ticketid").textContent="RASPADINHA "+modeForBet(ticket.bet).mult+"X";
   updateTicketTopPrize();
   for(let i=0;i<ticket.lucky.length;i++)makeCell("lucky",ticket.lucky[i],"","l"+i,false,ticket.revealed.includes("l"+i));
   for(let i=0;i<ticket.play.length;i++){
