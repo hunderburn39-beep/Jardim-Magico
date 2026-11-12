@@ -13,52 +13,69 @@
  const REEL_X=33, STEP_X=101, CELL_W=99, TOP=284, CELL_H=129, MAX_COINS=105;
  const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
  const active=()=>!!(audio.on&&audio.ctx&&!g.paused&&!g.superseded&&!document.hidden);
+ // Pequenas pancadas de metal com harmónicos e ruído percussivo filtrado.
+ // Tudo no barramento de efeitos: a música continua separada e não é reduzida.
+ let lastClatter=-Infinity,noiseContext=null,noiseBuffer=null;
  function coinSound(final=false){
   if(!active())return;
+  const now=performance.now();
+  if(!final&&now-lastClatter<160)return;
+  lastClatter=now;
   const ac=audio.ctx,bus=audio.out||ac.destination;
-  const hits=final?21:9, duration=final?1.9:.78;
-  // Clatter metálico irregular com ataques pequenos e decaimento natural.
-  // Separado do bus de música; nunca reduz o volume do Pharaoh's Ritual.
+  const hits=final?24:11,duration=final?1.58:.61;
   try{
+   if(noiseContext!==ac){
+    noiseContext=ac;noiseBuffer=null;
+    if(typeof ac.createBuffer==='function'){
+     noiseBuffer=ac.createBuffer(1,Math.round(ac.sampleRate*.075),ac.sampleRate);
+     const data=noiseBuffer.getChannelData(0);
+     for(let i=0;i<data.length;i++){
+      const decay=Math.pow(1-i/data.length,1.6);
+      data[i]=(Math.random()*2-1)*decay;
+     }
+    }
+   }
+   const start=ac.currentTime+.008;
    for(let i=0;i<hits;i++){
-    const offset=duration*Math.pow(i/Math.max(1,hits-1),.8);
-    const when=ac.currentTime+offset+(Math.random()-.5)*.025;
-    const loudness=(final?.014:.010)*(1-.38*i/hits);
-    const base=(i%5===0?820:1130)+Math.random()*650;
-    const gain=ac.createGain();
-    gain.gain.setValueAtTime(.0001,when);
-    gain.gain.exponentialRampToValueAtTime(loudness,when+.004);
-    gain.gain.exponentialRampToValueAtTime(.0001,when+.095+(i%3)*.013);
-    for(const ratio of [1,1.49]){
+    const when=start+duration*Math.pow(i/Math.max(1,hits-1),.88)+(Math.random()-.5)*.015;
+    const base=740+Math.random()*980+(i%4===0?280:0);
+    const level=(final?.023:.019)*(1-.5*i/hits);
+    const env=ac.createGain();
+    env.gain.setValueAtTime(.0001,when);
+    env.gain.exponentialRampToValueAtTime(level,when+.004);
+    env.gain.exponentialRampToValueAtTime(.0001,when+.18);
+    const output=typeof ac.createStereoPanner==='function'?ac.createStereoPanner():null;
+    if(output){
+     output.pan.value=Math.max(-.6,Math.min(.6,(i%5-2)*.23));
+     env.connect(output);output.connect(bus);
+    }else env.connect(bus);
+    for(const [idx,ratio] of [1,1.47,2.35].entries()){
      const osc=ac.createOscillator();
-     osc.type='sine';
+     osc.type=idx===2?'triangle':'sine';
      osc.frequency.setValueAtTime(base*ratio,when);
-     osc.frequency.exponentialRampToValueAtTime(base*ratio*.84,when+.11);
-     osc.connect(gain);osc.start(when);osc.stop(when+.15);
-     osc.onended=()=>{
-      try{osc.disconnect();}catch(_){}
-      if(ratio===1.49)try{gain.disconnect();}catch(_){}
-     };
+     osc.frequency.exponentialRampToValueAtTime(base*ratio*(idx===0?.82:.94),when+.16);
+     const attenuation=ac.createGain();
+     attenuation.gain.value=idx===0?1:idx===1?.38:.12;
+     osc.connect(attenuation);attenuation.connect(env);
+     osc.start(when);osc.stop(when+.2);
+     osc.onended=()=>{try{osc.disconnect();attenuation.disconnect();}catch(_){}
+      if(idx===2){try{env.disconnect();output?.disconnect();}catch(_){}}};
     }
-    gain.connect(bus);
-   }
-   // Um tilintar mais cheio no valor final sem acorde eletrónico básico.
-   if(final){
-    for(let j=0;j<5;j++){
-     const when=ac.currentTime+.27+j*.17;
-     const osc=ac.createOscillator(),env=ac.createGain();
-     osc.type='triangle';
-     osc.frequency.setValueAtTime(340+j*54,when);
-     osc.frequency.exponentialRampToValueAtTime(310+j*45,when+.19);
-     env.gain.setValueAtTime(.0001,when);
-     env.gain.exponentialRampToValueAtTime(.016,when+.012);
-     env.gain.exponentialRampToValueAtTime(.0001,when+.37);
-     osc.connect(env);env.connect(bus);osc.start(when);osc.stop(when+.4);
-     osc.onended=()=>{try{osc.disconnect();env.disconnect();}catch(_){}};
+    // O ruído curto imita o choque e as arestas das moedas a cair.
+    if(noiseBuffer&&i%2===0&&typeof ac.createBiquadFilter==='function'){
+     const noise=ac.createBufferSource(),filter=ac.createBiquadFilter(),ng=ac.createGain();
+     noise.buffer=noiseBuffer;filter.type='highpass';filter.frequency.value=2600+i%4*380;
+     ng.gain.setValueAtTime(.0001,when);
+     ng.gain.exponentialRampToValueAtTime(final?.007:.005,when+.003);
+     ng.gain.exponentialRampToValueAtTime(.0001,when+.058);
+     noise.connect(filter);filter.connect(ng);ng.connect(bus);
+     noise.start(when);noise.stop(when+.074);
+     noise.onended=()=>{try{noise.disconnect();filter.disconnect();ng.disconnect();}catch(_){}};
     }
    }
-  }catch(_){/* Sem contexto áudio funcional: nunca bloquear o jogo. */}
+  }catch(_){/* A apresentação sonora não pode impedir uma jogada. */}
  }
+
  audio.coinCascade=coinSound;
  // A fanfarra anterior era uma escala simples; substitui-a por moedas a cair.
  audio.fanfare=function(){coinSound(true);};
@@ -92,9 +109,63 @@
   }
   return [];
  }
+ // Sprites feitos uma única vez para evitar gradientes em cada moeda/frame.
+ function makeCoinSprite(back=false){
+  const bitmap=document.createElement('canvas');bitmap.width=96;bitmap.height=96;
+  const c=bitmap.getContext('2d');
+  if(!c)return bitmap;
+  const shade=c.createRadialGradient(34,24,4,48,48,39);
+  shade.addColorStop(0,'#ffffe4');
+  shade.addColorStop(.23,'#fff3ae');
+  shade.addColorStop(.52,back?'#daa74a':'#f1b938');
+  shade.addColorStop(.78,'#a56416');shade.addColorStop(1,'#452305');
+  c.fillStyle=shade;c.strokeStyle='#fff2bb';c.lineWidth=4;
+  c.beginPath();c.arc(48,48,35,0,TAU);c.fill();c.stroke();
+  c.strokeStyle='#75400b';c.lineWidth=2.2;c.beginPath();c.arc(48,48,28,0,TAU);c.stroke();
+  c.strokeStyle='#ffed9e';c.lineWidth=1.7;c.beginPath();c.arc(48,48,23,0,TAU);c.stroke();
+  // Cunho com flor egípcia de seis pétalas, não um disco amarelo liso.
+  c.save();c.translate(48,48);
+  c.fillStyle=back?'#ffcf65':'#ffec99';c.strokeStyle='#8f5717';c.lineWidth=1.2;
+  for(let i=0;i<6;i++){
+   c.save();c.rotate(i*Math.PI/3);
+   c.beginPath();c.ellipse(0,-11,5.4,10.5,0,0,TAU);c.fill();c.stroke();
+   c.restore();
+  }
+  c.fillStyle='#a76b1d';c.beginPath();c.arc(0,0,5,0,TAU);c.fill();
+  c.fillStyle='#fff3ba';c.beginPath();c.arc(-1.3,-1.6,2,0,TAU);c.fill();
+  c.restore();
+  const light=c.createLinearGradient(16,12,70,76);
+  light.addColorStop(0,'#fffdd9b8');light.addColorStop(.37,'#ffeeb200');light.addColorStop(1,'#3b230233');
+  c.fillStyle=light;c.beginPath();c.arc(48,48,34,0,TAU);c.fill();
+  return bitmap;
+ }
+ const coinFront=makeCoinSprite(),coinBack=makeCoinSprite(true);
+ function goldenCoin(x,y,r,phase,opacity=1,glint=false){
+  ctx.save();
+  ctx.globalAlpha*=clamp(opacity,0,1);
+  ctx.translate(x,y);
+  ctx.rotate(Math.sin(phase*.41)*.17);
+  const face=Math.cos(phase),flatten=Math.max(.15,Math.abs(face));
+  ctx.scale(flatten,1);
+  ctx.shadowColor='#ffd45a';ctx.shadowBlur=6;
+  ctx.drawImage(face>=0?coinFront:coinBack,-r,-r,2*r,2*r);
+  // Brilho pontual desloca-se sobre o metal ao rodar.
+  if(glint&&flatten>.38){
+   ctx.shadowColor='#fffbd7';ctx.shadowBlur=11;
+   ctx.fillStyle='#fffbd0';
+   ctx.beginPath();ctx.arc(-r*.38,-r*.43,Math.max(.65,r*.12),0,TAU);ctx.fill();
+  }
+  ctx.restore();
+ }
+ const sparkles=[];
+ const MAX_SPARKLES=85;
+ function addSparkle(x,y,t,life=480){
+  if(sparkles.length>=MAX_SPARKLES)sparkles.shift();
+  sparkles.push({x,y,t,life,size:1.4+Math.random()*2.5,phase:Math.random()*TAU});
+ }
  function shower(points,t,final=false){
-  if(reduced){return;}
-  const base=final?7:5, n=Math.min(5,points.length);
+  if(reduced)return;
+  const base=final?9:7,n=Math.min(5,points.length);
   for(let p=0;p<n;p++){
    const pos=points[p];
    for(let i=0;i<base;i++){
@@ -102,14 +173,16 @@
     const angle=(Math.random()-.5)*2.3;
     coins.push({
      x:pos.x+(Math.random()-.5)*23,y:pos.y+(Math.random()-.5)*13,
-     vx:Math.sin(angle)*(final?155:120),vy:-(final?205:145)-Math.random()*95,
-     g:240+Math.random()*90,born:t+p*(final?48:75)+Math.random()*115,
-     life:final?2250:1800,r:3+Math.random()*3.2,spin:Math.random()*TAU,
-     spinV:2.4+Math.random()*6
+     vx:Math.sin(angle)*(final?160:123),vy:-(final?215:155)-Math.random()*100,
+     g:245+Math.random()*90,born:t+p*(final?48:75)+Math.random()*115,
+     life:final?2450:2050,r:4.7+Math.random()*4.2,
+     spin:Math.random()*TAU,spinV:4.1+Math.random()*7.5
     });
+    if(i%3===0)addSparkle(pos.x+(Math.random()-.5)*28,pos.y+(Math.random()-.5)*24,t+p*72,520);
    }
   }
  }
+
  function award(stage,points,t){
   if(!points.length||seen.has(stage))return;
   seen.add(stage);
@@ -151,19 +224,28 @@
    const c=coins[i],age=t-c.born;
    if(age<0)continue;
    if(age>c.life){coins.splice(i,1);continue;}
-   const s=age/1000,x=c.x+c.vx*s,y=c.y+c.vy*s+.5*c.g*s*s;
+   const sec=age/1000,x=c.x+c.vx*sec,y=c.y+c.vy*sec+.5*c.g*sec*sec;
    if(x<18||x>542||y<235||y>750)continue;
+   const opacity=Math.min(1,age/85,Math.pow(1-age/c.life,.65));
+   goldenCoin(x,y,c.r,c.spin+c.spinV*sec,opacity,i%3===0);
+  }
+  // Centelhas minúsculas e rápidas acompanham a abertura dos prémios.
+  for(let i=sparkles.length-1;i>=0;i--){
+   const p=sparkles[i],age=t-p.t;
+   if(age<0)continue;
+   if(age>p.life){sparkles.splice(i,1);continue;}
+   const op=Math.sin(Math.PI*age/p.life);
    ctx.save();
-   ctx.globalAlpha=Math.min(1,age/100,1-(age/c.life)**2);
-   ctx.translate(x,y);ctx.rotate(c.spin+c.spinV*s);
-   ctx.shadowColor='#eeb646';ctx.shadowBlur=6;
-   ctx.fillStyle='#8d4d13';ctx.strokeStyle='#ffe8a0';ctx.lineWidth=1.3;
-   ctx.beginPath();ctx.ellipse(0,0,c.r,c.r*.76,0,0,TAU);ctx.fill();ctx.stroke();
-   ctx.beginPath();ctx.ellipse(-c.r*.13,-c.r*.17,c.r*.57,c.r*.42,0,0,TAU);
-   ctx.fillStyle='#ffd978';ctx.fill();
-   ctx.lineWidth=.7;ctx.strokeStyle='#c58b34';ctx.stroke();
+   ctx.globalAlpha=op;
+   ctx.translate(p.x+Math.sin(p.phase+age*.003)*5,p.y-age*.02);
+   ctx.rotate(Math.PI/4);
+   ctx.shadowColor='#fff3a1';ctx.shadowBlur=11;
+   ctx.strokeStyle='#fff6d2';ctx.lineWidth=1.3;
+   ctx.beginPath();ctx.moveTo(-p.size,0);ctx.lineTo(p.size,0);
+   ctx.moveTo(0,-p.size);ctx.lineTo(0,p.size);ctx.stroke();
    ctx.restore();
   }
+
  };
  function modalCoins(){
   const panel=document.querySelector('#modal .modal-inner');
@@ -198,7 +280,9 @@
   return result;
  };
  g.coinCelebrations={
-  version:'1.0-coins-from-winning-lines',
+  version:'1.1-bright-golden-coins',
+  drawGoldenCoin:goldenCoin,
+  get sparkles(){return sparkles.length;},
   events:{sequences:0,finales:0},
   get particles(){return coins.length;},
   audioOnlyFx:true,
