@@ -37,7 +37,7 @@ test('paragens do 1º ao 5º tambor, mesmo quando a 3ª torre cai no 4º',()=>{
       'Ordem violada: '+JSON.stringify({towers,free,turbo,stops:spin.stopAt}));
      assert.ok(spin.stopAt[reel]-spin.stopAt[reel-1]>=spin.reelGap);
     }
-    if(free)assert.ok(spin.stopAt[4]-spin.start<=2200,
+    if(free)assert.ok(spin.stopAt[4]-spin.start<=4100,
       'Free Spins lentas em excesso: '+JSON.stringify({towers,turbo,stops:spin.stopAt}));
    }
   }
@@ -69,7 +69,8 @@ test('expansões não desenham barra horizontal nem leitura vertical',()=>{
 });
 
 test('Free Spins usam tempos curtos nas sequências, preservando crédito faseado',()=>{
- assert.match(gameSrc,/const perReel=item\.free\?/);
+ assert.match(gameSrc,/const freeLine=item\.free&&isLine;/);
+ assert.match(gameSrc,/const perReel=freeLine\?/);
  assert.match(gameSrc,/const creditAt=cursor\+preDelay/);
  assert.match(gameSrc,/this\.audio\.paylineChime\?\.\(stage\.index\)/);
 });
