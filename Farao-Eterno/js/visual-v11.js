@@ -241,7 +241,10 @@
  }
  // Larger icons, strictly preserving their source aspect ratio.
  game.drawIcon=function(sym,x,y,w,h,win=false,t=performance.now()){
-  const img=this.images[sym],size=Math.min(w-4,h-4)*(sym==='TOMB'?1.0815:1);
+  const img=(sym==='MASK'&&(this.currentRound%2===1)&&
+    this.images.MASK_ALT?.complete&&this.images.MASK_ALT.naturalWidth)
+    ?this.images.MASK_ALT:this.images[sym];
+  const size=Math.min(w-4,h-4)*(sym==='TOMB'?1.0815:1);
   ctx.save();
   // As peças que efetivamente pagam brilham com uma aura azul-branca forte.
   // A aura é exclusivamente aplicada às células do conjunto premiado.
