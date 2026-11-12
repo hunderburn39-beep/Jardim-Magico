@@ -189,6 +189,7 @@ jobs:
           node stake-preview/tests/hold-continue.mjs
           node stake-preview/tests/free-continue.mjs
           node stake-preview/tests/cascade-celebrations.mjs
+          node stake-preview/tests/auto-control.mjs
           echo 'Stake preview: JS válido, 10 000 compras Hold e animações verificadas.'
 
       - name: Validar música e recursos do Faraó Eterno antes de publicar
