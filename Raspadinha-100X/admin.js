@@ -29,11 +29,20 @@ function draw(){
     const title=document.createElement("h3");title.textContent=mode.mult+"X · "+money(mode.bet);
     const balance=document.createElement("strong");balance.textContent=eur(p.available);
     const detail=document.createElement("dl");
+    const stock=state.officialStock?.[String(mode.mult)];
+    const remaining=stock?.remaining?Object.values(stock.remaining)
+      .reduce((total,count)=>total+(Number.isSafeInteger(count)&&count>0?count:0),0):0;
+    const formatted=n=>n.toLocaleString("pt-PT");
     const rows=[
-      ["Bilhetes",String(p.sold)],["Vendas",eur(p.stakes)],
-      ["Entradas 60%",eur(p.funded)],["Prémios atribuídos",eur(p.awarded)],
-      ["Prémios pagos",eur(p.paid)],["Por pagar",eur(Math.max(0,p.awarded-p.paid))],
-      ["Fundo colocado",eur(p.added)],["Fundo retirado",eur(p.removed)]
+      ["Tiragem vendida",formatted(stock?.issued||0)],
+      ["Bilhetes restantes",formatted(remaining)],
+      ["Vendas",eur(p.stakes)],
+      ["Entradas 60% (teste)",eur(p.funded)],
+      ["Prémios atribuídos",eur(p.awarded)],
+      ["Prémios pagos",eur(p.paid)],
+      ["Por pagar",eur(Math.max(0,p.awarded-p.paid))],
+      ["Fundo colocado",eur(p.added)],
+      ["Fundo retirado",eur(p.removed)]
     ];
     for(const [name,value] of rows){
       const dt=document.createElement("dt"),dd=document.createElement("dd");
@@ -42,9 +51,10 @@ function draw(){
     card.append(title,balance,detail);target.append(card);
   }
   $("scratch-admin-total").textContent=eur(total);
-  $("scratch-admin-legacy").textContent=state.prizeBank>0
-    ?"Fundo antigo partilhado (histórico, fora dos 4 cofres): "+eur(state.prizeBank)+"."
-    :"Os quatro cofres estão separados.";
+  $("scratch-admin-legacy").textContent=
+    "Os fundos apresentados são apenas registos de créditos de teste e não limitam os prémios. "+
+    "Cada raspadinha tem a sua tiragem fechada neste navegador."+
+    (state.prizeBank>0?" Fundo partilhado antigo (histórico): "+eur(state.prizeBank)+".":"");
 }
 
 function refreshShares(){
@@ -144,10 +154,15 @@ function drawOfficialPlans(){
   const euros=value=>(value).toLocaleString("pt-PT",{style:"currency",currency:"EUR",maximumFractionDigits:0});
   const integer=value=>Number(value).toLocaleString("pt-PT");
   const odds=(plan.emission/plan.winningTickets).toLocaleString("pt-PT",{maximumFractionDigits:2});
+  const stock=state.officialStock?.[mode];
+  const left=stock?.remaining?Object.values(stock.remaining)
+    .reduce((total,count)=>total+(Number.isSafeInteger(count)&&count>0?count:0),0):0;
   summary.textContent="Jogo "+plan.game+" · Preço "+euros(plan.bet/100)+
     " · Prémio máximo "+euros(plan.maxPrize)+
     " · "+plan.luckyCount+" estrela(s) / "+plan.playCount+" casas"+
-    " · Bilhetes "+integer(plan.emission)+
+    " · Tiragem original "+integer(plan.emission)+
+    " · Vendidos aqui "+integer(stock?.issued||0)+
+    " · Restantes aqui "+integer(left)+
     " · 1 prémio em "+odds+
     " · Retorno anunciado "+(plan.rtp*100).toLocaleString("pt-PT",{maximumFractionDigits:2})+"%"+
     " · símbolos "+plan.multipliers.map(n=>n+"X").join(", ");
