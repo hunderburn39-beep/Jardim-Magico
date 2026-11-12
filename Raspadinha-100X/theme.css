@@ -386,7 +386,7 @@ body[data-mode] .ticket::after{
  */
 body[data-mode="10"][data-ticket-color="a"]{
   --orig-top:#ff2a93;--orig-middle:#f81172;--orig-bottom:#bc0756;
-  --orig-stroke:#fff18d;--orig-label:#290a31;
+  --orig-stroke:#fff18d;--orig-label:#fff9e7;--orig-shadow:#560a34;
   --game-sky:#fb178c;--game-middle:#ab0d64;--game-bottom:#330c35;
   --game-highlight:#ffdf3d;--game-accent:#ff5eaa;--game-bright:#fff2c2;
   --game-ticket-1:#fa258b;--game-ticket-2:#d71677;--game-ticket-3:#85154c;
@@ -402,7 +402,7 @@ body[data-mode="10"][data-ticket-color="b"]{
 }
 body[data-mode="20"][data-ticket-color="a"]{
   --orig-top:#ff2b9d;--orig-middle:#ee137d;--orig-bottom:#b40065;
-  --orig-stroke:#9fe936;--orig-label:#2b092e;
+  --orig-stroke:#9fe936;--orig-label:#fff9ed;--orig-shadow:#4f0737;
   --game-sky:#fa2588;--game-middle:#ae0c63;--game-bottom:#360b32;
   --game-highlight:#59e0f6;--game-accent:#ff65b1;--game-bright:#ffe8fa;
   --game-ticket-1:#ff3ea8;--game-ticket-2:#ed1486;--game-ticket-3:#9a0c59;
@@ -473,19 +473,19 @@ body[data-mode] .ticket::before{
 }
 body[data-mode] .ticket h2{
   color:var(--orig-label);
-  text-shadow:0 1px 0 #fff9,0 0 10px #ffffff52;
+  text-shadow:0 1px 2px var(--orig-shadow,#ffffff99),0 0 10px #ffffff52;
 }
 body[data-mode] .ticket h2::before,body[data-mode] .ticket h2::after{
   background:linear-gradient(90deg,transparent,var(--orig-label));
 }
 body[data-mode] .tickettop span:first-child{
   color:var(--orig-label);
-  text-shadow:0 1px 1px #fff9;
+  text-shadow:0 1px 2px var(--orig-shadow,#ffffff99);
 }
 body[data-mode] .ticket-identification,
 body[data-mode] .ticket-identification strong{
   color:var(--orig-label);
-  text-shadow:0 1px #ffffff8c;
+  text-shadow:0 1px 2px var(--orig-shadow,#ffffff99);
 }
 body[data-mode] .ticket-identification{border-top-color:color-mix(in srgb,var(--orig-label) 36%,transparent)}
 /* Estrelas e casas continuam contrastadas sobre os fundos fortes. */
