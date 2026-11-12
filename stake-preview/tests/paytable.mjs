@@ -52,7 +52,7 @@ for(const bet of [.05,.2,1,7.5,10]){
       const shown=p(type,count,bet);
       assert.ok(Math.abs(shown-expected)<1e-8,'paytable must use actual engine outcome '+[bet,type,count,shown,expected]);
       if(type!==4)assert.equal(line.amount,coeffs[type]*pay[count],'Regular symbol payline coefficient must match motor');
-      assert.equal(line.cells.length,count,'winning line stops on last match');
+      assert.equal(line.cells.length,(type===4&&count<5)?2:count,'WILD 3/4 with blocking stone pay only the initial pair');
     }
   }
 }
