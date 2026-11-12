@@ -58,9 +58,11 @@ test('moedas saem uma vez por linha premiada, sem pagamentos adicionais',()=>{
 test('cada linha Free Spins tem as suas moedas e som na hora certa',()=>{
  const {game,nodes}=boot();
  const win={count:4,rows:[0,1,2,1,0],expanded:false,line:1,amount:3};
- game.freeStage={kind:'line',start:2000,preDelay:200,end:4600,win,amount:3};
+ game.freeStage={kind:'line',start:2000,preDelay:200,perReel:200,reels:[0,1,2,3],
+  end:4600,win,amount:3};
  game.frame(2100);assert.equal(game.coinCelebrations.events.sequences,0);
- game.frame(2240);assert.equal(game.coinCelebrations.events.sequences,1);
+ game.frame(2240);assert.equal(game.coinCelebrations.events.sequences,0,'Aguarda pela linha visível');
+ game.frame(2820);assert.equal(game.coinCelebrations.events.sequences,1);
  assert(nodes.oscillators>=18,'Oito ou mais impactos metálicos por linha');
 });
 test('a celebração final é mais intensa e não se repete a cada frame',()=>{
