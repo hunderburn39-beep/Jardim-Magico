@@ -19,15 +19,15 @@ function draw(){
   if(!unlocked)return;
   drawCommissions();
   drawOfficialPlans();
-  let total=0;
+  const report=profitReport();
   const target=$("scratch-admin-cards");target.replaceChildren();
   for(const mode of CARD_MODES){
     const p=state.pools[String(mode.mult)];
-    total+=p.available;
     const card=document.createElement("article");
     card.className="scratch-admin-card";
     const title=document.createElement("h3");title.textContent=mode.mult+"X · "+money(mode.bet);
-    const balance=document.createElement("strong");balance.textContent=eur(p.available);
+    const balance=document.createElement("strong");
+    balance.textContent="Lucro: "+formatSignedEuro(p.stakes-p.paid);
     const detail=document.createElement("dl");
     const stock=state.officialStock?.[String(mode.mult)];
     const remaining=stock?.remaining?Object.values(stock.remaining)
@@ -37,12 +37,10 @@ function draw(){
       ["Tiragem vendida",formatted(stock?.issued||0)],
       ["Bilhetes restantes",formatted(remaining)],
       ["Vendas",eur(p.stakes)],
-      ["Entradas 60% (teste)",eur(p.funded)],
-      ["Prémios atribuídos",eur(p.awarded)],
       ["Prémios pagos",eur(p.paid)],
-      ["Por pagar",eur(Math.max(0,p.awarded-p.paid))],
-      ["Fundo colocado",eur(p.added)],
-      ["Fundo retirado",eur(p.removed)]
+      ["Prémios pendentes",eur(Math.max(0,p.awarded-p.paid))],
+      ["Lucro da tiragem",formatSignedEuro(p.stakes-p.paid)],
+      ["Fundo auxiliar (não usado)",eur(p.available)]
     ];
     for(const [name,value] of rows){
       const dt=document.createElement("dt"),dd=document.createElement("dd");
@@ -56,13 +54,14 @@ function draw(){
     resetButton.addEventListener("click",()=>confirmModeReset(mode.mult));
     card.append(title,balance,detail,resetButton);target.append(card);
   }
-  $("scratch-admin-total").textContent=eur(total);
+  $("scratch-admin-total").textContent=formatSignedEuro(report.profit);
   $("scratch-admin-legacy").textContent=
-    "Os fundos apresentados são apenas registos de créditos de teste e não limitam os prémios. "+
-    "Cada raspadinha tem a sua tiragem fechada neste navegador."+
-    (state.prizeBank>0?" Fundo partilhado antigo (histórico): "+eur(state.prizeBank)+".":"");
+    "O lucro total inclui as vendas e os prémios pagos de todas as séries anteriores (mesmo após reiniciar uma raspadinha). "+
+    "Os fundos auxiliares não alteram os prémios nem a divisão do lucro."+
+    (state.prizeBank>0?" Fundo antigo guardado como histórico: "+eur(state.prizeBank)+".":"");
 }
 
+function formatSignedEuro(cents){return cents<0?"−"+eur(-cents):eur(cents)}
 function confirmModeReset(mult){
   if(!unlocked)return;
   const mode=CARD_MODES.find(m=>m.mult===Number(mult));
@@ -71,7 +70,7 @@ function confirmModeReset(mult){
     "Iniciar nova tiragem "+mult+"X?\n\n"+
     "São apagados o bilhete em curso, a tiragem atual e os contadores "+
     "desta raspadinha. A nova série começa com zero bilhetes vendidos.\n\n"+
-    "O saldo da carteira e as comissões partilhadas das outras modalidades não são apagados.");
+    "O saldo e o histórico global de lucro/levantamentos continuam intactos.");
   if(!ok)return;
   const success=window.resetScratchMode(mult);
   if(!success){$("scratch-reset-note").textContent="Não foi possível reiniciar durante a revelação das casas.";return}
@@ -83,8 +82,8 @@ function confirmAllReset(){
   if(!unlocked)return;
   const ok=window.confirm(
     "REPOSIÇÃO TOTAL: apagar todos os contadores e iniciar quatro tiragens novas?\n\n"+
-    "Isto apaga o saldo, os bilhetes, vendas, fundos, comissões, levantamentos, "+
-    "reserva e históricos deste navegador. Esta operação não pode ser anulada.");
+    "Isto apaga o saldo, os bilhetes, as tiragens, as vendas, os prémios, "+
+    "o lucro, os levantamentos e os históricos deste navegador. Esta operação não pode ser anulada.");
   if(!ok)return;
   const success=window.resetScratchAll();
   if(!success){$("scratch-reset-note").textContent="Conclui primeiro a revelação das casas.";return}
@@ -124,10 +123,12 @@ function saveShares(event){
   }
   state.commissionSplit={merchant,technician};
   save();draw();refreshShares();
-  notice.textContent="Divisão guardada: "+merchant+"% comerciante e "+technician+"% técnico. Aplica-se a novos bilhetes.";
+  notice.textContent="Divisão do lucro guardada: "+merchant+"% comerciante e "+technician+
+    "% dono do jogo. Recalcula a quota do lucro disponível, descontando levantamentos anteriores.";
 }
 function commissionAvailable(role){
-  return Math.max(0,state[role]-state.commissionWithdrawn[role]);
+  const result=profitReport();
+  return role==="merchant"?result.merchantAvailable:result.ownerAvailable;
 }
 function parseCommissionAmount(role){
   const raw=$("scratch-commission-"+role+"-amount").value.trim().replace(/\s/g,"").replace(",",".");
@@ -138,7 +139,7 @@ function parseCommissionAmount(role){
 }
 function withdrawCommission(role){
   if(!unlocked)return;
-  const roleName=role==="merchant"?"comerciante":"técnico";
+  const roleName=role==="merchant"?"comerciante":"dono do jogo";
   const amount=parseCommissionAmount(role);
   const available=commissionAvailable(role);
   const note=$("scratch-commission-withdraw-note");
@@ -158,10 +159,17 @@ function withdrawCommission(role){
 }
 function drawCommissions(){
   const merchant=state.commissionSplit.merchant,technician=state.commissionSplit.technician;
+  const report=profitReport();
   $("scratch-commission-merchant-rate").textContent=merchant+"%";
   $("scratch-commission-technician-rate").textContent=technician+"%";
+  $("scratch-profit-sales").textContent=eur(report.sales);
+  $("scratch-profit-paid").textContent=eur(report.paid);
+  $("scratch-profit-pending").textContent=eur(report.pending);
+  $("scratch-profit-net").textContent=formatSignedEuro(report.profit);
+  $("scratch-profit-distributable").textContent=eur(report.distributable);
   for(const role of ["merchant","technician"]){
-    $("scratch-commission-"+role+"-earned").textContent=eur(state[role]);
+    const quota=role==="merchant"?report.merchantShare:report.ownerShare;
+    $("scratch-commission-"+role+"-earned").textContent=eur(quota);
     $("scratch-commission-"+role+"-withdrawn").textContent=eur(state.commissionWithdrawn[role]);
     $("scratch-commission-"+role+"-available").textContent=eur(commissionAvailable(role));
   }
@@ -174,7 +182,7 @@ function drawCommissions(){
     const timestamp=new Date(entry.at);
     const date=Number.isNaN(timestamp.getTime())?"Data desconhecida":timestamp.toLocaleString("pt-PT",{dateStyle:"short",timeStyle:"short"});
     item.className="scratch-commission-history-item";
-    item.textContent=date+" · "+(entry.role==="merchant"?"Comerciante":"Técnico")+" · "+eur(entry.amount);
+    item.textContent=date+" · "+(entry.role==="merchant"?"Comerciante":"Dono do Jogo")+" · "+eur(entry.amount);
     history.append(item);
   }
 }
