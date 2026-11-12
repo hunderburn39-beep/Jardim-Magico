@@ -677,6 +677,13 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
     <div id="scratch-admin-view" hidden>
       <div class="scratch-admin-total">TOTAL DOS FUNDOS DE TESTE (SEM LIMITE PARA PRÉMIOS)<strong id="scratch-admin-total">0,00 €</strong></div>
       <div class="scratch-admin-cards" id="scratch-admin-cards"></div>
+      <section class="scratch-admin-reset-section" aria-labelledby="scratch-reset-title">
+        <h3 id="scratch-reset-title">♻️ Reiniciar contadores e tiragens</h3>
+        <p>Em cada cartão podes iniciar uma nova série, repor a sua tiragem completa e limpar só os contadores dessa raspadinha.</p>
+        <p><strong>REPOSIÇÃO TOTAL:</strong> coloca a zero os quatro cartões, saldo da carteira, vendas, fundos, reserva, comissões e levantamentos. Apaga os bilhetes em curso. As próximas quatro tiragens começam do bilhete n.º 00000001.</p>
+        <button type="button" id="scratch-reset-all">REPOR TUDO A ZERO · NOVAS TIRAGENS</button>
+        <p id="scratch-reset-note" aria-live="polite"></p>
+      </section>
       <div class="scratch-admin-tools">
         <label for="scratch-admin-mode">GERIR FUNDO DE TESTE</label>
         <div class="scratch-admin-row">
@@ -719,7 +726,8 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
 
       <section class="scratch-commission-section" aria-labelledby="scratch-commission-title">
         <h3 id="scratch-commission-title">Comissões do comerciante e do técnico</h3>
-        <p>30% das vendas para comissões, distribuídos por percentagem. Os 60% de prémios e os 10% de reserva mantêm-se.</p>
+        <p><strong>Divisão de cada venda:</strong> 60% para registo do fundo, 10% para reserva e 30% para comissões. O fundo não limita os prémios nem altera a tiragem.</p>
+        <p>Por exemplo, numa raspadinha de 10€: <strong>6€</strong> para o fundo, <strong>1€</strong> para a reserva e <strong>3€</strong> de comissão. Por defeito, os 3€ dividem-se em <strong>1,80€ para o comerciante</strong> e <strong>1,20€ para o técnico</strong>. Esta percentagem de 60% não é o retorno do jogo.</p>
         <form id="scratch-commission-form" class="scratch-commission-form">
           <label for="scratch-commission-merchant">Comerciante (%)</label>
           <input id="scratch-commission-merchant" type="number" min="0" max="100" step="1" value="60" inputmode="numeric">
@@ -779,6 +787,7 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
 // Divisão: técnico 10%, comerciante 20%, fundo 10%, cofre de prémios 60%.
 // Chave antiga mantida para preservar saldos de sessões anteriores.
 const KEY="raspadinha100x_v3_10eur";
+const COUNTERS_EPOCH="new-draw-2026-11-12-v1";
 const CARD_MODES=[
   {mult:10,bet:100},
   {mult:20,bet:200},
@@ -814,7 +823,7 @@ function freshOfficialStock(){
   for(const [key,plan] of Object.entries(window.SANTA_PLANS||{})){
     const left={0:plan.emission-plan.winningTickets};
     for(const [euros,count] of plan.prizes)left[String(euros)]=count;
-    stock[key]={remaining:left,issued:0};
+    stock[key]={remaining:left,issued:0,series:1};
   }
   return stock;
 }
@@ -822,7 +831,10 @@ function initOfficialStock(saved){
   if(!saved.officialStock||typeof saved.officialStock!=="object")saved.officialStock={};
   for(const [key,plan] of Object.entries(window.SANTA_PLANS||{})){
     const existing=saved.officialStock[key];
-    if(existing&&existing.remaining&&Number.isSafeInteger(existing.issued)&&existing.issued>=0)continue;
+    if(existing&&existing.remaining&&Number.isSafeInteger(existing.issued)&&existing.issued>=0){
+      if(!Number.isSafeInteger(existing.series)||existing.series<1)existing.series=1;
+      continue;
+    }
     saved.officialStock[key]=freshOfficialStock()[key];
   }
 }
@@ -930,7 +942,7 @@ function initTicketIdentification(saved){
   }
 }
 function fresh(){
-  const freshState={balance:100000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true,bet:100};
+  const freshState={balance:0,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true,bet:100,countersEpoch:COUNTERS_EPOCH};
   initPools(freshState);initCommissions(freshState);initOfficialStock(freshState);initModeTickets(freshState);
   initTicketIdentification(freshState);
   return freshState;
@@ -981,7 +993,24 @@ function migrateOldTicket(saved){
 function load(){
   try{
     const saved=JSON.parse(localStorage.getItem(KEY));
-    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0)){saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;migrateOldTicket(saved);initPools(saved);initCommissions(saved);initOfficialStock(saved);initModeTickets(saved);initTicketIdentification(saved);return saved;}
+    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0)){
+      // Reposição global solicitada: executa UMA VEZ neste navegador.
+      if(saved.countersEpoch!==COUNTERS_EPOCH){
+        const reset=fresh();
+        reset.sound=saved.sound!==false;
+        for(const key of Object.keys(reset.officialStock)){
+          const previous=saved.officialStock?.[key];
+          const oldSeries=Number.isSafeInteger(previous?.series)&&previous.series>0?previous.series:1;
+          reset.officialStock[key].series=oldSeries+1;
+        }
+        try{localStorage.setItem(KEY,JSON.stringify(reset))}catch(_){}
+        return reset;
+      }
+      saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;
+      migrateOldTicket(saved);initPools(saved);initCommissions(saved);
+      initOfficialStock(saved);initModeTickets(saved);initTicketIdentification(saved);
+      return saved;
+    }
   }catch(_){}
   return fresh();
 }
@@ -992,6 +1021,39 @@ function save(){
   try{localStorage.setItem(KEY,JSON.stringify(state))}catch(_){}
   if(typeof window.refreshScratchAdmin==="function")window.refreshScratchAdmin();
 }
+function resetScratchMode(mult){
+  const mode=CARD_MODES.find(m=>m.mult===Number(mult));
+  if(!mode||revealAllRunning)return false;
+  const key=String(mode.mult);
+  const previousSeries=state.officialStock?.[key]?.series||1;
+  const stock=freshOfficialStock()[key];
+  stock.series=previousSeries+1;
+  endScratch();stopScratchSound();clearCelebration();
+  state.officialStock[key]=stock;             // nova tiragem, sem bilhetes vendidos
+  state.pools[key]=blankPool();                // só os contadores deste cartão a zero
+  delete state.modeTickets[String(mode.bet)]; // elimina bilhete anterior desta modalidade
+  if(state.bet===mode.bet)state.ticket=null;
+  save();render();
+  status("Nova tiragem "+mode.mult+"X · série "+String(stock.series).padStart(2,"0")+
+    ". Contadores a zero. O próximo bilhete será 00000001.");
+  return true;
+}
+function resetScratchAll(){
+  if(revealAllRunning)return false;
+  const previous=state;
+  endScratch();stopScratchSound();clearCelebration();
+  const next=fresh();                           // saldo, comissões e históricos a zero
+  next.sound=previous.sound;
+  for(const key of Object.keys(next.officialStock))
+    next.officialStock[key].series=(previous.officialStock?.[key]?.series||1)+1;
+  state=next;
+  save();render();
+  status("Reposição total concluída: todas as contas a zero. "+
+    "Quatro tiragens novas. Coloca créditos pela carteira para jogar.");
+  return true;
+}
+window.resetScratchMode=resetScratchMode;
+window.resetScratchAll=resetScratchAll;
 function status(msg){el("status").textContent=msg}
 function paintBalance(){el("balance").textContent=eur(state.balance);el("sound").textContent=state.sound?"🔊 Som ligado":"🔇 Som desligado";el("sound").setAttribute("aria-label",state.sound?"Desligar som":"Ligar som")}
 
@@ -1188,7 +1250,7 @@ function buy(){
   state.cards++;
   state.ticket={
     id:state.cards,lucky,play,prize,bet,maxMult,capMult:maxMult,poolVersion:1,
-    officialVersion:1,officialGame:plan.game,simulatedTicketNumber:state.officialStock[String(maxMult)].issued,wins,cellPrizes,
+    officialVersion:1,officialGame:plan.game,ticketSeries:state.officialStock[String(maxMult)].series,simulatedTicketNumber:state.officialStock[String(maxMult)].issued,wins,cellPrizes,
     paidWins:[],revealed:[],completed:false
   };
   save();render();
@@ -1417,7 +1479,9 @@ function renderTicketIdentification(ticket){
   const mode=modeForBet(ticket?.bet||state.bet);
   const plan=officialPlan(mode.bet);
   const officialGameNumber=Number.isSafeInteger(plan?.game)?plan.game:"—";
-  el("ticket-identification-game").textContent="JOGO N.º "+officialGameNumber+" · SÉRIE 01";
+  const storedSeries=ticket?.ticketSeries||state.officialStock?.[String(mode.mult)]?.series||1;
+  el("ticket-identification-game").textContent="JOGO N.º "+officialGameNumber+
+    " · SÉRIE "+String(storedSeries).padStart(2,"0");
   const number=el("ticket-identification-number");
   if(!ticket){
     number.textContent="BILHETE · AGUARDA COMPRA";
@@ -1766,7 +1830,9 @@ if(state.ticket){
   status(state.ticket.completed?(state.ticket.prize?"Ganhaste "+eur(state.ticket.prize)+"!":"Bilhete sem prémio."):"Continua a raspar o teu bilhete.");
 }else{
   render();
-  status("Escolhe uma raspadinha e carrega em NOVA RASPADINHA.");
+  status(state.balance===0
+    ?"Nova tiragem: contadores a zero. Abre a CARTEIRA para colocar créditos e jogar."
+    :"Escolhe uma raspadinha e carrega em NOVA RASPADINHA.");
 }
 </script>
 <script src="./admin.js"></script>
