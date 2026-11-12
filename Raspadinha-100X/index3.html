@@ -675,12 +675,12 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
       <p id="scratch-admin-error" class="scratch-admin-error" role="alert"></p>
     </div>
     <div id="scratch-admin-view" hidden>
-      <div class="scratch-admin-total">TOTAL DOS FUNDOS DE TESTE (SEM LIMITE PARA PRÉMIOS)<strong id="scratch-admin-total">0,00 €</strong></div>
+      <div class="scratch-admin-total">LUCRO REAL ACUMULADO (VENDAS − PRÉMIOS PAGOS)<strong id="scratch-admin-total">0,00 €</strong></div>
       <div class="scratch-admin-cards" id="scratch-admin-cards"></div>
       <section class="scratch-admin-reset-section" aria-labelledby="scratch-reset-title">
         <h3 id="scratch-reset-title">♻️ Reiniciar contadores e tiragens</h3>
         <p>Em cada cartão podes iniciar uma nova série, repor a sua tiragem completa e limpar só os contadores dessa raspadinha.</p>
-        <p><strong>REPOSIÇÃO TOTAL:</strong> coloca a zero os quatro cartões, saldo da carteira, vendas, fundos, reserva, comissões e levantamentos. Apaga os bilhetes em curso. As próximas quatro tiragens começam do bilhete n.º 00000001.</p>
+        <p><strong>REPOSIÇÃO TOTAL:</strong> coloca a zero os quatro cartões, saldo da carteira, vendas, lucro, levantamentos e históricos. Apaga os bilhetes em curso. As próximas quatro tiragens começam do bilhete n.º 00000001.</p>
         <button type="button" id="scratch-reset-all">REPOR TUDO A ZERO · NOVAS TIRAGENS</button>
         <p id="scratch-reset-note" aria-live="polite"></p>
       </section>
@@ -725,21 +725,28 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
       </section>
 
       <section class="scratch-commission-section" aria-labelledby="scratch-commission-title">
-        <h3 id="scratch-commission-title">Comissões do comerciante e do técnico</h3>
-        <p><strong>Divisão de cada venda:</strong> 60% para registo do fundo, 10% para reserva e 30% para comissões. O fundo não limita os prémios nem altera a tiragem.</p>
-        <p>Por exemplo, numa raspadinha de 10€: <strong>6€</strong> para o fundo, <strong>1€</strong> para a reserva e <strong>3€</strong> de comissão. Por defeito, os 3€ dividem-se em <strong>1,80€ para o comerciante</strong> e <strong>1,20€ para o técnico</strong>. Esta percentagem de 60% não é o retorno do jogo.</p>
+        <h3 id="scratch-commission-title">Divisão do lucro — Comerciante e Dono do Jogo</h3>
+        <p><strong>Lucro real = vendas − prémios pagos.</strong> Os prémios já atribuídos mas ainda não revelados ficam reservados antes de permitir levantamentos. Não existe reserva de 10% nem comissões sobre as vendas.</p>
+        <p>Exemplo: 1.000€ de vendas e 600€ em prémios pagos dão 400€ de lucro (sem outras despesas). Com 60% / 40%, ficam 240€ para o comerciante e 160€ para o dono do jogo.</p>
+        <div id="scratch-profit-summary" class="scratch-profit-summary" aria-live="polite">
+          <div>Vendas <strong id="scratch-profit-sales">0,00 €</strong></div>
+          <div>Prémios pagos <strong id="scratch-profit-paid">0,00 €</strong></div>
+          <div>Por pagar <strong id="scratch-profit-pending">0,00 €</strong></div>
+          <div>Lucro líquido <strong id="scratch-profit-net">0,00 €</strong></div>
+          <div>Lucro disponível para divisão <strong id="scratch-profit-distributable">0,00 €</strong></div>
+        </div>
         <form id="scratch-commission-form" class="scratch-commission-form">
           <label for="scratch-commission-merchant">Comerciante (%)</label>
           <input id="scratch-commission-merchant" type="number" min="0" max="100" step="1" value="60" inputmode="numeric">
-          <label for="scratch-commission-technician">Técnico (%)</label>
+          <label for="scratch-commission-technician">Dono do Jogo (%)</label>
           <input id="scratch-commission-technician" type="number" min="0" max="100" step="1" value="40" inputmode="numeric">
           <button type="submit" id="scratch-commission-save">GRAVAR 60% / 40%</button>
         </form>
-        <p id="scratch-commission-note" role="status">As novas percentagens aplicam-se apenas a bilhetes futuros.</p>
+        <p id="scratch-commission-note" role="status">As percentagens repartem o lucro disponível; os levantamentos já registados são descontados.</p>
         <div class="scratch-commission-cards">
           <div class="scratch-commission-card" id="scratch-commission-merchant-card">
             <h4>🏪 Comerciante <span id="scratch-commission-merchant-rate">60%</span></h4>
-            <div class="scratch-commission-stat">Comissões acumuladas <strong id="scratch-commission-merchant-earned">0,00 €</strong></div>
+            <div class="scratch-commission-stat">Quota do lucro <strong id="scratch-commission-merchant-earned">0,00 €</strong></div>
             <div class="scratch-commission-stat">Já levantado <strong id="scratch-commission-merchant-withdrawn">0,00 €</strong></div>
             <div class="scratch-commission-available">Disponível para levantar <strong id="scratch-commission-merchant-available">0,00 €</strong></div>
             <label for="scratch-commission-merchant-amount">Valor a levantar (€)</label>
@@ -747,13 +754,13 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
             <button type="button" id="scratch-commission-merchant-withdraw">LEVANTAR COMERCIANTE</button>
           </div>
           <div class="scratch-commission-card" id="scratch-commission-technician-card">
-            <h4>🛠️ Técnico <span id="scratch-commission-technician-rate">40%</span></h4>
-            <div class="scratch-commission-stat">Comissões acumuladas <strong id="scratch-commission-technician-earned">0,00 €</strong></div>
+            <h4>👑 Dono do Jogo <span id="scratch-commission-technician-rate">40%</span></h4>
+            <div class="scratch-commission-stat">Quota do lucro <strong id="scratch-commission-technician-earned">0,00 €</strong></div>
             <div class="scratch-commission-stat">Já levantado <strong id="scratch-commission-technician-withdrawn">0,00 €</strong></div>
             <div class="scratch-commission-available">Disponível para levantar <strong id="scratch-commission-technician-available">0,00 €</strong></div>
             <label for="scratch-commission-technician-amount">Valor a levantar (€)</label>
             <input id="scratch-commission-technician-amount" type="text" inputmode="decimal" placeholder="0,00" maxlength="11">
-            <button type="button" id="scratch-commission-technician-withdraw">LEVANTAR TÉCNICO</button>
+            <button type="button" id="scratch-commission-technician-withdraw">LEVANTAR DONO DO JOGO</button>
           </div>
         </div>
         <p id="scratch-commission-withdraw-note" role="status"></p>
@@ -762,7 +769,7 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
         <p>Os levantamentos são movimentos de créditos de teste, não transferências bancárias. O histórico antigo mantém os valores acumulados antes da mudança da divisão.</p>
       </section>
 
-      <p>Os bilhetes alimentam apenas o seu próprio cofre com 60% da aposta. Os prémios são reservados na compra. Estes são créditos locais de teste, não fundos reais; a proteção por PIN no navegador não é autenticação segura.</p>
+      <p>Os prémios são definidos pela tiragem de cada modalidade e não dependem de cofres. Os valores são créditos recreativos locais; a proteção por PIN no navegador não é autenticação segura.</p>
       <button id="scratch-admin-logout" class="scratch-admin-logout" type="button">SAIR DA ADMINISTRAÇÃO</button>
     </div>
   </section>
@@ -784,7 +791,7 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
 <script>
 "use strict";
 // 4 raspadinhas fixas: 10X/1 €, 20X/2 €, 50X/5 € e 100X/10 €; valores em cêntimos.
-// Divisão: técnico 10%, comerciante 20%, fundo 10%, cofre de prémios 60%.
+// Lucro bruto do jogo = vendas - prémios pagos; não há reserva fixa nem comissões por venda.
 // Chave antiga mantida para preservar saldos de sessões anteriores.
 const KEY="raspadinha100x_v3_10eur";
 const COUNTERS_EPOCH="new-draw-2026-11-12-v1";
@@ -892,25 +899,64 @@ function initPools(saved){
 }
 function modePool(mult){return state.pools[String(mult)]}
 function accountPaidWin(ticket,win){
-  if(ticket.poolVersion!==1)return; // apenas bilhetes dos cofres individuais
+  if(ticket.poolVersion!==1)return;
   modePool(ticket.maxMult).paid+=win.amount;
+  state.profitLedger.paid+=win.amount;
 }
 
 
 function initCommissions(saved){
+  // Mantém os nomes das chaves para compatibilidade com sessões anteriores.
+  // "technician" passa a representar o dono do jogo e "commissionSplit"
+  // passa a ser a percentagem do LUCRO, nunca uma taxa sobre vendas.
   const share=saved.commissionSplit;
   const merchant=share&&Number.isInteger(share.merchant)&&share.merchant>=0&&share.merchant<=100?share.merchant:60;
   saved.commissionSplit={merchant,technician:100-merchant};
   const withdrawn=saved.commissionWithdrawn;
   if(!withdrawn||!Number.isSafeInteger(withdrawn.merchant)||!Number.isSafeInteger(withdrawn.technician)||
-     withdrawn.merchant<0||withdrawn.technician<0||
-     withdrawn.merchant>saved.merchant||withdrawn.technician>saved.technician){
-     saved.commissionWithdrawn={merchant:0,technician:0};
+     withdrawn.merchant<0||withdrawn.technician<0){
+    saved.commissionWithdrawn={merchant:0,technician:0};
   }
   if(!Array.isArray(saved.commissionHistory))saved.commissionHistory=[];
   saved.commissionHistory=saved.commissionHistory.filter(entry=>entry&&
     ["merchant","technician"].includes(entry.role)&&Number.isSafeInteger(entry.amount)&&entry.amount>0
     &&typeof entry.at==="string").slice(-100);
+  // A reserva e comissões calculadas a cada venda deixam de existir.
+  // Valores levantados anteriormente ficam como adiantamentos ao lucro.
+  saved.reserve=0;
+  saved.merchant=0;
+  saved.technician=0;
+}
+function initProfitLedger(saved){
+  const ledger=saved.profitLedger;
+  if(ledger&&["sales","awarded","paid"].every(k=>Number.isSafeInteger(ledger[k])&&ledger[k]>=0)
+    &&ledger.paid<=ledger.awarded)return;
+  const pools=Object.values(saved.pools||{});
+  saved.profitLedger={
+    sales:pools.reduce((sum,p)=>sum+(p?.stakes||0),0),
+    awarded:pools.reduce((sum,p)=>sum+(p?.awarded||0),0),
+    paid:pools.reduce((sum,p)=>sum+(p?.paid||0),0)
+  };
+  // Dados antigos sem repartição por modalidade: não há como reconstruí-los.
+  saved.profitLedger.awarded=Math.max(saved.profitLedger.awarded,saved.profitLedger.paid);
+}
+function profitReport(){
+  const ledger=state.profitLedger;
+  const sales=ledger.sales,awarded=ledger.awarded,paid=ledger.paid;
+  const profit=sales-paid;
+  const pending=Math.max(0,awarded-paid);
+  // A quota pode ser levantada apenas quando não existem prémios por pagar
+  // que a tornem indisponível, mesmo que o bilhete ainda não esteja raspado.
+  const distributable=Math.max(0,sales-Math.max(paid,awarded));
+  const merchantShare=Math.floor(distributable*state.commissionSplit.merchant/100);
+  const ownerShare=distributable-merchantShare;
+  const merchantWithdrawn=state.commissionWithdrawn.merchant;
+  const ownerWithdrawn=state.commissionWithdrawn.technician;
+  const overallAvailable=Math.max(0,distributable-merchantWithdrawn-ownerWithdrawn);
+  const merchantAvailable=Math.min(overallAvailable,Math.max(0,merchantShare-merchantWithdrawn));
+  const ownerAvailable=Math.min(overallAvailable,Math.max(0,ownerShare-ownerWithdrawn));
+  return {sales,awarded,paid,pending,profit,distributable,
+    merchantShare,ownerShare,merchantAvailable,ownerAvailable,overallAvailable};
 }
 
 function initModeTickets(saved){
@@ -943,7 +989,7 @@ function initTicketIdentification(saved){
 }
 function fresh(){
   const freshState={balance:0,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true,bet:100,countersEpoch:COUNTERS_EPOCH};
-  initPools(freshState);initCommissions(freshState);initOfficialStock(freshState);initModeTickets(freshState);
+  initPools(freshState);initCommissions(freshState);initProfitLedger(freshState);initOfficialStock(freshState);initModeTickets(freshState);
   initTicketIdentification(freshState);
   return freshState;
 }
@@ -1007,7 +1053,7 @@ function load(){
         return reset;
       }
       saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;
-      migrateOldTicket(saved);initPools(saved);initCommissions(saved);
+      migrateOldTicket(saved);initPools(saved);initCommissions(saved);initProfitLedger(saved);
       initOfficialStock(saved);initModeTickets(saved);initTicketIdentification(saved);
       return saved;
     }
@@ -1029,8 +1075,18 @@ function resetScratchMode(mult){
   const stock=freshOfficialStock()[key];
   stock.series=previousSeries+1;
   endScratch();stopScratchSound();clearCelebration();
+  const oldTicket=state.modeTickets[String(mode.bet)];
+  if(oldTicket&&!oldTicket.completed&&Array.isArray(oldTicket.wins)){
+    const credited=new Set(oldTicket.paidWins||[]);
+    const outstanding=oldTicket.wins.filter(win=>!credited.has(win.pos))
+      .reduce((sum,win)=>sum+win.amount,0);
+    state.profitLedger.awarded=Math.max(state.profitLedger.paid,
+      state.profitLedger.awarded-outstanding);
+  }
   state.officialStock[key]=stock;             // nova tiragem, sem bilhetes vendidos
-  state.pools[key]=blankPool();                // só os contadores deste cartão a zero
+  state.pools[key]=blankPool();                // apenas contadores locais a zero
+  // O lucro global e os levantamentos anteriores continuam contabilizados
+  // mesmo depois de reiniciar uma das quatro modalidades.
   delete state.modeTickets[String(mode.bet)]; // elimina bilhete anterior desta modalidade
   if(state.bet===mode.bet)state.ticket=null;
   save();render();
@@ -1207,24 +1263,13 @@ function buy(){
   stopScratchSound();
   clearCelebration();
   state.balance-=bet;
-  // Contabilidade informativa: 60% fundo de teste, 10% reserva,
-  // 30% comissões. Nenhum destes fundos limita os prémios sorteados.
-  // Os 30% são repartidos pelo comerciante e técnico (60/40 por defeito).
-  // Os montantes são cêntimos inteiros para não acumular arredondamentos.
-  const reservaEntrada=Math.round(bet*.10);
-  const cofreEntrada=Math.round(bet*.60);
-  const comissaoTotal=bet-reservaEntrada-cofreEntrada;
-  const parteComerciante=Math.round(comissaoTotal*state.commissionSplit.merchant/100);
-  const parteTecnico=comissaoTotal-parteComerciante;
-  state.reserve+=reservaEntrada;
-  state.merchant+=parteComerciante;
-  state.technician+=parteTecnico;
+  // A venda entra integralmente na faturação. Não existe reserva nem
+  // comissões automáticas. Só o lucro após os prémios é distribuível.
   const maxMult=modeForBet(bet).mult;
   const pool=modePool(maxMult);
-  pool.available+=cofreEntrada;
-  pool.funded+=cofreEntrada;
   pool.sold++;
   pool.stakes+=bet;
+  state.profitLedger.sales+=bet;
   const officialPrize=pickOfficialPrize(plan);
   if(officialPrize===null)throw Error("Tiragem esgotada inesperadamente"); 
   const awards=makeOfficialWinnings(officialPrize,plan);
@@ -1232,6 +1277,7 @@ function buy(){
   // O cofre apenas regista entradas e estatísticas, NÃO determina a
   // atribuição do prémio. Prémios altos podem exceder os fundos de teste.
   pool.awarded+=prize;
+  state.profitLedger.awarded+=prize;
   const nums=shuffle(Array.from({length:80},(_,i)=>i+1));
   const lucky=nums.slice(0,plan.luckyCount);
   const play=nums.slice(plan.luckyCount,plan.luckyCount+plan.playCount);
