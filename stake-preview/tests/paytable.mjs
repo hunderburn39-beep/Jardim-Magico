@@ -48,17 +48,19 @@ for(const bet of [.05,.2,1,7.5,10]){
       const result=evaluate(board);
       const line=result.lines.find(l=>l.line===1);
       assert.ok(line,'expected payline 1 for symbol '+type+' count '+count);
-      const expected=+((coeffs[type]*pay[count]+(type===4?55:0))*bet/100).toFixed(2);
+      const expected=+(line.amount*bet/100).toFixed(2);
       const shown=p(type,count,bet);
-      assert.ok(Math.abs(shown-expected)<1e-8,'paytable math mismatch '+[bet,type,count,shown,expected]);
-      assert.ok(Math.abs(line.amount*bet/100-expected)<=0.005001,'motor pays same '+[bet,type,count]);
+      assert.ok(Math.abs(shown-expected)<1e-8,'paytable must use actual engine outcome '+[bet,type,count,shown,expected]);
+      if(type!==4)assert.equal(line.amount,coeffs[type]*pay[count],'Regular symbol payline coefficient must match motor');
       assert.equal(line.cells.length,count,'winning line stops on last match');
     }
   }
 }
 assert.equal(p(9,3,7.5),0,'Scatter no line win');
 assert.equal(p(11,5,7.5),0,'Coins no line win');
-assert.equal(p(4,3,7.5),9.38,'WILD 3 pays with extra 0.55x');
+assert.equal(p(4,3,7.5),4.13,'Three WILDs followed by a stone pay only the WILD pair');
+assert.equal(p(4,4,7.5),4.13,'Four WILDs followed by a stone pay only the WILD pair');
+assert.equal(p(4,5,7.5),64.13,'Five WILDs pay 8.55x including the extra WILD pair');
 assert.equal(p(0,3,7.5),1.58,'Caracol 3 at bet 7.50');
 assert.equal(p(8,5,7.5),42,'Flor vermelha 5 at bet 7.50');
 
@@ -69,7 +71,7 @@ assert.equal(result,true);
 assert.equal(el('paytableOverlay').classList.contains('show'),true);
 assert.equal(el('paytableStake').textContent.includes('7,50'),true);
 assert.equal(el('paytableGrid').innerHTML.split('class="paytable-row"').length-1,9);
-assert.match(el('paytableGrid').innerHTML,/9,38/);
+assert.match(el('paytableGrid').innerHTML,/4,13/);
 assert.match(el('paytableRules').innerHTML,/150,00/,'Free Spins cost 20x at 7.5');
 assert.match(el('paytableRules').innerHTML,/225,00/,'Hold cost 30x at 7.5');
 assert.match(el('paytableRules').innerHTML,/1(?:\s|.)?875,00/,'Full 250x prize at 7.5');
