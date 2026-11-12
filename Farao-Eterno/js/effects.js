@@ -213,7 +213,7 @@
         // Se a camada opcional ainda não estiver carregada, conservar a arte anterior.
         const drawGold=this.coinCelebrations?.drawGoldenCoin;
         if(typeof drawGold==='function'){
-          drawGold(x,y,coin.r+1.6,coin.angle+secs*5,
+          drawGold(x,y,(coin.r+1.6)*1.4,coin.angle+secs*5,
             alpha*clamp(1-secs/3.5,0,1),true);
         }else{
           ctx.save();ctx.translate(x,y);ctx.rotate(coin.angle+secs*2.8);
