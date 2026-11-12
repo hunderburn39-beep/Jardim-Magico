@@ -64,7 +64,8 @@ async function waitForModal(promise){
   }
   assert.equal(showing,true,'Free Spins must await a click at the final result');
   assert.equal(el('freeResultOverlay').classList.contains('show'),true);
-  return promise;
+  // Do not adopt the still-pending play promise here: the test must click CONTINUAR first.
+  return true;
 }
 const initial=vm.runInContext('balance',ctx);
 const operation=vm.runInContext('play("free")',ctx);
