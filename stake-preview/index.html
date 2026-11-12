@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V1.2</title>
+<title>Jardim Mágico | Edição Stake Preview V1.3</title>
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -121,10 +121,22 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .modal{width:min(100%,390px);padding:21px 16px;background:radial-gradient(ellipse at top,#5e3e6a,#211a3d 70%);border:3px solid #edcd87;border-radius:22px;box-shadow:0 15px 45px #070512}
 .modal h2{text-align:center;margin:0;color:#ffe29e;letter-spacing:.04em;font-size:27px}
 .modal p{text-align:center;color:#f5e9d7;font-size:13px;margin:9px 0 13px}
-.hold-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:14px auto}
-.coin-slot{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:radial-gradient(#34254c,#130f29);border:2px solid #a7835799;color:#bea17b;font-weight:900}
-.coin-slot.filled{background:radial-gradient(circle at 32% 23%,#fff7c9,#edc968 45%,#9e5c18 75%,#68401d);border:3px solid #fff0a9;color:#50230a;box-shadow:0 0 12px #ffdc7f80;font-size:18px}
-.hold-stats{display:flex;justify-content:space-between;gap:10px;color:#ffe1ad;font-weight:850;font-size:14px}
+.hold-modal{max-width:385px;max-height:94svh;overflow-y:auto;text-align:center}
+.hold-modal h2{font-size:clamp(22px,7vw,29px)}
+.hold-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:10px auto 13px;max-width:325px}
+.coin-slot{aspect-ratio:1;min-width:0;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;background:radial-gradient(#34254c,#130f29);border:2px solid #a7835799;color:#bea17b;font-weight:900}
+.coin-slot.filled{background:radial-gradient(circle at 32% 23%,#fff7c9,#edc968 45%,#9e5c18 75%,#68401d);border:3px solid #fff0a9;color:#50230a;box-shadow:0 0 12px #ffdc7f80}
+.coin-slot strong{font-size:clamp(15px,4.8vw,21px);line-height:1.15}
+.coin-slot small{font-size:clamp(9px,2.5vw,11px);font-weight:900;line-height:1.2;white-space:nowrap}
+.hold-stats{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#ffe1ad;font-weight:850;font-size:clamp(11px,3vw,14px)}
+.hold-lives{display:flex;justify-content:center;gap:9px;margin-top:8px}
+.hold-life{display:inline-grid;place-items:center;width:35px;height:29px;background:#b7894b55;border:1px solid #b69870;border-radius:9px;color:#8c7996;opacity:.4;font-size:18px}
+.hold-life.active{background:radial-gradient(#fff5bc,#dca64e);color:#56250c;opacity:1;box-shadow:0 0 12px #f9c97399;border-color:#ffe4a0}
+.hold-payout{font-size:clamp(15px,4.7vw,19px);color:#fff2bb}
+.hold-summary{margin:10px 0 4px;padding:9px;border:1px solid #ffe4a0;background:linear-gradient(#594373,#302047);border-radius:14px;font-weight:900;color:#ffefc3;box-shadow:0 0 22px #ffe3ae55;line-height:1.45}
+.hold-summary strong{display:block;font-size:clamp(19px,5vw,24px);color:#d9ffbb}
+#closeHold{width:100%;max-width:260px;background:linear-gradient(#eaffd7,#86dca9);color:#153f2c;border:2px solid #fff2bb;min-height:50px;font-size:16px;box-shadow:0 4px 15px #0008}
+@media(max-height:700px) and (orientation:portrait){.hold-modal{padding:11px 12px}.hold-grid{margin:7px auto}.hold-modal p{margin:6px auto}.hold-lives{margin-top:4px}}
 .modal-close{display:block;margin:12px auto 0;border:1px solid #e5c489;background:#35264e;border-radius:12px;color:#fff;padding:10px 22px;font-weight:800}
 .history-modal{max-height:83svh;overflow-y:auto}
 .paytable-modal{width:min(100%,450px);max-height:88svh;overflow-y:auto;padding:15px 11px}
@@ -220,9 +232,9 @@ button:disabled{opacity:.48;cursor:not-allowed}
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V1.2 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
+ <footer class="foot"><b>V1.3 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
- <div class="overlay" id="holdOverlay"><div class="modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-grid" id="holdGrid"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin">0,00</span></div><button class="modal-close" id="closeHold" hidden>CONTINUAR</button></div></div>
+ <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
  <div class="overlay" id="historyOverlay"><div class="modal history-modal"><div class="history-head"><h2>HISTÓRICO</h2><button type="button" id="closeHistory" aria-label="Fechar histórico">×</button></div><p>Últimas 20 jogadas, em créditos fictícios. Procura pelo número e abre os símbolos. REPETIR não cobra nem paga novamente.</p><input id="historySearch" class="history-search" type="search" inputmode="numeric" placeholder="Pesquisar nº da jogada" aria-label="Pesquisar pelo número da jogada"><small id="historyCount" class="history-counter"></small><div id="historyList" class="history-list"></div><button type="button" class="modal-close" id="clearHistory">LIMPAR HISTÓRICO</button></div></div>
  <div class="overlay" id="detailOverlay"><div class="modal history-modal"><div class="history-head"><h2 id="detailTitle">JOGADA</h2><button type="button" id="closeDetail" aria-label="Fechar detalhes">×</button></div><p id="detailSummary"></p><div id="detailBoard" class="detail-board" aria-label="Símbolos da jogada"></div><div class="detail-nav"><button type="button" id="detailPrev" aria-label="Ver etapa anterior">◀</button><strong id="detailStage">ETAPA 1</strong><button type="button" id="detailNext" aria-label="Ver etapa seguinte">▶</button></div><p id="detailStats" class="detail-stats"></p><button class="detail-replay" id="detailReplay">▶ REPETIR ESTA JOGADA</button></div></div>
  <div class="overlay" id="paytableOverlay" role="dialog" aria-modal="true" aria-label="Tabela de prémios Jardim Mágico"><div class="modal paytable-modal"><div class="history-head"><h2>TABELA DE PRÉMIOS</h2><button type="button" id="closePaytable" aria-label="Fechar tabela de prémios">×</button></div><div id="paytableStake" class="paytable-stake"></div><div class="paytable-header"><span>SÍMBOLO</span><span>3 IGUAIS</span><span>4 IGUAIS</span><span>5 IGUAIS</span></div><div id="paytableGrid" class="paytable-grid"></div><div id="paytableRules"></div><h3 style="text-align:center;color:#ffe6a4;font-size:15px;margin:15px 0 5px">10 LINHAS PREMIADAS</h3><div id="paylineSheet" class="payline-sheet"></div><p>Valores em créditos de teste. São regras da simulação local, sem RTP certificado.</p><button class="modal-close" id="closePaytableBottom" type="button">VOLTAR AO JOGO</button></div></div>
@@ -250,6 +262,7 @@ const TYPES=[
 const WEIGHTS=[10,13,11,10,4,11,10,9,10,4,12,7], LINES=[[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,1,2],[1,2,2,1,0],[0,1,1,1,2]],COEFS=[3,4,8,5,10,7,4,4,7,0,0,0],PAY=[0,0,0,7,25,80];
 const BETS=[.05,.10,.20,.40,.60,.80,1,1.50,2,3,5,7.5,10];
 let betIndex=2,balance=1000,lastWin=0,busy=false,turbo=false,sound=true,autoLeft=0,toastTimer=0,skipAnimations=false;
+let pendingHoldContinue=null;
 let historyRecords=[],serial=0,replayBet=null,detailRoundId=null,detailFrameIndex=0,pendingRound=null,recoveredRoundId=null;
 let musicEnabled=true,backgroundMusic=null,audioActivated=false,gardenEntered=false;
 const AUDIO_BASE="../jardim-phaser/assets/audio/";
@@ -502,6 +515,7 @@ async function replayRound(id){
     say("REPETIÇÃO #"+saved.id+" · PRÉMIO ORIGINAL "+format(saved.payout)+" créditos","good");
     return true;
   }finally{
+    acknowledgeHoldContinue();hideHoldResult();
     replayBet=null;busy=false;skipAnimations=false;clearPayline();clearFreeHud();hideWildTally();controls();display();
     if(balance!==before||lastWin!==last)throw Error("A repetição alterou o saldo ou o último prémio");
   }
@@ -541,7 +555,35 @@ function updateFreeHud(remaining,raw,multi){$("freePanel").hidden=false;$("freeR
 function clearFreeHud(){$("freePanel").hidden=true;$("freePanel").classList.remove("celebrate")}
 function finalWinTier(payout,stake){const ratio=payout/stake;return ratio>=100?"SENSACIONAL":ratio>=25?"MEGA WIN":ratio>=10?"BIG WIN":"PRÉMIO TOTAL"}
 function controls(){["spin","minus","plus","buyFree","buyHold","reloadBtn","auto","historyBtn","paytableBtn"].forEach(id=>$(id).disabled=busy);$("skipBtn").hidden=!busy||skipAnimations;document.querySelectorAll("[data-bet]").forEach(button=>button.disabled=busy);$("turboLabel").textContent=turbo?"LIGADO":"DESL.";$("autoLabel").textContent=autoLeft?autoLeft+" GIROS":"5 GIROS"}
-function renderHold(grid,tries,previous=[]){$("holdGrid").innerHTML=grid.map((x,i)=>'<div class="coin-slot '+(x?"filled":"")+(x&&!previous[i]?" new-coin":"")+'">'+(x?'×'+x:'✦')+'</div>').join("");$("holdTries").textContent="Tentativas: "+tries;$("holdWin").textContent=money(100*grid.reduce((a,b)=>a+b,0))+" créditos"}
+function renderHold(grid,tries,previous=[]){
+  const stake=replayBet??BETS[betIndex];
+  $("holdGrid").innerHTML=grid.map((x,i)=>{
+    const filled=Number(x)>0,landed=filled&&!previous[i];
+    return '<div class="coin-slot '+(filled?"filled":"")+(landed?" new-coin":"")+'" aria-label="'+(filled?"Moeda "+x+" vezes, "+format(x*stake)+" créditos":"Casa vazia")+'">'+(filled?'<strong>×'+x+'</strong><small>'+format(x*stake)+'</small>':"✦")+'</div>';
+  }).join("");
+  $("holdLives").innerHTML=Array.from({length:3},(_,i)=>'<span class="hold-life '+(i<tries?"active":"")+'">◆</span>').join("");
+  $("holdLives").setAttribute("aria-label","Tentativas restantes: "+tries);
+  $("holdTries").textContent="Tentativas: "+tries;
+  $("holdWin").textContent="ACUMULADO "+money(100*grid.reduce((a,b)=>a+b,0));
+}
+function hideHoldResult(){
+  $("holdOverlay").classList.remove("show");
+  $("closeHold").hidden=true;
+  $("holdSummary").hidden=true;
+}
+function acknowledgeHoldContinue(){
+  if(!pendingHoldContinue)return false;
+  const finish=pendingHoldContinue;
+  pendingHoldContinue=null;
+  hideHoldResult();
+  finish();
+  return true;
+}
+function waitHoldContinue(){
+  if(skipAnimations)return Promise.resolve();
+  if(pendingHoldContinue)throw Error("O bónus já está à espera de confirmação");
+  return new Promise(resolve=>{pendingHoldContinue=resolve});
+}
 function clearPayline(){$("paylineSvg").innerHTML="";$("linePrize").hidden=true}
 async function highlightLines(evt){
   if(!evt.lines.length){clearPayline();return}
@@ -635,7 +677,11 @@ async function playback(book){
       if(evt.add){say("RETRIGGER · +"+evt.add+" FREE SPINS","bonus");$("freePanel").classList.add("celebrate");beep(950)}else{say("FREE SPINS: "+evt.played+" realizadas · BRUTO "+money(evt.raw)+" · ×"+evt.multi,"bonus");$("freePanel").classList.remove("celebrate")}
       await pause(turbo?30:100);
     }else if(evt.kind==="hold"){
-      if(evt.turn===0)await showBonusCurtain("HOLD & WIN","6 MOEDAS · 3 TENTATIVAS","◉");
+      if(evt.turn===0){
+        $("holdSummary").hidden=true;
+        $("closeHold").hidden=true;
+        await showBonusCurtain("HOLD & WIN","6 MOEDAS · 3 TENTATIVAS","◉");
+      }
       if(lastHoldGrid.length&&evt.grid.some((value,i)=>value&&!lastHoldGrid[i]))playRecorded("coin");
       $("holdOverlay").classList.add("show");
       renderHold(evt.grid,evt.tries,lastHoldGrid);
@@ -647,10 +693,14 @@ async function playback(book){
       playRecorded("bonus");
       renderHold(evt.grid,0,lastHoldGrid);
       $("holdText").textContent=evt.filled?"GRELHA COMPLETA! +250×":"HOLD & WIN TERMINADO";
-      $("holdWin").textContent=money(evt.amount)+" créditos";
+      $("holdWin").textContent="TOTAL "+money(evt.amount);
+      $("holdSummaryLabel").textContent=evt.filled?"GRELHA COMPLETA · EXTRA +250×":"PRÉMIO FINAL DO HOLD & WIN";
+      $("holdSummaryValue").textContent=money(evt.amount)+" créditos";
+      $("holdSummary").hidden=false;
       $("closeHold").hidden=false;
-      await pause(turbo?600:1300);
-      $("holdOverlay").classList.remove("show");$("closeHold").hidden=true;
+      // Do not auto-dismiss: a real click confirms the end; PASSAR bypasses visual holds.
+      await waitHoldContinue();
+      hideHoldResult();
       lastHoldGrid=[];
     }
   }
@@ -688,7 +738,8 @@ async function play(mode="base"){
       if(record)say("A animação falhou; o prémio "+format(record.payout)+" foi creditado e guardado na jogada #"+record.id+".","bonus");
       else say("A jogada já tinha sido contabilizada. Consulta o histórico.","bonus");
     }else say("Não foi possível iniciar a jogada. Não foram retirados créditos.");
-    $("holdOverlay").classList.remove("show");
+    acknowledgeHoldContinue();
+    hideHoldResult();
     $("bonusCurtain").classList.remove("visible");$("bonusCurtain").hidden=true;
     display();
   }finally{
@@ -701,6 +752,7 @@ async function play(mode="base"){
   }
 }
 $("introPlay").addEventListener("click",enterGarden);
+$("closeHold").addEventListener("click",acknowledgeHoldContinue);
 $("spin").addEventListener("click",()=>play("base"));
 $("skipBtn").addEventListener("click",()=>{if(!busy)return;skipAnimations=true;controls();say("A apresentar o resultado final desta jogada…","bonus")});
 $("minus").addEventListener("click",()=>{betIndex=Math.max(0,betIndex-1);display();saveSession()});
