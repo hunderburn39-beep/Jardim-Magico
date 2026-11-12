@@ -6,42 +6,55 @@ import vm from 'node:vm';
 
 const dir=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const html=readFileSync(join(dir,'index.html'),'utf8');
-assert.match(html,/Stake Preview V1\.8/);
-assert.match(html,/V1\.8 • EDIÇÃO GRÁFICA/);
-for(const filename of ['assets/jardim-v18-reference.png','assets/jardim-v18-moldura.svg']){
+assert.match(html,/Stake Preview V1\.8\.1/);
+assert.match(html,/V1\.8\.1 • NOVO VISUAL/);
+const assets=['assets/jardim-v181-cenario-limpo.svg','assets/jardim-v181-logo.svg','assets/jardim-v181-moldura.svg'];
+for(const filename of assets){
   const path=resolve(dir,filename);
-  assert.ok(existsSync(path),filename+' found in GitHub checkout');
-  assert.ok(statSync(path).size>5000,filename+' is not empty');
-  assert.ok(html.includes(filename),'approved artwork actually used by game CSS');
+  assert.ok(existsSync(path),'New HD asset missing: '+filename);
+  assert.ok(statSync(path).size>3500,'New vector asset empty: '+filename);
+  assert.ok(html.includes(filename),'Live game does not use '+filename);
 }
-const png=readFileSync(join(dir,'assets/jardim-v18-reference.png'));
-assert.equal(png.subarray(1,4).toString('ascii'),'PNG','approved artwork format');
-const width=png.readUInt32BE(16),height=png.readUInt32BE(20);
-assert.ok(width>90&&height>160,'portrait approved artwork is present');
-const frame=readFileSync(join(dir,'assets/jardim-v18-moldura.svg'),'utf8');
+const background=readFileSync(join(dir,assets[0]),'utf8');
+const logo=readFileSync(join(dir,assets[1]),'utf8');
+const frame=readFileSync(join(dir,assets[2]),'utf8');
+assert.match(background,/viewBox="0 0 941 1672"/,'True portrait image, no low-resolution stretch');
+assert.match(background,/jardim|Jardim/i);
+assert.doesNotMatch(background,/<text\b/i,'Background may not contain printed lettering');
+assert.doesNotMatch(background,/<image\b/i,'Background may not contain screenshot, low-res raster or fake controls');
+assert.doesNotMatch(background,/base64/i,'Background must remain crisp 100% vector');
+assert.match(background,/id="water"/,'Original waterfall and pond atmosphere');
+assert.match(background,/id="leaf"/,'Detailed independent foliage');
+assert.match(logo,/viewBox="0 0 940 410"/);
+assert.match(logo,/>Jardim<\/text>/,'Lettering renders as vector text');
+assert.match(logo,/>MÁGICO<\/text>/,'Full accentuated title');
+assert.doesNotMatch(logo,/<clipPath\b/i,'Logo should not have a cutout/crop');
 assert.match(frame,/viewBox="0 0 920 580"/);
-assert.match(frame,/url\(#gold\)/,'Frame has metallic gold highlights');
-assert.match(frame,/url\(#gem\)/,'Frame has purple gemstone');
-assert.match(frame,/fill="#df86de"/,'Frame has enchanted garden flowers');
-assert.match(html,/\.frame:after\s*\{[^}]*jardim-v18-moldura\.svg/s);
-assert.match(html,/\.logo-wrap\s*\{[^}]*top:7\.6%;left:10%;width:80%/s,'Complete logo within safe bounds');
-assert.match(html,/\.frame\s*\{[^}]*top:29\.1%/s,'5x3 grid in reference artwork location');
-assert.match(html,/\.reels\s*\{[^}]*height:100%/s,'Interactive reels cover printed symbols');
-assert.match(html,/\.bonus-row\s*\{[^}]*top:63\.0%/s,'Bonus controls align with the design');
-assert.match(html,/\.money-row\s*\{[^}]*top:73\.1%/s,'Balances are real controls');
-assert.match(html,/\.actions\s*\{[^}]*top:83\.0%/s,'Spin/auto/turbo align with artwork');
-assert.match(html,/\.intro-screen\s*\{[^}]*jardim-v18-reference\.png/s,'Intro uses approved art');
+assert.match(frame,/interior is transparent/i,'No fake reel graphic in frame');
+assert.match(frame,/url\(#gold\)/,'Gold trim remains');
+assert.match(frame,/url\(#jewel\)/,'Purple gemstone remains');
+assert.doesNotMatch(frame,/<image\b/i,'Frame is vector');
 
-const names=['reels','balance','bet','minus','plus','spin','auto','turbo','buyFree','buyHold','paytableBtn',
-'historyBtn','soundBtn','musicBtn','skipBtn','sessionStatus','freePanel','holdGrid','linePrize'];
-for(const id of names)assert.ok(html.includes('id="'+id+'"'),'Functional component remains real HTML: '+id);
-assert.match(html,/function commitRound/,'Current accounting is intact');
-assert.match(html,/function settlePendingRound/,'Pending transactions are intact');
-assert.match(html,/function freeFeature/,'Free Spins are intact');
-assert.match(html,/function holdFeature/,'Hold & Win is intact');
-assert.match(html,/function stopAuto/,'AUTO cancellation remains functional');
+assert.doesNotMatch(html,/jardim-v18-reference\.png/i,'No old blurry screenshot as background');
+assert.doesNotMatch(html,/url\('\.\.\/assets\/imagens\/jm80-cenario-imersivo\.svg'\)/,'No old background fallback');
+assert.match(html,/\.app\s*\{[^}]*jardim-v181-cenario-limpo\.svg/s);
+assert.match(html,/\.frame:after\s*\{[^}]*jardim-v181-moldura\.svg/s);
+assert.match(html,/\.logo-wrap\s*\{[^}]*env\(safe-area-inset-top\)/s,'Logo clears iPhone safe area');
+assert.match(html,/\.logo-wrap\s*\{[^}]*height:13\.4%/s);
+assert.match(html,/\.reels\s*\{[^}]*height:100%/s,'Five dynamic reel columns fill their frame');
+assert.match(html,/\.frame\s*\{[^}]*top:29%/s);
+assert.match(html,/\.bonus-row\s*\{[^}]*top:64\.2%/s);
+assert.match(html,/\.money-row\s*\{[^}]*top:74\.9%/s);
+assert.match(html,/\.actions\s*\{[^}]*top:85\.6%/s);
+assert.equal((html.match(/src="assets\/jardim-v181-logo\.svg"/g)||[]).length,2,'Both intro and game logo use the same crisp asset');
 
-const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1]?.split('$("introPlay").addEventListener')[0];
-assert.ok(script,'Game engine exists');
+for(const id of ['reels','balance','bet','minus','plus','spin','auto','turbo','buyFree','buyHold','paytableBtn','historyBtn','soundBtn','musicBtn','skipBtn','sessionStatus','freePanel','holdGrid','linePrize']){
+ assert.ok(html.includes('id="'+id+'"'),'Real functional HTML control missing: '+id);
+}
+for(const fn of ['commitRound','settlePendingRound','freeFeature','holdFeature','stopAuto','showPaytable']){
+ assert.ok(html.includes('function '+fn),'Core engine retained: '+fn);
+}
+const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+assert.ok(script,'Full working engine present');
 new vm.Script(script,{filename:'stake-preview/index.html'});
-console.log('Stake Preview V1.8: aprovado o visual 9:16 com logo inteiro, fundo, moldura, tambores e HUD funcionais; PNG '+width+'x'+height);
+console.log('Stake Preview V1.8.1: true SVG background with no screenshot, crisp full logo, transparent 5x3 frame, real buttons and valid JS passed.');
