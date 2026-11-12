@@ -12,7 +12,7 @@ assert.match(html,/id="historySearch"/);
 assert.match(html,/id="detailBoard"/);
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(script,'Game script exists');
-const source=script.split('$("spin").addEventListener')[0];
+const source=script.split('$("introPlay").addEventListener')[0];
 const elements=new Map(),buttons=[];
 function elem(id){
   if(!elements.has(id)){
