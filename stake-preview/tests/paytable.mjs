@@ -5,7 +5,7 @@ import {dirname,join} from 'node:path';
 import vm from 'node:vm';
 
 const html=readFileSync(join(dirname(fileURLToPath(import.meta.url)),'..','index.html'),'utf8');
-assert.match(html,/Stake Preview V1\.2/);
+assert.match(html,/Stake Preview V1\.3/);
 for(const name of ['paytableBtn','paytableOverlay','paytableStake','paytableGrid','paytableRules','paylineSheet','closePaytable','closePaytableBottom']){
   assert.ok(html.includes('id="'+name+'"'),'Paytable element exists: '+name);
 }
@@ -84,4 +84,4 @@ assert.equal(vm.runInContext('historyRecords.length',ctx),0,'Paytable must not c
 vm.runInContext('busy=true',ctx);
 assert.equal(vm.runInContext('showPaytable()',ctx),false,'No paytable while recording a spin');
 vm.runInContext('busy=false',ctx);
-console.log('Stake Preview V1.2: 135 payline payouts checked against motor, ten line diagrams, free/hold prices at bet 7,50.');
+console.log('Stake Preview V1.3: 135 payline payouts checked against motor, ten line diagrams, free/hold prices at bet 7,50.');
