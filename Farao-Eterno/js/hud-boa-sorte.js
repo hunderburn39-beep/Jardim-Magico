@@ -90,19 +90,33 @@ function drawWish(t,opacity=1,offsetX=0){
  ctx.restore();
  ctx.restore();
 }
-function drawCounter(){
- const value=Number(g.feature?.left);
- if(!Number.isFinite(value))return;
- // Lado esquerdo do medalhão central: nunca sobrepõe o botão GIRAR.
+// A mudança visual é alimentada apenas pelo contador real da sessão.
+// Não altera apostas, RNG, premiações nem a atribuição das Free Spins.
+const counter={last:null,changedAt:0,retriggerAt:-Infinity};
+function drawCounter(t){
+ const raw=Number(g.feature?.left);
+ if(!Number.isFinite(raw))return;
+ const value=Math.max(0,Math.trunc(raw));
+ if(counter.last!==value){
+  if(counter.last!==null&&value>counter.last)counter.retriggerAt=t;
+  counter.last=value;
+  counter.changedAt=t;
+ }
+ // Lado esquerdo do botão GIRAR: x=32..197, medalhão x=206..354.
  const x=32,y=824,w=165,h=102;
+ const isLast=value===1;
+ const age=Math.max(0,t-counter.changedAt);
+ const newlyAwarded=t-counter.retriggerAt<1300;
  ctx.save();
- ctx.shadowColor='#000c';ctx.shadowBlur=13;ctx.shadowOffsetY=5;
+ ctx.shadowColor=newlyAwarded?'#7dfae0':'#000c';
+ ctx.shadowBlur=newlyAwarded?18:13;
+ ctx.shadowOffsetY=5;
  const background=ctx.createLinearGradient(x,y,x+w,y+h);
  background.addColorStop(0,'#6c4b26');
  background.addColorStop(.12,'#263343');
  background.addColorStop(.69,'#0b1a2a');
  background.addColorStop(1,'#503721');
- rounded(x,y,w,h,13,background,'#e4b965',2.4);
+ rounded(x,y,w,h,13,background,isLast?'#fff0a9':'#e4b965',isLast?3:2.4);
  ctx.restore();
  ctx.save();
  rounded(x+4,y+4,w-8,h-8,9,null,'#ffe0a070',1);
@@ -111,18 +125,44 @@ function drawCounter(){
  ctx.fillText('FREE SPINS',x+w/2,y+22);
  ctx.strokeStyle='#b68d5185';ctx.lineWidth=1;
  ctx.beginPath();ctx.moveTo(x+20,y+39);ctx.lineTo(x+w-20,y+39);ctx.stroke();
- ctx.shadowColor='#70f5e8';ctx.shadowBlur=12;
- ctx.font='900 37px Georgia,serif';ctx.fillStyle='#b5fff1';
- ctx.fillText(String(Math.max(0,Math.trunc(value))),x+w/2,y+66);
- ctx.shadowBlur=0;ctx.font='800 10px Arial,sans-serif';
- ctx.fillStyle='#e0c58e';ctx.fillText('RESTANTES',x+w/2,y+91);
+ // Pulsar pequeno após a contagem efetivamente mudar.
+ const pulse=age<430?1+.065*Math.sin(Math.PI*age/430):1;
+ ctx.save();
+ ctx.translate(x+w/2,y+66);
+ ctx.scale(pulse,pulse);
+ ctx.shadowColor=isLast?'#ffde85':'#70f5e8';
+ ctx.shadowBlur=14;
+ ctx.font='900 37px Georgia,serif';ctx.fillStyle=isLast?'#fff0bd':'#b5fff1';
+ ctx.fillText(String(value),0,0);
+ ctx.restore();
+ ctx.font='800 10px Arial,sans-serif';
+ ctx.fillStyle=isLast?'#ffe3a0':'#e0c58e';
+ ctx.fillText(isLast?'ÚLTIMA RODADA':'RESTANTES',x+w/2,y+91);
+ // Um +8 (ou retrigger) acende brevemente quatro estrelas nas bordas.
+ if(newlyAwarded){
+  const life=Math.max(0,1-(t-counter.retriggerAt)/1300);
+  ctx.globalAlpha=Math.min(.95,life);
+  ctx.strokeStyle='#bcfff0';ctx.lineWidth=1.7;
+  for(let i=0;i<4;i++){
+   const px=x+(i%2? w-12:12),py=y+(i<2?16:h-16);
+   const s=(3+4*life)*(i%2?1:.85);
+   ctx.beginPath();ctx.moveTo(px-s,py);ctx.lineTo(px+s,py);
+   ctx.moveTo(px,py-s);ctx.lineTo(px,py+s);ctx.stroke();
+  }
+ }
  ctx.restore();
 }
 // BOA SORTE acompanha somente as Free Spins efetivamente iniciadas.
 // Entrada pela esquerda no início do bónus e saída à direita no final.
 // Nada é desenhado durante o jogo base, salvo a breve animação de saída.
 const wish={phase:'hidden',since:0};
+const reducedMotion=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 function drawConditionalWish(t,playingBonus){
+ if(reducedMotion){
+  wish.phase=playingBonus?'visible':'hidden';
+  if(playingBonus)drawWish(t,1,0);
+  return;
+ }
  if(playingBonus){
   if(wish.phase==='hidden'||wish.phase==='exiting'){
    wish.phase='entering';wish.since=t;
@@ -132,16 +172,16 @@ function drawConditionalWish(t,playingBonus){
  }
  if(wish.phase==='hidden')return;
  if(wish.phase==='entering'){
-  const p=Math.max(0,Math.min(1,(t-wish.since)/700));
+  const p=Math.max(0,Math.min(1,(t-wish.since)/620));
   const eased=1-Math.pow(1-p,3);
-  drawWish(t,eased,-64*(1-eased));
+  drawWish(t,eased,-45*(1-eased));
   if(p>=1)wish.phase='visible';
   return;
  }
  if(wish.phase==='exiting'){
-  const p=Math.max(0,Math.min(1,(t-wish.since)/620));
+  const p=Math.max(0,Math.min(1,(t-wish.since)/500));
   if(p>=1){wish.phase='hidden';return;}
-  drawWish(t,1-p,62*p*p);
+  drawWish(t,Math.pow(1-p,1.5),45*p*p);
   return;
  }
  drawWish(t,1,0);
@@ -157,7 +197,11 @@ g.header=function(t){
 const oldControls=g.controls.bind(g);
 g.controls=function(...args){
  oldControls(...args);
- if(this.ready&&this.feature)drawCounter();
+ if(!this.feature){counter.last=null;return;}
+ if(this.ready){
+  const time=Number.isFinite(args[0])?args[0]:performance.now();
+  drawCounter(time);
+ }
 };
-document.documentElement.dataset.faraoHud='boa-sorte-1.1-bonus-only';
+document.documentElement.dataset.faraoHud='boa-sorte-1.2-polished';
 })();
