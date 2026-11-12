@@ -7,7 +7,7 @@ import vm from 'node:vm';
 const html=readFileSync(join(dirname(fileURLToPath(import.meta.url)),'..','index.html'),'utf8');
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(script,'JS da pré-visualização existe');
-const source=script.split('$("spin").addEventListener')[0];
+const source=script.split('$("introPlay").addEventListener')[0];
 assert.match(source,/async function animateReelStop/);
 assert.match(source,/async function animateCascade/);
 assert.match(source,/async function playback/);
