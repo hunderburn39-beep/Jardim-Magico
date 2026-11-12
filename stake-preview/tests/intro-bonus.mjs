@@ -5,7 +5,7 @@ import {dirname,join} from 'node:path';
 import vm from 'node:vm';
 
 const html=readFileSync(join(dirname(fileURLToPath(import.meta.url)),'..','index.html'),'utf8');
-assert.match(html,/Stake Preview V1\.3/);
+assert.match(html,/Stake Preview V1\.4/);
 for(const target of ['introScreen','introPlay','bonusCurtain','bonusCurtainTitle','bonusCurtainSubtitle','bonusOrbit'])
   assert.ok(html.includes('id="'+target+'"'),target+' is present');
 assert.match(html,/ENTRAR NO JARDIM/);
@@ -70,4 +70,4 @@ assert.equal(vm.runInContext('pendingRound',ctx),null,'Transitions never create 
 assert.ok(plays.some(x=>x.endsWith('bonus.mp3')),'Recorded bonus intro effect is used');
 assert.equal(plays.filter(x=>x.endsWith('zen-meditation.mp3')).length,1,'Background keeps playing without restart through both bonuses');
 
-console.log('Stake Preview V1.3: intro requires tap, music remains continuous, free and Hold transitions finish, no credit changes.');
+console.log('Stake Preview V1.4: intro requires tap, music remains continuous, free and Hold transitions finish, no credit changes.');
