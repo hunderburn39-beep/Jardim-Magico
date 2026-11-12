@@ -58,9 +58,19 @@ const context=vm.createContext({
   localStorage,setTimeout(callback){Promise.resolve().then(callback);return 1},clearTimeout(){}
 });
 vm.runInContext(source,context,{timeout:10000});
+async function finishHold(promise){
+  for(let n=0;n<600;n++){
+    if(vm.runInContext('typeof pendingHoldContinue',context)==='function')break;
+    await Promise.resolve();
+  }
+  assert.equal(vm.runInContext('typeof pendingHoldContinue',context),'function','Hold final must wait for CONTINUAR');
+  assert.equal(vm.runInContext('acknowledgeHoldContinue()',context),true,'Test confirms Hold with CONTINUAR');
+  return await promise;
+}
+
 vm.runInContext('betIndex=BETS.indexOf(7.5);skipAnimations=true;turbo=true;',context);
 const startBalance=vm.runInContext('balance',context);
-await vm.runInContext('play("hold")',context);
+await finishHold(vm.runInContext('play("hold")',context));
 const records=vm.runInContext('historyRecords',context);
 assert.equal(records.length,1,'One actual completed Hold purchase stored');
 assert.equal(records[0].mode,'hold');
@@ -101,7 +111,7 @@ assert.equal(elem('detailOverlay').classList.contains('show'),false);
 vm.runInContext('showHistory()',context);
 
 context.originalId=originalId;
-const replayed=await vm.runInContext('replayRound(originalId)',context);
+const replayed=await finishHold(vm.runInContext('replayRound(originalId)',context));
 assert.equal(replayed,true);
 assert.equal(elem('historyOverlay').classList.contains('show'),false);
 assert.equal(vm.runInContext('balance',context),afterBalance,'Replay must not alter player balance');
