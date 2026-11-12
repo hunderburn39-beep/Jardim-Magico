@@ -48,6 +48,16 @@ const context=vm.createContext({
   clearTimeout(){},
 });
 vm.runInContext(source,context,{timeout:10000});
+async function finishHold(promise){
+  for(let n=0;n<600;n++){
+    if(vm.runInContext('typeof pendingHoldContinue',context)==='function')break;
+    await Promise.resolve();
+  }
+  assert.equal(vm.runInContext('typeof pendingHoldContinue',context),'function','Hold final must wait for CONTINUAR');
+  assert.equal(vm.runInContext('acknowledgeHoldContinue()',context),true,'Test confirms Hold with CONTINUAR');
+  return await promise;
+}
+
 vm.runInContext('betIndex=BETS.indexOf(7.5);display()',context);
 assert.equal(el('bet').textContent,'7,50');
 assert.equal(el('bet7.5').classList.contains('active'),true);
@@ -98,7 +108,7 @@ assert.match(el('freeRaw').textContent,/\d+,\d{2}/,'Total bruto de Free Spins mo
 assert.match(el('freeMult').textContent,/^×\d+/,'Multiplicador de Free Spins mostrado');
 vm.runInContext('skipAnimations=true',context);
 const preBalance=vm.runInContext('balance',context);
-await vm.runInContext('play("hold")',context);
+await finishHold(vm.runInContext('play("hold")',context));
 const postBalance=vm.runInContext('balance',context);
 const paid=vm.runInContext('lastWin',context);
 assert.ok(Math.abs(postBalance-(preBalance-225+paid))<1e-6,'Saltar animações não altera custo nem pagamento do Hold');
