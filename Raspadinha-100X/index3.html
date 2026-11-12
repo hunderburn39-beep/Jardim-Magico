@@ -814,7 +814,7 @@ function updateTicketTopPrize(){
   const t=state.ticket;
   const inProgress=t&&!t.completed;
   const newChoice=mode.mult+"X · "+money(mode.bet)+" → "+money(mode.bet*10);
-  const active=inProgress?maxForTicket(t)+"X · "+money(ticketBet(t))+" → "+money(ticketBet(t)*maxForTicket(t)):null;
+  const active=inProgress?maxForTicket({maxMult:t.maxMult})+"X · "+money(ticketBet(t))+" → "+money(ticketBet(t)*maxForTicket(t)):null;
   // Ao trocar a modalidade durante um bilhete por terminar, mostra a
   // próxima raspadinha sem ocultar que o bilhete atual é de outro valor.
   const next=inProgress&&ticketBet(t)!==mode.bet;
