@@ -787,19 +787,31 @@ function initOfficialStock(saved){
     saved.officialStock[key]=freshOfficialStock()[key];
   }
 }
-function pickOfficialPrize(plan,availableCents){
-  const st=state.officialStock[String(plan.game===659?10:plan.game===667?20:plan.game===669?50:100)];
-  if(!st)return 0;
-  // Respeita o cofre do protótipo: não reserva prémios acima do saldo.
-  // Por isso as probabilidades EFETIVAS podem diferir das oficiais.
+function officialStockForPlan(plan){
+  return state.officialStock[String(modeForBet(plan.bet).mult)];
+}
+function officialTicketsLeft(plan){
+  const st=officialStockForPlan(plan);
+  if(!st||!st.remaining)return 0;
+  return Object.values(st.remaining).reduce((sum,count)=>
+    sum+(Number.isSafeInteger(count)&&count>0?count:0),0);
+}
+function pickOfficialPrize(plan){
+  // Tiragem fechada e independente da modalidade: escolhe um único bilhete
+  // entre os que ainda restam, SEM condicionamento pelo saldo do cofre.
+  // Uma categoria com quantidade zero nunca volta a sair nesta tiragem local.
+  const st=officialStockForPlan(plan);
+  if(!st||!st.remaining)return null;
   const entries=Object.entries(st.remaining)
-    .filter(([euros,count])=>Number.isSafeInteger(count)&&count>0&&Number(euros)*100<=availableCents);
+    .filter(([euros,count])=>Number.isSafeInteger(count)&&count>0&&
+      Number.isSafeInteger(Number(euros))&&Number(euros)>=0);
   const total=entries.reduce((sum,[,count])=>sum+count,0);
-  if(total<=0)return 0;
+  if(total<=0)return null; // não inventar bilhetes quando a emissão esgotou
   let draw=Math.random()*total;
   let picked=entries[entries.length-1][0];
   for(const [euros,count] of entries){draw-=count;if(draw<0){picked=euros;break}}
-  st.remaining[picked]--;st.issued++;
+  st.remaining[picked]--;
+  st.issued++;
   return Number(picked)*100;
 }
 function makeOfficialWinnings(prizeCents,plan){
@@ -1073,11 +1085,16 @@ function buy(){
   const bet=state.bet;
   const plan=officialPlan(bet);
   if(!plan){status("As tabelas oficiais não carregaram. Atualiza a página.");return}
+  if(officialTicketsLeft(plan)===0){
+    status("A tiragem "+modeForBet(bet).mult+"X está esgotada. Escolhe outra raspadinha.");
+    return;
+  }
   if(state.balance<bet){status("Saldo insuficiente para comprar outro bilhete.");return}
   stopScratchSound();
   clearCelebration();
   state.balance-=bet;
-  // Do preço: 60% cofre de prémios, 10% reserva e 30% comissões.
+  // Contabilidade informativa: 60% fundo de teste, 10% reserva,
+  // 30% comissões. Nenhum destes fundos limita os prémios sorteados.
   // Os 30% são repartidos pelo comerciante e técnico (60/40 por defeito).
   // Os montantes são cêntimos inteiros para não acumular arredondamentos.
   const reservaEntrada=Math.round(bet*.10);
@@ -1094,10 +1111,12 @@ function buy(){
   pool.funded+=cofreEntrada;
   pool.sold++;
   pool.stakes+=bet;
-  const officialPrize=pickOfficialPrize(plan,pool.available);
+  const officialPrize=pickOfficialPrize(plan);
+  if(officialPrize===null)throw Error("Tiragem esgotada inesperadamente"); 
   const awards=makeOfficialWinnings(officialPrize,plan);
   const prize=awards.reduce((sum,w)=>sum+w.amount,0);
-  pool.available-=prize; // reserva do prémio total antes de revelar
+  // O cofre apenas regista entradas e estatísticas, NÃO determina a
+  // atribuição do prémio. Prémios altos podem exceder os fundos de teste.
   pool.awarded+=prize;
   const nums=shuffle(Array.from({length:80},(_,i)=>i+1));
   const lucky=nums.slice(0,plan.luckyCount);
@@ -1121,7 +1140,8 @@ function buy(){
     paidWins:[],revealed:[],completed:false
   };
   save();render();
-  status("Desliza o dedo pelas casas, sem levantar, até raspares tudo.");
+  status("Raspadinha "+maxMult+"X · bilhete "+state.officialStock[String(maxMult)].issued+
+    " desta tiragem. Raspa os números e símbolos para descobrir o prémio.");
 }
 
 // Raspagem contínua: quantidade de casas variável (1+5, 2+10, 5+15 ou 5+20).
