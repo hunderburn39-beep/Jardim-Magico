@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V0.9</title>
+<title>Jardim Mágico | Edição Stake Preview V1.0</title>
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -14,6 +14,24 @@ button{font:inherit;touch-action:manipulation;cursor:pointer;user-select:none}
 button:disabled{opacity:.48;cursor:not-allowed}
 .app{max-width:480px;min-height:100svh;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;position:relative;background:radial-gradient(ellipse at 50% 12%,#43375b77,transparent 55%),linear-gradient(180deg,#16152944,#110e26 80%),url('../assets/imagens/jm80-cenario-imersivo.svg') center/cover no-repeat;border-left:1px solid #5e4769;border-right:1px solid #5e4769;isolation:isolate;padding:env(safe-area-inset-top) 12px max(10px,env(safe-area-inset-bottom))}
 .app:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 34%,#10101b82 100%);z-index:-1}
+.intro-screen{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px;padding:28px 24px;background:linear-gradient(180deg,#0b122c99 0%,#1b1234a0 35%,#130c31ed 92%),url('../assets/imagens/jm80-cenario-imersivo.svg') center/cover no-repeat;transition:opacity .32s ease,transform .32s ease}
+.intro-screen.closing{opacity:0;pointer-events:none;transform:scale(1.02)}
+.intro-screen .intro-logo{display:block;width:min(90%,370px);max-height:31svh;object-fit:contain;filter:drop-shadow(0 0 25px #ffd37f90);animation:introGlow 4s ease-in-out infinite alternate}
+.intro-screen .intro-subtitle{font-size:13px;letter-spacing:.25em;color:#fff0be;font-weight:850;text-shadow:0 2px 9px #0b0828}
+.intro-screen .intro-lead{font-size:14px;max-width:280px;color:#f6e8d8;line-height:1.5;text-shadow:0 2px 6px #000}
+.intro-play{width:min(100%,310px);padding:18px 22px;font-size:20px;font-weight:1000;border-radius:26px;color:#183520;background:linear-gradient(160deg,#f8ffe6,#aef1b5 35%,#69cc8d 72%,#3da873);border:4px solid #ffe7ad;box-shadow:0 6px #347a54,0 9px 30px #090e2bcc,0 0 25px #ffe1a660;cursor:pointer}
+.intro-play:active{transform:translateY(3px);box-shadow:0 3px #347a54,0 5px 12px #090e2bcc}
+.intro-screen .intro-note{font-size:11px;color:#d6cadd;line-height:1.5;max-width:300px}
+@keyframes introGlow{from{filter:drop-shadow(0 0 15px #ffd37f5c)}to{filter:drop-shadow(0 0 34px #ffe7af9e) brightness(1.1)}}
+.bonus-curtain{position:absolute;inset:0;z-index:14;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:25px;background:radial-gradient(circle at center,#7453a6ed 0%,#2b1a4ceb 52%,#0a1022f4 100%);opacity:0;pointer-events:none;transition:opacity .22s ease}
+.bonus-curtain.visible{opacity:1}
+.bonus-curtain h2{margin:0;font-size:clamp(28px,8vw,43px);font-weight:1000;line-height:1.1;color:#ffeda7;text-shadow:0 0 23px #ffd18b8e,0 5px 9px #080c1c}
+.bonus-curtain p{font-size:17px;color:#e2ffcb;font-weight:900;letter-spacing:.05em}
+.bonus-curtain .bonus-orbit{width:100px;height:100px;border:4px solid #f9e7a3;border-radius:50%;background:radial-gradient(circle at 28% 20%,#fff7df,#cf9b41 48%,#6f3987);display:grid;place-items:center;font-size:55px;box-shadow:0 0 38px #ffde82aa;animation:introGlow 2s ease-in-out infinite alternate}
+.orientation-notice{display:none}
+@media(orientation:landscape) and (max-height:600px){.orientation-notice{position:fixed;inset:0;z-index:90;background:#131027f7;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;color:#ffe3a6;font-weight:900;font-size:22px}.orientation-notice small{font-size:13px;color:#ecd9de;margin-top:10px}}
+@media(max-height:700px) and (orientation:portrait){.app{padding-bottom:4px}.logo-wrap{height:68px}.reels{height:clamp(200px,35svh,260px)}.notice{min-height:28px}.bet-shortcuts{margin-bottom:4px}.bonus-row{margin-bottom:0}.foot{font-size:9px;padding-top:4px}.statline{margin:2px 0 5px}.money-row{margin-bottom:5px}}
+
 .top{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:36px}
 .mode-tag{font-size:10px;font-weight:850;letter-spacing:.12em;color:#111727;background:linear-gradient(#ffe4a3,#b9934d);border-radius:20px;padding:6px 10px;white-space:nowrap}
 .top-right{display:flex;align-items:center;gap:6px}
@@ -135,6 +153,15 @@ button:disabled{opacity:.48;cursor:not-allowed}
 </head>
 <body>
 <main class="app" id="app">
+ <div class="intro-screen" id="introScreen" role="dialog" aria-label="Ecrã inicial Jardim Mágico">
+  <img class="intro-logo" src="../assets/imagens/jm77-logo-isolado.svg" alt="Jardim Mágico">
+  <div class="intro-subtitle">O BOSQUE ENCANTADO</div>
+  <p class="intro-lead">Os tambores, as cascatas e os bónus mágicos esperam por ti.</p>
+  <button class="intro-play" id="introPlay" type="button">▶ ENTRAR NO JARDIM</button>
+  <p class="intro-note">A música começa depois do teu toque, como exigido pelo Safari. Créditos apenas para testes.</p>
+ </div>
+ <div class="bonus-curtain" id="bonusCurtain" hidden aria-live="off"><div class="bonus-orbit" id="bonusOrbit">✦</div><h2 id="bonusCurtainTitle">BÓNUS</h2><p id="bonusCurtainSubtitle"></p></div>
+ <div class="orientation-notice" aria-hidden="true">↻ RODA O TELEMÓVEL<small>Joga na vertical para veres o Jardim Mágico completo.</small></div>
  <div class="top"><div class="mode-tag">✦ EDIÇÃO STAKE · PREVIEW</div>
   <div class="top-right"><button class="round" id="historyBtn" title="Histórico e repetição" aria-label="Histórico de jogadas e repetição">☷</button><button class="round" id="infoBtn" title="Informações" aria-label="Informações">ⓘ</button><button class="round" id="reloadBtn" title="Repor créditos de teste" aria-label="Repor créditos">＋</button><button class="round" id="musicBtn" title="Ligar/desligar música zen" aria-label="Música ambiente" aria-pressed="true">♫</button><button class="round" id="soundBtn" title="Ligar/desligar efeitos gravados" aria-label="Efeitos sonoros" aria-pressed="true">🔊</button></div>
  </div>
@@ -161,7 +188,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V0.9 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
+ <footer class="foot"><b>V1.0 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="holdOverlay"><div class="modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-grid" id="holdGrid"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin">0,00</span></div><button class="modal-close" id="closeHold" hidden>CONTINUAR</button></div></div>
  <div class="overlay" id="historyOverlay"><div class="modal history-modal"><div class="history-head"><h2>HISTÓRICO</h2><button type="button" id="closeHistory" aria-label="Fechar histórico">×</button></div><p>Últimas 20 jogadas, em créditos fictícios. Procura pelo número e abre os símbolos. REPETIR não cobra nem paga novamente.</p><input id="historySearch" class="history-search" type="search" inputmode="numeric" placeholder="Pesquisar nº da jogada" aria-label="Pesquisar pelo número da jogada"><small id="historyCount" class="history-counter"></small><div id="historyList" class="history-list"></div><button type="button" class="modal-close" id="clearHistory">LIMPAR HISTÓRICO</button></div></div>
@@ -191,7 +218,7 @@ const WEIGHTS=[10,13,11,10,4,11,10,9,10,4,12,7], LINES=[[1,1,1,1,1],[0,0,0,0,0],
 const BETS=[.05,.10,.20,.40,.60,.80,1,1.50,2,3,5,7.5,10];
 let betIndex=2,balance=1000,lastWin=0,busy=false,turbo=false,sound=true,autoLeft=0,toastTimer=0,skipAnimations=false;
 let historyRecords=[],serial=0,replayBet=null,detailRoundId=null,detailFrameIndex=0,pendingRound=null,recoveredRoundId=null;
-let musicEnabled=true,backgroundMusic=null,audioActivated=false;
+let musicEnabled=true,backgroundMusic=null,audioActivated=false,gardenEntered=false;
 const AUDIO_BASE="../jardim-phaser/assets/audio/";
 const AUDIO_SFX=Object.freeze({spin:"spin.mp3",stop:"stop.mp3",cascade:"cascade.mp3",coin:"coin.mp3",wild:"wild.mp3",scatter:"scatter.mp3",win:"win.mp3",bonus:"bonus.mp3",click:"click.mp3"});
 const AUDIO_PREF_KEY="jardim_stake_audio_v09";
@@ -219,6 +246,27 @@ function activateAudio(){
   audioActivated=true;
   renderAudioButtons();
   startMusic();
+}
+function enterGarden(){
+  if(gardenEntered)return false;
+  gardenEntered=true;
+  activateAudio();
+  const intro=$("introScreen");
+  intro.classList.add("closing");
+  intro.setAttribute("aria-hidden","true");
+  setTimeout(()=>intro.hidden=true,340);
+  return true;
+}
+async function showBonusCurtain(title,subtitle,mark="✦"){
+  const curtain=$("bonusCurtain");
+  $("bonusCurtainTitle").textContent=title;
+  $("bonusCurtainSubtitle").textContent=subtitle;
+  $("bonusOrbit").textContent=mark;
+  curtain.hidden=false;
+  curtain.classList.add("visible");
+  playRecorded("bonus");
+  try{await pause(turbo?140:700)}
+  finally{curtain.classList.remove("visible");curtain.hidden=true}
 }
 function playRecorded(name){
   if(!sound||!canPlayRecorded()||!AUDIO_SFX[name]||document.hidden)return false;
@@ -444,7 +492,7 @@ async function playback(book){
   let previousRemoved=[],lastHoldGrid=[];clearPayline();
   for(const evt of book.events){
     if(evt.kind==="freeStart"){
-      playRecorded("bonus");
+      await showBonusCurtain("FREE SPINS","15 RODADAS MÁGICAS","✦");
       updateFreeHud(evt.remaining,evt.raw,evt.multi);
       $("freePanel").classList.add("celebrate");
       await pause(turbo?90:260);
@@ -479,6 +527,7 @@ async function playback(book){
       if(evt.add){say("RETRIGGER · +"+evt.add+" FREE SPINS","bonus");$("freePanel").classList.add("celebrate");beep(950)}else{say("FREE SPINS: "+evt.played+" realizadas · BRUTO "+money(evt.raw)+" · ×"+evt.multi,"bonus");$("freePanel").classList.remove("celebrate")}
       await pause(turbo?30:100);
     }else if(evt.kind==="hold"){
+      if(evt.turn===0)await showBonusCurtain("HOLD & WIN","6 MOEDAS · 3 TENTATIVAS","◉");
       if(lastHoldGrid.length&&evt.grid.some((value,i)=>value&&!lastHoldGrid[i]))playRecorded("coin");
       $("holdOverlay").classList.add("show");
       renderHold(evt.grid,evt.tries,lastHoldGrid);
@@ -532,6 +581,7 @@ async function play(mode="base"){
       else say("A jogada já tinha sido contabilizada. Consulta o histórico.","bonus");
     }else say("Não foi possível iniciar a jogada. Não foram retirados créditos.");
     $("holdOverlay").classList.remove("show");
+    $("bonusCurtain").classList.remove("visible");$("bonusCurtain").hidden=true;
     display();
   }finally{
     busy=false;skipAnimations=false;clearPayline();clearFreeHud();controls();
@@ -542,6 +592,7 @@ async function play(mode="base"){
     }
   }
 }
+$("introPlay").addEventListener("click",enterGarden);
 $("spin").addEventListener("click",()=>play("base"));
 $("skipBtn").addEventListener("click",()=>{if(!busy)return;skipAnimations=true;controls();say("A apresentar o resultado final desta jogada…","bonus")});
 $("minus").addEventListener("click",()=>{betIndex=Math.max(0,betIndex-1);display();saveSession()});
