@@ -22,7 +22,7 @@
   if(!final&&now-lastClatter<160)return;
   lastClatter=now;
   const ac=audio.ctx,bus=audio.out||ac.destination;
-  const hits=final?24:11,duration=final?1.58:.61;
+  const hits=final?38:13,duration=final?2.65:.78;
   try{
    if(noiseContext!==ac){
     noiseContext=ac;noiseBuffer=null;
@@ -38,8 +38,8 @@
    const start=ac.currentTime+.008;
    for(let i=0;i<hits;i++){
     const when=start+duration*Math.pow(i/Math.max(1,hits-1),.88)+(Math.random()-.5)*.015;
-    const base=740+Math.random()*980+(i%4===0?280:0);
-    const level=(final?.023:.019)*(1-.5*i/hits);
+    const base=510+Math.random()*1050+(i%5===0?190:0)-i*(final?4:0);
+    const level=(final?.021:.018)*(1-.46*i/hits);
     const env=ac.createGain();
     env.gain.setValueAtTime(.0001,when);
     env.gain.exponentialRampToValueAtTime(level,when+.004);
@@ -194,9 +194,14 @@
  g.frame=function(t){
   if(!this.spinning&&!this.paused&&!this.superseded&&!document.hidden){
    const base=this.activeBasePaylineAt?.(t);
-   if(base&&base.amount>0)award(base,winners(base.win),t);
+   // A chuva entra quando a caneta já revelou os símbolos da combinação,
+   // em vez de tocar antes de a linha ficar visível.
+   if(base&&base.amount>0&&t>=base.start+(this.turbo?470:650))
+    award(base,winners(base.win),t);
    const focused=this.sequenceFocusAt?.(t);
-   if(focused&&t>=focused.start+(focused.preDelay||0)&&focused.amount>0)
+   if(focused&&focused.amount>0&&
+      t>=focused.start+(focused.preDelay||0)+
+        (focused.kind==='line'?Math.min(3,focused.reels?.length||3)*(focused.perReel||0):0))
     award(focused,stagePoints(focused),t);
    const r=this.lastResult;
    if(r?.scatterWin>0&&!r.lineWins?.length&&r!==this._coinScatterSeen){
@@ -280,7 +285,7 @@
   return result;
  };
  g.coinCelebrations={
-  version:'1.1-bright-golden-coins',
+  version:'1.2-synchronised-coin-cascade',
   drawGoldenCoin:goldenCoin,
   get sparkles(){return sparkles.length;},
   events:{sequences:0,finales:0},
