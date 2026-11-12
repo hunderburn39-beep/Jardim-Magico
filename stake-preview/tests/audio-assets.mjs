@@ -6,7 +6,7 @@ import vm from 'node:vm';
 
 const preview=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const html=readFileSync(join(preview,'index.html'),'utf8');
-assert.match(html,/Stake Preview V1\.7/);
+assert.match(html,/Stake Preview V1\.8/);
 assert.match(html,/id="musicBtn"/);
 assert.match(html,/id="soundBtn"/);
 assert.match(html,/Kenney \(CC0\)/);
@@ -76,4 +76,4 @@ assert.match(store.get('jardim_stake_audio_v09'),/"effects":false/);
 vm.runInContext('musicEnabled=true;sound=true;restoreAudioPrefs()',ctx);
 assert.equal(vm.runInContext('musicEnabled',ctx),false);
 assert.equal(vm.runInContext('sound',ctx),false);
-console.log('Stake Preview V1.7: 12 símbolos HD e 10 MP3 confirmados, música contínua após gesto, som independente e pausa ao ocultar.');
+console.log('Stake Preview V1.8: 12 símbolos HD e 10 MP3 confirmados, música contínua após gesto, som independente e pausa ao ocultar.');
