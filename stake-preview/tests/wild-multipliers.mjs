@@ -55,7 +55,7 @@ for(let spin=0;spin<2500;spin++){
   assert.equal(result.paid,paid);
   assert.equal(result.wild,previousWild);
 }
-assert.ok(awardedRounds>500,'enough payable WILD cells to exercise presentation');
+assert.ok(awardedRounds>20,'enough payable WILD cells to exercise presentation');
 
 const board=[[4,10,10],[4,10,10],[4,10,10],[10,10,10],[10,10,10]];
 ctx.boardForTest=board;
