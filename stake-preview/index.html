@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V1.7</title>
+<title>Jardim Mágico | Edição Stake Preview V1.8</title>
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -219,6 +219,200 @@ button:disabled{opacity:.48;cursor:not-allowed}
 
 @media(max-height:750px){.logo-wrap{height:85px}.reels{height:clamp(240px,36svh,330px)}.statline{margin:4px 0 7px}.actions{margin-bottom:5px}.action-small{min-height:52px}.spin{height:63px}}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* V1.8 — arte aprovada, camada interativa separada da imagem de referência.
+   A imagem é apenas cenário: símbolos, saldo, aposta e botões continuam DOM reais. */
+html,body{overflow:hidden;background:#091b18}
+.app{
+  max-width:480px;width:100%;height:100svh;min-height:0;
+  padding:0!important;display:block;overflow:hidden;
+  border-left:2px solid #b57939;border-right:2px solid #b57939;
+  background:#113623 url('assets/jardim-v18-reference.png') center center / 100% 100% no-repeat;
+  box-shadow:0 0 32px #070d0d;
+}
+.app:before{
+  z-index:-1;opacity:.32;
+  background:linear-gradient(180deg,#170e1d55,transparent 20%,transparent 55%,#06240d60 100%);
+}
+.top{position:absolute;z-index:8;left:2.5%;right:2.5%;top:max(4px,env(safe-area-inset-top));min-height:30px;height:4%;justify-content:flex-end;gap:3px}
+.mode-tag{display:none}
+.top-right{width:100%;justify-content:space-between;gap:4px}
+.top-right .round{
+  width:clamp(27px,8vw,35px);height:clamp(27px,8vw,35px);
+  font-size:17px;border-radius:50%;color:#fff0ad;
+  background:radial-gradient(circle at 35% 20%,#976143,#391c23 70%,#170f20);
+  border:2px solid #fce3a1;box-shadow:0 0 0 2px #74451f,0 3px 10px #000a;
+}
+.logo-wrap{
+  position:absolute;z-index:4;top:7.6%;left:10%;width:80%;
+  height:12.7%;margin:0;border:0;
+  background:radial-gradient(ellipse,#064c348b 4%,#1635199a 63%,transparent 83%);
+  border-radius:46%;
+  filter:drop-shadow(0 3px 8px #080e18);
+}
+.logo-wrap img{
+  width:100%;height:100%;max-width:none;max-height:none;object-fit:contain;
+  filter:drop-shadow(0 0 9px #ffd77b66);
+}
+.logo-wrap small{display:none}
+.statline{
+  position:absolute;z-index:5;top:22.9%;left:12%;right:12%;
+  margin:0;gap:5px;height:4.3%;
+}
+.statline>div{
+  border:1.5px solid #e5bb66;border-radius:9px;padding:4px 2px;
+  background:linear-gradient(#4b2839ee,#191527ea);
+  box-shadow:0 0 9px #160d12bb;
+}
+.statline small{font-size:clamp(7px,2vw,9px);color:#ffeca5}
+.statline strong{font-size:clamp(11px,3.1vw,16px);color:#fff9d3}
+.frame{
+  position:absolute;z-index:3;left:3.4%;width:93.2%;top:29.1%;
+  height:30%;margin:0;border:7px solid #d6a741;border-radius:20px;
+  background:#083e29;overflow:visible;
+  box-shadow:0 0 0 3px #4c2f17,0 0 18px #ffcc7666,inset 0 0 18px #101a10;
+  border-image:none;
+}
+.frame:after{
+  content:"";position:absolute;inset:-15px;z-index:6;pointer-events:none;
+  background:url('assets/jardim-v18-moldura.svg') center / 100% 100% no-repeat;
+}
+.reels{
+  position:relative;z-index:1;height:100%;min-height:0;gap:1px;
+  padding:2px;overflow:hidden;border-radius:13px;
+  background:linear-gradient(120deg,#065030,#08351d 52%,#13472d);
+}
+.column{gap:1px;grid-template-rows:repeat(3,minmax(0,1fr));
+  background:#0c4825;border-left:1px solid #efc67c;border-right:1px solid #643b17}
+.cell{
+  background:radial-gradient(ellipse at 50% 36%,#2766388c,#07391f 84%);
+  border-bottom:1px solid #e5c37b;overflow:hidden;
+}
+.cell img{width:110%;height:98%;filter:drop-shadow(0 0 4px #ffcb70a2) drop-shadow(0 3px 3px #06140a)}
+.cell img[alt="WILD"]{filter:drop-shadow(0 0 12px #ffe58cc9) drop-shadow(0 2px 2px #180c15)}
+.cell img[alt="SCATTER"]{filter:drop-shadow(0 0 10px #e5a4ffb0)}
+.hud{top:-17px;left:50%;min-width:145px;padding:3px 9px;
+  background:linear-gradient(100deg,#1b422d,#453056,#1b422d);
+  border:2px solid #e4bd6c;box-shadow:0 3px 9px #090d18}
+.hud span{font-size:clamp(8px,2.4vw,11px)}
+.payline-visual{z-index:3}
+.win-sparks{z-index:4}
+.line-prize{z-index:5}
+.skip-btn{z-index:8}
+.wild-tally{
+  position:absolute;z-index:7;left:10%;right:10%;top:26.6%;
+  margin:0;font-size:clamp(10px,2.8vw,12px);padding:3px;
+}
+.cascade-meter{
+  position:absolute;z-index:7;top:59.3%;left:11%;right:11%;
+  margin:0;height:3.9%;gap:4px;
+}
+.cascade-meter>div{padding:3px 2px;background:#34223be9;border-color:#fae0a8}
+.cascade-meter small{font-size:clamp(7px,2vw,9px)}
+.cascade-meter strong{font-size:clamp(11px,3vw,14px)}
+.free-panel{
+  position:absolute;z-index:7;top:22.6%;left:7%;right:7%;
+  margin:0;padding:3px;gap:4px;background:#2b224bea;border-color:#ffdc86;
+}
+.free-panel small{font-size:clamp(7px,2vw,9px)}
+.free-panel strong{font-size:clamp(11px,3.2vw,15px)}
+.free-retrigger{position:absolute;z-index:8;left:13%;right:13%;top:60.2%;margin:0;padding:4px;font-size:12px}
+.notice{
+  position:absolute;z-index:6;top:69.8%;left:8%;right:8%;
+  min-height:19px;height:auto;margin:0;padding:1px;
+  font-size:clamp(9px,2.4vw,12px);line-height:1.35;
+  color:#fff3cd;background:#1a1e24c7;border-radius:7px;
+}
+.session-status{position:absolute;z-index:10;top:18.8%;left:8%;right:8%;margin:0}
+.bonus-row{
+  position:absolute;z-index:6;top:63.0%;left:8%;right:8%;height:6.1%;
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0;
+}
+.bonus-btn{
+  min-height:0;padding:4px 3px;border-radius:19px;
+  border:3px solid #f4cb70;color:#fff3ba;
+  background:linear-gradient(165deg,#8f2689,#5a1c78 48%,#351a59);
+  box-shadow:0 0 0 2px #6f411c,0 3px 13px #301137ad,inset 0 2px 7px #ffd1f54d;
+  font-size:clamp(10px,2.85vw,13px);font-weight:1000;text-shadow:0 1px 2px #14051d;
+}
+.bonus-btn span{font-size:clamp(8px,2vw,10px);color:#ffe4b8}
+.money-row{
+  position:absolute;z-index:6;top:73.1%;left:2.2%;right:2.2%;height:7.7%;
+  margin:0;display:grid;grid-template-columns:1fr 1fr;gap:2px;
+  padding:3px;background:linear-gradient(140deg,#be8333,#fff0a9,#b87727);
+  border:2px solid #dfaf53;border-radius:18px;
+  box-shadow:0 0 13px #ffc45e80,0 4px 11px #19111bc7;
+}
+.money{
+  min-height:0;padding:3px 6px;border-radius:12px;
+  background:linear-gradient(120deg,#53311c,#2b1e20 54%,#653e22);
+  border:1px solid #f5d48c;
+}
+.money label{font-size:clamp(8px,2.3vw,11px);color:#f6d68c}
+.money strong{font-size:clamp(14px,4vw,19px);color:#fff9e8}
+.bet-controls{gap:3px}
+.bet-controls button{width:24px;height:24px;background:#39232c;border:2px solid #ffc963;color:#fff7c7}
+.bet-shortcuts{
+  position:absolute;z-index:7;top:80.5%;left:4%;right:4%;
+  display:flex;justify-content:center;align-items:center;flex-wrap:nowrap;
+  gap:clamp(2px,1vw,5px);margin:0;height:3%;padding:1px;
+}
+.bet-shortcuts span{font-size:clamp(7px,1.7vw,9px);color:#fff2c7;text-shadow:0 2px #0f1610}
+.bet-shortcuts button{font-size:clamp(8px,2vw,10px);padding:2px 4px;min-height:23px}
+.actions{
+  position:absolute;z-index:7;top:83.0%;left:3%;right:3%;height:12.1%;
+  display:grid;grid-template-columns:1fr 1.18fr 1fr;
+  gap:clamp(4px,2vw,10px);align-items:center;margin:0;
+}
+.spin{
+  width:min(100%,min(28vw,120px));height:auto;aspect-ratio:1;
+  max-width:125px;min-height:0;
+  border:6px solid #ffe39b;border-radius:50%;
+  box-shadow:0 0 0 4px #b77526,0 5px 20px #020b0799,inset 0 4px 13px #d2ff7dcc;
+  background:radial-gradient(circle at 34% 20%,#e3ff9f,#2aba65 38%,#006a37 73%,#013d23);
+  font-size:clamp(10px,2.5vw,14px);color:#fff6c1;
+  text-shadow:0 2px 5px #092a13;
+}
+.spin b{font-size:clamp(29px,9vw,44px);line-height:1}
+.action-small{
+  min-height:0;height:48px;max-height:54px;padding:5px 1px;
+  color:#ffecc5;border:3px solid #e4ae58;border-radius:24px;
+  background:linear-gradient(#603a28,#281d21);
+  box-shadow:0 0 0 2px #7c4219,0 4px 8px #0009;
+  font-size:clamp(9px,2.4vw,12px);
+}
+.action-small b{font-size:clamp(8px,2.1vw,10px)}
+.action-small.auto-running{background:linear-gradient(#925d28,#4d1c37)}
+.foot{
+  position:absolute;z-index:3;bottom:0;left:2%;right:2%;
+  max-height:3%;overflow:hidden;margin:0;padding:1px;
+  color:#fff7d6;background:#112b19a8;border-radius:7px;
+  line-height:1.1;font-size:clamp(6px,1.65vw,8px);
+}
+.foot b{color:#ffe8a0}
+.toast{top:45%}
+.overlay{z-index:20}
+.intro-screen{
+  background:linear-gradient(180deg,#100b205c,#211b2b9b 45%,#141426ed),
+             url('assets/jardim-v18-reference.png') center/100% 100% no-repeat;
+  padding:10% 8% 5%;
+}
+.intro-screen .intro-logo{width:min(94%,370px);max-height:22svh;object-fit:contain}
+.intro-screen .intro-subtitle{text-shadow:0 0 9px #0a3420}
+.intro-screen .intro-play{font-size:17px}
+@media(max-height:680px) and (orientation:portrait){
+  .statline{top:22.4%}
+  .frame{top:29%;height:29%}
+  .bonus-row{top:62.8%}
+  .money-row{top:72.3%}
+  .bet-shortcuts{top:80%}
+  .actions{top:83.5%}
+  .notice{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .cell.winning,.action-small.auto-running{animation:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -262,7 +456,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V1.7 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
+ <footer class="foot"><b>V1.8 • EDIÇÃO GRÁFICA</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="freeResultOverlay" role="dialog" aria-modal="true" aria-label="Resultado final das Free Spins"><div class="modal free-result-modal"><h2>✦ FREE SPINS ✦</h2><p>O BÓNUS TERMINOU</p><div id="freeResultTotal" class="free-result-total">0,00</div><div class="free-result-math"><span>Jogadas realizadas</span><strong id="freeResultPlayed">15</strong><span>Prémio bruto</span><strong id="freeResultRaw">0,00</strong><span>Multiplicador</span><strong id="freeResultMulti">×1</strong></div><button class="free-continue" id="closeFree" type="button">▶ CONTINUAR</button></div></div>
  <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
