@@ -53,3 +53,19 @@
 .scratch-commission-history-item{border-bottom:1px solid #bba47b38;padding-bottom:4px;overflow-wrap:anywhere}
 .scratch-commission-history-item:last-child{border-bottom:0;padding-bottom:0}
 @media(max-width:355px){.scratch-commission-cards{gap:5px}.scratch-commission-card{padding:7px 5px}.scratch-commission-card h4{font-size:12px}.scratch-commission-card button{font-size:9px}}
+
+
+/* Tabelas agregadas reais dos bilhetes 2026, consultáveis no ADMIN. */
+.scratch-plans-section{margin-top:14px;padding:12px 9px;border:1px solid #baa36f;border-radius:13px;background:#101c36}
+.scratch-plans-section h3{margin:0 0 6px;font-size:17px;color:#ffe5a2}
+.scratch-plans-section p{margin:5px 0 10px}
+.scratch-plans-section label{font-size:12px;color:#ffe4aa}
+.scratch-plans-summary{font-size:11px;line-height:1.65;color:#f8ebcd;margin:8px 0;padding:9px;border-radius:9px;background:#223252}
+.scratch-plans-scroll{max-height:225px;overflow:auto;border:1px solid #988255;border-radius:9px;touch-action:pan-y}
+.scratch-plans-table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}
+.scratch-plans-table th{position:sticky;top:0;background:#263a57;color:#fff1ba;z-index:1;padding:8px 6px}
+.scratch-plans-table td{padding:7px 6px;color:#e8eaf0;border-top:1px solid #ffffff19;font-variant-numeric:tabular-nums}
+.scratch-plans-table td:nth-child(n+2),.scratch-plans-table th:nth-child(n+2){text-align:right}
+.scratch-plans-table tr:nth-child(even){background:#ffffff08}
+.scratch-plans-section .scratch-plans-source{display:block;color:#ffe5a0;text-decoration:underline;font-size:12px;margin:11px 0}
+.scratch-plans-section .scratch-plans-notice{color:#bcc6d9;font-size:10px}
