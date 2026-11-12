@@ -32,7 +32,10 @@ if(maskCtx){
  maskCtx.textAlign='center';maskCtx.textBaseline='middle';
  maskCtx.fillStyle='#fff';maskCtx.fillText('BOA SORTE',WIDTH/2,HEIGHT/2);
 }
-function drawWish(t){
+function drawWish(t,opacity=1,offsetX=0){
+ ctx.save();
+ ctx.globalAlpha=opacity;
+ ctx.translate(offsetX,0);
  const px=166,py=172,pw=244,ph=56,centre=px+pw/2;
  ctx.save();
  ctx.shadowColor='#000c';ctx.shadowBlur=14;ctx.shadowOffsetY=4;
@@ -85,6 +88,7 @@ function drawWish(t){
   }
  }
  ctx.restore();
+ ctx.restore();
 }
 function drawCounter(){
  const value=Number(g.feature?.left);
@@ -114,15 +118,46 @@ function drawCounter(){
  ctx.fillStyle='#e0c58e';ctx.fillText('RESTANTES',x+w/2,y+91);
  ctx.restore();
 }
+// BOA SORTE acompanha somente as Free Spins efetivamente iniciadas.
+// Entrada pela esquerda no início do bónus e saída à direita no final.
+// Nada é desenhado durante o jogo base, salvo a breve animação de saída.
+const wish={phase:'hidden',since:0};
+function drawConditionalWish(t,playingBonus){
+ if(playingBonus){
+  if(wish.phase==='hidden'||wish.phase==='exiting'){
+   wish.phase='entering';wish.since=t;
+  }
+ }else if(wish.phase==='visible'||wish.phase==='entering'){
+  wish.phase='exiting';wish.since=t;
+ }
+ if(wish.phase==='hidden')return;
+ if(wish.phase==='entering'){
+  const p=Math.max(0,Math.min(1,(t-wish.since)/700));
+  const eased=1-Math.pow(1-p,3);
+  drawWish(t,eased,-64*(1-eased));
+  if(p>=1)wish.phase='visible';
+  return;
+ }
+ if(wish.phase==='exiting'){
+  const p=Math.max(0,Math.min(1,(t-wish.since)/620));
+  if(p>=1){wish.phase='hidden';return;}
+  drawWish(t,1-p,62*p*p);
+  return;
+ }
+ drawWish(t,1,0);
+}
 const oldHeader=g.header.bind(g);
 g.header=function(t){
  oldHeader(t);
- if(this.ready)drawWish(Number.isFinite(t)?t:performance.now());
+ if(!this.ready)return;
+ const time=Number.isFinite(t)?t:performance.now();
+ const playingBonus=!!(this.feature && (this._freeStarted || this.feature.played>0) && !this.pendingSummary);
+ drawConditionalWish(time,playingBonus);
 };
 const oldControls=g.controls.bind(g);
 g.controls=function(...args){
  oldControls(...args);
  if(this.ready&&this.feature)drawCounter();
 };
-document.documentElement.dataset.faraoHud='boa-sorte-1.0';
+document.documentElement.dataset.faraoHud='boa-sorte-1.1-bonus-only';
 })();
