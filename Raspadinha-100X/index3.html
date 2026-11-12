@@ -1282,7 +1282,8 @@ function buy(){
   state.cards++;
   state.ticket={
     id:state.cards,lucky,play,prize,bet,maxMult,capMult:maxMult,poolVersion:1,
-    officialVersion:1,officialGame:plan.game,ticketSeries:state.officialStock[String(maxMult)].series,simulatedTicketNumber:state.officialStock[String(maxMult)].issued,wins,cellPrizes,
+    officialVersion:1,officialGame:plan.game,ticketSeries:state.officialStock[String(maxMult)].series,simulatedTicketNumber:state.officialStock[String(maxMult)].issued,
+    colorVariant:state.officialStock[String(maxMult)].issued%2===0?"b":"a",wins,cellPrizes,
     paidWins:[],revealed:[],completed:false
   };
   save();render();
@@ -1532,6 +1533,10 @@ function render(){
   scratchHandlers.clear();
   el("lucky").replaceChildren();el("play").replaceChildren();
   const ticket=state.ticket;
+  // Os bilhetes oficiais de 2026 têm duas variantes cromáticas por jogo.
+  // Cada novo bilhete alterna as duas cores; ao reabrir mantém a escolhida.
+  document.body.dataset.ticketColor=ticket?.colorVariant||
+    (ticket?.simulatedTicketNumber&&ticket.simulatedTicketNumber%2===0?"b":"a");
   const layoutLucky=ticket?.lucky.length||officialPlan(state.bet)?.luckyCount||5;
   el("lucky-heading").textContent=layoutLucky===1?"NÚMERO DA SORTE":"NÚMEROS DA SORTE";
   const layoutPlay=ticket?.play.length||officialPlan(state.bet)?.playCount||16;
