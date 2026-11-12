@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V1.6</title>
+<title>Jardim Mágico | Edição Stake Preview V1.7</title>
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -120,6 +120,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .hud span{font-size:11px;font-weight:900;color:#ffecc1;white-space:nowrap}
 .notice{min-height:39px;margin:7px 8px 2px;text-align:center;display:flex;justify-content:center;align-items:center;color:#f2e6db;text-shadow:0 2px 3px #000;font-size:13px;font-weight:750}
 .notice.good{color:#ffe39a}
+.session-status{margin:2px 8px 5px;padding:6px 9px;border-radius:10px;border:1px solid #eabf8c;background:#5b3548d9;color:#ffe3ba;text-align:center;font-size:11px;font-weight:800;line-height:1.4}
 .notice.bonus{color:#a9ffca}
 .money-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 1px 9px}
 .money{background:linear-gradient(180deg,#332343d9,#170f29d9);border:1px solid #b79a69bb;border-radius:12px;min-height:55px;padding:6px 10px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
@@ -246,6 +247,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
  <div id="freePanel" class="free-panel" hidden aria-live="off"><div><small>RESTANTES</small><strong id="freeRemaining">15</strong></div><div><small>BRUTO ACUMULADO</small><strong id="freeRaw">0,00</strong></div><div><small>MULTI</small><strong id="freeMult">×1</strong></div></div>
  <div id="freeRetrigger" class="free-retrigger" hidden aria-live="polite">✦ RETRIGGER +8 FREE SPINS ✦</div>
  <div class="notice" id="notice" aria-live="polite">Prime RODAR para entrar no bosque!</div>
+ <div class="session-status" id="sessionStatus" role="status" hidden>Estado da gravação da sessão</div>
  <div class="money-row">
    <div class="money"><label>SALDO · CRÉDITOS</label><strong id="balance">1 000,00</strong></div>
    <div class="money"><label>APOSTA · CRÉDITOS</label><div class="bet-controls"><button id="minus" aria-label="Diminuir aposta">−</button><strong id="bet">0,20</strong><button id="plus" aria-label="Aumentar aposta">+</button></div></div>
@@ -260,7 +262,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V1.6 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
+ <footer class="foot"><b>V1.7 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="freeResultOverlay" role="dialog" aria-modal="true" aria-label="Resultado final das Free Spins"><div class="modal free-result-modal"><h2>✦ FREE SPINS ✦</h2><p>O BÓNUS TERMINOU</p><div id="freeResultTotal" class="free-result-total">0,00</div><div class="free-result-math"><span>Jogadas realizadas</span><strong id="freeResultPlayed">15</strong><span>Prémio bruto</span><strong id="freeResultRaw">0,00</strong><span>Multiplicador</span><strong id="freeResultMulti">×1</strong></div><button class="free-continue" id="closeFree" type="button">▶ CONTINUAR</button></div></div>
  <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
@@ -387,6 +389,16 @@ function stopSpinEffect(){if(!currentSpinFx)return;try{currentSpinFx.pause();cur
 function suspendAudio(){backgroundMusic?.pause();stopSpinEffect()}
 
 const SESSION_KEY="jardim_stake_preview_v07";
+const MAX_SESSION_CHARS=900000;
+function showSessionMessage(message){
+  const panel=$("sessionStatus");
+  if(!panel)return;
+  panel.hidden=!message;
+  panel.textContent=message||"";
+}
+function storageQuotaError(error){
+  return Boolean(error&&(error.name==="QuotaExceededError"||error.name==="NS_ERROR_DOM_QUOTA_REACHED"||error.code===22||error.code===1014||/quota/i.test(String(error.message||""))));
+}
 function rand(){if(globalThis.crypto?.getRandomValues){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296;}return Math.random()}
 function pick(values,weights){let x=rand()*weights.reduce((a,b)=>a+b,0);for(let i=0;i<values.length;i++){x-=weights[i];if(x<0)return values[i]}return values.at(-1)}
 function board(free=false){const w=WEIGHTS.map((x,i)=>free&&i===9?2:x);return Array.from({length:5},()=>Array.from({length:3},()=>pick(TYPES.map((_,i)=>i),w)))}
@@ -473,16 +485,46 @@ function validRound(record){
     &&Number.isInteger(record.book.payout)&&record.book.payout>=0);
 }
 function saveSession(){
-  try{localStorage.setItem(SESSION_KEY,JSON.stringify({balance,betIndex,lastWin,serial,historyRecords,pendingRound}));return true}
-  catch(error){console.warn("Sessão de testes apenas em memória:",error);return false}
+  // Safari has limited local storage. Keep recent full replay books where possible,
+  // but never drop a pending transaction or sacrifice the balance to save old history.
+  let lastError=null;
+  const previousLength=historyRecords.length;
+  const maxKeep=Math.min(previousLength,20);
+  for(let keep=maxKeep;keep>=0;keep--){
+    const retained=historyRecords.slice(0,keep);
+    const payload=JSON.stringify({balance,betIndex,lastWin,serial,historyRecords:retained,pendingRound});
+    if(payload.length>MAX_SESSION_CHARS&&keep>0)continue;
+    try{
+      localStorage.setItem(SESSION_KEY,payload);
+      if(keep<previousLength){
+        historyRecords=retained;
+        showSessionMessage("Histórico antigo reduzido para "+keep+" jogadas para proteger o saldo e os bónus guardados.");
+      }else showSessionMessage("");
+      return true;
+    }catch(error){
+      lastError=error;
+      if(!storageQuotaError(error))break;
+    }
+  }
+  showSessionMessage("Não é possível guardar esta sessão. Não feches a página; novas jogadas serão bloqueadas até a gravação voltar a funcionar.");
+  console.warn("A sessão não pôde ser guardada:",lastError);
+  return false;
 }
 function commitRound(mode,stake,cost,payout,book){
   if(pendingRound)throw Error("Já existe uma jogada em processamento");
   if(!Number.isFinite(cost)||cost<=0||balance+1e-7<cost)throw Error("Saldo de teste insuficiente");
-  const record={id:++serial,mode,bet:stake,cost,payout,book,time:new Date().toISOString()};
+  const beforeBalance=balance,beforeSerial=serial;
+  const record={id:beforeSerial+1,mode,bet:stake,cost,payout,book,time:new Date().toISOString()};
+  serial=record.id;
   pendingRound=record;
   balance=Math.round((balance-cost)*100)/100;
-  saveSession();
+  if(!saveSession()){
+    // Atomic in-memory rollback: an unpersisted debit must never start playing.
+    balance=beforeBalance;
+    serial=beforeSerial;
+    pendingRound=null;
+    throw Error("Guardar sessão indisponível; nenhum crédito descontado");
+  }
   return record;
 }
 function settlePendingRound(){
@@ -867,7 +909,7 @@ async function play(mode="base"){
       const record=settlePendingRound();
       if(record)say("A animação falhou; o prémio "+format(record.payout)+" foi creditado e guardado na jogada #"+record.id+".","bonus");
       else say("A jogada já tinha sido contabilizada. Consulta o histórico.","bonus");
-    }else say("Não foi possível iniciar a jogada. Não foram retirados créditos.");
+    }else say(error?.message?.includes("Guardar sessão")?"A gravação local está indisponível. Nenhum crédito foi descontado.":"Não foi possível iniciar a jogada. Não foram retirados créditos.");
     acknowledgeHoldContinue();hideHoldResult();acknowledgeFreeContinue();hideFreeResult();
     $("bonusCurtain").classList.remove("visible");$("bonusCurtain").hidden=true;
     display();
