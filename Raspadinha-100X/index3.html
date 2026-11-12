@@ -624,7 +624,7 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
     <h2>OS TEUS NÚMEROS</h2>
     <div class="numgrid play" id="play"></div>
     <div id="ticket-identification" class="ticket-identification" aria-label="Identificação da raspadinha de simulação">
-      <span id="ticket-identification-game">JOGO N.º 659 · EMISSÃO 2026</span>
+      <span id="ticket-identification-game">JOGO N.º 659 · SÉRIE DE TESTE 01</span>
       <strong id="ticket-identification-number">BILHETE SIMULADO — AGUARDA COMPRA</strong>
     </div>
     <div id="scratch-layer" aria-label="Desliza o dedo para raspar as casas" role="group"></div>
@@ -1417,7 +1417,7 @@ function renderTicketIdentification(ticket){
   const mode=modeForBet(ticket?.bet||state.bet);
   const plan=officialPlan(mode.bet);
   const officialGameNumber=Number.isSafeInteger(plan?.game)?plan.game:"—";
-  el("ticket-identification-game").textContent="JOGO N.º "+officialGameNumber+" · EMISSÃO 2026";
+  el("ticket-identification-game").textContent="JOGO N.º "+officialGameNumber+" · SÉRIE DE TESTE 01";
   const number=el("ticket-identification-number");
   if(!ticket){
     number.textContent="BILHETE SIMULADO · AGUARDA COMPRA";
