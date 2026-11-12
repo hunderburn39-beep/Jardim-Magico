@@ -61,7 +61,7 @@ const url='http://127.0.0.1:8123/index.html?qa=bonus-buy';
    assert.equal(state.history.filter(h=>h.kind==='bonus-buy').length,1);
    await page.evaluate(()=>window.__faraoGame.openInfo('history'));
    assert.match(await page.locator('#history-results').innerText(),/Compra de bónus/);
-   assert.match(await page.locator('#history-results').innerText(),/Custo 100[,.]00\\s*€/);
+   assert.match(await page.locator('#history-results').innerText(),/Custo 100[,.]00\s*€/);
    assert.deepEqual(errors,[],'Erros JS: '+errors.join('; '));
    console.log(type.name()+': botão sob SALDO, confirmação, débito 100×, recuperação e histórico OK');
    await context.close();
