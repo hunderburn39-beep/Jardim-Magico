@@ -693,7 +693,7 @@ async function playback(book){
       playRecorded("bonus");
       renderHold(evt.grid,0,lastHoldGrid);
       $("holdText").textContent=evt.filled?"GRELHA COMPLETA! +250×":"HOLD & WIN TERMINADO";
-      $("holdWin").textContent="TOTAL "+money(evt.amount);
+      $("holdWin").textContent="TOTAL "+money(evt.amount)+" créditos";
       $("holdSummaryLabel").textContent=evt.filled?"GRELHA COMPLETA · EXTRA +250×":"PRÉMIO FINAL DO HOLD & WIN";
       $("holdSummaryValue").textContent=money(evt.amount)+" créditos";
       $("holdSummary").hidden=false;
