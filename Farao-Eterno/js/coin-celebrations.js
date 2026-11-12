@@ -40,7 +40,7 @@
     const source=ac.createBufferSource(),gain=ac.createGain();
     source.buffer=sampleBuffer;
     source.playbackRate.value=final?.96+(i%3)*.025:1;
-    gain.gain.value=final?.48:.88;
+    gain.gain.value=final?1.05:1.80; // moedas +~6 dB; música independente
     source.connect(gain);gain.connect(bus);
     source.start(ac.currentTime+.006+offsets[i]);
     source.onended=()=>{try{source.disconnect();gain.disconnect();}catch(_){}};
