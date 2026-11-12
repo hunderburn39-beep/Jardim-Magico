@@ -175,7 +175,7 @@
      x:pos.x+(Math.random()-.5)*23,y:pos.y+(Math.random()-.5)*13,
      vx:Math.sin(angle)*(final?160:123),vy:-(final?215:155)-Math.random()*100,
      g:245+Math.random()*90,born:t+p*(final?48:75)+Math.random()*115,
-     life:final?2450:2050,r:6.7+Math.random()*5.5,
+     life:final?2450:2050,r:10.1+Math.random()*8.2,
      spin:Math.random()*TAU,spinV:4.1+Math.random()*7.5
     });
     if(i%3===0)addSparkle(pos.x+(Math.random()-.5)*28,pos.y+(Math.random()-.5)*24,t+p*72,520);
@@ -262,7 +262,7 @@
   for(let i=0;i<count;i++){
    const el=document.createElement('i');
    const x=6+Math.random()*88,travel=80+Math.random()*180;
-   const size=8+Math.random()*7;
+   const size=12+Math.random()*10.5;
    el.style.cssText='position:absolute;left:'+x+'%;top:-8%;width:'+
      size+'px;height:'+size+
      'px;border:1px solid #fff0b8;border-radius:50%;box-shadow:0 0 5px #e6a33a;'+
@@ -286,7 +286,7 @@
   return result;
  };
  g.coinCelebrations={
-  version:'1.3-larger-gold-coins',
+  version:'1.4-giant-gold-coins',
   drawGoldenCoin:goldenCoin,
   get sparkles(){return sparkles.length;},
   events:{sequences:0,finales:0},
