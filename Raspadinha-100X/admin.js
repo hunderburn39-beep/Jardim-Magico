@@ -48,7 +48,13 @@ function draw(){
       const dt=document.createElement("dt"),dd=document.createElement("dd");
       dt.textContent=name;dd.textContent=value;detail.append(dt,dd);
     }
-    card.append(title,balance,detail);target.append(card);
+    const resetButton=document.createElement("button");
+    resetButton.type="button";
+    resetButton.className="scratch-admin-reset-mode";
+    resetButton.textContent="♻ NOVA TIRAGEM "+mode.mult+"X · REPOR CONTADORES";
+    resetButton.setAttribute("aria-label","Reiniciar a tiragem "+mode.mult+"X e os respetivos contadores");
+    resetButton.addEventListener("click",()=>confirmModeReset(mode.mult));
+    card.append(title,balance,detail,resetButton);target.append(card);
   }
   $("scratch-admin-total").textContent=eur(total);
   $("scratch-admin-legacy").textContent=
@@ -57,6 +63,35 @@ function draw(){
     (state.prizeBank>0?" Fundo partilhado antigo (histórico): "+eur(state.prizeBank)+".":"");
 }
 
+function confirmModeReset(mult){
+  if(!unlocked)return;
+  const mode=CARD_MODES.find(m=>m.mult===Number(mult));
+  if(!mode)return;
+  const ok=window.confirm(
+    "Iniciar nova tiragem "+mult+"X?\\n\\n"+
+    "São apagados o bilhete em curso, a tiragem atual e os contadores "+
+    "desta raspadinha. A nova série começa com zero bilhetes vendidos.\\n\\n"+
+    "O saldo da carteira e as comissões partilhadas das outras modalidades não são apagados.");
+  if(!ok)return;
+  const success=window.resetScratchMode(mult);
+  if(!success){$("scratch-reset-note").textContent="Não foi possível reiniciar durante a revelação das casas.";return}
+  $("scratch-reset-note").textContent="Nova tiragem "+mult+
+    "X iniciada, com os contadores desta raspadinha a zero.";
+  draw();
+}
+function confirmAllReset(){
+  if(!unlocked)return;
+  const ok=window.confirm(
+    "REPOSIÇÃO TOTAL: apagar todos os contadores e iniciar quatro tiragens novas?\\n\\n"+
+    "Isto apaga o saldo, os bilhetes, vendas, fundos, comissões, levantamentos, "+
+    "reserva e históricos deste navegador. Esta operação não pode ser anulada.");
+  if(!ok)return;
+  const success=window.resetScratchAll();
+  if(!success){$("scratch-reset-note").textContent="Conclui primeiro a revelação das casas.";return}
+  $("scratch-reset-note").textContent=
+    "Reposição total realizada. Tudo a zero; quatro tiragens novas. Adiciona créditos pela carteira.";
+  draw();refreshShares();
+}
 function refreshShares(){
   $("scratch-commission-merchant").value=String(state.commissionSplit.merchant);
   $("scratch-commission-technician").value=String(state.commissionSplit.technician);
@@ -221,6 +256,7 @@ $("scratch-commission-form").addEventListener("submit",saveShares);
 $("scratch-commission-merchant-withdraw").addEventListener("click",()=>withdrawCommission("merchant"));
 $("scratch-commission-technician-withdraw").addEventListener("click",()=>withdrawCommission("technician"));
 $("scratch-plans-mode").addEventListener("change",drawOfficialPlans);
+$("scratch-reset-all").addEventListener("click",confirmAllReset);
 $("scratch-admin-add").addEventListener("click",()=>modify("add"));
 $("scratch-admin-remove").addEventListener("click",()=>modify("remove"));
 panel.addEventListener("touchstart",e=>{if(e.touches.length===1)previousY=e.touches[0].clientY},{passive:true});
