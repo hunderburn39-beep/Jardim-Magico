@@ -2,8 +2,10 @@
  * das emissões Santa Casa de 2026. Não contêm os bilhetes individuais, sequências
  * nem a posição original dos números/multiplicadores.
  * Os valores são euros inteiros e as quantidades contam bilhetes premiados.
- * A seleção na nossa simulação pode ser limitada pelo cofre de teste disponível,
- * pelo que não deve ser anunciada como a probabilidade exata de uma lotaria real.
+ * Cada modalidade tem uma tiragem fechada INDEPENDENTE com contagem decrescente
+ * por prémio total (incluindo bilhetes sem prémio). Uma compra retira uma unidade.
+ * O cofre de testes NÃO limita o prémio. A tiragem é guardada por navegador
+ * em localStorage; não é sincronizada entre dispositivos, contas ou servidores.
  * Fontes oficiais: URLs verso nos objetos.
  */
 window.SANTA_PLANS={
