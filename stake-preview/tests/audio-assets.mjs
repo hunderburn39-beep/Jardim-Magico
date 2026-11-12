@@ -13,7 +13,7 @@ assert.match(html,/Kenney \(CC0\)/);
 assert.match(html,/Kevin MacLeod/);
 const inline=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(inline,'Jogo contém código JavaScript');
-const source=inline.split('$("spin").addEventListener')[0];
+const source=inline.split('$("introPlay").addEventListener')[0];
 const art=source.match(/const TYPES=\[([\s\S]*?)\];/)?.[1];
 assert.ok(art,'Lista de símbolos encontrada');
 const imagePaths=[...art.matchAll(/image:"(\.\.\/assets\/imagens\/[^"]+)"/g)].map(x=>x[1]);
