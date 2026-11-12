@@ -1103,8 +1103,7 @@ class Game {
   // Não desenhar o título duas vezes nem ocultar o cenário ao fundo.
   this.smallButton(49,66,68,'☰',()=>this.openInfo());
   this.smallButton(511,66,68,this.soundMode==='all'?'♫':this.soundMode==='effects'?'♪':'×',()=>this.cycleSoundMode());
-  if(this.feature)text('FREE SPINS  '+this.feature.left+' RESTANTES',
-   280,212,13,'#a7fff0','center','Arial',900);
+  // A contagem foi transferida para a placa lateral junto ao botão GIRAR.
  }
 
   reelBoard(t){
