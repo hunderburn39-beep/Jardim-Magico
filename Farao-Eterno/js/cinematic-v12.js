@@ -62,9 +62,9 @@
     // V1.3.58: Free Spins deliberadamente mais lentas do que o jogo base.
     // Mesmo com Turbo guardado, os símbolos devem ser fáceis de seguir.
     // Apenas tempo visual: resultado já está definido antes da animação.
-    spin.duration = spin.free ? (this.turbo ? 1350 : 1850)
+    spin.duration = spin.free ? (this.turbo ? 1350 : 2050)
       : (this.turbo ? 500 : 1040);
-    spin.reelGap = spin.free ? (this.turbo ? 185 : 270)
+    spin.reelGap = spin.free ? (this.turbo ? 185 : 300)
       : (this.turbo ? 65 : 170);
     // As paragens são estritamente sequenciais (1→2→3→4→5).
     // Duas torres acrescentam UMA pausa antes do próximo tambor; essa pausa
