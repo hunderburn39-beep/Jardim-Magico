@@ -10,7 +10,7 @@ const W=560,H=1000;
 const $ = id => document.getElementById(id);
 const canvas=$('canvas'),cx=canvas.getContext('2d',{alpha:false});
 const mod=$('modal'), modalContent=$('modal-content'), title=$('modal-title');
-const iconNames={TOMB:'Pirâmide dourada · WILD / SCATTER',KING:'Faraó',ANUBIS:'Anúbis',HORUS:'Hórus',MASK:'Máscara dourada',A:'A',K:'K',Q:'Q',J:'J','10':'10'};
+const iconNames={TOMB:'Pirâmide dourada · WILD / SCATTER',KING:'Faraó',ANUBIS:'Anúbis',HORUS:'Escaravelho alado',MASK:'Livro sagrado / Ankh',A:'A',K:'K',Q:'Q',J:'J','10':'10'};
 const bets=S.BETS;
 const PALETTE={gold:'#f3d389',bright:'#ffeeb1',dark:'#2a1715',teal:'#54d6ce',red:'#d85c63'};
 const money = val => (Math.round((val+Number.EPSILON)*100)/100).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
@@ -222,8 +222,15 @@ class Game {
    im.onload=()=>{if(im.naturalWidth>0)done(key,true);else fallback(key,im);};
    im.onerror=()=>fallback(key,im);
    this.images[key]=im;
-   im.src=key==='TOMB'?'assets/tomb.webp?v=originais-1.3.51':'assets/'+(E.NORMAL.slice(0,5).includes(key)?key+'.png?v=originais-1.3.51':key.toLowerCase()+(E.NORMAL.slice(5).includes(key)?'.webp?v=originais-1.3.51':'.svg?v=originais-1.3.51'));
+   im.src=(key!=='TOMB'&&window.FARAO_CUSTOM_SYMBOLS?.[key])||
+     (key==='TOMB'?'assets/tomb.webp?v=originais-1.3.51':'assets/'+(E.NORMAL.slice(0,5).includes(key)?key+'.png?v=originais-1.3.51':key.toLowerCase()+(E.NORMAL.slice(5).includes(key)?'.webp?v=originais-1.3.51':'.svg?v=originais-1.3.51')));
    arm(key,im);
+  }
+  // O Ankh é uma variante VISUAL do Livro; a tabela de prémios continua igual.
+  if(window.FARAO_CUSTOM_SYMBOLS?.MASK_ALT){
+   const ankh=new Image();
+   ankh.src=window.FARAO_CUSTOM_SYMBOLS.MASK_ALT;
+   this.images.MASK_ALT=ankh;
   }
   const img=new Image();
   img.onload=()=>{
@@ -1345,7 +1352,10 @@ class Game {
    rect(bx,by,box,box,aura);
   }
   // A pirâmide usa apenas os píxeis transparentes do ficheiro original.
-  const img=this.images[sym];
+  // Variar Livro / Ankh em rondas alternadas sem criar símbolos novos no motor.
+  const img=(sym==='MASK'&&(this.currentRound%2===1)&&
+     this.images.MASK_ALT?.complete&&this.images.MASK_ALT.naturalWidth)
+    ?this.images.MASK_ALT:this.images[sym];
   if(img?.complete&&img?.naturalWidth&&img.naturalHeight){
    const premium=E.NORMAL.slice(5).includes(sym)||sym==='TOMB';
    const maxSide=box*(sym==='TOMB'?.97*1.03:premium?.97:.92);
