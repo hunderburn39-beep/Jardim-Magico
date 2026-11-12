@@ -35,7 +35,10 @@
      osc.frequency.setValueAtTime(base*ratio,when);
      osc.frequency.exponentialRampToValueAtTime(base*ratio*.84,when+.11);
      osc.connect(gain);osc.start(when);osc.stop(when+.15);
-     osc.onended=()=>{try{osc.disconnect();}catch(_){}};
+     osc.onended=()=>{
+      try{osc.disconnect();}catch(_){}
+      if(ratio===1.49)try{gain.disconnect();}catch(_){}
+     };
     }
     gain.connect(bus);
    }
