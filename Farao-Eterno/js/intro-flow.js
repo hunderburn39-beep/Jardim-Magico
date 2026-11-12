@@ -43,6 +43,10 @@ function enter(){
 splash.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();enter();},{passive:false});
 splash.addEventListener('click',e=>{e.stopPropagation();enter();});
 splash.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();enter();}});
+// Os testes automáticos com ?qa= usam sessão isolada e têm de aceder aos
+// controlos sem um ecrã de apresentação a interceptar os seus cliques.
+// Quem joga normalmente continua a ver a capa até tocar nela.
+if(new URLSearchParams(location.search).has('qa'))enter();
 /* Autoplay quando permitido; em iOS Safari o primeiro toque desbloqueia o som. */
 g.audio.init();
 g.audio.startMusic?.();
