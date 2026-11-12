@@ -21,7 +21,7 @@ function boot(){
  };
  const gradient=()=>({addColorStop:noop});
  const ctx={
-  save:noop,restore:noop,beginPath:noop,ellipse:noop,arc:noop,
+  save:noop,restore:noop,beginPath:noop,ellipse:noop,arc:noop,moveTo:noop,lineTo:noop,
   fill:noop,stroke:noop,drawImage:noop,scale:noop,
   createRadialGradient:gradient,createLinearGradient:gradient,
   translate(x,y){nodes.coords.push({x,y});},rotate:noop
