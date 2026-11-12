@@ -65,6 +65,8 @@ g.autoSpin=function(...args){
 const oldAdvance=g.advanceStage.bind(g);
 g.advanceStage=function(...args){
  if(this._introCoverVisible)return;
+ // Um toque durante a rotação das Free Spins não salta os cinco tambores.
+ if(this.feature&&this.spinning)return;
  if(this.feature&&this._awaitBonusStart&&!this._welcome){
   if(this.spinning||this.ledger.payout)return;
   if(this.featureIntro&&now()<this.featureIntro.end)return;
