@@ -515,6 +515,29 @@ body[data-mode="100"] .ticket{border-color:#fff0a4}
   #ticket-top-prize[data-next="true"]::before{content:"⇢ "}
 }
 
+
+/* Grelhas por emissão: estrelas e números conforme plano de referência. */
+.lucky[data-count="1"]{width:min(90px,26%);align-self:center;grid-template-columns:1fr}
+.lucky[data-count="2"]{width:min(195px,52%);align-self:center;grid-template-columns:repeat(2,minmax(0,1fr))}
+.lucky[data-count="5"]{width:100%;grid-template-columns:repeat(5,minmax(0,1fr))}
+.play[data-count="5"],.play[data-count="10"],.play[data-count="15"],.play[data-count="20"]{
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:5px;
+}
+.play[data-count="5"]{grid-template-rows:1fr;flex:1;max-height:165px;margin:auto 0}
+.play[data-count="10"]{grid-template-rows:repeat(2,minmax(0,1fr));flex:1;max-height:280px;margin:auto 0}
+.play[data-count="15"]{grid-template-rows:repeat(3,minmax(0,1fr));flex:1}
+.play[data-count="20"]{grid-template-rows:repeat(4,minmax(0,1fr));flex:1}
+.play[data-count="16"]{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr))}
+.play .cell.instant-symbol small{
+  position:relative;z-index:1;font-size:clamp(9px,2.25vw,12px);
+  color:#fff2b5;text-shadow:0 1px 2px #000;
+}
+@media(max-height:650px){
+  .play[data-count="5"]{max-height:105px}
+  .play[data-count="10"]{max-height:165px}
+}
+
 </style>
 <link rel="stylesheet" href="./admin.css">
 <link rel="stylesheet" href="./theme.css">
@@ -531,7 +554,7 @@ body[data-mode="100"] .ticket{border-color:#fff0a4}
 </div>
   <section class="ticket" aria-label="Bilhete de raspadinha">
     <div class="tickettop"><span id="ticketid">BILHETE Nº 1</span><span id="ticket-top-prize">1 € – 10 €</span></div>
-    <h2>NÚMEROS DA SORTE</h2>
+    <h2 id="lucky-heading">NÚMEROS DA SORTE</h2>
     <div class="numgrid lucky" id="lucky"></div>
     <h2>OS TEUS NÚMEROS</h2>
     <div class="numgrid play" id="play"></div>
@@ -659,6 +682,7 @@ body[data-mode="100"] .ticket{border-color:#fff0a4}
   </div>
 </div>
 <audio id="fireworks-audio" preload="auto" src="./Fireworks.mp3"></audio>
+<script src="./santa-plans.js"></script>
 <script>
 "use strict";
 // 4 raspadinhas fixas: 10X/1 €, 20X/2 €, 50X/5 € e 100X/10 €; valores em cêntimos.
@@ -673,6 +697,11 @@ const CARD_MODES=[
 ];
 const BET_LEVELS=CARD_MODES.map(mode=>mode.bet);
 const modeForBet=bet=>CARD_MODES.find(mode=>mode.bet===bet)||CARD_MODES[0];
+const officialPlan=bet=>window.SANTA_PLANS?.[String(modeForBet(bet).mult)]||null;
+const ticketTotalCells=t=>t.lucky.length+t.play.length;
+const ticketMaxAmount=t=>t.officialVersion===1&&officialPlan(ticketBet(t))
+  ?officialPlan(ticketBet(t)).maxPrize*100
+  :ticketBet(t)*maxForTicket(t);
 // Teto por bilhete = preço x multiplicador da modalidade.
 // Bilhetes já comprados mantêm o teto guardado no momento da compra.
 const maxForTicket=ticket=>{
@@ -690,6 +719,55 @@ const money=c=>(c/100).toLocaleString("pt-PT",{maximumFractionDigits:0})+" €";
 const randomInt=max=>Math.floor(Math.random()*max);
 function shuffle(items){for(let i=items.length-1;i>0;i--){const j=randomInt(i+1);[items[i],items[j]]=[items[j],items[i]]}return items}
 
+function freshOfficialStock(){
+  const stock={};
+  for(const [key,plan] of Object.entries(window.SANTA_PLANS||{})){
+    const left={0:plan.emission-plan.winningTickets};
+    for(const [euros,count] of plan.prizes)left[String(euros)]=count;
+    stock[key]={remaining:left,issued:0};
+  }
+  return stock;
+}
+function initOfficialStock(saved){
+  if(!saved.officialStock||typeof saved.officialStock!=="object")saved.officialStock={};
+  for(const [key,plan] of Object.entries(window.SANTA_PLANS||{})){
+    const existing=saved.officialStock[key];
+    if(existing&&existing.remaining&&Number.isSafeInteger(existing.issued)&&existing.issued>=0)continue;
+    saved.officialStock[key]=freshOfficialStock()[key];
+  }
+}
+function pickOfficialPrize(plan,availableCents){
+  const st=state.officialStock[String(plan.game===659?10:plan.game===667?20:plan.game===669?50:100)];
+  if(!st)return 0;
+  // Respeita o cofre do protótipo: não reserva prémios acima do saldo.
+  // Por isso as probabilidades EFETIVAS podem diferir das oficiais.
+  const entries=Object.entries(st.remaining)
+    .filter(([euros,count])=>Number.isSafeInteger(count)&&count>0&&Number(euros)*100<=availableCents);
+  const total=entries.reduce((sum,[,count])=>sum+count,0);
+  if(total<=0)return 0;
+  let draw=Math.random()*total;
+  let picked=entries[entries.length-1][0];
+  for(const [euros,count] of entries){draw-=count;if(draw<0){picked=euros;break}}
+  st.remaining[picked]--;st.issued++;
+  return Number(picked)*100;
+}
+function makeOfficialWinnings(prizeCents,plan){
+  if(!prizeCents)return [];
+  // A tabela oficial fixa os TOTAIS. A disposição de símbolos abaixo é
+  // ilustrativa, porque o verso não revela os bilhetes individualmente.
+  const totalEuros=prizeCents/100;
+  let parts=[prizeCents];
+  if(totalEuros<=100&&totalEuros>=4&&Math.random()<.38){
+    const option=[2,3,4].filter(n=>totalEuros%n===0&&n<=plan.playCount);
+    if(option.length){const n=option[randomInt(option.length)];parts=Array(n).fill(prizeCents/n)}
+  }
+  return parts.map(amount=>{
+    const multipliers=plan.multipliers.filter(m=>amount%(m*100)===0);
+    const useMultiplier=multipliers.length&&Math.random()<.48;
+    const mult=useMultiplier?multipliers[randomInt(multipliers.length)]:1;
+    return{amount,mult,type:useMultiplier?"instant":"match",baseAmount:amount/mult};
+  });
+}
 function blankPool(){return{available:0,sold:0,stakes:0,funded:0,awarded:0,paid:0,added:0,removed:0}}
 function initPools(saved){
   if(!saved.pools||typeof saved.pools!=="object"||Array.isArray(saved.pools))saved.pools={};
@@ -721,7 +799,7 @@ function initCommissions(saved){
     &&typeof entry.at==="string").slice(-100);
 }
 
-function fresh(){const state={balance:100000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true,bet:100};initPools(state);initCommissions(state);return state}
+function fresh(){const state={balance:100000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true,bet:100};initPools(state);initCommissions(state);initOfficialStock(state);return state}
 // Preserva os prémios e o progresso dos bilhetes antigos com 20 casas.
 function migrateOldTicket(saved){
   const t=saved.ticket;
@@ -768,7 +846,7 @@ function migrateOldTicket(saved){
 function load(){
   try{
     const saved=JSON.parse(localStorage.getItem(KEY));
-    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0)){saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;migrateOldTicket(saved);initPools(saved);initCommissions(saved);return saved;}
+    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0)){saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;migrateOldTicket(saved);initPools(saved);initCommissions(saved);initOfficialStock(saved);return saved;}
   }catch(_){}
   return fresh();
 }
@@ -847,11 +925,11 @@ function updateTicketTopPrize(){
   const t=state.ticket;
   const next=Boolean(t&&!t.completed&&ticketBet(t)!==mode.bet);
   const corner=el("ticket-top-prize");
-  const label=money(mode.bet)+" – "+money(mode.bet*mode.mult);
+  const label=money(mode.bet)+" – "+money(officialPlan(mode.bet)?.maxPrize*100||mode.bet*mode.mult);
   corner.textContent=label;
   corner.dataset.next=next?"true":"false";
   corner.setAttribute("aria-label",
-    "Raspadinha "+mode.mult+"X: custa "+money(mode.bet)+", prémio máximo "+money(mode.bet*mode.mult)+
+    "Raspadinha "+mode.mult+"X: custa "+money(mode.bet)+", prémio máximo "+money(officialPlan(mode.bet)?.maxPrize*100||mode.bet*mode.mult)+
     (next?". Este valor aplica-se ao próximo bilhete.":""));
   corner.title=next?"Próximo bilhete: "+label:label;
 }
@@ -877,7 +955,7 @@ function selectCardMode(bet){
   const mode=modeForBet(bet);
   status(state.ticket&&!state.ticket.completed
     ?"Escolhida "+mode.mult+"X por "+money(mode.bet)+". Termina a raspadinha atual para começares esta."
-    :"Selecionada raspadinha "+mode.mult+"X por "+money(mode.bet)+", prémio máximo "+money(mode.bet*mode.mult)+".");
+    :"Selecionada raspadinha "+mode.mult+"X por "+money(mode.bet)+", prémio máximo "+money(officialPlan(mode.bet)?.maxPrize*100||mode.bet*mode.mult)+".");
 }
 function ticketBet(ticket){return BET_LEVELS.includes(ticket.bet)?ticket.bet:1000}
 function weightedPick(options){
@@ -930,36 +1008,39 @@ function buy(){
   pool.funded+=cofreEntrada;
   pool.sold++;
   pool.stakes+=bet;
-  const awards=selectWinnings(pool.available,bet,maxMult);
-  const prize=awards.reduce((sum,amount)=>sum+amount,0);
-  pool.available-=prize; // reservar prémios apenas neste cofre
+  const plan=officialPlan(bet);
+  if(!plan){status("As tabelas oficiais não carregaram. Atualiza a página.");return}
+  const officialPrize=pickOfficialPrize(plan,pool.available);
+  const awards=makeOfficialWinnings(officialPrize,plan);
+  const prize=awards.reduce((sum,w)=>sum+w.amount,0);
+  pool.available-=prize; // reserva do prémio total antes de revelar
   pool.awarded+=prize;
-  const nums=shuffle(Array.from({length:70},(_,i)=>i+1));
-  const lucky=nums.slice(0,5),play=nums.slice(5,21);
-  const positions=shuffle(Array.from({length:16},(_,i)=>i)).slice(0,awards.length);
-  const luckyIndices=shuffle([0,1,2,3,4]);
-  let nextLucky=0;
-  // Os símbolos X2/X5/X10/X20/X25/X50/X100 pagam ao revelar e não têm número, sujeitos ao teto.
-  // Os prémios por correspondência mantêm os números das 5 estrelas.
-  const wins=awards.map((amount,i)=>({
-    pos:positions[i],amount,mult:amount/bet,type:Math.random()<.50?"instant":"match"
-  }));
+  const nums=shuffle(Array.from({length:80},(_,i)=>i+1));
+  const lucky=nums.slice(0,plan.luckyCount);
+  const play=nums.slice(plan.luckyCount,plan.luckyCount+plan.playCount);
+  const positions=shuffle(Array.from({length:plan.playCount},(_,i)=>i)).slice(0,awards.length);
+  const wins=awards.map((item,i)=>({...item,pos:positions[i]}));
   for(const win of wins){
     if(win.type==="instant")play[win.pos]=null;
-    else play[win.pos]=lucky[luckyIndices[nextLucky++]];
+    else play[win.pos]=lucky[randomInt(lucky.length)];
   }
-  const visiblePrizes=PRIZES.filter(item=>item.mult<=maxMult);
-  const cellPrizes=Array.from({length:16},(_,i)=>{
+  const examplePrizes=plan.prizes.filter(([value])=>value<=Math.min(100,plan.maxPrize)).map(([value])=>value*100);
+  const cellPrizes=play.map((_,i)=>{
     const award=wins.find(w=>w.pos===i);
-    return award?award.amount:visiblePrizes[randomInt(visiblePrizes.length)].mult*bet;
+    return award?(award.type==="instant"?award.baseAmount:award.amount):
+      examplePrizes[randomInt(examplePrizes.length)];
   });
   state.cards++;
-  state.ticket={id:state.cards,lucky,play,prize,bet,maxMult,capMult:maxMult,poolVersion:1,wins,cellPrizes,paidWins:[],revealed:[],completed:false};
+  state.ticket={
+    id:state.cards,lucky,play,prize,bet,maxMult,capMult:maxMult,poolVersion:1,
+    officialVersion:1,officialGame:plan.game,wins,cellPrizes,
+    paidWins:[],revealed:[],completed:false
+  };
   save();render();
   status("Desliza o dedo pelas casas, sem levantar, até raspares tudo.");
 }
 
-// Raspagem contínua: camada fixa independente das 21 películas (5 sorte + 16 jogo).
+// Raspagem contínua: quantidade de casas variável (1+5, 2+10, 5+15 ou 5+20).
 // Uso de touch events no iPhone, sem depender de pointer capture de uma casa removida.
 const scratchHandlers=new Map();
 let scratchGesture=null;
@@ -1093,13 +1174,13 @@ function makeCell(parent,num,label,id,isWinner,alreadyRevealed,valueLabel="",isI
     const instant=state.ticket.wins.some(win=>win.type==="instant"&&id==="p"+win.pos);
     if(!instant)playRevealSound(id.startsWith("l")?"lucky":"play");
     const prizes=highlightRevealedWinners();
-    if(state.ticket.revealed.length===21)finish();
+    if(state.ticket.revealed.length===ticketTotalCells(state.ticket)){finish();celebrateWinningTicket()}
     else{
       save();
       if(prizes.length){
         const isInstant=prizes.some(win=>win.type==="instant");
         status((isInstant?"🪙 PRÉMIO INSTANTÂNEO! ":"⭐ NÚMERO DA SORTE! ")+prizes.map(w=>eur(w.amount)).join(" + ")+" · saldo "+eur(state.balance));
-      }else status("Casas raspadas: "+state.ticket.revealed.length+"/21. Continua a deslizar o dedo.");
+      }else status("Casas raspadas: "+state.ticket.revealed.length+"/"+ticketTotalCells(state.ticket)+". Continua a deslizar o dedo.");
     }
   }
   // Cada célula tem a sua própria película, mas o gesto é partilhado pelo bilhete.
@@ -1160,11 +1241,17 @@ function render(){
   scratchHandlers.clear();
   el("lucky").replaceChildren();el("play").replaceChildren();
   const ticket=state.ticket;
+  const layoutLucky=ticket?.lucky.length||officialPlan(state.bet)?.luckyCount||5;
+  el("lucky-heading").textContent=layoutLucky===1?"NÚMERO DA SORTE":"NÚMEROS DA SORTE";
+  const layoutPlay=ticket?.play.length||officialPlan(state.bet)?.playCount||16;
+  el("lucky").dataset.count=String(layoutLucky);
+  el("play").dataset.count=String(layoutPlay);
+  document.body.dataset.ticketMode=String(modeForBet(ticket?.bet||state.bet).mult);
   if(!ticket){el("ticketid").textContent="PRONTO A JOGAR";updateTicketTopPrize();return}
   el("ticketid").textContent="BILHETE Nº "+ticket.id;
   updateTicketTopPrize();
-  for(let i=0;i<5;i++)makeCell("lucky",ticket.lucky[i],"","l"+i,false,ticket.revealed.includes("l"+i));
-  for(let i=0;i<16;i++){
+  for(let i=0;i<ticket.lucky.length;i++)makeCell("lucky",ticket.lucky[i],"","l"+i,false,ticket.revealed.includes("l"+i));
+  for(let i=0;i<ticket.play.length;i++){
     const revealed=ticket.revealed.includes("p"+i);
     const win=ticket.wins.find(item=>item.pos===i);
     const instant=win?.type==="instant";
@@ -1172,7 +1259,7 @@ function render(){
     const amount=ticket.cellPrizes[i];
     if(instant){
       // Na casa instantânea não surge número: só o multiplicador permitido pela modalidade.
-      makeCell("play",win.mult+"×","","p"+i,matched,revealed,"",true);
+      makeCell("play",win.mult+"×",ticket.officialVersion===1?money(win.baseAmount):"","p"+i,matched,revealed,"",true);
     }else{
       // Nas outras casas mantém o número e o respetivo valor da aposta.
       makeCell("play",ticket.play[i],money(amount),"p"+i,matched,revealed);
@@ -1226,19 +1313,19 @@ async function revealAll(){
   layer.style.pointerEvents="none";
   layer.setAttribute("aria-busy","true");
   try{
-    // 1. Os 16 medalhões, sempre da esquerda para a direita e linha a linha.
-    for(let i=0;i<16;i++){
+    // 1. As casas de jogo, da esquerda para a direita e linha a linha.
+    for(let i=0;i<ticket.play.length;i++){
       if(state.ticket!==ticket)break;
       const revealedNow=revealCellInPlace("play",i);
       if(!revealedNow)continue;
       const matches=highlightRevealedWinners();
       if(matches.length){
         status((matches.some(w=>w.type==="instant")?"🪙 PRÉMIO INSTANTÂNEO! ":"⭐ NÚMERO DA SORTE! ")+matches.map(w=>eur(w.amount)).join(" + ")+" · saldo "+eur(state.balance));
-      }else status("A revelar os teus números: "+(i+1)+"/16");
+      }else status("A revelar os teus números: "+(i+1)+"/"+ticket.play.length);
       await pauseReveal(matches.length?850:145);
     }
-    // 2. Só depois as cinco estrelas douradas da sorte.
-    for(let i=0;i<5;i++){
+    // 2. Só depois as estrelas douradas da sorte da modalidade.
+    for(let i=0;i<ticket.lucky.length;i++){
       if(state.ticket!==ticket)break;
       const revealedNow=revealCellInPlace("lucky",i);
       if(!revealedNow)continue;
@@ -1247,11 +1334,11 @@ async function revealAll(){
         status("⭐ "+matches.length+" prémio(s) da sorte: "+matches.map(w=>eur(w.amount)).join(" + ")+" · saldo "+eur(state.balance));
         await pauseReveal(1050); // mantém o pulsar e a chuva de moedas visíveis
       }else{
-        status("Números da sorte: "+(i+1)+"/5");
+        status("Números da sorte: "+(i+1)+"/"+ticket.lucky.length);
         await pauseReveal(480);
       }
     }
-    if(state.ticket===ticket&&ticket.revealed.length===21){
+    if(state.ticket===ticket&&ticket.revealed.length===ticketTotalCells(ticket)){
       finish(); // soma os prémios e credita o saldo uma única vez
       await pauseReveal(380);
       celebrateWinningTicket();
