@@ -538,6 +538,36 @@ body[data-mode="100"] .ticket{border-color:#fff0a4}
   .play[data-count="10"]{max-height:165px}
 }
 
+
+/* Bilhetes de referência: grelhas reais 10X (1+5), 20X (2+10),
+   50X (5+15) e 100X (5+20). Os símbolos visuais são originais da simulação. */
+.lucky[data-count="1"]{grid-template-columns:1fr;width:26%;min-width:76px;max-width:96px;align-self:center}
+.lucky[data-count="2"]{grid-template-columns:repeat(2,minmax(0,1fr));width:52%;max-width:195px;align-self:center}
+.lucky[data-count="5"]{grid-template-columns:repeat(5,minmax(0,1fr));width:100%;align-self:stretch}
+.play[data-count="5"]{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:1fr;flex:1;max-height:150px;margin:auto 0}
+.play[data-count="10"]{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));flex:1;max-height:275px;margin:auto 0}
+.play[data-count="15"]{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));flex:1}
+.play[data-count="20"]{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));flex:1}
+body[data-ticket-status="preview"] .preview-cell{
+  border-color:var(--game-highlight,#ffe0a0);
+  background:radial-gradient(circle at 30% 15%,#fff8d44a,transparent 50%),linear-gradient(140deg,#e7c176,#a76d2c 68%,#f6e2a0);
+  box-shadow:inset 0 0 0 2px #fff5bf7a,0 2px 5px #0005;
+  color:#fff4d6;text-shadow:0 1px 2px #78440d,0 0 8px #c78a20;
+}
+body[data-ticket-status="preview"] .preview-cell b{font-size:clamp(27px,7.3vw,43px);line-height:.9}
+body[data-ticket-status="preview"] .preview-cell small{font-size:clamp(8px,2.4vw,11px);color:#5a3217}
+body[data-ticket-status="preview"] .lucky .preview-cell{border-radius:40% 40% 45% 45%;background:radial-gradient(circle at 38% 25%,#fffbe2,#d2a057 65%,#86531d)}
+body[data-ticket-status="started"] .lucky .cell{border-radius:40% 40% 45% 45%}
+body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45% 45%!important}
+.play[data-count="20"] .cell b,.play[data-count="15"] .cell b{font-size:clamp(16px,4.8vw,23px)}
+.play[data-count="20"] .cell small,.play[data-count="15"] .cell small{font-size:clamp(8px,2.18vw,11px)}
+.play[data-count="20"] .cell.instant-symbol b{font-size:clamp(19px,5vw,26px)}
+@media(max-height:680px){
+  .play[data-count="5"]{max-height:95px}
+  .play[data-count="10"]{max-height:175px}
+  .lucky[data-count="1"],.lucky[data-count="2"]{max-height:43px}
+}
+
 </style>
 <link rel="stylesheet" href="./admin.css">
 <link rel="stylesheet" href="./theme.css">
@@ -820,7 +850,27 @@ function initCommissions(saved){
     &&typeof entry.at==="string").slice(-100);
 }
 
-function fresh(){const state={balance:100000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true,bet:100};initPools(state);initCommissions(state);initOfficialStock(state);return state}
+function initModeTickets(saved){
+  // Uma raspadinha comprada pode ficar em curso enquanto se consulta outra.
+  if(!saved.modeTickets||typeof saved.modeTickets!=="object"||Array.isArray(saved.modeTickets))
+    saved.modeTickets={};
+  if(saved.ticket){
+    if(!BET_LEVELS.includes(saved.ticket.bet))saved.ticket.bet=saved.bet;
+    saved.modeTickets[String(saved.ticket.bet)]=saved.ticket;
+  }
+  for(const bet of BET_LEVELS){
+    const t=saved.modeTickets[String(bet)];
+    if(!t||!Array.isArray(t.lucky)||!Array.isArray(t.play)||
+      !Array.isArray(t.revealed)||!Array.isArray(t.wins)||t.bet!==bet)
+      delete saved.modeTickets[String(bet)];
+  }
+  saved.ticket=saved.modeTickets[String(saved.bet)]||null;
+}
+function fresh(){
+  const freshState={balance:100000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true,bet:100};
+  initPools(freshState);initCommissions(freshState);initOfficialStock(freshState);initModeTickets(freshState);
+  return freshState;
+}
 // Preserva os prémios e o progresso dos bilhetes antigos com 20 casas.
 function migrateOldTicket(saved){
   const t=saved.ticket;
@@ -867,12 +917,17 @@ function migrateOldTicket(saved){
 function load(){
   try{
     const saved=JSON.parse(localStorage.getItem(KEY));
-    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0)){saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;migrateOldTicket(saved);initPools(saved);initCommissions(saved);initOfficialStock(saved);return saved;}
+    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0)){saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;migrateOldTicket(saved);initPools(saved);initCommissions(saved);initOfficialStock(saved);initModeTickets(saved);return saved;}
   }catch(_){}
   return fresh();
 }
 let state=load(),scratchAudio=null,audioContext=null;
-function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(_){}if(typeof window.refreshScratchAdmin==="function")window.refreshScratchAdmin()}
+function save(){
+  if(state.ticket&&BET_LEVELS.includes(state.ticket.bet))
+    state.modeTickets[String(state.ticket.bet)]=state.ticket;
+  try{localStorage.setItem(KEY,JSON.stringify(state))}catch(_){}
+  if(typeof window.refreshScratchAdmin==="function")window.refreshScratchAdmin();
+}
 function status(msg){el("status").textContent=msg}
 function paintBalance(){el("balance").textContent=eur(state.balance);el("sound").textContent=state.sound?"🔊 Som ligado":"🔇 Som desligado";el("sound").setAttribute("aria-label",state.sound?"Desligar som":"Ligar som")}
 
@@ -971,12 +1026,20 @@ function paintBet(){
 }
 function selectCardMode(bet){
   if(!BET_LEVELS.includes(bet)||revealAllRunning)return;
+  endScratch();
+  stopScratchSound();
+  if(state.ticket)state.modeTickets[String(state.ticket.bet)]=state.ticket;
   state.bet=bet;
-  save();paintBet();
+  state.ticket=state.modeTickets[String(bet)]||null;
+  save();
+  render();
   const mode=modeForBet(bet);
-  status(state.ticket&&!state.ticket.completed
-    ?"Escolhida "+mode.mult+"X por "+money(mode.bet)+". Termina a raspadinha atual para começares esta."
-    :"Selecionada raspadinha "+mode.mult+"X por "+money(mode.bet)+", prémio máximo "+money(officialPlan(mode.bet)?.maxPrize*100||mode.bet*mode.mult)+".");
+  status(state.ticket
+    ?(state.ticket.completed
+      ?"Raspadinha "+mode.mult+"X concluída. Podes comprar outra."
+      :"Retomada raspadinha "+mode.mult+"X. Continua a raspar as "+ticketTotalCells(state.ticket)+" casas.")
+    :"Raspadinha "+mode.mult+"X: "+officialPlan(bet)?.luckyCount+" números da sorte e "+
+      officialPlan(bet)?.playCount+" casas. Carrega em NOVA RASPADINHA para jogar.");
 }
 function ticketBet(ticket){return BET_LEVELS.includes(ticket.bet)?ticket.bet:1000}
 function weightedPick(options){
@@ -1169,11 +1232,19 @@ function makeCell(parent,num,label,id,isWinner,alreadyRevealed,valueLabel="",isI
   ctx.globalAlpha=1;
   ctx.strokeStyle="#8a571e";ctx.lineWidth=Math.max(1,scale);
   ctx.beginPath();ctx.arc(w/2,h/2,Math.min(w,h)*.40,0,Math.PI*2);ctx.stroke();
-  ctx.fillStyle="#573014";ctx.textAlign="center";ctx.textBaseline="middle";
-  ctx.shadowColor="#fff8cc";ctx.shadowBlur=2*scale;
-  ctx.font="1000 "+Math.max(10,Math.round(w*.19))+"px system-ui";
-  ctx.fillText("RASPA",w/2,h/2);
+  // A película revela a forma exterior: medalhão da sorte ou estrela dos números.
+  // O símbolo está na camada raspável; os números só aparecem após raspar.
+  const isLuck=parent==="lucky";
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillStyle=isLuck?"#fff6d3":"#ffe7a0";
+  ctx.shadowColor=isLuck?"#edda7b":"#e99f27";
+  ctx.shadowBlur=3*scale;
+  ctx.font="1000 "+Math.max(17,Math.round(Math.min(w,h)*.62))+"px system-ui";
+  ctx.fillText(isLuck?"✦":"★",w/2,h*.46);
   ctx.shadowBlur=0;
+  ctx.fillStyle="#583a16";
+  ctx.font="1000 "+Math.max(8,Math.round(Math.min(w,h)*.17))+"px system-ui";
+  ctx.fillText("RASPA",w/2,h*.79);
   let travel=0;
   function xy(clientX,clientY){
     const r=canvas.getBoundingClientRect();
@@ -1257,6 +1328,19 @@ function flashWinningCell(cell){
   void cell.offsetWidth;
   cell.classList.add("flash-win","win-pop");
 }
+
+function appendPreviewCell(parent){
+  const cell=document.createElement("div");
+  cell.className="cell preview-cell";
+  cell.setAttribute("aria-hidden","true");
+  const motif=document.createElement("b");
+  motif.textContent=parent==="lucky"?"✦":"★";
+  const label=document.createElement("small");
+  label.textContent=parent==="lucky"?"SORTE":"RASPA";
+  cell.append(motif,label);
+  el(parent).append(cell);
+}
+
 function render(){
   paintBalance();paintBet();
   scratchHandlers.clear();
@@ -1268,7 +1352,14 @@ function render(){
   el("lucky").dataset.count=String(layoutLucky);
   el("play").dataset.count=String(layoutPlay);
   document.body.dataset.ticketMode=String(modeForBet(ticket?.bet||state.bet).mult);
-  if(!ticket){el("ticketid").textContent="PRONTO A JOGAR";updateTicketTopPrize();return}
+  document.body.dataset.ticketStatus=ticket?"started":"preview";
+  if(!ticket){
+    el("ticketid").textContent="PRONTO A JOGAR";
+    for(let i=0;i<layoutLucky;i++)appendPreviewCell("lucky");
+    for(let i=0;i<layoutPlay;i++)appendPreviewCell("play");
+    updateTicketTopPrize();
+    return;
+  }
   el("ticketid").textContent="BILHETE Nº "+ticket.id;
   updateTicketTopPrize();
   for(let i=0;i<ticket.lucky.length;i++)makeCell("lucky",ticket.lucky[i],"","l"+i,false,ticket.revealed.includes("l"+i));
@@ -1579,8 +1670,13 @@ el("sound").addEventListener("click",()=>{state.sound=!state.sound;stopScratchSo
 document.addEventListener("touchmove",e=>{if(e.cancelable)e.preventDefault()},{passive:false});
 document.addEventListener("gesturestart",e=>{if(e.cancelable)e.preventDefault()},{passive:false});
 window.addEventListener("blur",endScratch);
-if(state.ticket){render();status(state.ticket.completed?(state.ticket.prize?"Ganhaste "+eur(state.ticket.prize)+"!":"Bilhete sem prémio."):"Continua a raspar o teu bilhete.");}
-else{buy()}
+if(state.ticket){
+  render();
+  status(state.ticket.completed?(state.ticket.prize?"Ganhaste "+eur(state.ticket.prize)+"!":"Bilhete sem prémio."):"Continua a raspar o teu bilhete.");
+}else{
+  render();
+  status("Escolhe uma raspadinha e carrega em NOVA RASPADINHA.");
+}
 </script>
 <script src="./admin.js"></script>
 </body>
