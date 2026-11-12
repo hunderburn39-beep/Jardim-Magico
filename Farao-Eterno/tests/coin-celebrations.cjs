@@ -19,8 +19,11 @@ function boot(){
     connect:noop,disconnect:noop};
   }
  };
+ const gradient=()=>({addColorStop:noop});
  const ctx={
-  save:noop,restore:noop,beginPath:noop,ellipse:noop,fill:noop,stroke:noop,
+  save:noop,restore:noop,beginPath:noop,ellipse:noop,arc:noop,
+  fill:noop,stroke:noop,drawImage:noop,scale:noop,
+  createRadialGradient:gradient,createLinearGradient:gradient,
   translate(x,y){nodes.coords.push({x,y});},rotate:noop
  };
  const result={lineWins:[],scatterWin:0,expanders:[]};
@@ -35,7 +38,9 @@ function boot(){
   showSummary(){this.shown=(this.shown||0)+1;}
  };
  const document={
-  hidden:false,getElementById(id){return id==='canvas'?{getContext:()=>ctx}:null;},
+  hidden:false,
+  getElementById(id){return id==='canvas'?{getContext:()=>ctx}:null;},
+  createElement(tag){assert.equal(tag,'canvas');return {width:0,height:0,getContext:()=>ctx};},
   querySelector:()=>null
  };
  vm.runInNewContext(source,{window:{__faraoGame:game,matchMedia:()=>({matches:false})},
