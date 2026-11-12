@@ -627,6 +627,27 @@ body[data-mode="100"] .ticket{border-color:#fff0a4}
       </div>
       <p id="scratch-admin-legacy"></p>
 
+      <section class="scratch-plans-section" aria-labelledby="scratch-plans-heading">
+        <h3 id="scratch-plans-heading">📋 Tabelas oficiais de prémios</h3>
+        <p>Distribuição por prémio total dos bilhetes nas emissões oficiais de 2026.</p>
+        <label for="scratch-plans-mode">Escolhe uma emissão</label>
+        <select id="scratch-plans-mode" aria-label="Emissão da raspadinha">
+          <option value="10">10X · Jogo 659</option>
+          <option value="20">20X · Jogo 667</option>
+          <option value="50">50X · Jogo 669</option>
+          <option value="100">100X · Jogo 677</option>
+        </select>
+        <div id="scratch-plans-summary" class="scratch-plans-summary"></div>
+        <div class="scratch-plans-scroll">
+          <table class="scratch-plans-table">
+            <thead><tr><th>Prémio</th><th>Bilhetes</th><th>1 em</th></tr></thead>
+            <tbody id="scratch-plans-tbody"></tbody>
+          </table>
+        </div>
+        <a id="scratch-plans-source" class="scratch-plans-source" href="https://www.jogossantacasa.pt/web/JogarLotInst/" target="_blank" rel="noopener noreferrer">Ver tabela original da Santa Casa</a>
+        <p class="scratch-plans-notice">A tabela é uma referência oficial; os símbolos em cada bilhete desta simulação são ilustrativos. A capacidade do cofre de teste limita a atribuição de prémios, podendo alterar as probabilidades efetivas.</p>
+      </section>
+
       <section class="scratch-commission-section" aria-labelledby="scratch-commission-title">
         <h3 id="scratch-commission-title">Comissões do comerciante e do técnico</h3>
         <p>30% das vendas para comissões, distribuídos por percentagem. Os 60% de prémios e os 10% de reserva mantêm-se.</p>
@@ -987,6 +1008,8 @@ function selectWinnings(bank,bet,maxMult){
 function buy(){
   if(state.ticket && !state.ticket.completed){status("Raspa ou revela primeiro o bilhete atual.");return}
   const bet=state.bet;
+  const plan=officialPlan(bet);
+  if(!plan){status("As tabelas oficiais não carregaram. Atualiza a página.");return}
   if(state.balance<bet){status("Saldo insuficiente para comprar outro bilhete.");return}
   stopScratchSound();
   clearCelebration();
@@ -1008,8 +1031,6 @@ function buy(){
   pool.funded+=cofreEntrada;
   pool.sold++;
   pool.stakes+=bet;
-  const plan=officialPlan(bet);
-  if(!plan){status("As tabelas oficiais não carregaram. Atualiza a página.");return}
   const officialPrize=pickOfficialPrize(plan,pool.available);
   const awards=makeOfficialWinnings(officialPrize,plan);
   const prize=awards.reduce((sum,w)=>sum+w.amount,0);
