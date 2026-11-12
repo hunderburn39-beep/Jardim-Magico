@@ -7,7 +7,7 @@ import vm from 'node:vm';
 const html = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'index.html'), 'utf8');
 const match = html.match(/<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'Inline game JavaScript exists');
-const code = match[1].split('$("spin").addEventListener')[0];
+const code = match[1].split('$("introPlay").addEventListener')[0];
 assert.ok(code.includes('function holdFeature()'), 'Hold logic present');
 let seed=0x1234abcd;
 const fakeCrypto={getRandomValues(values) {
