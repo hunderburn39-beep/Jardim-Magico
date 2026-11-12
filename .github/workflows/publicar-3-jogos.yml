@@ -30,7 +30,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: publicar-quatro-jogos-pages
+  group: publicar-quatro-jogos-pages-estavel
   # Não cancelar uma publicação já em curso quando outra pasta de jogo é alterada.
   # O GitHub mantém a execução em curso e a mais recente pendente.
   cancel-in-progress: false
