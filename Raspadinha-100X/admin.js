@@ -18,6 +18,7 @@ function close(){modal.hidden=true;modal.setAttribute("aria-hidden","true");$("s
 function draw(){
   if(!unlocked)return;
   drawCommissions();
+  drawOfficialPlans();
   let total=0;
   const target=$("scratch-admin-cards");target.replaceChildren();
   for(const mode of CARD_MODES){
@@ -133,6 +134,40 @@ function drawCommissions(){
   }
 }
 
+
+function drawOfficialPlans(){
+  const mode=$("scratch-plans-mode").value;
+  const plan=window.SANTA_PLANS?.[mode];
+  const summary=$("scratch-plans-summary"),tbody=$("scratch-plans-tbody");
+  tbody.replaceChildren();
+  if(!plan){summary.textContent="Tabela indisponível.";return}
+  const euros=value=>(value).toLocaleString("pt-PT",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+  const integer=value=>Number(value).toLocaleString("pt-PT");
+  const odds=(plan.emission/plan.winningTickets).toLocaleString("pt-PT",{maximumFractionDigits:2});
+  summary.textContent="Jogo "+plan.game+" · Preço "+euros(plan.bet/100)+
+    " · Prémio máximo "+euros(plan.maxPrize)+
+    " · "+plan.luckyCount+" estrela(s) / "+plan.playCount+" casas"+
+    " · Bilhetes "+integer(plan.emission)+
+    " · 1 prémio em "+odds+
+    " · Retorno anunciado "+(plan.rtp*100).toLocaleString("pt-PT",{maximumFractionDigits:2})+"%"+
+    " · símbolos "+plan.multipliers.map(n=>n+"X").join(", ");
+  const rows=[[0,plan.emission-plan.winningTickets],...plan.prizes];
+  for(const [eurosPrize,count] of rows){
+    const tr=document.createElement("tr");
+    const label=document.createElement("td");
+    const quantity=document.createElement("td");
+    const probability=document.createElement("td");
+    label.textContent=eurosPrize===0?"Sem prémio":euros(eurosPrize);
+    quantity.textContent=integer(count);
+    probability.textContent=(plan.emission/count).toLocaleString("pt-PT",{maximumFractionDigits:1});
+    tr.append(label,quantity,probability);
+    tbody.append(tr);
+  }
+  const link=$("scratch-plans-source");
+  link.href=plan.url;
+  link.textContent="Ver verso oficial do jogo "+plan.game;
+}
+
 function amount(){
   const raw=$("scratch-admin-amount").value.trim().replace(/\s/g,"").replace(",",".");
   if(!/^\d{1,8}(?:\.\d{1,2})?$/.test(raw))return null;
@@ -170,6 +205,7 @@ $("scratch-commission-technician").addEventListener("input",()=>updateOtherPerce
 $("scratch-commission-form").addEventListener("submit",saveShares);
 $("scratch-commission-merchant-withdraw").addEventListener("click",()=>withdrawCommission("merchant"));
 $("scratch-commission-technician-withdraw").addEventListener("click",()=>withdrawCommission("technician"));
+$("scratch-plans-mode").addEventListener("change",drawOfficialPlans);
 $("scratch-admin-add").addEventListener("click",()=>modify("add"));
 $("scratch-admin-remove").addEventListener("click",()=>modify("remove"));
 panel.addEventListener("touchstart",e=>{if(e.touches.length===1)previousY=e.touches[0].clientY},{passive:true});
