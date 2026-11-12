@@ -27,14 +27,15 @@ jobs:
           node stake-preview/tests/paytable.mjs
           node stake-preview/tests/wild-multipliers.mjs
           node stake-preview/tests/hold-continue.mjs
+          node stake-preview/tests/free-continue.mjs
       - name: Confirmar GitHub Pages independente das outras publicações
         run: |
           set -euo pipefail
-          url="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=1.3"
+          url="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=1.4"
           echo "A verificar $url"
           for n in {1..12}; do
             if curl -fLsS --max-time 10 --connect-timeout 5 "$url" -o /tmp/stake-preview.html; then
-              if grep -q 'Stake Preview V1.3' /tmp/stake-preview.html \
+              if grep -q 'Stake Preview V1.4' /tmp/stake-preview.html \
                  && grep -q 'id="skipBtn"' /tmp/stake-preview.html \
                  && grep -q 'id="paylineSvg"' /tmp/stake-preview.html \
                  && grep -q 'id="freePanel"' /tmp/stake-preview.html \
@@ -49,17 +50,19 @@ jobs:
                  && grep -q 'id="paytableOverlay"' /tmp/stake-preview.html \
                  && grep -q 'id="wildTally"' /tmp/stake-preview.html \
                  && grep -q 'id="holdLives"' /tmp/stake-preview.html \
-                 && grep -q 'id="holdSummary"' /tmp/stake-preview.html; then
+                 && grep -q 'id="holdSummary"' /tmp/stake-preview.html \
+                 && grep -q 'id="freeResultOverlay"' /tmp/stake-preview.html \
+                 && grep -q 'id="freeRetrigger"' /tmp/stake-preview.html; then
                 curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/assets/imagens/jm38-caracol.svg" -o /tmp/caracol.svg
                 test -s /tmp/caracol.svg
-                echo 'CONFIRMADO: Stake Preview V1.3 online, PASSAR, linhas e caracol.'
+                echo 'CONFIRMADO: Stake Preview V1.4 online, PASSAR, linhas e caracol.'
                 exit 0
               fi
-              echo "Página ainda não atualizada para V1.3 ($n/12)."
+              echo "Página ainda não atualizada para V1.4 ($n/12)."
             else
               echo "Página indisponível ($n/12)."
             fi
             sleep 5
           done
-          echo '::error::Não foi possível confirmar a página V1.3.'
+          echo '::error::Não foi possível confirmar a página V1.4.'
           exit 1
