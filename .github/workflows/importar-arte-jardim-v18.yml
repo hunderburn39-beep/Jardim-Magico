@@ -1,0 +1,40 @@
+name: Importar arte aprovada Jardim V1.8 (uma vez)
+on:
+  push:
+    paths:
+      - '.github/workflows/importar-arte-jardim-v18.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  importar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Importar arte aprovada sem alterar outros jogos
+        shell: bash
+        env:
+          ART_HIGH: 'https://media.canva.com/v2/image-resize/format:PNG/height:1672/quality:100/uri:ifs%3A%2F%2FM%2F647b231b-6d84-4d18-b79b-e4671f84884a/watermark:F/width:941?csig=AAAAAAAAAAAAAAAAAAAAAGc6ko5-UD71j4FtDbt6oLlVUCEGs2Vv9OAwRwizuAG5&exp=1794531745&osig=AAAAAAAAAAAAAAAAAAAAAOxYZRihgTfsEqAtKQIQV71Sjcqssv0UoaROwI-tF4uN&signer=media-rpc&token=AAIAAU0AJDY0N2IyMzFiLTZkODQtNGQxOC1iNzliLWU0NjcxZjg0ODg0YQAAAAABodJtXOgCCzPlazZx6N-D2aAXHC42ywNwcdCbxzNMGQyaFn3lMQ&x-canva-quality=thumbnail'
+          ART_MED: 'https://media.canva.com/v2/image-resize/format:PNG/height:850/quality:100/uri:ifs%3A%2F%2FM%2F647b231b-6d84-4d18-b79b-e4671f84884a/watermark:F/width:478?csig=AAAAAAAAAAAAAAAAAAAAAGc6ko5-UD71j4FtDbt6oLlVUCEGs2Vv9OAwRwizuAG5&exp=1794531745&osig=AAAAAAAAAAAAAAAAAAAAAOxYZRihgTfsEqAtKQIQV71Sjcqssv0UoaROwI-tF4uN&signer=media-rpc&token=AAIAAU0AJDY0N2IyMzFiLTZkODQtNGQxOC1iNzliLWU0NjcxZjg0ODg0YQAAAAABodJtXOgCCzPlazZx6N-D2aAXHC42ywNwcdCbxzNMGQyaFn3lMQ&x-canva-quality=thumbnail'
+          ART_FALLBACK: 'https://media.canva.com/v2/image-resize/format:PNG/height:200/quality:100/uri:ifs%3A%2F%2FM%2F647b231b-6d84-4d18-b79b-e4671f84884a/watermark:F/width:112?csig=AAAAAAAAAAAAAAAAAAAAAGc6ko5-UD71j4FtDbt6oLlVUCEGs2Vv9OAwRwizuAG5&exp=1794531745&osig=AAAAAAAAAAAAAAAAAAAAAOxYZRihgTfsEqAtKQIQV71Sjcqssv0UoaROwI-tF4uN&signer=media-rpc&token=AAIAAU0AJDY0N2IyMzFiLTZkODQtNGQxOC1iNzliLWU0NjcxZjg0ODg0YQAAAAABodJtXOgCCzPlazZx6N-D2aAXHC42ywNwcdCbxzNMGQyaFn3lMQ&x-canva-quality=thumbnail'
+        run: |
+          set -euo pipefail
+          mkdir -p stake-preview/assets
+          for variant in ART_HIGH ART_MED ART_FALLBACK; do
+            url="${!variant}"
+            if curl --retry 1 -fLsS --connect-timeout 8 --max-time 25 "$url" -o /tmp/v18-art.png && file /tmp/v18-art.png | grep -qi 'PNG image'; then
+              echo "Arte disponível a partir de $variant"
+              cp /tmp/v18-art.png stake-preview/assets/jardim-v18-reference.png
+              break
+            fi
+          done
+          test -s stake-preview/assets/jardim-v18-reference.png
+          file stake-preview/assets/jardim-v18-reference.png
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add stake-preview/assets/jardim-v18-reference.png
+          if ! git diff --cached --quiet; then
+            git commit -m "Assets: adicionar arte de referencia aprovada Jardim Magico V1.8"
+            git push origin HEAD:main
+          fi
