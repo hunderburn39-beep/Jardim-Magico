@@ -323,20 +323,23 @@ function generate(mode){const events=[],cost=mode==="base"?1:mode==="free"?20:30
 function format(x){return x.toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function prizeForSymbol(typeIndex,count,stake=BETS[betIndex]){
   if(!Number.isInteger(typeIndex)||typeIndex<0||typeIndex>8||![3,4,5].includes(count))return 0;
-  const base=COEFS[typeIndex]*PAY[count]/100;
-  // If every symbol is WILD, the first two also pay the 0.55x WILD pair.
-  return +(stake*(base+(typeIndex===4?.55:0))).toFixed(2);
+  // The actual engine decides the payout. In particular, WILD chains with a
+  // non-paying next symbol may pay only the special two-WILD award.
+  const b=Array.from({length:5},()=>[10,10,10]);
+  for(let c=0;c<count;c++)b[c][1]=typeIndex;
+  const line=evaluate(b).lines.find(entry=>entry.line===1);
+  return +((line?.amount||0)*stake/100).toFixed(2);
 }
 function renderPaytable(){
   const stake=BETS[betIndex];
-  $("paytableStake").textContent="APOSTA: "+format(stake)+" créditos · Valores da linha antes de outros multiplicadores";
+  $("paytableStake").textContent="APOSTA: "+format(stake)+" créditos · Valores dos símbolos em linha, sem WILD misturados";
   $("paytableGrid").innerHTML=TYPES.map((type,id)=>{
     if(id>8)return "";
     const payouts=[3,4,5].map(count=>'<span class="payout">'+format(prizeForSymbol(id,count,stake))+'</span>').join("");
     return '<div class="paytable-row"><div class="paytable-symbol"><img alt="'+type.label+'" src="'+type.image+'"><strong>'+type.label+'</strong></div>'+payouts+'</div>';
   }).join("");
   $("paytableRules").innerHTML=
-    '<div class="paytable-rule"><strong>WILD:</strong> substitui os símbolos normais. Dois WILD seguidos nos tambores 1 e 2 acrescentam <strong>'+format(.55*stake)+'</strong> créditos, mesmo que a linha também tenha um prémio de 3–5 símbolos. A tabela já inclui esse extra na linha só de WILD.</div>'+
+    '<div class="paytable-rule"><strong>WILD:</strong> substitui os símbolos normais. Dois WILD seguidos nos tambores 1 e 2 acrescentam <strong>'+format(.55*stake)+'</strong> créditos. Os valores WILD para 3 e 4 representam sequências terminadas por um símbolo que não paga (como a PEDRA); quando o WILD substitui outros símbolos, o valor pode ser superior. Cinco WILD pagam o prémio da combinação mais o extra do par.</div>'+
     '<div class="paytable-rule"><strong>SCATTER:</strong> 3 ou mais símbolos ao longo de uma cascata ativam 15 Free Spins. Nas Free Spins, 2 dão +8 e 3 ou mais dão +15, com limite total de 60. Compra direta: <strong>'+format(stake*20)+'</strong> créditos.</div>'+
     '<div class="paytable-rule"><strong>MOEDAS:</strong> 6 ou mais numa cascata ativam o Hold & Win 4×4, com 6 moedas iniciais e 3 tentativas renovadas quando cai moeda. Compra direta: <strong>'+format(stake*30)+'</strong> créditos. Grelha cheia: extra de <strong>'+format(stake*250)+'</strong> créditos.</div>'+
     '<div class="paytable-rule"><strong>CASCADE:</strong> as linhas são avaliadas da esquerda para a direita. Cada linha vale independentemente; as peças vencedoras desaparecem e as novas caem. Os multiplicadores de Free Spins aplicam-se no final do bónus.</div>';
