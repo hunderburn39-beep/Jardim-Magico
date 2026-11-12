@@ -4,7 +4,7 @@ const S=require('../js/session.js');
 const E=require('../js/engine.js');
 const make=(betIndex=4,lines=10)=>{const s=S.fresh();s.betIndex=betIndex;s.lines=lines;s.balanceU=S.units(300);return s;};
 test('compra de bónus custa exatamente 100x a aposta TOTAL ativa',()=>{
- for(const [betIndex,lines] of [[0,1],[0,10],[4,5],[4,10],[7,1],[7,10]]){
+ for(const [betIndex,lines] of [[0,10],[4,10],[7,10]]){
   const s=make(betIndex,lines);s.balanceU=S.units(10000);
   const before=s.balanceU,stakeU=S.units(S.stake(s)),stats=s.stats.stakeU;
   const bought=S.buyBonus(s,()=>.34,'2026-11-10T17:00:00.000Z');
@@ -18,6 +18,13 @@ test('compra de bónus custa exatamente 100x a aposta TOTAL ativa',()=>{
   a.equal(s.history[0].cost,S.credits(100*stakeU));
   a.equal(s.sequence,0,'Comprar não inventa um ID de jogada');
   S.validate(s);
+ }
+});
+test('compra só permite dez linhas e mantém saldo intacto nas restantes',()=>{
+ for(const lines of [1,5,9]){
+  const s=make(4,lines),before=JSON.stringify(s);
+  a.throws(()=>S.buyBonus(s,()=>.34),/10 linhas/i);
+  a.equal(JSON.stringify(s),before);
  }
 });
 test('créditos insuficientes não alteram o saldo nem o histórico',()=>{
