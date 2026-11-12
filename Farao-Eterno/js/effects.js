@@ -209,11 +209,19 @@
         const x = coin.x + coin.vx * secs;
         const y = coin.y + coin.vy * secs + 115 * secs * secs;
         if (y < 260 || y > 659) continue;
-        ctx.save(); ctx.translate(x, y); ctx.rotate(coin.angle + secs * 2.8);
-        ctx.globalAlpha = alpha * clamp(1 - secs / 3.5, 0, 1);
-        ctx.fillStyle = '#bb7731'; ctx.strokeStyle = '#ffe9ac'; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.ellipse(0, 0, coin.r, coin.r * .73, 0, 0, TAU); ctx.fill(); ctx.stroke();
-        ctx.restore();
+        // Partilhar as mesmas moedas cunhadas e brilhantes usadas nas linhas premiadas.
+        // Se a camada opcional ainda não estiver carregada, conservar a arte anterior.
+        const drawGold=this.coinCelebrations?.drawGoldenCoin;
+        if(typeof drawGold==='function'){
+          drawGold(x,y,coin.r+1.6,coin.angle+secs*5,
+            alpha*clamp(1-secs/3.5,0,1),true);
+        }else{
+          ctx.save();ctx.translate(x,y);ctx.rotate(coin.angle+secs*2.8);
+          ctx.globalAlpha=alpha*clamp(1-secs/3.5,0,1);
+          ctx.fillStyle='#bb7731';ctx.strokeStyle='#ffe9ac';ctx.lineWidth=1.5;
+          ctx.beginPath();ctx.ellipse(0,0,coin.r,coin.r*.73,0,0,TAU);ctx.fill();ctx.stroke();
+          ctx.restore();
+        }
       }
       ctx.restore();
     }
