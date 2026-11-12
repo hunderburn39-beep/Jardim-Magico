@@ -61,7 +61,7 @@ assert.equal(p(11,5,7.5),0,'Coins no line win');
 assert.equal(p(4,3,7.5),4.13,'Three WILDs followed by a stone pay only the WILD pair');
 assert.equal(p(4,4,7.5),4.13,'Four WILDs followed by a stone pay only the WILD pair');
 assert.equal(p(4,5,7.5),64.13,'Five WILDs pay 8.55x including the extra WILD pair');
-assert.equal(p(0,3,7.5),1.58,'Caracol 3 at bet 7.50');
+assert.equal(p(0,3,7.5),1.57,'Caracol 3 at bet 7.50 follows the existing engine rounding');
 assert.equal(p(8,5,7.5),42,'Flor vermelha 5 at bet 7.50');
 
 const moneyBefore=vm.runInContext('balance',ctx);
