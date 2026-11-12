@@ -68,9 +68,9 @@ function confirmModeReset(mult){
   const mode=CARD_MODES.find(m=>m.mult===Number(mult));
   if(!mode)return;
   const ok=window.confirm(
-    "Iniciar nova tiragem "+mult+"X?\\n\\n"+
+    "Iniciar nova tiragem "+mult+"X?\n\n"+
     "São apagados o bilhete em curso, a tiragem atual e os contadores "+
-    "desta raspadinha. A nova série começa com zero bilhetes vendidos.\\n\\n"+
+    "desta raspadinha. A nova série começa com zero bilhetes vendidos.\n\n"+
     "O saldo da carteira e as comissões partilhadas das outras modalidades não são apagados.");
   if(!ok)return;
   const success=window.resetScratchMode(mult);
@@ -82,7 +82,7 @@ function confirmModeReset(mult){
 function confirmAllReset(){
   if(!unlocked)return;
   const ok=window.confirm(
-    "REPOSIÇÃO TOTAL: apagar todos os contadores e iniciar quatro tiragens novas?\\n\\n"+
+    "REPOSIÇÃO TOTAL: apagar todos os contadores e iniciar quatro tiragens novas?\n\n"+
     "Isto apaga o saldo, os bilhetes, vendas, fundos, comissões, levantamentos, "+
     "reserva e históricos deste navegador. Esta operação não pode ser anulada.");
   if(!ok)return;
