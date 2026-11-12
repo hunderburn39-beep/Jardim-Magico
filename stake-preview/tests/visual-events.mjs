@@ -12,7 +12,7 @@ assert.match(source,/async function animateReelStop/);
 assert.match(source,/async function animateCascade/);
 assert.match(source,/async function playback/);
 assert.match(html, /data-bet="7\.5"/);
-assert.match(html, /V1\.1/);
+assert.match(html, /V1\.2/);
 const elements=new Map();
 function el(id) {
   if(!elements.has(id)) {
@@ -106,4 +106,4 @@ assert.equal(el('skipBtn').hidden,true,'Botão PASSAR esconde-se após terminar'
 assert.equal(el('paylineSvg').innerHTML,'','Linha SVG desaparece após vitória');
 assert.equal(vm.runInContext('finalWinTier(750,7.5)',context),'SENSACIONAL');
 assert.equal(vm.runInContext('finalWinTier(75,7.5)',context),'BIG WIN');
-console.log('Jardim Stake Preview V1.1: tambores, linhas até prémio real, Free Spins, Hold, 7,50 e passar animações validados.');
+console.log('Jardim Stake Preview V1.2: tambores, linhas até prémio real, Free Spins, Hold, 7,50 e passar animações validados.');
