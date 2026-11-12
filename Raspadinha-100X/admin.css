@@ -69,3 +69,24 @@
 .scratch-plans-table tr:nth-child(even){background:#ffffff08}
 .scratch-plans-section .scratch-plans-source{display:block;color:#ffe5a0;text-decoration:underline;font-size:12px;margin:11px 0}
 .scratch-plans-section .scratch-plans-notice{color:#bcc6d9;font-size:10px}
+
+
+/* Nova tiragem e reposição de contadores com confirmação. */
+.scratch-admin-reset-section{
+  margin:12px 0;padding:13px 11px;border:1px solid #ca9d56;
+  border-radius:12px;background:linear-gradient(145deg,#392b32,#1b2540 70%,#102a3b);
+}
+.scratch-admin-reset-section h3{color:#ffe19a;margin:0 0 9px;font-size:16px}
+.scratch-admin-reset-section p{font-size:12px;line-height:1.48;color:#f1eadf;margin:7px 0}
+.scratch-admin-reset-section strong{color:#ffe0a2}
+#scratch-reset-all,.scratch-admin-reset-mode{
+  display:block;min-height:40px;width:100%;margin:9px 0 0;padding:8px 10px;
+  font-weight:1000;font-size:clamp(11px,2.9vw,13px);border-radius:10px;
+  background:linear-gradient(160deg,#fbd588,#a8652e);color:#241d2e;
+  border:1px solid #fff1ae;box-shadow:0 2px 5px #0007;touch-action:manipulation;
+  white-space:normal;line-height:1.3;cursor:pointer;
+}
+#scratch-reset-all{background:linear-gradient(145deg,#f8b59b,#ce593b 65%,#9e312c);color:#fff9e9;border-color:#ffddc5}
+.scratch-admin-reset-mode{background:linear-gradient(155deg,#e1c68a,#9c7b3b);color:#2a2230;border-color:#f9deb5}
+#scratch-reset-all:focus-visible,.scratch-admin-reset-mode:focus-visible{outline:2px solid #fff;outline-offset:3px}
+#scratch-reset-note{font-size:12px;color:#ffe4a3;min-height:16px;margin-top:11px}
