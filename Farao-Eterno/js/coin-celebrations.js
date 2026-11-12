@@ -13,69 +13,40 @@
  const REEL_X=33, STEP_X=101, CELL_W=99, TOP=284, CELL_H=129, MAX_COINS=105;
  const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
  const active=()=>!!(audio.on&&audio.ctx&&!g.paused&&!g.superseded&&!document.hidden);
- // Pequenas pancadas de metal com harmónicos e ruído percussivo filtrado.
- // Tudo no barramento de efeitos: a música continua separada e não é reduzida.
- let lastClatter=-Infinity,noiseContext=null,noiseBuffer=null;
+ // Som de moedas real enviado pelo criador, cortado no primeiro impacto.
+ // MP3 mono local embutido para reprodução instantânea em dispositivos móveis.
+ const SAMPLE_B64='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';
+ const sampleBytes=Uint8Array.from(atob(SAMPLE_B64),c=>c.charCodeAt(0)).buffer;
+ let sampleCtx=null,sampleBuffer=null,lastClatter=-Infinity;
+ function prepareSample(){
+  const ac=audio.ctx;if(!ac||sampleCtx===ac)return;
+  sampleCtx=ac;sampleBuffer=null;
+  try{ac.decodeAudioData(sampleBytes.slice(0)).then(b=>{if(sampleCtx===ac)sampleBuffer=b;}).catch(()=>{});}
+  catch(_){}
+ }
+ const originalInit=audio.init.bind(audio);
+ audio.init=function(...args){const result=originalInit(...args);prepareSample();return result;};
  function coinSound(final=false){
   if(!active())return;
+  prepareSample();
   const now=performance.now();
-  if(!final&&now-lastClatter<160)return;
+  if(!final&&now-lastClatter<85)return;
   lastClatter=now;
+  if(!sampleBuffer)return;
   const ac=audio.ctx,bus=audio.out||ac.destination;
-  const hits=final?38:13,duration=final?2.65:.78;
-  try{
-   if(noiseContext!==ac){
-    noiseContext=ac;noiseBuffer=null;
-    if(typeof ac.createBuffer==='function'){
-     noiseBuffer=ac.createBuffer(1,Math.round(ac.sampleRate*.075),ac.sampleRate);
-     const data=noiseBuffer.getChannelData(0);
-     for(let i=0;i<data.length;i++){
-      const decay=Math.pow(1-i/data.length,1.6);
-      data[i]=(Math.random()*2-1)*decay;
-     }
-    }
-   }
-   const start=ac.currentTime+.008;
-   for(let i=0;i<hits;i++){
-    const when=start+duration*Math.pow(i/Math.max(1,hits-1),.88)+(Math.random()-.5)*.015;
-    const base=510+Math.random()*1050+(i%5===0?190:0)-i*(final?4:0);
-    const level=(final?.021:.018)*(1-.46*i/hits);
-    const env=ac.createGain();
-    env.gain.setValueAtTime(.0001,when);
-    env.gain.exponentialRampToValueAtTime(level,when+.004);
-    env.gain.exponentialRampToValueAtTime(.0001,when+.18);
-    const output=typeof ac.createStereoPanner==='function'?ac.createStereoPanner():null;
-    if(output){
-     output.pan.value=Math.max(-.6,Math.min(.6,(i%5-2)*.23));
-     env.connect(output);output.connect(bus);
-    }else env.connect(bus);
-    for(const [idx,ratio] of [1,1.47,2.35].entries()){
-     const osc=ac.createOscillator();
-     osc.type=idx===2?'triangle':'sine';
-     osc.frequency.setValueAtTime(base*ratio,when);
-     osc.frequency.exponentialRampToValueAtTime(base*ratio*(idx===0?.82:.94),when+.16);
-     const attenuation=ac.createGain();
-     attenuation.gain.value=idx===0?1:idx===1?.38:.12;
-     osc.connect(attenuation);attenuation.connect(env);
-     osc.start(when);osc.stop(when+.2);
-     osc.onended=()=>{try{osc.disconnect();attenuation.disconnect();}catch(_){}
-      if(idx===2){try{env.disconnect();output?.disconnect();}catch(_){}}};
-    }
-    // O ruído curto imita o choque e as arestas das moedas a cair.
-    if(noiseBuffer&&i%2===0&&typeof ac.createBiquadFilter==='function'){
-     const noise=ac.createBufferSource(),filter=ac.createBiquadFilter(),ng=ac.createGain();
-     noise.buffer=noiseBuffer;filter.type='highpass';filter.frequency.value=2600+i%4*380;
-     ng.gain.setValueAtTime(.0001,when);
-     ng.gain.exponentialRampToValueAtTime(final?.007:.005,when+.003);
-     ng.gain.exponentialRampToValueAtTime(.0001,when+.058);
-     noise.connect(filter);filter.connect(ng);ng.connect(bus);
-     noise.start(when);noise.stop(when+.074);
-     noise.onended=()=>{try{noise.disconnect();filter.disconnect();ng.disconnect();}catch(_){}};
-    }
-   }
-  }catch(_){/* A apresentação sonora não pode impedir uma jogada. */}
+  const offsets=final?[0,.35,.76,1.17,1.58,1.98]:[0];
+  for(let i=0;i<offsets.length;i++){
+   try{
+    const source=ac.createBufferSource(),gain=ac.createGain();
+    source.buffer=sampleBuffer;
+    source.playbackRate.value=final?.96+(i%3)*.025:1;
+    gain.gain.value=final?.48:.88;
+    source.connect(gain);gain.connect(bus);
+    source.start(ac.currentTime+.006+offsets[i]);
+    source.onended=()=>{try{source.disconnect();gain.disconnect();}catch(_){}};
+   }catch(_){/* Erros sonoros não interrompem o jogo. */}
+  }
  }
-
  audio.coinCascade=coinSound;
  // A fanfarra anterior era uma escala simples; substitui-a por moedas a cair.
  audio.fanfare=function(){coinSound(true);};
@@ -272,6 +243,7 @@
    wrap.appendChild(el);
   }
   panel.appendChild(wrap);
+  coinSound(true); // A cascata sonora acompanha o resumo final.
   if(!document.getElementById('farao-coin-style')){
    const st=document.createElement('style');st.id='farao-coin-style';
    st.textContent='@keyframes farao-coin-fall{0%{opacity:0;transform:translateY(-15px) rotate(0)}'+
@@ -286,7 +258,7 @@
   return result;
  };
  g.coinCelebrations={
-  version:'1.4-giant-gold-coins',
+  version:'1.5-real-coin-sample',
   drawGoldenCoin:goldenCoin,
   get sparkles(){return sparkles.length;},
   events:{sequences:0,finales:0},
