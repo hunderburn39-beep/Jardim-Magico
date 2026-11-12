@@ -22,9 +22,6 @@
 .scratch-admin-card>strong{display:block;margin:4px 0;font-size:20px;color:#9df5c3;font-variant-numeric:tabular-nums}
 .scratch-admin-card dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:4px;font-size:10px}
 .scratch-admin-card dt{color:#c0cbe0}.scratch-admin-card dd{margin:0;color:#fff3d2;text-align:right;font-variant-numeric:tabular-nums}
-.scratch-admin-tools{margin:10px 0;padding:8px;border:1px solid #c3a76c;border-radius:12px;background:#111b34}
-.scratch-admin-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
-.scratch-admin .scratch-admin-remove{background:linear-gradient(#ed7893,#a12945);color:#fff6e6}
 .scratch-admin-logout{width:100%;margin-top:7px}
 @media(max-width:365px){.scratch-admin-card{padding:6px}.scratch-admin-card>strong{font-size:17px}.scratch-admin-card h3{font-size:13px}.scratch-admin-card dl{font-size:9px}.summary .admin-trigger{font-size:9px;padding:6px}}
 
