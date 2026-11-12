@@ -568,6 +568,41 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
   .lucky[data-count="1"],.lucky[data-count="2"]{max-height:43px}
 }
 
+
+/* Identificação no canto INFERIOR ESQUERDO do bilhete, fora das casas raspáveis.
+   Número oficial do JOGO + número local da SIMULAÇÃO: não é código de validação. */
+.ticket-identification{
+  z-index:22!important;
+  position:relative;
+  pointer-events:none;
+  flex:none;
+  align-self:stretch;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  align-items:flex-start;
+  min-height:27px;
+  max-width:100%;
+  margin:3px 0 0;
+  padding:3px 7px 2px;
+  border-top:1px solid color-mix(in srgb,var(--game-highlight,#ffdb85) 55%,transparent);
+  text-align:left;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+  overflow:hidden;
+  font-size:clamp(8px,2.1vw,10px);
+  font-weight:850;
+  letter-spacing:.1px;
+  line-height:1.25;
+  color:var(--game-bright,#ffe8b1);
+  text-shadow:0 1px 2px #000c;
+}
+.ticket-identification strong{display:block;font-size:clamp(9px,2.45vw,11px);font-weight:1000;color:var(--game-highlight,#ffdb85)}
+@media(max-height:680px){
+  .ticket-identification{min-height:21px;padding:1px 5px;font-size:8px;line-height:1.1;margin-top:1px}
+  .ticket-identification strong{font-size:9px}
+}
+
 </style>
 <link rel="stylesheet" href="./admin.css">
 <link rel="stylesheet" href="./theme.css">
@@ -588,6 +623,10 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
     <div class="numgrid lucky" id="lucky"></div>
     <h2>OS TEUS NÚMEROS</h2>
     <div class="numgrid play" id="play"></div>
+    <div id="ticket-identification" class="ticket-identification" aria-label="Identificação da raspadinha de simulação">
+      <span id="ticket-identification-game">JOGO N.º 659 · EMISSÃO 2026</span>
+      <strong id="ticket-identification-number">BILHETE SIMULADO — AGUARDA COMPRA</strong>
+    </div>
     <div id="scratch-layer" aria-label="Desliza o dedo para raspar as casas" role="group"></div>
   </section>
   <div class="actions"><button id="new" type="button">NOVA RASPADINHA · 1 €</button><button id="reveal" type="button">RASPAR TUDO</button></div>
@@ -878,9 +917,22 @@ function initModeTickets(saved){
   }
   saved.ticket=saved.modeTickets[String(saved.bet)]||null;
 }
+function initTicketIdentification(saved){
+  for(const bet of BET_LEVELS){
+    const t=saved.modeTickets?.[String(bet)];
+    if(!t||t.officialVersion!==1||Number.isSafeInteger(t.simulatedTicketNumber))continue;
+    const plan=officialPlan(bet);
+    const issued=saved.officialStock?.[String(plan?.game===659?10:plan?.game===667?20:plan?.game===669?50:100)]?.issued;
+    // Só os bilhetes previamente criados por este motor recebem um número retroativo:
+    // o contador já representa o bilhete mais recente desta modalidade.
+    if(t.officialGame===plan?.game&&Number.isSafeInteger(issued)&&issued>0)
+      t.simulatedTicketNumber=issued;
+  }
+}
 function fresh(){
   const freshState={balance:100000,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true,bet:100};
   initPools(freshState);initCommissions(freshState);initOfficialStock(freshState);initModeTickets(freshState);
+  initTicketIdentification(freshState);
   return freshState;
 }
 // Preserva os prémios e o progresso dos bilhetes antigos com 20 casas.
@@ -929,7 +981,7 @@ function migrateOldTicket(saved){
 function load(){
   try{
     const saved=JSON.parse(localStorage.getItem(KEY));
-    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0)){saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;migrateOldTicket(saved);initPools(saved);initCommissions(saved);initOfficialStock(saved);initModeTickets(saved);return saved;}
+    if(saved && ["balance","prizeBank","reserve","technician","merchant","cards"].every(k=>Number.isSafeInteger(saved[k]) && saved[k]>=0)){saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;migrateOldTicket(saved);initPools(saved);initCommissions(saved);initOfficialStock(saved);initModeTickets(saved);initTicketIdentification(saved);return saved;}
   }catch(_){}
   return fresh();
 }
@@ -1136,7 +1188,7 @@ function buy(){
   state.cards++;
   state.ticket={
     id:state.cards,lucky,play,prize,bet,maxMult,capMult:maxMult,poolVersion:1,
-    officialVersion:1,officialGame:plan.game,wins,cellPrizes,
+    officialVersion:1,officialGame:plan.game,simulatedTicketNumber:state.officialStock[String(maxMult)].issued,wins,cellPrizes,
     paidWins:[],revealed:[],completed:false
   };
   save();render();
@@ -1361,6 +1413,24 @@ function appendPreviewCell(parent){
   el(parent).append(cell);
 }
 
+function renderTicketIdentification(ticket){
+  const mode=modeForBet(ticket?.bet||state.bet);
+  const plan=officialPlan(mode.bet);
+  const officialGameNumber=Number.isSafeInteger(plan?.game)?plan.game:"—";
+  el("ticket-identification-game").textContent="JOGO N.º "+officialGameNumber+" · EMISSÃO 2026";
+  const number=el("ticket-identification-number");
+  if(!ticket){
+    number.textContent="BILHETE SIMULADO · AGUARDA COMPRA";
+    return;
+  }
+  // A numeração é local e sequencial por jogo: não é um identificador
+  // emitido nem validado pela Santa Casa e não pode servir para resgate.
+  const local=Number.isSafeInteger(ticket.simulatedTicketNumber)&&ticket.simulatedTicketNumber>0
+    ?String(ticket.simulatedTicketNumber).padStart(8,"0")
+    :null;
+  number.textContent=local?"BILHETE SIMULADO N.º "+local
+    :"BILHETE ANTERIOR DE TESTE N.º "+String(ticket.id||0).padStart(8,"0");
+}
 function render(){
   paintBalance();paintBet();
   scratchHandlers.clear();
@@ -1373,6 +1443,7 @@ function render(){
   el("play").dataset.count=String(layoutPlay);
   document.body.dataset.ticketMode=String(modeForBet(ticket?.bet||state.bet).mult);
   document.body.dataset.ticketStatus=ticket?"started":"preview";
+  renderTicketIdentification(ticket);
   if(!ticket){
     el("ticketid").textContent="PRONTO A JOGAR";
     for(let i=0;i<layoutLucky;i++)appendPreviewCell("lucky");
