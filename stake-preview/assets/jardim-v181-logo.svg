@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="410" viewBox="0 0 940 410" role="img" aria-label="Jardim Mágico — logótipo dourado e verde, totalmente visível">
+<title>Jardim Mágico</title>
+<defs>
+ <linearGradient id="wordA" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#f2ffa3"/><stop offset=".18" stop-color="#7bd45d"/><stop offset=".48" stop-color="#227744"/><stop offset=".75" stop-color="#19532e"/><stop offset="1" stop-color="#9add75"/></linearGradient>
+ <linearGradient id="wordB" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#fff9d2"/><stop offset=".25" stop-color="#e9a9ff"/><stop offset=".54" stop-color="#b458d9"/><stop offset=".76" stop-color="#622a9c"/><stop offset="1" stop-color="#d9acf5"/></linearGradient>
+ <linearGradient id="gilt" x1="0" x2=".3" y1="0" y2="1"><stop stop-color="#fffbd9"/><stop offset=".21" stop-color="#fbd77f"/><stop offset=".47" stop-color="#b5651a"/><stop offset=".7" stop-color="#e8ac46"/><stop offset="1" stop-color="#fff7bc"/></linearGradient>
+ <linearGradient id="sprig" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#ccf594"/><stop offset=".48" stop-color="#418b49"/><stop offset="1" stop-color="#153e35"/></linearGradient>
+ <radialGradient id="gem"><stop stop-color="#fffde8"/><stop offset=".21" stop-color="#f0beff"/><stop offset=".56" stop-color="#ae42d5"/><stop offset="1" stop-color="#522887"/></radialGradient>
+ <filter id="goldShadow" x="-25%" y="-30%" width="150%" height="160%"><feDropShadow dx="1" dy="8" stdDeviation="5" flood-color="#040d13" flood-opacity=".8"/></filter>
+</defs>
+<!-- Sculpted background ornament: deliberately transparent center, no photo, no crop -->
+<path d="M90 170Q136 104 223 109Q245 52 295 59Q320 23 379 43Q471 11 555 42Q619 23 651 72Q734 48 781 120Q829 125 848 178Q819 243 742 252Q667 337 472 369Q287 346 206 268Q118 270 90 170Z" fill="#093321" opacity=".76" stroke="#0d2d25" stroke-width="12"/>
+<path d="M92 168Q179 87 256 100Q325 12 448 37Q574 5 647 93Q746 74 846 175" stroke="url(#gilt)" stroke-width="7" fill="none" opacity=".75"/>
+<g fill="url(#sprig)" stroke="#ddf9a5" stroke-width="2">
+ <path d="M87 240Q29 171 94 118Q148 151 87 240Z"/><path d="M130 267Q46 240 66 170Q131 169 130 267Z"/>
+ <path d="M165 95Q105 31 177 16Q205 49 165 95Z"/><path d="M243 51Q231 0 279 15Q296 38 243 51Z"/>
+ <path d="M853 240Q911 171 846 118Q792 151 853 240Z"/><path d="M810 267Q894 240 874 170Q809 169 810 267Z"/>
+ <path d="M775 95Q835 31 763 16Q735 49 775 95Z"/><path d="M697 51Q709 0 661 15Q644 38 697 51Z"/>
+</g>
+<g fill="#d06fe1" stroke="#ffe4b8" stroke-width="3">
+ <ellipse cx="101" cy="242" rx="21" ry="38" transform="rotate(25 101 242)"/>
+ <ellipse cx="101" cy="242" rx="21" ry="38" transform="rotate(85 101 242)"/>
+ <ellipse cx="101" cy="242" rx="21" ry="38" transform="rotate(145 101 242)"/>
+ <ellipse cx="839" cy="242" rx="21" ry="38" transform="rotate(-25 839 242)"/>
+ <ellipse cx="839" cy="242" rx="21" ry="38" transform="rotate(-85 839 242)"/>
+ <ellipse cx="839" cy="242" rx="21" ry="38" transform="rotate(-145 839 242)"/>
+</g>
+<circle cx="101" cy="242" r="12" fill="#ffe7a5"/><circle cx="839" cy="242" r="12" fill="#ffe7a5"/>
+<g font-family="Georgia,'Times New Roman',serif" font-weight="900" text-anchor="middle" paint-order="stroke fill" stroke-linejoin="round" filter="url(#goldShadow)">
+ <text x="470" y="185" font-size="157" letter-spacing="-8" textLength="585" lengthAdjust="spacingAndGlyphs" stroke="#201109" stroke-width="23" fill="#0c241d">Jardim</text>
+ <text x="470" y="185" font-size="157" letter-spacing="-8" textLength="585" lengthAdjust="spacingAndGlyphs" stroke="url(#gilt)" stroke-width="13" fill="url(#wordA)">Jardim</text>
+ <text x="470" y="185" font-size="157" letter-spacing="-8" textLength="585" lengthAdjust="spacingAndGlyphs" fill="url(#wordA)" stroke="none">Jardim</text>
+ <text x="470" y="315" font-size="135" letter-spacing="-4" textLength="620" lengthAdjust="spacingAndGlyphs" stroke="#21122c" stroke-width="24" fill="#170d24">MÁGICO</text>
+ <text x="470" y="315" font-size="135" letter-spacing="-4" textLength="620" lengthAdjust="spacingAndGlyphs" stroke="url(#gilt)" stroke-width="13" fill="url(#wordB)">MÁGICO</text>
+ <text x="470" y="315" font-size="135" letter-spacing="-4" textLength="620" lengthAdjust="spacingAndGlyphs" fill="url(#wordB)" stroke="none">MÁGICO</text>
+</g>
+<path d="M187 340Q470 404 753 340" fill="none" stroke="#533322" stroke-width="15"/>
+<path d="M190 336Q470 401 751 336" fill="none" stroke="url(#gilt)" stroke-width="7" stroke-linecap="round"/>
+<path d="M469 329L490 357 470 389 448 357Z" fill="url(#gem)" stroke="#ffdf91" stroke-width="6"/>
+<path d="M458 356H481M469 339V380" stroke="#f9e5ff" opacity=".8" stroke-width="2"/>
+<g fill="#fff6c8">
+ <circle cx="178" cy="103" r="4"/><circle cx="751" cy="92" r="3"/>
+ <circle cx="284" cy="36" r="4"/><circle cx="669" cy="42" r="4"/>
+ <circle cx="198" cy="296" r="2.8"/><circle cx="749" cy="307" r="2.8"/>
+</g>
+</svg>
