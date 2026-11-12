@@ -376,3 +376,121 @@ body[data-mode] .ticket::after{
   body[data-mode] .ticket::after{animation:none!important}
   body[data-mode] .ambience-trails{opacity:.10}
 }
+
+
+/* PALETAS OFICIAIS 2026 - A/B
+ * Adaptacao cromatica das frentes de bilhete, sem reproduzir arte original.
+ * Fotografias Santa Casa: jogo 659 10X (rosa/amarelo), jogo 667 20X
+ * (magenta/verde), jogo 669 50X (amarelo/lilas), jogo 677 100X
+ * (turquesa/coral). Cada bilhete usa variante A ou B persistente.
+ */
+body[data-mode="10"][data-ticket-color="a"]{
+  --orig-top:#ff2a93;--orig-middle:#f81172;--orig-bottom:#bc0756;
+  --orig-stroke:#fff18d;--orig-label:#290a31;
+  --game-sky:#fb178c;--game-middle:#ab0d64;--game-bottom:#330c35;
+  --game-highlight:#ffdf3d;--game-accent:#ff5eaa;--game-bright:#fff2c2;
+  --game-ticket-1:#fa258b;--game-ticket-2:#d71677;--game-ticket-3:#85154c;
+  --game-depth:#83133f;--game-dark:#400a30;--game-ink:#3c1237;
+}
+body[data-mode="10"][data-ticket-color="b"]{
+  --orig-top:#ffe81b;--orig-middle:#ffce05;--orig-bottom:#d88b00;
+  --orig-stroke:#fa3695;--orig-label:#312100;
+  --game-sky:#f9d51d;--game-middle:#b56b12;--game-bottom:#35200b;
+  --game-highlight:#f62b91;--game-accent:#fda533;--game-bright:#fff9d0;
+  --game-ticket-1:#ffe532;--game-ticket-2:#ffba0b;--game-ticket-3:#ae6804;
+  --game-depth:#9f5809;--game-dark:#412909;--game-ink:#312100;
+}
+body[data-mode="20"][data-ticket-color="a"]{
+  --orig-top:#ff2b9d;--orig-middle:#ee137d;--orig-bottom:#b40065;
+  --orig-stroke:#9fe936;--orig-label:#2b092e;
+  --game-sky:#fa2588;--game-middle:#ae0c63;--game-bottom:#360b32;
+  --game-highlight:#59e0f6;--game-accent:#ff65b1;--game-bright:#ffe8fa;
+  --game-ticket-1:#ff3ea8;--game-ticket-2:#ed1486;--game-ticket-3:#9a0c59;
+  --game-depth:#8a125a;--game-dark:#3d0b39;--game-ink:#310a35;
+}
+body[data-mode="20"][data-ticket-color="b"]{
+  --orig-top:#b0f314;--orig-middle:#7ade0b;--orig-bottom:#398b16;
+  --orig-stroke:#fbd92b;--orig-label:#1b2a0a;
+  --game-sky:#87da26;--game-middle:#387f29;--game-bottom:#12321b;
+  --game-highlight:#ffe641;--game-accent:#9cf259;--game-bright:#f2ffbb;
+  --game-ticket-1:#b1ee35;--game-ticket-2:#68c519;--game-ticket-3:#31791c;
+  --game-depth:#315e18;--game-dark:#19351b;--game-ink:#1d3212;
+}
+body[data-mode="50"][data-ticket-color="a"]{
+  --orig-top:#fff235;--orig-middle:#f7d32c;--orig-bottom:#cb9b00;
+  --orig-stroke:#9ada3d;--orig-label:#33220a;
+  --game-sky:#ffdf2d;--game-middle:#ae800d;--game-bottom:#33250e;
+  --game-highlight:#a0f03c;--game-accent:#ffbd18;--game-bright:#fffacc;
+  --game-ticket-1:#ffe54a;--game-ticket-2:#f7c930;--game-ticket-3:#a67a0b;
+  --game-depth:#8c650e;--game-dark:#3d3011;--game-ink:#3b2c10;
+}
+body[data-mode="50"][data-ticket-color="b"]{
+  --orig-top:#e2c5ff;--orig-middle:#b39bd6;--orig-bottom:#8061ad;
+  --orig-stroke:#a1df4b;--orig-label:#27163d;
+  --game-sky:#c3a3e4;--game-middle:#6a4a9a;--game-bottom:#28173f;
+  --game-highlight:#d6ff5c;--game-accent:#cb9aff;--game-bright:#f3ddff;
+  --game-ticket-1:#d8baf5;--game-ticket-2:#a685ce;--game-ticket-3:#684b9c;
+  --game-depth:#5d3c84;--game-dark:#28173f;--game-ink:#2a1642;
+}
+body[data-mode="100"][data-ticket-color="a"]{
+  --orig-top:#27e4df;--orig-middle:#13c7cb;--orig-bottom:#087a91;
+  --orig-stroke:#ffed60;--orig-label:#043340;
+  --game-sky:#1fd0d6;--game-middle:#117c91;--game-bottom:#082d45;
+  --game-highlight:#ffdd4b;--game-accent:#34eded;--game-bright:#e1ffff;
+  --game-ticket-1:#28dedf;--game-ticket-2:#13b7c9;--game-ticket-3:#11778f;
+  --game-depth:#0b6272;--game-dark:#073044;--game-ink:#073745;
+}
+body[data-mode="100"][data-ticket-color="b"]{
+  --orig-top:#ffc6ad;--orig-middle:#f4a19b;--orig-bottom:#cd657b;
+  --orig-stroke:#ffe465;--orig-label:#4d172e;
+  --game-sky:#f6aea8;--game-middle:#ad536b;--game-bottom:#401a38;
+  --game-highlight:#ffe568;--game-accent:#ffbe7b;--game-bright:#fff1d7;
+  --game-ticket-1:#ffc3b1;--game-ticket-2:#ec9a9e;--game-ticket-3:#b05a78;
+  --game-depth:#973b59;--game-dark:#422037;--game-ink:#451a31;
+}
+/* Pre-visualizacao na primeira cor para quem entra antes de comprar. */
+body[data-mode="10"]:not([data-ticket-color]){--orig-top:#ff2a93;--orig-middle:#f81172;--orig-bottom:#bc0756;--orig-stroke:#fff18d;--orig-label:#290a31}
+body[data-mode="20"]:not([data-ticket-color]){--orig-top:#ff2b9d;--orig-middle:#ee137d;--orig-bottom:#b40065;--orig-stroke:#9fe936;--orig-label:#2b092e}
+body[data-mode="50"]:not([data-ticket-color]){--orig-top:#fff235;--orig-middle:#f7d32c;--orig-bottom:#cb9b00;--orig-stroke:#9ada3d;--orig-label:#33220a}
+body[data-mode="100"]:not([data-ticket-color]){--orig-top:#27e4df;--orig-middle:#13c7cb;--orig-bottom:#087a91;--orig-stroke:#ffed60;--orig-label:#043340}
+
+/* Cores de papel e pequenas riscas das frentes de 2026.
+ * A textura movimenta-se discretamente, sem cobrir numeros ou estrelas. */
+body[data-mode] .ticket{
+  background:
+    radial-gradient(ellipse at 50% -18%,#ffffffb2,transparent 46%),
+    repeating-linear-gradient(0deg,#fff4 0 1px,transparent 2px 21px),
+    radial-gradient(ellipse at 90% 75%,color-mix(in srgb,var(--orig-stroke) 32%,transparent),transparent 48%),
+    linear-gradient(145deg,var(--orig-top),var(--orig-middle) 48%,var(--orig-bottom));
+  background-size:160% 150%,100% 100%,145% 145%,100% 100%;
+  border-color:var(--orig-stroke);
+  box-shadow:0 10px 24px #0009,0 0 22px color-mix(in srgb,var(--orig-top) 50%,transparent),
+    inset 0 0 0 2px #fff8;
+}
+body[data-mode] .ticket::before{
+  border-color:#ffffff9c;
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--orig-stroke) 55%,transparent);
+}
+body[data-mode] .ticket h2{
+  color:var(--orig-label);
+  text-shadow:0 1px 0 #fff9,0 0 10px #ffffff52;
+}
+body[data-mode] .ticket h2::before,body[data-mode] .ticket h2::after{
+  background:linear-gradient(90deg,transparent,var(--orig-label));
+}
+body[data-mode] .tickettop span:first-child{
+  color:var(--orig-label);
+  text-shadow:0 1px 1px #fff9;
+}
+body[data-mode] .ticket-identification,
+body[data-mode] .ticket-identification strong{
+  color:var(--orig-label);
+  text-shadow:0 1px #ffffff8c;
+}
+body[data-mode] .ticket-identification{border-top-color:color-mix(in srgb,var(--orig-label) 36%,transparent)}
+/* Estrelas e casas continuam contrastadas sobre os fundos fortes. */
+body[data-mode] .lucky .cell,
+body[data-mode] .play .cell:not(.winning){
+  box-shadow:0 1px 3px #0007,inset 0 1px 2px #fff4;
+}
+body[data-mode] .ticket .cell canvas{touch-action:none}
