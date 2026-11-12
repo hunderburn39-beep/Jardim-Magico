@@ -39,8 +39,7 @@ function draw(){
       ["Vendas",eur(p.stakes)],
       ["Prémios pagos",eur(p.paid)],
       ["Prémios pendentes",eur(Math.max(0,p.awarded-p.paid))],
-      ["Lucro da tiragem",formatSignedEuro(p.stakes-p.paid)],
-      ["Fundo auxiliar (não usado)",eur(p.available)]
+      ["Lucro da tiragem",formatSignedEuro(p.stakes-p.paid)]
     ];
     for(const [name,value] of rows){
       const dt=document.createElement("dt"),dd=document.createElement("dd");
@@ -55,10 +54,7 @@ function draw(){
     card.append(title,balance,detail,resetButton);target.append(card);
   }
   $("scratch-admin-total").textContent=formatSignedEuro(report.profit);
-  $("scratch-admin-legacy").textContent=
-    "O lucro total inclui as vendas e os prémios pagos de todas as séries anteriores (mesmo após reiniciar uma raspadinha). "+
-    "Os fundos auxiliares não alteram os prémios nem a divisão do lucro."+
-    (state.prizeBank>0?" Fundo antigo guardado como histórico: "+eur(state.prizeBank)+".":"");
+
 }
 
 function formatSignedEuro(cents){return cents<0?"−"+eur(-cents):eur(cents)}
@@ -226,29 +222,6 @@ function drawOfficialPlans(){
   link.textContent="Ver verso oficial do jogo "+plan.game;
 }
 
-function amount(){
-  const raw=$("scratch-admin-amount").value.trim().replace(/\s/g,"").replace(",",".");
-  if(!/^\d{1,8}(?:\.\d{1,2})?$/.test(raw))return null;
-  const [whole,decimal=""]=raw.split(".");
-  const cents=Number(whole)*100+Number(decimal.padEnd(2,"0"));
-  return Number.isSafeInteger(cents)&&cents>=100?cents:null;
-}
-function modify(kind){
-  if(!unlocked)return;
-  const mode=$("scratch-admin-mode").value,p=state.pools[mode];
-  const sum=amount(),notice=$("scratch-admin-note");
-  if(!p||sum===null){notice.textContent="Indica um valor válido de pelo menos 1 €.";return}
-  if(kind==="remove"){
-    if(sum>p.available){notice.textContent="Esse cofre não tem saldo disponível suficiente.";return}
-    p.available-=sum;p.removed+=sum;
-    notice.textContent=eur(sum)+" retirados do fundo "+mode+"X.";
-  }else{
-    if(!Number.isSafeInteger(p.available+sum)||!Number.isSafeInteger(p.added+sum)){notice.textContent="Montante acima do limite.";return}
-    p.available+=sum;p.added+=sum;
-    notice.textContent=eur(sum)+" colocados no fundo "+mode+"X.";
-  }
-  save();draw();
-}
 $("scratch-admin-open").addEventListener("click",show);
 $("scratch-admin-close").addEventListener("click",close);
 $("scratch-admin-login-form").addEventListener("submit",e=>{
@@ -265,8 +238,6 @@ $("scratch-commission-merchant-withdraw").addEventListener("click",()=>withdrawC
 $("scratch-commission-technician-withdraw").addEventListener("click",()=>withdrawCommission("technician"));
 $("scratch-plans-mode").addEventListener("change",drawOfficialPlans);
 $("scratch-reset-all").addEventListener("click",confirmAllReset);
-$("scratch-admin-add").addEventListener("click",()=>modify("add"));
-$("scratch-admin-remove").addEventListener("click",()=>modify("remove"));
 panel.addEventListener("touchstart",e=>{if(e.touches.length===1)previousY=e.touches[0].clientY},{passive:true});
 panel.addEventListener("touchmove",e=>{
   if(previousY===null||e.touches.length!==1)return;
