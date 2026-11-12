@@ -193,15 +193,17 @@
  const oldSync=g.syncLedger.bind(g);
  g.syncLedger=function(){
    oldSync();
-   if(!this._freeTurbo)this._savedTurbo=!!this.ledger.settings.turbo;
-   if(this._freeTurbo)this.turbo=true;
+   // Free Spins a velocidade estável, mesmo que o Turbo esteja guardado.
+   this._savedTurbo=!!this.ledger.settings.turbo;
+   if(this.feature)this.turbo=false;
  };
  const oldSave=g.save.bind(g);
  g.save=function(){
    const active=this.turbo;
-   if(this._freeTurbo)this.turbo=this._savedTurbo;
+   // Preservar a preferência do jogo base sem gravar o modo lento como Turbo.
+   if(this.feature)this.turbo=this._savedTurbo;
    oldSave();
-   if(!this._freeTurbo)this._savedTurbo=!!this.ledger.settings.turbo;
+   if(!this.feature)this._savedTurbo=!!this.ledger.settings.turbo;
    this.turbo=active;
  };
  const oldStart=g.startSpin.bind(g);
@@ -226,13 +228,9 @@
      return oldStart();
    }
    if(manual&&this.paused){oldStart();return;}
-   if(this.feature&&manual&&(this._freeStarted||this.feature.played>0)){
-     this._freeTurbo=!this._freeTurbo;
-     this.turbo=this._freeTurbo||this._savedTurbo;
-     this.notice(this._freeTurbo?'FREE SPINS · TURBO ATIVO':
-       'FREE SPINS · VELOCIDADE NORMAL',870,'cyan');
-     return;
-   }
+   // GIRAR durante as Free Spins nunca altera a velocidade acidentalmente.
+   // O ritmo é controlado pela animação normal do bónus.
+   if(this.feature&&manual&&(this._freeStarted||this.feature.played>0))return;
    oldStart();
  };
  const originalAuto=g.autoSpin.bind(g);
