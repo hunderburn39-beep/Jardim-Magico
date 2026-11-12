@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 580" width="920" height="580" fill="none">
+<title>Moldura Jardim Mágico V1.8 — ouro, madeira e flores</title>
+<defs>
+ <linearGradient id="wood" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#45241a"/><stop offset=".27" stop-color="#9c5730"/><stop offset=".55" stop-color="#422519"/><stop offset=".8" stop-color="#a2663a"/><stop offset="1" stop-color="#422119"/></linearGradient>
+ <linearGradient id="gold" x1="0" x2=".8" y1="0" y2="1"><stop stop-color="#fff6b8"/><stop offset=".2" stop-color="#c28624"/><stop offset=".44" stop-color="#fae282"/><stop offset=".63" stop-color="#a55a19"/><stop offset=".86" stop-color="#ffc964"/><stop offset="1" stop-color="#fff8c0"/></linearGradient>
+ <linearGradient id="gem" x1="0" x2=".9" y1="0" y2="1"><stop stop-color="#fff0ff"/><stop offset=".18" stop-color="#cc77ff"/><stop offset=".54" stop-color="#7a19c5"/><stop offset=".76" stop-color="#482184"/><stop offset="1" stop-color="#e6b2ff"/></linearGradient>
+ <filter id="glow" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<g stroke-linejoin="round">
+ <rect x="12" y="34" width="896" height="515" rx="38" stroke="#25120b" stroke-width="17"/>
+ <rect x="15" y="34" width="890" height="509" rx="39" stroke="url(#wood)" stroke-width="29"/>
+ <rect x="21" y="42" width="878" height="500" rx="38" stroke="url(#gold)" stroke-width="10"/>
+ <rect x="34" y="56" width="850" height="468" rx="27" stroke="#5c3c1b" stroke-width="8"/>
+ <rect x="37" y="58" width="845" height="464" rx="26" stroke="#ffda78" stroke-width="4"/>
+ <rect x="44" y="66" width="832" height="448" rx="20" stroke="#fcf0a8" stroke-width="1.8" opacity=".7"/>
+</g>
+<g stroke="url(#gold)" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M70 20 Q166 -5 232 24 Q289 58 363 32 Q399 15 435 26 M486 26 Q526 15 557 32 Q645 55 717 23 Q790-4 851 24" stroke-width="11"/>
+ <path d="M70 560 Q166 583 232 552 Q290 519 370 547 Q412 556 434 548 M485 548 Q533 566 563 546 Q648 522 722 558 Q790 584 851 558" stroke-width="11"/>
+ <path d="M67 23 Q151 7 197 34 Q230 61 271 29 M849 23 Q772 8 728 34 Q691 61 653 29 M69 556 Q148 574 205 545 Q241 511 268 551 M851 556 Q774 569 713 546 Q679 512 652 551" stroke-width="4.2"/>
+</g>
+<g fill="#3d8a4b" stroke="#c6e99b" stroke-width="1.8">
+ <path d="M100 26 Q131 -4 169 3 Q164 28 125 34 Z"/><path d="M820 26 Q788 -5 748 3 Q754 27 793 34 Z"/>
+ <path d="M113 559 Q129 586 164 573 Q169 548 135 547 Z"/><path d="M807 559 Q787 589 748 573 Q748 548 787 547 Z"/>
+ <path d="M41 92 Q-4 120 20 164 Q54 153 44 122 Z"/><path d="M877 92 Q923 117 901 164 Q872 155 876 124 Z"/>
+ <path d="M40 475 Q1 443 18 410 Q58 425 45 456 Z"/><path d="M880 473 Q922 442 904 406 Q864 424 874 452 Z"/>
+</g>
+<g fill="url(#gold)" stroke="#6b3511" stroke-width="3">
+ <path d="M445 8 Q460 -4 476 8 L493 29 476 53 458 66 438 52 422 29Z"/>
+ <path d="M445 512 Q460 499 476 513 L494 545 476 567 458 578 440 565 422 544Z"/>
+</g>
+<g fill="url(#gem)" stroke="#fff4cb" stroke-width="2.3" filter="url(#glow)">
+ <path d="M460 15 L478 31 461 56 443 31Z"/><path d="M460 524 L478 545 461 566 443 545Z"/>
+</g>
+<path d="M443 31h35m-18-16v41m-18-25 18 4 18-4" stroke="#f3ccff" stroke-opacity=".7"/>
+<path d="M443 545h35m-18-21v42m-18-21 18-4 18 4" stroke="#f3ccff" stroke-opacity=".7"/>
+<g transform="translate(52 54) scale(1 1)">
+ <g fill="#df86de" stroke="#ffe0f1" stroke-width="1.9"><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(0)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(72)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(144)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(216)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(288)"/></g>
+ <circle r="8" fill="#fee89d"/><circle r="3" fill="#d78430"/>
+ <path d="M-8 13 Q-36 33-49 17 Q-42-3-14 4" fill="#4d9a51" stroke="#cbed85" stroke-width="2"/>
+ <path d="M8 14 Q24 47 43 31 Q44 12 13 7" fill="#2c7341" stroke="#d1eb90" stroke-width="2"/>
+ </g>
+<g transform="translate(868 54) scale(-1 1)">
+ <g fill="#df86de" stroke="#ffe0f1" stroke-width="1.9"><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(0)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(72)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(144)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(216)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(288)"/></g>
+ <circle r="8" fill="#fee89d"/><circle r="3" fill="#d78430"/>
+ <path d="M-8 13 Q-36 33-49 17 Q-42-3-14 4" fill="#4d9a51" stroke="#cbed85" stroke-width="2"/>
+ <path d="M8 14 Q24 47 43 31 Q44 12 13 7" fill="#2c7341" stroke="#d1eb90" stroke-width="2"/>
+ </g>
+<g transform="translate(52 527) scale(1 1)">
+ <g fill="#df86de" stroke="#ffe0f1" stroke-width="1.9"><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(0)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(72)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(144)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(216)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(288)"/></g>
+ <circle r="8" fill="#fee89d"/><circle r="3" fill="#d78430"/>
+ <path d="M-8 13 Q-36 33-49 17 Q-42-3-14 4" fill="#4d9a51" stroke="#cbed85" stroke-width="2"/>
+ <path d="M8 14 Q24 47 43 31 Q44 12 13 7" fill="#2c7341" stroke="#d1eb90" stroke-width="2"/>
+ </g>
+<g transform="translate(868 527) scale(-1 1)">
+ <g fill="#df86de" stroke="#ffe0f1" stroke-width="1.9"><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(0)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(72)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(144)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(216)"/><ellipse cx="0" cy="-20" rx="12" ry="25" transform="rotate(288)"/></g>
+ <circle r="8" fill="#fee89d"/><circle r="3" fill="#d78430"/>
+ <path d="M-8 13 Q-36 33-49 17 Q-42-3-14 4" fill="#4d9a51" stroke="#cbed85" stroke-width="2"/>
+ <path d="M8 14 Q24 47 43 31 Q44 12 13 7" fill="#2c7341" stroke="#d1eb90" stroke-width="2"/>
+ </g>
+<g fill="#fff1b0" opacity=".78" filter="url(#glow)">
+ <circle cx="160" cy="21" r="3"/><circle cx="758" cy="27" r="2"/><circle cx="72" cy="267" r="2"/><circle cx="844" cy="240" r="3"/><circle cx="232" cy="546" r="2"/><circle cx="706" cy="539" r="3"/>
+</g>
+</svg>
