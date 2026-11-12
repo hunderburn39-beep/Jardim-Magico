@@ -31,8 +31,9 @@ permissions:
 
 concurrency:
   group: publicar-quatro-jogos-pages
-  # Uma publicação nova substitui automaticamente a anterior que ficou presa.
-  cancel-in-progress: true
+  # Não cancelar uma publicação já em curso quando outra pasta de jogo é alterada.
+  # O GitHub mantém a execução em curso e a mais recente pendente.
+  cancel-in-progress: false
 
 jobs:
   preparar:
