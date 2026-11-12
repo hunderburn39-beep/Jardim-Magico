@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V1.5</title>
+<title>Jardim Mágico | Edição Stake Preview V1.6</title>
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -129,6 +129,9 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .bet-controls button{border:1px solid #e5ca8e;background:#503b5b;color:#fbe6b9;border-radius:50%;width:27px;height:27px;font-size:18px;font-weight:900}
 .actions{display:grid;grid-template-columns:1fr 1.45fr 1fr;gap:8px;align-items:center;margin:2px 2px 9px}
 .action-small{border-radius:15px;padding:12px 4px;color:#fff8df;background:linear-gradient(#4c3770,#281b48);border:2px solid #d2a969;font-weight:850;font-size:11px;min-height:57px;text-shadow:0 1px 2px #000}
+.action-small.auto-running{background:linear-gradient(165deg,#8b2d58,#522144);border-color:#ffe6ad;box-shadow:0 0 15px #e6aa7682;animation:autoGlow 1.2s ease-in-out infinite alternate}
+.action-small.auto-running #autoLabel{color:#fff4ae}
+@keyframes autoGlow{to{filter:brightness(1.18)}}
 .spin{height:74px;border-radius:50%;max-width:135px;width:100%;justify-self:center;border:5px solid #ffe3a5;color:#133023;background:radial-gradient(circle at 34% 20%,#dbffe3,#7eeab9 45%,#17865a 100%);box-shadow:0 5px #266144,0 8px 20px #000d,inset 0 2px 8px #f9ffe7;font-size:16px;font-weight:1000;letter-spacing:.02em;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .spin b{font-size:28px;line-height:1}
 .bonus-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 2px}
@@ -251,13 +254,13 @@ button:disabled{opacity:.48;cursor:not-allowed}
  <div class="actions">
   <button class="action-small" id="turbo">⚡ TURBO<br><b id="turboLabel">DESL.</b></button>
   <button class="spin" id="spin"><b>↻</b>RODAR</button>
-  <button class="action-small" id="auto">↻ AUTO<br><b id="autoLabel">5 GIROS</b></button>
+  <button class="action-small" id="auto" type="button" aria-label="Iniciar cinco rodadas automáticas" aria-pressed="false"><span id="autoHeading">↻ AUTO</span><br><b id="autoLabel">5 GIROS</b></button>
  </div>
  <div class="bonus-row">
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V1.5 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
+ <footer class="foot"><b>V1.6 • PRÉ-VISUALIZAÇÃO JOGÁVEL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="freeResultOverlay" role="dialog" aria-modal="true" aria-label="Resultado final das Free Spins"><div class="modal free-result-modal"><h2>✦ FREE SPINS ✦</h2><p>O BÓNUS TERMINOU</p><div id="freeResultTotal" class="free-result-total">0,00</div><div class="free-result-math"><span>Jogadas realizadas</span><strong id="freeResultPlayed">15</strong><span>Prémio bruto</span><strong id="freeResultRaw">0,00</strong><span>Multiplicador</span><strong id="freeResultMulti">×1</strong></div><button class="free-continue" id="closeFree" type="button">▶ CONTINUAR</button></div></div>
  <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
@@ -270,7 +273,35 @@ button:disabled{opacity:.48;cursor:not-allowed}
 "use strict";
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-const pause=ms=>skipAnimations?Promise.resolve():sleep(ms);
+// Pauses used by animations can be ended immediately by PASSAR, even while awaiting.
+const activePauses=new Set();
+function pause(ms){
+  if(skipAnimations||ms<=0)return Promise.resolve();
+  return new Promise(resolve=>{
+    let finished=false;
+    const entry={timer:null,finish(){
+      if(finished)return;
+      finished=true;
+      clearTimeout(entry.timer);
+      activePauses.delete(entry);
+      resolve();
+    }};
+    entry.timer=setTimeout(()=>entry.finish(),ms);
+    activePauses.add(entry);
+  });
+}
+function skipCurrentAnimations(){
+  if(!busy)return false;
+  skipAnimations=true;
+  for(const entry of [...activePauses])entry.finish();
+  stopSpinEffect();
+  acknowledgeFreeContinue();
+  acknowledgeHoldContinue();
+  clearWinSparks();
+  controls();
+  say("A apresentar o resultado final desta jogada…","bonus");
+  return true;
+}
 const TYPES=[
  {label:"CARACOL",image:"../assets/imagens/jm38-caracol.svg"},
  {label:"JOANINHA",image:"../assets/imagens/jm38-joaninha.svg"},
@@ -287,7 +318,7 @@ const TYPES=[
 ];
 const WEIGHTS=[10,13,11,10,4,11,10,9,10,4,12,7], LINES=[[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,1,2],[1,2,2,1,0],[0,1,1,1,2]],COEFS=[3,4,8,5,10,7,4,4,7,0,0,0],PAY=[0,0,0,7,25,80];
 const BETS=[.05,.10,.20,.40,.60,.80,1,1.50,2,3,5,7.5,10];
-let betIndex=2,balance=1000,lastWin=0,busy=false,turbo=false,sound=true,autoLeft=0,toastTimer=0,skipAnimations=false;
+let betIndex=2,balance=1000,lastWin=0,busy=false,turbo=false,sound=true,autoLeft=0,autoSession=0,toastTimer=0,skipAnimations=false;
 let pendingHoldContinue=null,pendingFreeContinue=null;
 let historyRecords=[],serial=0,replayBet=null,detailRoundId=null,detailFrameIndex=0,pendingRound=null,recoveredRoundId=null;
 let musicEnabled=true,backgroundMusic=null,audioActivated=false,gardenEntered=false;
@@ -584,7 +615,36 @@ function acknowledgeFreeContinue(){if(!pendingFreeContinue)return false;const do
 function waitFreeContinue(){if(skipAnimations)return Promise.resolve();if(pendingFreeContinue)throw Error("Free Spins já aguardam confirmação");return new Promise(done=>{pendingFreeContinue=done})}
 function clearFreeHud(){$("freePanel").hidden=true;$("freePanel").classList.remove("celebrate");$("freeRetrigger").hidden=true}
 function finalWinTier(payout,stake){const ratio=payout/stake;return ratio>=100?"SENSACIONAL":ratio>=25?"MEGA WIN":ratio>=10?"BIG WIN":"PRÉMIO TOTAL"}
-function controls(){["spin","minus","plus","buyFree","buyHold","reloadBtn","auto","historyBtn","paytableBtn"].forEach(id=>$(id).disabled=busy);$("skipBtn").hidden=!busy||skipAnimations;document.querySelectorAll("[data-bet]").forEach(button=>button.disabled=busy);$("turboLabel").textContent=turbo?"LIGADO":"DESL.";$("autoLabel").textContent=autoLeft?autoLeft+" GIROS":"5 GIROS"}
+function controls(){
+  const autoRunning=autoLeft>0;
+  ["spin","minus","plus","buyFree","buyHold","reloadBtn","historyBtn","paytableBtn"].forEach(id=>$(id).disabled=busy||autoRunning);
+  $("auto").disabled=busy&&!autoRunning;
+  $("auto").classList.toggle("auto-running",autoRunning);
+  $("auto").setAttribute("aria-pressed",String(autoRunning));
+  $("auto").setAttribute("aria-label",autoRunning?"Parar rodadas automáticas após a jogada atual":"Iniciar cinco rodadas automáticas");
+  $("autoHeading").textContent=autoRunning?"■ PARAR":"↻ AUTO";
+  $("autoLabel").textContent=autoRunning?autoLeft+" RESTAM":"5 GIROS";
+  $("skipBtn").hidden=!busy||skipAnimations;
+  document.querySelectorAll("[data-bet]").forEach(button=>button.disabled=busy||autoRunning);
+  $("turboLabel").textContent=turbo?"LIGADO":"DESL.";
+}
+function stopAuto(){
+  if(autoLeft===0)return false;
+  autoLeft=0;autoSession++;
+  controls();
+  say(busy?"AUTO parado. A jogada atual termina normalmente.":"Rodadas automáticas interrompidas.","bonus");
+  return true;
+}
+function toggleAuto(){
+  if(autoLeft>0)return stopAuto();
+  if(busy)return false;
+  if(balance+1e-7<BETS[betIndex]){say("Saldo insuficiente para iniciar as rodadas automáticas.");return false}
+  autoSession++;
+  autoLeft=5;
+  controls();
+  void play("base");
+  return true;
+}
 function renderHold(grid,tries,previous=[]){
   const stake=replayBet??BETS[betIndex];
   $("holdGrid").innerHTML=grid.map((x,i)=>{
@@ -801,7 +861,7 @@ async function play(mode="base"){
     }else say("Sem prémio nesta jogada. Experimenta novamente.");
   }catch(error){
     console.error(error);
-    autoLeft=0;
+    autoLeft=0;autoSession++;
     if(committed){
       // Visual errors never cancel or redraw a precommitted, fully resolved outcome.
       const record=settlePendingRound();
@@ -813,10 +873,19 @@ async function play(mode="base"){
     display();
   }finally{
     busy=false;skipAnimations=false;clearPayline();clearFreeHud();hideWildTally();hideFreeResult();clearWinSparks();controls();
-    if(autoLeft){
-      autoLeft--;controls();
-      if(autoLeft&&balance>=BETS[betIndex]){await sleep(190);play("base")}
-      else{autoLeft=0;controls()}
+    if(autoLeft>0){
+      autoLeft--;
+      controls();
+      if(autoLeft>0&&balance+1e-7>=BETS[betIndex]){
+        const session=autoSession;
+        await sleep(190);
+        // STOP may have been pressed during the interval, or a new AUTO
+        // session may have started. Never launch a stray old spin.
+        if(autoLeft>0&&autoSession===session&&!busy&&balance+1e-7>=BETS[betIndex])void play("base");
+      }else{
+        if(autoLeft>0){autoLeft=0;autoSession++;say("AUTO terminou: saldo insuficiente para continuar.","bonus")}
+        controls();
+      }
     }
   }
 }
@@ -824,7 +893,7 @@ $("introPlay").addEventListener("click",enterGarden);
 $("closeHold").addEventListener("click",acknowledgeHoldContinue);
 $("closeFree").addEventListener("click",acknowledgeFreeContinue);
 $("spin").addEventListener("click",()=>play("base"));
-$("skipBtn").addEventListener("click",()=>{if(!busy)return;skipAnimations=true;acknowledgeFreeContinue();acknowledgeHoldContinue();controls();say("A apresentar o resultado final desta jogada…","bonus")});
+$("skipBtn").addEventListener("click",skipCurrentAnimations);
 $("minus").addEventListener("click",()=>{betIndex=Math.max(0,betIndex-1);display();saveSession()});
 $("plus").addEventListener("click",()=>{betIndex=Math.min(BETS.length-1,betIndex+1);display();saveSession()});
 document.querySelectorAll("[data-bet]").forEach(button=>button.addEventListener("click",()=>{if(busy)return;const wanted=Number(button.dataset.bet),index=BETS.findIndex(v=>v===wanted);if(index!==-1){betIndex=index;display();saveSession();say("Aposta selecionada: "+format(wanted)+" créditos.")}}));
@@ -832,7 +901,7 @@ $("buyFree").addEventListener("click",()=>play("free"));
 $("buyHold").addEventListener("click",()=>play("hold"));
 $("reloadBtn").addEventListener("click",()=>{balance+=250;display();saveSession();say("Adicionados 250 créditos de teste.","bonus")});
 $("turbo").addEventListener("click",()=>{turbo=!turbo;controls()});
-$("auto").addEventListener("click",()=>{autoLeft=5;controls();play("base")});
+$("auto").addEventListener("click",toggleAuto);
 $("soundBtn").addEventListener("click",()=>{sound=!sound;activateAudio();renderAudioButtons();saveAudioPrefs();if(!sound)stopSpinEffect()});
 $("musicBtn").addEventListener("click",()=>{musicEnabled=!musicEnabled;audioActivated=true;if(musicEnabled)startMusic();else backgroundMusic?.pause();renderAudioButtons();saveAudioPrefs()});
 document.addEventListener("visibilitychange",()=>{if(document.hidden)suspendAudio();else startMusic()});
