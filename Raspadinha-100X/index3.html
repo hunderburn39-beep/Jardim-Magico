@@ -487,6 +487,34 @@ body[data-mode="20"] .ticket{border-color:#99d8ff}
 body[data-mode="50"] .ticket{border-color:#dbacff}
 body[data-mode="100"] .ticket{border-color:#fff0a4}
 @media(max-height:740px){.stake-bar{min-height:44px;padding:3px 6px;gap:4px}.stake-bar .mode-choice{min-height:37px;padding:2px}}
+
+/* Etiqueta do canto superior direito: sempre legível em iPhone,
+   sem deslocar o bilhete e com indicação de modalidade futura. */
+.tickettop{min-width:0}
+#ticket-top-prize{
+  flex:0 1 auto;
+  max-width:62%;
+  min-width:0;
+  white-space:nowrap;
+  text-align:center;
+  font-size:clamp(9px,2.5vw,12px);
+  letter-spacing:-.15px;
+  font-variant-numeric:tabular-nums;
+  line-height:1.1;
+  padding:6px 8px;
+  overflow:hidden;
+  text-overflow:clip;
+}
+#ticket-top-prize[data-next="true"]::before{
+  content:"PRÓXIMA ";
+  font-size:.82em;
+  letter-spacing:0;
+}
+@media(max-width:365px){
+  #ticket-top-prize{max-width:65%;padding:5px 5px;font-size:clamp(9px,2.7vw,11px)}
+  #ticket-top-prize[data-next="true"]::before{content:"⇢ "}
+}
+
 </style>
 <link rel="stylesheet" href="./admin.css">
 <link rel="stylesheet" href="./theme.css">
@@ -502,7 +530,7 @@ body[data-mode="100"] .ticket{border-color:#fff0a4}
   <button type="button" class="mode-choice" data-mode-bet="1000" aria-pressed="false"><strong>100X</strong><span>10 €</span></button>
 </div>
   <section class="ticket" aria-label="Bilhete de raspadinha">
-    <div class="tickettop"><span id="ticketid">BILHETE Nº 1</span><span id="ticket-top-prize">10X · 1 € → 10 €</span></div>
+    <div class="tickettop"><span id="ticketid">BILHETE Nº 1</span><span id="ticket-top-prize">1 € – 10 €</span></div>
     <h2>NÚMEROS DA SORTE</h2>
     <div class="numgrid lucky" id="lucky"></div>
     <h2>OS TEUS NÚMEROS</h2>
@@ -813,18 +841,19 @@ el("wallet-amount").addEventListener("keydown",e=>{if(e.key==="Enter"){e.prevent
 document.addEventListener("keydown",e=>{if(e.key==="Escape" && !el("wallet-modal").hidden)closeWallet();});
 
 function updateTicketTopPrize(){
+  // O canto superior direito segue SEMPRE a modalidade escolhida.
+  // Um bilhete iniciado noutra modalidade continua com os seus próprios pagamentos.
   const mode=modeForBet(state.bet);
   const t=state.ticket;
-  const inProgress=t&&!t.completed;
-  const newChoice=mode.mult+"X · "+money(mode.bet)+" → "+money(mode.bet*mode.mult);
-  const active=inProgress?modeForBet(ticketBet(t)).mult+"X · "+money(ticketBet(t))+" → "+money(ticketBet(t)*maxForTicket(t)):null;
-  // Ao trocar a modalidade durante um bilhete por terminar, mostra a
-  // próxima raspadinha sem ocultar que o bilhete atual é de outro valor.
-  const next=inProgress&&ticketBet(t)!==mode.bet;
-  const label=next?"PRÓX.: "+newChoice:(active||newChoice);
+  const next=Boolean(t&&!t.completed&&ticketBet(t)!==mode.bet);
   const corner=el("ticket-top-prize");
+  const label=money(mode.bet)+" – "+money(mode.bet*mode.mult);
   corner.textContent=label;
-  corner.title=next?"Termina o bilhete atual antes de iniciares a modalidade selecionada":label;
+  corner.dataset.next=next?"true":"false";
+  corner.setAttribute("aria-label",
+    "Raspadinha "+mode.mult+"X: custa "+money(mode.bet)+", prémio máximo "+money(mode.bet*mode.mult)+
+    (next?". Este valor aplica-se ao próximo bilhete.":""));
+  corner.title=next?"Próximo bilhete: "+label:label;
 }
 function paintBet(){
   const mode=modeForBet(state.bet);
