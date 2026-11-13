@@ -1,0 +1,73 @@
+name: Importar figuras Farao aprovadas 2026-11-13
+on:
+  push:
+    paths:
+      - '.github/workflows/importar-farao-figuras-aprovadas-20261113.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  importar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Importar imagens aprovadas e preservar piramide
+        shell: bash
+        env:
+          S_10: 'https://media.canva.com/v2/image-resize/format:PNG/height:200/quality:100/uri:ifs%3A%2F%2FM%2Fe093eff9-b83a-475e-ac7f-7944fc04ed9d/watermark:F/width:200?csig=AAAAAAAAAAAAAAAAAAAAAD63mUWFlIt19CRt91r8A_0QiMVUjJAAcnCFHPzSyVZP&exp=1794561942&osig=AAAAAAAAAAAAAAAAAAAAADyLnpUTMGbwl8zq5UStwSF4HZDEDgYmzX8xKbv9IG0n&signer=media-rpc&token=AAIAAU0AJGUwOTNlZmY5LWI4M2EtNDc1ZS1hYzdmLTc5NDRmYzA0ZWQ5ZAAAAAABodQ6IfBJD3EFRYDMR4mvfED9-B3PEkIL8JcPl8lS3h7NKTTuTQ&x-canva-quality=thumbnail'
+          S_J: 'https://media.canva.com/v2/image-resize/format:PNG/height:200/quality:100/uri:ifs%3A%2F%2FM%2F1cf6f6b9-c6f7-444d-9ad9-8e47f1cd31c2/watermark:F/width:200?csig=AAAAAAAAAAAAAAAAAAAAAMpHcUZJ3wHQJpghhxXgOA1IsGLymtHKVTEC05F1mAD3&exp=1794561942&osig=AAAAAAAAAAAAAAAAAAAAALMXqY6oVxpAsp9nv-3z7Lnqy9qEd_iDTbrrE98lIpiy&signer=media-rpc&token=AAIAAU0AJDFjZjZmNmI5LWM2ZjctNDQ0ZC05YWQ5LThlNDdmMWNkMzFjMgAAAAABodQ6IfB8HNjdcsJG0jNrsjhf6maLjb_brtl1TkKZ63cyBT6-ww&x-canva-quality=thumbnail'
+          S_Q: 'https://media.canva.com/v2/image-resize/format:PNG/height:200/quality:100/uri:ifs%3A%2F%2FM%2F1bc56349-b50a-4369-82ef-06d0a8cd8e63/watermark:F/width:200?csig=AAAAAAAAAAAAAAAAAAAAAFpZQrGhd0KjHjwF8GJEgbY89SHHGbxIHeIOFvTiK29_&exp=1794562799&osig=AAAAAAAAAAAAAAAAAAAAALp7Q1FguRdjQMRF4HQA3zgQ6ZDcSaDkqEndTCAF4M5i&signer=media-rpc&token=AAIAAU0AJDFiYzU2MzQ5LWI1MGEtNDM2OS04MmVmLTA2ZDBhOGNkOGU2MwAAAAABodRHNZg5rOHyOTleAanpStVyetqCxzSImnSS-TEPBRm3xzQTAA&x-canva-quality=thumbnail'
+          S_K: 'https://media.canva.com/v2/image-resize/format:PNG/height:200/quality:100/uri:ifs%3A%2F%2FM%2F9f256496-ca35-4297-b421-20519bdd2304/watermark:F/width:200?csig=AAAAAAAAAAAAAAAAAAAAANCVR_cv0lS8WR_zcPHAbK0HGi0cq3Cy5P26rEltSiFU&exp=1794563185&osig=AAAAAAAAAAAAAAAAAAAAABCzEme91vuj9doa9LeJu8w_X5Jo1k-pQKCj7792fTKo&signer=media-rpc&token=AAIAAU0AJDlmMjU2NDk2LWNhMzUtNDI5Ny1iNDIxLTIwNTE5YmRkMjMwNAAAAAABodRNGWgSF0rc_yAFznov21yJZWViyoHEIanKURADw4mRxiAVRQ&x-canva-quality=thumbnail'
+          S_A: 'https://media.canva.com/v2/image-resize/format:PNG/height:200/quality:100/uri:ifs%3A%2F%2FM%2F5003a2d5-ddf0-46db-b249-9f40b2389c6d/watermark:F/width:200?csig=AAAAAAAAAAAAAAAAAAAAAJjOXBIHhRN7o5wgC7tD6suQ0E5C2HX2_r510YQR8AMz&exp=1794560238&osig=AAAAAAAAAAAAAAAAAAAAAPbcdtK9IiIgpN1lAsy66uRSoCVoyerUjh9c06ZfGucj&signer=media-rpc&token=AAIAAU0AJDUwMDNhMmQ1LWRkZjAtNDZkYi1iMjQ5LTlmNDBiMjM4OWM2ZAAAAAABodQgIbA50SAGF-ctXJA4UTR33WqDhKyBYFU8nFI51JNuj6SEew&x-canva-quality=thumbnail'
+          S_HORUS: 'https://media.canva.com/v2/image-resize/format:PNG/height:200/quality:100/uri:ifs%3A%2F%2FM%2F5e07890f-be8a-4729-9ac2-c479f8ed4c9f/watermark:F/width:200?csig=AAAAAAAAAAAAAAAAAAAAABVpnVPjMVda-4OeeufiLdD_aok-CPwElpgCty27Bk4Y&exp=1794562841&osig=AAAAAAAAAAAAAAAAAAAAANJeLXEFE5axcet3LgDtBlwD33qkvDGM4See5B91y9Hj&signer=media-rpc&token=AAIAAU0AJDVlMDc4OTBmLWJlOGEtNDcyOS05YWMyLWM0NzlmOGVkNGM5ZgAAAAABodRH2ajlVmwK6f3ronbI9fg32kXL4luTphQhTNr1SS-6ElONJw&x-canva-quality=thumbnail'
+          S_MASK: 'https://media.canva.com/v2/image-resize/format:PNG/height:200/quality:100/uri:ifs%3A%2F%2FM%2F65dafb30-b918-42ec-b997-bc8d41fb8c7f/watermark:F/width:200?csig=AAAAAAAAAAAAAAAAAAAAAE37mcYaPnczmV8QV3h-b4UUG9j9YLtO97QdlzHRlGp-&exp=1794560729&osig=AAAAAAAAAAAAAAAAAAAAAG-0hjMIyYFGDaygFkngZPSkCLbczqZpBBDF9fpson7Z&signer=media-rpc&token=AAIAAU0AJDY1ZGFmYjMwLWI5MTgtNDJlYy1iOTk3LWJjOGQ0MWZiOGM3ZgAAAAABodQnn6iSBAPofdUFarv8WmZ_drj2_MkfDmEQgwa0CWSf1U362w&x-canva-quality=thumbnail'
+          S_ANUBIS: 'https://media.canva.com/v2/image-resize/format:PNG/height:200/quality:100/uri:ifs%3A%2F%2FM%2Fb63f94d0-7932-4794-aa4e-9bab7192b2cb/watermark:F/width:200?csig=AAAAAAAAAAAAAAAAAAAAAMGEllSWzfwL8v6BJ8AuxTcrSXWtclbVxHfWuyTBkxvh&exp=1794561089&osig=AAAAAAAAAAAAAAAAAAAAAKbHarSCbYTyyBiMhD2uZ-bYXw_G1PUHb2j-2R7k7ypk&signer=media-rpc&token=AAIAAU0AJGI2M2Y5NGQwLTc5MzItNDc5NC1hYTRlLTliYWI3MTkyYjJjYgAAAAABodQtHehrwA7KmvOqUaoTBKu85n4EhccUSsD89A7sm8G3cSW8Bg&x-canva-quality=thumbnail'
+          S_KING: 'https://media.canva.com/v2/image-resize/format:PNG/height:200/quality:100/uri:ifs%3A%2F%2FM%2F45875419-5188-4c85-9c21-0b8126eb125a/watermark:F/width:200?csig=AAAAAAAAAAAAAAAAAAAAANbz8dbt2T6JPfqaLwRYv9CKmZL78AOk_lAJPLNrxprj&exp=1794559805&osig=AAAAAAAAAAAAAAAAAAAAAGpnMfqT4_j4H7kBYFzb5xudzOtEjitfn92pzdrB3V9W&signer=media-rpc&token=AAIAAU0AJDQ1ODc1NDE5LTUxODgtNGM4NS05YzIxLTBiODEyNmViMTI1YQAAAAABodQZhkhbKKPINTSn_hwR47SDDV2lx0k0EC7t1041ZQAkZdcAmw&x-canva-quality=thumbnail'
+          S_MASK_ALT: 'https://media.canva.com/v2/image-resize/format:PNG/height:200/quality:100/uri:ifs%3A%2F%2FM%2Fea7b99f1-3959-4927-b8a4-baa06a45f3c8/watermark:F/width:200?csig=AAAAAAAAAAAAAAAAAAAAAIDZ7NHGs5ReCwko1ZDYx-8i5HsHmRMt3kJdhjadE0b8&exp=1794561903&osig=AAAAAAAAAAAAAAAAAAAAABIfh4EaiO48xhakq5k_U--wV3nVQJwSATy0henNQ9X5&signer=media-rpc&token=AAIAAU0AJGVhN2I5OWYxLTM5NTktNDkyNy1iOGE0LWJhYTA2YTQ1ZjNjOAAAAAABodQ5iZjyBS42cx_I82qLV3vk37RzgxIl1HlJvvvmTEKOetxKIg&x-canva-quality=thumbnail'
+        run: |
+          set -euo pipefail
+          mkdir -p Farao-Eterno/assets/approved-20261113
+          curl -fL --retry 3 --connect-timeout 10 --max-time 90 "$S_10" -o "Farao-Eterno/assets/approved-20261113/10.png"
+          curl -fL --retry 3 --connect-timeout 10 --max-time 90 "$S_J" -o "Farao-Eterno/assets/approved-20261113/J.png"
+          curl -fL --retry 3 --connect-timeout 10 --max-time 90 "$S_Q" -o "Farao-Eterno/assets/approved-20261113/Q.png"
+          curl -fL --retry 3 --connect-timeout 10 --max-time 90 "$S_K" -o "Farao-Eterno/assets/approved-20261113/K.png"
+          curl -fL --retry 3 --connect-timeout 10 --max-time 90 "$S_A" -o "Farao-Eterno/assets/approved-20261113/A.png"
+          curl -fL --retry 3 --connect-timeout 10 --max-time 90 "$S_HORUS" -o "Farao-Eterno/assets/approved-20261113/HORUS.png"
+          curl -fL --retry 3 --connect-timeout 10 --max-time 90 "$S_MASK" -o "Farao-Eterno/assets/approved-20261113/MASK.png"
+          curl -fL --retry 3 --connect-timeout 10 --max-time 90 "$S_ANUBIS" -o "Farao-Eterno/assets/approved-20261113/ANUBIS.png"
+          curl -fL --retry 3 --connect-timeout 10 --max-time 90 "$S_KING" -o "Farao-Eterno/assets/approved-20261113/KING.png"
+          curl -fL --retry 3 --connect-timeout 10 --max-time 90 "$S_MASK_ALT" -o "Farao-Eterno/assets/approved-20261113/MASK_ALT.png"
+          test -s "Farao-Eterno/assets/approved-20261113/10.png"; file "Farao-Eterno/assets/approved-20261113/10.png" | grep -q 'PNG image'
+          test -s "Farao-Eterno/assets/approved-20261113/J.png"; file "Farao-Eterno/assets/approved-20261113/J.png" | grep -q 'PNG image'
+          test -s "Farao-Eterno/assets/approved-20261113/Q.png"; file "Farao-Eterno/assets/approved-20261113/Q.png" | grep -q 'PNG image'
+          test -s "Farao-Eterno/assets/approved-20261113/K.png"; file "Farao-Eterno/assets/approved-20261113/K.png" | grep -q 'PNG image'
+          test -s "Farao-Eterno/assets/approved-20261113/A.png"; file "Farao-Eterno/assets/approved-20261113/A.png" | grep -q 'PNG image'
+          test -s "Farao-Eterno/assets/approved-20261113/HORUS.png"; file "Farao-Eterno/assets/approved-20261113/HORUS.png" | grep -q 'PNG image'
+          test -s "Farao-Eterno/assets/approved-20261113/MASK.png"; file "Farao-Eterno/assets/approved-20261113/MASK.png" | grep -q 'PNG image'
+          test -s "Farao-Eterno/assets/approved-20261113/ANUBIS.png"; file "Farao-Eterno/assets/approved-20261113/ANUBIS.png" | grep -q 'PNG image'
+          test -s "Farao-Eterno/assets/approved-20261113/KING.png"; file "Farao-Eterno/assets/approved-20261113/KING.png" | grep -q 'PNG image'
+          test -s "Farao-Eterno/assets/approved-20261113/MASK_ALT.png"; file "Farao-Eterno/assets/approved-20261113/MASK_ALT.png" | grep -q 'PNG image'
+          cat > Farao-Eterno/js/imported-symbols.js <<'EOF_SYMBOLS'
+          /* Dez imagens individuais aprovadas, sem redesenhar. A piramide TOMB permanece original. */
+          window.FARAO_CUSTOM_SYMBOLS = {
+            '10': 'assets/approved-20261113/10.png?v=approved-20261113-v2',
+            'J': 'assets/approved-20261113/J.png?v=approved-20261113-v2',
+            'Q': 'assets/approved-20261113/Q.png?v=approved-20261113-v2',
+            'K': 'assets/approved-20261113/K.png?v=approved-20261113-v2',
+            'A': 'assets/approved-20261113/A.png?v=approved-20261113-v2',
+            'HORUS': 'assets/approved-20261113/HORUS.png?v=approved-20261113-v2',
+            'MASK': 'assets/approved-20261113/MASK.png?v=approved-20261113-v2',
+            'ANUBIS': 'assets/approved-20261113/ANUBIS.png?v=approved-20261113-v2',
+            'KING': 'assets/approved-20261113/KING.png?v=approved-20261113-v2',
+            'MASK_ALT': 'assets/approved-20261113/MASK_ALT.png?v=approved-20261113-v2'
+          };
+          EOF_SYMBOLS
+          # Verificacao independente: todos os dez recursos e script presentes
+          test "$(find Farao-Eterno/assets/approved-20261113 -maxdepth 1 -name '*.png' | wc -l)" -eq 10
+          node --check Farao-Eterno/js/imported-symbols.js
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Farao-Eterno/assets/approved-20261113 Farao-Eterno/js/imported-symbols.js
+          git commit -m 'Farao Eterno: instalar 10 imagens aprovadas PNG, manter piramide'
+          git push
