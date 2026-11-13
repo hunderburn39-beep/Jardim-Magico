@@ -39,6 +39,10 @@ function draw(){
       ["Tiragem vendida",formatted(stock?.issued||0)],
       ["Bilhetes restantes",formatted(remaining)],
       ["Vendas",eur(p.stakes)],
+      ["Para prémios (60% das vendas)",eur(p.funded)],
+      ["Prémios atribuídos / reservados",eur(p.awarded)],
+      ["Disponível para novos prémios",eur(prizeFundRemaining(p))],
+      ...(p.awarded>p.funded?[["Compromissos anteriores sem cobertura",eur(p.awarded-p.funded)]]:[]),
       ["Prémios pagos",eur(p.paid)],
       ["Prémios pendentes",eur(Math.max(0,p.awarded-p.paid))],
       ["Lucro da tiragem",eur(Math.max(0,modeProfit))],
@@ -210,7 +214,8 @@ function drawOfficialPlans(){
     " · Vendidos aqui "+integer(stock?.issued||0)+
     " · Restantes aqui "+integer(left)+
     " · 1 prémio em "+odds+
-    " · Retorno anunciado "+(plan.rtp*100).toLocaleString("pt-PT",{maximumFractionDigits:2})+"%"+
+    " · RTP da emissão oficial (não aplicável a este jogo): "+(plan.rtp*100).toLocaleString("pt-PT",{maximumFractionDigits:2})+"%"+
+    " · Fundo de prémios disponível "+eur(prizeFundRemaining(state.pools[mode]))+
     " · símbolos "+plan.multipliers.map(n=>n+"X").join(", ");
   const rows=[[0,plan.emission-plan.winningTickets],...plan.prizes];
   for(const [eurosPrize,count] of rows){
