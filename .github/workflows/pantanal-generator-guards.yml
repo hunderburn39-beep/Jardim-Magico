@@ -1,0 +1,21 @@
+name: Pantanal v2.15 — validar gerador APK
+on:
+  push:
+    paths:
+      - .github/workflows/pantanal-generator-guards.yml
+permissions: {contents: read}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Testar gerador e matemática em Node.js
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check Pantanal/apk_engine.js
+          node --check Pantanal/bonus_ui.js
+          node Pantanal/tests/generator_guards.test.cjs
+          node Pantanal/tests/apk_engine.test.cjs
+          node Pantanal/tests/original_rules.test.cjs
