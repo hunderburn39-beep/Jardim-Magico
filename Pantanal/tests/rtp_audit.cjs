@@ -6,13 +6,18 @@ const betPerLine=2,lines=25,stake=e.betTotal(betPerLine,lines);
 let board=null,credit=50000,spinsDone=0,totalStake=0,totalAward=0;
 let bonus={strawberry:0,cauldron:0,wheel:0,dice:0};
 let jackpotCount={min:0,med:0,max:0},jackpots=e.defaultJackpots(),maxWin=0,refills=0;
-let baseAward=0,bonusAward=0,jackpotAward=0;
+let baseAward=0,bonusAward=0,jackpotAward=0,forcedSpins=0;
 const rng=Math.random;
 for(let k=0;k<spins;k++){
   if(credit<stake){credit+=50000;refills++;}
   credit-=stake;totalStake+=stake;
   const difficulty=e.difficulty(credit,k,50,rng);
-  board=e.generateBoard(board,difficulty.active,rng);
+  const generated=e.generateRound(board,difficulty.active,rng,{
+    lines,betPerLine,generatorCount:k,canPay:k>=239,
+    medEnabled:false,maxEnabled:false,numSorteio:200
+  });
+  board=generated.board;
+  if(generated.meta.forced.length)forcedSpins++;
   const outcome=e.resultBoard(board,lines,betPerLine);
   let pay=outcome.total;
   baseAward+=pay;
