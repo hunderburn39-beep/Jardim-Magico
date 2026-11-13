@@ -23,7 +23,7 @@ jobs:
           node Pantanal/tests/apk_engine.test.cjs
           node Pantanal/tests/original_rules.test.cjs
           python3 -m py_compile Pantanal/tools/port_phase5.py
-      - name: Integrar administração de acumulados virtual e verificar página
+      - name: Validar e integrar administração de acumulados virtual
         shell: bash
         run: |
           set -euo pipefail
