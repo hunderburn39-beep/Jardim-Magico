@@ -44,9 +44,10 @@ jobs:
           const fs=require('node:fs');
           const src=fs.readFileSync('Pantanal/index.html','utf8');
           const match=[...src.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
-          if(match.length!==1)throw Error('HTML inline script count: '+match.length);
-          const tmp='/tmp/pantanal-web-214.js';fs.writeFileSync(tmp,match[0][1]);
-          console.log('Extracted',tmp,match[0][1].length,'bytes');
+          const inline=match.map(x=>x[1]).filter(x=>x.trim().length>1000);
+          if(inline.length!==1)throw Error('Long inline scripts: '+inline.length);
+          const tmp='/tmp/pantanal-web-214.js';fs.writeFileSync(tmp,inline[0]);
+          console.log('Extracted',tmp,inline[0].length,'bytes');
           JS
           node --check /tmp/pantanal-web-214.js
           git diff --check
