@@ -121,10 +121,15 @@ async function test(name,engine){
     g.syncLedger();
     const balance=g.ledger.balanceU,won=g.ledger.stats.winU;
     g.showSummary();
-    return {balance,won,visible:!!document.getElementById('super-final-total'),
-      total:document.getElementById('super-final-total')?.textContent};
+    return {balance,won,transition:g.finalV23?.active,
+      paymentPending:!!g.ledger.payout,
+      visible:!!document.getElementById('super-final-total')};
   });
-  assert(summary.visible,'Ecrã de prémio final ausente');
+  assert(summary.transition,'Transição cinematográfica não começou');
+  assert(!summary.visible,'O prémio apareceu antes de terminar a transição');
+  assert(!summary.paymentPending,'Resumo começou antes de liquidar as sequências');
+  await page.screenshot({path:path.join(OUTPUT,'farao-v2-'+name+'-transicao.png')});
+  await page.waitForFunction(()=>!!document.getElementById('super-final-total'),null,{timeout:7000});
   await page.waitForFunction(()=>{
     const p=document.getElementById('super-final-total');
     return p?.classList.contains('reached')&&p.textContent.includes('750,00');
@@ -137,6 +142,26 @@ async function test(name,engine){
   assert.equal(summaryAfter.balance,summary.balance,'Contador final duplicou os créditos');
   assert.equal(summaryAfter.won,summary.won,'Contador final alterou a contabilidade');
   assert(summaryAfter.total.includes('750,00'),'Total final incorreto');
+  assert.equal(await page.evaluate(()=>window.__faraoGame.finalV23.active),false,
+    'Transição bloqueada depois de aparecer o resumo');
+  // Centelha da linha premiada: só apresentação e sem som extra.
+  const glint=await page.evaluate(()=>{
+    const g=window.__faraoGame;
+    const before=g.finalV23.traces,bal=g.ledger.balanceU,wins=g.ledger.stats.winU;
+    const t=performance.now();
+    g.lastWasFree=false;
+    g.basePaylineDisplay=[{
+      start:t-900,end:t+1000,amount:2,
+      win:{rows:[1,1,1,1,1],count:5,expanded:false,line:0}
+    }];
+    g.drawFx(t);
+    g.basePaylineDisplay=[];
+    return {traces:g.finalV23.traces-before,balBefore:bal,balAfter:g.ledger.balanceU,
+      winsBefore:wins,winsAfter:g.ledger.stats.winU};
+  });
+  assert(glint.traces>0,'A luz da linha vencedora não foi desenhada');
+  assert.equal(glint.balBefore,glint.balAfter,'A luz da linha alterou créditos');
+  assert.equal(glint.winsBefore,glint.winsAfter,'A luz da linha alterou prémios');
   await page.screenshot({path:path.join(OUTPUT,'farao-v2-'+name+'-final-750.png')});
   // Verificar responsividade sem redesenhar nem trocar os símbolos.
   for(const [w,h] of [[320,568],[375,667],[430,932]]){
@@ -150,7 +175,7 @@ async function test(name,engine){
   assert.deepEqual(failedResources,[],'Assets não encontrados');
   assert.deepEqual(errors,[],'Erros JS inesperados');
   console.log(name.toUpperCase()+' V2 PASS · arte '+v.loaded+'/'+v.total+
-      ', 9:16, giro real, Super Scatter ×5 e 4 screenshots');
+      ', 9:16, giro real, Super Scatter ×5, transição e 5 screenshots');
  }finally{await page.close();await browser.close();}
 }
 (async()=>{
