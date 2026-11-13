@@ -122,8 +122,20 @@
    const free=!!s.feature,bet=S.stake(s),stakeU=U(bet),e=s.economy;
    if(!free&&s.balanceU<stakeU)throw Error('Saldo insuficiente');
    const incomingPrize=free?0:Math.floor(stakeU*e.level/100);
-   const available=e.prizeU+incomingPrize;
-   const maxBonus=U(E.upperLimit(bet))-(free?s.feature.totalU:0);
+   // O Super Scatter guarda a sua face ANTES das Free Spins. Cada unidade
+   // base que sair numa rodada tem de reservar também (m-1) unidades para
+   // a multiplicação final. Sem esta reserva o último giro pode prometer
+   // um extra superior ao fundo disponível.
+   const factor=free?(root.FaraoSuperScatter?.superFactor(s)||1):1;
+   const reservedU=free?(factor-1)*s.feature.totalU:0;
+   const available=free&&factor>1
+     ?Math.floor(Math.max(0,e.prizeU-reservedU)/factor)
+     :e.prizeU+incomingPrize;
+   // 5000x aplica-se ao valor TOTAL do bónus multiplicado, não apenas
+   // à soma de base. A validação do resultado permanece na sessão.
+   const maxBonus=free&&factor>1
+     ?Math.floor(U(E.upperLimit(bet))/factor)-s.feature.totalU
+     :U(E.upperLimit(bet))-(free?s.feature.totalU:0);
    const limit=Math.min(available,Math.max(0,maxBonus));
    const weights=weighted(e.level,free);
    let chosen=null;
