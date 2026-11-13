@@ -52,27 +52,44 @@ def check_device(browser, width, height, label, show_image=False):
     if show_image:
         img=page.screenshot(type="jpeg",quality=75,full_page=True,animations="disabled")
         print("STAKE_VISUAL_PREVIEW_START"+base64.b64encode(img).decode()+"STAKE_VISUAL_PREVIEW_END",flush=True)
-    # Check animated reel symbol geometry, with the same CSS used during the real roll.
-    motion=page.evaluate("""()=>{
+    # Check every artwork, not just the mushroom, on the real animated strip.
+    motion=page.evaluate("""async()=>{
       const col=document.querySelector('.column');
       const el=document.createElement('div');el.className='reel-scroll-viewport';
       const strip=document.createElement('div');strip.className='reel-scroll-strip';
       strip.style.setProperty('--reel-cell-height','80px');
-      const tile=document.createElement('div');tile.className='reel-scroll-symbol';
-      tile.innerHTML=symbolArtworkMarkup(6);
-      strip.append(tile);el.append(strip);col.append(el);
-      const img=tile.querySelector('img'),r=img.getBoundingClientRect(),c=tile.getBoundingClientRect();
-      const result={within:r.left>=c.left-1&&r.right<=c.right+1&&r.top>=c.top-1&&r.bottom<=c.bottom+1,width:r.width,height:r.height,cellWidth:c.width,cellHeight:c.height};
-      el.remove();return result;
+      for(let id=0;id<12;id++){
+        const tile=document.createElement('div');tile.className='reel-scroll-symbol';
+        tile.innerHTML=symbolArtworkMarkup(id);
+        strip.append(tile);
+      }
+      el.append(strip);col.append(el);
+      const images=[...strip.querySelectorAll('img.jmSymbolArt')];
+      await Promise.all(images.map(img=>img.decode().catch(()=>{})));
+      const checks=images.map(im=>{
+        const r=im.getBoundingClientRect(),c=im.closest('.reel-scroll-symbol').getBoundingClientRect();
+        return {id:Number(im.dataset.symbolId),
+          within:r.left>=c.left-1&&r.right<=c.right+1&&r.top>=c.top-1&&r.bottom<=c.bottom+1,
+          loaded:im.complete&&im.naturalWidth>0,
+          ratio:+Math.min(r.width/c.width,r.height/c.height).toFixed(3)};
+      });
+      el.remove();return checks;
     }""")
-    assert motion["within"],(label,"spinning symbol clipped",motion)
-    print("ROLLING_CELL_OK",label,json.dumps(motion),flush=True)
+    assert len(motion)==12,(label,"not all scrolling symbols shown",motion)
+    assert all(m["within"] and m["loaded"] and m["ratio"]<=.971 for m in motion),(label,"spinning symbol clipped",motion)
+    print("ROLLING_12_SYMBOLS_OK",label,json.dumps(motion,ensure_ascii=False),flush=True)
     page.close()
 
 with sync_playwright() as p:
-    browser=p.chromium.launch(headless=True,args=["--no-sandbox"])
-    check_device(browser,390,844,"iPhone compact",show_image=True)
-    check_device(browser,428,926,"iPhone large")
-    check_device(browser,360,780,"Android compact")
-    browser.close()
-print("VISUAL_BROWSER_PASS 5x3 fitted originals, clear corners, rolling reels on 3 phones",flush=True)
+    chromium=p.chromium.launch(headless=True,args=["--no-sandbox"])
+    check_device(chromium,390,844,"Chromium iPhone compact",show_image=True)
+    check_device(chromium,428,926,"Chromium iPhone large")
+    check_device(chromium,360,780,"Chromium Android compact")
+    chromium.close()
+    # WebKit exercises Safari's rendering engine, where background/clip bugs
+    # were originally reported on the user's iPhone.
+    webkit=p.webkit.launch(headless=True)
+    check_device(webkit,390,844,"WebKit iPhone compact")
+    check_device(webkit,428,926,"WebKit iPhone large")
+    webkit.close()
+print("VISUAL_BROWSER_PASS 5x3 originals, 12 scrolling symbols, transparent corners, Chromium and WebKit",flush=True)
