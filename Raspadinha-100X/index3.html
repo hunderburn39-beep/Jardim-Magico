@@ -681,6 +681,7 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
     </div>
     <div id="scratch-admin-view" hidden>
       <div class="scratch-admin-total">LUCRO ACUMULADO (VENDAS − PRÉMIOS PAGOS)<strong id="scratch-admin-total">0,00 €</strong></div>
+      <div class="scratch-admin-loss" id="scratch-admin-loss" hidden>PREJUÍZO ACUMULADO <strong id="scratch-admin-loss-amount">0,00 €</strong></div>
       <div class="scratch-admin-cards" id="scratch-admin-cards"></div>
       <section class="scratch-admin-reset-section" aria-labelledby="scratch-reset-title">
         <h3 id="scratch-reset-title">♻️ Reiniciar contadores e tiragens</h3>
@@ -719,6 +720,7 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
           <div>Prémios pagos <strong id="scratch-profit-paid">0,00 €</strong></div>
           <div>Por pagar <strong id="scratch-profit-pending">0,00 €</strong></div>
           <div>Lucro líquido <strong id="scratch-profit-net">0,00 €</strong></div>
+          <div id="scratch-profit-loss-row" hidden>Prejuízo acumulado <strong id="scratch-profit-loss">0,00 €</strong></div>
           <div>Lucro disponível para divisão <strong id="scratch-profit-distributable">0,00 €</strong></div>
         </div>
         <form id="scratch-commission-form" class="scratch-commission-form">
@@ -930,6 +932,8 @@ function profitReport(){
   const ledger=state.profitLedger;
   const sales=ledger.sales,awarded=ledger.awarded,paid=ledger.paid;
   const profit=sales-paid;
+  const netProfit=Math.max(0,profit);
+  const loss=Math.max(0,-profit);
   const pending=Math.max(0,awarded-paid);
   // A quota pode ser levantada apenas quando não existem prémios por pagar
   // que a tornem indisponível, mesmo que o bilhete ainda não esteja raspado.
@@ -941,7 +945,7 @@ function profitReport(){
   const overallAvailable=Math.max(0,distributable-merchantWithdrawn-ownerWithdrawn);
   const merchantAvailable=Math.min(overallAvailable,Math.max(0,merchantShare-merchantWithdrawn));
   const ownerAvailable=Math.min(overallAvailable,Math.max(0,ownerShare-ownerWithdrawn));
-  return {sales,awarded,paid,pending,profit,distributable,
+  return {sales,awarded,paid,pending,profit,netProfit,loss,distributable,
     merchantShare,ownerShare,merchantAvailable,ownerAvailable,overallAvailable};
 }
 
