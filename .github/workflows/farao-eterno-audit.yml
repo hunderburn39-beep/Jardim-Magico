@@ -37,6 +37,8 @@ jobs:
           node --check Farao-Eterno/js/economy.js
           node --check Farao-Eterno/js/coin-celebrations.js
           node --check Farao-Eterno/js/quality-polish-v2.js
+      - name: Testar 6 multiplicadores, pagamentos parciais e recuperação do Safari
+        run: node --test Farao-Eterno/tests/recuperacao-cofre.cjs
       - name: Auditar 50000 rondas, reentradas e cofre do Super Scatter
         env:
           SAMPLES: '50000'
