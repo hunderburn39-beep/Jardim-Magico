@@ -17,7 +17,8 @@ function seeded(s){
  x^=x+Math.imul(x^(x>>>7),x|61);
  return ((x^(x>>>14))>>>0)/4294967296;};
 }
-const N=Number(process.env.SAMPLES||5000);
+const N=Number(process.env.SAMPLES||5000),LEVEL=Number(process.env.LEVEL||90);
+assert([85,90,95].includes(LEVEL),'LEVEL: 85, 90 ou 95');
 assert(Number.isSafeInteger(N)&&N>=100&&N<=200000,'SAMPLES fora do intervalo seguro');
 assert.deepEqual(globalThis.FaraoSuperScatter.faces,[2,3,4,5,8,10]);
 assert.equal(E.LINES.length,10);
@@ -56,20 +57,26 @@ assert(E.evaluate(no,1,10).superCount===1);
 const s=S.fresh(),rng=seeded(seed0+47);
 S.adjustCredits(s,'deposit',10000);
 S.economy.adjustFund(s,'add',1000000);
+S.economy.setLevel(s,LEVEL);
 const initialBalance=s.balanceU;
 const originalRandom=E.randomFloat;
 E.randomFloat=rng;
 let paid=0,free=0,superBonuses=0,maxWon=0,guard=0;
+let baseReturnU=0,freeReturnU=0,superExtraU=0;
 try{
  while(paid<N || s.feature){
    if(++guard>N*30+3000)throw Error('Limite preventivo de retriggers excedido');
    if(!s.feature&&paid>=N)break;
-   const wasFree=!!s.feature;
+   const wasFree=!!s.feature,previousWinU=s.stats.winU;
    const {pending,result}=S.begin(s,rng);
    if(!wasFree)paid++; else free++;
    if(!wasFree&&result.superTrigger)superBonuses++;
    const out=S.settle(s);
    S.finishPayout(s);
+   const creditedU=s.stats.winU-previousWinU;
+   if(wasFree){freeReturnU+=out.prizeU;superExtraU+=creditedU-out.prizeU;}
+   else baseReturnU+=creditedU;
+   assert(creditedU>=0,'O prémio nunca pode ser negativo');
    assert(s.economy.prizeU>=0,'Saldo do cofre negativo');
    assert(s.balanceU>=0,'Saldo de créditos negativo');
    assert(s.stats.winU>=0);
@@ -78,6 +85,7 @@ try{
 }finally{E.randomFloat=originalRandom;}
 S.validate(s);
 const stake=S.credits(s.stats.stakeU),wins=S.credits(s.stats.winU);
+assert.equal(baseReturnU+freeReturnU+superExtraU,s.stats.winU,'As fontes dos prémios devem somar o total creditado');
 assert(Math.abs((S.credits(s.balanceU)-S.credits(initialBalance))-(wins-stake))<1e-6,
  'Diferença no livro razão: possível perda ou crédito duplicado');
 assert(s.feature===null&&s.pending===null&&s.payout===null,'Bónus/pagamento incompleto');
@@ -85,9 +93,12 @@ const report={
  rounds:paid,freeSpins:free,features:s.stats.features,superBonuses,
  stakeCredits:Math.round(stake*100)/100,returnedCredits:Math.round(wins*100)/100,
  measuredRtpPct:Math.round(10000*wins/stake)/100,
+ baseReturnPct:Math.round(10000*S.credits(baseReturnU)/stake)/100,
+ freeSpinsReturnPct:Math.round(10000*S.credits(freeReturnU)/stake)/100,
+ superExtraReturnPct:Math.round(10000*S.credits(superExtraU)/stake)/100,
  maxBaseOrFreeWinCredits:Math.round(maxWon*100)/100,
  level:s.economy.level,prizeFundRemaining:S.credits(s.economy.prizeU),
  meaning:'RTP observado na amostra, sem garantia de retorno futuro; saldo de créditos fictícios.',
- assumptions:'Amostra independente com nível 90, aposta base de 1 crédito, 10 linhas, fundo pré-financiado, sem compra de bónus.'
+ assumptions:'Amostra independente com nível '+LEVEL+', aposta base de 1 crédito, 10 linhas, fundo pré-financiado, sem compra de bónus.'
 };
 console.log('AUDITORIA_FARAO_V2 '+JSON.stringify(report));
