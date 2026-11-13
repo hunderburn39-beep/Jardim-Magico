@@ -15,8 +15,8 @@ jobs:
           lines=s.splitlines()
           print('SOURCE LINES',len(lines))
           for i,line in enumerate(lines,1):
-              if 901<=i<=1080:
-                  print('L',i,line[:2400])
+              if 810<=i<=900 or 970<=i<=1035:
+                  print('L',i,line[:3200])
           print('MATCHES')
           for key in ["adminIcon","function admin","ADMIN","adminPin","SetAdmin","state.difficulty","accumulation","bonusTrigger","linesBtn","function update","function calcWins","spinBusy=false","PantanalApkEngine","panels"]:
               print('SEARCH',key)
