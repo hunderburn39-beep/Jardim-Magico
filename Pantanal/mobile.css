@@ -1,4 +1,4 @@
-/* Pantanal V2.08 — ecrã vertical 9:16, preservando o modo horizontal */
+/* Pantanal V2.09 — ecrã vertical 9:16, preservando o modo horizontal */
 #screen.portrait{
  background:radial-gradient(ellipse 520px 520px at 50% 40%,#ac6126 0%,#65330c 55%,transparent 100%),repeating-linear-gradient(125deg,#231607 0px,#4a3514 72px,#201608 143px),#160d06;
 }
@@ -16,6 +16,7 @@
 #screen.portrait #homeHint{bottom:7%;font-size:20px;padding:0 40px;line-height:1.4}
 #screen.portrait #adminIcon{top:3%;right:28px;padding:14px 20px;font-size:38px}
 #screen.portrait #game>.bg{
+ position:absolute; /* manter a arte alinhada com os tambores no iPhone */
  inset:auto;left:0;top:calc(45% - 240px);width:800px;height:480px;
  object-fit:fill;clip-path:inset(0 0 17% 0);filter:drop-shadow(0 2px 22px #000b)
 }
