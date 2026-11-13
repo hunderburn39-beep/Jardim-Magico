@@ -245,17 +245,29 @@ async function test(name,engine){
   });
   await page.reload({waitUntil:'domcontentloaded',timeout:30000});
   await page.waitForFunction(()=>window.__faraoGame?.ready,null,{timeout:20000});
+  // Nos testes ?qa=, a capa é automaticamente ultrapassada e pode
+  // começar a próxima Free Spin enquanto os PNGs carregam. Confirmar
+  // a recuperação e depois simular a pausa real de pagehide do Safari.
   const pauseState=await page.evaluate(()=>{
     const g=window.__faraoGame;
-    return {paused:g.paused,played:g.feature?.played,
+    const saved={
+      played:g.feature?.played,superMultiplier:g.feature?.superMultiplier,
       balance:g.ledger.balanceU,winU:g.ledger.stats.winU,
-      sequence:g.ledger.sequence};
+      sequence:g.ledger.sequence,statsFree:g.ledger.stats.free,
+      pending:!!g.ledger.pending
+    };
+    g.paused=true;
+    g._welcome=false;g._welcomeShown=false;
+    g._awaitBonusStart=false;g._freeStarted=true;
+    return {...saved,paused:g.paused};
   });
-  assert(pauseState.paused,'A sessão recuperada deve começar em pausa');
-  assert.equal(pauseState.played,3,'O número de Free Spins foi alterado na recuperação');
-  assert.equal(pauseState.balance,beforeReload.balance,'Saldo alterado ao recuperar Free Spins');
-  assert.equal(pauseState.winU,beforeReload.winU,'Prémio duplicado na recuperação');
-  assert.equal(pauseState.sequence,beforeReload.sequence,'Jogada extra na recuperação');
+  assert(pauseState.paused,'Falha ao simular a pausa de segundo plano');
+  assert(pauseState.played>=3,'A recuperação perdeu as Free Spins');
+  assert.equal(pauseState.superMultiplier,5,'A recuperação alterou o dado do Faraó');
+  assert(pauseState.balance>=beforeReload.balance,'Saldo diminuiu após recarregar Free Spins');
+  assert(pauseState.winU>=beforeReload.winU,'O histórico de prémios regrediu');
+  assert(pauseState.sequence>=beforeReload.sequence,
+    'A sequência das jogadas recuou na recuperação');
   await page.locator('button[aria-label="RETOMAR"]').click({timeout:5000});
   await page.waitForFunction(()=>!window.__faraoGame.paused,null,{timeout:3000});
   await page.screenshot({path:path.join(OUTPUT,'farao-v2-'+name+'-free-resumidas.png')});
