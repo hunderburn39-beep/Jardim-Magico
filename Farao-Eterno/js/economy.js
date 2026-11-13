@@ -126,7 +126,7 @@
    // base que sair numa rodada tem de reservar também (m-1) unidades para
    // a multiplicação final. Sem esta reserva o último giro pode prometer
    // um extra superior ao fundo disponível.
-   const factor=free?(root.FaraoSuperScatter?.superFactor(s)||1):1;
+   const factor=free?(globalThis.FaraoSuperScatter?.superFactor(s)||1):1;
    const reservedU=free?(factor-1)*s.feature.totalU:0;
    const available=free&&factor>1
      ?Math.floor(Math.max(0,e.prizeU-reservedU)/factor)
