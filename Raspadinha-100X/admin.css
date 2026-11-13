@@ -111,3 +111,36 @@
 }
 .scratch-profit-summary strong{font-variant-numeric:tabular-nums;color:#ffebbc;text-align:right;white-space:nowrap;font-size:clamp(12px,3vw,15px)}
 .scratch-profit-summary>div:last-child strong{font-size:clamp(14px,4vw,18px);color:#ffe49f}
+
+
+/* FUNDO DE PREMIOS CONFIGURAVEL */
+.scratch-fund-settings{
+  border:1px solid #bda15b;border-radius:12px;padding:12px;margin:12px 0;
+  background:linear-gradient(142deg,#293750,#111b33 72%,#252b3c);
+}
+.scratch-fund-settings h3{margin:0 0 9px;font-size:16px;color:#ffe7a1}
+.scratch-fund-settings p{font-size:12px;line-height:1.45;margin:8px 0 11px;color:#e8e6e4}
+.scratch-fund-settings strong{color:#ffe0a5}
+.scratch-fund-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.scratch-fund-inputs label{
+  display:grid;grid-template-columns:minmax(0,1fr) 54px 13px;
+  gap:3px;align-items:center;min-height:45px;
+  padding:5px 7px;margin:0;border-radius:9px;
+  background:#101c33;border:1px solid #8e825b;color:#ffe1a0;
+  font-size:12px;white-space:nowrap;
+}
+.scratch-fund-inputs input{
+  display:block;width:54px;min-width:0;margin:0;
+  padding:7px 2px;text-align:center;font-size:16px;
+  border:1px solid #d8b970;border-radius:6px;
+  background:#071222;color:#fff7db;
+  appearance:textfield;-moz-appearance:textfield;
+}
+.scratch-fund-inputs input::-webkit-inner-spin-button,
+.scratch-fund-inputs input::-webkit-outer-spin-button{
+  -webkit-appearance:none;margin:0;
+}
+.scratch-fund-inputs span{color:#ffe5a9;font-size:12px}
+.scratch-fund-settings #scratch-fund-save{width:100%;min-height:44px;margin-top:12px}
+.scratch-fund-settings #scratch-fund-note{min-height:18px;margin:9px 0 0;color:#e3e7da}
+@media(max-width:360px){.scratch-fund-inputs{grid-template-columns:1fr}}
