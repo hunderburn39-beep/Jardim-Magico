@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../js/coin-celebrations.js'),'utf8');
 
-function boot(){
+function boot({width=1024,reduced=false}={}){
  const nodes={oscillators:0,samples:0,gains:0,coords:[]};
  const noop=()=>{};
  const sound={
@@ -45,7 +45,7 @@ function boot(){
   createElement(tag){assert.equal(tag,'canvas');return {width:0,height:0,getContext:()=>ctx};},
   querySelector:()=>null
  };
- vm.runInNewContext(source,{window:{__faraoGame:game,matchMedia:()=>({matches:false})},
+ vm.runInNewContext(source,{window:{__faraoGame:game,innerWidth:width,matchMedia:()=>({matches:reduced})},
   document,Math,console,WeakSet,Uint8Array,atob:x=>Buffer.from(x,'base64').toString('binary'),performance:{now:()=>0}},{filename:'coin-celebrations.js'});
  return {game,nodes,document};
 }
@@ -88,4 +88,46 @@ test('som desligado e jogo em pausa nunca emitem novos impactos',()=>{
  assert.equal(nodes.samples,0);
  game.audio.on=true;game.paused=true;game.audio.fanfare(3);
  assert.equal(nodes.samples,0);
+});
+
+
+test('iPhone: vários prémios sucessivos respeitam o orçamento de partículas',()=>{
+ const {game,nodes}=boot({width:390});
+ assert.equal(game.coinCelebrations.maxParticles,68);
+ assert.equal(game.coinCelebrations.maxSparkles,42);
+ assert.equal(game.coinCelebrations.compact,true);
+ const wins=Array.from({length:10},(_,i)=>({
+    kind:'line',win:{count:5,rows:[i%3,i%3,i%3,i%3,i%3],expanded:false,line:i},
+    amount:3,start:500+i*100,preDelay:0,perReel:1,
+    reels:[0,1,2,3,4],end:3000
+ }));
+ game.freeStage=wins[0];
+ for(let i=0;i<wins.length;i++){
+   game.freeStage=wins[i];
+   game.frame(700+i*100);
+   assert(game.coinCelebrations.particles<=68,'Moedas acima do orçamento móvel');
+   assert(game.coinCelebrations.sparkles<=42,'Centelhas acima do orçamento móvel');
+ }
+ assert.equal(game.coinCelebrations.events.sequences,10,
+   'Não perder celebrações de linhas diferentes');
+ const before=nodes.samples;
+ game.frame(1700);
+ assert.equal(game.coinCelebrations.events.sequences,10,
+   'A mesma linha não pode reiniciar a celebração');
+ assert.equal(nodes.samples,before,'Não repetir o impacto');
+});
+test('ecrã grande mantém a riqueza da celebração',()=>{
+ const {game}=boot({width:1100});
+ assert.equal(game.coinCelebrations.maxParticles,105);
+ assert.equal(game.coinCelebrations.maxSparkles,85);
+ assert.equal(game.coinCelebrations.compact,false);
+});
+test('preferência de movimento reduzido elimina a chuva no Canvas',()=>{
+ const {game}=boot({width:390,reduced:true});
+ game.baseStage={win:{count:3,rows:[1,1,1],expanded:false,line:0},
+   amount:2,start:0,end:2000};
+ game.frame(900);
+ assert.equal(game.coinCelebrations.events.sequences,1);
+ assert.equal(game.coinCelebrations.particles,0);
+ assert.equal(game.coinCelebrations.sparkles,0);
 });
