@@ -92,7 +92,7 @@ jobs:
                   grep -q 'clipPath' "/tmp/${figura}-limpo.svg"
                 done
                 curl -fLsS --max-time 15 "https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/assets/figuras-v197/jm38-joaninha-limpo.svg" -o /tmp/joaninha-limpa.svg
-                grep -q 'viewBox="-20 -12 560 548"' /tmp/joaninha-limpa.svg
+                grep -q 'viewBox="20 -12 560 548"' /tmp/joaninha-limpa.svg
                 echo 'CONFIRMADO: Stake Preview V1.9.8 online, com os cinco símbolos transparentes e linhas de prémio.'
                 exit 0
               fi
