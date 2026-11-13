@@ -128,6 +128,12 @@ async function test(name,engine){
   assert(summary.transition,'Transição cinematográfica não começou');
   assert(!summary.visible,'O prémio apareceu antes de terminar a transição');
   assert(!summary.paymentPending,'Resumo começou antes de liquidar as sequências');
+  await page.waitForTimeout(240); // capturar a animação já desenhada no WebKit
+  const visible=await page.locator('.farao-treasure-transition').evaluate(el=>{
+    const st=getComputedStyle(el),box=el.getBoundingClientRect();
+    return st.visibility==='visible'&&Number(st.opacity)>.06&&box.width>100;
+  });
+  assert(visible,'A transição estava ativa mas não ficou visível no ecrã');
   await page.screenshot({path:path.join(OUTPUT,'farao-v2-'+name+'-transicao.png')});
   await page.waitForFunction(()=>!!document.getElementById('super-final-total'),null,{timeout:7000});
   await page.waitForFunction(()=>{
