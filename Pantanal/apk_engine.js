@@ -323,7 +323,17 @@
    for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
    return a;
  }
- const strawberryDeck=(rng=Math.random)=>shuffled([0,0,1,1,2,2,3,3,4,4,5,6],rng);
+ function strawberryDeck(rng=Math.random,opts={}){
+   const deck=[0,0,1,1,2,2,3,3,4,4,5,6];
+   const repeatBonus=(Number(opts.existingBonus)||0)>0;
+   const restricted=opts.paymentMode===false&&repeatBonus;
+   if(restricted&&Number(opts.triggerCount)===2){
+     deck.splice(9,3,6,6,6);
+   }else if(restricted&&Number(opts.triggerCount)>2){
+     deck.splice(8,4,6,6,6,6);
+   }
+   return shuffled(deck,rng);
+ }
  const strawberryPay=(category,betPerLine,triggerCount)=>[2,5,10,20,50,100,0][category]*betPerLine*triggerCount;
  const cauldronDeck=(rng=Math.random)=>shuffled([0,1,2,3,8],rng);
  const cauldronPay=(category,betPerLine,triggers)=>[50,75,100,150][category]*betPerLine*triggers;
