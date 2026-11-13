@@ -10,7 +10,10 @@
  const audio=g.audio,TAU=Math.PI*2;
  const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  const seen=new WeakSet(),coins=[];
- const REEL_X=35, STEP_X=101, CELL_W=95, TOP=284, CELL_H=129, MAX_COINS=105;
+ const REEL_LAYOUT=g.visualV11?.layout||{left:18,top:284,cw:105,gh:129,step:109};
+ const REEL_X=REEL_LAYOUT.left, STEP_X=REEL_LAYOUT.step,
+       CELL_W=REEL_LAYOUT.cw, TOP=REEL_LAYOUT.top,
+       CELL_H=REEL_LAYOUT.gh, MAX_COINS=105;
  const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
  const active=()=>!!(audio.on&&audio.ctx&&!g.paused&&!g.superseded&&!document.hidden);
  // Som de moedas real enviado pelo criador, cortado no primeiro impacto.
