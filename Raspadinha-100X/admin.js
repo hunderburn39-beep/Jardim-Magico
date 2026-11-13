@@ -109,7 +109,7 @@ function saveFundRates(event){
   const note=$("scratch-fund-note");
   for(const mode of CARD_MODES){
     const raw=$("scratch-fund-"+mode.mult).value.trim();
-    if(!/^\\d{1,3}$/.test(raw)){
+    if(!/^\d{1,3}$/.test(raw)){
       note.textContent="Indica percentagens inteiras de 10% a 100%.";
       return;
     }
