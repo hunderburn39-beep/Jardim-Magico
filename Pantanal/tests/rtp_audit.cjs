@@ -6,14 +6,15 @@ const betPerLine=2,lines=25,stake=e.betTotal(betPerLine,lines);
 let board=null,credit=50000,spinsDone=0,totalStake=0,totalAward=0;
 let bonus={strawberry:0,cauldron:0,wheel:0,dice:0};
 let jackpotCount={min:0,med:0,max:0},jackpots=e.defaultJackpots(),maxWin=0,refills=0;
-let baseAward=0,bonusAward=0,jackpotAward=0,forcedSpins=0;
+let baseAward=0,bonusAward=0,jackpotAward=0,forcedSpins=0,generatorCalls=0;
 const rng=Math.random;
 for(let k=0;k<spins;k++){
   if(credit<stake){credit+=50000;refills++;}
   credit-=stake;totalStake+=stake;
-  const difficulty=e.difficulty(credit,k,50,rng);
+  const difficulty=e.difficulty(credit,generatorCalls,50,rng);
+  generatorCalls=difficulty.nextSpins;
   const generated=e.generateRound(board,difficulty.active,rng,{
-    lines,betPerLine,generatorCount:k,canPay:k>=239,
+    lines,betPerLine,generatorCount:generatorCalls,canPay:k>=239,
     medEnabled:false,maxEnabled:false,numSorteio:200
   });
   board=generated.board;
@@ -31,19 +32,32 @@ for(let k=0;k<spins;k++){
   const b=outcome.bonus;
   for(const key of Object.keys(b))bonus[key]+=b[key];
   if(b.strawberry>0){
-    const deck=e.strawberryDeck(rng);
+    const d=e.difficulty(credit+pay,generatorCalls,50,rng);
+    generatorCalls=d.nextSpins;
+    const deck=e.strawberryDeck(rng,{paymentMode:d.active,triggerCount:b.strawberry,existingBonus:0});
     for(const category of deck){if(category===6)break;pay+=e.strawberryPay(category,betPerLine,b.strawberry);}
   }
   if(b.cauldron>0){
     const deck=e.cauldronDeck(rng);
-    const category=deck[Math.floor(rng()*5)];
+    let category=deck[Math.floor(rng()*5)];
+    const d=e.difficulty(credit+pay,generatorCalls,50,rng);
+    generatorCalls=d.nextSpins;
+    if(!d.active&&category>2)category=deck.find(v=>v<3);
     if(category===8){
       const pumpkins=e.pumpkinDeck(rng);
       pay+=e.pumpkinPay(pumpkins[Math.floor(rng()*5)],betPerLine,b.cauldron);
     }else pay+=e.cauldronPay(category,betPerLine,b.cauldron);
   }
-  for(let i=0;i<b.wheel;i++)pay*=e.wheelRoll(rng,difficulty.active,pay).multiplier;
-  for(let i=0;i<b.dice;i++)pay*=e.diceRoll(rng,difficulty.active).multiplier;
+  for(let i=0;i<b.wheel;i++){
+    const d=e.difficulty(credit+pay,generatorCalls,50,rng);
+    generatorCalls=d.nextSpins;
+    pay*=e.wheelRoll(rng,d.active,pay).multiplier;
+  }
+  for(let i=0;i<b.dice;i++){
+    const d=e.difficulty(credit+pay,generatorCalls,50,rng);
+    generatorCalls=d.nextSpins;
+    pay*=e.diceRoll(rng,d.active).multiplier;
+  }
   bonusAward+=pay-beforeBonus;
   credit+=pay;totalAward+=pay;maxWin=Math.max(maxWin,pay);
   jackpots=e.advanceJackpots(jackpots,stake,pay,5,e.jackpotCaps());
@@ -57,6 +71,7 @@ const out={
   jackpotReturnPercent:Math.round(jackpotAward/totalStake*10000)/100,
   totalStaked:totalStake,totalReturned:totalAward,maxWin,bonusTriggers:bonus,
   jackpotTriggers:jackpotCount,virtualRefills:refills,
+  generatedSpecialSpins:forcedSpins,difficultyChecks:generatorCalls,
   warning:'SAMPLE ONLY — not certified. Generator/bonus state and APK economics still under review'
 };
 console.log(JSON.stringify(out,null,2));
