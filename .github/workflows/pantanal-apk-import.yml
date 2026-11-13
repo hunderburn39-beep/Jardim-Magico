@@ -1,0 +1,87 @@
+name: Pantanal — importar APK 2.06 e recursos originais
+on:
+  push:
+    branches:
+      - pantanal-apk-206-import
+    paths:
+      - .github/workflows/pantanal-apk-import.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  extrair-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Transferir APK 2.06 e validar integridade
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p Pantanal/APK-2.06
+          curl --retry 3 --retry-all-errors --connect-timeout 25 --max-time 180 -fL \
+            -H 'User-Agent: Mozilla/5.0 (compatible; GitHubActions PantanalReferenceImport)' \
+            'https://d.apkpure.net/b/APK/com.r7games.slotpantanal?version=latest' \
+            -o 'Pantanal/APK-2.06/Pantanal-Original-2.06.apk'
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile,hashlib
+          p=Path('Pantanal/APK-2.06/Pantanal-Original-2.06.apk')
+          with zipfile.ZipFile(p) as z:
+              assert z.testzip() is None, 'CRC invalido'
+              assert 'classes.dex' in z.namelist()
+              assert 'AndroidManifest.xml' in z.namelist()
+              print('APK validado',p.stat().st_size,'bytes; entradas:',len(z.namelist()))
+              print('SHA-256:',hashlib.sha256(p.read_bytes()).hexdigest())
+          PY
+      - name: Extrair todas as entradas e criar inventario SHA-256
+        run: |
+          python3 -m py_compile Pantanal/tools/extract_apk.py
+          python3 Pantanal/tools/extract_apk.py 'Pantanal/APK-2.06/Pantanal-Original-2.06.apk' --out Pantanal/APK-2.06
+      - name: Descompilar bytecode com JADX (referencia de estudo)
+        shell: bash
+        run: |
+          set -u
+          curl --retry 2 --connect-timeout 20 --max-time 180 -fLsS \
+            'https://github.com/skylot/jadx/releases/download/v1.5.6/jadx-1.5.6.zip' -o /tmp/jadx.zip
+          result=$?
+          if [ "$result" -eq 0 ]; then
+            mkdir -p /tmp/jadx-pantanal
+            unzip -q /tmp/jadx.zip -d /tmp/jadx-pantanal
+            mkdir -p Pantanal/APK-2.06/jadx
+            timeout 420 bash /tmp/jadx-pantanal/bin/jadx --threads-count 2 \
+              --no-res --show-bad-code -d Pantanal/APK-2.06/jadx \
+              Pantanal/APK-2.06/Pantanal-Original-2.06.apk || true
+          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('Pantanal/APK-2.06/jadx')
+          files=list(root.rglob('*.java')) if root.exists() else []
+          print('Ficheiros Java reconstruidos pelo JADX:',len(files))
+          (Path('Pantanal/APK-2.06')/'RESULTADO_JADX.txt').write_text(
+              f'{len(files)} ficheiros Java reconstruidos. O Java descompilado nao constitui fonte original verificavel.\n',
+              encoding='utf8')
+          PY
+      - name: Preparar pacote de download completo no GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pantanal-APK-2.06-original-completo
+          path: Pantanal/APK-2.06/
+          retention-days: 30
+          compression-level: 6
+      - name: Guardar extracao no ramo de referencia do GitHub
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Pantanal/APK-2.06/
+          if ! git diff --cached --quiet; then
+            git commit -m "archive(Pantanal): import original APK 2.06, all resources and reverse-engineering reference"
+            git pull --rebase origin pantanal-apk-206-import
+            git push origin HEAD:pantanal-apk-206-import
+          fi
+          echo "Ficheiros originais disponiveis no ramo pantanal-apk-206-import; jogo main preservado."
