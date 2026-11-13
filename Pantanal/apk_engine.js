@@ -277,7 +277,7 @@
      meta.sorteio=nextInt(nSorteio,rng)+1;
      if(meta.sorteio<=13){
        const hit=meta.sorteio;
-       const pattern=BIG_LINE_SHAPES[(hit-1)%5];
+       const pattern=BIG_LINE_SHAPES[hit<=5?hit-1:hit<=9?hit-5:hit-9];
        const symbol=hit<=5?8:hit<=9?9:5;
        overwritePositions(table,pattern,symbol);
        meta.medTriggered=true;meta.forced.push('med-'+hit);
