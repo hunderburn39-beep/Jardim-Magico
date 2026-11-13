@@ -145,7 +145,7 @@ class Game {
    if(mod.classList.contains('hidden')===false)return;
    // Direct canvas hit-testing keeps symbols tappable on iPhone Safari,
    // independently of the transparent accessibility control layer.
-   const reel=this.visualV11?.layout||{left:35,top:284,cw:95,gh:129,step:101};
+   const reel=this.visualV11?.layout||{left:18,top:284,cw:105,gh:129,step:109};
    if(!this.spinning&&!this.superseded&&x>=reel.left&&x<reel.left+5*reel.step&&y>=reel.top&&y<reel.top+3*reel.gh){
     const col=Math.floor((x-reel.left)/reel.step),row=Math.floor((y-reel.top)/reel.gh);
     if(col>=0&&col<5&&row>=0&&row<3){
@@ -317,7 +317,7 @@ class Game {
   }
   const canInspect=!this.spinning&&!this.superseded&&mod.classList.contains('hidden');
   this._symbolOverlay.style.pointerEvents=canInspect?'auto':'none';
-  const reel=this.visualV11?.layout||{left:35,top:284,cw:95,gh:129,step:101};
+  const reel=this.visualV11?.layout||{left:18,top:284,cw:105,gh:129,step:109};
   for(const {button,col,row} of this._symbolButtons){
    button.style.left=(ox+(reel.left+col*reel.step+reel.cw/2)*sc)+'px';
    button.style.top=(oy+(reel.top+row*reel.gh+reel.gh/2)*scY)+'px';
@@ -532,10 +532,13 @@ class Game {
   for(const candidate of result.expanders){for(const reel of candidate.reels){
     if(!this.expanded[reel] || E.PAYS[candidate.symbol][candidate.count]>(E.PAYS[this.expanded[reel].symbol][this.expanded[reel].count]||0))this.expanded[reel]=candidate;
   }}
+  // Centralizar partículas nos cinco tambores alargados, sem desvios laterais.
+  const reelLayout=this.visualV11?.layout||{left:18,top:284,cw:105,gh:129,step:109};
+  const reelCentre=c=>reelLayout.left+c*reelLayout.step+reelLayout.cw/2;
   // Celebration effects are visual only, and never change the settled outcome.
   for(const cell of this.winCells.slice(0,13)) {
    const [c,r]=cell.split('-').map(Number);
-   this.emitBurst(82+c*101,322+r*132,3,result.trigger?'#85fff0':'#f9d27b',finishedAt);
+   this.emitBurst(reelCentre(c),322+r*132,3,result.trigger?'#85fff0':'#f9d27b',finishedAt);
   }
   this.announce(`${item.free?'Free Spin':'Jogada'}: prémio ${money(prize)}. Saldo ${money(this.balance)}.`);
   if(result.lineWins.length || result.scatterWin) this.audio.win(Boolean(item.free));
@@ -564,7 +567,7 @@ class Game {
      win:group.kind==='line'?result.lineWins.find(w=>!w.expanded&&
        w.line===group.line&&w.symbol===group.symbol):null};
     if(group.kind==='expansion')reels.forEach((reel,k)=>
-     this.emitBurst(83+reel*101,444,13,'#83ffef',cursor+preDelay+(k+1)*perReel));
+     this.emitBurst(reelCentre(reel),444,13,'#83ffef',cursor+preDelay+(k+1)*perReel));
     cursor=end+(freeLine?(this.turbo?260:380)
       :item.free?(this.turbo?135:210):(this.turbo?380:840));
     return stage;
@@ -588,7 +591,7 @@ class Game {
      amount:candidate.amount};
     visualStages.push(stage);
     rawGroups.push({symbol:candidate.symbol,amount:candidate.amount,stage});
-    candidate.reels.forEach((reel,k)=>this.emitBurst(83+reel*101,444,14,'#83ffef',
+    candidate.reels.forEach((reel,k)=>this.emitBurst(reelCentre(reel),444,14,'#83ffef',
      start+preDelay+k*perReel));
     cursor=end+(this.turbo?180:280);
    }
@@ -615,7 +618,7 @@ class Game {
    // Conservar o movimento aprovado quando só uma figura é expansiva.
    const reels=item.free?Object.keys(this.expanded).map(Number).sort((a,b)=>a-b):[];
    const animationEnd=reels.length?250+reels.length*(this.turbo?200:300)+480:0;
-   for(let k=0;k<reels.length;k++)this.emitBurst(83+reels[k]*101,444,16,'#83ffef',
+   for(let k=0;k<reels.length;k++)this.emitBurst(reelCentre(reels[k]),444,16,'#83ffef',
     finishedAt+(this.turbo?190:250)+k*(this.turbo?200:300));
    this.reveal=reels.length?{start:finishedAt,reels,preDelay:this.turbo?190:250,
     perReel:this.turbo?200:300,end:finishedAt+animationEnd}:null;
