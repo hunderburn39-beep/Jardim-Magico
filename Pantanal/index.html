@@ -809,7 +809,7 @@ const __MEDIA = {
 };
 const el=id=>document.getElementById(id), asset=n=>__MEDIA[n]||'';
 function hydrateAssets(root=document){root.querySelectorAll('[src^="assets/"]').forEach(el=>{el.src=asset(el.getAttribute('src').slice(7))});}
-const DEFAULT={credits:5000,betIndex:0,lines:25,totalSpins:0,totalBet:0,totalPaid:0,lastWin:0,maxWin:0,totalAdded:5000,totalTaken:0,username:'JOGADOR',adminPin:'12345',difficulty:60,accumulation:0.5,accum1min:500,accum1max:1000,accum2min:700,accum2max:1200,accum3min:1200,accum3max:2000,bonusCount:0,sound:true,history:[],blocked:50,apkAccumPercent:5,jackpots:null};
+const DEFAULT={credits:5000,betIndex:0,lines:25,totalSpins:0,totalBet:0,totalPaid:0,lastWin:0,maxWin:0,totalAdded:5000,totalTaken:0,username:'JOGADOR',adminPin:'12345',difficulty:60,accumulation:0.5,accum1min:500,accum1max:1000,accum2min:700,accum2max:1200,accum3min:1200,accum3max:2000,bonusCount:0,sound:true,history:[],blocked:50,apkAccumPercent:5,jackpots:null,generatorCalls:0,medEnabled:false,maxEnabled:false,apjNumSorteio:200,apjSorteio:0};
 let state;try{state={...DEFAULT,...JSON.parse(localStorage.getItem('pantanal-web2.06')||'{}')}}catch{state={...DEFAULT}};
 if(![1,5,9,15,25].includes(state.lines))state.lines=25;if(state.betIndex<0||state.betIndex>=6)state.betIndex=0;state.blocked=Number(state.blocked)||50;state.apkAccumPercent=(state.apkAccumPercent===undefined?5:Number(state.apkAccumPercent));state.jackpots=state.jackpots||{min:state.accum1min,med:state.accum2min,max:state.accum3min};
 let board=Array.from({length:3},()=>Array.from({length:5},()=>0)),spinBusy=false,auto=false,bonusBusy=false,modalCallback=null,paylineTimer=null;
@@ -992,6 +992,8 @@ async function spin(){if(spinBusy||bonusBusy||celebrationBusy)return;const stake
  });
  const target=generation.board;
  state.apjSorteio=generation.meta.sorteio;
+ if(generation.meta.medTriggered)state.medEnabled=false;
+ if(generation.meta.maxTriggered)state.maxEnabled=false;
  // Asynchronous reel-stop animation staggered from left to right.
  for(let tick=0;tick<31;tick++){for(let col=0;col<5;col++)if(tick<10+col*4){for(let row=0;row<3;row++)board[row][col]=pick()}else if(tick===10+col*4){for(let row=0;row<3;row++)board[row][col]=target[row][col];play('line')};renderBoard();await wait(49)}
  board=target;renderBoard();
@@ -1003,6 +1005,8 @@ async function spin(){if(spinBusy||bonusBusy||celebrationBusy)return;const stake
      const award=apk.awardJackpot(state.jackpots,type);
      total+=award.amount;state.jackpots[type]=award.reset;
      jackpotNames.push(type.toUpperCase()+' '+money(award.amount));
+     if(type==='med')state.medEnabled=false;
+     if(type==='max')state.maxEnabled=false;
    }
  }
  state.lastWin=total;state.credits+=total;state.totalPaid+=total;
@@ -1102,11 +1106,14 @@ window.doubleChoice=i=>{const stake=state.lastWin;let good=rnd()<.5;if(good){sta
 function adminLogin(){setDialog(`<h2>Administração</h2><p>Insira o PIN do painel local.</p><label>PIN <input id="pin" type="password" autocomplete="off" inputmode="numeric"></label><button class="action" id="pinEnter">ENTRAR</button><p class="small">O PIN web inicial é 12345 e pode ser alterado. Não corresponde necessariamente à palavra-passe original do APK.</p>`);el('pinEnter').onclick=()=>{if(el('pin').value!==state.adminPin){el('pin').value='';el('pin').placeholder='PIN incorreto';return}adminPanel()};}
 el('adminIcon').onclick=adminLogin;
 function adminPanel(){setDialog(`<h2>Pantanal — Administração local</h2><div class="row"><div class="panel"><h3>Contabilidade</h3><table><tr><td>Créditos colocados</td><td>${money(state.totalAdded)}</td></tr><tr><td>Créditos retirados</td><td>${money(state.totalTaken)}</td></tr><tr><td>Total de apostas</td><td>${money(state.totalBet)}</td></tr><tr><td>Prémios entregues</td><td>${money(state.totalPaid)}</td></tr><tr><td>Diferença</td><td>${money(state.totalBet-state.totalPaid)}</td></tr><tr><td>Saldo atual</td><td>${money(state.credits)}</td></tr><tr><td>Jogadas / Bónus</td><td>${state.totalSpins} / ${state.bonusCount}</td></tr></table><p><button class="action" id="admCredit">+ CRÉDITOS</button><button class="action" id="admRemove">- CRÉDITOS</button></p><button class="action" id="export">EXPORTAR HISTÓRICO</button></div>
-<div class="panel"><h3>Parâmetros encontrados no APK</h3><label>Bloqueio do APK <input id="blocked" type="number" min="5" max="50" step="5"></label><label>Acumulação (%) <input id="apkAccumPercent" type="number" min="0" max="10" step=".5"></label>${[1,2,3].map(k=>`<label>Acum. ${k}: mínimo <input id="accum${k}min" type="number" value="${state['accum'+k+'min']}"></label><label>Acum. ${k}: máximo <input id="accum${k}max" type="number" value="${state['accum'+k+'max']}"></label>`).join('')}<button class="action" id="admSave">GRAVAR</button><p class="small">Parâmetros aplicados na simulação local. O APK original usa estados adicionais e ainda não está certificado.</p></div></div><div><button class="action" id="admPass">MUDAR PIN</button><button class="action" id="admReset">ZERAR ESTATÍSTICAS</button><button class="action" id="admHist">HISTÓRICO</button></div>`);
- el('blocked').value=state.blocked;el('apkAccumPercent').value=state.apkAccumPercent;
+<div class="panel"><h3>Parâmetros encontrados no APK</h3><label>Bloqueio do APK <input id="blocked" type="number" min="5" max="50" step="5"></label><label>Acumulação (%) <input id="apkAccumPercent" type="number" min="0" max="10" step=".5"></label><label>Autorizar MED (modo local) <input id="medEnabled" type="checkbox" ${state.medEnabled?'checked':''}></label><label>Autorizar MAX (modo local) <input id="maxEnabled" type="checkbox" ${state.maxEnabled?'checked':''}></label><label>Intervalo especial do APK <input id="apjNumSorteio" type="number" min="1" max="5000" step="1" value="${state.apjNumSorteio||200}"></label>${[1,2,3].map(k=>`<label>Acum. ${k}: mínimo <input id="accum${k}min" type="number" value="${state['accum'+k+'min']}"></label><label>Acum. ${k}: máximo <input id="accum${k}max" type="number" value="${state['accum'+k+'max']}"></label>`).join('')}<button class="action" id="admSave">GRAVAR</button><p class="small">Os desbloqueios MED/MAX originais vinham de um servidor externo. Estes botões simulam a autorização local com créditos virtuais; não há servidor nem certificação matemática.</p></div></div><div><button class="action" id="admPass">MUDAR PIN</button><button class="action" id="admReset">ZERAR ESTATÍSTICAS</button><button class="action" id="admHist">HISTÓRICO</button></div>`);
+ el('blocked').value=state.blocked;el('apkAccumPercent').value=state.apkAccumPercent;el('apjNumSorteio').value=state.apjNumSorteio||200;
  el('admCredit').onclick=()=>{const n=prompt('Quantidade de créditos a acrescentar','1000');if(n===null)return;const x=Math.floor(Number(n));if(!(x>0&&x<=1e9))return;state.credits+=x;state.totalAdded+=x;save();update();adminPanel()};
  el('admRemove').onclick=()=>{const n=prompt('Quantidade de créditos a retirar','1000');if(n===null)return;const x=Math.floor(Number(n));if(!(x>0&&x<=state.credits))return;state.credits-=x;state.totalTaken+=x;save();update();adminPanel()};
- el('admSave').onclick=()=>{state.blocked=Number(el('blocked').value)||50;state.apkAccumPercent=Math.max(0,Math.min(10,Number(el('apkAccumPercent').value)||0));for(let k=1;k<=3;k++){state['accum'+k+'min']=Math.max(0,Number(el('accum'+k+'min').value)||0);state['accum'+k+'max']=Math.max(state['accum'+k+'min'],Number(el('accum'+k+'max').value)||0)}state.jackpots=state.jackpots||window.PantanalApkEngine.defaultJackpots();for(const [idx,name] of ['min','med','max'].entries())state.jackpots[name]=Math.max(state['accum'+(idx+1)+'min'],Math.min(state['accum'+(idx+1)+'max'],state.jackpots[name]));save();update();adminPanel()};
+ el('admSave').onclick=()=>{state.blocked=Number(el('blocked').value)||50;state.apkAccumPercent=Math.max(0,Math.min(10,Number(el('apkAccumPercent').value)||0));
+ state.medEnabled=el('medEnabled').checked;state.maxEnabled=el('maxEnabled').checked;
+ state.apjNumSorteio=Math.max(1,Math.min(5000,Math.floor(Number(el('apjNumSorteio').value)||200)));
+ for(let k=1;k<=3;k++){state['accum'+k+'min']=Math.max(0,Number(el('accum'+k+'min').value)||0);state['accum'+k+'max']=Math.max(state['accum'+k+'min'],Number(el('accum'+k+'max').value)||0)}state.jackpots=state.jackpots||window.PantanalApkEngine.defaultJackpots();for(const [idx,name] of ['min','med','max'].entries())state.jackpots[name]=Math.max(state['accum'+(idx+1)+'min'],Math.min(state['accum'+(idx+1)+'max'],state.jackpots[name]));save();update();adminPanel()};
  el('admPass').onclick=()=>{const p=prompt('Novo PIN (mínimo 4 caracteres)');if(p&&p.length>=4){state.adminPin=p;save();alert('PIN local alterado')}};
  el('admReset').onclick=()=>{if(!confirm('Zerar totais e histórico? O saldo atual será preservado.'))return;for(let k of ['totalSpins','totalBet','totalPaid','lastWin','maxWin','bonusCount'])state[k]=0;state.generatorCalls=0;state.apjSorteio=0;state.history=[];state.totalAdded=state.credits;state.totalTaken=0;save();adminPanel()};
  el('admHist').onclick=()=>setDialog(`<h2>Histórico das últimas ${state.history.length} jogadas</h2><table><tr><th>Data</th><th>Aposta</th><th>Linhas</th><th>Prémio</th></tr>${state.history.map(x=>`<tr><td>${x.at}</td><td>${x.stake}</td><td>${x.lines}</td><td>${x.total}</td></tr>`).join('')}</table><button class="action" onclick="adminPanel()">VOLTAR AO ADMIN</button>`);
@@ -1114,6 +1121,6 @@ function adminPanel(){setDialog(`<h2>Pantanal — Administração local</h2><div
 }
 window.adminPanel=adminPanel;
 for(let r=0;r<3;r++)for(let c=0;c<5;c++)board[r][c]=pick();renderBoard();update();
-</script><script src="paylines.js?v=2.16"></script>
+</script><script src="paylines.js?v=2.17"></script>
 <script src="original_rules.js?v=2.13"></script>
-<script src="apk_engine.js?v=2.16"></script><script src="bonus_ui.js?v=2.16"></script></body></html>
+<script src="apk_engine.js?v=2.17"></script><script src="bonus_ui.js?v=2.17"></script></body></html>
