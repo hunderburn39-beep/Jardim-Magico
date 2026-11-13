@@ -683,6 +683,20 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
       <div class="scratch-admin-total">LUCRO ACUMULADO (VENDAS − PRÉMIOS PAGOS)<strong id="scratch-admin-total">0,00 €</strong></div>
       <div class="scratch-admin-loss" id="scratch-admin-loss" hidden>PREJUÍZO ACUMULADO <strong id="scratch-admin-loss-amount">0,00 €</strong></div>
       <div class="scratch-admin-cards" id="scratch-admin-cards"></div>
+      <section class="scratch-fund-settings" aria-labelledby="scratch-fund-title">
+        <h3 id="scratch-fund-title">⚙️ Fundo de prémios ajustável</h3>
+        <p>Escolhe a percentagem das <strong>novas vendas</strong> que fica reservada para prémios em cada raspadinha. Inicial: <strong>60%</strong>. Ajustável entre <strong>10% e 100%</strong>, de 1 em 1%. Os prémios já emitidos e o fundo acumulado mantêm-se intactos.</p>
+        <form id="scratch-fund-form" class="scratch-fund-form">
+          <div class="scratch-fund-inputs">
+            <label for="scratch-fund-10">10X · 1 € <input id="scratch-fund-10" type="number" min="10" max="100" step="1" inputmode="numeric" value="60" required><span>%</span></label>
+            <label for="scratch-fund-20">20X · 2 € <input id="scratch-fund-20" type="number" min="10" max="100" step="1" inputmode="numeric" value="60" required><span>%</span></label>
+            <label for="scratch-fund-50">50X · 5 € <input id="scratch-fund-50" type="number" min="10" max="100" step="1" inputmode="numeric" value="60" required><span>%</span></label>
+            <label for="scratch-fund-100">100X · 10 € <input id="scratch-fund-100" type="number" min="10" max="100" step="1" inputmode="numeric" value="60" required><span>%</span></label>
+          </div>
+          <button type="submit" id="scratch-fund-save">GUARDAR PERCENTAGENS</button>
+        </form>
+        <p id="scratch-fund-note" role="status" aria-live="polite">A configuração é local a este navegador. Não altera resultados de bilhetes já comprados.</p>
+      </section>
       <section class="scratch-admin-reset-section" aria-labelledby="scratch-reset-title">
         <h3 id="scratch-reset-title">♻️ Reiniciar contadores e tiragens</h3>
         <p>Em cada cartão podes iniciar uma nova série, repor a sua tiragem completa e limpar só os contadores dessa raspadinha.</p>
@@ -692,7 +706,7 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
       </section>
       <section class="scratch-plans-section" aria-labelledby="scratch-plans-heading">
         <h3 id="scratch-plans-heading">📋 Tabelas oficiais de referência</h3>
-        <p>As quantidades abaixo são da Santa Casa, mas este jogo só emite prémios que o fundo automático (60% das vendas da respetiva modalidade) pode pagar. Por isso, as probabilidades e o retorno deste jogo são diferentes dos oficiais.</p>
+        <p>As quantidades abaixo são da Santa Casa, mas este jogo só emite prémios que o fundo automático (percentagem ajustável por raspadinha) pode pagar. Por isso, as probabilidades e o retorno deste jogo são diferentes dos oficiais.</p>
         <label for="scratch-plans-mode">Escolhe uma emissão</label>
         <select id="scratch-plans-mode" aria-label="Emissão da raspadinha">
           <option value="10">10X · Jogo 659</option>
@@ -713,8 +727,8 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
 
       <section class="scratch-commission-section" aria-labelledby="scratch-commission-title">
         <h3 id="scratch-commission-title">Divisão do lucro — Comerciante e Dono do Jogo</h3>
-        <p><strong>Fundo de prémios:</strong> 60% de cada venda fica protegido automaticamente para pagar prémios dessa modalidade. Nunca se emite um bilhete com prémio acima desse saldo. Não existe reserva extra de 10% nem botões para carregar o fundo manualmente.</p>
-        <p><strong>Lucro contabilístico = vendas − prémios pagos.</strong> Mas só é possível repartir o lucro que sobra depois de proteger o fundo e os prémios já atribuídos. A divisão do lucro entre comerciante e dono do jogo é ajustável (60% / 40% por defeito); é uma percentagem diferente dos 60% do fundo de prémios.</p>
+        <p><strong>Fundo de prémios:</strong> a percentagem definida para cada raspadinha (60% por defeito) fica protegida automaticamente. Nunca se emite um novo bilhete com prémio superior ao saldo de prémios disponível. Não existe reserva extra de 10% nem carregamento manual de fundo.</p>
+        <p><strong>Lucro contabilístico = vendas − prémios pagos.</strong> Mas só é possível repartir o lucro que sobra depois de proteger o fundo e os prémios já atribuídos. A divisão entre comerciante e dono do jogo é independente da percentagem escolhida para o fundo de prémios.</p>
         <div id="scratch-profit-summary" class="scratch-profit-summary" aria-live="polite">
           <div>Vendas <strong id="scratch-profit-sales">0,00 €</strong></div>
           <div>Prémios pagos <strong id="scratch-profit-paid">0,00 €</strong></div>
@@ -783,7 +797,23 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
 // Chave antiga mantida para preservar saldos de sessões anteriores.
 const KEY="raspadinha100x_v3_10eur";
 const COUNTERS_EPOCH="new-draw-2026-11-12-v1";
-const PRIZE_FUND_PERCENT=60; // Percentagem de cada compra retida para pagar prémios.
+const DEFAULT_PRIZE_FUND_PERCENT=60; // Taxa inicial, personalizável no ADMIN.
+const MIN_PRIZE_FUND_PERCENT=10;
+const MAX_PRIZE_FUND_PERCENT=100;
+function initPrizeFundRates(saved){
+  if(!saved.prizeFundRates||typeof saved.prizeFundRates!=="object"||
+    Array.isArray(saved.prizeFundRates))saved.prizeFundRates={};
+  for(const mode of CARD_MODES){
+    const key=String(mode.mult);
+    const value=saved.prizeFundRates[key];
+    if(!Number.isInteger(value)||value<MIN_PRIZE_FUND_PERCENT||
+      value>MAX_PRIZE_FUND_PERCENT)
+      saved.prizeFundRates[key]=DEFAULT_PRIZE_FUND_PERCENT;
+  }
+}
+function prizeFundRate(mult){
+  return state.prizeFundRates[String(mult)]??DEFAULT_PRIZE_FUND_PERCENT;
+}
 const CARD_MODES=[
   {mult:10,bet:100},
   {mult:20,bet:200},
@@ -881,7 +911,9 @@ function makeOfficialWinnings(prizeCents,plan){
   });
 }
 function blankPool(){return{available:0,sold:0,stakes:0,funded:0,awarded:0,paid:0,added:0,removed:0}}
-function fundContribution(bet){return Math.floor(bet*PRIZE_FUND_PERCENT/100)}
+function fundContribution(bet){
+  return Math.floor(bet*prizeFundRate(modeForBet(bet).mult)/100);
+}
 function prizeFundRemaining(pool){
   // Inclui como gasto o valor TOTAL de todos os bilhetes emitidos, mesmo
   // que ainda não tenham sido raspados (prémio já reservado).
@@ -889,19 +921,24 @@ function prizeFundRemaining(pool){
 }
 function initPools(saved){
   if(!saved.pools||typeof saved.pools!=="object"||Array.isArray(saved.pools))saved.pools={};
+  const migrateLegacyFund=saved.prizeFundAccountingVersion!==2;
   for(const mode of CARD_MODES){
     const key=String(mode.mult),p=saved.pools[key];
     if(!p||["available","sold","stakes","funded","awarded","paid","added","removed"].some(k=>!Number.isSafeInteger(p[k])||p[k]<0)){
       saved.pools[key]=blankPool();continue;
     }
-    // Migração sem perder vendas/prémios. Descarta o antigo fundo de TESTE,
-    // que era ajustável manualmente, e reconstrói a cobertura a 60% das vendas.
-    const cumulative=Math.floor(p.stakes*PRIZE_FUND_PERCENT/100);
-    if(!Number.isSafeInteger(cumulative)){saved.pools[key]=blankPool();continue}
-    p.funded=cumulative;
+    if(migrateLegacyFund){
+      // Reconstrói uma única vez o antigo fundo fixo de 60% das vendas.
+      // Nas aberturas seguintes, preserva cada contribuição histórica:
+      // mudar a percentagem afeta APENAS as próximas compras.
+      const historical=Math.floor(p.stakes*DEFAULT_PRIZE_FUND_PERCENT/100);
+      if(!Number.isSafeInteger(historical)){saved.pools[key]=blankPool();continue}
+      p.funded=historical;
+      p.added=0;p.removed=0;
+    }
     p.available=prizeFundRemaining(p);
-    p.added=0;p.removed=0;
   }
+  saved.prizeFundAccountingVersion=2;
 }
 function modePool(mult){return state.pools[String(mult)]}
 function accountPaidWin(ticket,win){
@@ -955,7 +992,7 @@ function profitReport(){
   const pending=Math.max(0,awarded-paid);
   // A quota pode ser levantada apenas quando não existem prémios por pagar
   // que a tornem indisponível, mesmo que o bilhete ainda não esteja raspado.
-  // Os 60% que continuam em caixa para prémios NÃO são distribuídos
+  // A percentagem destinada a prémios e ainda livre NÃO é distribuída
   // pelo comerciante/dono, mesmo enquanto ainda não houve vencedores.
   const protectedPrizeFunds=Object.values(state.pools||{}).
     reduce((sum,p)=>sum+prizeFundRemaining(p),0);
@@ -1001,7 +1038,7 @@ function initTicketIdentification(saved){
 }
 function fresh(){
   const freshState={balance:0,prizeBank:0,reserve:0,technician:0,merchant:0,cards:0,ticket:null,sound:true,bet:100,countersEpoch:COUNTERS_EPOCH};
-  initPools(freshState);initCommissions(freshState);initProfitLedger(freshState);initOfficialStock(freshState);initModeTickets(freshState);
+  initPrizeFundRates(freshState);initPools(freshState);initCommissions(freshState);initProfitLedger(freshState);initOfficialStock(freshState);initModeTickets(freshState);
   initTicketIdentification(freshState);
   return freshState;
 }
@@ -1065,7 +1102,7 @@ function load(){
         return reset;
       }
       saved.bet=BET_LEVELS.includes(saved.bet)?saved.bet:100;
-      migrateOldTicket(saved);initPools(saved);initCommissions(saved);initProfitLedger(saved);
+      migrateOldTicket(saved);initPrizeFundRates(saved);initPools(saved);initCommissions(saved);initProfitLedger(saved);
       initOfficialStock(saved);initModeTickets(saved);initTicketIdentification(saved);
       return saved;
     }
@@ -1275,7 +1312,7 @@ function buy(){
   const maxMult=modeForBet(bet).mult;
   const pool=modePool(maxMult);
   const contribution=fundContribution(bet);
-  // Verificação ANTES de cobrar: inclui os 60% desta nova compra, desconta
+  // Verificação ANTES de cobrar: inclui a percentagem configurada desta compra, desconta
   // prémios já reservados e dívidas de tiragens anteriores desta modalidade.
   const fundAfterPurchase=Math.max(0,pool.funded+contribution-pool.awarded);
   const officialPrize=pickOfficialPrize(plan,fundAfterPurchase);
