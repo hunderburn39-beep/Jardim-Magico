@@ -85,3 +85,32 @@
  .super-dice-area.is-rolling .super-die{visibility:hidden}
  .super-dice-area.is-rolling .super-die-docked{opacity:1}
 }
+
+/* V2.2 — Fim de bónus: contador legível, aumento de luminosidade ao chegar
+   ao prémio final e sem scroll lateral em iPhones pequenos. */
+.super-final #super-final-total{
+ display:block;
+ max-width:100%;
+ min-width:0;
+ padding:3px 5px 5px;
+ text-align:center;
+ overflow-wrap:anywhere;
+ font-variant-numeric:tabular-nums;
+ transform:translateZ(0);
+}
+.super-final #super-final-total.reached{
+ animation:farao-v2-treasure 1350ms ease-out both;
+}
+@keyframes farao-v2-treasure{
+ 0%{transform:scale(.92);filter:brightness(1)}
+ 25%{transform:scale(1.09);filter:brightness(1.65);text-shadow:0 0 32px #ffd365}
+ 57%{transform:scale(1.045);filter:brightness(1.27)}
+ 100%{transform:scale(1);filter:brightness(1)}
+}
+@media(max-width:350px){
+ .super-final .super-total-equation{gap:7px}
+ .super-final .super-times{font-size:24px}
+}
+@media(prefers-reduced-motion:reduce){
+ .super-final #super-final-total.reached{animation:none}
+}
