@@ -5,7 +5,9 @@
  const game=window.__faraoGame, canvas=document.getElementById('canvas');
  if(!game || !canvas) return;
  const ctx=canvas.getContext('2d');
- const R=Object.freeze({left:35,top:284,cw:95,gh:129,step:101});
+ // Moldura quase até às margens da tela lógica 576×1024 (9:16).
+ // Cinco tambores de 105 px, com 4 px de espaço entre eles.
+ const R=Object.freeze({left:18,top:284,cw:105,gh:129,step:109});
  const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||false;
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
  const TAU=Math.PI*2;
@@ -37,20 +39,20 @@
  // Transparent tiles: the entire piece, including its gold square, moves with the reel.
  // Cache the ornamental frame so iPhone/WebKit does not recreate gradients each frame.
  const tile=asset(R.cw,R.gh,c=>{
-  const y=(R.gh-96)/2,x=(R.cw-96)/2;
+  const square=102,y=(R.gh-square)/2,x=(R.cw-square)/2;
   c.save();c.shadowColor='#000a';c.shadowBlur=4;
-  rounded(c,x,y,96,96,10,grad(c,x,y,x+96,y+96,
+  rounded(c,x,y,square,square,10,grad(c,x,y,x+square,y+square,
     [[0,'#13263831'],[.5,'#081c332c'],[1,'#06152450']]),'#d99c43d0',2.3);
   c.restore();
-  rounded(c,x+3,y+3,90,90,7,null,'#ffdc8e7c',1);
-  rounded(c,x+6,y+6,84,84,5,null,'#5eacaa50',.9);
+  rounded(c,x+3,y+3,square-6,square-6,7,null,'#ffdc8e7c',1);
+  rounded(c,x+6,y+6,square-12,square-12,5,null,'#5eacaa50',.9);
   // Embossed corners and tiny turquoise inlays without an opaque tile background.
-  for(const xx of [x+7,x+89])for(const yy of [y+7,y+89]){
+  for(const xx of [x+7,x+square-7])for(const yy of [y+7,y+square-7]){
    disk(c,xx,yy,1.9,'#54c5c1', '#f8df9b',.55);
   }
   c.save();c.globalAlpha=.35;
-  line(c,x+19,y+4,x+77,y+4,'#fff2c1',1.15);
-  line(c,x+19,y+92,x+77,y+92,'#d69b51',1.1);
+  line(c,x+19,y+4,x+square-19,y+4,'#fff2c1',1.15);
+  line(c,x+19,y+square-4,x+square-19,y+square-4,'#d69b51',1.1);
   c.restore();
  });
  // Ornate circular spin medallion, cached at double resolution.
@@ -142,7 +144,7 @@
   if(sym==='TOMB')return;
   game.drawIcon(sym,x,y,R.cw,R.gh,win,t);
  }
- game.visualV11={layout:R,tile,medallion,version:'1.1'};
+ game.visualV11={layout:R,tile,medallion,version:'1.2-wide-reels-9x16'};
  game.drawReelSeparators=function(left,top,interval,gh){
   for(let c=1;c<5;c++){
    const x=left+c*interval-(interval-R.cw)/2;
@@ -485,7 +487,7 @@
    const candidate=shown?.expanded?this.lastResult.expanders?.find(e=>e.symbol===shown.symbol):null;
    phaseExpanded=candidate?Object.fromEntries(candidate.reels.map(reel=>[reel,candidate])):{};
   }
-  const x=20,y=R.top-2,w=520,h=R.top+3*R.gh-y+10;
+  const x=R.left-2,y=R.top-2,w=4*R.step+R.cw+4,h=R.top+3*R.gh-y+10;
   ctx.save();ctx.shadowColor='#000c';ctx.shadowBlur=16;ctx.shadowOffsetY=6;
   rounded(ctx,x-5,y-7,w+10,h+10,15,null,'#deb56b',3.7);ctx.restore();
   rounded(ctx,x-1,y-5,w+2,h+5,13,null,'#745027a9',1.5);
@@ -610,7 +612,7 @@
   // Mostrar os prémios pelo brilho das peças, sem qualquer linha de varrimento.
   drawTitle3D(t); // Sempre à frente da moldura e atrás dos ícones de prémio.
   ctx.save();ctx.shadowColor='#ffdd84';ctx.shadowBlur=7;
-  rounded(ctx,23,R.top+R.gh*3+8,514,9,4,
+  rounded(ctx,R.left-1,R.top+R.gh*3+8,4*R.step+R.cw+2,9,4,
    grad(ctx,0,R.top+R.gh*3+8,0,R.top+R.gh*3+17,
    [[0,'#ffefaf'],[.43,'#ae782c'],[1,'#452d22']]),'#ffe09a',1.5);
   ctx.restore();
