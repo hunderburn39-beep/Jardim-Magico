@@ -285,6 +285,28 @@
     ctx.drawImage(img,bounds.x,bounds.y,bounds.w,bounds.h,
       x+(w-iw)/2,y+(h-ih)/2,iw,ih);
     ctx.restore();
+   }else if(sym==='SUPER'){
+    // EXATAMENTE a imagem de referência do Faraó, sem máscara redesenhada.
+    // Reservar espaço na base para o nome da peça, sem tapar a cara.
+    const fit=Math.min((w-8)/img.naturalWidth,(h-35)/img.naturalHeight);
+    const iw=img.naturalWidth*fit,ih=img.naturalHeight*fit;
+    ctx.save();
+    ctx.shadowColor='#f5c978';ctx.shadowBlur=reducedMotion?0:11;
+    ctx.drawImage(img,x+(w-iw)/2,y+4,iw,ih);
+    ctx.restore();
+    const lx=x+3,ly=y+h-27,lw=w-6,lh=24;
+    const banner=ctx.createLinearGradient(lx,ly,lx,ly+lh);
+    banner.addColorStop(0,'#745322');
+    banner.addColorStop(.25,'#111b2a');
+    banner.addColorStop(1,'#09233a');
+    ctx.save();
+    ctx.fillStyle=banner;ctx.fillRect(lx,ly,lw,lh);
+    ctx.strokeStyle='#f9d782';ctx.lineWidth=1.6;ctx.strokeRect(lx,ly,lw,lh);
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor='#f4d27b';ctx.shadowBlur=5;ctx.fillStyle='#fff1c3';
+    ctx.font='900 11px Georgia,serif';ctx.fillText('SUPER',x+w/2,ly+7);
+    ctx.font='900 9px Georgia,serif';ctx.fillText('SCATTER',x+w/2,ly+17);
+    ctx.restore();
    }else if(livingFigures.has(sym)){
     drawLivingFigure(img,sym,x,y,w,h,size,t,win,this.spinning);
    }else{
