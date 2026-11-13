@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V1.8.9</title>
+<title>Jardim Mágico | Edição Stake Preview V1.9.0</title>
 <link rel="preload" as="image" href="../assets/imagens/jm38-caracol.svg">
 <link rel="preload" as="image" href="../assets/imagens/jm38-joaninha.svg">
 <link rel="preload" as="image" href="../assets/imagens/jm38-flor-azul.svg">
@@ -738,6 +738,47 @@ html,body{height:100%;overflow:hidden;background:#051814}
   .spin{width:min(100%,clamp(64px,19vw,80px))}
 }
 
+
+/* V1.9.0 — retrato iPhone: áreas separadas e botões sem sobreposição.
+   Os ajustes são exclusivamente de apresentação; o motor de jogo mantém-se. */
+.logo-wrap{
+  top:max(6.4%,calc(env(safe-area-inset-top) + 33px));
+  left:6%;right:6%;width:88%;height:14%;
+  overflow:visible;
+}
+.logo-wrap img{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}
+.statline{top:23%;height:4.25%;left:8%;right:8%}
+.frame{top:29.5%}
+.hud{top:-10px;max-width:88%;padding:2px 8px;overflow:hidden;text-overflow:ellipsis}
+.notice{top:70.1%;min-height:0;padding:2px;line-height:1.1;font-size:clamp(9px,2vw,10px)}
+.money-row{top:72.8%;height:6.3%}
+.bet-shortcuts{top:79.9%;height:3%;gap:clamp(3px,.9vw,6px)}
+.bet-shortcuts button{min-height:24px}
+.actions{top:86.8%;height:8.2%}
+.spin{width:min(100%,clamp(70px,20vw,82px));max-width:82px}
+.foot{max-height:2.7%;overflow:hidden;line-height:1.1}
+@media(max-height:700px) and (orientation:portrait){
+  .logo-wrap{top:max(6.4%,calc(env(safe-area-inset-top) + 31px));height:14.1%}
+  .statline{top:22.9%;height:4.3%}
+  .frame{top:29.3%;height:29.5%}
+  .notice{display:block;top:69.7%;font-size:clamp(8px,2vw,10px)}
+  .money-row{top:72.2%;height:6.5%}
+  .bet-shortcuts{top:79.5%;height:3.1%}
+  .actions{top:86.3%;height:8.3%}
+  .spin{width:min(100%,clamp(68px,20vw,80px));max-width:80px}
+}
+@media(max-height:560px) and (orientation:portrait){
+  .logo-wrap{top:max(6.1%,calc(env(safe-area-inset-top) + 30px));height:13%}
+  .statline{top:22.2%;height:4.2%}
+  .frame{top:28.3%;height:29.5%}
+  .bonus-row{top:61%;height:6.2%}
+  .notice{display:none}
+  .money-row{top:69.3%;height:7.2%}
+  .bet-shortcuts{top:77.3%;height:2.9%}
+  .actions{top:84.5%;height:9%}
+  .spin{width:min(100%,clamp(64px,18vw,74px));max-width:74px}
+}
+
 </style>
 </head>
 <body>
@@ -775,7 +816,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
   <div><small>ÚLTIMO PRÉMIO</small><strong id="lastWin">0,00</strong></div>
  </div>
  <div id="wildTally" class="wild-tally" hidden><span id="wildTallyText"></span></div>
- <div class="frame" id="reelFrame"><div class="hud"><span id="hud">✦ RODADAS DE TESTE ✦</span></div><div class="reels" id="reels" aria-label="Cinco tambores, três linhas"></div><svg id="paylineSvg" class="payline-visual" viewBox="0 0 500 300" preserveAspectRatio="none" aria-hidden="true"></svg><div id="winSparks" class="win-sparks" aria-hidden="true"></div><output id="linePrize" class="line-prize" hidden aria-live="off"></output><button id="skipBtn" class="skip-btn" type="button" hidden>PASSAR ⏩</button></div>
+ <div class="frame" id="reelFrame"><div class="hud"><span id="hud">✦ JARDIM ENCANTADO ✦</span></div><div class="reels" id="reels" aria-label="Cinco tambores, três linhas"></div><svg id="paylineSvg" class="payline-visual" viewBox="0 0 500 300" preserveAspectRatio="none" aria-hidden="true"></svg><div id="winSparks" class="win-sparks" aria-hidden="true"></div><output id="linePrize" class="line-prize" hidden aria-live="off"></output><button id="skipBtn" class="skip-btn" type="button" hidden>PASSAR ⏩</button></div>
  <div id="cascadeMeter" class="cascade-meter" hidden aria-live="off"><div><small id="cascadeWinLabel">PRÉMIO DA QUEDA</small><strong id="cascadeWinValue">0,00</strong></div><div><small id="cascadeTotalLabel">TOTAL DAS CASCATAS</small><strong id="cascadeTotalValue">0,00</strong></div></div>
  <div id="freePanel" class="free-panel" hidden aria-live="off"><div><small>RESTANTES</small><strong id="freeRemaining">15</strong></div><div><small>BRUTO ACUMULADO</small><strong id="freeRaw">0,00</strong></div><div><small>MULTI</small><strong id="freeMult">×1</strong></div></div>
  <div id="freeRetrigger" class="free-retrigger" hidden aria-live="polite">✦ RETRIGGER +8 FREE SPINS ✦</div>
@@ -795,7 +836,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V1.8.9</b> · Apenas créditos fictícios; sem depósitos ou levantamentos. Não ligado à Stake nem aprovado para jogo comercial.</footer>
+ <footer class="foot"><b>V1.9.0</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="freeResultOverlay" role="dialog" aria-modal="true" aria-label="Resultado final das Free Spins"><div class="modal free-result-modal"><h2>✦ FREE SPINS ✦</h2><p>O BÓNUS TERMINOU</p><div id="freeResultTotal" class="free-result-total">0,00</div><div class="free-result-math"><span>Jogadas realizadas</span><strong id="freeResultPlayed">15</strong><span>Prémio bruto</span><strong id="freeResultRaw">0,00</strong><span>Multiplicador</span><strong id="freeResultMulti">×1</strong></div><button class="free-continue" id="closeFree" type="button">▶ CONTINUAR</button></div></div>
  <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
