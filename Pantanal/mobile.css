@@ -111,3 +111,10 @@
 #screen.portrait #modal .panel h3{font-size:30px}
 #screen.portrait #modal .small{font-size:22px}
 #screen.portrait #specialCelebration .specialCard{max-width:680px}
+
+/* V2.10 — ponteiro fixo às 12 horas: acompanhar a roleta 9:16 e tocar na borda */
+#screen.portrait #wheelPointer{
+  left:calc(50% - 15px);
+  top:calc(50% - 360px);
+  z-index:16;
+}
