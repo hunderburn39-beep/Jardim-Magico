@@ -8,8 +8,8 @@ const dir=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const html=readFileSync(join(dir,'index.html'),'utf8');
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(script);
-assert.match(html,/Stake Preview V1\.9\.7/);
-assert.match(html,/V1\.9\.7 — figuras equilibradas/);
+assert.match(html,/Stake Preview V1\.9\.8/);
+assert.match(html,/V1\.9\.8 — nenhum símbolo pode ultrapassar/);
 
 const typeSource=script.match(/const TYPES=\[[\s\S]*?\n\];/)?.[0];
 const symbolSource=script.match(/const SYMBOL_FALLBACKS=\[[\s\S]*?\n(?=const WEIGHTS=)/)?.[0];
@@ -63,4 +63,16 @@ for(let i=0;i<12;i++){
 vm.runInContext('Image=undefined',ctx);
 assert.equal(vm.runInContext('warmSymbolImages()',ctx),0,
   'Game can still show results when the Image constructor is unavailable');
-console.log('Stake Preview V1.9.7: all 12 genuine figures exist, are preloaded once, and never show empty tiles during Safari decoding or errors.');
+// V1.9.8: nenhuma imagem sai dos quadrados, nem nos símbolos animados.
+const fitBlock=html.split('/* V1.9.8 — nenhum símbolo pode ultrapassar')[1]?.split('</style>')[0];
+assert.ok(fitBlock,'Reel artwork fitting CSS must be present');
+assert.match(fitBlock,/#reelFrame \.cell img\.jmSymbolArt,/);
+assert.match(fitBlock,/#reelFrame \.reel-scroll-symbol img\.jmSymbolArt/);
+assert.match(fitBlock,/max-width:96%!important/);
+assert.match(fitBlock,/max-height:96%!important/);
+const zooms=Array.from(fitBlock.matchAll(/--jm-fit:\s*(\d+)%/g),m=>Number(m[1]));
+assert.ok(zooms.length>=6);
+assert.ok(zooms.every(p=>p<=96 && p>=80),'All reel images must stay inside their cells');
+assert.doesNotMatch(fitBlock,/--jm-fit:1(?:[1-9]\d|\d{2})%/);
+
+console.log('Stake Preview V1.9.8: all 12 genuine figures exist, are preloaded once, and never show empty tiles during Safari decoding or errors.');
