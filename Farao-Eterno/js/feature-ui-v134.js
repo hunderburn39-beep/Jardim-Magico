@@ -34,6 +34,11 @@
    oldClose();
    modal.classList.remove('farao-theme');
    if(reveal&&this.feature){
+     // Depois do regresso do Safari, um toque para iniciar as Free Spins
+     // retoma também o motor que foi colocado em pausa pelo pagehide.
+     this.paused=false;
+     this.audio.init?.();
+     this.audio.startMusic?.();
      this._welcome=false;this._awaitBonusStart=true;
      this.ledger.feature.introSeen=true;
      this.featureIntro=null;
@@ -209,6 +214,17 @@
  const oldStart=g.startSpin.bind(g);
  g.startSpin=function(){
    const manual=!this._autoDispatch;
+   // Safari em segundo plano suspende o jogo. Durante o bónus, o botão
+   // RETOMAR não deve ser confundido com GIRAR nem criar outra jogada.
+   // O frame continua o giro pendente, ou inicia a próxima Free Spin.
+   if(manual&&this.feature&&this.paused&&!this._welcome&&
+       !this._welcomeShown&&!this.pendingSummary){
+     this.paused=false;
+     this.audio.init?.();
+     this.audio.startMusic?.();
+     this.notice('FREE SPINS RETOMADAS',850);
+     return;
+   }
    if(this.pendingSummary){
      if(manual&&now()>=this.nextActionAt&&!this.ledger.payout){
        this._summaryRequested=true;this.showSummary();
