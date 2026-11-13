@@ -8,12 +8,20 @@
  const rotations=['rotateX(0deg) rotateY(0deg)',
   'rotateY(-90deg)','rotateY(180deg)','rotateY(90deg)',
   'rotateX(-90deg)','rotateX(90deg)'];
+ const oldClose=game.closeModal.bind(game);
+ game.closeModal=function(){
+  if(this._welcomeShown&&this.feature?.superMultiplier&&
+    (!this.ledger.feature?.superRollSeen||this._superRolling))return;
+  $('close-modal').style.visibility='';
+  oldClose();
+ };
  const oldWelcome=game.showFeatureWelcome.bind(game);
  game.showFeatureWelcome=function(){
   const f=this.feature;
   if(!f||!api.faces.includes(f.superMultiplier))return oldWelcome();
   if(this.spinning||this._welcomeShown)return;
   this._welcomeShown=true;this._welcome=true;this._awaitBonusStart=true;
+  $('close-modal').style.visibility='hidden';
   const face=Number.isInteger(f.superFace)?f.superFace:api.faces.indexOf(f.superMultiplier);
   const already=!!this.ledger.feature.superRollSeen;
   const sides=api.faces.map((m,i)=>
@@ -41,8 +49,10 @@
    status.textContent='O FARAÓ LANÇA O DADO';
    value.textContent='✦';
    this.audio?.extra?.();
+   this._superRolling=true;
    die.classList.add('rolling');
    window.setTimeout(()=>{
+    this._superRolling=false;
     if(!die.isConnected)return;
     die.classList.remove('rolling');
     die.style.transform=rotations[face];
