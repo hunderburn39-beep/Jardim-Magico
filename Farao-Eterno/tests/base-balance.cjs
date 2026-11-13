@@ -14,7 +14,7 @@ function baseWeights(level,free){
  const original=free?E.FREE_WEIGHTS:E.WEIGHTS;
  const boost=.70+(level-90)*.006,w={...original};
  for(const k of ['HORUS','MASK','ANUBIS','KING'])w[k]=original[k]*boost;
- w.TOMB=original.TOMB*(free?(0.40+(level-90)*0.004):(0.64+(level-90)*0.006));
+ w.TOMB=original.TOMB*(free?(0.40+(level-90)*0.004):(0.58+(level-90)*0.006));
  return w;
 }
 test('prémios e 10 linhas mantêm-se na tabela aprovada',()=>{
