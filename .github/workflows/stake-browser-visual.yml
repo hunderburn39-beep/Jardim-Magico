@@ -1,0 +1,29 @@
+name: Stake Preview | Encaixe visual no navegador
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'stake-preview/index.html'
+      - 'stake-preview/tests/browser-visual.py'
+      - 'stake-preview/assets/figuras-v199/**'
+      - 'stake-preview/assets/figuras-v197/**'
+      - '.github/workflows/stake-browser-visual.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  testar-encaixe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Playwright e Chromium
+        run: |
+          python -m pip install -q playwright
+          python -m playwright install --with-deps chromium
+      - name: Testar 5x3, transparência e rolagem em 3 ecrãs
+        run: |
+          python -m http.server 8765 --bind 127.0.0.1 > /tmp/stake-static.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid || true' EXIT
+          python stake-preview/tests/browser-visual.py
