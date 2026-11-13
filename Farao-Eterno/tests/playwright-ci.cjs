@@ -91,11 +91,20 @@ async function test(name,engine){
   });
   assert(ceremony.die&&ceremony.button,'Cerimónia do dado não apareceu');
   assert(/SUPER SCATTER/i.test(ceremony.title),'Título do Super Scatter em falta');
+  assert.equal(await page.locator('#super-die-docked').textContent(),'?',
+   'A face sorteada não pode aparecer antes do lançamento');
   await page.screenshot({path:path.join(OUTPUT,'farao-v2-'+name+'-super-scatter.png')});
   await page.locator('#super-roll').click({timeout:5000});
   await page.waitForFunction(()=>document.getElementById('super-dice-result')?.textContent==='×5',null,{timeout:6000});
   const face=await page.locator('#super-dice-result').textContent();
   assert.equal(face,'×5','O dado mudou a face sorteada');
+  assert.equal(await page.locator('#super-die-docked').textContent(),'×5',
+    'A face não ficou visível no fim da animação');
+  const dieVisible=await page.locator('#super-die-docked').evaluate(el=>{
+    const cs=getComputedStyle(el),r=el.getBoundingClientRect();
+    return cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity)>0.9&&r.width>70&&r.height>70;
+  });
+  assert(dieVisible,'Dado invisível no Safari depois da rotação');
   await page.screenshot({path:path.join(OUTPUT,'farao-v2-'+name+'-dado.png')});
   // Verificar responsividade sem redesenhar nem trocar os símbolos.
   for(const [w,h] of [[320,568],[375,667],[430,932]]){
