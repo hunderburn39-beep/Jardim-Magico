@@ -102,3 +102,29 @@ for(const m of FACES){
    assert.equal(restored.balanceU,rec.balanceU,'Segundo reload pagou novamente');
  });
 }
+
+test('Super ×10: jogada antiga pendente e fundo limitado são recuperados sem exceder a reserva',()=>{
+ // A grelha de prémio alto ficou guardada por uma versão antiga,
+ // antes do limite de exposição ×10 ser verificado na escolha.
+ const s=newBonus(10,25000);
+ const {result}=beginWithGrid(s);
+ assert(result.total>0&&s.pending,'A jogada antiga deve estar pré-sorteada');
+ s.economy.prizeU=U(400); // estado de cofre reduzido ao recuperar
+ const budget=Math.floor((s.economy.prizeU-9*s.feature.totalU)/10);
+ assert(budget>0&&U(result.total)>budget,
+   'É necessário simular uma grelha que excede a reserva antiga');
+ const beforeBalance=s.balanceU,beforeWon=s.stats.winU;
+ const rec=S.restore(clone(s));
+ const outcome=S.settle(rec,undefined,{defer:true});
+ assert(outcome.prizeU<=budget,'A liquidação da jogada antiga excedeu o fundo');
+ S.finishPayout(rec);
+ const extraU=outcome.bonusDone.superExtraU;
+ assert.equal(extraU,9*(U(20)+outcome.prizeU));
+ assert.equal(rec.balanceU,beforeBalance+outcome.prizeU+extraU);
+ assert.equal(rec.stats.winU,beforeWon+outcome.prizeU+extraU);
+ assert(rec.economy.prizeU>=0);
+ S.validate(rec);
+ const again=S.restore(clone(rec));
+ assert.equal(again.balanceU,rec.balanceU,'O segundo arranque repetiu o prémio');
+ assert.equal(again.economy.prizeU,rec.economy.prizeU);
+});
