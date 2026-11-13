@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 
 const html=readFileSync(join(dirname(fileURLToPath(import.meta.url)),'..','index.html'),'utf8');
-assert.match(html,/Stake Preview V1\.8\.3/);
+assert.match(html,/Stake Preview V1\.8\.4/);
 for(const id of ['freePanel','freeRemaining','freeRaw','freeMult','freeRetrigger','freeResultOverlay','freeResultTotal','freeResultPlayed','freeResultRaw','freeResultMulti','closeFree']){
   assert.ok(html.includes('id="'+id+'"'),'missing Free Spins element: '+id);
 }
@@ -116,4 +116,4 @@ assert.equal(vm.runInContext('pendingFreeContinue',ctx),null);
 assert.equal(el('freeResultOverlay').classList.contains('show'),false);
 assert.equal(vm.runInContext('balance',ctx),after);
 assert.equal(vm.runInContext('acknowledgeFreeContinue()',ctx),false);
-console.log('Stake Preview V1.8.3: Free Spins final CONTINUAR, retriggers, 7,50, accounting once, replay and PASSAR passed.');
+console.log('Stake Preview V1.8.4: Free Spins final CONTINUAR, retriggers, 7,50, accounting once, replay and PASSAR passed.');

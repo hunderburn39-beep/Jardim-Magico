@@ -6,8 +6,8 @@ import vm from 'node:vm';
 
 const dir=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const html=readFileSync(join(dir,'index.html'),'utf8');
-assert.match(html,/Stake Preview V1\.8\.3/);
-assert.match(html,/V1\.8\.3 • AJUSTE DO TOPO/);
+assert.match(html,/Stake Preview V1\.8\.4/);
+assert.match(html,/V1\.8\.4 • TAMBORES MAIS LENTOS/);
 const assets=['assets/jardim-v181-cenario-limpo.svg','assets/jardim-v181-logo.svg','assets/jardim-v181-moldura.svg'];
 for(const filename of assets){
   const path=resolve(dir,filename);
@@ -57,4 +57,4 @@ for(const fn of ['commitRound','settlePendingRound','freeFeature','holdFeature',
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(script,'Full working engine present');
 new vm.Script(script,{filename:'stake-preview/index.html'});
-console.log('Stake Preview V1.8.3: true SVG background with no screenshot, crisp full logo, transparent 5x3 frame, real buttons and valid JS passed.');
+console.log('Stake Preview V1.8.4: true SVG background with no screenshot, crisp full logo, transparent 5x3 frame, real buttons and valid JS passed.');
