@@ -106,6 +106,38 @@ async function test(name,engine){
   });
   assert(dieVisible,'Dado invisível no Safari depois da rotação');
   await page.screenshot({path:path.join(OUTPUT,'farao-v2-'+name+'-dado.png')});
+  // O contador final é só gráfico; o saldo e o total de ganhos não mudam
+  // quando a janela é apresentada ou quando se salta a animação.
+  const summary=await page.evaluate(()=>{
+    const g=window.__faraoGame,S=window.FaraoSession;
+    g.ledger.feature=null;g._welcomeShown=false;g._welcome=false;
+    g.ledger.payout=null;g.spinning=false;g.paused=false;
+    g._summaryRequested=true;g.nextActionAt=0;
+    g.closeModal();
+    g.pendingSummary={
+      played:8,retriggers:0,superMultiplier:5,
+      superBaseTotalU:S.units(150),totalU:S.units(750)
+    };
+    g.syncLedger();
+    const balance=g.ledger.balanceU,won=g.ledger.stats.winU;
+    g.showSummary();
+    return {balance,won,visible:!!document.getElementById('super-final-total'),
+      total:document.getElementById('super-final-total')?.textContent};
+  });
+  assert(summary.visible,'Ecrã de prémio final ausente');
+  await page.waitForFunction(()=>{
+    const p=document.getElementById('super-final-total');
+    return p?.classList.contains('reached')&&p.textContent.includes('750,00');
+  },null,{timeout:6500});
+  const summaryAfter=await page.evaluate(()=>{
+    const g=window.__faraoGame;
+    return {balance:g.ledger.balanceU,won:g.ledger.stats.winU,
+      total:document.getElementById('super-final-total')?.textContent};
+  });
+  assert.equal(summaryAfter.balance,summary.balance,'Contador final duplicou os créditos');
+  assert.equal(summaryAfter.won,summary.won,'Contador final alterou a contabilidade');
+  assert(summaryAfter.total.includes('750,00'),'Total final incorreto');
+  await page.screenshot({path:path.join(OUTPUT,'farao-v2-'+name+'-final-750.png')});
   // Verificar responsividade sem redesenhar nem trocar os símbolos.
   for(const [w,h] of [[320,568],[375,667],[430,932]]){
     await page.setViewportSize({width:w,height:h});
