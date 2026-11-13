@@ -5,8 +5,8 @@ import {fileURLToPath} from "node:url";
 import vm from "node:vm";
 
 const html=readFileSync(join(dirname(fileURLToPath(import.meta.url)),"..","index.html"),"utf8");
-assert.match(html,/Stake Preview V1\.8\.7/);
-assert.match(html,/V1\.8\.7 • IMAGENS SEM FALHAS/);
+assert.match(html,/Stake Preview V1\.8\.8/);
+assert.match(html,/V1\.8\.8 • SÍMBOLOS SEM FALHAS/);
 assert.match(html,/\.reel-scroll-symbol\{[\s\S]*?flex:0 0 var\(--reel-cell-height,80px\)/);
 assert.match(html,/\.reel-scroll-viewport\{[\s\S]*?overflow:hidden/);
 assert.doesNotMatch(html,/reel-scroll-strip\.braking/,"Changing strip dimensions on brake is forbidden");
@@ -118,4 +118,4 @@ for(const phase of [0,.05,.25,.5,.75,.95,.999]){
  assert.deepEqual(strip.slice(6,12),strip.slice(12,18),"Repeated cycle is truly seamless");
  assert.equal(strip.slice(startIndex,startIndex+3).length,3);
 }
-console.log("Stake Preview V1.8.7: all three rows filled through the complete roll/brake, no changing the DOM strip, Safari pixel heights, 5 reels, TURBO and PASSAR validated.");
+console.log("Stake Preview V1.8.8: all three rows filled through the complete roll/brake, no changing the DOM strip, Safari pixel heights, 5 reels, TURBO and PASSAR validated.");
