@@ -899,7 +899,7 @@ async function celebrateSpecial(wins,total){
  return true;
 }
 async function spin(){if(spinBusy||bonusBusy||celebrationBusy)return;const stake=BET_LEVELS[state.betIndex];if(state.credits<stake){showStatus('CRÉDITOS INSUFICIENTES');return}
- spinBusy=true;state.credits-=stake;state.totalBet+=stake;state.totalSpins++;state.lastWin=0;showStatus('');update();play('reel');el('lineOverlay').style.display='none';
+ window.PantanalClearPaylines?.();spinBusy=true;state.credits-=stake;state.totalBet+=stake;state.totalSpins++;state.lastWin=0;showStatus('');update();play('reel');el('lineOverlay').style.display='none';
  const target=Array.from({length:3},()=>Array.from({length:5},()=>pick()));
  // Asynchronous reel-stop animation staggered from left to right.
  for(let tick=0;tick<31;tick++){for(let col=0;col<5;col++)if(tick<10+col*4){for(let row=0;row<3;row++)board[row][col]=pick()}else if(tick===10+col*4){for(let row=0;row<3;row++)board[row][col]=target[row][col];play('line')};renderBoard();await wait(49)}
@@ -907,7 +907,7 @@ async function spin(){if(spinBusy||bonusBusy||celebrationBusy)return;const stake
  const bonusTrigger=board.flat().filter(v=>v===9).length>=3;
  state.history.unshift({at:new Date().toLocaleString('pt-PT'),stake,lines:state.lines,board:board.map(x=>x.slice()),wins,total,bonus:bonusTrigger});
  save();update();spinBusy=false;
- if(wins.length){showStatus(`${wins.length} LINHA${wins.length!==1?'S':''} PREMIADA${wins.length!==1?'S':''} • ${money(total)} CRÉDITOS`);const special=wins.some(w=>(w.symbol===6&&w.count>=4)||(w.symbol===7&&w.count===5));if(special)await celebrateSpecial(wins,total);else{play(total>=100?'big':'win');flashWin(wins)}}else{showStatus('BOA SORTE!')}
+ if(wins.length){showStatus(`${wins.length} LINHA${wins.length!==1?'S':''} PREMIADA${wins.length!==1?'S':''} • ${money(total)} CRÉDITOS`);const special=wins.some(w=>(w.symbol===6&&w.count>=4)||(w.symbol===7&&w.count===5));if(special)await celebrateSpecial(wins,total);else{play(total>=100?'big':'win');flashWin(wins);window.PantanalShowPaylines?.(wins)}}else{showStatus('BOA SORTE!')}
  if(bonusTrigger){auto=false;await wait(500);openWheel();return}
  if(auto){await wait(450);if(auto)spin()}
 }
@@ -985,4 +985,5 @@ function adminPanel(){setDialog(`<h2>Pantanal — Administração local</h2><div
 }
 window.adminPanel=adminPanel;
 for(let r=0;r<3;r++)for(let c=0;c<5;c++)board[r][c]=pick();renderBoard();update();
-</script></body></html>
+</script><script src="paylines.js?v=2.11"></script>
+</body></html>
