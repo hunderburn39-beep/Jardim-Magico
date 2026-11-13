@@ -34,9 +34,34 @@
    game.appendChild(layer);
    return {layer,panel,grid,feedback};
  }
- function finish(state,delta,multiplier,hooks){
+ function sanitizeCount(value){
+   const n=Number(value);
+   return Number.isFinite(n)?Math.max(0,Math.min(100,Math.floor(n))):0;
+ }
+ function createPending(bonus,betPerLine){
+   const b=bonus||{};
+   return {
+     version:1,
+     strawberry:sanitizeCount(b.strawberry),
+     cauldron:sanitizeCount(b.cauldron),
+     wheel:sanitizeCount(b.wheel),
+     dice:sanitizeCount(b.dice),
+     betPerLine:Number(b.betPerLine)||Number(betPerLine)||1
+   };
+ }
+ function hasPending(value){
+   return !!value&&['strawberry','cauldron','wheel','dice'].some(x=>sanitizeCount(value[x])>0);
+ }
+ function finish(state,delta,multiplier,hooks,kind){
    if(!Number.isFinite(delta))throw new TypeError('Prémio inválido');
    const add=Math.max(0,Math.round(delta));
+   // O pagamento e a conclusão da etapa são guardados juntos;
+   // reabrir o navegador não volta a pagar uma etapa terminada.
+   if(kind&&state.pendingBonus){
+     const remaining=sanitizeCount(state.pendingBonus[kind]);
+     if(remaining<1)throw new Error('Etapa do bónus já concluída: '+kind);
+     state.pendingBonus[kind]=(kind==='strawberry'||kind==='cauldron')?0:remaining-1;
+   }
    state.lastWin+=add;
    state.credits+=add;
    state.totalPaid+=add;
@@ -92,7 +117,7 @@
      remaining--;
      if(running)await wait(250);
    }
-   finish(state,accum,0,hooks);await wait(1400);panel.layer.remove();
+   finish(state,accum,0,hooks,'strawberry');await wait(1400);panel.layer.remove();
  }
  async function pumpkin(ctx,units,layer){
    const eng=engine(),deck=eng.pumpkinDeck(ctx.rng);
@@ -133,7 +158,7 @@
      cards[chosen].style.fontSize='26px';
      layer.feedback.textContent='CALDEIRÃO · +'+hooks.money(prize);
    }
-   finish(state,prize,0,hooks);await wait(1200);layer.layer.remove();
+   finish(state,prize,0,hooks,'cauldron');await wait(1200);layer.layer.remove();
  }
  async function dice(ctx){
    const {game,state,hooks,asset,rng}=ctx;
@@ -145,7 +170,7 @@
    cards[chosen].style.backgroundImage='none';
    cards[chosen].textContent='×'+roll.multiplier;
    layer.feedback.textContent='DADO ×'+roll.multiplier+' · '+hooks.money(final)+' CRÉDITOS';
-   finish(state,final-prior,roll.multiplier,hooks);
+   finish(state,final-prior,roll.multiplier,hooks,'dice');
    await wait(1800);layer.layer.remove();
  }
  async function wheel(ctx){
@@ -166,25 +191,33 @@
    await wait(4250);
    const prior=state.lastWin,final=prior*roll.multiplier;
    layer.feedback.textContent='CASA '+roll.displaySector+' · ×'+roll.multiplier+' · '+hooks.money(final)+' CRÉDITOS';
-   finish(state,final-prior,roll.multiplier,hooks);
+   finish(state,final-prior,roll.multiplier,hooks,'wheel');
    button.textContent='PRÉMIO ×'+roll.multiplier;
    await wait(1500);layer.layer.remove();
  }
  async function launch(opts){
-   const {bonus,state,hooks}=opts;
-   const b={...{strawberry:0,cauldron:0,wheel:0,dice:0},...(bonus||{})};
-   const ctx={...opts,game:document.getElementById('game'),rng:opts.rng||Math.random};
+   const {state,hooks}=opts;
+   const pending=hasPending(state.pendingBonus)
+     ?createPending(state.pendingBonus,state.pendingBonus.betPerLine||opts.betPerLine)
+     :createPending(opts.bonus,opts.betPerLine);
+   state.pendingBonus=pending;
+   hooks.save();
+   const ctx={...opts,betPerLine:pending.betPerLine,
+     game:document.getElementById('game'),rng:opts.rng||Math.random};
    if(!ctx.game)throw new Error('Área do Pantanal inexistente');
    hooks.setBusy(true);
    try{
-     if(b.strawberry>0)await straw(ctx,b.strawberry);
-     if(b.cauldron>0)await cauldron(ctx,b.cauldron);
-     for(let i=0;i<Math.min(5,b.wheel);i++)await wheel(ctx);
-     for(let i=0;i<Math.min(5,b.dice);i++)await dice(ctx);
+     if(state.pendingBonus.strawberry>0)await straw(ctx,state.pendingBonus.strawberry);
+     if(state.pendingBonus.cauldron>0)await cauldron(ctx,state.pendingBonus.cauldron);
+     while(state.pendingBonus.wheel>0)await wheel(ctx);
+     while(state.pendingBonus.dice>0)await dice(ctx);
+     // Remover a fila apenas depois de todos os prémios já pagos.
+     state.pendingBonus=null;
+     hooks.save();hooks.update();
    }finally{
      document.getElementById('pantanalBonusModal')?.remove();
      hooks.setBusy(false);
    }
  }
- return Object.freeze({launch});
+ return Object.freeze({launch,createPending,hasPending});
 });
