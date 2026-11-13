@@ -29,7 +29,7 @@
   this.openModal('SUPER SCATTER!', '<div class="farao-ceremony super-ceremony">'+
    '<div class="super-royal-portrait"><img src="data:image/webp;base64,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" alt="O Faraó dourado com coroa azul e serpente sagrada"></div>'+
    '<p class="super-intro">As três pirâmides despertaram o Faraó!</p>'+
-   '<p class="farao-spins-label">8 FREE SPINS · MULTIPLICADOR REAL</p>'+
+   '<p class="farao-spins-label">8 FREE SPINS · MULTIPLICADOR DO BÓNUS</p>'+
    '<div class="super-dice-area"><div class="super-die" id="super-die" role="img" aria-label="Dado de seis faces">'+sides+'</div></div>'+
    '<div id="super-dice-status" class="super-dice-status" role="status" aria-live="polite">'+
     (already?'MULTIPLICADOR SORTEADO':'LANÇA O DADO SAGRADO')+'</div>'+
@@ -79,7 +79,7 @@
    '<div class="super-total-equation">'+
     '<div><small>TOTAL ACUMULADO</small><strong>'+fmt(b.superBaseTotalU)+'</strong></div>'+
     '<span class="super-times">×</span>'+
-    '<div><small>DADO SAGRADO</small><strong>×'+b.superMultiplier+'</strong></div>'+
+    '<div><small>DADO SAGRADO</small><strong>'+b.superMultiplier+'</strong></div>'+
    '</div>'+
    '<p class="farao-spins-label">PRÉMIO FINAL</p>'+
    '<strong class="super-total-prize">'+fmt(b.totalU)+'</strong>'+
@@ -115,5 +115,19 @@
   ctx.fillText('SUPER SCATTER ×'+m,280,231);
   ctx.restore();
  };
- document.documentElement.dataset.superScatter='1.0';
+ // Explicar as seis faces do novo símbolo na tabela de pagamentos.
+ const previousInfo=game.openInfo.bind(game);
+ game.openInfo=function(tab){
+  previousInfo(tab);
+  if(tab!=='pays')return;
+  const anchor=document.querySelector('.farao-scatter-pay');
+  if(!anchor)return;
+  const note=document.createElement('section');
+  note.className='super-pay-info';
+  note.innerHTML='<img src="assets/super.svg" alt="Super Scatter">'+
+   '<div><strong>SUPER SCATTER · BÓNUS DO FARAÓ</strong>'+
+   '<p>Um SUPER SCATTER com 3 ou mais pirâmides no jogo base dá 8 Free Spins especiais. O dado sorteia ×2, ×3, ×4, ×5, ×8 ou ×10. No fim, multiplica o total acumulado. Retriggers mantêm o dado. O prémio respeita o limite de 5.000× e o fundo disponível.</p></div>';
+  anchor.insertAdjacentElement('afterend',note);
+ };
+ document.documentElement.dataset.superScatter='1.1';
 })();
