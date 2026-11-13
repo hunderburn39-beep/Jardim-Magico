@@ -86,12 +86,44 @@
     '<div><small>DADO SAGRADO</small><strong>'+b.superMultiplier+'</strong></div>'+
    '</div>'+
    '<p class="farao-spins-label">PRÉMIO FINAL</p>'+
-   '<strong class="super-total-prize">'+fmt(b.totalU)+'</strong>'+
+   '<strong class="super-total-prize" id="super-final-total" aria-label="Prémio final: '+fmt(b.totalU)+'">'+fmt(b.totalU)+'</strong>'+
    '<p class="farao-bonus-rounds">'+b.played+' RODADAS · '+b.retriggers+' RETRIGGERS</p>'+
    '<button type="button" class="btn farao-gold-btn" id="collect-bonus">RECEBER TESOURO</button>'+
    '</div>',true);
   this.audio?.fanfare?.(3);
-  const ack=()=>{
+  // A contagem é visual. O bónus foi pago pela sessão antes desta janela.
+  // Nunca chamar settle(), creditNext() ou alterar o cofre neste código.
+  const counter=$('super-final-total');
+  const reduce=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const totalU=Number.isSafeInteger(b.totalU)&&b.totalU>=0?b.totalU:0;
+  let finished=false;
+  let raf=0;
+  const finishCount=()=>{
+   if(finished)return;
+   finished=true;
+   if(raf)window.cancelAnimationFrame(raf);
+   counter.textContent=fmt(totalU);
+   counter.classList.add('reached');
+   counter.removeAttribute('aria-busy');
+  };
+  if(!reduce&&totalU>0){
+   const started=performance.now(),duration=2050;
+   counter.textContent=fmt(0);
+   counter.setAttribute('aria-busy','true');
+   const step=now=>{
+    if(!counter.isConnected){finished=true;return;}
+    const progress=Math.min(1,Math.max(0,(now-started)/duration));
+    // Início lento, aceleração progressiva, final com desaceleração.
+    const eased=progress<.5?2*progress*progress:1-Math.pow(-2*progress+2,2)/2;
+    counter.textContent=fmt(Math.min(totalU,Math.floor(totalU*eased)));
+    if(progress>=1){finishCount();return;}
+    raf=window.requestAnimationFrame(step);
+   };
+   raf=window.requestAnimationFrame(step);
+   // Um toque no valor permite apresentar logo o prémio total.
+   counter.addEventListener('pointerdown',finishCount,{once:true});
+  }else counter.classList.add('reached');
+  const ack=()=>{finishCount();
    this.ledger.lastSummarySeenId=this.ledger.last?.id;
    this.save();this.closeModal();
   };
