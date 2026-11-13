@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 
 const html=readFileSync(join(dirname(fileURLToPath(import.meta.url)),'..','index.html'),'utf8');
-assert.match(html,/Stake Preview V1\.8\.5/);
+assert.match(html,/Stake Preview V1\.8\.6/);
 assert.match(html,/id="wildTally"/);
 assert.match(html,/id="wildTallyText"/);
 const code=html.match(/<script>([\s\S]*?)<\/script>/)?.[1]?.split('$("introPlay").addEventListener')[0];
@@ -80,4 +80,4 @@ for(let n=0;n<10;n++){
   const wins=round.events.filter(e=>e.kind==='reels'&&e.wildAwards.length);
   assert.ok(wins.every(evt=>evt.wildAwards.every(item=>item.value>=1&&item.value<=5)));
 }
-console.log('Stake Preview V1.8.5: '+(2500)+' stages, '+awardedRounds+' WILD-winning cascades / '+awardedCells+' valued symbols, badges, free tally and payouts verified.');
+console.log('Stake Preview V1.8.6: '+(2500)+' stages, '+awardedRounds+' WILD-winning cascades / '+awardedCells+' valued symbols, badges, free tally and payouts verified.');
