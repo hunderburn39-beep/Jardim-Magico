@@ -70,7 +70,10 @@ const oldAdvance=g.advanceStage.bind(g);
 g.advanceStage=function(...args){
  if(this._introCoverVisible)return;
  // Um toque durante a rotação das Free Spins não salta os cinco tambores.
- if(this.feature&&this.spinning)return;
+ // Uma Free Spin em curso não pode ser acelerada por toques repetidos;
+ // EXCEÇÃO: o Safari pode tê-la pausado a meio. RETOMAR tem de chegar
+ // ao motor para continuar exatamente os mesmos 5 tambores.
+ if(this.feature&&this.spinning&&!this.paused)return;
  if(this.feature&&this._awaitBonusStart&&!this._welcome){
   if(this.spinning||this.ledger.payout)return;
   if(this.featureIntro&&now()<this.featureIntro.end)return;
