@@ -148,7 +148,7 @@ with sync_playwright() as p:
     page.locator("#historyBtn").click()
     page.locator("#historySearch").fill("1")
     page.locator("#historyList [data-replay]").click()
-    page.wait_for_function("!busy && document.querySelector('#reelFrame').classList.contains('round-finished')",timeout=90000)
+    page.wait_for_function("!busy && document.querySelector('#notice').textContent.includes('REPETIÇÃO #1 · PRÉMIO ORIGINAL')",timeout=30000)
     after_replay=page.evaluate("({balance,serial,count:historyRecords.length})")
     assert before_replay==after_replay,("Replay changed test credits or records",before_replay,after_replay)
     print("HISTORY_REPLAY_OK",json.dumps(after_replay),flush=True)
