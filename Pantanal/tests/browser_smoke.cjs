@@ -9,7 +9,7 @@ const fs=require('node:fs');
  });
  const errors=[];
  page.on('pageerror',e=>errors.push(String(e)));
- await page.goto('http://127.0.0.1:8765/Pantanal/?v=2.19',{waitUntil:'domcontentloaded',timeout:50000});
+ await page.goto('http://127.0.0.1:8765/Pantanal/?v=2.20',{waitUntil:'domcontentloaded',timeout:50000});
  await page.waitForSelector('#screen');
  let baseline=await page.evaluate(()=>({
   scripts:!!window.PantanalApkEngine&&!!window.PantanalBonusUI,
@@ -38,8 +38,19 @@ const fs=require('node:fs');
  assert(Math.abs(p.overlay.w-p.reels.w)<2);
  assert(Math.abs(p.overlay.h-p.reels.h)<2);
  assert(p.paylines>=25,'Pre-visualizacao completa com 25 linhas');
+ const centerPortrait=await page.evaluate(()=>{
+   const r=document.getElementById('reels').getBoundingClientRect();
+   const screen=document.getElementById('screen').getBoundingClientRect();
+   return {delta:Math.abs(r.left+r.width/2-screen.left-screen.width/2),
+     width:parseFloat(getComputedStyle(document.getElementById('reels')).width),
+     height:parseFloat(getComputedStyle(document.getElementById('reels')).height)};
+ });
+ assert(centerPortrait.delta<1.5,'Tambores descentrados no iPhone');
+ assert.equal(centerPortrait.width,611);
+ assert.equal(centerPortrait.height,314);
+
  fs.mkdirSync('Pantanal/tests/screenshots',{recursive:true});
- await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v219-iphone.png',fullPage:false});
+ await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v220-iphone.png',fullPage:false});
  await page.evaluate(()=>{
   window.__modeCalls=0;window.__visualTestState={lastWin:100,credits:1000,totalPaid:0,maxWin:0,history:[{total:100}]};
   window.__visualTestPromise=PantanalBonusUI.launch({
@@ -80,8 +91,18 @@ const fs=require('node:fs');
  const spinsBefore=await page.evaluate(()=>state.totalSpins);
  const genBefore=await page.evaluate(()=>Number(state.generatorCalls)||0);
  await page.locator('#spinButton').click({force:true});
+ await page.waitForSelector('#pantanalReelSpinStage .reelSpinLane',{timeout:5000});
+ const activeColumns=await page.locator('#pantanalReelSpinStage .reelSpinLane').count();
+ assert.equal(activeColumns,5,'Rolagem tem de ter cinco faixas independentes');
+ const firstStrip=page.locator('#pantanalReelSpinStage .reelSpinStrip').first();
+ const initialMatrix=await firstStrip.evaluate(el=>getComputedStyle(el).transform);
+ await page.waitForTimeout(140);
+ const laterMatrix=await firstStrip.evaluate(el=>getComputedStyle(el).transform);
+ assert.notEqual(initialMatrix,laterMatrix,'O movimento não é contínuo entre frames');
  await page.waitForFunction(n=>state.totalSpins>n,spinsBefore,{timeout:12000});
  await page.waitForFunction(()=>!spinBusy,{timeout:12000});
+ assert.equal(await page.locator('#pantanalReelSpinStage').count(),0,
+   'Faixas temporárias não desapareceram após a paragem');
  const settled=await page.evaluate(()=>({spins:state.totalSpins,lastWin:state.lastWin,credits:state.credits}));
  assert(Number.isFinite(settled.credits)&&settled.spins>spinsBefore,'Jogada nao concluida');
  assert((await page.evaluate(()=>state.generatorCalls))>genBefore,'Gerador não incrementou o contador persistente');
@@ -160,7 +181,14 @@ const fs=require('node:fs');
  });
  assert.equal(desktop.portrait,false);
  assert(desktop.dx<2&&desktop.dy<2,'Linhas perdidas no modo horizontal');
- await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v219-desktop.png'});
+ const centerDesktop=await page.evaluate(()=>{
+   const r=document.getElementById('reels').getBoundingClientRect();
+   const screen=document.getElementById('screen').getBoundingClientRect();
+   return Math.abs(r.left+r.width/2-screen.left-screen.width/2);
+ });
+ assert(centerDesktop<1.5,'Tambores descentrados no modo horizontal');
+
+ await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v220-desktop.png'});
  const readableErrors=errors.filter(x=>!x.includes('Audio'));
  assert.equal(readableErrors.length,0,'Erros de JS no browser: '+readableErrors.join(' | '));
  console.log(JSON.stringify({success:true,portrait:baseline,lines:p,bonus,desktop,jsErrors:readableErrors},null,2));
