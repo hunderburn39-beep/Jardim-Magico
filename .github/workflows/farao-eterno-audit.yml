@@ -42,3 +42,9 @@ jobs:
           SAMPLES: '20000'
           LEVEL: ${{ matrix.level }}
         run: node Farao-Eterno/tests/auditoria-completa.cjs
+
+      - name: Procurar pesos equilibrados sem mudar a tabela
+        if: matrix.level == 90
+        env:
+          CALIBRATION_SAMPLES: '5000'
+        run: node Farao-Eterno/tests/calibracao.cjs
