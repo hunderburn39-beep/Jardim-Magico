@@ -14,7 +14,10 @@ assert.match(html,/player\.loop=name==="spin"/);
 const m=html.match(/const REEL_SPIN_PROFILE=Object\.freeze\([\s\S]*?\nasync function animateCascade/);
 assert.ok(m,"Engine found");
 const code=m[0].slice(0,-"async function animateCascade".length);
-new vm.Script(code);
+const helpers=html.match(/const SYMBOL_FALLBACKS=\[[\s\S]*?\n(?=const WEIGHTS=)/)?.[0];
+assert.ok(helpers,"Shared symbol-artwork renderer must be available to the reel tests");
+const bundle=helpers+"\n"+code;
+new vm.Script(bundle);
 
 const TYPES=Array.from({length:12},(_,id)=>({label:"SYMBOL"+id,image:"/symbols/"+id+".svg"}));
 const final=Array.from({length:5},(_,col)=>[col,(col+1)%12,(col+2)%12]);
@@ -70,7 +73,7 @@ const testScenario=async(turbo,{skipAt=0,reduced=false}={})=>{
     stopSpinEffect(){stopFx++},
     pause(ms){pauses.push(ms);if(skipAt&&pauses.length===skipAt)ctx.skipAnimations=true;return Promise.resolve()}
   });
-  vm.runInContext(code,ctx);
+  vm.runInContext(bundle,ctx);
   ctx.result=final;
   await vm.runInContext("animateReelStop(result)",ctx);
   assert.equal(drawn.at(-1),json,"The predetermined result is preserved");
@@ -103,7 +106,7 @@ assert.equal(skip.sfx.filter(x=>x==="stop").length,0);
 const accessible=await testScenario(false,{reduced:true});
 assert.equal(accessible.pauses.length,0);
 const ctx=vm.createContext({TYPES,Math,Object,Array,Number});
-vm.runInContext(code,ctx);
+vm.runInContext(bundle,ctx);
 for(const phase of [0,.05,.25,.5,.75,.95,.999]){
  ctx.phase=phase;
  const arr=Array.from({length:18},(_,i)=>i);
