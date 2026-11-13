@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" role="img" aria-label="Faraó com coroa azul e dourada">
+<defs>
+ <linearGradient id="gold" x2="1" y2="1"><stop stop-color="#fff4bd"/><stop offset=".22" stop-color="#e9af44"/><stop offset=".52" stop-color="#8b481d"/><stop offset=".72" stop-color="#d99d3c"/><stop offset="1" stop-color="#ffdf84"/></linearGradient>
+ <linearGradient id="skin"><stop stop-color="#7d381d"/><stop offset=".2" stop-color="#d18b4b"/><stop offset=".5" stop-color="#f3be77"/><stop offset=".75" stop-color="#bd6335"/><stop offset="1" stop-color="#743b29"/></linearGradient>
+ <linearGradient id="blue" x2=".8" y2=".8"><stop stop-color="#0b2c78"/><stop offset=".5" stop-color="#1f4fbb"/><stop offset="1" stop-color="#101c58"/></linearGradient>
+ <radialGradient id="gem"><stop stop-color="#a3fdf2"/><stop offset=".42" stop-color="#1bc8be"/><stop offset="1" stop-color="#057c8b"/></radialGradient>
+ <pattern id="stripe" width="28" height="46" patternUnits="userSpaceOnUse"><path d="M0 0H28V46H0Z" fill="url(#blue)"/><path d="M0 4H28V14H0ZM0 25H28V32H0Z" fill="url(#gold)"/><path d="M0 19H28" stroke="#f2d78a"/></pattern>
+ <filter id="shadow"><feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#090d14" flood-opacity=".7"/></filter>
+</defs>
+<rect width="300" height="300" fill="#07182c"/>
+<ellipse cx="150" cy="160" rx="135" ry="129" fill="#173b67" opacity=".5"/>
+<g filter="url(#shadow)">
+ <path d="M112 26Q148 4 187 26Q238 40 257 99L294 207Q270 227 218 215L210 260H88L80 215Q25 225 7 207L43 102Q66 40 112 26Z" fill="url(#stripe)" stroke="url(#gold)" stroke-width="7"/>
+ <path d="M93 48Q149 17 206 49L214 114Q206 158 201 208L191 256Q149 272 108 256L97 209Q89 154 86 115Z" fill="url(#skin)" stroke="#bd7635" stroke-width="2"/>
+ <path d="M103 148Q149 163 195 148L193 201Q177 235 151 242Q126 237 107 202Z" fill="url(#skin)"/>
+ <path d="M101 123Q121 107 141 123M160 123Q181 106 200 122" fill="none" stroke="#442317" stroke-width="5" stroke-linecap="round"/>
+ <path d="M105 131Q123 123 141 133Q125 140 105 131M159 133Q178 122 196 130Q178 141 159 133" fill="#f6e6cf" stroke="#4b2922" stroke-width="2"/>
+ <ellipse cx="126" cy="132" rx="5" ry="5" fill="#261d20"/><ellipse cx="174" cy="132" rx="5" ry="5" fill="#261d20"/>
+ <path d="M150 131L141 168Q150 175 159 168" stroke="#9f4f2a" stroke-width="3" fill="none"/>
+ <path d="M129 189Q150 181 171 189Q150 195 129 189Z" fill="#8b4530" stroke="#f5c38b" stroke-width="1"/>
+ <path d="M110 226Q148 243 191 227" fill="none" stroke="#fff1b9" stroke-width="3"/>
+ <path d="M82 248Q150 214 218 248L248 287H50Z" fill="url(#gold)" stroke="#f8d98d" stroke-width="4"/>
+ <path d="M65 272Q150 245 233 272" fill="none" stroke="#1767a9" stroke-width="14"/><path d="M64 280Q150 253 236 280" fill="none" stroke="#05a7b4" stroke-width="6"/>
+ <path d="M92 44Q151 21 211 46L208 86Q152 65 90 85Z" fill="url(#gold)" stroke="#ffebac" stroke-width="5"/>
+ <path d="M148 31Q171 26 170 48Q196 56 178 71Q156 79 147 61Q135 42 148 31Z" fill="url(#gold)" stroke="#ffe8a3" stroke-width="3"/>
+ <path d="M155 34Q174 22 180 37Q187 46 176 50Q163 49 161 43Z" fill="#17a5a5" stroke="#f7df8c"/>
+ <ellipse cx="150" cy="77" rx="11" ry="14" fill="url(#gem)" stroke="#ffe6a3" stroke-width="4"/>
+ <path d="M135 244L150 234 165 244 159 278H141Z" fill="url(#gold)"/><ellipse cx="150" cy="261" rx="9" ry="13" fill="url(#gem)" stroke="#ffeab2" stroke-width="3"/>
+</g>
+</svg>
