@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V1.9.3</title>
+<title>Jardim Mágico | Edição Stake Preview V1.9.5</title>
 <link rel="preload" as="image" href="../assets/imagens/jm38-caracol.svg">
 <link rel="preload" as="image" href="../assets/imagens/jm38-joaninha.svg">
 <link rel="preload" as="image" href="../assets/imagens/jm38-flor-azul.svg">
@@ -883,6 +883,14 @@ html,body{height:100%;overflow:hidden;background:#051814}
   .column + .column{
     border-left:1px solid #d6a76f66;
   }
+}
+
+/* V1.9.5 — remover exclusivamente a moldura ornamental SOBRE os tambores.
+   Mantém os cinco rolos, linhas de prémios, grelha e rebordo exterior. */
+#reelFrame::after{
+  content:none!important;
+  display:none!important;
+  background:none!important;
 }
 
 </style>
