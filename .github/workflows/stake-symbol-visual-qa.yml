@@ -1,0 +1,60 @@
+name: Stake Preview | Auditoria visual das figuras
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'stake-preview/assets/figuras-v199/**'
+      - 'stake-preview/assets/figuras-v197/jm38-joaninha-limpo.svg'
+      - '.github/workflows/stake-symbol-visual-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validar-recortes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar renderizador SVG
+        run: python -m pip install -q pillow cairosvg
+      - name: Verificar transparência e gerar amostra visual
+        run: |
+          python - <<'PY'
+          import io,base64
+          from pathlib import Path
+          from PIL import Image,ImageDraw
+          import cairosvg
+          base=Path('stake-preview/assets')
+          assets=[
+            ('Bule',base/'figuras-v199/bule-limpo.svg'),
+            ('Diamante',base/'figuras-v199/diamante-limpo.svg'),
+            ('Cogumelo',base/'figuras-v199/cogumelo-limpo.svg'),
+            ('Chapeu',base/'figuras-v199/chapeu-limpo.svg'),
+            ('Joaninha',base/'figuras-v197/jm38-joaninha-limpo.svg')
+          ]
+          W,H=800,175
+          out=Image.new('RGB',(W,H),'white')
+          d=ImageDraw.Draw(out)
+          for i,(name,path) in enumerate(assets):
+            raw=path.read_bytes()
+            png=cairosvg.svg2png(bytestring=raw,output_width=256,output_height=256)
+            im=Image.open(io.BytesIO(png)).convert('RGBA')
+            alpha=im.getchannel('A')
+            box=alpha.getbbox()
+            assert box is not None,(name,'Figura totalmente transparente')
+            assert 0 < sum(1 for a in alpha.getdata() if a>48) < 256*256*.9,(name,'Alpha invalido')
+            assert all(alpha.getpixel(pt)<12 for pt in [(0,0),(255,0),(0,255),(255,255)]),(name,'Cantos opacos')
+            x=i*160
+            for yy in range(0,150,12):
+              for xx in range(0,160,12):
+                if (xx//12+yy//12)%2: d.rectangle((x+xx,yy,x+xx+11,yy+11),fill=(192,202,200))
+                else:d.rectangle((x+xx,yy,x+xx+11,yy+11),fill=(245,244,231))
+            im.thumbnail((147,141),Image.Resampling.LANCZOS)
+            out.paste(im,(x+(160-im.width)//2,(149-im.height)//2),im)
+            d.rectangle((x,150,x+159,174),fill=(28,36,42))
+            d.text((x+8,155),name,fill=(255,255,255))
+            print(name,'alpha box',box,'PNG bytes',len(png))
+          stream=io.BytesIO();out.save(stream,'JPEG',quality=75,optimize=True)
+          print('VISUAL_PREVIEW_START'+base64.b64encode(stream.getvalue()).decode()+'VISUAL_PREVIEW_END')
+          print('SUCESSO: cinco recortes renderizados, com cantos transparentes')
+          PY
