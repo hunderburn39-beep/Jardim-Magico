@@ -87,5 +87,5 @@ test('som desligado e jogo em pausa nunca emitem novos impactos',()=>{
  game.audio.on=false;game.audio.fanfare(3);
  assert.equal(nodes.samples,0);
  game.audio.on=true;game.paused=true;game.audio.fanfare(3);
- assert.equal(nodes.oscillators,0);
+ assert.equal(nodes.samples,0);
 });
