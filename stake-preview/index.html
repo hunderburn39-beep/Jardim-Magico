@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V1.9.0</title>
+<title>Jardim Mágico | Edição Stake Preview V1.9.3</title>
 <link rel="preload" as="image" href="../assets/imagens/jm38-caracol.svg">
 <link rel="preload" as="image" href="../assets/imagens/jm38-joaninha.svg">
 <link rel="preload" as="image" href="../assets/imagens/jm38-flor-azul.svg">
@@ -813,6 +813,50 @@ html,body{height:100%;overflow:hidden;background:#051814}
   }
 }
 
+
+/* V1.9.3 — moldura mais ampla sem perder o 9:16.
+   Maximizamos a largura real dos 5 tambores e aumentamos
+   ligeiramente a altura, guardando espaço para o aviso e bónus. */
+@media (orientation:portrait){
+  .frame{
+    left:.4%;
+    right:auto;
+    width:99.2%;
+    max-width:99.2%;
+    box-sizing:border-box;
+    height:31%;
+    border-width:3px;
+    border-radius:15px;
+  }
+  .frame:after{inset:-3px}
+  .reels{
+    width:100%;
+    height:100%;
+    padding:0;
+    gap:1px;
+    border-radius:11px;
+  }
+  .column{gap:1px}
+  /* A ronda concluída continua fora da zona das figuras. */
+  .frame.round-finished .hud{
+    top:calc(100% + 2px);
+    padding:2px 8px;
+  }
+  .cascade-meter,.free-retrigger{top:61%}
+}
+@media (orientation:portrait) and (max-height:700px){
+  .frame{height:30.5%}
+  .frame.round-finished .hud{
+    top:calc(100% + 1px);
+    padding:1px 6px;
+  }
+  .cascade-meter,.free-retrigger{top:60.15%}
+}
+@media (orientation:portrait) and (max-height:560px){
+  .frame{height:29.5%}
+  .cascade-meter,.free-retrigger{top:58.7%}
+}
+
 </style>
 </head>
 <body>
@@ -870,7 +914,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V1.9.0</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
+ <footer class="foot"><b>V1.9.3</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="freeResultOverlay" role="dialog" aria-modal="true" aria-label="Resultado final das Free Spins"><div class="modal free-result-modal"><h2>✦ FREE SPINS ✦</h2><p>O BÓNUS TERMINOU</p><div id="freeResultTotal" class="free-result-total">0,00</div><div class="free-result-math"><span>Jogadas realizadas</span><strong id="freeResultPlayed">15</strong><span>Prémio bruto</span><strong id="freeResultRaw">0,00</strong><span>Multiplicador</span><strong id="freeResultMulti">×1</strong></div><button class="free-continue" id="closeFree" type="button">▶ CONTINUAR</button></div></div>
  <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
