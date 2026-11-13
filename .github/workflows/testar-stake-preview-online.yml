@@ -78,7 +78,7 @@ jobs:
                 curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/assets/imagens/jm38-caracol.svg" -o /tmp/caracol.svg
                 test -s /tmp/caracol.svg
                 curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/assets/jardim-v181-cenario-limpo.svg" -o /tmp/v181-cenario.svg
-                curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/assets/figuras-v197/jm38-caracol-limpo.svg" -o /tmp/v181-moldura.svg
+                curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/assets/figuras-v197/jm38-caracol-limpo.svg" -o /tmp/v197-caracol.svg
                 test -s /tmp/v181-cenario.svg && test -s /tmp/v197-caracol.svg
                 curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/assets/jardim-v181-logo.svg" -o /tmp/v181-logo.svg
                 test -s /tmp/v181-logo.svg
