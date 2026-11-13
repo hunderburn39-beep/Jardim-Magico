@@ -6,8 +6,8 @@ import vm from 'node:vm';
 
 const dir=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const html=readFileSync(join(dir,'index.html'),'utf8');
-assert.match(html,/Stake Preview V1\.8\.1/);
-assert.match(html,/V1\.8\.1 • NOVO VISUAL/);
+assert.match(html,/Stake Preview V1\.8\.2/);
+assert.match(html,/V1\.8\.2 • VISUAL MOBILE/);
 const assets=['assets/jardim-v181-cenario-limpo.svg','assets/jardim-v181-logo.svg','assets/jardim-v181-moldura.svg'];
 for(const filename of assets){
   const path=resolve(dir,filename);
@@ -40,12 +40,12 @@ assert.doesNotMatch(html,/url\('\.\.\/assets\/imagens\/jm80-cenario-imersivo\.sv
 assert.match(html,/\.app\s*\{[^}]*jardim-v181-cenario-limpo\.svg/s);
 assert.match(html,/\.frame:after\s*\{[^}]*jardim-v181-moldura\.svg/s);
 assert.match(html,/\.logo-wrap\s*\{[^}]*env\(safe-area-inset-top\)/s,'Logo clears iPhone safe area');
-assert.match(html,/\.logo-wrap\s*\{[^}]*height:13\.4%/s);
+assert.match(html,/\.logo-wrap\s*\{[^}]*height:11\.7%/s);
 assert.match(html,/\.reels\s*\{[^}]*height:100%/s,'Five dynamic reel columns fill their frame');
-assert.match(html,/\.frame\s*\{[^}]*top:29%/s);
-assert.match(html,/\.bonus-row\s*\{[^}]*top:64\.2%/s);
-assert.match(html,/\.money-row\s*\{[^}]*top:74\.9%/s);
-assert.match(html,/\.actions\s*\{[^}]*top:85\.6%/s);
+assert.match(html,/\.frame\s*\{[^}]*top:29\.4%/s);
+assert.match(html,/\.bonus-row\s*\{[^}]*top:63\.4%/s);
+assert.match(html,/\.money-row\s*\{[^}]*top:74\.5%/s);
+assert.match(html,/\.actions\s*\{[^}]*top:86\.2%/s);
 assert.equal((html.match(/src="assets\/jardim-v181-logo\.svg"/g)||[]).length,2,'Both intro and game logo use the same crisp asset');
 
 for(const id of ['reels','balance','bet','minus','plus','spin','auto','turbo','buyFree','buyHold','paytableBtn','historyBtn','soundBtn','musicBtn','skipBtn','sessionStatus','freePanel','holdGrid','linePrize']){
@@ -57,4 +57,4 @@ for(const fn of ['commitRound','settlePendingRound','freeFeature','holdFeature',
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(script,'Full working engine present');
 new vm.Script(script,{filename:'stake-preview/index.html'});
-console.log('Stake Preview V1.8.1: true SVG background with no screenshot, crisp full logo, transparent 5x3 frame, real buttons and valid JS passed.');
+console.log('Stake Preview V1.8.2: true SVG background with no screenshot, crisp full logo, transparent 5x3 frame, real buttons and valid JS passed.');
