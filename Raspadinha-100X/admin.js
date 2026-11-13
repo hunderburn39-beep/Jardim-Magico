@@ -19,6 +19,7 @@ function draw(){
   if(!unlocked)return;
   drawCommissions();
   drawOfficialPlans();
+  drawFundSettings();
   const report=profitReport();
   const target=$("scratch-admin-cards");target.replaceChildren();
   for(const mode of CARD_MODES){
@@ -39,7 +40,8 @@ function draw(){
       ["Tiragem vendida",formatted(stock?.issued||0)],
       ["Bilhetes restantes",formatted(remaining)],
       ["Vendas",eur(p.stakes)],
-      ["Para prémios (60% das vendas)",eur(p.funded)],
+      ["Percentagem das próximas vendas",prizeFundRate(mode.mult)+"%"],
+      ["Fundo de prémios acumulado",eur(p.funded)],
       ["Prémios atribuídos / reservados",eur(p.awarded)],
       ["Disponível para novos prémios",eur(prizeFundRemaining(p))],
       ...(p.awarded>p.funded?[["Compromissos anteriores sem cobertura",eur(p.awarded-p.funded)]]:[]),
@@ -95,6 +97,35 @@ function confirmAllReset(){
   $("scratch-reset-note").textContent=
     "Reposição total realizada. Tudo a zero; quatro tiragens novas. Adiciona créditos pela carteira.";
   draw();refreshShares();
+}
+function drawFundSettings(){
+  for(const mode of CARD_MODES)
+    $("scratch-fund-"+mode.mult).value=String(prizeFundRate(mode.mult));
+}
+function saveFundRates(event){
+  event.preventDefault();
+  if(!unlocked)return;
+  const rates={};
+  const note=$("scratch-fund-note");
+  for(const mode of CARD_MODES){
+    const raw=$("scratch-fund-"+mode.mult).value.trim();
+    if(!/^\\d{1,3}$/.test(raw)){
+      note.textContent="Indica percentagens inteiras de 10% a 100%.";
+      return;
+    }
+    const rate=Number(raw);
+    if(rate<MIN_PRIZE_FUND_PERCENT||rate>MAX_PRIZE_FUND_PERCENT){
+      note.textContent="O fundo deve estar entre 10% e 100%, de 1 em 1%.";
+      return;
+    }
+    rates[String(mode.mult)]=rate;
+  }
+  state.prizeFundRates={...state.prizeFundRates,...rates};
+  save();
+  draw();
+  note.textContent="Percentagens guardadas: "+
+    CARD_MODES.map(m=>m.mult+"X "+rates[String(m.mult)]+"%").join(" · ")+
+    ". Aplicam-se apenas às próximas compras; o fundo e os prémios anteriores mantêm-se.";
 }
 function refreshShares(){
   $("scratch-commission-merchant").value=String(state.commissionSplit.merchant);
@@ -215,6 +246,7 @@ function drawOfficialPlans(){
     " · Restantes aqui "+integer(left)+
     " · 1 prémio em "+odds+
     " · RTP da emissão oficial (não aplicável a este jogo): "+(plan.rtp*100).toLocaleString("pt-PT",{maximumFractionDigits:2})+"%"+
+    " · Fundo das novas compras "+prizeFundRate(Number(mode))+"%"+
     " · Fundo de prémios disponível "+eur(prizeFundRemaining(state.pools[mode]))+
     " · símbolos "+plan.multipliers.map(n=>n+"X").join(", ");
   const rows=[[0,plan.emission-plan.winningTickets],...plan.prizes];
@@ -250,6 +282,7 @@ $("scratch-commission-merchant-withdraw").addEventListener("click",()=>withdrawC
 $("scratch-commission-technician-withdraw").addEventListener("click",()=>withdrawCommission("technician"));
 $("scratch-plans-mode").addEventListener("change",drawOfficialPlans);
 $("scratch-reset-all").addEventListener("click",confirmAllReset);
+$("scratch-fund-form").addEventListener("submit",saveFundRates);
 panel.addEventListener("touchstart",e=>{if(e.touches.length===1)previousY=e.touches[0].clientY},{passive:true});
 panel.addEventListener("touchmove",e=>{
   if(previousY===null||e.touches.length!==1)return;
