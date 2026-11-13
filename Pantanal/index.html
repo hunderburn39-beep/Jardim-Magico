@@ -1025,9 +1025,13 @@ async function spin(){
  state.apjSorteio=generation.meta.sorteio;
  if(generation.meta.medTriggered)state.medEnabled=false;
  if(generation.meta.maxTriggered)state.maxEnabled=false;
- // Asynchronous reel-stop animation staggered from left to right.
- for(let tick=0;tick<31;tick++){for(let col=0;col<5;col++)if(tick<10+col*4){for(let row=0;row<3;row++)board[row][col]=pick()}else if(tick===10+col*4){for(let row=0;row<3;row++)board[row][col]=target[row][col];play('line')};renderBoard();await wait(49)}
- board=target;renderBoard();
+ // Cada faixa desloca-se continuamente para baixo e abranda antes de parar.
+ // A animação não participa no RNG nem altera os símbolos escolhidos.
+ await window.PantanalReelMotion.spin(board,target,{
+   pick,asset,
+   onStop(){play('line')},
+   onComplete(){board=target;renderBoard();}
+ });
  let {wins,total,bonus,jackpots}=calcWins(board);
  const apk=window.PantanalApkEngine,jackpotNames=[];
  state.jackpots=state.jackpots||apk.defaultJackpots();
@@ -1157,6 +1161,6 @@ if(savedBoard){
  for(let r=0;r<3;r++)for(let c=0;c<5;c++)board[r][c]=pick();
 }
 renderBoard();update();
-</script><script src="paylines.js?v=2.19"></script>
+</script><script src="paylines.js?v=2.20"></script>
 <script src="original_rules.js?v=2.13"></script>
-<script src="apk_engine.js?v=2.19"></script><script src="bonus_ui.js?v=2.19"></script></body></html>
+<script src="apk_engine.js?v=2.20"></script><script src="bonus_ui.js?v=2.20"></script><script src="reels_motion.js?v=2.20"></script></body></html>
