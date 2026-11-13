@@ -1257,7 +1257,11 @@ async function animateReelStop(boardFinal){
   const profile=turbo?REEL_SPIN_PROFILE.turbo:REEL_SPIN_PROFILE.normal;
   const reducedMotion=typeof window!=="undefined" &&
     Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
-  if(skipAnimations||reducedMotion){draw(boardFinal,[]);return}
+  // In non-visual test runtimes there may be no DOM factory. The browser
+  // always has createElement; without it we still show the committed result.
+  if(skipAnimations||reducedMotion||typeof document.createElement!=="function"){
+    draw(boardFinal,[]);return;
+  }
   let strips=[];
   try{
     strips=mountRollingReels(boardFinal,profile);
