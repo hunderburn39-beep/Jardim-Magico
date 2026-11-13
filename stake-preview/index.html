@@ -857,6 +857,34 @@ html,body{height:100%;overflow:hidden;background:#051814}
   .cascade-meter,.free-retrigger{top:58.7%}
 }
 
+
+/* V1.9.4 — mais espaço útil dentro da moldura: aro lateral dourado
+   mais fino e imagem das cinco colunas livre até às bordas internas. */
+@media (orientation:portrait){
+  .frame{
+    border-width:1px;
+    padding:0;
+  }
+  .frame:after{
+    inset:-2px;
+    background-image:url('assets/jardim-v194-moldura-interior-largo.svg');
+  }
+  .reels{
+    width:100%;
+    height:100%;
+    padding:0;
+    column-gap:1px;
+    overflow:hidden;
+  }
+  .column{
+    min-width:0;
+    border-left-width:0;
+  }
+  .column + .column{
+    border-left:1px solid #d6a76f66;
+  }
+}
+
 </style>
 </head>
 <body>
