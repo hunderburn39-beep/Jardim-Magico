@@ -93,6 +93,18 @@
    const w={...original};
    for(const k of ['HORUS','MASK','ANUBIS','KING'])w[k]=original[k]*boost;
    w.TOMB=original.TOMB*(.78+(level-85)*.065);
+   // Equilíbrio V1.4 (exclusivamente jogo base):
+   // ligeiramente mais Faraó e Anúbis para criar combinações grandes
+   // sem alterar a tabela de pagamentos, os Wilds ou as Free Spins.
+   // Hórus e Máscara cedem algum peso para não concentrar toda
+   // a alteração nos prémios medianos. Continua a ser sorteio genuíno,
+   // sujeito ao fundo de prémios disponível.
+   if(!free){
+     w.KING*=1.12;
+     w.ANUBIS*=1.05;
+     w.HORUS*=.94;
+     w.MASK*=.94;
+   }
    return w;
  }
  const old={
