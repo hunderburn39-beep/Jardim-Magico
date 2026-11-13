@@ -875,7 +875,7 @@ function officialTicketsLeft(plan){
 }
 function pickOfficialPrize(plan,maxPrizeCents){
   // Primeiro filtra o inventário para NÃO emitir um prémio que ultrapasse
-  // os 60% acumulados e ainda livres da modalidade. Só depois sorteia.
+  // a percentagem acumulada e ainda livre da modalidade. Só depois sorteia.
   // A filtragem muda as probabilidades e o RTP relativamente às tabelas
   // da Santa Casa; estas são usadas apenas como limites de stock.
   const st=officialStockForPlan(plan);
@@ -1149,6 +1149,9 @@ function resetScratchAll(){
   endScratch();stopScratchSound();clearCelebration();
   const next=fresh();                           // saldo, comissões e históricos a zero
   next.sound=previous.sound;
+  // Configurações do jogo não são contadores: preservar as percentagens.
+  next.prizeFundRates={...previous.prizeFundRates};
+  initPrizeFundRates(next);
   for(const key of Object.keys(next.officialStock))
     next.officialStock[key].series=(previous.officialStock?.[key]?.series||1)+1;
   state=next;
