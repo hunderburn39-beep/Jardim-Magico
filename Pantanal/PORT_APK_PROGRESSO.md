@@ -1,4 +1,4 @@
-# Pantanal — migração do APK Android 2.06 para web (v2.17)
+# Pantanal — migração do APK Android 2.06 para web (v2.19)
 
 Atualizado em **13/11/2026**. O jogo web usa **créditos virtuais**, sem servidor de apostas reais nem RTP certificado.
 
@@ -15,6 +15,16 @@ Foram importadas **254 entradas originais** do APK e reconstruídos **2598 fiche
 - **v2.15:** implementação das travas **travaMin(7)** e **travaAcum(7/8)**, deteção antecipada de morangos e caldeirão, correção de bónus duplos e padrões especiais das primeiras 200 verificações do gerador. Foi também implementado o sorteio condicional de MED e MAX e a proteção contra cinco colunas completas do símbolo específico.
 - **v2.16:** contador persistente das chamadas a **downDificult()**. O APK chama esse método na geração dos tambores *e também* no cálculo de dados, roleta, morangos e caldeirão; estas chamadas passam agora a fazer parte da evolução da dificuldade no navegador.
 - **v2.17:** estados **MED/MAX autorizados** e número de sorteio especial configuráveis no admin local. O código original ativava MED/MAX através de mensagens de um servidor remoto (PainelScreen.EnviarLeitura e respetivos flags \`med\`, \`max\`, \`sorteio\`). Essa comunicação **não foi recuperada**; no navegador existe apenas autorização manual para créditos virtuais. Quando o evento ocorre, a autorização é consumida.
+
+## Recuperação de sessão (v2.18 e v2.19)
+
+- **v2.18:** a fila pendente de bónus é registada no mesmo estado que o prémio da jogada. Ao terminar uma etapa, o pagamento, o valor do prémio e o avanço da fila são guardados juntos. Recarregar entre etapas não deve pagar novamente uma etapa já concluída.
+- **v2.19:** o tabuleiro 3×5 é recuperado do último registo válido no histórico; a página não inventa novos símbolos na recuperação visual de um bónus.
+- Se o navegador for fechado **antes** da confirmação de uma escolha, essa escolha pendente será apresentada de novo. Se fechar **depois** de a etapa ter sido paga e guardada, essa etapa não reaparece.
+- A sessão é armazenada em `localStorage` no próprio aparelho. Não existe sincronização entre dispositivos ou segurança de servidor para dinheiro real; limpar dados do site apaga essa sessão.
+- A diferença matemática das faixas do primeiro tambor foi revista contra `GeneratorNew.faixa` e `Generate`: a última distribuição aplicada à coluna inicial já estava correta na versão web, sendo agora coberta por um teste de regressão.
+
+[Integração da fila de bónus v2.18](https://github.com/hunderburn39-beep/Jardim-Magico/actions/runs/43508182610) e [restauro dos tambores v2.19](https://github.com/hunderburn39-beep/Jardim-Magico/actions/runs/43508631141) passaram testes de código.
 
 ## Como testar o admin local
 
