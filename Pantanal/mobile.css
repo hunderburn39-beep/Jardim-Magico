@@ -1,0 +1,112 @@
+/* Pantanal V2.08 — ecrã vertical 9:16, preservando o modo horizontal */
+#screen.portrait{
+ background:radial-gradient(ellipse 520px 520px at 50% 40%,#ac6126 0%,#65330c 55%,transparent 100%),repeating-linear-gradient(125deg,#231607 0px,#4a3514 72px,#201608 143px),#160d06;
+}
+#screen.portrait #home,#screen.portrait #game,#screen.portrait #bonusLayer{width:800px;height:100%}
+#screen.portrait #home::before,#screen.portrait #game::before{
+ content:"PANTANAL";position:absolute;top:9%;left:0;width:100%;text-align:center;
+ font:900 93px Georgia,serif;letter-spacing:4px;color:#ffe2a1;-webkit-text-stroke:2px #66380d;
+ text-shadow:0 7px #4b2308,0 12px 24px #000,0 0 32px #d8841c;pointer-events:none
+}
+#screen.portrait #home img{
+ inset:auto;top:calc(48% - 240px);left:0;width:800px;height:480px;
+ object-fit:fill;filter:drop-shadow(0 0 28px #000b)
+}
+#screen.portrait #hotspots{inset:auto;top:calc(48% - 240px);left:0;width:800px;height:480px}
+#screen.portrait #homeHint{bottom:7%;font-size:20px;padding:0 40px;line-height:1.4}
+#screen.portrait #adminIcon{top:3%;right:28px;padding:14px 20px;font-size:38px}
+#screen.portrait #game>.bg{
+ inset:auto;left:0;top:calc(45% - 240px);width:800px;height:480px;
+ object-fit:fill;clip-path:inset(0 0 17% 0);filter:drop-shadow(0 2px 22px #000b)
+}
+#screen.portrait #reels,#screen.portrait #lineOverlay{top:calc(45% - 170px)}
+#screen.portrait #credit,#screen.portrait #win,#screen.portrait #bet{
+ top:calc(45% - 227px);font-size:25px
+}
+#screen.portrait #status{
+ top:calc(45% + 180px);left:30px;right:30px;
+ min-height:44px;padding:10px;font-size:21px;line-height:1.25;
+ color:#ffefb8;text-shadow:0 2px 3px #170800
+}
+#screen.portrait #ctrls{
+ left:30px;top:auto;bottom:5%;width:740px;height:300px;padding:0;
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+ grid-template-rows:145px 145px;gap:8px;
+ align-items:center;justify-items:center;
+ border-top:2px solid #eeb95a88;border-radius:24px;
+ background:linear-gradient(#7f460414,#100803b8)
+}
+#screen.portrait #ctrls button{width:122px;height:121px}
+#screen.portrait #ctrls button img{width:112px;height:112px}
+#screen.portrait #ctrls button span{font-size:18px;bottom:-4px}
+#screen.portrait #ctrls button.customOrb{
+ width:122px;height:116px;border-width:5px;font-size:21px
+}
+#screen.portrait #spinButton{
+ width:168px!important;height:148px!important;
+ grid-column:2/span 2;grid-row:1;z-index:1
+}
+#screen.portrait #spinButton img{width:146px!important;height:144px!important}
+#screen.portrait #betBtn{grid-column:1;grid-row:1}
+#screen.portrait #linesBtn{grid-column:4;grid-row:1}
+#screen.portrait #doubleBtn{grid-column:1;grid-row:2}
+#screen.portrait #autoBtn{grid-column:2;grid-row:2}
+#screen.portrait #payBtn{grid-column:3;grid-row:2}
+#screen.portrait #menuGameBtn{grid-column:4;grid-row:2}
+#screen.portrait #soundSwitch{
+ top:3%;right:28px;font-size:35px;padding:12px 18px;z-index:3
+}
+#screen.portrait #game .menuBtn{
+ top:3%;left:28px;width:128px;height:72px;
+ border:2px solid #c58d43;border-radius:18px;
+ color:#ffe7b9;background:#2e1a0de6;font-size:22px;font-weight:900
+}
+#screen.portrait #bonusLayer{
+ background:radial-gradient(circle at 50% 43%,#b36a1f 0%,#703706 37%,#2b190a 73%,#100c07 100%);
+ box-shadow:inset 0 0 125px #070702
+}
+#screen.portrait #bonusBg{display:none!important}
+#screen.portrait #bonusLayer::before{
+ content:"PANTANAL";position:absolute;top:10%;left:0;width:100%;text-align:center;
+ font:900 93px Georgia,serif;letter-spacing:4px;color:#ffe2a1;-webkit-text-stroke:2px #66380d;
+ text-shadow:0 6px #4b2308,0 12px 24px #000,0 0 32px #d8841c;pointer-events:none
+}
+#screen.portrait #bonusLayer::after{
+ content:"ROLETA DE BÓNUS";position:absolute;top:23%;left:0;width:100%;
+ text-align:center;font-size:31px;font-weight:900;letter-spacing:5px;
+ color:#ffeba9;text-shadow:0 3px 5px #1f1003;pointer-events:none
+}
+#screen.portrait #wheel{
+ left:100px;top:calc(50% - 340px);width:600px;height:600px;
+ border-radius:50%;box-shadow:0 0 0 12px #9a5619,0 0 0 20px #d49d45,0 0 60px 23px #e9a53b63
+}
+#screen.portrait #bonusLayer .bonusMsg{
+ left:30px;top:calc(50% + 290px);width:740px;
+ color:#fff0ae;font-size:38px;line-height:1.27;
+ white-space:normal;overflow-wrap:break-word;padding:10px 18px;
+ text-shadow:0 3px 4px #100800,0 0 17px #d68b2f
+}
+#screen.portrait #bonusLayer button#bonusAction{
+ left:200px;bottom:8%;width:400px;min-height:95px;
+ padding:20px;font-size:31px;line-height:1.2;
+ border:5px solid #ffdb86;border-radius:20px;
+ background:linear-gradient(#bc782c,#552401);
+ box-shadow:0 8px 0 #241004,0 0 25px #ebba50a6
+}
+#screen.portrait #modal{padding:32px;background:#130901ef}
+#screen.portrait #modal .dialog{
+ width:740px;max-height:82%;min-height:400px;padding:36px 35px;
+ border-radius:22px;border-width:5px;font-size:27px
+}
+#screen.portrait #modal h2{font-size:42px;margin-bottom:26px}
+#screen.portrait #modal .close{font-size:36px;padding:10px 20px}
+#screen.portrait #modal input,#screen.portrait #modal select{
+ font-size:27px;width:195px;padding:14px
+}
+#screen.portrait #modal input[type=password]{width:300px}
+#screen.portrait #modal .action{font-size:26px;padding:17px 24px}
+#screen.portrait #modal .row{gap:20px}
+#screen.portrait #modal .panel{min-width:310px}
+#screen.portrait #modal .panel h3{font-size:30px}
+#screen.portrait #modal .small{font-size:22px}
+#screen.portrait #specialCelebration .specialCard{max-width:680px}
