@@ -3,9 +3,24 @@
 <style>
 :root{color-scheme:dark;font-family:Arial,Helvetica,sans-serif;background:#120b06;color:white}*{box-sizing:border-box}html,body{margin:0;overflow:hidden;width:100%;height:100%;touch-action:manipulation}#app{display:flex;align-items:center;justify-content:center;width:100vw;height:100dvh;background:radial-gradient(ellipse at 50% 50%,#8a420a 0%,#301606 80%,#0c0703 100%)}#screen{position:relative;width:800px;height:480px;transform-origin:center;overflow:hidden;background:#71330b;flex-shrink:0;user-select:none;-webkit-user-select:none}#screen>*{position:absolute}button{cursor:pointer;font-family:inherit;color:white}button:disabled{opacity:.4;cursor:default}.bg{inset:0;width:800px;height:480px;pointer-events:none}#home{inset:0}#home img{position:absolute;inset:0}#game{inset:0;display:none}#reels{position:absolute;top:70px;left:50px;width:620px;height:318px;display:grid;grid-template-columns:repeat(5,115px);column-gap:9px;grid-template-rows:repeat(3,102px);row-gap:4px;overflow:hidden;pointer-events:none}.symbol{width:115px;height:102px;background-image:none;background-repeat:no-repeat;image-rendering:auto;transform:translateZ(0)}.symbol.winning{outline:3px solid #faff00;outline-offset:-4px;filter:brightness(1.35) drop-shadow(0 0 5px #ffdf23);animation:flash .65s ease-in-out infinite alternate}@keyframes flash{to{filter:brightness(1.8) drop-shadow(0 0 8px #fff)}}#lineOverlay{left:34px;top:70px;width:659px;height:318px;pointer-events:none;display:none;opacity:.95}.digit{position:absolute;color:#ffe26b;letter-spacing:1px;font-weight:900;text-shadow:1px 2px 1px #0a0604;font-size:23px;text-align:right;white-space:nowrap;line-height:32px}#credit{top:13px;left:137px;width:110px}#win{top:13px;left:387px;width:110px}#bet{top:13px;left:601px;width:77px}#ctrls{position:absolute;left:0;top:401px;width:800px;height:79px;display:flex;align-items:center;justify-content:center;gap:9px;padding:0 18px}#ctrls button{width:65px;height:70px;border:none;background:transparent;position:relative;flex-shrink:0;padding:0;text-shadow:1px 1px 2px black}#ctrls button img{position:absolute;top:0;left:50%;width:62px;height:68px;object-fit:fill;transform:translateX(-50%)}#ctrls button span{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:10px;font-weight:900;background:linear-gradient(90deg,transparent,#2f180acc,transparent);border-radius:6px}#ctrls button:active{transform:translateY(2px) scale(.97)}#ctrls button.customOrb{height:64px;width:65px;background:radial-gradient(circle at 32% 23%,#cfb39a 0%,#603d28 40%,#160e08 75%,#090807 100%);border:4px ridge #bfb7ad;border-radius:50%;box-shadow:1px 3px 6px #000c,inset 0 2px 2px #fff4;display:flex;align-items:center;justify-content:center;font-size:12px;text-shadow:0 1px #000}#ctrls button.customOrb b{pointer-events:none}#spinButton{width:84px!important;height:78px!important}#spinButton img{width:74px!important;height:77px!important}#status{left:22px;top:386px;right:22px;text-align:center;font-size:15px;font-weight:800;color:#fff8a6;text-shadow:1px 2px 2px #000;pointer-events:none}#hotspots{position:absolute;inset:0}#hotspots button{position:absolute;background:transparent;border:0;color:transparent;touch-action:manipulation}#hotspots button:focus-visible{outline:3px solid yellow}#soundSwitch{position:absolute;top:8px;right:17px;z-index:2;border:0;background:#281306c9;border-radius:30px;color:#ffe8aa;font-size:14px;padding:6px 10px}#modal{display:none;position:absolute;inset:0;z-index:20;background:#150903d9;align-items:center;justify-content:center;padding:20px}#modal.active{display:flex}#modal .dialog{position:relative;background:linear-gradient(155deg,#995011,#3b1b08);border:3px solid #d9a14b;box-shadow:0 10px 25px #000e;max-height:455px;overflow:auto;width:740px;min-height:200px;padding:17px 23px;border-radius:9px;color:#fff5d7;font-size:15px}#modal h2{color:#f8d37a;margin:0 0 12px;font-size:24px}#modal .close{position:absolute;right:12px;top:8px;border:2px solid #ffe29f;border-radius:8px;background:#2e1b0d;font-weight:bold;padding:4px 9px;font-size:18px}#modal label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0}#modal input,#modal select{width:128px;padding:5px 7px;background:#211308;color:#fff;border:1px solid #c18b34;border-radius:4px;font-size:15px}#modal input[type=password]{width:250px}.action{background:linear-gradient(#aa641e,#552604);border:2px solid #efb65b;border-radius:7px;padding:8px 14px;margin:6px;font-weight:bold}.row{display:flex;gap:16px;flex-wrap:wrap}.panel{flex:1;min-width:260px;background:#1c0e0669;padding:9px;border:1px solid #b17d37;border-radius:5px}.panel h3{margin:3px 0 8px;font-size:18px}#modal p{line-height:1.4}.small{font-size:12px;color:#f2cc94}#paytable{width:100%;display:block}.bonusbg{inset:0;width:800px;height:480px;pointer-events:none}#wheel{position:absolute;left:245px;top:99px;width:310px;height:310px;transform-origin:center;transition:transform 2.9s cubic-bezier(.15,.68,.16,1)}#bonusLayer{display:none;inset:0;z-index:10}#bonusLayer .bonusMsg{position:absolute;left:0;top:385px;width:100%;text-align:center;font-size:22px;font-weight:bold;color:#ffe8a5;text-shadow:2px 2px #000}#bonusLayer button{position:absolute;left:338px;bottom:20px;background:#5b310a;color:#fff4d3;border:2px solid #ecb45e;border-radius:8px;padding:10px 18px;font-weight:bold}#hives{position:absolute;inset:84px 85px 260px;display:flex;justify-content:space-around}#hives button{position:static;width:110px;height:132px;background:transparent;border:0}
 #homeHint{position:absolute;bottom:6px;left:0;right:0;text-align:center;pointer-events:none;color:#fff0ba;text-shadow:1px 2px #000;font-size:12px}#adminIcon{position:absolute;top:0px;right:0px;padding:8px 12px;color:#ffeab0;background:#2c140a8c;border:none;display:block;z-index:2}table{width:100%;border-collapse:collapse}td,th{padding:4px;border-bottom:1px solid #7b5426}th{text-align:left}#game .menuBtn{position:absolute;top:0;left:0;width:52px;height:63px;border:0;background:transparent;color:transparent}#game .menuBtn:focus-visible{outline:3px solid yellow}@media(prefers-reduced-motion:reduce){.symbol.winning{animation:none}}
+/* Pantanal V2.07: destaques especiais para as sequências de animais maiores */
+#specialCelebration{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;pointer-events:none;overflow:hidden;background:radial-gradient(ellipse at center,#3a21039a 0%,#050300eb 85%)}
+#specialCelebration:before{content:"";position:absolute;width:780px;height:780px;left:10px;top:-150px;background:repeating-conic-gradient(from 0deg,#ffdc564a 0deg 9deg,transparent 9deg 22deg);animation:specialRays 10s linear infinite;mask-image:radial-gradient(circle,transparent 0 15%,black 31% 63%,transparent 78%)}
+#specialCelebration.reveal{animation:specialIn .36s ease-out}
+#specialCelebration .specialCard{position:relative;width:548px;height:318px;border:4px solid #ffe18c;border-radius:25px;box-shadow:0 0 28px 12px #f0a71b9c, inset 0 0 35px #e2a93482;background:radial-gradient(ellipse at 50% 26%,#995411,#361702 68%,#170800 100%);text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+#specialCelebration.ultra .specialCard{border-color:#fff7b6;box-shadow:0 0 40px 16px #ffdc65e0,inset 0 0 38px #ffd65ba8;animation:specialPulse 1s ease-in-out infinite alternate}
+#specialCelebration h2{margin:0;color:#fff5b7;font-size:32px;line-height:1.04;letter-spacing:2px;text-shadow:0 0 14px #ffb900,3px 4px 3px #250a00}
+#specialCelebration .specialPortrait{width:115px;height:102px;flex-shrink:0;background-repeat:no-repeat;image-rendering:auto;filter:drop-shadow(0 0 12px #ffec55);transform:scale(1.2);margin:4px 0}
+#specialCelebration .specialMultiplier{font-size:18px;font-weight:900;color:#ffdf6c;text-shadow:1px 2px #120800}
+#specialCelebration .specialValue{font-size:40px;font-weight:900;color:#fff7c8;letter-spacing:1px;text-shadow:0 0 12px #ffc400,0 3px 3px #000;line-height:1.05;font-variant-numeric:tabular-nums}
+#specialCelebration .specialFooter{font-size:13px;font-weight:bold;color:#fbe7b0;text-shadow:0 2px #1b0900}
+@keyframes specialRays{to{transform:rotate(360deg)}}
+@keyframes specialPulse{to{filter:brightness(1.22);transform:scale(1.025)}}
+@keyframes specialIn{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){#specialCelebration:before,#specialCelebration.ultra .specialCard,#specialCelebration.reveal{animation:none}}
 </style></head><body><main id="app"><section id="screen" aria-label="Pantanal caça níquel">
 <div id="home"><img src="assets/painel.png" alt="Pantanal: menu de início, créditos e ajuda"><div id="hotspots"><button style="left:288px;top:237px;width:224px;height:68px" id="start" aria-label="Iniciar jogo">Iniciar jogo</button><button style="left:60px;top:323px;width:217px;height:72px" id="giveCredit" aria-label="Obter créditos">Créditos</button><button style="left:298px;top:323px;width:208px;height:72px" id="help" aria-label="Ajuda">Ajuda</button><button style="left:529px;top:323px;width:211px;height:72px" id="scores" aria-label="Placar de pontos">Pontuação</button><button style="left:620px;top:424px;width:166px;height:53px" id="exit" aria-label="Sair">Sair</button></div><button id="adminIcon" aria-label="Administração">⚙</button><div id="homeHint">Reconstrução experimental a partir do APK 2.06 • Créditos locais sem valor real</div></div>
-<div id="game"><img class="bg" src="assets/05_telabot.png" alt="Interface original Pantanal"><div id="reels"></div><img id="lineOverlay" alt="Linha premiada"><span id="credit" class="digit">0</span><span id="win" class="digit">0</span><span id="bet" class="digit">1</span><button class="menuBtn" id="menuBtn" aria-label="Abrir menu do jogo">MENU</button><div id="status"></div><div id="ctrls"><button id="betBtn" title="Alterar aposta"><img src="assets/aposta.png"><span>APOSTA</span></button><button id="linesBtn" title="Alterar linhas"><img src="assets/linha.png"><span>LINHAS</span></button><button class="customOrb" id="doubleBtn" title="Dobrar prémio"><b>DOBRAR</b></button><button id="spinButton" title="Jogar"><img src="assets/joga.png"><span id="spinLabel">JOGAR</span></button><button id="autoBtn" title="Jogadas automáticas"><img src="assets/btnauto.png"><span>AUTO</span></button><button class="customOrb" id="payBtn" title="Tabela de prémios"><b>TABELA</b></button><button class="customOrb" id="menuGameBtn" title="Menu"><b>MENU</b></button></div><button id="soundSwitch" title="Som" aria-label="Ativar ou desativar o som">♫</button></div>
+<div id="game"><img class="bg" src="assets/05_telabot.png" alt="Interface original Pantanal"><div id="reels"></div><div id="specialCelebration" role="status" aria-live="polite" aria-atomic="true"><div class="specialCard"><h2 id="specialTitle">GRANDE PRÉMIO!</h2><div id="specialPortrait" class="specialPortrait" aria-hidden="true"></div><div id="specialMultiplier" class="specialMultiplier"></div><div id="specialValue" class="specialValue">0</div><div id="specialFooter" class="specialFooter"></div></div></div><img id="lineOverlay" alt="Linha premiada"><span id="credit" class="digit">0</span><span id="win" class="digit">0</span><span id="bet" class="digit">1</span><button class="menuBtn" id="menuBtn" aria-label="Abrir menu do jogo">MENU</button><div id="status"></div><div id="ctrls"><button id="betBtn" title="Alterar aposta"><img src="assets/aposta.png"><span>APOSTA</span></button><button id="linesBtn" title="Alterar linhas"><img src="assets/linha.png"><span>LINHAS</span></button><button class="customOrb" id="doubleBtn" title="Dobrar prémio"><b>DOBRAR</b></button><button id="spinButton" title="Jogar"><img src="assets/joga.png"><span id="spinLabel">JOGAR</span></button><button id="autoBtn" title="Jogadas automáticas"><img src="assets/btnauto.png"><span>AUTO</span></button><button class="customOrb" id="payBtn" title="Tabela de prémios"><b>TABELA</b></button><button class="customOrb" id="menuGameBtn" title="Menu"><b>MENU</b></button></div><button id="soundSwitch" title="Som" aria-label="Ativar ou desativar o som">♫</button></div>
 <div id="bonusLayer"><img id="bonusBg" class="bonusbg" src="assets/05_telab2b.png" alt="Bónus Pantanal"><img id="wheel" src="assets/05_roleta.png" alt="Roleta Pantanal"><div class="bonusMsg" id="bonusMsg">BÓNUS</div><div id="hives" style="display:none"><button aria-label="Colmeia 1"></button><button aria-label="Colmeia 2"></button><button aria-label="Colmeia 3"></button><button aria-label="Colmeia 4"></button></div><button id="bonusAction">GIRAR ROLETA</button></div>
 <div id="modal" role="dialog" aria-modal="true"><div class="dialog"><button class="close" id="close">✕</button><div id="modalBody"></div></div></div>
 </section></main>
@@ -831,7 +846,51 @@ function calcWins(b){const wins=[];let total=0;for(let l=0;l<state.lines;l++){co
  if(sym===9&&count>=3)mult=0; // giraffes are bonus-route icons in the original paytable
  if(count>=3&&mult>0){const payout=Math.round(mult*BET_LEVELS[state.betIndex]);wins.push({line:l+1,amount:payout,symbol:sym,count,path});total+=payout;}}
  return {wins,total}}
-async function spin(){if(spinBusy||bonusBusy)return;const stake=BET_LEVELS[state.betIndex];if(state.credits<stake){showStatus('CRÉDITOS INSUFICIENTES');return}
+let celebrationBusy=false;
+async function celebrateSpecial(wins,total){
+ const specials=wins.filter(w=>(w.symbol===6&&w.count>=4)||(w.symbol===7&&w.count===5));
+ if(!specials.length)return false;
+ // Preserve the normal line payouts: this only changes their presentation.
+ const top=specials.slice().sort((a,b)=>b.amount-a.amount)[0];
+ const ultra=top.symbol===6&&top.count===5;
+ const multiplier=PAY[top.symbol][top.count-1];
+ const layer=el('specialCelebration');
+ celebrationBusy=true;
+ clearInterval(paylineTimer);
+ el('lineOverlay').style.display='none';
+ document.querySelectorAll('.symbol').forEach(a=>a.classList.remove('winning'));
+ for(let c=0;c<top.count;c++){
+  document.querySelector(`[data-cell="${top.path[c]}-${c}"]`)?.classList.add('winning');
+ }
+ el('specialTitle').textContent=top.count+' '+(top.symbol===6?'ELEFANTES!':'LEÕES!');
+ el('specialMultiplier').textContent=`LINHA ${top.line} • ${money(multiplier)}× A APOSTA`;
+ el('specialFooter').textContent=total>top.amount?`TOTAL DA JOGADA: ${money(total)} CRÉDITOS`:'PRÉMIO ESPECIAL DO PANTANAL';
+ const portrait=el('specialPortrait');
+ portrait.style.backgroundImage=`url("${asset('05_slots.png')}")`;
+ portrait.style.backgroundPosition=`0px -${top.symbol*102}px`;
+ el('specialValue').textContent='0 CRÉDITOS';
+ layer.classList.toggle('ultra',ultra);
+ layer.style.display='flex';
+ layer.classList.remove('reveal');void layer.offsetWidth;layer.classList.add('reveal');
+ play('big');
+ const duration=ultra?4900:3600, countDuration=ultra?2900:2000;
+ const start=performance.now();
+ const countUp=now=>{
+  if(!celebrationBusy)return;
+  const progress=Math.max(0,Math.min(1,(now-start)/countDuration));
+  const smooth=1-Math.pow(1-progress,3);
+  el('specialValue').textContent=money(Math.round(top.amount*smooth))+' CRÉDITOS';
+  if(progress<1)requestAnimationFrame(countUp);
+ };
+ requestAnimationFrame(countUp);
+ await wait(duration);
+ el('specialValue').textContent=money(top.amount)+' CRÉDITOS';
+ layer.style.display='none';layer.classList.remove('reveal','ultra');
+ document.querySelectorAll('.symbol').forEach(a=>a.classList.remove('winning'));
+ celebrationBusy=false;
+ return true;
+}
+async function spin(){if(spinBusy||bonusBusy||celebrationBusy)return;const stake=BET_LEVELS[state.betIndex];if(state.credits<stake){showStatus('CRÉDITOS INSUFICIENTES');return}
  spinBusy=true;state.credits-=stake;state.totalBet+=stake;state.totalSpins++;state.lastWin=0;showStatus('');update();play('reel');el('lineOverlay').style.display='none';
  const target=Array.from({length:3},()=>Array.from({length:5},()=>pick()));
  // Asynchronous reel-stop animation staggered from left to right.
@@ -840,7 +899,7 @@ async function spin(){if(spinBusy||bonusBusy)return;const stake=BET_LEVELS[state
  const bonusTrigger=board.flat().filter(v=>v===9).length>=3;
  state.history.unshift({at:new Date().toLocaleString('pt-PT'),stake,lines:state.lines,board:board.map(x=>x.slice()),wins,total,bonus:bonusTrigger});
  save();update();spinBusy=false;
- if(wins.length){play(total>=100?'big':'win');showStatus(`${wins.length} LINHA${wins.length!==1?'S':''} PREMIADA${wins.length!==1?'S':''} • ${money(total)} CRÉDITOS`);flashWin(wins);}else{showStatus('BOA SORTE!')}
+ if(wins.length){showStatus(`${wins.length} LINHA${wins.length!==1?'S':''} PREMIADA${wins.length!==1?'S':''} • ${money(total)} CRÉDITOS`);const special=wins.some(w=>(w.symbol===6&&w.count>=4)||(w.symbol===7&&w.count===5));if(special)await celebrateSpecial(wins,total);else{play(total>=100?'big':'win');flashWin(wins)}}else{showStatus('BOA SORTE!')}
  if(bonusTrigger){auto=false;await wait(500);openWheel();return}
  if(auto){await wait(450);if(auto)spin()}
 }
