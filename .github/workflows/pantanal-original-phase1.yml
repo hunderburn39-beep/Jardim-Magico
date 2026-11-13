@@ -1,0 +1,63 @@
+name: Pantanal v2.13 — motor original fase 1
+on:
+  push:
+    paths:
+      - '.github/workflows/pantanal-original-phase1.yml'
+permissions:
+  contents: write
+jobs:
+  integrar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validar módulo original e testes das linhas/dados
+        run: |
+          node --check Pantanal/original_rules.js
+          node --check Pantanal/paylines.js
+          node Pantanal/tests/original_rules.test.cjs
+          python3 -m py_compile Pantanal/tools/port_phase1.py
+      - name: Integrar na versão web Pantanal e verificar sintaxe
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 Pantanal/tools/port_phase1.py
+          node - <<'JS'
+          const fs=require('fs');
+          const html=fs.readFileSync('Pantanal/index.html','utf8');
+          const chunks=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
+          if(!chunks.length)throw Error('Sem scripts inline');
+          const js=chunks.join('\n');
+          fs.writeFileSync('/tmp/pantanal-inline-v213.js',js);
+          console.log('HTML scripts:',chunks.length,'code bytes:',js.length);
+          JS
+          node --check /tmp/pantanal-inline-v213.js
+          node Pantanal/tests/original_rules.test.cjs
+          python3 - <<'PY'
+          from pathlib import Path
+          a=Path('Pantanal/index.html').read_text()
+          assert 'const LINES=[' in a and 'showDiceBonus()' in a
+          assert 'original_rules.js?v=2.13' in a and 'paylines.js?v=2.13' in a
+          assert 'window.PantanalOriginalRules.verticalResults' in a
+          assert 'const bonusTrigger=bonus.wheel>0' in a
+          assert 'pendingDice=bonus.dice' in a
+          assert 'window.PantanalOriginalRules.stake(' in a
+          assert 'state.lines=levels[(current+1)%levels.length]' in a
+          assert "const bonusTrigger=board.flat().filter(v=>v===9).length>=3" not in a
+          print('PASS: no trigger antigo; 25 linhas e bónus dos dados ativados.')
+          PY
+          git diff --check
+      - name: Gravar e publicar alteração sem substituir outros projetos
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Pantanal/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(Pantanal): original 20+5 paylines, per-line wagers, dice bonus v2.13"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
