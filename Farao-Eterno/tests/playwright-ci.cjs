@@ -274,6 +274,24 @@ async function test(name,engine){
     .every(b=>b.getAttribute('aria-hidden')==='true'&&b.tabIndex===-1));
   assert(overlapping,'O botão antigo deve ficar fora dos toques e do VoiceOver');
   await page.waitForFunction(()=>!window.__faraoGame.paused,null,{timeout:3000});
+  // O multiplicador não pode voltar a tapar BOA SORTE no topo.
+  const badge=await page.evaluate(()=>{
+    const g=window.__faraoGame,ctx=document.getElementById('canvas').getContext('2d');
+    const draw=ctx.fillText,seen=[];
+    try{
+      ctx.fillText=function(label,x,y,...rest){
+        if(label==='DADO SAGRADO'||label==='×5'||String(label).startsWith('SUPER SCATTER ×'))
+          seen.push({label,x,y});
+        return draw.call(this,label,x,y,...rest);
+      };
+      g.statusBar(performance.now());
+    }finally{ctx.fillText=draw;}
+    return seen;
+  });
+  assert(badge.some(x=>x.label==='DADO SAGRADO'&&x.y>=780),'Falta legenda do dado fora do logótipo');
+  assert(badge.some(x=>x.label==='×5'&&x.y>=820),'Falta multiplicador junto às Free Spins');
+  assert(!badge.some(x=>x.label.startsWith('SUPER SCATTER ×')&&x.y<300),
+    'O multiplicador continua em cima do logótipo');
   await page.screenshot({path:path.join(OUTPUT,'farao-v2-'+name+'-free-resumidas.png')});
   assert.deepEqual(failedResources,[],'Assets não encontrados');
   assert.deepEqual(errors,[],'Erros JS inesperados');
