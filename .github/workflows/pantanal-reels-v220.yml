@@ -1,0 +1,56 @@
+name: Pantanal v2.20 — tambores fluidos e centrados
+on:
+  push:
+    paths:
+      - '.github/workflows/pantanal-reels-v220.yml'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validar cinco faixas de rolagem e motor original
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check Pantanal/reels_motion.js
+          node --check Pantanal/paylines.js
+          node --check Pantanal/apk_engine.js
+          node --check Pantanal/bonus_ui.js
+          node Pantanal/tests/reels_motion.test.cjs
+          node Pantanal/tests/generator_guards.test.cjs
+          node Pantanal/tests/apk_engine.test.cjs
+          node Pantanal/tests/bonus_recovery.test.cjs
+          python3 -m py_compile Pantanal/tools/port_reels_v220.py
+      - name: Integrar rolamento e verificar HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 Pantanal/tools/port_reels_v220.py
+          node - <<'JS'
+          const fs=require('fs'),s=fs.readFileSync('Pantanal/index.html','utf8');
+          const chunks=[...s.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(x=>x.length>1000);
+          if(chunks.length!==1)throw Error('Missing app script');
+          fs.writeFileSync('/tmp/pantanal-inline-v220.js',chunks[0]);
+          for(const key of ['reels_motion.js?v=2.20','PantanalReelMotion.spin(board,target','onComplete(){board=target;renderBoard();}']){
+            if(!s.includes(key))throw Error('Missing '+key);
+          }
+          JS
+          node --check /tmp/pantanal-inline-v220.js
+          git diff --check
+      - name: Publicar Pantanal v2.20 sem alterar os outros jogos
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Pantanal/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(Pantanal): smooth downward reel motion and centered reels v2.20"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
