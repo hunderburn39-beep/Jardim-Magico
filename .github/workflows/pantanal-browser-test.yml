@@ -1,0 +1,38 @@
+name: Pantanal v2.14 — teste navegador 9:16 e bónus
+on:
+  push:
+    paths:
+      - .github/workflows/pantanal-browser-test.yml
+permissions:
+  contents: read
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright + Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pantanal-playwright
+          npm install --prefix /tmp/pantanal-playwright --no-save --no-audit --no-fund playwright@1.56.1
+          node /tmp/pantanal-playwright/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Executar jogo real no navegador e verificar linhas/bonus
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/pantanal-server.log 2>&1 &
+          sleep 2
+          NODE_PATH=/tmp/pantanal-playwright/node_modules node Pantanal/tests/browser_smoke.cjs
+      - name: Anexar capturas dos dois layouts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pantanal-v214-screenshots
+          path: Pantanal/tests/screenshots/
+          if-no-files-found: warn
+          retention-days: 10
