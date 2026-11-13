@@ -9,7 +9,7 @@ const fs=require('node:fs');
  });
  const errors=[];
  page.on('pageerror',e=>errors.push(String(e)));
- await page.goto('http://127.0.0.1:8765/Pantanal/?v=2.14',{waitUntil:'domcontentloaded',timeout:50000});
+ await page.goto('http://127.0.0.1:8765/Pantanal/?v=2.16',{waitUntil:'domcontentloaded',timeout:50000});
  await page.waitForSelector('#screen');
  let baseline=await page.evaluate(()=>({
   scripts:!!window.PantanalApkEngine&&!!window.PantanalBonusUI,
@@ -39,12 +39,13 @@ const fs=require('node:fs');
  assert(Math.abs(p.overlay.h-p.reels.h)<2);
  assert(p.paylines>=25,'Pre-visualizacao completa com 25 linhas');
  fs.mkdirSync('Pantanal/tests/screenshots',{recursive:true});
- await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v214-iphone.png',fullPage:false});
+ await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v216-iphone.png',fullPage:false});
  await page.evaluate(()=>{
-  window.__visualTestState={lastWin:100,credits:1000,totalPaid:0,maxWin:0,history:[{total:100}]};
+  window.__modeCalls=0;window.__visualTestState={lastWin:100,credits:1000,totalPaid:0,maxWin:0,history:[{total:100}]};
   window.__visualTestPromise=PantanalBonusUI.launch({
    bonus:{dice:1},state:window.__visualTestState,betPerLine:1,
    asset:()=>'',rng:()=>0.75,difficulty:{active:false},
+   nextDifficulty:()=>{window.__modeCalls++;return {active:false}}, 
    hooks:{save(){},update(){},showStatus(){},play(){},money:n=>String(n),setBusy(flag){window.__visualTestBusy=flag;}}
   });
  });
@@ -57,6 +58,7 @@ const fs=require('node:fs');
   paid:window.__visualTestState.totalPaid
  }));
  assert.deepEqual(bonus,{win:400,credits:1300,paid:300});
+ assert.equal(await page.evaluate(()=>window.__modeCalls),1,'Dados não consultaram a dificuldade separadamente');
  await page.evaluate(()=>window.__visualTestPromise);
  assert.equal(await page.locator('#pantanalBonusModal').count(),0,'Bónus fechado');
  // Administração: parâmetros novos têm de persistir realmente no jogo.
@@ -71,11 +73,13 @@ const fs=require('node:fs');
 
  // Uma jogada completa sem erros de JS no ambiente Safari-like do iPhone.
  const spinsBefore=await page.evaluate(()=>state.totalSpins);
+ const genBefore=await page.evaluate(()=>Number(state.generatorCalls)||0);
  await page.locator('#spinButton').click({force:true});
  await page.waitForFunction(n=>state.totalSpins>n,spinsBefore,{timeout:12000});
  await page.waitForFunction(()=>!spinBusy,{timeout:12000});
  const settled=await page.evaluate(()=>({spins:state.totalSpins,lastWin:state.lastWin,credits:state.credits}));
  assert(Number.isFinite(settled.credits)&&settled.spins>spinsBefore,'Jogada nao concluida');
+ assert((await page.evaluate(()=>state.generatorCalls))>genBefore,'Gerador não incrementou o contador persistente');
 
  // Bónus morangos e caldeirão, incluindo possibilidade das 5 abóboras.
  for(const type of ['strawberry','cauldron']){
@@ -111,7 +115,7 @@ const fs=require('node:fs');
  });
  assert.equal(desktop.portrait,false);
  assert(desktop.dx<2&&desktop.dy<2,'Linhas perdidas no modo horizontal');
- await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v214-desktop.png'});
+ await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v216-desktop.png'});
  const readableErrors=errors.filter(x=>!x.includes('Audio'));
  assert.equal(readableErrors.length,0,'Erros de JS no browser: '+readableErrors.join(' | '));
  console.log(JSON.stringify({success:true,portrait:baseline,lines:p,bonus,desktop,jsErrors:readableErrors},null,2));
