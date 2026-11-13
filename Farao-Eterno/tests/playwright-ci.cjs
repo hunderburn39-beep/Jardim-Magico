@@ -182,6 +182,83 @@ async function test(name,engine){
     assert(rect.x>=-1&&rect.y>=-1&&rect.x+rect.width<=w+1&&rect.y+rect.height<=h+1,
       'Moldura cortada em '+w+'×'+h);
   }
+  // Safari: fechar a página DURANTE os 1,9 s de rotação do dado
+  // não pode marcar o resultado como apresentado nem sortear outra face.
+  const midRoll=await page.evaluate(()=>{
+    const g=window.__faraoGame;
+    g.closeModal();
+    g.ledger.feature={
+      left:8,played:0,totalU:0,symbols:['Q'],retriggers:0,
+      superMultiplier:5,superFace:3,superRollSeen:false
+    };
+    g.syncLedger();g.paused=false;g.spinning=false;g.nextActionAt=0;
+    g._welcome=false;g._welcomeShown=false;g._awaitBonusStart=true;
+    g.pendingSummary=null;
+    g.showFeatureWelcome();
+    document.getElementById('super-roll').click();
+    g.save();
+    return {rolled:g.ledger.feature.superRollSeen,
+      multiplier:g.ledger.feature.superMultiplier};
+  });
+  assert.equal(midRoll.rolled,false,'Face marcada como vista antes do fim');
+  assert.equal(midRoll.multiplier,5,'Dado deixou de ter a face pré-sorteada');
+  await page.reload({waitUntil:'domcontentloaded',timeout:30000});
+  await page.waitForFunction(()=>window.__faraoGame?.ready,null,{timeout:20000});
+  const rollRecovery=await page.evaluate(()=>{
+    const g=window.__faraoGame;
+    const pending=!g.ledger.feature.superRollSeen;
+    g.showFeatureWelcome();
+    return {pending,multiplier:g.feature?.superMultiplier,
+      result:document.getElementById('super-dice-result')?.textContent,
+      button:document.getElementById('super-roll')?.textContent};
+  });
+  assert.equal(rollRecovery.multiplier,5,'A recuperação alterou o multiplicador');
+  assert(rollRecovery.pending,'A animação interrompida foi considerada vista');
+  assert.equal(rollRecovery.result,'?','O dado interrompido revelou antecipadamente o resultado');
+  assert(/LANÇAR DADO/.test(rollRecovery.button),'Não é possível repetir o lançamento');
+  await page.locator('#super-roll').click();
+  await page.waitForFunction(()=>window.__faraoGame?.ledger?.feature?.superRollSeen===true,
+    null,{timeout:6500});
+  await page.locator('#super-roll').click(); // COMEÇAR FREE SPINS
+  const afterRoll=await page.evaluate(()=>{
+    const g=window.__faraoGame;
+    return {paused:g.paused,intro:g.ledger.feature.introSeen,
+      multiplier:g.ledger.feature.superMultiplier};
+  });
+  assert.equal(afterRoll.paused,false,'Free Spins bloqueadas após lançar o dado recuperado');
+  assert(afterRoll.intro,'Revelação do bónus não gravada');
+  assert.equal(afterRoll.multiplier,5);
+  // O Safari também pode fechar durante uma Free Spin JÁ INICIADA.
+  // RETOMAR deve soltar o motor, sem disparar um giro extra nesse toque.
+  const beforeReload=await page.evaluate(()=>{
+    const g=window.__faraoGame;
+    g.ledger.feature={
+      left:5,played:3,totalU:0,symbols:['Q'],retriggers:0,
+      introSeen:true,superMultiplier:5,superFace:3,superRollSeen:true
+    };
+    g.ledger.pending=null;g.ledger.payout=null;g.spinning=false;
+    g.syncLedger();g.paused=false;g._welcome=false;
+    g._awaitBonusStart=false;g._freeStarted=true;
+    g.save();
+    return {balance:g.ledger.balanceU,winU:g.ledger.stats.winU,
+      sequence:g.ledger.sequence};
+  });
+  await page.reload({waitUntil:'domcontentloaded',timeout:30000});
+  await page.waitForFunction(()=>window.__faraoGame?.ready,null,{timeout:20000});
+  const pauseState=await page.evaluate(()=>{
+    const g=window.__faraoGame;
+    return {paused:g.paused,played:g.feature?.played,
+      balance:g.ledger.balanceU,winU:g.ledger.stats.winU,
+      sequence:g.ledger.sequence};
+  });
+  assert(pauseState.paused,'A sessão recuperada deve começar em pausa');
+  assert.equal(pauseState.played,3,'O número de Free Spins foi alterado na recuperação');
+  assert.equal(pauseState.balance,beforeReload.balance,'Saldo alterado ao recuperar Free Spins');
+  assert.equal(pauseState.winU,beforeReload.winU,'Prémio duplicado na recuperação');
+  assert.equal(pauseState.sequence,beforeReload.sequence,'Jogada extra na recuperação');
+  await page.locator('button[aria-label="RETOMAR"]').click({timeout:5000});
+  await page.waitForFunction(()=>!window.__faraoGame.paused,null,{timeout:3000});
+  await page.screenshot({path:path.join(OUTPUT,'farao-v2-'+name+'-free-resumidas.png')});
   assert.deepEqual(failedResources,[],'Assets não encontrados');
   assert.deepEqual(errors,[],'Erros JS inesperados');
   console.log(name.toUpperCase()+' V2 PASS · arte '+v.loaded+'/'+v.total+
