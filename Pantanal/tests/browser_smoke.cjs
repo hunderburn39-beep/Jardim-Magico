@@ -9,7 +9,7 @@ const fs=require('node:fs');
  });
  const errors=[];
  page.on('pageerror',e=>errors.push(String(e)));
- await page.goto('http://127.0.0.1:8765/Pantanal/?v=2.18',{waitUntil:'domcontentloaded',timeout:50000});
+ await page.goto('http://127.0.0.1:8765/Pantanal/?v=2.19',{waitUntil:'domcontentloaded',timeout:50000});
  await page.waitForSelector('#screen');
  let baseline=await page.evaluate(()=>({
   scripts:!!window.PantanalApkEngine&&!!window.PantanalBonusUI,
@@ -39,7 +39,7 @@ const fs=require('node:fs');
  assert(Math.abs(p.overlay.h-p.reels.h)<2);
  assert(p.paylines>=25,'Pre-visualizacao completa com 25 linhas');
  fs.mkdirSync('Pantanal/tests/screenshots',{recursive:true});
- await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v218-iphone.png',fullPage:false});
+ await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v219-iphone.png',fullPage:false});
  await page.evaluate(()=>{
   window.__modeCalls=0;window.__visualTestState={lastWin:100,credits:1000,totalPaid:0,maxWin:0,history:[{total:100}]};
   window.__visualTestPromise=PantanalBonusUI.launch({
@@ -111,7 +111,9 @@ const fs=require('node:fs');
 
  // Recuperação real de uma fila de bónus persistida após fechar o navegador.
  await page.evaluate(()=>{
-   state.lastWin=80;state.history.unshift({at:'recovery-check',stake:50,total:80});
+   state.lastWin=80;
+   state.history.unshift({at:'recovery-check',stake:50,total:80,
+     board:[[1,2,3,4,5],[5,4,3,2,1],[0,1,2,3,4]]});
    state.pendingBonus=PantanalBonusUI.createPending({dice:1},2);
    save();
  });
@@ -119,6 +121,9 @@ const fs=require('node:fs');
  await page.reload({waitUntil:'domcontentloaded'});
  await page.locator('#start').click({force:true});
  await page.waitForSelector('#pantanalBonusModal button',{timeout:5000});
+ const boardRestored=await page.evaluate(()=>board.map(row=>row.slice()));
+ assert.deepEqual(boardRestored,[[1,2,3,4,5],[5,4,3,2,1],[0,1,2,3,4]],
+   'Os tambores não restauraram os símbolos da jogada guardada');
  const recoveryLabel=await page.locator('#pantanalBonusModal').innerText();
  assert(recoveryLabel.includes('DADOS'),'Bonus de dados guardado não retomou');
  await page.locator('#pantanalBonusModal button').first().click({force:true});
@@ -155,7 +160,7 @@ const fs=require('node:fs');
  });
  assert.equal(desktop.portrait,false);
  assert(desktop.dx<2&&desktop.dy<2,'Linhas perdidas no modo horizontal');
- await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v218-desktop.png'});
+ await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v219-desktop.png'});
  const readableErrors=errors.filter(x=>!x.includes('Audio'));
  assert.equal(readableErrors.length,0,'Erros de JS no browser: '+readableErrors.join(' | '));
  console.log(JSON.stringify({success:true,portrait:baseline,lines:p,bonus,desktop,jsErrors:readableErrors},null,2));
