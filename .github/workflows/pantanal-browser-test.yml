@@ -21,7 +21,7 @@ jobs:
           mkdir -p /tmp/pantanal-playwright
           npm install --prefix /tmp/pantanal-playwright --no-save --no-audit --no-fund playwright@1.56.1
           node /tmp/pantanal-playwright/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Executar jogo real no navegador e verificar linhas/bonus
+      - name: Testar jogada, admin, linhas e os quatro bonus no navegador
         shell: bash
         run: |
           set -euo pipefail
