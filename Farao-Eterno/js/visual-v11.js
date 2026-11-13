@@ -5,7 +5,7 @@
  const game=window.__faraoGame, canvas=document.getElementById('canvas');
  if(!game || !canvas) return;
  const ctx=canvas.getContext('2d');
- const R=Object.freeze({left:33,top:284,cw:99,gh:129,step:101});
+ const R=Object.freeze({left:35,top:284,cw:95,gh:129,step:101});
  const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||false;
  const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
  const TAU=Math.PI*2;
@@ -120,16 +120,16 @@
  function drawReelShell(c){
   const xx=R.left+c*R.step,bot=R.top+R.gh*3;
   // Cylinder walls: narrow fixed gold ribs; transparent central channel.
-  for(const [x,sgn] of [[xx-2,1],[xx+R.cw-1,-1]]){
-   const wall=grad(ctx,x-2,0,x+5,0,[[0,'#25171b'],[.24,'#ad692b'],[.44,'#ffe6a3'],[.77,'#8f592e'],[1,'#2b1e1c']]);
-   rounded(ctx,x,R.top-13,5,bot-R.top+24,2,wall,'#d69b50a0',.8);
-   line(ctx,x+sgn*3,R.top+23,x+sgn*3,bot-20,'#6be4d12f',.9);
+  for(const [x,sgn] of [[xx-1,1],[xx+R.cw-2,-1]]){
+   const wall=grad(ctx,x-1,0,x+3,0,[[0,'#25171b'],[.24,'#ad692b'],[.44,'#ffe6a3'],[.77,'#8f592e'],[1,'#2b1e1c']]);
+   rounded(ctx,x,R.top-13,3,bot-R.top+24,1.5,wall,'#d69b50a0',.8);
+   line(ctx,x+sgn*2,R.top+23,x+sgn*2,bot-20,'#6be4d12f',.9);
   }
   ctx.save();ctx.shadowColor='#f4ba55';ctx.shadowBlur=5;
-  rounded(ctx,xx-3,R.top-21,105,21,8,grad(ctx,0,R.top-21,0,R.top,
+  rounded(ctx,xx-2,R.top-21,R.cw+4,21,8,grad(ctx,0,R.top-21,0,R.top,
    [[0,'#42271c'],[.18,'#ffe39c'],[.49,'#c78d37'],[.76,'#654126'],[1,'#301f1e']]),'#ffe9a4',1.8);
   ctx.restore();
-  rounded(ctx,xx-3,bot-1,105,23,8,grad(ctx,0,bot-1,0,bot+22,
+  rounded(ctx,xx-2,bot-1,R.cw+4,23,8,grad(ctx,0,bot-1,0,bot+22,
    [[0,'#fff0b7'],[.14,'#8f5724'],[.44,'#513420'],[.68,'#d1a24a'],[1,'#30201a']]),'#eac277',1.5);
   drawScarab(ctx,xx+R.cw/2,R.top-10,.67);
   drawScarab(ctx,xx+R.cw/2,bot+10,.76);
@@ -145,7 +145,7 @@
  game.visualV11={layout:R,tile,medallion,version:'1.1'};
  game.drawReelSeparators=function(left,top,interval,gh){
   for(let c=1;c<5;c++){
-   const x=left+c*interval-1;
+   const x=left+c*interval-(interval-R.cw)/2;
    ctx.save();ctx.shadowColor='#edc47c';ctx.shadowBlur=5;
    line(ctx,x,top+3,x,top+gh*3-3,'#e8c581bd',1.1);
    ctx.restore();
