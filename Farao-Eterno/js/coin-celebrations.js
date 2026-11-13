@@ -9,11 +9,14 @@
  const ctx=canvas.getContext('2d');
  const audio=g.audio,TAU=Math.PI*2;
  const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+ // Em ecrãs pequenos a prioridade é manter os cinco tambores fluidos.
+ // O número de impactos audíveis por combinação não é alterado.
+ const compact=Number.isFinite(window.innerWidth)&&window.innerWidth<=480;
  const seen=new WeakSet(),coins=[];
  const REEL_LAYOUT=g.visualV11?.layout||{left:18,top:284,cw:105,gh:129,step:109};
  const REEL_X=REEL_LAYOUT.left, STEP_X=REEL_LAYOUT.step,
        CELL_W=REEL_LAYOUT.cw, TOP=REEL_LAYOUT.top,
-       CELL_H=REEL_LAYOUT.gh, MAX_COINS=105;
+       CELL_H=REEL_LAYOUT.gh, MAX_COINS=compact?68:105;
  const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
  const active=()=>!!(audio.on&&audio.ctx&&!g.paused&&!g.superseded&&!document.hidden);
  // Som de moedas real enviado pelo criador, cortado no primeiro impacto.
@@ -132,14 +135,14 @@
   ctx.restore();
  }
  const sparkles=[];
- const MAX_SPARKLES=85;
+ const MAX_SPARKLES=compact?42:85;
  function addSparkle(x,y,t,life=480){
   if(sparkles.length>=MAX_SPARKLES)sparkles.shift();
   sparkles.push({x,y,t,life,size:1.4+Math.random()*2.5,phase:Math.random()*TAU});
  }
  function shower(points,t,final=false){
   if(reduced)return;
-  const base=final?9:7,n=Math.min(5,points.length);
+  const base=final?(compact?6:9):(compact?4:7),n=Math.min(5,points.length);
   for(let p=0;p<n;p++){
    const pos=points[p];
    for(let i=0;i<base;i++){
@@ -232,7 +235,8 @@
   const wrap=document.createElement('div');
   wrap.className='farao-final-coins';wrap.setAttribute('aria-hidden','true');
   wrap.style.cssText='position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;border-radius:17px';
-  const count=reduced?8:32;
+  // Preferência de movimento reduzido não deve criar moedas animadas.
+  const count=reduced?0:(compact?22:32);
   for(let i=0;i<count;i++){
    const el=document.createElement('i');
    const x=6+Math.random()*88,travel=80+Math.random()*180;
@@ -261,7 +265,10 @@
   return result;
  };
  g.coinCelebrations={
-  version:'1.5-real-coin-sample',
+  version:'1.6-mobile-coin-budget',
+  compact,
+  get maxParticles(){return MAX_COINS;},
+  get maxSparkles(){return MAX_SPARKLES;},
   drawGoldenCoin:goldenCoin,
   get sparkles(){return sparkles.length;},
   events:{sequences:0,finales:0},
