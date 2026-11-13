@@ -79,6 +79,8 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add Pantanal/APK-2.06/
+          # O .gitignore global exclui *.apk; guardar explicitamente esta copia de referencia.
+          git add -f Pantanal/APK-2.06/Pantanal-Original-2.06.apk
           if ! git diff --cached --quiet; then
             git commit -m "archive(Pantanal): import original APK 2.06, all resources and reverse-engineering reference"
             git pull --rebase origin pantanal-apk-206-import
