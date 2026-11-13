@@ -1,4 +1,4 @@
-/* Pantanal v2.13: linhas de prémio desenhadas a partir dos resultados reais.
+/* Pantanal v2.20: linhas de prémio desenhadas a partir dos resultados reais.
    Apenas apresentação visual; sem alterações ao RNG, apostas ou pagamentos. */
 (function(){
   'use strict';
@@ -31,7 +31,7 @@
     const valid=wins.filter(w=>lineCoords(w).length >= 3);
     if(!valid.length)return;
     const current=++serial;
-    const svg=make('svg',{id:'pantanalPaylines',viewBox:'0 0 620 318',width:'620',height:'318','aria-hidden':'true'});
+    const svg=make('svg',{id:'pantanalPaylines',viewBox:'0 0 611 314',width:'611',height:'314','aria-hidden':'true'});
     svg.style.cssText='position:absolute;inset:0;left:0;top:0;width:100%;height:100%;z-index:9;pointer-events:none;overflow:hidden;display:block';
     const defs=make('defs');
     const glow=make('filter',{id:'pantanalWinGlow',x:'-30%',y:'-100%',width:'160%',height:'300%'});
