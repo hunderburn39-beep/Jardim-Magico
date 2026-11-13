@@ -44,8 +44,8 @@ once("let {wins,total}=calcWins(board);",
 once("const bonusTrigger=board.flat().filter(v=>v===9).length>=3;",
      "const bonusTrigger=bonus.wheel>0;const diceTrigger=bonus.dice>0;pendingDice=bonus.dice;",
      "gatilho de roleta/dados vertical, sem scatter inventado")
-once("if(auto){await wait(450);if(auto)spin()}\n }",
-     "if(diceTrigger){auto=false;await wait(500);showDiceBonus();return}\n if(auto){await wait(450);if(auto)spin()}\n }",
+once("if(auto){await wait(450);if(auto)spin()}",
+     "if(diceTrigger){auto=false;await wait(500);showDiceBonus();return}\n if(auto){await wait(450);if(auto)spin()}",
      "mostrar dados após os tambores")
 once("function flashWin(wins){",
      "function flashWin(wins){",
@@ -53,9 +53,9 @@ once("function flashWin(wins){",
 once("window.PantanalClearPaylines?.();spinBusy=true;",
      "window.PantanalClearPaylines?.();pendingDice=0;spinBusy=true;",
      "limpar fila de bónus antes de rodar")
-once("action.onclick=doWheel;\n  };",
-     "action.onclick=doWheel;\n   if(pendingDice>0)showDiceBonus();\n  };",
-     "chamar os dados após terminar a roleta")
+s,n=re.subn(r"(action\.onclick=doWheel;)(\s*\n\s*\};)",
+           r"\1\n   if(pendingDice>0)showDiceBonus();\2",s,count=1)
+assert n==1,"chamar os dados após terminar a roleta: local não encontrado"
 old_line=[l for l in s.splitlines() if "el('linesBtn').onclick=" in l]
 assert len(old_line)==1,"Um único handler de linhas é esperado"
 old=old_line[0]
