@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V1.9.5</title>
+<title>Jardim Mágico | Edição Stake Preview V1.9.6</title>
 <link rel="preload" as="image" href="../assets/imagens/jm38-caracol.svg">
 <link rel="preload" as="image" href="../assets/imagens/jm38-joaninha.svg">
 <link rel="preload" as="image" href="../assets/imagens/jm38-flor-azul.svg">
@@ -290,10 +290,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
   background:#052c21;overflow:visible;padding:0;
   box-shadow:0 0 0 2px #3b260e,0 8px 19px #040f0ed9,inset 0 0 12px #091b13;
 }
-.frame:after{
-  content:"";position:absolute;inset:-16px;z-index:6;pointer-events:none;
-  background:url('assets/jardim-v181-moldura.svg') center center / 100% 100% no-repeat;
-}
+
 .reels{
   position:relative;z-index:1;
   display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
@@ -525,7 +522,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
 .statline small{font-weight:900}
 .statline strong{font-weight:1000;text-shadow:0 0 6px #f9d68b42}
 .frame{top:29.4%;height:30.2%;border-width:4px;border-radius:18px}
-.frame:after{inset:-13px}
+
 .reels{padding:1px;gap:1.5px;border-radius:13px}
 .column{gap:1px}
 .cell{box-shadow:inset 0 0 8px #06140ba8}
@@ -804,9 +801,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
     width:97%;
     max-width:97%;
   }
-  .frame:after{
-    inset:-5px;
-  }
+  
   .reels{
     padding:1px;
     column-gap:1px;
@@ -828,7 +823,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
     border-width:3px;
     border-radius:15px;
   }
-  .frame:after{inset:-3px}
+  
   .reels{
     width:100%;
     height:100%;
@@ -865,10 +860,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
     border-width:1px;
     padding:0;
   }
-  .frame:after{
-    inset:-2px;
-    background-image:url('assets/jardim-v194-moldura-interior-largo.svg');
-  }
+  
   .reels{
     width:100%;
     height:100%;
@@ -885,7 +877,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
   }
 }
 
-/* V1.9.5 — remover exclusivamente a moldura ornamental SOBRE os tambores.
+/* V1.9.6 — moldura ornamental floral eliminada da origem do CSS.
    Mantém os cinco rolos, linhas de prémios, grelha e rebordo exterior. */
 #reelFrame::after{
   content:none!important;
