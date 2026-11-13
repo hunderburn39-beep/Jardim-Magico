@@ -35,9 +35,19 @@ with sync_playwright() as p:
     page=context.new_page()
     errors=[]
     page.on("pageerror",lambda exc:errors.append(str(exc)))
-    response=page.goto(ROOT,wait_until="networkidle",timeout=45000)
-    assert response and response.status==200,"Public Stake Preview not reachable"
-    assert "assets/figuras-v199/joaninha-limpa.svg" in page.content(),"Public assets not updated"
+    # The GitHub Pages deployment can lag behind a source commit.
+    # Wait until the public site actually serves this presentation fix.
+    import time
+    published=False
+    for attempt in range(28):
+        response=page.goto(ROOT+"&ready="+str(attempt),wait_until="domcontentloaded",timeout=45000)
+        source=page.content()
+        if response and response.status==200 and "function moneyDetailed(v)" in source and "assets/figuras-v199/joaninha-limpa.svg" in source:
+            published=True
+            break
+        print("GAMEPLAY_SITE_WAIT",attempt+1,flush=True)
+        time.sleep(8)
+    assert published,"Public Stake Preview not updated with Free Spins display precision"
     page.locator("#introPlay").click()
     page.locator("#turbo").click()
     assert page.locator("#turboLabel").inner_text()=="LIGADO"
@@ -107,6 +117,15 @@ with sync_playwright() as p:
     assert free_end["multi"]=="×"+str(free_end["event"]["multi"]),free_end
     assert int(free_end["played"])==free_end["event"]["played"],free_end
     assert free_end["total"]!="0,00" or free_end["event"]["amount"]==0,free_end
+    # The unmultiplied value can include fractions of a cent; the screen
+    # must show enough digits for the displayed multiplier to reproduce
+    # the exact rounded award.
+    shown_raw=float(free_end["raw"].replace("\u00a0","").replace("\u202f","").replace(" ","").replace(".","").replace(",","."))
+    raw_exact=free_end["event"]["raw"]*0.2/100
+    assert abs(shown_raw-raw_exact)<0.000051,("Free raw display lost sub-cent precision",free_end)
+    multiplied=shown_raw*free_end["event"]["multi"]
+    expected=free_end["event"]["amount"]*0.2/100
+    assert abs(multiplied-expected)<0.0006,("Free multiplier display mismatch",free_end)
     page.locator("#closeFree").click()
     page.wait_for_function("!busy && historyRecords.length===2",timeout=30000)
     free=inspect_round(page,"free",before,1)

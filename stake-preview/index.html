@@ -1214,6 +1214,12 @@ function renderPaytable(){
 function showPaytable(){if(busy)return false;autoLeft=0;controls();renderPaytable();$("paytableOverlay").classList.add("show");return true}
 function hidePaytable(){$("paytableOverlay").classList.remove("show")}
 function money(v){return format(v/100*(replayBet??BETS[betIndex]))}
+function moneyDetailed(v){
+  // Keep fractional cents visible before Free Spins multiplication:
+  // e.g. 0,336 × 12 = 4,032 → 4,03 credits, without changing payout math.
+  const amount=v/100*(replayBet??BETS[betIndex]);
+  return amount.toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:4});
+}
 function loadSession(){
   try{
     const state=JSON.parse(localStorage.getItem(SESSION_KEY)||"null");
@@ -1407,7 +1413,7 @@ function beep(freq=660){
   return playRecorded("stop");
 }
 function toast(title,value,level="normal"){const panel=$("toast");$("toastTitle").textContent=title;$("toastValue").textContent=value;panel.classList.toggle("big-celebration",level==="big");panel.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>{panel.classList.remove("visible");panel.classList.remove("big-celebration")},level==="big"?2200:1450)}
-function updateFreeHud(remaining,raw,multi){$("freePanel").hidden=false;$("freeRemaining").textContent=remaining;$("freeRaw").textContent=money(raw);$("freeMult").textContent="×"+multi}
+function updateFreeHud(remaining,raw,multi){$("freePanel").hidden=false;$("freeRemaining").textContent=remaining;$("freeRaw").textContent=moneyDetailed(raw);$("freeMult").textContent="×"+multi}
 function showFreeRetrigger(add){const chip=$("freeRetrigger");chip.hidden=!add;if(add)chip.textContent="✦ RETRIGGER +"+add+" FREE SPINS ✦"}
 function hideFreeResult(){$("freeResultOverlay").classList.remove("show");$("freeRetrigger").hidden=true}
 function acknowledgeFreeContinue(){if(!pendingFreeContinue)return false;const done=pendingFreeContinue;pendingFreeContinue=null;hideFreeResult();done();return true}
@@ -1665,7 +1671,7 @@ async function playback(book){
       playRecorded("bonus");
       $("freeResultTotal").textContent=money(evt.amount)+" créditos";
       $("freeResultPlayed").textContent=evt.played;
-      $("freeResultRaw").textContent=money(evt.raw);
+      $("freeResultRaw").textContent=moneyDetailed(evt.raw);
       $("freeResultMulti").textContent="×"+evt.multi;
       $("freeResultOverlay").classList.add("show");
       say("FREE SPINS FINALIZADAS · "+money(evt.amount)+" créditos","bonus");
