@@ -793,6 +793,26 @@ html,body{height:100%;overflow:hidden;background:#051814}
   .frame.round-finished .hud{top:calc(100% + 1px);padding:1px 7px}
   .frame.round-finished .hud span{font-size:9px}
 }
+
+/* V1.9.2 — moldura e cinco tambores mais largos em ecrãs verticais.
+   Reduz apenas a margem lateral, mantendo os três símbolos por tambor,
+   os limites do ecrã e a zona dos botões. */
+@media(orientation:portrait){
+  .frame{
+    left:1.5%;
+    right:auto;
+    width:97%;
+    max-width:97%;
+  }
+  .frame:after{
+    inset:-5px;
+  }
+  .reels{
+    padding:1px;
+    column-gap:1px;
+  }
+}
+
 </style>
 </head>
 <body>
