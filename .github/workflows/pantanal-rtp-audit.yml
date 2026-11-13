@@ -1,0 +1,15 @@
+name: Pantanal v2.14 — auditoria RTP experimental
+on:
+  push:
+    paths: [.github/workflows/pantanal-rtp-audit.yml]
+permissions: {contents: read}
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Simular 40 mil jogadas (creditos ficticios)
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUDIT_SPINS=40000 node Pantanal/tests/rtp_audit.cjs
