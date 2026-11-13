@@ -263,37 +263,33 @@ public class b {
     public synchronized JSONObject b() {
         JSONObject jSONObjectD;
         String[] list;
+        jSONObjectD = g.a().d();
         try {
-            jSONObjectD = g.a().d();
-            try {
-                if (this.l != this.a.d()) {
-                    e();
-                }
-                JSONArray jSONArrayE = g.a().e();
-                Iterator<String> it = this.f.iterator();
-                while (it.hasNext()) {
-                    jSONArrayE.put(it.next());
-                }
-                com.chartboost.sdk.Libraries.d.a(jSONObjectD, "templates", jSONArrayE);
-                for (String str : this.d.get().t) {
-                    if (!str.equals("templates")) {
-                        File file = new File(this.a.d().a, str);
-                        JSONArray jSONArrayE2 = g.a().e();
-                        if (file.exists() && (list = file.list()) != null) {
-                            for (String str2 : list) {
-                                if (!str2.equals(".nomedia") && !str2.endsWith(".tmp")) {
-                                    jSONArrayE2.put(str2);
-                                }
+            if (this.l != this.a.d()) {
+                e();
+            }
+            JSONArray jSONArrayE = g.a().e();
+            Iterator<String> it = this.f.iterator();
+            while (it.hasNext()) {
+                jSONArrayE.put(it.next());
+            }
+            com.chartboost.sdk.Libraries.d.a(jSONObjectD, "templates", jSONArrayE);
+            for (String str : this.d.get().t) {
+                if (!str.equals("templates")) {
+                    File file = new File(this.a.d().a, str);
+                    JSONArray jSONArrayE2 = g.a().e();
+                    if (file.exists() && (list = file.list()) != null) {
+                        for (String str2 : list) {
+                            if (!str2.equals(".nomedia") && !str2.endsWith(".tmp")) {
+                                jSONArrayE2.put(str2);
                             }
                         }
-                        com.chartboost.sdk.Libraries.d.a(jSONObjectD, str, jSONArrayE2);
                     }
+                    com.chartboost.sdk.Libraries.d.a(jSONObjectD, str, jSONArrayE2);
                 }
-            } catch (Exception e) {
-                com.chartboost.sdk.Tracking.a.a(getClass(), "getWebViewCacheAssets", e);
             }
-        } catch (Throwable th) {
-            throw th;
+        } catch (Exception e) {
+            com.chartboost.sdk.Tracking.a.a(getClass(), "getWebViewCacheAssets", e);
         }
         return jSONObjectD;
     }

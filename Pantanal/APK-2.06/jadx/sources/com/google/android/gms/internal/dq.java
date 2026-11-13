@@ -165,37 +165,33 @@ public final class dq {
     private static String b(final Context context, String str) {
         String str2;
         synchronized (px) {
-            try {
-                if (rf != null) {
-                    str2 = rf;
+            if (rf != null) {
+                str2 = rf;
+            } else {
+                if (Build.VERSION.SDK_INT >= 17) {
+                    rf = dt.getDefaultUserAgent(context);
+                } else if (dv.bD()) {
+                    rf = j(context);
                 } else {
-                    if (Build.VERSION.SDK_INT >= 17) {
-                        rf = dt.getDefaultUserAgent(context);
-                    } else if (dv.bD()) {
-                        rf = j(context);
-                    } else {
-                        dv.rp.post(new Runnable() { // from class: com.google.android.gms.internal.dq.1
-                            @Override // java.lang.Runnable
-                            public void run() {
-                                synchronized (dq.px) {
-                                    String unused = dq.rf = dq.j(context);
-                                    dq.px.notifyAll();
-                                }
-                            }
-                        });
-                        while (rf == null) {
-                            try {
-                                px.wait();
-                            } catch (InterruptedException e) {
-                                str2 = rf;
+                    dv.rp.post(new Runnable() { // from class: com.google.android.gms.internal.dq.1
+                        @Override // java.lang.Runnable
+                        public void run() {
+                            synchronized (dq.px) {
+                                String unused = dq.rf = dq.j(context);
+                                dq.px.notifyAll();
                             }
                         }
+                    });
+                    while (rf == null) {
+                        try {
+                            px.wait();
+                        } catch (InterruptedException e) {
+                            str2 = rf;
+                        }
                     }
-                    rf += " (Mobile; " + str + ")";
-                    str2 = rf;
                 }
-            } catch (Throwable th) {
-                throw th;
+                rf += " (Mobile; " + str + ")";
+                str2 = rf;
             }
         }
         return str2;

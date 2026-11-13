@@ -63,71 +63,67 @@ class ee extends ed {
         String strValueOf;
         boolean z = false;
         synchronized (this) {
-            try {
-                TapjoyConnectCore.setSDKType("event");
-                if (context == null) {
-                    TapjoyLog.e("TapjoyAPI", new TapjoyErrorMessage(TapjoyErrorMessage.ErrorType.INTEGRATION_ERROR, "The application context is NULL"));
+            TapjoyConnectCore.setSDKType("event");
+            if (context == null) {
+                TapjoyLog.e("TapjoyAPI", new TapjoyErrorMessage(TapjoyErrorMessage.ErrorType.INTEGRATION_ERROR, "The application context is NULL"));
+                if (tJConnectListener != null) {
+                    tJConnectListener.onConnectFailure();
+                }
+            } else {
+                FiveRocksIntegration.a(hashtable);
+                try {
+                    TapjoyAppSettings.init(context);
+                    TapjoyConnectCore.requestTapjoyConnect(context, str, hashtable, new TJConnectListener() { // from class: com.tapjoy.internal.ee.1
+                        @Override // com.tapjoy.TJConnectListener
+                        public final void onConnectSuccess() {
+                            ee.this.d = new TJCurrency(context);
+                            ee.this.e = new TapjoyCache(context);
+                            try {
+                                TJEventOptimizer.init(context);
+                                ee.this.a = true;
+                                if (tJConnectListener != null) {
+                                    tJConnectListener.onConnectSuccess();
+                                }
+                            } catch (InterruptedException e) {
+                                onConnectFailure();
+                            } catch (RuntimeException e2) {
+                                TapjoyLog.w("TapjoyAPI", e2.getMessage());
+                                onConnectFailure();
+                            }
+                        }
+
+                        @Override // com.tapjoy.TJConnectListener
+                        public final void onConnectFailure() {
+                            if (tJConnectListener != null) {
+                                tJConnectListener.onConnectFailure();
+                            }
+                        }
+                    });
+                    this.b = true;
+                    if (Build.VERSION.SDK_INT < 14) {
+                        TapjoyLog.i("TapjoyAPI", "Automatic session tracking is not available on this device.");
+                    } else {
+                        if (hashtable != null && (strValueOf = String.valueOf(hashtable.get(TapjoyConnectFlag.DISABLE_AUTOMATIC_SESSION_TRACKING))) != null && strValueOf.equalsIgnoreCase("true")) {
+                            z = true;
+                        }
+                        if (!z) {
+                            ej.a(context);
+                        } else {
+                            TapjoyLog.i("TapjoyAPI", "Automatic session tracking is disabled.");
+                        }
+                    }
+                    z = true;
+                } catch (TapjoyIntegrationException e) {
+                    TapjoyLog.e("TapjoyAPI", new TapjoyErrorMessage(TapjoyErrorMessage.ErrorType.INTEGRATION_ERROR, e.getMessage()));
                     if (tJConnectListener != null) {
                         tJConnectListener.onConnectFailure();
                     }
-                } else {
-                    FiveRocksIntegration.a(hashtable);
-                    try {
-                        TapjoyAppSettings.init(context);
-                        TapjoyConnectCore.requestTapjoyConnect(context, str, hashtable, new TJConnectListener() { // from class: com.tapjoy.internal.ee.1
-                            @Override // com.tapjoy.TJConnectListener
-                            public final void onConnectSuccess() {
-                                ee.this.d = new TJCurrency(context);
-                                ee.this.e = new TapjoyCache(context);
-                                try {
-                                    TJEventOptimizer.init(context);
-                                    ee.this.a = true;
-                                    if (tJConnectListener != null) {
-                                        tJConnectListener.onConnectSuccess();
-                                    }
-                                } catch (InterruptedException e) {
-                                    onConnectFailure();
-                                } catch (RuntimeException e2) {
-                                    TapjoyLog.w("TapjoyAPI", e2.getMessage());
-                                    onConnectFailure();
-                                }
-                            }
-
-                            @Override // com.tapjoy.TJConnectListener
-                            public final void onConnectFailure() {
-                                if (tJConnectListener != null) {
-                                    tJConnectListener.onConnectFailure();
-                                }
-                            }
-                        });
-                        this.b = true;
-                        if (Build.VERSION.SDK_INT < 14) {
-                            TapjoyLog.i("TapjoyAPI", "Automatic session tracking is not available on this device.");
-                        } else {
-                            if (hashtable != null && (strValueOf = String.valueOf(hashtable.get(TapjoyConnectFlag.DISABLE_AUTOMATIC_SESSION_TRACKING))) != null && strValueOf.equalsIgnoreCase("true")) {
-                                z = true;
-                            }
-                            if (!z) {
-                                ej.a(context);
-                            } else {
-                                TapjoyLog.i("TapjoyAPI", "Automatic session tracking is disabled.");
-                            }
-                        }
-                        z = true;
-                    } catch (TapjoyIntegrationException e) {
-                        TapjoyLog.e("TapjoyAPI", new TapjoyErrorMessage(TapjoyErrorMessage.ErrorType.INTEGRATION_ERROR, e.getMessage()));
-                        if (tJConnectListener != null) {
-                            tJConnectListener.onConnectFailure();
-                        }
-                    } catch (TapjoyException e2) {
-                        TapjoyLog.e("TapjoyAPI", new TapjoyErrorMessage(TapjoyErrorMessage.ErrorType.SDK_ERROR, e2.getMessage()));
-                        if (tJConnectListener != null) {
-                            tJConnectListener.onConnectFailure();
-                        }
+                } catch (TapjoyException e2) {
+                    TapjoyLog.e("TapjoyAPI", new TapjoyErrorMessage(TapjoyErrorMessage.ErrorType.SDK_ERROR, e2.getMessage()));
+                    if (tJConnectListener != null) {
+                        tJConnectListener.onConnectFailure();
                     }
                 }
-            } catch (Throwable th) {
-                throw th;
             }
         }
         return z;

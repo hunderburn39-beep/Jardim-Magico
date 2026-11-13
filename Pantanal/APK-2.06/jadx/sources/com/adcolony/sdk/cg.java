@@ -295,63 +295,59 @@ class cg {
         new bp(bv.aN().u) { // from class: com.adcolony.sdk.cg.6
             @Override // com.adcolony.sdk.bp
             public synchronized void a() {
+                JSONArray jSONArray = new JSONArray();
+                ArrayList arrayList = new ArrayList();
+                ArrayList arrayList2 = new ArrayList();
                 try {
-                    JSONArray jSONArray = new JSONArray();
-                    ArrayList arrayList = new ArrayList();
-                    ArrayList arrayList2 = new ArrayList();
-                    try {
-                        bw.b(cg.this.i(), "pre send queue:" + cg.this.d, true);
-                        int i = 0;
-                        for (Map map : cg.this.d) {
-                            if (i >= bv.aN().aw().y()) {
-                                break;
-                            }
-                            int i2 = i + 1;
-                            arrayList.add(map);
-                            JSONObject jSONObject = new JSONObject();
-                            jSONObject.put(bn.as, map.get(bn.as));
-                            jSONObject.put(bn.at, map.get(bn.at));
-                            jSONObject.put(bn.au, map.get(bn.au));
-                            JSONObject jSONObject2 = new JSONObject();
-                            jSONObject2.put("op", map.get("op"));
-                            jSONObject2.put("stat", jSONObject);
-                            jSONObject2.put("time", map.get("time"));
-                            jSONObject2.put(bn.ad, map.get(bn.ad));
-                            jSONObject2.put("stat_transaction_id", map.get("stat_transaction_id"));
-                            jSONObject2.put("checksum", map.get("checksum"));
-                            if (bv.aN().g(map.get(bn.as) + ((String) map.get("stat_transaction_id")) + map.get(bn.au)).equals(map.get("checksum"))) {
-                                jSONArray.put(jSONObject2);
-                            } else {
-                                arrayList2.add(map);
-                            }
-                            i = i2;
+                    bw.b(cg.this.i(), "pre send queue:" + cg.this.d, true);
+                    int i = 0;
+                    for (Map map : cg.this.d) {
+                        if (i >= bv.aN().aw().y()) {
+                            break;
                         }
-                        if (jSONArray.length() == 0) {
-                            bw.b(cg.this.i(), "no stats in array", true);
-                            b();
+                        int i2 = i + 1;
+                        arrayList.add(map);
+                        JSONObject jSONObject = new JSONObject();
+                        jSONObject.put(bn.as, map.get(bn.as));
+                        jSONObject.put(bn.at, map.get(bn.at));
+                        jSONObject.put(bn.au, map.get(bn.au));
+                        JSONObject jSONObject2 = new JSONObject();
+                        jSONObject2.put("op", map.get("op"));
+                        jSONObject2.put("stat", jSONObject);
+                        jSONObject2.put("time", map.get("time"));
+                        jSONObject2.put(bn.ad, map.get(bn.ad));
+                        jSONObject2.put("stat_transaction_id", map.get("stat_transaction_id"));
+                        jSONObject2.put("checksum", map.get("checksum"));
+                        if (bv.aN().g(map.get(bn.as) + ((String) map.get("stat_transaction_id")) + map.get(bn.au)).equals(map.get("checksum"))) {
+                            jSONArray.put(jSONObject2);
                         } else {
-                            String string = jSONArray.toString();
-                            bw.b(cg.this.i(), "statsParam: " + string, true);
-                            HashMap map2 = new HashMap();
-                            map2.put("data", string);
-                            HashMap map3 = new HashMap();
-                            map3.put("success", arrayList);
-                            map3.put("stats", jSONArray);
-                            map3.put("failed", arrayList2);
-                            ca.c().a(bv.aN().aw().a(bn.aJ), (Map<String, String>) map2, "stats", false, (Map<String, Object>) map3, 1, new bk() { // from class: com.adcolony.sdk.cg.6.1
-                                @Override // com.adcolony.sdk.bk
-                                public void a(bn.a aVar) {
-                                    a(aVar == bn.a.YVOLVER_ERROR_NONE, aVar);
-                                }
-                            });
+                            arrayList2.add(map);
                         }
-                    } catch (JSONException e) {
-                        bs bsVar = new bs(bn.a.YVOLVER_ERROR_JSON, "Error occurred while flushing STAT queue->" + e.getMessage());
-                        bv.aN().a((Exception) e, bn.a.YVOLVER_ERROR_JSON, "Error occurred while flushing STAT queue->" + e.getMessage(), true);
-                        a(bsVar);
+                        i = i2;
                     }
-                } catch (Throwable th) {
-                    throw th;
+                    if (jSONArray.length() == 0) {
+                        bw.b(cg.this.i(), "no stats in array", true);
+                        b();
+                    } else {
+                        String string = jSONArray.toString();
+                        bw.b(cg.this.i(), "statsParam: " + string, true);
+                        HashMap map2 = new HashMap();
+                        map2.put("data", string);
+                        HashMap map3 = new HashMap();
+                        map3.put("success", arrayList);
+                        map3.put("stats", jSONArray);
+                        map3.put("failed", arrayList2);
+                        ca.c().a(bv.aN().aw().a(bn.aJ), (Map<String, String>) map2, "stats", false, (Map<String, Object>) map3, 1, new bk() { // from class: com.adcolony.sdk.cg.6.1
+                            @Override // com.adcolony.sdk.bk
+                            public void a(bn.a aVar) {
+                                a(aVar == bn.a.YVOLVER_ERROR_NONE, aVar);
+                            }
+                        });
+                    }
+                } catch (JSONException e) {
+                    bs bsVar = new bs(bn.a.YVOLVER_ERROR_JSON, "Error occurred while flushing STAT queue->" + e.getMessage());
+                    bv.aN().a((Exception) e, bn.a.YVOLVER_ERROR_JSON, "Error occurred while flushing STAT queue->" + e.getMessage(), true);
+                    a(bsVar);
                 }
             }
         };

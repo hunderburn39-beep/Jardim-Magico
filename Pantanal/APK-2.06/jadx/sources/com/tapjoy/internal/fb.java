@@ -86,7 +86,11 @@ class fb extends fa {
     }
 
     /* JADX INFO: Access modifiers changed from: protected */
+    /* JADX WARN: Bottom block not found for handler: all -> 0x0147 */
     @Override // com.tapjoy.internal.fa
+    /*
+        Code decompiled incorrectly, please refer to instructions dump.
+    */
     public void a(long j, String str, String str2, Map map) {
         long jInsert;
         if (this.d != null) {
@@ -108,71 +112,66 @@ class fb extends fa {
                 str2 = "";
             }
             Cursor cursorRawQuery = this.d.rawQuery("SELECT ROWID,count,first_time,last_time FROM UsageStats WHERE name = ? AND dimensions = ?", new String[]{str, str2});
-            try {
-                ContentValues contentValues = new ContentValues();
-                if (cursorRawQuery.moveToNext()) {
-                    long j2 = cursorRawQuery.getLong(0);
-                    int i = cursorRawQuery.getInt(1);
-                    long j3 = cursorRawQuery.getLong(2);
-                    long j4 = cursorRawQuery.getLong(3);
-                    contentValues.put("count", Integer.valueOf(i + 1));
-                    if (j < j3) {
-                        contentValues.put("first_time", Long.valueOf(j));
-                    }
-                    if (j > j4) {
-                        contentValues.put("last_time", Long.valueOf(j));
-                    }
-                    this.d.update("UsageStats", contentValues, "ROWID = " + j2, null);
-                    jInsert = j2;
-                } else {
-                    contentValues.put("name", str);
-                    contentValues.put("dimensions", str2);
-                    contentValues.put("count", (Integer) 1);
+            ContentValues contentValues = new ContentValues();
+            if (cursorRawQuery.moveToNext()) {
+                long j2 = cursorRawQuery.getLong(0);
+                int i = cursorRawQuery.getInt(1);
+                long j3 = cursorRawQuery.getLong(2);
+                long j4 = cursorRawQuery.getLong(3);
+                contentValues.put("count", Integer.valueOf(i + 1));
+                if (j < j3) {
                     contentValues.put("first_time", Long.valueOf(j));
-                    contentValues.put("last_time", Long.valueOf(j));
-                    jInsert = this.d.insert("UsageStats", null, contentValues);
                 }
-                if (map != null && !map.isEmpty()) {
-                    for (Map.Entry entry : map.entrySet()) {
-                        if (entry.getValue() != null) {
-                            String str3 = (String) entry.getKey();
-                            long jLongValue = ((Long) entry.getValue()).longValue();
-                            Cursor cursorRawQuery2 = this.d.rawQuery("SELECT ROWID, * FROM UsageStatValues WHERE stat_id = ? AND name = ?", new String[]{Long.toString(jInsert), str3});
-                            try {
-                                if (cursorRawQuery2.moveToNext()) {
-                                    long j5 = cursorRawQuery2.getLong(0);
-                                    int i2 = cursorRawQuery2.getInt(3);
-                                    double d = cursorRawQuery2.getDouble(4);
-                                    long j6 = cursorRawQuery2.getLong(5);
-                                    contentValues.clear();
-                                    contentValues.put("count", Integer.valueOf(i2 + 1));
-                                    contentValues.put("avg", Double.valueOf(d + ((jLongValue - d) / ((double) (i2 + 1)))));
-                                    if (jLongValue > j6) {
-                                        contentValues.put("max", Long.valueOf(jLongValue));
-                                    }
-                                    this.d.update("UsageStatValues", contentValues, "ROWID = " + j5, null);
-                                } else {
-                                    contentValues.clear();
-                                    contentValues.put("stat_id", Long.valueOf(jInsert));
-                                    contentValues.put("name", str3);
-                                    contentValues.put("count", (Integer) 1);
-                                    contentValues.put("avg", Long.valueOf(jLongValue));
+                if (j > j4) {
+                    contentValues.put("last_time", Long.valueOf(j));
+                }
+                this.d.update("UsageStats", contentValues, "ROWID = " + j2, null);
+                jInsert = j2;
+            } else {
+                contentValues.put("name", str);
+                contentValues.put("dimensions", str2);
+                contentValues.put("count", (Integer) 1);
+                contentValues.put("first_time", Long.valueOf(j));
+                contentValues.put("last_time", Long.valueOf(j));
+                jInsert = this.d.insert("UsageStats", null, contentValues);
+            }
+            if (map != null && !map.isEmpty()) {
+                for (Map.Entry entry : map.entrySet()) {
+                    if (entry.getValue() != null) {
+                        String str3 = (String) entry.getKey();
+                        long jLongValue = ((Long) entry.getValue()).longValue();
+                        Cursor cursorRawQuery2 = this.d.rawQuery("SELECT ROWID, * FROM UsageStatValues WHERE stat_id = ? AND name = ?", new String[]{Long.toString(jInsert), str3});
+                        try {
+                            if (cursorRawQuery2.moveToNext()) {
+                                long j5 = cursorRawQuery2.getLong(0);
+                                int i2 = cursorRawQuery2.getInt(3);
+                                double d = cursorRawQuery2.getDouble(4);
+                                long j6 = cursorRawQuery2.getLong(5);
+                                contentValues.clear();
+                                contentValues.put("count", Integer.valueOf(i2 + 1));
+                                contentValues.put("avg", Double.valueOf(d + ((jLongValue - d) / ((double) (i2 + 1)))));
+                                if (jLongValue > j6) {
                                     contentValues.put("max", Long.valueOf(jLongValue));
-                                    this.d.insert("UsageStatValues", null, contentValues);
                                 }
-                                cursorRawQuery2.close();
-                            } catch (Throwable th) {
-                                cursorRawQuery2.close();
-                                throw th;
+                                this.d.update("UsageStatValues", contentValues, "ROWID = " + j5, null);
+                            } else {
+                                contentValues.clear();
+                                contentValues.put("stat_id", Long.valueOf(jInsert));
+                                contentValues.put("name", str3);
+                                contentValues.put("count", (Integer) 1);
+                                contentValues.put("avg", Long.valueOf(jLongValue));
+                                contentValues.put("max", Long.valueOf(jLongValue));
+                                this.d.insert("UsageStatValues", null, contentValues);
                             }
+                            cursorRawQuery2.close();
+                        } catch (Throwable th) {
+                            cursorRawQuery2.close();
+                            throw th;
                         }
                     }
                 }
-                cursorRawQuery.close();
-            } catch (Throwable th2) {
-                cursorRawQuery.close();
-                throw th2;
             }
+            cursorRawQuery.close();
         }
     }
 
