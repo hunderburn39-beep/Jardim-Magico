@@ -149,10 +149,14 @@
   if(m===1||!this.visualV11?.layout)return;
   const ctx=$('canvas').getContext('2d');
   ctx.save();
-  ctx.shadowColor='#eec46b';ctx.shadowBlur=9;
-  ctx.fillStyle='#f3d58b';ctx.font='900 14px Georgia,serif';
-  ctx.textAlign='center';
-  ctx.fillText('SUPER SCATTER ×'+m,280,231);
+  // Colocar o dado no espaço livre à direita das Free Spins.
+  // A posição anterior (y=231) atravessava BOA SORTE e o logótipo.
+  ctx.shadowColor='#eec46b';ctx.shadowBlur=8;
+  ctx.fillStyle='#9de5df';ctx.textAlign='center';
+  ctx.font='800 12px Georgia,serif';
+  ctx.fillText('DADO SAGRADO',444,811);
+  ctx.fillStyle='#ffe1a0';ctx.font='900 24px Georgia,serif';
+  ctx.fillText('×'+m,444,844);
   ctx.restore();
  };
  // Explicar as seis faces do novo símbolo na tabela de pagamentos.
