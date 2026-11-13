@@ -1,4 +1,4 @@
-/* Pantanal v2.11: linhas de prémio desenhadas a partir dos resultados reais.
+/* Pantanal v2.13: linhas de prémio desenhadas a partir dos resultados reais.
    Apenas apresentação visual; sem alterações ao RNG, apostas ou pagamentos. */
 (function(){
   'use strict';
@@ -14,12 +14,21 @@
     if(timer!==null){clearInterval(timer);timer=null;}
     if(layer){layer.remove();layer=null;}
   }
+  function lineCoords(w){
+    if(Number(w.line)>=21 && Number(w.line)<=25){
+      const x=57.5+124*(Number(w.line)-21);
+      return [0,1,2].map(row=>[x,51+106*row]);
+    }
+    if(!Array.isArray(w.path)||w.path.length<5)return [];
+    return w.path.slice(0,5).map((row,col)=>[57.5+124*col,51+106*row]);
+  }
+  function coordsText(w){return lineCoords(w).map(([x,y])=>x+','+y).join(' ')}
   function show(wins, preview=false){
     clear();
     const reels=document.getElementById('reels');
     const game=document.getElementById('game');
     if(!reels||!game||!Array.isArray(wins))return;
-    const valid=wins.filter(w=>Array.isArray(w.path)&&w.path.length>=5&&w.path.slice(0,5).every(v=>Number.isInteger(v)&&v>=0&&v<=2));
+    const valid=wins.filter(w=>lineCoords(w).length >= 3);
     if(!valid.length)return;
     const current=++serial;
     const svg=make('svg',{id:'pantanalPaylines',viewBox:'0 0 620 318',width:'620',height:'318','aria-hidden':'true'});
@@ -37,7 +46,7 @@
       const others=make('g');
       const colors=['#ffe67b','#72d8ff','#ffa1d3','#b0ff9f','#c9adff'];
       valid.forEach((w,i)=>others.appendChild(make('polyline',{
-        points:w.path.slice(0,5).map((r,c)=>(57.5+124*c)+','+(51+106*r)).join(' '),
+        points:coordsText(w),
         fill:'none',stroke:colors[i%colors.length],'stroke-width':2,opacity:'.38',
         'stroke-linejoin':'round','stroke-linecap':'round'
       })));
@@ -47,12 +56,12 @@
       if(current!==serial||layer!==svg)return;
       while(svg.childNodes.length>(preview?2:1))svg.lastChild.remove();
       const w=valid[idx%valid.length];
-      const points=w.path.slice(0,5).map((r,c)=>(57.5+124*c)+','+(51+106*r)).join(' ');
+      const points=coordsText(w);
       svg.appendChild(make('polyline',{points,fill:'none',stroke:'#ffcd36','stroke-width':'12','stroke-linejoin':'round','stroke-linecap':'round',filter:'url(#pantanalWinGlow)',opacity:'.9'}));
       svg.appendChild(make('polyline',{points,fill:'none',stroke:'#542905','stroke-width':'9','stroke-linejoin':'round','stroke-linecap':'round'}));
       svg.appendChild(make('polyline',{points,fill:'none',stroke:'#fff279','stroke-width':'5','stroke-linejoin':'round','stroke-linecap':'round'}));
-      for(let c=0;c<Math.min(w.count||0,5);c++){
-        svg.appendChild(make('circle',{cx:57.5+124*c,cy:51+106*w.path[c],r:12,fill:'#fff5b7',stroke:'#dd7617','stroke-width':4}));
+      for(const [x,y] of lineCoords(w).slice(0,Math.min(w.count||0,5))){
+        svg.appendChild(make('circle',{cx:x,cy:y,r:12,fill:'#fff5b7',stroke:'#dd7617','stroke-width':4}));
       }
       const label=make('g');
       label.appendChild(make('rect',{x:5,y:5,width:220,height:31,rx:8,fill:'#251005',stroke:'#e2aa50','stroke-width':1.5,opacity:.94}));
