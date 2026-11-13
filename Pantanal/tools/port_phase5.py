@@ -31,7 +31,7 @@ once("state.apkAccumPercent=Math.max(0,Math.min(10,Number(el('apkAccumPercent').
      """state.apkAccumPercent=Math.max(0,Math.min(10,Number(el('apkAccumPercent').value)||0));
  state.medEnabled=el('medEnabled').checked;state.maxEnabled=el('maxEnabled').checked;
  state.apjNumSorteio=Math.max(1,Math.min(5000,Math.floor(Number(el('apjNumSorteio').value)||200)));
- for(let k=1;k<=3;k++""",
+ for(let k=1;k<=3;k++)""",
      'persistir desbloqueio')
 once("state.apjSorteio=generation.meta.sorteio;",
      """state.apjSorteio=generation.meta.sorteio;
