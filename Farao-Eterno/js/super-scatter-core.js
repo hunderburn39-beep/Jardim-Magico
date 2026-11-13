@@ -81,7 +81,23 @@
   const m=isFree?superFactor(s):1;
   const isSuper=!isFree&&E.countScatters(pending.grid)>=3&&
     pending.grid.some(col=>col.includes('SUPER'));
-  const out=previousSettle(s,...args);
+  // O mesmo limite usado na escolha dos símbolos tem de ser cumprido
+  // na liquidação, incluindo jogadas antigas recuperadas do Safari.
+  // Caso contrário, um grid válido no passado pode exceder o cofre ×m.
+  let out;
+  if(isFree&&m>1&&s.economy){
+   const remaining=Math.max(0,s.economy.prizeU-reserve(s,m));
+   const maxFromFund=Math.floor(remaining/m);
+   const maxFromCeiling=Math.max(0,
+     Math.floor(U(originalUpper(pending.bet))/m)-s.feature.totalU);
+   const allowed=Math.min(maxFromFund,maxFromCeiling);
+   const priorUpper=E.upperLimit;
+   // session.settle() calcula min(prémio, upperLimit - totalAnterior).
+   // CR() conserva precisão exata em unidades inteiras de cêntimo.
+   E.upperLimit=()=>CR(s.feature.totalU+allowed);
+   try{out=previousSettle(s,...args);}
+   finally{E.upperLimit=priorUpper;}
+  }else out=previousSettle(s,...args);
   if(!out)return out;
   if(isSuper&&s.feature){
    const face=Math.min(5,Math.floor(E.randomFloat()*6));
