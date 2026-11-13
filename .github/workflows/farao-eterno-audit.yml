@@ -37,14 +37,8 @@ jobs:
           node --check Farao-Eterno/js/economy.js
           node --check Farao-Eterno/js/coin-celebrations.js
           node --check Farao-Eterno/js/quality-polish-v2.js
-      - name: Auditar 20000 rondas, reentradas e cofre do Super Scatter
+      - name: Auditar 50000 rondas, reentradas e cofre do Super Scatter
         env:
-          SAMPLES: '20000'
+          SAMPLES: '50000'
           LEVEL: ${{ matrix.level }}
         run: node Farao-Eterno/tests/auditoria-completa.cjs
-
-      - name: Procurar pesos equilibrados sem mudar a tabela
-        if: matrix.level == 90
-        env:
-          CALIBRATION_SAMPLES: '5000'
-        run: node Farao-Eterno/tests/calibracao.cjs
