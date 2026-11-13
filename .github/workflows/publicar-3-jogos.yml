@@ -22,6 +22,7 @@ on:
       - 'Halloween/**'
       - 'Raspadinha-100X/**'
       - 'Pantanal/**'
+      - 'Classic-Slot/**'
       - '.github/workflows/publicar-3-jogos.yml'
   workflow_dispatch:
 
@@ -114,6 +115,7 @@ jobs:
           test -s Halloween/js/art.js
           test -s Raspadinha-100X/index3.html
           test -s Pantanal/index.html
+          test -s Classic-Slot/index.html
           test -d css
           test -d js
           test -d assets
@@ -129,7 +131,7 @@ jobs:
           cp -a css js assets public/
           cp -a jardim-phaser jardim-3d public/
           cp -a stake-preview public/
-          cp -a templo-do-trovao Farao-Eterno Halloween Raspadinha-100X Pantanal public/
+          cp -a templo-do-trovao Farao-Eterno Halloween Raspadinha-100X Pantanal Classic-Slot public/
           mkdir -p public/Sugar-Rush-1000
           cp -a Sugar-Rush-1000/standalone public/Sugar-Rush-1000/
           mkdir -p public/Sugar-Rush-1000/play
@@ -158,6 +160,7 @@ jobs:
           test -s public/Halloween/js/art.js
           test -s public/Raspadinha-100X/index3.html
           test -s public/Pantanal/index.html
+          test -s public/Classic-Slot/index.html
           test -s public/index2.html
           test -s public/Sugar-Rush-1000/standalone/index.html
           test -s public/Sugar-Rush-1000/play/index.html
@@ -167,6 +170,7 @@ jobs:
           echo "Halloween: /Halloween/"
           echo "Raspadinha 100X: /Raspadinha-100X/index3.html"
           echo "Pantanal: /Pantanal/"
+          echo "Classic Slot: /Classic-Slot/"
           echo "Sugar Rush original Phaser offline: /index2.html"
 
       # O preview é independente: uma asserção de versão antiga nele
@@ -331,4 +335,25 @@ jobs:
             sleep 10
           done
           echo "::warning::Raspadinha indisponivel ou versao desatualizada no GitHub Pages."
+          exit 1
+
+      - name: Confirmar Classic Slot online (HTTP 200)
+        continue-on-error: true
+        shell: bash
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          url="${SITE_URL%/}/Classic-Slot/index.html?sha=${GITHUB_SHA}"
+          for tentativa in {1..10}; do
+            if curl -fLsS --max-time 20 "$url" -o /tmp/classic-slot-publicado.html \
+                && grep -q 'Classic Slot' /tmp/classic-slot-publicado.html \
+                && grep -q 'id="spin"' /tmp/classic-slot-publicado.html; then
+              echo "Classic Slot publicada: HTTP 200, HTML e botão GIRAR confirmados."
+              exit 0
+            fi
+            echo "Classic Slot: verificacao ${tentativa}/10..."
+            sleep 6
+          done
+          echo "::warning::Classic Slot indisponivel no GitHub Pages. Verificar configuracao de Pages."
           exit 1
