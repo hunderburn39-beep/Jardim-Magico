@@ -691,8 +691,8 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
         <p id="scratch-reset-note" aria-live="polite"></p>
       </section>
       <section class="scratch-plans-section" aria-labelledby="scratch-plans-heading">
-        <h3 id="scratch-plans-heading">📋 Tabelas oficiais de prémios</h3>
-        <p>Distribuição por prémio total dos bilhetes nas emissões oficiais de 2026.</p>
+        <h3 id="scratch-plans-heading">📋 Tabelas oficiais de referência</h3>
+        <p>As quantidades abaixo são da Santa Casa, mas este jogo só emite prémios que o fundo automático (60% das vendas da respetiva modalidade) pode pagar. Por isso, as probabilidades e o retorno deste jogo são diferentes dos oficiais.</p>
         <label for="scratch-plans-mode">Escolhe uma emissão</label>
         <select id="scratch-plans-mode" aria-label="Emissão da raspadinha">
           <option value="10">10X · Jogo 659</option>
@@ -713,8 +713,8 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
 
       <section class="scratch-commission-section" aria-labelledby="scratch-commission-title">
         <h3 id="scratch-commission-title">Divisão do lucro — Comerciante e Dono do Jogo</h3>
-        <p><strong>Lucro contabilístico = vendas − prémios pagos.</strong> Os prémios já atribuídos mas ainda não revelados ficam reservados antes de permitir levantamentos. Não existe reserva de 10% nem comissões sobre as vendas.</p>
-        <p>Exemplo: 1.000€ de vendas e 600€ em prémios pagos dão 400€ de lucro (sem outras despesas). Com 60% / 40%, ficam 240€ para o comerciante e 160€ para o dono do jogo.</p>
+        <p><strong>Fundo de prémios:</strong> 60% de cada venda fica protegido automaticamente para pagar prémios dessa modalidade. Nunca se emite um bilhete com prémio acima desse saldo. Não existe reserva extra de 10% nem botões para carregar o fundo manualmente.</p>
+        <p><strong>Lucro contabilístico = vendas − prémios pagos.</strong> Mas só é possível repartir o lucro que sobra depois de proteger o fundo e os prémios já atribuídos. A divisão do lucro entre comerciante e dono do jogo é ajustável (60% / 40% por defeito); é uma percentagem diferente dos 60% do fundo de prémios.</p>
         <div id="scratch-profit-summary" class="scratch-profit-summary" aria-live="polite">
           <div>Vendas <strong id="scratch-profit-sales">0,00 €</strong></div>
           <div>Prémios pagos <strong id="scratch-profit-paid">0,00 €</strong></div>
@@ -783,6 +783,7 @@ body[data-ticket-status="started"] .lucky .cell canvas{border-radius:40% 40% 45%
 // Chave antiga mantida para preservar saldos de sessões anteriores.
 const KEY="raspadinha100x_v3_10eur";
 const COUNTERS_EPOCH="new-draw-2026-11-12-v1";
+const PRIZE_FUND_PERCENT=60; // Percentagem de cada compra retida para pagar prémios.
 const CARD_MODES=[
   {mult:10,bet:100},
   {mult:20,bet:200},
@@ -842,17 +843,19 @@ function officialTicketsLeft(plan){
   return Object.values(st.remaining).reduce((sum,count)=>
     sum+(Number.isSafeInteger(count)&&count>0?count:0),0);
 }
-function pickOfficialPrize(plan){
-  // Tiragem fechada e independente da modalidade: escolhe um único bilhete
-  // entre os que ainda restam, SEM condicionamento pelo saldo do cofre.
-  // Uma categoria com quantidade zero nunca volta a sair nesta tiragem local.
+function pickOfficialPrize(plan,maxPrizeCents){
+  // Primeiro filtra o inventário para NÃO emitir um prémio que ultrapasse
+  // os 60% acumulados e ainda livres da modalidade. Só depois sorteia.
+  // A filtragem muda as probabilidades e o RTP relativamente às tabelas
+  // da Santa Casa; estas são usadas apenas como limites de stock.
   const st=officialStockForPlan(plan);
-  if(!st||!st.remaining)return null;
+  if(!st||!st.remaining||!Number.isSafeInteger(maxPrizeCents)||maxPrizeCents<0)return null;
   const entries=Object.entries(st.remaining)
     .filter(([euros,count])=>Number.isSafeInteger(count)&&count>0&&
-      Number.isSafeInteger(Number(euros))&&Number(euros)>=0);
+      Number.isSafeInteger(Number(euros))&&Number(euros)>=0&&
+      Number(euros)*100<=maxPrizeCents);
   const total=entries.reduce((sum,[,count])=>sum+count,0);
-  if(total<=0)return null; // não inventar bilhetes quando a emissão esgotou
+  if(total<=0)return null; // não cobrar se não existe bilhete comportável
   let draw=Math.random()*total;
   let picked=entries[entries.length-1][0];
   for(const [euros,count] of entries){draw-=count;if(draw<0){picked=euros;break}}
@@ -878,11 +881,26 @@ function makeOfficialWinnings(prizeCents,plan){
   });
 }
 function blankPool(){return{available:0,sold:0,stakes:0,funded:0,awarded:0,paid:0,added:0,removed:0}}
+function fundContribution(bet){return Math.floor(bet*PRIZE_FUND_PERCENT/100)}
+function prizeFundRemaining(pool){
+  // Inclui como gasto o valor TOTAL de todos os bilhetes emitidos, mesmo
+  // que ainda não tenham sido raspados (prémio já reservado).
+  return Math.max(0,pool.funded-pool.awarded);
+}
 function initPools(saved){
   if(!saved.pools||typeof saved.pools!=="object"||Array.isArray(saved.pools))saved.pools={};
   for(const mode of CARD_MODES){
     const key=String(mode.mult),p=saved.pools[key];
-    if(!p||["available","sold","stakes","funded","awarded","paid","added","removed"].some(k=>!Number.isSafeInteger(p[k])||p[k]<0))saved.pools[key]=blankPool();
+    if(!p||["available","sold","stakes","funded","awarded","paid","added","removed"].some(k=>!Number.isSafeInteger(p[k])||p[k]<0)){
+      saved.pools[key]=blankPool();continue;
+    }
+    // Migração sem perder vendas/prémios. Descarta o antigo fundo de TESTE,
+    // que era ajustável manualmente, e reconstrói a cobertura a 60% das vendas.
+    const cumulative=Math.floor(p.stakes*PRIZE_FUND_PERCENT/100);
+    if(!Number.isSafeInteger(cumulative)){saved.pools[key]=blankPool();continue}
+    p.funded=cumulative;
+    p.available=prizeFundRemaining(p);
+    p.added=0;p.removed=0;
   }
 }
 function modePool(mult){return state.pools[String(mult)]}
@@ -937,7 +955,11 @@ function profitReport(){
   const pending=Math.max(0,awarded-paid);
   // A quota pode ser levantada apenas quando não existem prémios por pagar
   // que a tornem indisponível, mesmo que o bilhete ainda não esteja raspado.
-  const distributable=Math.max(0,sales-Math.max(paid,awarded));
+  // Os 60% que continuam em caixa para prémios NÃO são distribuídos
+  // pelo comerciante/dono, mesmo enquanto ainda não houve vencedores.
+  const protectedPrizeFunds=Object.values(state.pools||{}).
+    reduce((sum,p)=>sum+prizeFundRemaining(p),0);
+  const distributable=Math.max(0,sales-Math.max(paid,awarded)-protectedPrizeFunds);
   const merchantShare=Math.floor(distributable*state.commissionSplit.merchant/100);
   const ownerShare=distributable-merchantShare;
   const merchantWithdrawn=state.commissionWithdrawn.merchant;
@@ -946,7 +968,7 @@ function profitReport(){
   const merchantAvailable=Math.min(overallAvailable,Math.max(0,merchantShare-merchantWithdrawn));
   const ownerAvailable=Math.min(overallAvailable,Math.max(0,ownerShare-ownerWithdrawn));
   return {sales,awarded,paid,pending,profit,netProfit,loss,distributable,
-    merchantShare,ownerShare,merchantAvailable,ownerAvailable,overallAvailable};
+    protectedPrizeFunds,merchantShare,ownerShare,merchantAvailable,ownerAvailable,overallAvailable};
 }
 
 function initModeTickets(saved){
@@ -1250,23 +1272,33 @@ function buy(){
     return;
   }
   if(state.balance<bet){status("Saldo insuficiente para comprar outro bilhete.");return}
+  const maxMult=modeForBet(bet).mult;
+  const pool=modePool(maxMult);
+  const contribution=fundContribution(bet);
+  // Verificação ANTES de cobrar: inclui os 60% desta nova compra, desconta
+  // prémios já reservados e dívidas de tiragens anteriores desta modalidade.
+  const fundAfterPurchase=Math.max(0,pool.funded+contribution-pool.awarded);
+  const officialPrize=pickOfficialPrize(plan,fundAfterPurchase);
+  if(officialPrize===null){
+    status("Esta tiragem não tem bilhetes que o fundo de prémios consiga pagar. Não foi cobrado nenhum crédito.");
+    return;
+  }
+  const awards=makeOfficialWinnings(officialPrize,plan);
+  const prize=awards.reduce((sum,w)=>sum+w.amount,0);
+  if(prize>fundAfterPurchase||!Number.isSafeInteger(prize)){
+    throw Error("Prémio fora da cobertura: emissão interrompida.");
+  }
   stopScratchSound();
   clearCelebration();
   state.balance-=bet;
-  // A venda entra integralmente na faturação. Não existe reserva nem
-  // comissões automáticas. Só o lucro após os prémios é distribuível.
-  const maxMult=modeForBet(bet).mult;
-  const pool=modePool(maxMult);
   pool.sold++;
   pool.stakes+=bet;
+  pool.funded+=contribution;
   state.profitLedger.sales+=bet;
-  const officialPrize=pickOfficialPrize(plan);
-  if(officialPrize===null)throw Error("Tiragem esgotada inesperadamente"); 
-  const awards=makeOfficialWinnings(officialPrize,plan);
-  const prize=awards.reduce((sum,w)=>sum+w.amount,0);
-  // O cofre apenas regista entradas e estatísticas, NÃO determina a
-  // atribuição do prémio. Prémios altos podem exceder os fundos de teste.
+  // Reserva integralmente o prémio no momento em que o bilhete é emitido.
+  // O resgate NÃO volta a descontar do fundo; só regista o valor pago.
   pool.awarded+=prize;
+  pool.available=prizeFundRemaining(pool);
   state.profitLedger.awarded+=prize;
   const nums=shuffle(Array.from({length:80},(_,i)=>i+1));
   const lucky=nums.slice(0,plan.luckyCount);
