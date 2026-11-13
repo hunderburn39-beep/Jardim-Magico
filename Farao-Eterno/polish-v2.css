@@ -33,7 +33,7 @@
 @keyframes farao-spark-v2{
   0%{opacity:0;transform:translate(-50%,-50%) scale(.15)}
   16%{opacity:1}
-  48%{opacity:.85;transform:translate(calc(-50% + var(--dx)*.58),calc(-50% + var(--dy)*.58)) scale(1.1)}
+  48%{opacity:.85;transform:translate(calc(-50% + var(--dx2)),calc(-50% + var(--dy2))) scale(1.1)}
   100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.22)}
 }
 /* O modal respeita a área segura do iPhone e nunca corta o lançamento do dado. */
