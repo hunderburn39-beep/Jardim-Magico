@@ -78,7 +78,8 @@ jobs:
                  && grep -q 'assets/figuras-v199/bule-limpo.svg' /tmp/stake-preview.html \
                  && grep -q 'assets/figuras-v199/diamante-limpo.svg' /tmp/stake-preview.html \
                  && grep -q 'assets/figuras-v199/cogumelo-limpo.svg' /tmp/stake-preview.html \
-                 && grep -q 'assets/figuras-v199/chapeu-limpo.svg' /tmp/stake-preview.html; then
+                 && grep -q 'assets/figuras-v199/chapeu-limpo.svg' /tmp/stake-preview.html \
+                 && grep -q 'assets/figuras-v199/joaninha-limpa.svg' /tmp/stake-preview.html; then
                 curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/assets/imagens/jm38-caracol.svg" -o /tmp/caracol.svg
                 test -s /tmp/caracol.svg
                 curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/assets/jardim-v181-cenario-limpo.svg" -o /tmp/v181-cenario.svg
@@ -91,7 +92,7 @@ jobs:
                   test -s "/tmp/${figura}-limpo.svg"
                   grep -q 'clipPath' "/tmp/${figura}-limpo.svg"
                 done
-                curl -fLsS --max-time 15 "https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/assets/figuras-v197/jm38-joaninha-limpo.svg" -o /tmp/joaninha-limpa.svg
+                curl -fLsS --max-time 15 "https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/assets/figuras-v199/joaninha-limpa.svg" -o /tmp/joaninha-limpa.svg
                 grep -q 'viewBox="20 -12 560 548"' /tmp/joaninha-limpa.svg
                 echo 'CONFIRMADO: Stake Preview V1.9.8 online, com os cinco símbolos transparentes e linhas de prémio.'
                 exit 0

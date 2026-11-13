@@ -30,7 +30,7 @@ jobs:
             ('Diamante',base/'figuras-v199/diamante-limpo.svg'),
             ('Cogumelo',base/'figuras-v199/cogumelo-limpo.svg'),
             ('Chapeu',base/'figuras-v199/chapeu-limpo.svg'),
-            ('Joaninha',base/'figuras-v197/jm38-joaninha-limpo.svg')
+            ('Joaninha',base/'figuras-v199/joaninha-limpa.svg')
           ]
           W,H=800,175
           out=Image.new('RGB',(W,H),'white')
