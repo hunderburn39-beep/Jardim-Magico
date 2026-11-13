@@ -70,7 +70,7 @@ game.reelBoard=function(t){
  if(!this.ready||this.superseded)return;
  const img=this.images?.SUPER;
  if(!img?.complete||!img.naturalWidth||!img.naturalHeight)return;
- const R=this.visualV11?.layout||{left:35,top:284,cw:95,gh:129,step:101};
+ const R=this.visualV11?.layout||{left:18,top:284,cw:105,gh:129,step:109};
  const spin=this.spinObject;
  const boosted=!!(spin?.result?.superTrigger||this.lastResult?.superTrigger);
  ctx.save();ctx.beginPath();
