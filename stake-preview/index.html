@@ -162,6 +162,24 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .modal p{text-align:center;color:#f5e9d7;font-size:13px;margin:9px 0 13px}
 .hold-modal{max-width:385px;max-height:94svh;overflow-y:auto;text-align:center}
 .hold-modal h2{font-size:clamp(22px,7vw,29px)}
+/* Hold & Win overlays the reel controls: keep PASSAR inside its own modal. */
+.hold-skip{
+  display:block;
+  margin:-7px 0 4px auto;
+  border:1.5px solid #ffe19b;
+  border-radius:11px;
+  background:linear-gradient(160deg,#3b2a54,#241b42);
+  color:#fff4d2;
+  font-weight:900;
+  font-size:12px;
+  padding:6px 10px;
+  min-height:32px;
+  touch-action:manipulation;
+  cursor:pointer;
+  box-shadow:0 2px 9px #0a0718ba;
+}
+.hold-skip[hidden]{display:none!important}
+.hold-skip:active{transform:translateY(1px)}
 .hold-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:10px auto 13px;max-width:325px}
 .coin-slot{aspect-ratio:1;min-width:0;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;background:radial-gradient(#34254c,#130f29);border:2px solid #a7835799;color:#bea17b;font-weight:900}
 .coin-slot.filled{background:radial-gradient(circle at 32% 23%,#fff7c9,#edc968 45%,#9e5c18 75%,#68401d);border:3px solid #fff0a9;color:#50230a;box-shadow:0 0 12px #ffdc7f80}
@@ -994,7 +1012,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
  <footer class="foot"><b>V1.9.8 · ARTE LIMPA</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="freeResultOverlay" role="dialog" aria-modal="true" aria-label="Resultado final das Free Spins"><div class="modal free-result-modal"><h2>✦ FREE SPINS ✦</h2><p>O BÓNUS TERMINOU</p><div id="freeResultTotal" class="free-result-total">0,00</div><div class="free-result-math"><span>Jogadas realizadas</span><strong id="freeResultPlayed">15</strong><span>Prémio bruto</span><strong id="freeResultRaw">0,00</strong><span>Multiplicador</span><strong id="freeResultMulti">×1</strong></div><button class="free-continue" id="closeFree" type="button">▶ CONTINUAR</button></div></div>
- <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
+ <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><button id="holdSkip" class="hold-skip" type="button" aria-label="Passar animação do Hold & Win" hidden>PASSAR ⏩</button><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
  <div class="overlay" id="historyOverlay"><div class="modal history-modal"><div class="history-head"><h2>HISTÓRICO</h2><button type="button" id="closeHistory" aria-label="Fechar histórico">×</button></div><p>Últimas 20 jogadas, em créditos fictícios. Procura pelo número e abre os símbolos. REPETIR não cobra nem paga novamente.</p><input id="historySearch" class="history-search" type="search" inputmode="numeric" placeholder="Pesquisar nº da jogada" aria-label="Pesquisar pelo número da jogada"><small id="historyCount" class="history-counter"></small><div id="historyList" class="history-list"></div><button type="button" class="modal-close" id="clearHistory">LIMPAR HISTÓRICO</button></div></div>
  <div class="overlay" id="detailOverlay"><div class="modal history-modal"><div class="history-head"><h2 id="detailTitle">JOGADA</h2><button type="button" id="closeDetail" aria-label="Fechar detalhes">×</button></div><p id="detailSummary"></p><div id="detailBoard" class="detail-board" aria-label="Símbolos da jogada"></div><div class="detail-nav"><button type="button" id="detailPrev" aria-label="Ver etapa anterior">◀</button><strong id="detailStage">ETAPA 1</strong><button type="button" id="detailNext" aria-label="Ver etapa seguinte">▶</button></div><p id="detailStats" class="detail-stats"></p><button class="detail-replay" id="detailReplay">▶ REPETIR ESTA JOGADA</button></div></div>
  <div class="overlay" id="paytableOverlay" role="dialog" aria-modal="true" aria-label="Tabela de prémios Jardim Mágico"><div class="modal paytable-modal"><div class="history-head"><h2>TABELA DE PRÉMIOS</h2><button type="button" id="closePaytable" aria-label="Fechar tabela de prémios">×</button></div><div id="paytableStake" class="paytable-stake"></div><div class="paytable-header"><span>SÍMBOLO</span><span>3 IGUAIS</span><span>4 IGUAIS</span><span>5 IGUAIS</span></div><div id="paytableGrid" class="paytable-grid"></div><div id="paytableRules"></div><h3 style="text-align:center;color:#ffe6a4;font-size:15px;margin:15px 0 5px">10 LINHAS PREMIADAS</h3><div id="paylineSheet" class="payline-sheet"></div><p>Valores em créditos de teste. São regras da simulação local, sem RTP certificado.</p><button class="modal-close" id="closePaytableBottom" type="button">VOLTAR AO JOGO</button></div></div>
@@ -1430,6 +1448,7 @@ function controls(){
   $("autoHeading").textContent=autoRunning?"■ PARAR":"↻ AUTO";
   $("autoLabel").textContent=autoRunning?autoLeft+" RESTAM":"5 GIROS";
   $("skipBtn").hidden=!busy||skipAnimations;
+  $("holdSkip").hidden=!busy||skipAnimations;
   document.querySelectorAll("[data-bet]").forEach(button=>button.disabled=busy||autoRunning);
   $("turboLabel").textContent=turbo?"LIGADO":"DESL.";
 }
@@ -1799,6 +1818,7 @@ $("closeHold").addEventListener("click",acknowledgeHoldContinue);
 $("closeFree").addEventListener("click",acknowledgeFreeContinue);
 $("spin").addEventListener("click",()=>play("base"));
 $("skipBtn").addEventListener("click",skipCurrentAnimations);
+$("holdSkip").addEventListener("click",skipCurrentAnimations);
 $("minus").addEventListener("click",()=>{betIndex=Math.max(0,betIndex-1);display();saveSession()});
 $("plus").addEventListener("click",()=>{betIndex=Math.min(BETS.length-1,betIndex+1);display();saveSession()});
 document.querySelectorAll("[data-bet]").forEach(button=>button.addEventListener("click",()=>{if(busy)return;const wanted=Number(button.dataset.bet),index=BETS.findIndex(v=>v===wanted);if(index!==-1){betIndex=index;display();saveSession();say("Aposta selecionada: "+format(wanted)+" créditos.")}}));
