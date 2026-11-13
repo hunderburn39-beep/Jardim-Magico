@@ -48,25 +48,7 @@ async function scenario(isTurbo,{skipAt=0,reducedMotion=false}={}){
   const ctx=vm.createContext({
     document:{
       querySelectorAll(selector){assert.equal(selector,'.column');return columns},
-      createElement(tag){
-        assert.equal(tag,'div');
-        created++;
-        return {
-          className:'',style:{props:{},setProperty(k,v){this.props[k]=v}},
-          setAttribute(k,v){calls.push('attr:'+k+':'+v)},
-          innerHTML:'',classList:{
-            add(name){
-              calls.push('viewport:'+name);
-              if(name==='braking'){
-                const content=columns.find(c=>c.viewport===viewport)?.viewport.innerHTML||'';
-                calls.push('brake-cells:'+(content.match(/class="reel-scroll-symbol"/g)||[]).length);
-              }
-            }
-          },
-          remove(){removed++;calls.push('removed')}
-        };
-        function viewport(){}
-      }
+      createElement(){throw Error('DOM factory is installed before the scenario begins')}
     },
     window:{matchMedia(){return {matches:reducedMotion}}},
     TYPES,Math,Object,console,Array,Boolean,
@@ -94,7 +76,7 @@ async function scenario(isTurbo,{skipAt=0,reducedMotion=false}={}){
           calls.push('brake-final:' + el.innerHTML.slice(0,270));
         }
       }},
-      remove(){removed++;this.removed=true;calls.push('removed')}
+      remove(){if(!this.removed){removed++;this.removed=true}calls.push('removed')}
     };
     return el;
   };
