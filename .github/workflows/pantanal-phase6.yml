@@ -1,0 +1,54 @@
+name: Pantanal v2.18 — recuperar bónus interrompidos
+on:
+  push:
+    paths:
+      - '.github/workflows/pantanal-phase6.yml'
+permissions:
+  contents: write
+jobs:
+  integrar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validar matemática do APK e esquema da fila persistente
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check Pantanal/apk_engine.js
+          node --check Pantanal/bonus_ui.js
+          node Pantanal/tests/generator_guards.test.cjs
+          node Pantanal/tests/apk_engine.test.cjs
+          node Pantanal/tests/original_rules.test.cjs
+          node Pantanal/tests/bonus_recovery.test.cjs
+          python3 -m py_compile Pantanal/tools/port_phase6.py
+      - name: Aplicar recuperação e verificar JavaScript completo
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 Pantanal/tools/port_phase6.py
+          node - <<'JS'
+          const fs=require('fs'),src=fs.readFileSync('Pantanal/index.html','utf8');
+          const inline=[...src.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+            .map(x=>x[1]).filter(x=>x.length>1000);
+          if(inline.length!==1)throw Error('App script not found');
+          fs.writeFileSync('/tmp/pantanal-v218-main.js',inline[0]);
+          for(const term of ['pendingBonus','resumePendingBonuses','bonus_ui.js?v=2.18'])
+            if(!src.includes(term))throw Error('Missing '+term);
+          JS
+          node --check /tmp/pantanal-v218-main.js
+          git diff --check
+      - name: Gravar novo jogo sem alterar outros projetos
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Pantanal/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(Pantanal): checkpoint and resume native bonus sequence v2.18"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
