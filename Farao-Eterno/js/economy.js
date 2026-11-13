@@ -130,9 +130,16 @@
    // A camada super-scatter-core.js já reduz temporariamente o cofre
    // e o teto de 5000× pelo multiplicador em S.begin. Não voltar a
    // dividir nesta camada: isso reservaria o mesmo prémio duas vezes.
-   const available=e.prizeU+incomingPrize;
-   const maxBonus=U(E.upperLimit(bet))-(free?s.feature.totalU:0);
-   const limit=Math.min(available,Math.max(0,maxBonus));
+   // Super Scatter: cada nova unidade base obriga a reservar m unidades
+   // de prémio final, além do extra prometido das rodadas anteriores.
+   // Aplicar a cota ANTES de selecionar a grelha, não só depois do sorteio.
+   const m=free&&[2,3,4,5,8,10].includes(s.feature.superMultiplier)
+     ?s.feature.superMultiplier:1;
+   const reserved=free?(m-1)*s.feature.totalU:0;
+   const available=Math.max(0,e.prizeU+incomingPrize-reserved);
+   const maxBonus=Math.max(0,Math.floor(U(E.upperLimit(bet))/m)-
+     (free?s.feature.totalU:0));
+   const limit=Math.min(Math.floor(available/m),maxBonus);
    const weights=weighted(e.level,free);
    let chosen=null;
    for(let attempt=0;attempt<180;attempt++){
@@ -175,8 +182,15 @@
        p.paylinesVersion===E.PAYLINES_VERSION?E.LINES:E.LEGACY_LINES,
        p.expansionPayVersion===2?'separate':'legacy',
        p.free&&p.towerPayVersion===1?'free-anywhere':'base');
-     const maxPrize=U(E.upperLimit(p.bet))-(p.free?s.feature.totalU:0);
-     const owed=Math.max(0,Math.min(U(result.total),Math.max(0,maxPrize)));
+     // A recuperação de uma jogada Super guardada antes desta versão tem
+     // de usar o mesmo limite de exposição que o novo sorteio.
+     const m=p.free&&[2,3,4,5,8,10].includes(s.feature.superMultiplier)
+       ?s.feature.superMultiplier:1;
+     const reserved=p.free?(m-1)*s.feature.totalU:0;
+     const maxPrize=Math.max(0,Math.floor(U(E.upperLimit(p.bet))/m)-
+       (p.free?s.feature.totalU:0));
+     const affordable=Math.floor(Math.max(0,e.prizeU-reserved)/m);
+     const owed=Math.max(0,Math.min(U(result.total),maxPrize,affordable));
      if(owed>e.prizeU)throw Error('Fundo de prémios insuficiente para pagar esta jogada');
    }
    const out=old.settle(s,...args);
