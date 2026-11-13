@@ -9,5 +9,6 @@ window.FARAO_CUSTOM_SYMBOLS = {
   'MASK': 'assets/approved-20261113/MASK.png?v=approved-20261113-v2',
   'ANUBIS': 'assets/approved-20261113/ANUBIS.png?v=approved-20261113-v2',
   'KING': 'assets/approved-20261113/KING.png?v=approved-20261113-v2',
+  'SUPER': 'assets/super-reference.webp?v=original-reference-1',
   'MASK_ALT': 'assets/approved-20261113/MASK_ALT.png?v=approved-20261113-v2'
 };
