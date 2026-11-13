@@ -1,0 +1,30 @@
+name: Pantanal inspect payline mechanics
+on:
+  push:
+    paths:
+      - .github/workflows/pantanal-inspect-paylines.yml
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect layout and scripts for precise payline fix
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('Pantanal/index.html').read_text()
+          lines=s.splitlines()
+          print('TOTAL LINES',len(lines))
+          for i,line in enumerate(lines,1):
+              if 810 <= i <= 970:
+                  print(f'{i}: {line[:1000]}')
+          for term in ['linesBtn','flashWin','const LINES','PAYLINES','lineOverlay','paylineTimer','function render','resize','portrait','calcWins','state.lines','function update','function fit','lineOverlay']:
+              hits=[]
+              for i,line in enumerate(lines,1):
+                  if term in line and i not in range(810,971):
+                      hits.append((i,line[:500]))
+              print('\nMATCHES',term)
+              for i,line in hits[:16]:print(i,line)
+          PY
