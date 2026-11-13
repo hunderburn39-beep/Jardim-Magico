@@ -145,7 +145,7 @@ class Game {
    if(mod.classList.contains('hidden')===false)return;
    // Direct canvas hit-testing keeps symbols tappable on iPhone Safari,
    // independently of the transparent accessibility control layer.
-   const reel=this.visualV11?.layout||{left:33,top:284,cw:99,gh:129,step:101};
+   const reel=this.visualV11?.layout||{left:35,top:284,cw:95,gh:129,step:101};
    if(!this.spinning&&!this.superseded&&x>=reel.left&&x<reel.left+5*reel.step&&y>=reel.top&&y<reel.top+3*reel.gh){
     const col=Math.floor((x-reel.left)/reel.step),row=Math.floor((y-reel.top)/reel.gh);
     if(col>=0&&col<5&&row>=0&&row<3){
@@ -317,7 +317,7 @@ class Game {
   }
   const canInspect=!this.spinning&&!this.superseded&&mod.classList.contains('hidden');
   this._symbolOverlay.style.pointerEvents=canInspect?'auto':'none';
-  const reel=this.visualV11?.layout||{left:33,top:284,cw:99,gh:129,step:101};
+  const reel=this.visualV11?.layout||{left:35,top:284,cw:95,gh:129,step:101};
   for(const {button,col,row} of this._symbolButtons){
    button.style.left=(ox+(reel.left+col*reel.step+reel.cw/2)*sc)+'px';
    button.style.top=(oy+(reel.top+row*reel.gh+reel.gh/2)*scY)+'px';
@@ -1121,7 +1121,7 @@ class Game {
   rect(x-4,y-7,w+8,h+14,null,'#bb8648',11,2.5);
   rect(x+6,y+2,w-12,h-5,null,'#ad874d88',6,1.2);
   // Five unfilled reels with 15 fixed, square glass-cell borders.
-  const cw=99,gh=132,left=33,top=258,interval=101,square=94;
+  const cw=95,gh=132,left=35,top=258,interval=101,square=90;
   for(let c=0;c<5;c++){
    const rx=left+c*interval;
    cx.save();cx.beginPath();cx.rect(rx,top,cw,gh*3);cx.clip();
