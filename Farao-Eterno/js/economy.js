@@ -96,7 +96,7 @@
    const boost=.70+(level-90)*.006;
    const w={...original};
    for(const k of ['HORUS','MASK','ANUBIS','KING'])w[k]=original[k]*boost;
-   const tombScale=free?.40+(level-90)*.004:.64+(level-90)*.006;
+   const tombScale=free ? (0.40+(level-90)*0.004) : (0.64+(level-90)*0.006);
    w.TOMB=original.TOMB*tombScale;
    // Equilíbrio V1.4 (exclusivamente jogo base):
    // ligeiramente mais Faraó e Anúbis para criar combinações grandes
