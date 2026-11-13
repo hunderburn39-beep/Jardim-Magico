@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 200" role="img" aria-label="SUPER SCATTER">
+<defs><radialGradient id="glow"><stop stop-color="#63d9e5"/><stop offset=".7" stop-color="#14366b"/><stop offset="1" stop-color="#05152e"/></radialGradient><linearGradient id="gold" x2=".9" y2="1"><stop stop-color="#fff1af"/><stop offset=".35" stop-color="#e4ac3e"/><stop offset=".65" stop-color="#85501e"/><stop offset="1" stop-color="#f5cc73"/></linearGradient><filter id="shine" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter></defs>
+<ellipse cx="90" cy="105" rx="70" ry="90" fill="#f5d269" opacity=".4" filter="url(#shine)"/>
+<path d="M90 6L157 46 162 146 90 192 18 146 23 46Z" fill="url(#glow)" stroke="url(#gold)" stroke-width="9"/>
+<path d="M28 67L90 21 152 67M21 139L90 175 159 139" fill="none" stroke="#f0c876" stroke-width="3"/>
+<path d="M48 63Q90 38 132 63L127 112Q90 137 53 112Z" fill="#d9a242" stroke="#ffe8ac" stroke-width="4"/>
+<path d="M90 38L103 59 90 87 77 59Z" fill="#18c9d3" stroke="#f7dd88" stroke-width="4"/>
+<path d="M64 83Q76 71 88 82M92 82Q104 71 116 83M80 100L90 110 100 100" stroke="#38231d" stroke-width="6" stroke-linecap="round" fill="none"/>
+<path d="M45 123H135V154H45Z" fill="#123b6b" stroke="#f5d079" stroke-width="4"/>
+<text x="90" y="137" text-anchor="middle" fill="#fff4c2" font-size="21" font-family="Georgia" font-weight="900">SUPER</text>
+<text x="90" y="150" text-anchor="middle" fill="#80f5f2" font-size="11" font-family="Georgia" font-weight="900">SCATTER</text>
+<path d="M90 4L97 23 116 27 97 33 90 51 83 33 64 27 83 23Z" fill="#fff4c6" opacity=".9"/>
+</svg>
