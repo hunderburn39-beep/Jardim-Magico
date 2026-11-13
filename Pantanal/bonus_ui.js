@@ -59,12 +59,13 @@
      grid.appendChild(b);return b;
    });
  }
- async function selectOne(buttons){
+ async function selectOne(buttons,lockAll=true){
    return new Promise(resolve=>{
      let selected=false;
      buttons.forEach((btn,i)=>btn.addEventListener('click',()=>{
        if(selected)return;selected=true;
-       buttons.forEach(x=>x.disabled=true);
+       if(lockAll)buttons.forEach(x=>x.disabled=true);
+       else btn.disabled=true;
        btn.style.transform='translateY(12px) scale(1.1)';
        btn.style.filter='brightness(1.4)';
        resolve(i);
@@ -78,7 +79,7 @@
    const deck=eng.strawberryDeck(rng);let running=true,accum=0,remaining=12;
    while(running&&remaining>0){
      const active=cards.filter(b=>!b.disabled);
-     const originalIdx=await selectOne(active);
+     const originalIdx=await selectOne(active,false);
      const card=active[originalIdx],idx=Number(card.dataset.choice);
      const category=deck[idx],prize=eng.strawberryPay(category,ctx.betPerLine,units);
      card.textContent=category===6?'FIM':hooks.money(prize);
