@@ -1,0 +1,53 @@
+name: Pantanal v2.19 — restaurar tambores da jogada
+on:
+  push:
+    paths:
+      - '.github/workflows/pantanal-phase7.yml'
+permissions:
+  contents: write
+jobs:
+  integrar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validar motor e reconstituição dos bónus
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check Pantanal/apk_engine.js
+          node --check Pantanal/bonus_ui.js
+          node Pantanal/tests/bonus_recovery.test.cjs
+          node Pantanal/tests/apk_engine.test.cjs
+          node Pantanal/tests/generator_guards.test.cjs
+          python3 -m py_compile Pantanal/tools/port_phase7.py
+      - name: Restaurar tabuleiro e validar sintaxe HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 Pantanal/tools/port_phase7.py
+          node - <<'JS'
+          const fs=require('fs'),src=fs.readFileSync('Pantanal/index.html','utf8');
+          const js=[...src.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+            .map(v=>v[1]).filter(v=>v.length>1000);
+          if(js.length!==1)throw Error('Unable to locate Pantanal app script');
+          fs.writeFileSync('/tmp/pantanal-v219.js',js[0]);
+          if(!src.includes('const savedBoard=state.history?.find('))throw Error('Saved reel restoration missing');
+          if(!src.includes('bonus_ui.js?v=2.19'))throw Error('Missing asset cache version');
+          JS
+          node --check /tmp/pantanal-v219.js
+          git diff --check
+      - name: Gravar Pantanal sem alterar os restantes jogos
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Pantanal/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "fix(Pantanal): persist original reels across bonus resume and reload v2.19"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
