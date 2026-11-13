@@ -10,10 +10,11 @@
     return n;
   }
   function clear(){
+    ++serial;
     if(timer!==null){clearInterval(timer);timer=null;}
     if(layer){layer.remove();layer=null;}
   }
-  function show(wins){
+  function show(wins, preview=false){
     clear();
     const reels=document.getElementById('reels');
     const game=document.getElementById('game');
@@ -22,18 +23,29 @@
     if(!valid.length)return;
     const current=++serial;
     const svg=make('svg',{id:'pantanalPaylines',viewBox:'0 0 620 318',width:'620',height:'318','aria-hidden':'true'});
-    svg.style.cssText='position:absolute;left:'+reels.offsetLeft+'px;top:'+reels.offsetTop+'px;width:'+reels.offsetWidth+'px;height:'+reels.offsetHeight+'px;z-index:9;pointer-events:none;overflow:visible';
+    svg.style.cssText='position:absolute;inset:0;left:0;top:0;width:100%;height:100%;z-index:9;pointer-events:none;overflow:hidden;display:block';
     const defs=make('defs');
     const glow=make('filter',{id:'pantanalWinGlow',x:'-30%',y:'-100%',width:'160%',height:'300%'});
     glow.appendChild(make('feGaussianBlur',{stdDeviation:'3'}));
     defs.appendChild(glow);svg.appendChild(defs);
-    game.appendChild(svg);layer=svg;
+    reels.appendChild(svg);layer=svg;
     const legacy=document.getElementById('lineOverlay');
     if(legacy)legacy.style.setProperty('display','none','important');
     let idx=0;
+    // Desenhar imediatamente todas as linhas ativas, depois destacar cada percurso.
+    if(preview){
+      const others=make('g');
+      const colors=['#ffe67b','#72d8ff','#ffa1d3','#b0ff9f','#c9adff'];
+      valid.forEach((w,i)=>others.appendChild(make('polyline',{
+        points:w.path.slice(0,5).map((r,c)=>(57.5+124*c)+','+(51+106*r)).join(' '),
+        fill:'none',stroke:colors[i%colors.length],'stroke-width':2,opacity:'.38',
+        'stroke-linejoin':'round','stroke-linecap':'round'
+      })));
+      svg.appendChild(others);
+    }
     function paint(){
       if(current!==serial||layer!==svg)return;
-      while(svg.childNodes.length>1)svg.lastChild.remove();
+      while(svg.childNodes.length>(preview?2:1))svg.lastChild.remove();
       const w=valid[idx%valid.length];
       const points=w.path.slice(0,5).map((r,c)=>(57.5+124*c)+','+(51+106*r)).join(' ');
       svg.appendChild(make('polyline',{points,fill:'none',stroke:'#ffcd36','stroke-width':'12','stroke-linejoin':'round','stroke-linecap':'round',filter:'url(#pantanalWinGlow)',opacity:'.9'}));
@@ -45,18 +57,23 @@
       const label=make('g');
       label.appendChild(make('rect',{x:5,y:5,width:220,height:31,rx:8,fill:'#251005',stroke:'#e2aa50','stroke-width':1.5,opacity:.94}));
       const t=make('text',{x:14,y:27,fill:'#fff1a0','font-size':20,'font-weight':'bold','font-family':'Arial,sans-serif'});
-      t.textContent='LINHA '+w.line+'  +'+(Number(w.amount)||0);
+      t.textContent=preview?('LINHA '+w.line+' / '+valid.length):('LINHA '+w.line+'  +'+(Number(w.amount)||0));
       label.appendChild(t);svg.appendChild(label);
       idx++;
-      if(idx>=Math.min(valid.length,10)){
+      if(idx>=(preview?valid.length:Math.min(valid.length,10))){
         if(timer!==null){clearInterval(timer);timer=null;}
         setTimeout(()=>{if(current===serial)clear()},1400);
       }
     }
     paint();
-    if(valid.length>1)timer=setInterval(paint,1250);
+    if(valid.length>1)timer=setInterval(paint,preview?Math.max(160,Math.ceil(3800/valid.length)):1250);
     else setTimeout(()=>{if(current===serial)clear()},4400);
   }
+  function previewLines(paths){
+    const active=Array.isArray(paths)?paths:[];
+    show(active.map((path,i)=>({path,line:i+1,count:0,amount:0})),true);
+  }
+  window.PantanalPreviewLines=previewLines;
   window.PantanalShowPaylines=show;
   window.PantanalClearPaylines=clear;
 })();

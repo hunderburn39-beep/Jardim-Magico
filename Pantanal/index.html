@@ -907,13 +907,11 @@ async function spin(){if(spinBusy||bonusBusy||celebrationBusy)return;const stake
  const bonusTrigger=board.flat().filter(v=>v===9).length>=3;
  state.history.unshift({at:new Date().toLocaleString('pt-PT'),stake,lines:state.lines,board:board.map(x=>x.slice()),wins,total,bonus:bonusTrigger});
  save();update();spinBusy=false;
- if(wins.length){showStatus(`${wins.length} LINHA${wins.length!==1?'S':''} PREMIADA${wins.length!==1?'S':''} • ${money(total)} CRÉDITOS`);const special=wins.some(w=>(w.symbol===6&&w.count>=4)||(w.symbol===7&&w.count===5));if(special)await celebrateSpecial(wins,total);else{play(total>=100?'big':'win');flashWin(wins);window.PantanalShowPaylines?.(wins)}}else{showStatus('BOA SORTE!')}
+ if(wins.length){showStatus(`${wins.length} LINHA${wins.length!==1?'S':''} PREMIADA${wins.length!==1?'S':''} • ${money(total)} CRÉDITOS`);const special=wins.some(w=>(w.symbol===6&&w.count>=4)||(w.symbol===7&&w.count===5));if(special)await celebrateSpecial(wins,total);else{play(total>=100?'big':'win');flashWin(wins)}}else{showStatus('BOA SORTE!')}
  if(bonusTrigger){auto=false;await wait(500);openWheel();return}
  if(auto){await wait(450);if(auto)spin()}
 }
-function flashWin(wins){if(!wins.length)return;let n=0;clearInterval(paylineTimer);paylineTimer=setInterval(()=>{document.querySelectorAll('.symbol').forEach(a=>a.classList.remove('winning'));
- const w=wins[n++%wins.length];for(let c=0;c<w.count;c++){const cell=document.querySelector(`[data-cell="${w.path[c]}-${c}"]`);cell?.classList.add('winning')}
- const path=`05_lin${w.line}.png`;if(w.line<=20){el('lineOverlay').src=asset(path);el('lineOverlay').style.display='block'}else el('lineOverlay').style.display='none';if(n>=wins.length*4){clearInterval(paylineTimer);setTimeout(()=>{el('lineOverlay').style.display='none';document.querySelectorAll('.symbol').forEach(a=>a.classList.remove('winning'))},450)}},750)}
+function flashWin(wins){window.PantanalShowPaylines?.(wins)}
 function openWheel(){bonusBusy=true;el('bonusLayer').style.display='block';el('bonusBg').src=asset('05_telab2b.png');el('wheel').style.display='block';el('hives').style.display='none';el('bonusMsg').textContent='MULTIPLIQUE O SEU BÔNUS';el('bonusAction').textContent='GIRAR ROLETA';el('bonusAction').style.display='block';el('wheel').style.transform='rotate(0deg)';play('bonus')}
 async function doWheel(){
  const action=el('bonusAction');
@@ -964,7 +962,7 @@ el('giveCredit').onclick=()=>setDialog(`<h2>Obter créditos</h2><p>Saldo de cré
 window.addCredits=x=>{state.credits+=x;state.totalAdded+=x;save();update();closeDialog()};
 el('scores').onclick=()=>setDialog(`<h2>Placar de pontos</h2><p>Jogadas: <b>${money(state.totalSpins)}</b> • Maior prémio: <b>${money(state.maxWin)}</b></p><p>Total apostado: ${money(state.totalBet)} • Prémios entregues: ${money(state.totalPaid)}</p><table><tr><th>Data</th><th>Aposta</th><th>Prémio</th></tr>${state.history.slice(0,12).map(x=>`<tr><td>${x.at}</td><td>${x.stake}</td><td>${x.total}</td></tr>`).join('')}</table>`);
 el('betBtn').onclick=()=>{if(spinBusy)return;state.betIndex=(state.betIndex+1)%BET_LEVELS.length;save();update();showStatus(`APOSTA: ${money(BET_LEVELS[state.betIndex])} CRÉDITOS`)};
-el('linesBtn').onclick=()=>{if(spinBusy)return;state.lines=state.lines===25?20:state.lines===20?15:state.lines===15?10:state.lines===10?5:25;save();showStatus(`${state.lines} LINHAS ATIVAS`)};
+el('linesBtn').onclick=()=>{if(spinBusy)return;state.lines=state.lines===25?20:state.lines===20?15:state.lines===15?10:state.lines===10?5:25;save();showStatus(`${state.lines} LINHAS ATIVAS`);window.PantanalPreviewLines?.(LINES.slice(0,state.lines))};
 el('spinButton').onclick=spin;
 el('autoBtn').onclick=()=>{if(auto){auto=false;showStatus('AUTO PARADO')}else{auto=true;if(!spinBusy)spin()}update()};
 el('soundSwitch').onclick=()=>{state.sound=!state.sound;el('soundSwitch').textContent=state.sound?'♫':'♪̸';save()};
@@ -985,5 +983,5 @@ function adminPanel(){setDialog(`<h2>Pantanal — Administração local</h2><div
 }
 window.adminPanel=adminPanel;
 for(let r=0;r<3;r++)for(let c=0;c<5;c++)board[r][c]=pick();renderBoard();update();
-</script><script src="paylines.js?v=2.11"></script>
+</script><script src="paylines.js?v=2.12"></script>
 </body></html>
