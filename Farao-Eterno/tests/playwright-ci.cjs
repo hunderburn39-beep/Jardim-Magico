@@ -34,6 +34,8 @@ async function test(name,engine){
       hasPolish:g.qualityV2?.presentationOnly===true,
       hasSuper:!!window.FaraoSuperScatter,
       hasAudio:!!g.audio?.coinCascade,
+      coinBudget:g.coinCelebrations?.maxParticles,
+      sparkBudget:g.coinCelebrations?.maxSparkles,
       hasIntro:!!document.getElementById('farao-opening')
     };
   });
@@ -42,6 +44,8 @@ async function test(name,engine){
   assert.equal(v.loaded,v.total,'Carregamento incompleto');
   assert(v.hasHud&&v.hasPolish&&v.hasSuper&&v.hasAudio,'Módulos atuais não carregados');
   assert(!v.hasIntro,'QA isolada deve ignorar a capa de entrada');
+  assert.equal(v.coinBudget,68,'Excesso de moedas no ecrã do iPhone');
+  assert.equal(v.sparkBudget,42,'Excesso de centelhas no ecrã do iPhone');
   const r=v.layout;
   assert(r.left>=0&&r.cw>80&&r.gh>=110&&r.step>=r.cw,'Geometria inválida');
   assert(r.left+4*r.step+r.cw<=576&&r.top+3*r.gh<=1024,'Tambores fora da tela 9:16');
