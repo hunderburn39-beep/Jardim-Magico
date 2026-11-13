@@ -59,6 +59,46 @@ const fs=require('node:fs');
  assert.deepEqual(bonus,{win:400,credits:1300,paid:300});
  await page.evaluate(()=>window.__visualTestPromise);
  assert.equal(await page.locator('#pantanalBonusModal').count(),0,'Bónus fechado');
+ // Administração: parâmetros novos têm de persistir realmente no jogo.
+ await page.evaluate(()=>window.adminPanel());
+ await page.waitForSelector('#blocked');
+ await page.locator('#blocked').fill('30');
+ await page.locator('#apkAccumPercent').fill('5');
+ await page.locator('#admSave').click({force:true});
+ const blocked=await page.evaluate(()=>state.blocked);
+ assert.equal(blocked,30,'Bloqueio do admin nao foi gravado');
+ await page.locator('#close').click({force:true});
+
+ // Uma jogada completa sem erros de JS no ambiente Safari-like do iPhone.
+ const spinsBefore=await page.evaluate(()=>state.totalSpins);
+ await page.locator('#spinButton').click({force:true});
+ await page.waitForFunction(n=>state.totalSpins>n,spinsBefore,{timeout:12000});
+ await page.waitForFunction(()=>!spinBusy,{timeout:12000});
+ const settled=await page.evaluate(()=>({spins:state.totalSpins,lastWin:state.lastWin,credits:state.credits}));
+ assert(Number.isFinite(settled.credits)&&settled.spins>spinsBefore,'Jogada nao concluida');
+
+ // Bónus morangos e caldeirão, incluindo possibilidade das 5 abóboras.
+ for(const type of ['strawberry','cauldron']){
+   await page.evaluate(type=>{
+     window.__extraState={lastWin:100,credits:1000,totalPaid:0,maxWin:0,history:[{total:100}]};
+     window.__extraPromise=PantanalBonusUI.launch({
+       bonus:{[type]:1},state:window.__extraState,betPerLine:1,
+       asset:()=>'',rng:()=>0.4,difficulty:{active:true},
+       hooks:{save(){},update(){},showStatus(){},play(){},money:n=>String(n),setBusy(flag){window.__extraBusy=flag;}}
+     });
+   },type);
+   await page.waitForSelector('#pantanalBonusModal button');
+   for(let j=0;j<13;j++){
+     const open=await page.locator('#pantanalBonusModal').count();
+     if(!open)break;
+     const active=page.locator('#pantanalBonusModal button:not([disabled])');
+     if(await active.count())await active.first().click({force:true});
+     await page.waitForTimeout(370);
+     if(j===12)await page.waitForTimeout(1400);
+   }
+   await page.evaluate(()=>window.__extraPromise);
+   assert.equal(await page.locator('#pantanalBonusModal').count(),0,'Fecho bonus '+type);
+ }
  // Desktop horizontal: viewport reajustado sem perder estado e com posições estáveis.
  await page.setViewportSize({width:1000,height:600});
  await page.waitForTimeout(200);
