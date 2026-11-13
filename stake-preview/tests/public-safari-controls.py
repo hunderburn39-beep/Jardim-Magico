@@ -2,6 +2,7 @@
 Créditos fictícios, contexto privado; sem tocar no motor de pagamentos.
 """
 import json
+import time
 from playwright.sync_api import sync_playwright
 
 URL="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=controls-safari-qa"
@@ -30,8 +31,16 @@ with sync_playwright() as p:
     page=context.new_page()
     errors=[]
     page.on("pageerror",lambda exc: errors.append(str(exc)))
-    response=page.goto(URL,wait_until="networkidle",timeout=45000)
-    assert response and response.status==200,"Published game not reachable"
+    # Wait for publication of the Hold & Win PASSAR button before browser checks.
+    ready=False
+    for attempt in range(35):
+        response=page.goto(URL+"&update="+str(attempt),wait_until="domcontentloaded",timeout=45000)
+        if response and response.status==200 and 'id="holdSkip"' in page.content():
+            ready=True
+            break
+        print("SAFARI_CONTROLS_PUBLICATION_WAIT",attempt+1,flush=True)
+        time.sleep(8)
+    assert ready,"Published Stake game does not yet contain the Hold & Win skip button"
     page.locator("#introPlay").click()
     page.locator("#turbo").click()
     assert page.locator("#turboLabel").inner_text()=="LIGADO","Turbo toggle not shown"
@@ -115,7 +124,8 @@ with sync_playwright() as p:
         page.locator(button).click()
         page.wait_for_function("busy && pendingRound!==null",timeout=12000)
         due=page.evaluate("({mode:pendingRound.mode,payout:pendingRound.payout,id:pendingRound.id})")
-        page.locator("#skipBtn").click(timeout=12000)
+        skip_selector="#holdSkip" if name=="hold" else "#skipBtn"
+        page.locator(skip_selector).click(timeout=12000)
         page.wait_for_function("!busy && pendingRound===null",timeout=35000)
         after=check_ledger(page,"skip bonus "+name)
         assert after["serial"]==before["serial"]+1,(name,"not one round")
