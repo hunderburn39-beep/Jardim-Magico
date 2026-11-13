@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'stake-preview/tests/public-safari-gameplay.py'
+      - 'stake-preview/tests/public-safari-controls.py'
       - '.github/workflows/stake-safari-gameplay.yml'
   workflow_dispatch:
 permissions:
@@ -11,7 +12,7 @@ permissions:
 jobs:
   testar-fluxo-real:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 17
     steps:
       - uses: actions/checkout@v4
       - name: Instalar Playwright WebKit
@@ -20,3 +21,5 @@ jobs:
           python -m playwright install --with-deps webkit
       - name: Jogar e validar cascatas, Free Spins, Hold & Win e saldo no Safari
         run: python stake-preview/tests/public-safari-gameplay.py
+      - name: Validar AUTO, PARAR, PASSAR e recuperação em Safari
+        run: python stake-preview/tests/public-safari-controls.py
