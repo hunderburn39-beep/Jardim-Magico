@@ -1,0 +1,26 @@
+name: Pantanal inspect admin and game UI
+on:
+  push:
+    paths: [.github/workflows/pantanal-inspect-ui.yml]
+permissions: {contents: read}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('Pantanal/index.html').read_text()
+          lines=s.splitlines()
+          print('SOURCE LINES',len(lines))
+          for i,line in enumerate(lines,1):
+              if 901<=i<=1080:
+                  print('L',i,line[:2400])
+          print('MATCHES')
+          for key in ["adminIcon","function admin","ADMIN","adminPin","SetAdmin","state.difficulty","accumulation","bonusTrigger","linesBtn","function update","function calcWins","spinBusy=false","PantanalApkEngine","panels"]:
+              print('SEARCH',key)
+              for i,line in enumerate(lines,1):
+                  if key in line and (i<5 or i>795):
+                      print(' ',i,line[:1200])
+          PY
