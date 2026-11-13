@@ -820,10 +820,10 @@ const PAY={0:[0,0,10,50,200],1:[0,0,7,100,150],2:[0,0,5,35,75],3:[0,0,2,20,50],4
 // Padrões das 25 linhas: primeira linha = centro, segunda = topo, terceira = fundo.
 const LINES=[
 [1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],
-[0,0,1,2,2],[2,2,1,0,0],[1,0,0,0,1],[1,2,2,2,1],[0,1,1,1,0],
-[2,1,1,1,2],[0,1,0,1,0],[2,1,2,1,2],[1,0,1,0,1],[1,2,1,2,1],
-[0,0,1,0,0],[2,2,1,2,2],[1,1,0,1,1],[1,1,2,1,1],[0,2,0,2,0],
-[0,1,2,2,1],[2,1,0,0,1],[1,0,2,0,1],[1,2,0,2,1],[2,0,1,0,2]
+    [0,0,1,2,2],[2,2,1,0,0],[1,2,2,2,1],[1,0,0,0,1],[1,0,1,2,1],
+    [1,2,1,0,1],[2,1,0,0,0],[0,1,2,2,2],[0,0,0,1,2],[2,2,2,1,0],
+    [0,0,0,0,1],[2,2,2,2,1],[1,0,0,0,0],[1,2,2,2,2],[2,1,1,1,0],
+[0,1,2],[0,1,2],[0,1,2],[0,1,2],[0,1,2]
 ];
 const sounds={reel:'slots.mp3',win:'premio4.mp3',line:'linha.mp3',bonus:'bonus1.mp3',end:'fimdobonus.mp3',wheel:'bonus2.mp3',big:'premiobonus.mp3'};
 let soundUnlock=false;const soundNodes={};for(const [k,f] of Object.entries(sounds)){const a=new Audio(asset('sons/'+f));a.preload='auto';a.volume=k==='reel'?.45:.75;soundNodes[k]=a;}
@@ -845,15 +845,17 @@ function fit(){
 }
 addEventListener('resize',fit);fit();
 function renderBoard(animateCol=-1){const root=el('reels');root.innerHTML='';for(let r=0;r<3;r++)for(let c=0;c<5;c++){const s=document.createElement('div');s.className='symbol';const idx=board[r][c];s.dataset.cell=`${r}-${c}`;s.style.backgroundPosition=`-115px -${idx*102}px`;if(animateCol===c)s.style.filter='blur(2px)';root.appendChild(s)}}
-function showStatus(txt){el('status').textContent=txt||''}function update(){el('credit').textContent=money(state.credits);el('win').textContent=money(state.lastWin);el('bet').textContent=money(BET_LEVELS[state.betIndex]);el('autoBtn').style.filter=auto?'drop-shadow(0 0 10px #e9ed61)':'none';el('spinLabel').textContent=spinBusy?'RODANDO':'JOGAR';}
+function showStatus(txt){el('status').textContent=txt||''}function update(){el('credit').textContent=money(state.credits);el('win').textContent=money(state.lastWin);el('bet').textContent=money(BET_LEVELS[state.betIndex]*state.lines);el('autoBtn').style.filter=auto?'drop-shadow(0 0 10px #e9ed61)':'none';el('spinLabel').textContent=spinBusy?'RODANDO':'JOGAR';}
 function showGame(){el('home').style.display='none';el('game').style.display='block';el('bonusLayer').style.display='none';renderBoard();update();showStatus('PANTANAL — 25 LINHAS');}
 function showHome(){auto=false;el('home').style.display='block';el('game').style.display='none';el('bonusLayer').style.display='none';update();}
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-function calcWins(b){const wins=[];let total=0;for(let l=0;l<state.lines;l++){const path=LINES[l],seq=path.map((r,c)=>b[r][c]);let sym=seq[0],count=1;while(count<5&&seq[count]===sym)count++;
+function calcWins(b){const wins=[];let total=0;for(let l=0;l<Math.min(state.lines,20);l++){const path=LINES[l],seq=path.map((r,c)=>b[r][c]);let sym=seq[0],count=1;while(count<5&&seq[count]===sym)count++;
  let mult=(PAY[sym]||[])[count-1]||0;
  if(sym===9&&count>=3)mult=0; // giraffes are bonus-route icons in the original paytable
  if(count>=3&&mult>0){const payout=Math.round(mult*BET_LEVELS[state.betIndex]);wins.push({line:l+1,amount:payout,symbol:sym,count,path});total+=payout;}}
- return {wins,total}}
+ const vertical=window.PantanalOriginalRules.verticalResults(b,state.lines,BET_LEVELS[state.betIndex]);
+ wins.push(...vertical.wins);
+ return {wins,total:total+vertical.total,bonus:vertical.bonus}}
 let celebrationBusy=false;
 async function celebrateSpecial(wins,total){
  const specials=wins.filter(w=>(w.symbol===6&&w.count>=4)||(w.symbol===7&&w.count===5));
@@ -898,17 +900,86 @@ async function celebrateSpecial(wins,total){
  celebrationBusy=false;
  return true;
 }
-async function spin(){if(spinBusy||bonusBusy||celebrationBusy)return;const stake=BET_LEVELS[state.betIndex];if(state.credits<stake){showStatus('CRÉDITOS INSUFICIENTES');return}
- window.PantanalClearPaylines?.();spinBusy=true;state.credits-=stake;state.totalBet+=stake;state.totalSpins++;state.lastWin=0;showStatus('');update();play('reel');el('lineOverlay').style.display='none';
+
+let pendingDice=0;
+function showDiceBonus(){
+ if(pendingDice<=0)return;
+ bonusBusy=true;
+ auto=false;
+ const old=document.getElementById('pantanalDiceBonus');
+ if(old)old.remove();
+ const layer=document.createElement('div');
+ layer.id='pantanalDiceBonus';
+ layer.style.cssText='position:absolute;inset:0;z-index:35;background:rgba(10,5,3,.86);display:flex;align-items:center;justify-content:center;box-sizing:border-box;';
+ const panel=document.createElement('div');
+ panel.style.cssText='width:760px;max-width:96%;min-height:345px;padding:20px;border:6px ridge #e8b85d;border-radius:23px;text-align:center;box-sizing:border-box;background:radial-gradient(ellipse,#895221,#361b0b);box-shadow:0 0 35px #000;';
+ const h=document.createElement('h2');
+ h.textContent='BÓNUS DOS DADOS';
+ h.style.cssText='margin:8px 0 8px;font-size:39px;color:#ffe9a4;text-shadow:2px 3px 4px #000;';
+ const sub=document.createElement('div');
+ sub.textContent='ESCOLHE UM DOS 5 DADOS';
+ sub.style.cssText='font-size:24px;font-weight:bold;color:#fff3d9;margin:7px;';
+ const row=document.createElement('div');
+ row.style.cssText='display:flex;justify-content:center;gap:9px;margin:30px 5px;flex-wrap:nowrap;';
+ const info=document.createElement('div');
+ info.textContent='PRÉMIO ATUAL: '+money(state.lastWin)+' CRÉDITOS';
+ info.style.cssText='font-size:25px;color:#ffe9a4;font-weight:bold;min-height:39px;';
+ const dice=[];
+ for(let i=0;i<5;i++){
+  const b=document.createElement('button');
+  b.type='button';b.title='Escolher dado '+(i+1);
+  b.style.cssText='width:125px;height:115px;border:4px solid #efb976;border-radius:15px;background:radial-gradient(circle at 30% 20%,#df4933,#861c16 85%);box-shadow:0 5px 9px #120500;font-size:61px;color:#fff5c6;font-weight:bold;transition:transform .3s;';
+  // dado.png: atlas original de 8 colunas por 9 linhas.
+  const icon=asset('dado.png');
+  if(icon){b.style.backgroundImage='url("'+icon+'")';b.style.backgroundSize='800% 900%';b.style.backgroundPosition='0% 0%';b.textContent='';}
+  else b.textContent='⚄';
+  b.addEventListener('click',()=>{
+   if(!bonusBusy||layer.dataset.picked)return;
+   layer.dataset.picked='true';
+   dice.forEach(x=>x.disabled=true);
+   b.style.transform='translateY(70px) rotate(720deg) scale(1.06)';
+   // Gerador do APK: 80 ou 100 posições, consoante a condição de pagamento.
+   // Esta é uma aproximação inicial dessa condição; o motor completo fica pendente.
+   const paymentMode=(state.credits<42500&&state.totalSpins<500);
+   const roll=window.PantanalOriginalRules.diceRoll(rnd,paymentMode);
+   const final=window.PantanalOriginalRules.dicePrize(state.lastWin,roll);
+   const extra=final-state.lastWin;
+   state.lastWin=final;state.credits+=extra;state.totalPaid+=extra;
+   state.maxWin=Math.max(state.maxWin,final);
+   if(state.history[0]){
+     state.history[0].total=final;
+     state.history[0].diceMultiplier=roll.multiplier;
+     state.history[0].bonus=true;
+   }
+   save();update();play('big');
+   b.style.backgroundImage='none';
+   b.textContent='×'+roll.multiplier;
+   b.style.fontSize='50px';
+   info.textContent='DADO ×'+roll.multiplier+' — PRÉMIO FINAL: '+money(final)+' CRÉDITOS';
+   showStatus('BÓNUS DOS DADOS: ×'+roll.multiplier+' — '+money(final)+' CRÉDITOS');
+   setTimeout(()=>{
+     layer.remove();bonusBusy=false;pendingDice=Math.max(0,pendingDice-1);
+     if(pendingDice>0)showDiceBonus();
+   },2500);
+  });
+  dice.push(b);row.appendChild(b);
+ }
+ panel.append(h,sub,row,info);layer.appendChild(panel);el('game').appendChild(layer);
+ play('bonus');
+}
+
+async function spin(){if(spinBusy||bonusBusy||celebrationBusy)return;const stake=window.PantanalOriginalRules.stake(BET_LEVELS[state.betIndex],state.lines);if(state.credits<stake){showStatus('CRÉDITOS INSUFICIENTES');return}
+ window.PantanalClearPaylines?.();pendingDice=0;spinBusy=true;state.credits-=stake;state.totalBet+=stake;state.totalSpins++;state.lastWin=0;showStatus('');update();play('reel');el('lineOverlay').style.display='none';
  const target=Array.from({length:3},()=>Array.from({length:5},()=>pick()));
  // Asynchronous reel-stop animation staggered from left to right.
  for(let tick=0;tick<31;tick++){for(let col=0;col<5;col++)if(tick<10+col*4){for(let row=0;row<3;row++)board[row][col]=pick()}else if(tick===10+col*4){for(let row=0;row<3;row++)board[row][col]=target[row][col];play('line')};renderBoard();await wait(49)}
- board=target;renderBoard();let {wins,total}=calcWins(board);state.lastWin=total;state.credits+=total;state.totalPaid+=total;state.maxWin=Math.max(state.maxWin,total);
- const bonusTrigger=board.flat().filter(v=>v===9).length>=3;
+ board=target;renderBoard();let {wins,total,bonus}=calcWins(board);state.lastWin=total;state.credits+=total;state.totalPaid+=total;state.maxWin=Math.max(state.maxWin,total);
+ const bonusTrigger=bonus.wheel>0;const diceTrigger=bonus.dice>0;pendingDice=bonus.dice;
  state.history.unshift({at:new Date().toLocaleString('pt-PT'),stake,lines:state.lines,board:board.map(x=>x.slice()),wins,total,bonus:bonusTrigger});
  save();update();spinBusy=false;
  if(wins.length){showStatus(`${wins.length} LINHA${wins.length!==1?'S':''} PREMIADA${wins.length!==1?'S':''} • ${money(total)} CRÉDITOS`);const special=wins.some(w=>(w.symbol===6&&w.count>=4)||(w.symbol===7&&w.count===5));if(special)await celebrateSpecial(wins,total);else{play(total>=100?'big':'win');flashWin(wins)}}else{showStatus('BOA SORTE!')}
  if(bonusTrigger){auto=false;await wait(500);openWheel();return}
+ if(diceTrigger){auto=false;await wait(500);showDiceBonus();return}
  if(auto){await wait(450);if(auto)spin()}
 }
 function flashWin(wins){window.PantanalShowPaylines?.(wins)}
@@ -950,6 +1021,7 @@ async function doWheel(){
   bonusBusy=false;
   el('bonusLayer').style.display='none';
   action.onclick=doWheel;
+   if(pendingDice>0)showDiceBonus();
  };
 }
 el('bonusAction').onclick=doWheel;
@@ -961,8 +1033,18 @@ el('help').onclick=()=>setDialog(`<h2>Como jogar</h2><img src="assets/ajuda.png"
 el('giveCredit').onclick=()=>setDialog(`<h2>Obter créditos</h2><p>Saldo de créditos locais: <b>${money(state.credits)}</b></p><button class="action" onclick="addCredits(1000)">+1 000 créditos</button><button class="action" onclick="addCredits(5000)">+5 000 créditos</button><p class="small">Apenas créditos virtuais para jogar no browser; não são depósitos em dinheiro.</p>`);
 window.addCredits=x=>{state.credits+=x;state.totalAdded+=x;save();update();closeDialog()};
 el('scores').onclick=()=>setDialog(`<h2>Placar de pontos</h2><p>Jogadas: <b>${money(state.totalSpins)}</b> • Maior prémio: <b>${money(state.maxWin)}</b></p><p>Total apostado: ${money(state.totalBet)} • Prémios entregues: ${money(state.totalPaid)}</p><table><tr><th>Data</th><th>Aposta</th><th>Prémio</th></tr>${state.history.slice(0,12).map(x=>`<tr><td>${x.at}</td><td>${x.stake}</td><td>${x.total}</td></tr>`).join('')}</table>`);
-el('betBtn').onclick=()=>{if(spinBusy)return;state.betIndex=(state.betIndex+1)%BET_LEVELS.length;save();update();showStatus(`APOSTA: ${money(BET_LEVELS[state.betIndex])} CRÉDITOS`)};
-el('linesBtn').onclick=()=>{if(spinBusy)return;state.lines=state.lines===25?20:state.lines===20?15:state.lines===15?10:state.lines===10?5:25;save();showStatus(`${state.lines} LINHAS ATIVAS`);window.PantanalPreviewLines?.(LINES.slice(0,state.lines))};
+el('betBtn').onclick=()=>{if(spinBusy||bonusBusy)return;
+ state.betIndex=(state.betIndex+1)%BET_LEVELS.length;
+ save();update();
+ showStatus('POR LINHA: '+money(BET_LEVELS[state.betIndex])+' • TOTAL: '+money(BET_LEVELS[state.betIndex]*state.lines)+' CRÉDITOS');
+};
+el('linesBtn').onclick=()=>{if(spinBusy||bonusBusy)return;
+ const levels=window.PantanalOriginalRules.LEVELS;
+ const current=levels.indexOf(state.lines);
+ state.lines=levels[(current+1)%levels.length];
+ save();update();showStatus(state.lines+' LINHAS ATIVAS');
+ window.PantanalPreviewLines?.(LINES.slice(0,state.lines));
+};
 el('spinButton').onclick=spin;
 el('autoBtn').onclick=()=>{if(auto){auto=false;showStatus('AUTO PARADO')}else{auto=true;if(!spinBusy)spin()}update()};
 el('soundSwitch').onclick=()=>{state.sound=!state.sound;el('soundSwitch').textContent=state.sound?'♫':'♪̸';save()};
@@ -983,5 +1065,6 @@ function adminPanel(){setDialog(`<h2>Pantanal — Administração local</h2><div
 }
 window.adminPanel=adminPanel;
 for(let r=0;r<3;r++)for(let c=0;c<5;c++)board[r][c]=pick();renderBoard();update();
-</script><script src="paylines.js?v=2.12"></script>
+</script><script src="paylines.js?v=2.13"></script>
+<script src="original_rules.js?v=2.13"></script>
 </body></html>
