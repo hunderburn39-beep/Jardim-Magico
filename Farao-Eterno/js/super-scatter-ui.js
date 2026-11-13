@@ -30,14 +30,15 @@
    '<div class="super-royal-portrait"><img src="assets/super-reference.webp?v=original-reference-1" alt="O Faraó dourado com coroa azul e serpente sagrada"></div>'+
    '<p class="super-intro">As três pirâmides despertaram o Faraó!</p>'+
    '<p class="farao-spins-label">8 FREE SPINS · MULTIPLICADOR DO BÓNUS</p>'+
-   '<div class="super-dice-area"><div class="super-die" id="super-die" role="img" aria-label="Dado de seis faces">'+sides+'</div></div>'+
+   '<div class="super-dice-area"><div class="super-die" id="super-die" role="img" aria-label="Dado de seis faces">'+sides+'</div>'+'<div class="super-die-docked" id="super-die-docked" aria-hidden="true">'+(already?'×'+f.superMultiplier:'?')+'</div></div>'+
    '<div id="super-dice-status" class="super-dice-status" role="status" aria-live="polite">'+
     (already?'MULTIPLICADOR SORTEADO':'LANÇA O DADO SAGRADO')+'</div>'+
    '<strong id="super-dice-result" class="super-multiplier">'+(already?'×'+f.superMultiplier:'?')+'</strong>'+
    '<button type="button" class="btn farao-gold-btn" id="super-roll">'+
     (already?'COMEÇAR FREE SPINS':'LANÇAR DADO')+'</button>'+
    '</div>',true);
-  const die=$('super-die'),btn=$('super-roll'),status=$('super-dice-status'),value=$('super-dice-result');
+  const die=$('super-die'),docked=$('super-die-docked'),area=die.parentElement,
+    btn=$('super-roll'),status=$('super-dice-status'),value=$('super-dice-result');
   if(already)die.style.transform=rotations[face];
   btn.onclick=()=>{
    if(this.ledger.feature.superRollSeen){this.closeModal();return;}
@@ -50,12 +51,15 @@
    value.textContent='✦';
    this.audio?.extra?.();
    this._superRolling=true;
+   area.classList.add('is-rolling');
    die.classList.add('rolling');
    window.setTimeout(()=>{
     this._superRolling=false;
     if(!die.isConnected)return;
     die.classList.remove('rolling');
+    area.classList.remove('is-rolling');
     die.style.transform=rotations[face];
+    docked.textContent='×'+f.superMultiplier;
     value.textContent='×'+f.superMultiplier;
     status.textContent='TODOS OS PRÉMIOS DAS FREE SPINS ×'+f.superMultiplier;
     btn.disabled=false;btn.textContent='COMEÇAR FREE SPINS';
