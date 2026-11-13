@@ -1,0 +1,53 @@
+name: Pantanal v2.15 — publicar gerador APK
+on:
+  push:
+    paths:
+      - '.github/workflows/pantanal-phase3.yml'
+permissions:
+  contents: write
+jobs:
+  integrar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validar gerador, 25 linhas, jackpots e bonus
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check Pantanal/apk_engine.js
+          node --check Pantanal/bonus_ui.js
+          node --check Pantanal/paylines.js
+          node Pantanal/tests/generator_guards.test.cjs
+          node Pantanal/tests/apk_engine.test.cjs
+          node Pantanal/tests/original_rules.test.cjs
+          python3 -m py_compile Pantanal/tools/port_phase3.py
+      - name: Aplicar v2.15 e verificar HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 Pantanal/tools/port_phase3.py
+          node - <<'JS'
+          const fs=require('fs'),s=fs.readFileSync('Pantanal/index.html','utf8');
+          const matches=[...s.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(x=>x.length>1000);
+          if(matches.length!==1)throw Error('Expected one inline app script, got '+matches.length);
+          fs.writeFileSync('/tmp/pantanal-v215-main.js',matches[0]);
+          if(!s.includes('generateRound(board,difficulty.active,rnd'))throw Error('Generator not wired');
+          if(!s.includes('apk_engine.js?v=2.15'))throw Error('Cache path missing');
+          if(!s.includes('PantanalBonusUI.launch'))throw Error('Bonus queue missing');
+          JS
+          node --check /tmp/pantanal-v215-main.js
+          git diff --check
+      - name: Publicar nova versao sem alterar outros jogos
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Pantanal/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(Pantanal): guard min/med/max accumulators and forced APK reel patterns v2.15"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
