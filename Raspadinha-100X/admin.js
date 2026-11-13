@@ -27,7 +27,9 @@ function draw(){
     card.className="scratch-admin-card";
     const title=document.createElement("h3");title.textContent=mode.mult+"X · "+money(mode.bet);
     const balance=document.createElement("strong");
-    balance.textContent="Lucro: "+formatSignedEuro(p.stakes-p.paid);
+    const modeProfit=p.stakes-p.paid;
+    balance.textContent=modeProfit<0?"Lucro: "+eur(0)+" · Prejuízo: "+eur(-modeProfit):
+      "Lucro: "+eur(modeProfit);
     const detail=document.createElement("dl");
     const stock=state.officialStock?.[String(mode.mult)];
     const remaining=stock?.remaining?Object.values(stock.remaining)
@@ -39,7 +41,8 @@ function draw(){
       ["Vendas",eur(p.stakes)],
       ["Prémios pagos",eur(p.paid)],
       ["Prémios pendentes",eur(Math.max(0,p.awarded-p.paid))],
-      ["Lucro da tiragem",formatSignedEuro(p.stakes-p.paid)]
+      ["Lucro da tiragem",eur(Math.max(0,modeProfit))],
+      ...(modeProfit<0?[["Prejuízo da tiragem",eur(-modeProfit)]]:[])
     ];
     for(const [name,value] of rows){
       const dt=document.createElement("dt"),dd=document.createElement("dd");
@@ -53,7 +56,9 @@ function draw(){
     resetButton.addEventListener("click",()=>confirmModeReset(mode.mult));
     card.append(title,balance,detail,resetButton);target.append(card);
   }
-  $("scratch-admin-total").textContent=formatSignedEuro(report.profit);
+  $("scratch-admin-total").textContent=eur(report.netProfit);
+  $("scratch-admin-loss").hidden=report.loss===0;
+  $("scratch-admin-loss-amount").textContent=eur(report.loss);
 
 }
 
@@ -161,7 +166,9 @@ function drawCommissions(){
   $("scratch-profit-sales").textContent=eur(report.sales);
   $("scratch-profit-paid").textContent=eur(report.paid);
   $("scratch-profit-pending").textContent=eur(report.pending);
-  $("scratch-profit-net").textContent=formatSignedEuro(report.profit);
+  $("scratch-profit-net").textContent=eur(report.netProfit);
+  $("scratch-profit-loss-row").hidden=report.loss===0;
+  $("scratch-profit-loss").textContent=eur(report.loss);
   $("scratch-profit-distributable").textContent=eur(report.distributable);
   for(const role of ["merchant","technician"]){
     const quota=role==="merchant"?report.merchantShare:report.ownerShare;
