@@ -36,11 +36,11 @@ jobs:
       - name: Confirmar GitHub Pages independente das outras publicações
         run: |
           set -euo pipefail
-          url="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=1.8.2"
+          url="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=1.8.3"
           echo "A verificar $url"
           for n in {1..12}; do
             if curl -fLsS --max-time 10 --connect-timeout 5 "$url" -o /tmp/stake-preview.html; then
-              if grep -q 'Stake Preview V1.8.2' /tmp/stake-preview.html \
+              if grep -q 'Stake Preview V1.8.3' /tmp/stake-preview.html \
                  && grep -q 'id="skipBtn"' /tmp/stake-preview.html \
                  && grep -q 'id="paylineSvg"' /tmp/stake-preview.html \
                  && grep -q 'id="freePanel"' /tmp/stake-preview.html \
@@ -73,14 +73,14 @@ jobs:
                 test -s /tmp/v181-cenario.svg && test -s /tmp/v181-moldura.svg
                 curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/assets/jardim-v181-logo.svg" -o /tmp/v181-logo.svg
                 test -s /tmp/v181-logo.svg
-                echo 'CONFIRMADO: Stake Preview V1.8.2 online, PASSAR, linhas e caracol.'
+                echo 'CONFIRMADO: Stake Preview V1.8.3 online, PASSAR, linhas e caracol.'
                 exit 0
               fi
-              echo "Página ainda não atualizada para V1.8.2 ($n/12)."
+              echo "Página ainda não atualizada para V1.8.3 ($n/12)."
             else
               echo "Página indisponível ($n/12)."
             fi
             sleep 5
           done
-          echo '::error::Não foi possível confirmar a página V1.8.2.'
+          echo '::error::Não foi possível confirmar a página V1.8.3.'
           exit 1

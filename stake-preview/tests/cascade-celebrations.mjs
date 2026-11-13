@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 
 const html=readFileSync(join(dirname(fileURLToPath(import.meta.url)),'..','index.html'),'utf8');
-assert.match(html,/Stake Preview V1\.8\.2/);
+assert.match(html,/Stake Preview V1\.8\.3/);
 for(const id of ['cascadeMeter','cascadeWinLabel','cascadeWinValue','cascadeTotalLabel','cascadeTotalValue','winSparks','reelFrame']) {
  assert.ok(html.includes('id="'+id+'"'),'Missing visualization '+id);
 }
@@ -110,6 +110,6 @@ for(let i=0;i<2500;i++){
 }
 assert.ok(winningDrops>100);
 assert.ok(accounted>0);
-console.log('Stake Preview V1.8.2: 2500 cascade outcomes, base/free award clarity, running totals and presentation-only sparks verified.');
+console.log('Stake Preview V1.8.3: 2500 cascade outcomes, base/free award clarity, running totals and presentation-only sparks verified.');
 
 function cascadeAmountFrom(evt){return getAmount(evt)}
