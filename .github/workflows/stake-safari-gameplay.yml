@@ -1,0 +1,22 @@
+name: Stake Preview | Jogabilidade completa Safari
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'stake-preview/tests/public-safari-gameplay.py'
+      - '.github/workflows/stake-safari-gameplay.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  testar-fluxo-real:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Playwright WebKit
+        run: |
+          python -m pip install -q playwright
+          python -m playwright install --with-deps webkit
+      - name: Jogar e validar cascatas, Free Spins, Hold & Win e saldo no Safari
+        run: python stake-preview/tests/public-safari-gameplay.py
