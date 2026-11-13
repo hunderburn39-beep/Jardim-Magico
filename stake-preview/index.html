@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V1.8.3</title>
+<title>Jardim Mágico | Edição Stake Preview V1.8.4</title>
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -600,6 +600,9 @@ html,body{height:100%;overflow:hidden;background:#051814}
   .actions{top:86%;height:10.3%}
 }
 
+/* V1.8.4 — reel motion is deliberately less frantic in normal mode. */
+.cell.spinning img,.cell.spinning .emoji,.cell.spinning .orb{animation-duration:.20s}
+.cell.landing{animation-duration:.34s}
 </style>
 </head>
 <body>
@@ -657,7 +660,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V1.8.3 • AJUSTE DO TOPO</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
+ <footer class="foot"><b>V1.8.4 • TAMBORES MAIS LENTOS</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="freeResultOverlay" role="dialog" aria-modal="true" aria-label="Resultado final das Free Spins"><div class="modal free-result-modal"><h2>✦ FREE SPINS ✦</h2><p>O BÓNUS TERMINOU</p><div id="freeResultTotal" class="free-result-total">0,00</div><div class="free-result-math"><span>Jogadas realizadas</span><strong id="freeResultPlayed">15</strong><span>Prémio bruto</span><strong id="freeResultRaw">0,00</strong><span>Multiplicador</span><strong id="freeResultMulti">×1</strong></div><button class="free-continue" id="closeFree" type="button">▶ CONTINUAR</button></div></div>
  <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
@@ -773,6 +776,7 @@ function playRecorded(name){
   try{
     const player=new Audio(AUDIO_BASE+AUDIO_SFX[name]);
     player.volume=name==="spin"?.32:name==="win"?.58:.47;
+    player.loop=name==="spin"; // The reel motor continues until the last reel stops.
     player.preload="auto";
     const pending=player.play();
     if(pending&&typeof pending.catch==="function")pending.catch(()=>{});
@@ -1153,29 +1157,41 @@ async function highlightLines(evt){
   }
   clearPayline();
 }
+// Presentation timing only: 670 ms in the old normal mode felt like an instant
+// flash on mobile. Normal mode now runs for ~2.65 s with progressively slower
+// reel stops. Turbo retains its short ~135 ms animation. No outcome math changes.
+const REEL_SPIN_PROFILE=Object.freeze({
+  normal:Object.freeze({turns:11,frameMs:125,firstStopMs:175,stopStepMs:40}),
+  turbo:Object.freeze({turns:1,frameMs:35,firstStopMs:20,stopStepMs:0})
+});
 async function animateReelStop(boardFinal){
+  const profile=turbo?REEL_SPIN_PROFILE.turbo:REEL_SPIN_PROFILE.normal;
   playRecorded("spin");
   // Visible rotations are purely presentation. The final symbol board was chosen
   // before animation and is never replaced based on the wager or bankroll.
   let preview=board();
-  const turns=turbo?1:3;
-  for(let i=0;i<turns;i++){
-    preview=board();draw(preview,[]);
-    document.querySelectorAll(".cell").forEach(cell=>cell.classList.add("spinning"));
-    await pause(turbo?35:90);
+  try{
+    for(let i=0;i<profile.turns;i++){
+      if(skipAnimations)break;
+      preview=board();draw(preview,[]);
+      document.querySelectorAll(".cell").forEach(cell=>cell.classList.add("spinning"));
+      await pause(profile.frameMs);
+    }
+    for(let col=0;col<5;col++){
+      if(skipAnimations)break;
+      preview[col]=boardFinal[col].slice();
+      draw(preview,[]);
+      document.querySelectorAll(".column").forEach((column,index)=>{
+        if(index>col)column.querySelectorAll(".cell").forEach(cell=>cell.classList.add("spinning"));
+        else if(index===col)column.querySelectorAll(".cell").forEach(cell=>cell.classList.add("landing"));
+      });
+      playRecorded("stop");
+      await pause(profile.firstStopMs+col*profile.stopStepMs);
+    }
+  }finally{
+    stopSpinEffect();
+    draw(boardFinal,[]);
   }
-  for(let col=0;col<5;col++){
-    preview[col]=boardFinal[col].slice();
-    draw(preview,[]);
-    document.querySelectorAll(".column").forEach((column,index)=>{
-      if(index>col)column.querySelectorAll(".cell").forEach(cell=>cell.classList.add("spinning"));
-      else if(index===col)column.querySelectorAll(".cell").forEach(cell=>cell.classList.add("landing"));
-    });
-    playRecorded("stop");
-    await pause(turbo?20:80);
-  }
-  stopSpinEffect();
-  draw(boardFinal,[]);
 }
 async function animateCascade(boardFinal,oldRemoved){
   playRecorded("cascade");
