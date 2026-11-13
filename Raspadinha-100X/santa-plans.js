@@ -4,7 +4,11 @@
  * Os valores são euros inteiros e as quantidades contam bilhetes premiados.
  * Cada modalidade tem uma tiragem fechada INDEPENDENTE com contagem decrescente
  * por prémio total (incluindo bilhetes sem prémio). Uma compra retira uma unidade.
- * O cofre de testes NÃO limita o prémio. A tiragem é guardada por navegador
+ * O motor FILTRA os prémios pelo fundo de cada modalidade, formado com 60%
+ * das vendas e reduzido pelos prémios atribuídos. Portanto probabilidades
+ * e RTP do motor não correspondem aos da Santa Casa. Os valores/quantidades
+ * deste ficheiro são apenas a distribuição oficial de REFERÊNCIA.
+ * A tiragem é guardada por navegador
  * em localStorage; não é sincronizada entre dispositivos, contas ou servidores.
  * Fontes oficiais: URLs verso nos objetos.
  */
