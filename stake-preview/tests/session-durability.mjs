@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
 
 const html=readFileSync(join(dirname(fileURLToPath(import.meta.url)),'..','index.html'),'utf8');
-assert.match(html,/Stake Preview V1\.8\.8/);
+assert.match(html,/Stake Preview V1\.9\.7/);
 assert.match(html,/id="sessionStatus"/);
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1]?.split('$("introPlay").addEventListener')[0];
 assert.ok(script);
@@ -134,4 +134,4 @@ assert.equal(run('pendingRound'),null);
 blocked=false;
 assert.equal(run('saveSession()'),true);
 assert.equal(get('sessionStatus').hidden,true);
-console.log('Stake Preview V1.8.8: quota adaptation, newest history, pending settlement after reload, atomic debit rollback and storage-blocker recovery passed.');
+console.log('Stake Preview V1.9.7: quota adaptation, newest history, pending settlement after reload, atomic debit rollback and storage-blocker recovery passed.');

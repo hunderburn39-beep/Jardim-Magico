@@ -6,14 +6,14 @@ import vm from 'node:vm';
 
 const dir=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const html=readFileSync(join(dir,'index.html'),'utf8');
-assert.match(html,/Stake Preview V1\.8\.8/);
-assert.match(html,/V1\.8\.8 • SÍMBOLOS SEM FALHAS/);
+assert.match(html,/Stake Preview V1\.9\.7/);
+assert.match(html,/V1\.9\.7 — figuras equilibradas/);
 const assets=['assets/jardim-v181-cenario-limpo.svg','assets/jardim-v181-logo.svg','assets/jardim-v181-moldura.svg'];
 for(const filename of assets){
   const path=resolve(dir,filename);
   assert.ok(existsSync(path),'New HD asset missing: '+filename);
   assert.ok(statSync(path).size>3500,'New vector asset empty: '+filename);
-  assert.ok(html.includes(filename),'Live game does not use '+filename);
+  if(!filename.endsWith('moldura.svg'))assert.ok(html.includes(filename),'Live game does not use '+filename);
 }
 const background=readFileSync(join(dir,assets[0]),'utf8');
 const logo=readFileSync(join(dir,assets[1]),'utf8');
@@ -38,7 +38,7 @@ assert.doesNotMatch(frame,/<image\b/i,'Frame is vector');
 assert.doesNotMatch(html,/jardim-v18-reference\.png/i,'No old blurry screenshot as background');
 assert.doesNotMatch(html,/url\('\.\.\/assets\/imagens\/jm80-cenario-imersivo\.svg'\)/,'No old background fallback');
 assert.match(html,/\.app\s*\{[^}]*jardim-v181-cenario-limpo\.svg/s);
-assert.match(html,/\.frame:after\s*\{[^}]*jardim-v181-moldura\.svg/s);
+assert.doesNotMatch(html,/\.frame:after\s*\{/s,'A moldura floral não pode tapar os tambores');
 assert.match(html,/\.logo-wrap\s*\{[^}]*env\(safe-area-inset-top\)/s,'Logo clears iPhone safe area');
 assert.match(html,/\.logo-wrap\s*\{[^}]*height:11\.7%/s);
 assert.match(html,/\.reels\s*\{[^}]*height:100%/s,'Five dynamic reel columns fill their frame');
@@ -57,4 +57,4 @@ for(const fn of ['commitRound','settlePendingRound','freeFeature','holdFeature',
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(script,'Full working engine present');
 new vm.Script(script,{filename:'stake-preview/index.html'});
-console.log('Stake Preview V1.8.8: true SVG background with no screenshot, crisp full logo, transparent 5x3 frame, real buttons and valid JS passed.');
+console.log('Stake Preview V1.9.7: true SVG background with no screenshot, crisp full logo, transparent 5x3 frame, real buttons and valid JS passed.');

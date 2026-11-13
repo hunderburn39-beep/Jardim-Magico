@@ -8,8 +8,8 @@ const dir=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const html=readFileSync(join(dir,'index.html'),'utf8');
 const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 assert.ok(script);
-assert.match(html,/Stake Preview V1\.8\.8/);
-assert.match(html,/V1\.8\.8 • SÍMBOLOS SEM FALHAS/);
+assert.match(html,/Stake Preview V1\.9\.7/);
+assert.match(html,/V1\.9\.7 — figuras equilibradas/);
 
 const typeSource=script.match(/const TYPES=\[[\s\S]*?\n\];/)?.[0];
 const symbolSource=script.match(/const SYMBOL_FALLBACKS=\[[\s\S]*?\n(?=const WEIGHTS=)/)?.[0];
@@ -63,4 +63,4 @@ for(let i=0;i<12;i++){
 vm.runInContext('Image=undefined',ctx);
 assert.equal(vm.runInContext('warmSymbolImages()',ctx),0,
   'Game can still show results when the Image constructor is unavailable');
-console.log('Stake Preview V1.8.8: all 12 genuine figures exist, are preloaded once, and never show empty tiles during Safari decoding or errors.');
+console.log('Stake Preview V1.9.7: all 12 genuine figures exist, are preloaded once, and never show empty tiles during Safari decoding or errors.');

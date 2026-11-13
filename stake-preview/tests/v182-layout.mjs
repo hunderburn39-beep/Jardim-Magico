@@ -9,8 +9,8 @@ const visual=css.split('/* V1.8.2 • Mobile polish')[1];
 const refinement=css.split('/* V1.8.3 — subir o logótipo')[1];
 assert.ok(refinement,'V1.8.3 top and betting spacing corrections are present');
 assert.ok(visual,'V1.8.2 garden graphics and responsive support retained');
-assert.match(html,/Stake Preview V1\.8\.8/);
-assert.match(html,/V1\.8\.8 • SÍMBOLOS SEM FALHAS/);
+assert.match(html,/Stake Preview V1\.9\.7/);
+assert.match(html,/V1\.9\.7 — figuras equilibradas/);
 assert.match(visual,/\.top\s*\{[^}]*safe-area-inset-top/s);
 assert.match(visual,/\.logo-wrap\s*\{[^}]*safe-area-inset-top/s,'Safe top on notched iPhones');
 assert.match(refinement,/\.logo-wrap\s*\{[^}]*height:10\.6%/s);
@@ -31,7 +31,7 @@ assert.match(visual,/@keyframes wingFlap/);
 assert.doesNotMatch(visual,/url\(['"]?assets\/jardim-v18-reference\.png/);
 assert.match(html,/url\('assets\/jardim-v181-cenario-limpo\.svg'\)/);
 assert.match(html,/src="assets\/jardim-v181-logo\.svg"/);
-assert.match(html,/url\('assets\/jardim-v181-moldura\.svg'\)/);
+assert.doesNotMatch(html,/url\('assets\/jardim-v181-moldura\.svg'\)/);
 for(const id of ['spin','auto','turbo','minus','plus','buyFree','buyHold','bet','balance','reels','paytableBtn','skipBtn','historyBtn']){
   assert.ok(html.includes('id="'+id+'"'),'Must keep clickable or live control '+id);
 }
@@ -70,4 +70,4 @@ for(const {name,width,height,safeTop,compact} of phones){
  assert.ok(shortcutTop<actionsTop,name+': betting and spin controls are in logical order');
  assert.ok(width>=300,name+': phone width supported');
 }
-console.log('Stake Preview V1.8.8: responsive iPhone/Android layouts, full logo, animated background, real controls and reduced motion passed.');
+console.log('Stake Preview V1.9.7: responsive iPhone/Android layouts, full logo, animated background, real controls and reduced motion passed.');
