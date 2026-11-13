@@ -18,7 +18,7 @@
 @keyframes specialPulse{to{filter:brightness(1.22);transform:scale(1.025)}}
 @keyframes specialIn{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){#specialCelebration:before,#specialCelebration.ultra .specialCard,#specialCelebration.reveal{animation:none}}
-</style></head><body><main id="app"><section id="screen" aria-label="Pantanal caça níquel">
+</style><link rel="stylesheet" href="mobile.css?v=2.08"></head><body><main id="app"><section id="screen" aria-label="Pantanal caça níquel">
 <div id="home"><img src="assets/painel.png" alt="Pantanal: menu de início, créditos e ajuda"><div id="hotspots"><button style="left:288px;top:237px;width:224px;height:68px" id="start" aria-label="Iniciar jogo">Iniciar jogo</button><button style="left:60px;top:323px;width:217px;height:72px" id="giveCredit" aria-label="Obter créditos">Créditos</button><button style="left:298px;top:323px;width:208px;height:72px" id="help" aria-label="Ajuda">Ajuda</button><button style="left:529px;top:323px;width:211px;height:72px" id="scores" aria-label="Placar de pontos">Pontuação</button><button style="left:620px;top:424px;width:166px;height:53px" id="exit" aria-label="Sair">Sair</button></div><button id="adminIcon" aria-label="Administração">⚙</button><div id="homeHint">Reconstrução experimental a partir do APK 2.06 • Créditos locais sem valor real</div></div>
 <div id="game"><img class="bg" src="assets/05_telabot.png" alt="Interface original Pantanal"><div id="reels"></div><div id="specialCelebration" role="status" aria-live="polite" aria-atomic="true"><div class="specialCard"><h2 id="specialTitle">GRANDE PRÉMIO!</h2><div id="specialPortrait" class="specialPortrait" aria-hidden="true"></div><div id="specialMultiplier" class="specialMultiplier"></div><div id="specialValue" class="specialValue">0</div><div id="specialFooter" class="specialFooter"></div></div></div><img id="lineOverlay" alt="Linha premiada"><span id="credit" class="digit">0</span><span id="win" class="digit">0</span><span id="bet" class="digit">1</span><button class="menuBtn" id="menuBtn" aria-label="Abrir menu do jogo">MENU</button><div id="status"></div><div id="ctrls"><button id="betBtn" title="Alterar aposta"><img src="assets/aposta.png"><span>APOSTA</span></button><button id="linesBtn" title="Alterar linhas"><img src="assets/linha.png"><span>LINHAS</span></button><button class="customOrb" id="doubleBtn" title="Dobrar prémio"><b>DOBRAR</b></button><button id="spinButton" title="Jogar"><img src="assets/joga.png"><span id="spinLabel">JOGAR</span></button><button id="autoBtn" title="Jogadas automáticas"><img src="assets/btnauto.png"><span>AUTO</span></button><button class="customOrb" id="payBtn" title="Tabela de prémios"><b>TABELA</b></button><button class="customOrb" id="menuGameBtn" title="Menu"><b>MENU</b></button></div><button id="soundSwitch" title="Som" aria-label="Ativar ou desativar o som">♫</button></div>
 <div id="bonusLayer"><img id="bonusBg" class="bonusbg" src="assets/05_telab2b.png" alt="Bónus Pantanal"><img id="wheel" src="assets/05_roleta.png" alt="Roleta Pantanal"><div class="bonusMsg" id="bonusMsg">BÓNUS</div><div id="hives" style="display:none"><button aria-label="Colmeia 1"></button><button aria-label="Colmeia 2"></button><button aria-label="Colmeia 3"></button><button aria-label="Colmeia 4"></button></div><button id="bonusAction">GIRAR ROLETA</button></div>
@@ -834,7 +834,15 @@ function pick(){const sum=weights.reduce((a,b)=>a+b,0);let p=rnd()*sum;for(let j
 function money(n){return Math.round(n).toLocaleString('pt-PT')}
 function save(){state.history=state.history.slice(0,300);try{localStorage.setItem('pantanal-web2.06',JSON.stringify(state))}catch{ /* browser privacy mode: in-memory only */ }}
 hydrateAssets();document.head.insertAdjacentHTML('beforeend','<style>.symbol{background-image:url(\"'+asset('05_slots.png')+'\")}</style>');
-function fit(){const w=innerWidth,h=innerHeight;const factor=Math.min(w/800,h/480);el('screen').style.transform=`scale(${factor})`}
+function fit(){
+ const w=Math.max(1,innerWidth),h=Math.max(1,innerHeight);
+ const portrait=h>w*1.20;
+ const factor=portrait?w/800:Math.min(w/800,h/480);
+ const screen=el('screen');
+ screen.classList.toggle('portrait',portrait);
+ screen.style.height=portrait?Math.ceil(h/factor)+'px':'480px';
+ screen.style.transform='scale('+factor+')';
+}
 addEventListener('resize',fit);fit();
 function renderBoard(animateCol=-1){const root=el('reels');root.innerHTML='';for(let r=0;r<3;r++)for(let c=0;c<5;c++){const s=document.createElement('div');s.className='symbol';const idx=board[r][c];s.dataset.cell=`${r}-${c}`;s.style.backgroundPosition=`-115px -${idx*102}px`;if(animateCol===c)s.style.filter='blur(2px)';root.appendChild(s)}}
 function showStatus(txt){el('status').textContent=txt||''}function update(){el('credit').textContent=money(state.credits);el('win').textContent=money(state.lastWin);el('bet').textContent=money(BET_LEVELS[state.betIndex]);el('autoBtn').style.filter=auto?'drop-shadow(0 0 10px #e9ed61)':'none';el('spinLabel').textContent=spinBusy?'RODANDO':'JOGAR';}
