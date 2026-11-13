@@ -9,11 +9,11 @@
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-caracol-limpo.svg">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-joaninha-limpo.svg">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-flor-azul-limpo.svg">
-<link rel="preload" as="image" href="../assets/imagens/49d6874847ff87abe4.png">
+<link rel="preload" as="image" href="assets/figuras-v199/bule-limpo.svg">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-wild-limpo.svg">
-<link rel="preload" as="image" href="../assets/imagens/6db9f4dd9d6abeb732.png">
-<link rel="preload" as="image" href="../assets/imagens/81cc7b8d8f2c0d0b18.png">
-<link rel="preload" as="image" href="../assets/imagens/ab10713bfdfc732017.png">
+<link rel="preload" as="image" href="assets/figuras-v199/diamante-limpo.svg">
+<link rel="preload" as="image" href="assets/figuras-v199/cogumelo-limpo.svg">
+<link rel="preload" as="image" href="assets/figuras-v199/chapeu-limpo.svg">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-flor-vermelha-limpo.svg">
 <link rel="preload" as="image" href="../assets/imagens/d95ddf1f53c88d01c4.png">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-pedra-limpo.svg">
@@ -922,9 +922,14 @@ html,body{height:100%;overflow:hidden;background:#051814}
 #reelFrame img.jmSymbolArt[data-symbol-id="6"],
 #reelFrame img.jmSymbolArt[data-symbol-id="7"],
 #reelFrame img.jmSymbolArt[data-symbol-id="9"]{--jm-fit:96%}
-/* Os cinco PNG de fundo retangular conservam o recorte suave, mas
-   já não são ampliados nem ficam cortados pelas bordas da grelha. */
-#reelFrame img.jmSymbolArt:is([data-symbol-id="3"],[data-symbol-id="5"],[data-symbol-id="6"],[data-symbol-id="7"],[data-symbol-id="9"]){
+/* V1.9.8-artfix: os novos SVG já têm máscara de transparência e não
+   podem receber outro recorte circular. */
+#reelFrame img.jmSymbolArt:is([data-symbol-id="3"],[data-symbol-id="5"],[data-symbol-id="6"],[data-symbol-id="7"]){
+  -webkit-clip-path:none!important;
+  clip-path:none!important;
+  background:transparent!important;
+}
+#reelFrame img.jmSymbolArt[data-symbol-id="9"]{
   -webkit-clip-path:circle(48% at 50% 50%);
   clip-path:circle(48% at 50% 50%);
 }
@@ -986,7 +991,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V1.9.8</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
+ <footer class="foot"><b>V1.9.8 · ARTE LIMPA</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="freeResultOverlay" role="dialog" aria-modal="true" aria-label="Resultado final das Free Spins"><div class="modal free-result-modal"><h2>✦ FREE SPINS ✦</h2><p>O BÓNUS TERMINOU</p><div id="freeResultTotal" class="free-result-total">0,00</div><div class="free-result-math"><span>Jogadas realizadas</span><strong id="freeResultPlayed">15</strong><span>Prémio bruto</span><strong id="freeResultRaw">0,00</strong><span>Multiplicador</span><strong id="freeResultMulti">×1</strong></div><button class="free-continue" id="closeFree" type="button">▶ CONTINUAR</button></div></div>
  <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
@@ -1032,11 +1037,11 @@ const TYPES=[
  {label:"CARACOL",image:"assets/figuras-v197/jm38-caracol-limpo.svg"},
  {label:"JOANINHA",image:"assets/figuras-v197/jm38-joaninha-limpo.svg"},
  {label:"FLOR AZUL",image:"assets/figuras-v197/jm38-flor-azul-limpo.svg"},
- {label:"BULE",image:"../assets/imagens/49d6874847ff87abe4.png"},
+ {label:"BULE",image:"assets/figuras-v199/bule-limpo.svg"},
  {label:"WILD",image:"assets/figuras-v197/jm38-wild-limpo.svg"},
- {label:"CRISTAL",image:"../assets/imagens/6db9f4dd9d6abeb732.png"},
- {label:"COGUMELO",image:"../assets/imagens/81cc7b8d8f2c0d0b18.png"},
- {label:"CHAPÉU",image:"../assets/imagens/ab10713bfdfc732017.png"},
+ {label:"CRISTAL",image:"assets/figuras-v199/diamante-limpo.svg"},
+ {label:"COGUMELO",image:"assets/figuras-v199/cogumelo-limpo.svg"},
+ {label:"CHAPÉU",image:"assets/figuras-v199/chapeu-limpo.svg"},
  {label:"FLOR VERMELHA",image:"assets/figuras-v197/jm38-flor-vermelha-limpo.svg"},
  {label:"SCATTER",image:"../assets/imagens/d95ddf1f53c88d01c4.png"},
  {label:"PEDRA",image:"assets/figuras-v197/jm38-pedra-limpo.svg"},

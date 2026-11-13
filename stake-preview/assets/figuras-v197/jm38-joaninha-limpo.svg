@@ -11,7 +11,7 @@
 <stop offset=".58" stop-color="#e84042" stop-opacity=".08"/><stop offset="1" stop-color="#f21724" stop-opacity="0"/></radialGradient>
 <linearGradient id="headShine38" x1="0" y1="0" x2="1" y2="1">
  <stop stop-color="#f5ffe9"/><stop offset=".24" stop-color="#738a8c"/><stop offset=".59" stop-color="#202935"/><stop offset="1" stop-color="#050709"/></linearGradient></defs>
-<ellipse cx="254" cy="433" rx="175" ry="22" fill="#090f10" opacity=".34" filter="url(#shadow)"/>
+
 <g transform="translate(389 398) rotate(55) scale(1.4)"><path d="M0 0 C-26-40-20-85 21-111 C43-71 43-27 0 0Z" fill="url(#leaf)" stroke="#b1e66b" stroke-width="2"/><path d="M0 0 Q14-53 21-111 M7-25 L-12-47 M12-53 L31-71" fill="none" stroke="#b6df82" stroke-opacity=".7" stroke-width="3"/></g><g transform="translate(140 399) rotate(-50) scale(1)"><path d="M0 0 C-26-40-20-85 21-111 C43-71 43-27 0 0Z" fill="url(#leaf)" stroke="#b1e66b" stroke-width="2"/><path d="M0 0 Q14-53 21-111 M7-25 L-12-47 M12-53 L31-71" fill="none" stroke="#b6df82" stroke-opacity=".7" stroke-width="3"/></g>
 <path d="M79 404 C167 371 297 387 420 402 C365 442 164 438 79 404Z" fill="#26733e" stroke="#7fc86a" stroke-width="5"/>
 <g stroke="#151923" stroke-width="13" stroke-linecap="round"><path d="M154 310 L99 342 M169 356 L112 404 M317 332 L373 373 M332 287 L399 293 M214 374 L214 422 M293 373 L319 413"/></g>
