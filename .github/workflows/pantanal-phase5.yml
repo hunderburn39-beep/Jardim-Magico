@@ -1,0 +1,52 @@
+name: Pantanal v2.17 — acumulados MED/MAX offline
+on:
+  push:
+    paths:
+      - .github/workflows/pantanal-phase5.yml
+permissions:
+  contents: write
+jobs:
+  integrar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validar matemática, travas e desbloqueios do APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check Pantanal/apk_engine.js
+          node --check Pantanal/bonus_ui.js
+          node Pantanal/tests/generator_guards.test.cjs
+          node Pantanal/tests/apk_engine.test.cjs
+          node Pantanal/tests/original_rules.test.cjs
+          python3 -m py_compile Pantanal/tools/port_phase5.py
+      - name: Integrar administração de acumulados virtual e verificar página
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 Pantanal/tools/port_phase5.py
+          node - <<'JS'
+          const fs=require('fs'),src=fs.readFileSync('Pantanal/index.html','utf8');
+          for(const v of ['medEnabled','maxEnabled','apjNumSorteio','bonus_ui.js?v=2.17'])
+            if(!src.includes(v))throw Error('Missing '+v);
+          const js=[...src.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+            .map(x=>x[1]).filter(x=>x.length>1000);
+          if(js.length!==1)throw Error('Expected 1 app script');
+          fs.writeFileSync('/tmp/pantanal-main-v217.js',js[0]);
+          JS
+          node --check /tmp/pantanal-main-v217.js
+          git diff --check
+      - name: Publicar mantendo versões anteriores no histórico
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Pantanal/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(Pantanal): offline MED MAX permission and special draw controls v2.17"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
