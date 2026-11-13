@@ -49,3 +49,6 @@
 .super-total-prize{display:block;font:900 clamp(29px,8vw,45px)/1.3 Georgia,serif;color:#fff0b4;text-shadow:0 0 18px #ffca55;}
 @media(max-height:690px){.super-royal-portrait{height:95px;width:120px}.super-dice-area{min-height:110px}.super-die{transform-origin:center;scale:.83}.super-intro{font-size:13px}.super-ceremony{padding-bottom:0}}
 @media(prefers-reduced-motion:reduce){.super-die.rolling{animation:none}.super-die{transition:none}}
+
+.super-pay-info{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:center;margin:10px 0 20px;padding:13px 10px;background:#0d2740;border:2px solid #d8a953;border-radius:12px;color:#ffdfa3}
+.super-pay-info img{width:64px;height:72px;object-fit:contain}.super-pay-info strong{font:900 13px Arial,sans-serif;color:#ffeaa4}.super-pay-info p{font:650 11px/1.5 Arial,sans-serif;margin:6px 0;color:#d9d3be}
