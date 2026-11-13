@@ -268,7 +268,11 @@ async function test(name,engine){
   assert(pauseState.winU>=beforeReload.winU,'O histórico de prémios regrediu');
   assert(pauseState.sequence>=beforeReload.sequence,
     'A sequência das jogadas recuou na recuperação');
-  await page.locator('button[aria-label="RETOMAR"]').click({timeout:5000});
+  await page.locator('#primary-touch-controls button[aria-label="RETOMAR"]').click({timeout:5000});
+  const overlapping=await page.evaluate(()=>[...document.querySelectorAll('.touch-target')]
+    .filter(b=>b.getAttribute('aria-label')==='RETOMAR')
+    .every(b=>b.getAttribute('aria-hidden')==='true'&&b.tabIndex===-1));
+  assert(overlapping,'O botão antigo deve ficar fora dos toques e do VoiceOver');
   await page.waitForFunction(()=>!window.__faraoGame.paused,null,{timeout:3000});
   await page.screenshot({path:path.join(OUTPUT,'farao-v2-'+name+'-free-resumidas.png')});
   assert.deepEqual(failedResources,[],'Assets não encontrados');
