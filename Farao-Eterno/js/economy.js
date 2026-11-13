@@ -152,8 +152,11 @@
    E.makeGrid=()=>chosen.map(column=>column.slice());
    try{
      const begun=old.begin(s,rng);
-     if(!free)incoming(s,stakeU);
+     // Marcar a transação NOVA antes de mexer no cofre: incoming()
+     // valida a sessão e ensure() só pode financiar legados históricos.
+     // Sem esta ordem, uma grelha atual poderia criar fundo fictício.
      begun.pending.economyVersion=1;
+     if(!free)incoming(s,stakeU);
      return begun;
    }finally{E.makeGrid=normalMake;}
  };
