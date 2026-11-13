@@ -89,10 +89,15 @@
  }
  function weighted(level,free){
    const original=free?E.FREE_WEIGHTS:E.WEIGHTS;
-   const boost=.58+(level-85)*.145; // 85: jackpots raros; 95: mais frequentes
+   // Calibração V2: reduzir o excesso de prémios nas Free Spins e
+   // manter uma progressão suave entre os níveis 85–95.
+   // Os valores são pesos relativos, NÃO percentagens de RTP garantidas.
+   // A tabela aprovada e o motor E.evaluate permanecem inalterados.
+   const boost=.70+(level-90)*.006;
    const w={...original};
    for(const k of ['HORUS','MASK','ANUBIS','KING'])w[k]=original[k]*boost;
-   w.TOMB=original.TOMB*(.78+(level-85)*.065);
+   const tombScale=free?.40+(level-90)*.004:.64+(level-90)*.006;
+   w.TOMB=original.TOMB*tombScale;
    // Equilíbrio V1.4 (exclusivamente jogo base):
    // ligeiramente mais Faraó e Anúbis para criar combinações grandes
    // sem alterar a tabela de pagamentos, os Wilds ou as Free Spins.
