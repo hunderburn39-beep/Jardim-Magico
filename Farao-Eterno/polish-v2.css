@@ -1,0 +1,59 @@
+/* Faraó Eterno — acabamento cinematográfico V2.
+ * Apresentação apenas: sem intervenção em RNG, RTP, saldo ou pagamentos.
+ */
+#stage .farao-quality-layer{
+  position:absolute;inset:0;z-index:6;pointer-events:none;overflow:hidden;
+  isolation:isolate;contain:layout paint;
+}
+.farao-quality-layer .farao-win-flash{
+  position:absolute;left:1.5%;right:1.5%;top:27.5%;height:42%;
+  opacity:0;transform:scale(.94);
+  background:radial-gradient(ellipse at 50% 48%,rgba(255,225,128,.27),rgba(255,186,56,.13) 45%,transparent 73%);
+  mix-blend-mode:screen;
+}
+.farao-quality-layer.burst .farao-win-flash{
+  animation:farao-flash-v2 1700ms ease-out both;
+}
+.farao-quality-layer .farao-spark{
+  position:absolute;top:var(--sy);left:var(--sx);width:8px;height:8px;
+  opacity:0;transform:translate(-50%,-50%) scale(.1);
+  border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,#fffdf0 0%,#ffe19a 35%,#ba7022 70%,transparent 76%);
+  box-shadow:0 0 7px #ffebad,0 0 18px #e5ad5a;
+}
+.farao-quality-layer.burst .farao-spark{
+  animation:farao-spark-v2 1450ms cubic-bezier(.15,.46,.27,1) var(--delay) both;
+}
+@keyframes farao-flash-v2 {
+  0%{opacity:0;transform:scale(.92)}
+  19%{opacity:.9}
+  40%{opacity:.55}
+  100%{opacity:0;transform:scale(1.10)}
+}
+@keyframes farao-spark-v2{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.15)}
+  16%{opacity:1}
+  48%{opacity:.85;transform:translate(calc(-50% + var(--dx)*.58),calc(-50% + var(--dy)*.58)) scale(1.1)}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.22)}
+}
+/* O modal respeita a área segura do iPhone e nunca corta o lançamento do dado. */
+.modal.farao-theme:has(.super-ceremony) .modal-inner{
+  max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+  scrollbar-width:thin;
+}
+.super-ceremony .farao-gold-btn{
+  min-height:48px;touch-action:manipulation;
+}
+.super-ceremony .super-dice-status{min-height:19px;text-align:center}
+.super-ceremony .super-total-prize{font-variant-numeric:tabular-nums}
+@media(max-height:700px){
+  .modal.farao-theme:has(.super-ceremony) .modal-inner{padding-top:12px;padding-bottom:10px}
+  .super-ceremony .super-dice-area{min-height:96px}
+  .super-ceremony .super-intro{margin:2px 0}
+}
+@media(prefers-reduced-motion:reduce){
+  .farao-quality-layer.burst .farao-win-flash{
+    animation:none;opacity:.15;
+  }
+  .farao-quality-layer .farao-spark{display:none!important}
+}
