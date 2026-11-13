@@ -37,11 +37,11 @@ jobs:
       - name: Confirmar GitHub Pages independente das outras publicações
         run: |
           set -euo pipefail
-          url="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=1.8.3"
+          url="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=1.8.5"
           echo "A verificar $url"
           for n in {1..12}; do
             if curl -fLsS --max-time 10 --connect-timeout 5 "$url" -o /tmp/stake-preview.html; then
-              if grep -q 'Stake Preview V1.8.4' /tmp/stake-preview.html \
+              if grep -q 'Stake Preview V1.8.5' /tmp/stake-preview.html \
                  && grep -q 'id="skipBtn"' /tmp/stake-preview.html \
                  && grep -q 'id="paylineSvg"' /tmp/stake-preview.html \
                  && grep -q 'id="freePanel"' /tmp/stake-preview.html \
@@ -66,7 +66,9 @@ jobs:
                  && grep -q 'jardim-v181-cenario-limpo.svg' /tmp/stake-preview.html \
                  && grep -q 'jardim-v181-moldura.svg' /tmp/stake-preview.html \
                  && grep -q 'jardim-v181-logo.svg' /tmp/stake-preview.html \
-                 && grep -q 'class="scene-fx"' /tmp/stake-preview.html; then
+                 && grep -q 'class="scene-fx"' /tmp/stake-preview.html \
+                 && grep -q 'reelRollDown' /tmp/stake-preview.html \
+                 && grep -q 'reel-scroll-viewport' /tmp/stake-preview.html; then
                 curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/assets/imagens/jm38-caracol.svg" -o /tmp/caracol.svg
                 test -s /tmp/caracol.svg
                 curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/assets/jardim-v181-cenario-limpo.svg" -o /tmp/v181-cenario.svg
@@ -74,14 +76,14 @@ jobs:
                 test -s /tmp/v181-cenario.svg && test -s /tmp/v181-moldura.svg
                 curl -fLsS --max-time 10 "https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/assets/jardim-v181-logo.svg" -o /tmp/v181-logo.svg
                 test -s /tmp/v181-logo.svg
-                echo 'CONFIRMADO: Stake Preview V1.8.4 online, PASSAR, linhas e caracol.'
+                echo 'CONFIRMADO: Stake Preview V1.8.5 online, PASSAR, linhas e caracol.'
                 exit 0
               fi
-              echo "Página ainda não atualizada para V1.8.4 ($n/12)."
+              echo "Página ainda não atualizada para V1.8.5 ($n/12)."
             else
               echo "Página indisponível ($n/12)."
             fi
             sleep 5
           done
-          echo '::error::Não foi possível confirmar a página V1.8.4.'
+          echo '::error::Não foi possível confirmar a página V1.8.5.'
           exit 1
