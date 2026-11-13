@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V1.8.1</title>
+<title>Jardim Mágico | Edição Stake Preview V1.8.2</title>
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -437,6 +437,141 @@ html,body{height:100%;overflow:hidden;background:#051814}
 }
 @media(prefers-reduced-motion:reduce){.cell.winning,.action-small.auto-running{animation:none!important}}
 
+
+/* V1.8.2 • Mobile polish and lightweight enchanted-garden motion. */
+/* The 3 layers (background, ambient FX, interactive controls) remain separate. */
+.scene-fx{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1;isolation:isolate}
+.scene-fx .firefly{
+  position:absolute;left:var(--x);top:var(--y);width:4px;height:4px;
+  border-radius:50%;background:#fff4b2;
+  box-shadow:0 0 4px 2px #fff5b0bf,0 0 13px 7px #e9e78e47;
+  animation:floatFirefly var(--duration,7s) ease-in-out var(--delay,0s) infinite alternate;
+  will-change:transform,opacity;
+}
+@keyframes floatFirefly{
+  0%{transform:translate(-6px,9px) scale(.6);opacity:.15}
+  45%{transform:translate(6px,-8px) scale(1.13);opacity:.9}
+  100%{transform:translate(-3px,-19px) scale(.8);opacity:.38}
+}
+.scene-fx .butterfly{
+  position:absolute;left:var(--x);top:var(--y);
+  width:14px;height:19px;border-radius:60% 40%;
+  background:#b3faf4;opacity:.84;
+  box-shadow:0 0 10px #63d8e977;filter:drop-shadow(0 0 3px #75ffe7);
+  transform-origin:50% 50%;
+  animation:driftButterfly 12s ease-in-out var(--delay,0s) infinite alternate;
+  will-change:transform;
+}
+.scene-fx .butterfly:before,.scene-fx .butterfly:after{
+  content:"";position:absolute;top:2px;width:13px;height:16px;
+  background:linear-gradient(135deg,#f5ffff,#6ad2ff 49%,#5252bd 94%);
+  border:1px solid #f1ffc6;
+  animation:wingFlap .8s ease-in-out infinite alternate;
+}
+.scene-fx .butterfly:before{
+  right:8px;border-radius:95% 8% 75% 5%;
+  transform-origin:right center;
+}
+.scene-fx .butterfly:after{
+  left:8px;border-radius:8% 95% 5% 75%;
+  transform-origin:left center;
+  animation-direction:alternate-reverse;
+}
+.scene-fx .butterfly-purple:before,.scene-fx .butterfly-purple:after{
+  background:linear-gradient(135deg,#fffafc,#d29dfb 45%,#8241bb);
+}
+@keyframes driftButterfly{
+  0%{transform:translate(0,0) rotate(-12deg) scale(.95)}
+  42%{transform:translate(17px,-18px) rotate(14deg) scale(1.08)}
+  100%{transform:translate(-15px,18px) rotate(-16deg) scale(.88)}
+}
+@keyframes wingFlap{
+  0%{transform:rotateY(62deg)}
+  100%{transform:rotateY(-15deg)}
+}
+.top{
+  top:max(4px,env(safe-area-inset-top));left:3%;right:3%;
+  height:clamp(31px,4.1svh,38px);
+}
+.top-right .round{
+  width:clamp(32px,8.5vw,38px);
+  height:clamp(32px,8.5vw,38px);
+  flex-shrink:0;
+  box-shadow:0 0 0 1px #5c3c23,0 3px 8px #061310c9,inset 0 1px #fff4bb44;
+}
+.logo-wrap{
+  top:max(10.5%,calc(env(safe-area-inset-top) + 40px));
+  left:4%;right:4%;width:92%;height:11.7%;
+  background:radial-gradient(ellipse at center,#0d4a36c4 10%,#17351a7a 45%,transparent 78%);
+  border-radius:40%;z-index:5;
+}
+.logo-wrap img{
+  filter:drop-shadow(0 3px 2px #04100b) drop-shadow(0 0 9px #ffe3aaaf);
+}
+.statline{top:23.4%;height:4.1%;left:8%;right:8%}
+.statline>div{border-radius:12px;min-height:0}
+.statline small{font-weight:900}
+.statline strong{font-weight:1000;text-shadow:0 0 6px #f9d68b42}
+.frame{top:29.4%;height:30.2%;border-width:4px;border-radius:18px}
+.frame:after{inset:-13px}
+.reels{padding:1px;gap:1.5px;border-radius:13px}
+.column{gap:1px}
+.cell{box-shadow:inset 0 0 8px #06140ba8}
+.cell img{width:114%;height:106%;object-fit:contain}
+.cell img[alt="WILD"]{width:112%;height:104%}
+.cell img[alt="SCATTER"]{width:112%;height:104%}
+.bonus-row{top:63.4%;height:7.0%;left:5%;right:5%}
+.bonus-btn{border-radius:16px;border-width:2.5px;box-shadow:0 0 0 1px #4b2b17,0 3px 10px #050e0ecb,inset 0 1px #ffffff55}
+.bonus-btn:active,.action-small:active{transform:translateY(2px);filter:brightness(1.15)}
+.notice{top:70.9%;left:7%;right:7%}
+.money-row{top:74.5%;height:7.8%;left:2.7%;right:2.7%;border-color:#ffe4a4}
+.money{padding:2px 4px;gap:0;box-shadow:inset 0 1px #fff8ca44}
+.money label{font-size:clamp(9px,2.4vw,11px);letter-spacing:.03em}
+.money strong{font-size:clamp(15px,4vw,21px);white-space:nowrap;line-height:1.16}
+.bet-controls{min-width:0;justify-content:center}
+.bet-controls strong{min-width:0}
+.bet-controls button{flex-shrink:0;min-width:28px;min-height:28px}
+.bet-shortcuts{top:82.65%;height:3%;left:2.8%;right:2.8%}
+.bet-shortcuts button{min-height:25px;border-radius:8px}
+.actions{top:86.2%;height:10.5%;left:5%;right:5%}
+.spin{
+  width:min(100%,clamp(75px,26vw,116px));max-width:116px;
+  border-color:#fff2ae;
+  box-shadow:0 0 0 3px #bb832c,0 5px 15px #03100cc9,inset 0 3px 10px #d5ffa499,0 0 14px #c7ff8a75;
+  transition:transform .16s ease,filter .16s ease;
+}
+.spin:active{transform:scale(.95);filter:brightness(1.09)}
+.action-small{height:clamp(44px,7.3svh,59px);border-color:#ffdb92}
+.foot{bottom:max(0px,calc(env(safe-area-inset-bottom) / 3))}
+.cascade-meter{top:60.1%;z-index:7}
+.free-retrigger{top:60.2%}
+@media(max-height:700px) and (orientation:portrait){
+  .logo-wrap{top:max(9%,calc(env(safe-area-inset-top) + 36px));height:12.2%}
+  .statline{top:23%;height:4.2%}
+  .frame{top:29%;height:29.7%}
+  .bonus-row{top:63%;height:6.9%}
+  .notice{display:none}
+  .money-row{top:72.2%;height:8%}
+  .bet-shortcuts{top:81.1%}
+  .actions{top:85.3%;height:11.6%}
+}
+@media(max-width:360px){
+  .top-right .round{width:30px;height:30px}
+  .money label{font-size:8px}
+  .money strong{font-size:14px}
+  .bet-shortcuts span{display:none}
+  .bet-shortcuts button{font-size:9px}
+  .bonus-btn{font-size:10px}
+  .bonus-btn span{font-size:8px}
+  .spin{width:min(100%,88px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .scene-fx .firefly,.scene-fx .butterfly,.scene-fx .butterfly:before,.scene-fx .butterfly:after{
+    animation:none!important;will-change:auto;opacity:.4
+  }
+  .spin{transition:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -450,6 +585,20 @@ html,body{height:100%;overflow:hidden;background:#051814}
  </div>
  <div class="bonus-curtain" id="bonusCurtain" hidden aria-live="off"><div class="bonus-orbit" id="bonusOrbit">✦</div><h2 id="bonusCurtainTitle">BÓNUS</h2><p id="bonusCurtainSubtitle"></p></div>
  <div class="orientation-notice" aria-hidden="true">↻ RODA O TELEMÓVEL<small>Joga na vertical para veres o Jardim Mágico completo.</small></div>
+ <div class="scene-fx" aria-hidden="true">
+  <span class="firefly" style="--x:13%;--y:24%;--delay:-1.4s;--duration:5.8s"></span>
+  <span class="firefly" style="--x:88%;--y:27%;--delay:-3.3s;--duration:7.2s"></span>
+  <span class="firefly" style="--x:6%;--y:43%;--delay:-2.8s;--duration:6.2s"></span>
+  <span class="firefly" style="--x:94%;--y:48%;--delay:-.8s;--duration:5.5s"></span>
+  <span class="firefly" style="--x:14%;--y:60%;--delay:-4.1s;--duration:8.3s"></span>
+  <span class="firefly" style="--x:86%;--y:62%;--delay:-2.0s;--duration:7.8s"></span>
+  <span class="firefly" style="--x:17%;--y:73%;--delay:-4.5s;--duration:6.5s"></span>
+  <span class="firefly" style="--x:78%;--y:74%;--delay:-1.6s;--duration:9s"></span>
+  <span class="firefly" style="--x:9%;--y:84%;--delay:-2.9s;--duration:6.8s"></span>
+  <span class="firefly" style="--x:91%;--y:88%;--delay:-.6s;--duration:7.1s"></span>
+  <span class="butterfly" style="--x:12%;--y:19%;--delay:-3s"></span>
+  <span class="butterfly butterfly-purple" style="--x:88%;--y:21%;--delay:-6s"></span>
+ </div>
  <div class="top"><div class="mode-tag">✦ EDIÇÃO STAKE · PREVIEW</div>
   <div class="top-right"><button class="round" id="historyBtn" title="Histórico e repetição" aria-label="Histórico de jogadas e repetição">☷</button><button class="round" id="infoBtn" title="Informações" aria-label="Informações">ⓘ</button><button class="round" id="reloadBtn" title="Repor créditos de teste" aria-label="Repor créditos">＋</button><button class="round" id="musicBtn" title="Ligar/desligar música zen" aria-label="Música ambiente" aria-pressed="true">♫</button><button class="round" id="soundBtn" title="Ligar/desligar efeitos gravados" aria-label="Efeitos sonoros" aria-pressed="true">🔊</button></div>
  </div>
@@ -480,7 +629,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
   <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
   <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
  </div>
- <footer class="foot"><b>V1.8.1 • NOVO VISUAL</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
+ <footer class="foot"><b>V1.8.2 • VISUAL MOBILE</b> · Créditos de teste, sem depósitos ou levantamentos. <br>Simulação local; não ligada à Stake nem aprovada para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="freeResultOverlay" role="dialog" aria-modal="true" aria-label="Resultado final das Free Spins"><div class="modal free-result-modal"><h2>✦ FREE SPINS ✦</h2><p>O BÓNUS TERMINOU</p><div id="freeResultTotal" class="free-result-total">0,00</div><div class="free-result-math"><span>Jogadas realizadas</span><strong id="freeResultPlayed">15</strong><span>Prémio bruto</span><strong id="freeResultRaw">0,00</strong><span>Multiplicador</span><strong id="freeResultMulti">×1</strong></div><button class="free-continue" id="closeFree" type="button">▶ CONTINUAR</button></div></div>
  <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
