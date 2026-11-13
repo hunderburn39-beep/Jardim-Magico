@@ -76,7 +76,10 @@
    const {game,state,hooks,rng,asset}=ctx,eng=engine(),panel=open(game,'BÓNUS DOS MORANGOS','Escolhe morangos até aparecer o fim do bónus',asset('05_telab.png'));
    const cards=pickButton({grid:panel.grid,count:12,icon:'🍓',cols:4});
    cards.forEach(b=>{b.style.height='80px';b.style.fontSize='44px';});
-   const deck=eng.strawberryDeck(rng);let running=true,accum=0,remaining=12;
+   const paymentMode=ctx.nextDifficulty?ctx.nextDifficulty().active:ctx.difficulty?.active;
+   const deck=eng.strawberryDeck(rng,{
+      paymentMode,triggerCount:units,existingBonus:state.moraBns||0
+   });let running=true,accum=0,remaining=12;
    while(running&&remaining>0){
      const active=cards.filter(b=>!b.disabled);
      const originalIdx=await selectOne(active,false);
@@ -114,7 +117,7 @@
    const chosen=await selectOne(cards);let category=deck[chosen],prize=0;
    // No APK, o modo de dificuldade pode trocar a opção alta por uma
    // das três primeiras. A reprodução completa da lógica permanece auditável.
-   const restriction=ctx.difficulty?.active===false;
+   const restriction=(ctx.nextDifficulty?ctx.nextDifficulty():ctx.difficulty)?.active===false;
    if(restriction&&category>2){
      const low=deck.findIndex((v,i)=>i!==chosen&&v<3);
      if(low>=0)category=deck[low];
@@ -137,7 +140,7 @@
    const layer=open(game,'BÓNUS DOS DADOS','Escolhe um dos 5 dados',asset('05_telab3.png'));
    const cards=pickButton({grid:layer.grid,count:5,icon:'🎲',assetUrl:asset('dado.png')});
    const chosen=await selectOne(cards);
-   const roll=engine().diceRoll(rng,ctx.difficulty?.active);
+   const roll=engine().diceRoll(rng,(ctx.nextDifficulty?ctx.nextDifficulty():ctx.difficulty)?.active);
    const prior=state.lastWin,final=prior*roll.multiplier;
    cards[chosen].style.backgroundImage='none';
    cards[chosen].textContent='×'+roll.multiplier;
@@ -156,7 +159,7 @@
    layer.panel.insertBefore(button,layer.feedback);
    await new Promise(resolve=>button.addEventListener('click',resolve,{once:true}));
    button.disabled=true;button.textContent='A RODAR...';
-   const roll=engine().wheelRoll(rng,ctx.difficulty?.active,state.lastWin);
+   const roll=engine().wheelRoll(rng,(ctx.nextDifficulty?ctx.nextDifficulty():ctx.difficulty)?.active,state.lastWin);
    hooks.play('wheel');
    const degrees=7*360+(360-roll.sector*15)%360;
    wheel.style.transform='rotate('+degrees+'deg)';
