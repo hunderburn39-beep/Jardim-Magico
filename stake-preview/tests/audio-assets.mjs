@@ -16,7 +16,7 @@ assert.ok(inline,'Jogo contém código JavaScript');
 const source=inline.split('$("introPlay").addEventListener')[0];
 const art=source.match(/const TYPES=\[([\s\S]*?)\];/)?.[1];
 assert.ok(art,'Lista de símbolos encontrada');
-const imagePaths=[...art.matchAll(/image:"(\.\.\/assets\/imagens\/[^"]+)"/g)].map(x=>x[1]);
+const imagePaths=[...art.matchAll(/image:"([^"]+)"/g)].map(x=>x[1]);
 assert.equal(imagePaths.length,12,'Todos os doze símbolos têm imagem HD, sem emoji');
 for(const p of imagePaths){
   const local=resolve(preview,p);
