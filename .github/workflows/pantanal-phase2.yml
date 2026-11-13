@@ -1,0 +1,63 @@
+name: Pantanal v2.14 — motor APK e admin
+on:
+  push:
+    paths:
+      - .github/workflows/pantanal-phase2.yml
+permissions:
+  contents: write
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validar regras do APK
+        run: |
+          node --check Pantanal/apk_engine.js
+          node --check Pantanal/bonus_ui.js
+          node --check Pantanal/paylines.js
+          node Pantanal/tests/apk_engine.test.cjs
+          node Pantanal/tests/original_rules.test.cjs
+          python3 -m py_compile Pantanal/tools/port_phase2.py Pantanal/tools/port_admin.py
+      - name: Integrar no HTML e testar a sintaxe JavaScript completa
+        run: |
+          set -euo pipefail
+          python3 Pantanal/tools/port_phase2.py
+          python3 Pantanal/tools/port_admin.py
+          python3 - <<'PY'
+          from pathlib import Path
+          a=Path('Pantanal/index.html').read_text()
+          assert a.count('apk_engine.js?v=2.14')==1
+          assert a.count('bonus_ui.js?v=2.14')==1
+          assert a.count('PantanalBonusUI.launch(')==1
+          assert "state.blocked=Number(el('blocked').value)||50" in a
+          assert "el('apkAccumPercent')" in a
+          assert 'PantanalApkEngine.resultBoard(' in a
+          assert 'const difficulty=window.PantanalApkEngine.difficulty(' in a
+          assert "state.jackpots=apk.advanceJackpots(" in a
+          assert 'window.PantanalApkEngine.generateBoard(' in a
+          print('Pantanal 2.14: UI, bonus, jackpot, faixas e admin presentes.')
+          PY
+          node - <<'JS'
+          const fs=require('node:fs');
+          const src=fs.readFileSync('Pantanal/index.html','utf8');
+          const match=[...src.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
+          if(match.length!==1)throw Error('HTML inline script count: '+match.length);
+          const tmp='/tmp/pantanal-web-214.js';fs.writeFileSync(tmp,match[0][1]);
+          console.log('Extracted',tmp,match[0][1].length,'bytes');
+          JS
+          node --check /tmp/pantanal-web-214.js
+          git diff --check
+      - name: Publicar 2.14 na main e preservar versão anterior
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Pantanal/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(Pantanal): native 20+5 mask math, 4 bonus scenes, jackpots and admin v2.14"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
