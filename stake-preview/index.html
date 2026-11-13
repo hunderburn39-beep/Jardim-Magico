@@ -779,6 +779,20 @@ html,body{height:100%;overflow:hidden;background:#051814}
   .spin{width:min(100%,clamp(64px,18vw,74px));max-width:74px}
 }
 
+
+/* V1.9.1 — o aviso de ronda finalizada fica por baixo da moldura,
+   no intervalo livre antes dos botões de bónus, sem tapar os símbolos. */
+.frame.round-finished .hud{
+  top:calc(100% + 5px);
+  max-width:90%;
+  padding:3px 10px;
+  line-height:1.05;
+  z-index:8;
+}
+@media(max-height:700px) and (orientation:portrait){
+  .frame.round-finished .hud{top:calc(100% + 1px);padding:1px 7px}
+  .frame.round-finished .hud span{font-size:9px}
+}
 </style>
 </head>
 <body>
@@ -1492,6 +1506,7 @@ async function animateCascade(boardFinal,oldRemoved){
   await pause(turbo?85:350);
 }
 async function playback(book){
+  $("reelFrame").classList.remove("round-finished");
   let previousRemoved=[],lastHoldGrid=[],cascadeRunning=0;
   clearPayline();hideCascadeMeter();clearWinSparks();
   for(const evt of book.events){
@@ -1595,6 +1610,7 @@ async function play(mode="base"){
     settlePendingRound();
     display();
     $("hud").textContent="✦ RONDA #"+record.id+" CONCLUÍDA ✦";
+    $("reelFrame").classList.add("round-finished");
     $("dropNum").textContent="0";$("multiNum").textContent="×1";
     if(payout>0){
       const tier=finalWinTier(payout,bet);
