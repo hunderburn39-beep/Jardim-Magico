@@ -1,0 +1,51 @@
+name: Corrigir linhas Pantanal v2.11
+on:
+  push:
+    paths:
+      - '.github/workflows/pantanal-paylines-fix.yml'
+permissions:
+  contents: write
+jobs:
+  apply-payline-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Validar JavaScript e inserir apresentação das linhas
+        shell: bash
+        run: |
+          node --check Pantanal/paylines.js
+          python3 - <<'PY'
+          from pathlib import Path
+          page=Path('Pantanal/index.html')
+          text=page.read_text(encoding='utf-8')
+          marker='paylines.js?v=2.11'
+          if marker in text:
+              print('Correção já aplicada.')
+              raise SystemExit(0)
+          old="flashWin(wins)}}else{showStatus('BOA SORTE!')}"
+          new="flashWin(wins);window.PantanalShowPaylines?.(wins)}}else{showStatus('BOA SORTE!')}"
+          assert text.count(old)==1, f'Local de apresentação de prémios alterado: {text.count(old)}'
+          assert text.count('</body>')==1, 'Documento HTML inválido'
+          assert 'spinBusy=true;state.credits' in text, 'Início de rodada não localizado'
+          text=text.replace(old,new,1)
+          text=text.replace('spinBusy=true;state.credits','window.PantanalClearPaylines?.();spinBusy=true;state.credits',1)
+          text=text.replace('</body>','<script src="paylines.js?v=2.11"></script>\n</body>',1)
+          assert text.count('window.PantanalShowPaylines?.(wins)')==1
+          assert text.count(marker)==1
+          page.write_text(text,encoding='utf-8')
+          print('Pantanal: linhas visuais de prémio inseridas. Matemática intacta.')
+          PY
+          git diff --check
+      - name: Gravar correcao na branch main
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Pantanal/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "fix(Pantanal): show paylines over reels v2.11"
+            git push origin HEAD:main
+          fi
