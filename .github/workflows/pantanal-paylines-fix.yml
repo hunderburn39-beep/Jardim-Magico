@@ -1,4 +1,4 @@
-name: Corrigir linhas Pantanal v2.11
+name: Corrigir linhas Pantanal v2.12
 on:
   push:
     paths:
@@ -13,39 +13,101 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: true
-      - name: Validar JavaScript e inserir apresentação das linhas
+      - name: Corrigir ancoragem SVG e pré-visualização das linhas
         shell: bash
         run: |
-          node --check Pantanal/paylines.js
           python3 - <<'PY'
           from pathlib import Path
           page=Path('Pantanal/index.html')
-          text=page.read_text(encoding='utf-8')
-          marker='paylines.js?v=2.11'
-          if marker in text:
-              print('Correção já aplicada.')
+          source=page.read_text(encoding='utf-8')
+          script=Path('Pantanal/paylines.js')
+          js=script.read_text(encoding='utf-8')
+          if 'paylines.js?v=2.12' in source:
+              print('Pantanal v2.12 já aplicado.')
               raise SystemExit(0)
-          old="flashWin(wins)}}else{showStatus('BOA SORTE!')}"
-          new="flashWin(wins);window.PantanalShowPaylines?.(wins)}}else{showStatus('BOA SORTE!')}"
-          assert text.count(old)==1, f'Local de apresentação de prémios alterado: {text.count(old)}'
-          assert text.count('</body>')==1, 'Documento HTML inválido'
-          assert 'spinBusy=true;state.credits' in text, 'Início de rodada não localizado'
-          text=text.replace(old,new,1)
-          text=text.replace('spinBusy=true;state.credits','window.PantanalClearPaylines?.();spinBusy=true;state.credits',1)
-          text=text.replace('</body>','<script src="paylines.js?v=2.11"></script>\n</body>',1)
-          assert text.count('window.PantanalShowPaylines?.(wins)')==1
-          assert text.count(marker)==1
-          page.write_text(text,encoding='utf-8')
-          print('Pantanal: linhas visuais de prémio inseridas. Matemática intacta.')
+
+          def once(src,old,new,description):
+              n=src.count(old)
+              assert n==1,f'{description}: expected one match, found {n}'
+              return src.replace(old,new,1)
+
+          js=once(js,'function clear(){','function clear(){\n    ++serial;','invalidate delayed callbacks')
+          js=once(js,'function show(wins){','function show(wins, preview=false){','preview mode')
+          js=once(js,
+              "svg.style.cssText='position:absolute;left:'+reels.offsetLeft+'px;top:'+reels.offsetTop+'px;width:'+reels.offsetWidth+'px;height:'+reels.offsetHeight+'px;z-index:9;pointer-events:none;overflow:visible';",
+              "svg.style.cssText='position:absolute;inset:0;left:0;top:0;width:100%;height:100%;z-index:9;pointer-events:none;overflow:hidden;display:block';",
+              'anchor SVG to the reel grid')
+          js=once(js,'game.appendChild(svg);layer=svg;','reels.appendChild(svg);layer=svg;','attach to reels instead of logo/game')
+          js=once(js,'let idx=0;\n    function paint(){',
+              '''let idx=0;
+    // Desenhar imediatamente todas as linhas ativas, depois destacar cada percurso.
+    if(preview){
+      const others=make('g');
+      const colors=['#ffe67b','#72d8ff','#ffa1d3','#b0ff9f','#c9adff'];
+      valid.forEach((w,i)=>others.appendChild(make('polyline',{
+        points:w.path.slice(0,5).map((r,c)=>(57.5+124*c)+','+(51+106*r)).join(' '),
+        fill:'none',stroke:colors[i%colors.length],'stroke-width':2,opacity:'.38',
+        'stroke-linejoin':'round','stroke-linecap':'round'
+      })));
+      svg.appendChild(others);
+    }
+    function paint(){''','active lines overview')
+          js=once(js,'while(svg.childNodes.length>1)svg.lastChild.remove();',
+              'while(svg.childNodes.length>(preview?2:1))svg.lastChild.remove();','keep preview overview')
+          js=once(js,
+              "t.textContent='LINHA '+w.line+'  +'+(Number(w.amount)||0);",
+              "t.textContent=preview?('LINHA '+w.line+' / '+valid.length):('LINHA '+w.line+'  +'+(Number(w.amount)||0));",
+              'preview label')
+          js=once(js,'if(idx>=Math.min(valid.length,10)){','if(idx>=(preview?valid.length:Math.min(valid.length,10))){','show every selected line')
+          js=once(js,'if(valid.length>1)timer=setInterval(paint,1250);',
+              'if(valid.length>1)timer=setInterval(paint,preview?Math.max(160,Math.ceil(3800/valid.length)):1250);','faster preview')
+          js=once(js,'window.PantanalShowPaylines=show;',
+              '''function previewLines(paths){
+    const active=Array.isArray(paths)?paths:[];
+    show(active.map((path,i)=>({path,line:i+1,count:0,amount:0})),true);
+  }
+  window.PantanalPreviewLines=previewLines;
+  window.PantanalShowPaylines=show;''','expose line preview')
+          script.write_text(js,encoding='utf-8')
+          start=source.index('function flashWin(wins){')
+          end=source.index('function openWheel(){',start)
+          assert 100<end-start<2000,'original flashWin block changed unexpectedly'
+          source=source[:start]+'function flashWin(wins){window.PantanalShowPaylines?.(wins)}\n'+source[end:]
+          source=once(source,'flashWin(wins);window.PantanalShowPaylines?.(wins)',
+              'flashWin(wins)','remove duplicated overlay')
+          hit=[line for line in source.splitlines() if "el('linesBtn').onclick=" in line]
+          assert len(hit)==1,'line button handler changed'
+          original=hit[0]
+          assert original.endswith(')};'),'unexpected line button handler'
+          fixed=original[:-3]+');window.PantanalPreviewLines?.(LINES.slice(0,state.lines))};'
+          source=once(source,original,fixed,'line selection preview')
+          source=once(source,'paylines.js?v=2.11','paylines.js?v=2.12','invalidate Safari JS cache')
+          page.write_text(source,encoding='utf-8')
+          print('v2.12: SVG inside #reels, active lines drawn on selection, winning lines centered on symbols.')
+          print('pick(), calcWins(), PAY, stakes and bonus math not modified.')
+          PY
+          node --check Pantanal/paylines.js
+          python3 - <<'PY'
+          from pathlib import Path
+          a=Path('Pantanal/index.html').read_text()
+          b=Path('Pantanal/paylines.js').read_text()
+          assert a.count('window.PantanalPreviewLines?.(LINES.slice(0,state.lines))')==1
+          assert a.count('paylines.js?v=2.12')==1
+          assert "reels.appendChild(svg);layer=svg;" in b
+          assert 'game.appendChild(svg)' not in b
+          assert 'flashWin(wins);window.PantanalShowPaylines?.(wins)' not in a
+          assert 'const LINES=[' in a and 'function calcWins(' in a and 'function pick(' in a
+          assert 'window.PantanalClearPaylines?.();spinBusy=true' in a
+          print('Checks PASS: preview, SVG location, no duplicate, game calculations intact.')
           PY
           git diff --check
-      - name: Gravar correcao na branch main
+      - name: Publicar v2.12 na main
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Pantanal/index.html
+          git add Pantanal/index.html Pantanal/paylines.js
           if ! git diff --cached --quiet; then
-            git commit -m "fix(Pantanal): show paylines over reels v2.11"
+            git commit -m "fix(Pantanal): anchor paylines to reels and preview selected lines v2.12"
             git push origin HEAD:main
           fi
