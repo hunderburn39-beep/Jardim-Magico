@@ -44,8 +44,9 @@
    if(this.ledger.feature.superRollSeen){this.closeModal();return;}
    // O valor já foi sorteado e persistido na criação do bónus:
    // a animação NUNCA sorteia outro número.
-   this.ledger.feature.superRollSeen=true;
-   this.syncLedger();this.save();
+   // Guardar 'dado visto' apenas QUANDO a face aparece. Se o Safari
+   // fechar durante a rotação, o jogador pode repetir a animação, mas
+   // a face matemática já escolhida continua rigorosamente a mesma.
    btn.disabled=true;btn.textContent='A SORTEAR...';
    status.textContent='O FARAÓ LANÇA O DADO';
    value.textContent='✦';
@@ -55,7 +56,10 @@
    die.classList.add('rolling');
    window.setTimeout(()=>{
     this._superRolling=false;
-    if(!die.isConnected)return;
+    if(!die.isConnected||!this.ledger.feature||
+       this.ledger.feature.superMultiplier!==f.superMultiplier)return;
+    this.ledger.feature.superRollSeen=true;
+    this.syncLedger();this.save();
     die.classList.remove('rolling');
     area.classList.remove('is-rolling');
     die.style.transform=rotations[face];
