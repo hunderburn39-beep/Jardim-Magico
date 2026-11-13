@@ -9,7 +9,7 @@ const fs=require('node:fs');
  });
  const errors=[];
  page.on('pageerror',e=>errors.push(String(e)));
- await page.goto('http://127.0.0.1:8765/Pantanal/?v=2.16',{waitUntil:'domcontentloaded',timeout:50000});
+ await page.goto('http://127.0.0.1:8765/Pantanal/?v=2.17',{waitUntil:'domcontentloaded',timeout:50000});
  await page.waitForSelector('#screen');
  let baseline=await page.evaluate(()=>({
   scripts:!!window.PantanalApkEngine&&!!window.PantanalBonusUI,
@@ -39,7 +39,7 @@ const fs=require('node:fs');
  assert(Math.abs(p.overlay.h-p.reels.h)<2);
  assert(p.paylines>=25,'Pre-visualizacao completa com 25 linhas');
  fs.mkdirSync('Pantanal/tests/screenshots',{recursive:true});
- await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v216-iphone.png',fullPage:false});
+ await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v217-iphone.png',fullPage:false});
  await page.evaluate(()=>{
   window.__modeCalls=0;window.__visualTestState={lastWin:100,credits:1000,totalPaid:0,maxWin:0,history:[{total:100}]};
   window.__visualTestPromise=PantanalBonusUI.launch({
@@ -66,9 +66,14 @@ const fs=require('node:fs');
  await page.waitForSelector('#blocked');
  await page.locator('#blocked').fill('30');
  await page.locator('#apkAccumPercent').fill('5');
+ await page.locator('#medEnabled').check({force:true});
+ await page.locator('#maxEnabled').check({force:true});
+ await page.locator('#apjNumSorteio').fill('200');
  await page.locator('#admSave').click({force:true});
  const blocked=await page.evaluate(()=>state.blocked);
  assert.equal(blocked,30,'Bloqueio do admin nao foi gravado');
+ const jackpotPerms=await page.evaluate(()=>({med:state.medEnabled,max:state.maxEnabled,sorteio:state.apjNumSorteio}));
+ assert.deepEqual(jackpotPerms,{med:true,max:true,sorteio:200},'Autorização local MED/MAX não foi guardada');
  await page.locator('#close').click({force:true});
 
  // Uma jogada completa sem erros de JS no ambiente Safari-like do iPhone.
@@ -115,7 +120,7 @@ const fs=require('node:fs');
  });
  assert.equal(desktop.portrait,false);
  assert(desktop.dx<2&&desktop.dy<2,'Linhas perdidas no modo horizontal');
- await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v216-desktop.png'});
+ await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v217-desktop.png'});
  const readableErrors=errors.filter(x=>!x.includes('Audio'));
  assert.equal(readableErrors.length,0,'Erros de JS no browser: '+readableErrors.join(' | '));
  console.log(JSON.stringify({success:true,portrait:baseline,lines:p,bonus,desktop,jsErrors:readableErrors},null,2));
