@@ -15,7 +15,9 @@ jobs:
           lines=s.splitlines()
           print('SOURCE LINES',len(lines))
           for i,line in enumerate(lines,1):
-              if 810<=i<=900 or 970<=i<=1035:
+              if i<810 and any(k in line for k in ('#reels','.reels','#game{','#game ','.symbol{','#lineOverlay','.reel','.reel-frame','id="reels"','id="game"','@media','--reel')):
+                  print('CSS',i,line[:2500])
+              if 796<=i<=816 or 839<=i<=850 or 978<=i<=1046 or 1060<=i<=1076:
                   print('L',i,line[:3200])
           print('MATCHES')
           for key in ["adminIcon","function admin","ADMIN","adminPin","SetAdmin","state.difficulty","accumulation","bonusTrigger","linesBtn","function update","function calcWins","spinBusy=false","PantanalApkEngine","panels"]:
