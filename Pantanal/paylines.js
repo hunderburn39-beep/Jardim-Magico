@@ -60,7 +60,10 @@
       svg.appendChild(make('polyline',{points,fill:'none',stroke:'#ffcd36','stroke-width':'12','stroke-linejoin':'round','stroke-linecap':'round',filter:'url(#pantanalWinGlow)',opacity:'.9'}));
       svg.appendChild(make('polyline',{points,fill:'none',stroke:'#542905','stroke-width':'9','stroke-linejoin':'round','stroke-linecap':'round'}));
       svg.appendChild(make('polyline',{points,fill:'none',stroke:'#fff279','stroke-width':'5','stroke-linejoin':'round','stroke-linecap':'round'}));
-      for(const [x,y] of lineCoords(w).slice(0,Math.min(w.count||0,5))){
+      const winningCells=Array.isArray(w.cells)&&w.cells.length?
+        w.cells.map(([col,row])=>[57.5+124*col,51+106*row]):
+        lineCoords(w).slice(0,Math.min(w.count||0,5));
+      for(const [x,y] of winningCells){
         svg.appendChild(make('circle',{cx:x,cy:y,r:12,fill:'#fff5b7',stroke:'#dd7617','stroke-width':4}));
       }
       const label=make('g');
