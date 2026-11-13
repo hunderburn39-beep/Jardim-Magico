@@ -809,7 +809,7 @@ const __MEDIA = {
 };
 const el=id=>document.getElementById(id), asset=n=>__MEDIA[n]||'';
 function hydrateAssets(root=document){root.querySelectorAll('[src^="assets/"]').forEach(el=>{el.src=asset(el.getAttribute('src').slice(7))});}
-const DEFAULT={credits:5000,betIndex:0,lines:25,totalSpins:0,totalBet:0,totalPaid:0,lastWin:0,maxWin:0,totalAdded:5000,totalTaken:0,username:'JOGADOR',adminPin:'12345',difficulty:60,accumulation:0.5,accum1min:500,accum1max:1000,accum2min:700,accum2max:1200,accum3min:1200,accum3max:2000,bonusCount:0,sound:true,history:[],blocked:50,apkAccumPercent:5,jackpots:null,generatorCalls:0,medEnabled:false,maxEnabled:false,apjNumSorteio:200,apjSorteio:0};
+const DEFAULT={credits:5000,betIndex:0,lines:25,totalSpins:0,totalBet:0,totalPaid:0,lastWin:0,maxWin:0,totalAdded:5000,totalTaken:0,username:'JOGADOR',adminPin:'12345',difficulty:60,accumulation:0.5,accum1min:500,accum1max:1000,accum2min:700,accum2max:1200,accum3min:1200,accum3max:2000,bonusCount:0,sound:true,history:[],blocked:50,apkAccumPercent:5,jackpots:null,generatorCalls:0,medEnabled:false,maxEnabled:false,apjNumSorteio:200,apjSorteio:0,pendingBonus:null};
 let state;try{state={...DEFAULT,...JSON.parse(localStorage.getItem('pantanal-web2.06')||'{}')}}catch{state={...DEFAULT}};
 if(![1,5,9,15,25].includes(state.lines))state.lines=25;if(state.betIndex<0||state.betIndex>=6)state.betIndex=0;state.blocked=Number(state.blocked)||50;state.apkAccumPercent=(state.apkAccumPercent===undefined?5:Number(state.apkAccumPercent));state.jackpots=state.jackpots||{min:state.accum1min,med:state.accum2min,max:state.accum3min};
 let board=Array.from({length:3},()=>Array.from({length:5},()=>0)),spinBusy=false,auto=false,bonusBusy=false,modalCallback=null,paylineTimer=null;
@@ -860,7 +860,15 @@ function updateJackpotHUD(){
     '<div style="background:linear-gradient(#6d3a0b,#2b1605);border:2px solid #dcac52;border-radius:14px;padding:5px 11px;text-align:center;flex:1;color:#ffebb5;font:bold 18px Arial,sans-serif">'
     +['MIN','MED','MAX'][i]+'<div style="color:white;font-size:21px">'+money(Math.floor(j[k]*100))+'</div></div>').join('');
 }
-function showGame(){el('home').style.display='none';el('game').style.display='block';el('bonusLayer').style.display='none';renderBoard();update();showStatus('PANTANAL — 25 LINHAS');}
+function showGame(){
+ el('home').style.display='none';el('game').style.display='block';
+ el('bonusLayer').style.display='none';renderBoard();update();
+ showStatus('PANTANAL — '+state.lines+' LINHAS');
+ if(window.PantanalBonusUI?.hasPending(state.pendingBonus)){
+   showStatus('BÓNUS POR TERMINAR — A RETOMAR');
+   setTimeout(()=>resumePendingBonuses(),100);
+ }
+}
 function showHome(){auto=false;el('home').style.display='block';el('game').style.display='none';el('bonusLayer').style.display='none';update();}
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function calcWins(b){return window.PantanalApkEngine.resultBoard(b,state.lines,BET_LEVELS[state.betIndex]);}
@@ -976,7 +984,30 @@ function showDiceBonus(){
  play('bonus');
 }
 
-async function spin(){if(spinBusy||bonusBusy||celebrationBusy)return;const stake=window.PantanalApkEngine.betTotal(BET_LEVELS[state.betIndex],state.lines);if(state.credits<stake){showStatus('CRÉDITOS INSUFICIENTES');return}
+async function resumePendingBonuses(){
+ if(spinBusy||bonusBusy||celebrationBusy||
+    !window.PantanalBonusUI?.hasPending(state.pendingBonus))return false;
+ auto=false;
+ const apk=window.PantanalApkEngine;
+ showStatus('BÓNUS GUARDADO — CONTINUAR');
+ await window.PantanalBonusUI.launch({
+   state,betPerLine:state.pendingBonus.betPerLine,
+   rng:rnd,asset,
+   nextDifficulty(){
+     const d=apk.difficulty(state.credits,state.generatorCalls||0,state.blocked,rnd);
+     state.generatorCalls=d.nextSpins;save();return d;
+   },
+   hooks:{save,update,showStatus,play,money,setBusy(flag){bonusBusy=!!flag;}}
+ });
+ return true;
+}
+async function spin(){
+ if(spinBusy||bonusBusy||celebrationBusy)return;
+ if(window.PantanalBonusUI?.hasPending(state.pendingBonus)){
+   await resumePendingBonuses();
+   return;
+ }
+ const stake=window.PantanalApkEngine.betTotal(BET_LEVELS[state.betIndex],state.lines);if(state.credits<stake){showStatus('CRÉDITOS INSUFICIENTES');return}
  window.PantanalClearPaylines?.();pendingDice=0;spinBusy=true;state.credits-=stake;state.totalBet+=stake;state.totalSpins++;state.lastWin=0;showStatus('');update();play('reel');el('lineOverlay').style.display='none';
  const generatorCalls=Math.max(0,Math.floor(Number(state.generatorCalls??(state.totalSpins-1))||0));
  const difficulty=window.PantanalApkEngine.difficulty(state.credits,generatorCalls,state.blocked,rnd);
@@ -1015,21 +1046,16 @@ async function spin(){if(spinBusy||bonusBusy||celebrationBusy)return;const stake
  state.jackpots=apk.advanceJackpots(state.jackpots,stake,total,state.apkAccumPercent,caps);
  state.bonusCount+=Object.values(bonus).reduce((a,b)=>a+b,0);
  const bonusTrigger=Object.values(bonus).some(v=>v>0);
+ state.pendingBonus=bonusTrigger
+   ?window.PantanalBonusUI.createPending(bonus,BET_LEVELS[state.betIndex])
+   :null;
  state.history.unshift({at:new Date().toLocaleString('pt-PT'),stake,lines:state.lines,board:board.map(x=>x.slice()),wins,total,bonus:bonusTrigger});
  save();update();spinBusy=false;
  if(wins.length){showStatus(`${wins.length} LINHA${wins.length!==1?'S':''} PREMIADA${wins.length!==1?'S':''} • ${money(total)} CRÉDITOS`);const special=false;if(special)await celebrateSpecial(wins,total);else{play(total>=100?'big':'win');flashWin(wins)}}else{showStatus('BOA SORTE!')}
  if(jackpotNames.length){showStatus('ACUMULADO: '+jackpotNames.join(' • '));play('big');}
  if(bonusTrigger){
    auto=false;await wait(450);
-   await window.PantanalBonusUI.launch({
-     bonus,state,betPerLine:BET_LEVELS[state.betIndex],rng:rnd,
-     asset,difficulty,
-     nextDifficulty(){
-       const d=apk.difficulty(state.credits,state.generatorCalls||0,state.blocked,rnd);
-       state.generatorCalls=d.nextSpins;save();return d;
-     },
-     hooks:{save,update,showStatus,play,money,setBusy(flag){bonusBusy=!!flag;}}
-   });
+   await resumePendingBonuses();
    return;
  }
  if(auto){await wait(450);if(auto)spin()}
@@ -1121,6 +1147,6 @@ function adminPanel(){setDialog(`<h2>Pantanal — Administração local</h2><div
 }
 window.adminPanel=adminPanel;
 for(let r=0;r<3;r++)for(let c=0;c<5;c++)board[r][c]=pick();renderBoard();update();
-</script><script src="paylines.js?v=2.17"></script>
+</script><script src="paylines.js?v=2.18"></script>
 <script src="original_rules.js?v=2.13"></script>
-<script src="apk_engine.js?v=2.17"></script><script src="bonus_ui.js?v=2.17"></script></body></html>
+<script src="apk_engine.js?v=2.18"></script><script src="bonus_ui.js?v=2.18"></script></body></html>
