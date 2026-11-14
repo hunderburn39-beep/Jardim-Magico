@@ -750,38 +750,63 @@ class Game {
 
  openBuyBonus(){
   if(this.superseded||!this.ready||this.spinning||this.feature||this.ledger.pending||
-     this.pendingSummary||performance.now()<this.nextActionAt)return;
-  const priceU=S.units(this.bet)*100;
-  const hasTenLines=this.lines===10;
-  const enough=this.ledger.balanceU>=priceU;
-  const allowed=hasTenLines&&enough;
-  const reason=!hasTenLines?'Ativa as 10 linhas no menu APOSTA para comprar o bónus.':
-   !enough?'Créditos insuficientes para esta compra.':'';
-  this.openModal('COMPRAR BÓNUS',`<div class="bonus-summary"><p class="eyebrow">8 FREE SPINS</p><p>Compra direta de 8 Free Spins com um símbolo expansivo inicial aleatório.</p><strong>${money(S.credits(priceU))}</strong><p>Custo = <b>100 × aposta total</b> (${money(this.bet)}). <b>10 linhas ativas obrigatórias.</b> Saldo atual: ${money(this.balance)}.</p>${reason?'<p style="color:#b12323;font-weight:800">'+reason+'</p>':''}<div class="actions"><button class="btn" id="buy-bonus-confirm" ${allowed?'':'disabled'}>Confirmar compra</button><button class="btn" id="buy-bonus-cancel">Cancelar</button></div></div>`);
-  $('buy-bonus-confirm').onclick=()=>this.confirmBuyBonus();
+     this.ledger.payout||this.pendingSummary||performance.now()<this.nextActionAt)return;
+  const stakeU=S.units(this.bet),priceRegular=stakeU*100,priceSuper=stakeU*200;
+  const hasTenLines=this.lines===10,canRegular=hasTenLines&&this.ledger.balanceU>=priceRegular,
+    canSuper=hasTenLines&&this.ledger.balanceU>=priceSuper;
+  const noLines=hasTenLines?'':'<p style="color:#d54433;font-weight:800">Ativa as 10 linhas no menu APOSTA para comprar um bónus.</p>';
+  this.openModal('COMPRAR BÓNUS',
+   '<div class="farao-buy-options">'+
+   '<p class="farao-buy-intro">Escolhe o bónus que queres comprar. Ambos começam com <b>8 Free Spins</b> e exigem as 10 linhas ativas.</p>'+
+   '<section class="farao-buy-option">'+
+   '<img src="assets/tomb.webp?v=originais-1.3.51" alt="Pirâmide dourada">'+
+   '<div><h3>3 PIRÂMIDES</h3><p>Free Spins normais, com símbolo expansivo sorteado.</p>'+
+   '<strong>'+money(S.credits(priceRegular))+'</strong><small>100× a aposta total</small></div>'+
+   '<button type="button" class="btn farao-buy-action" id="buy-bonus-confirm" '+(canRegular?'':'disabled')+'>COMPRAR BÓNUS NORMAL</button>'+
+   '</section>'+
+   '<section class="farao-buy-option farao-buy-super">'+
+   '<img src="assets/super-reference.webp?v=original-reference-1" alt="Super Scatter do Faraó">'+
+   '<div><h3>3 PIRÂMIDES + SUPER SCATTER</h3><p>8 Free Spins especiais. O dado do Faraó sorteia o multiplicador para o total do bónus.</p>'+
+   '<strong>'+money(S.credits(priceSuper))+'</strong><small>200× a aposta total</small></div>'+
+   '<button type="button" class="btn farao-buy-action" id="buy-super-confirm" '+(canSuper?'':'disabled')+'>COMPRAR SUPER SCATTER</button>'+
+   '</section>'+
+   '<p class="farao-buy-balance">Saldo: <b>'+money(this.balance)+'</b> · Aposta: <b>'+money(this.bet)+'</b></p>'+
+   noLines+
+   (!canRegular&&hasTenLines?'<p class="farao-buy-warning">Saldo insuficiente para comprar o bónus normal.</p>':'')+
+   (!canSuper&&hasTenLines?'<p class="farao-buy-warning">Saldo insuficiente para comprar o Super Scatter.</p>':'')+
+   '<button type="button" class="btn" id="buy-bonus-cancel">Cancelar</button></div>');
+  $('buy-bonus-confirm').onclick=()=>this.confirmBuyBonus('regular');
+  $('buy-super-confirm').onclick=()=>this.confirmBuyBonus('super');
   $('buy-bonus-cancel').onclick=()=>this.closeModal();
  }
- confirmBuyBonus(){
-  if(this.superseded||!this.ready||this.spinning||this.feature||this.ledger.pending||this.pendingSummary||
-     mod.classList.contains('hidden'))return;
-  // Duplo toque nunca pode desencadear uma segunda compra.
-  const confirm=$('buy-bonus-confirm');
+ confirmBuyBonus(mode='regular'){
+  if(this.superseded||!this.ready||this.spinning||this.feature||this.ledger.pending||
+     this.ledger.payout||this.pendingSummary||mod.classList.contains('hidden'))return;
+  if(mode!=='regular'&&mode!=='super')return;
+  // Evitar compras duplicadas com dois toques, também entre os dois botões.
+  const normal=$('buy-bonus-confirm'),special=$('buy-super-confirm');
+  const confirm=mode==='super'?special:normal;
   if(!confirm||confirm.disabled)return;
-  confirm.disabled=true;
+  if(normal)normal.disabled=true;
+  if(special)special.disabled=true;
   let purchase;
-  try{purchase=S.buyBonus(this.ledger,this.rng);}
-  catch(e){confirm.disabled=false;this.notice(e.message||'Compra não disponível',1700,'red');return;}
+  try{purchase=S.buyBonus(this.ledger,this.rng,undefined,mode);}
+  catch(e){
+   if(normal)normal.disabled=this.lines!==10||this.ledger.balanceU<S.units(this.bet)*100;
+   if(special)special.disabled=this.lines!==10||this.ledger.balanceU<S.units(this.bet)*200;
+   this.notice(e.message||'Compra não disponível',1700,'red');return;
+  }
   this.auto=0;this.paused=false;this.reveal=null;this.featureIntro=null;
   this.winCount=null;this.lastResult=null;this.lastWin=0;this.lastWasFree=false;
   this.expanded={};this.winCells=[];this.pendingSummary=null;
   this.syncLedger();this.save();this.closeModal();
   const t=performance.now();
   this.audio.init();this.audio.startMusic?.();this.audio.extra();
-  this.notice('BÓNUS COMPRADO · 8 FREE SPINS',1850,'cyan');
+  this.notice(mode==='super'?'SUPER SCATTER COMPRADO · 8 FREE SPINS':'BÓNUS COMPRADO · 8 FREE SPINS',1850,'cyan');
   this.queueIntro(purchase.symbol,t+320);
  }
 
- closeModal(){
+   closeModal(){
   mod.classList.add('hidden');mod.setAttribute('aria-hidden','true');$('touch-controls').inert=false;
   this.nextActionAt=Math.max(this.nextActionAt,performance.now()+350);this.focusBeforeModal?.focus();
  }
@@ -917,7 +942,7 @@ class Game {
     const hasId=Number.isSafeInteger(h.id)&&h.id>0;
     const isBonus=h.kind==='free-bonus';
     const canOpen=hasId&&(isBonus?Array.isArray(h.rounds)&&h.rounds.length>0:!!h.grid);
-    const kind=isBonus?'Free Spins':h.kind==='deposit'?'Depósito':h.kind==='withdraw'?'Levantamento':h.kind==='reset'?'Reposição de saldo':h.kind==='gamble'?'Carta':h.kind==='bonus-buy'?'Compra de bónus':h.bonus?'Free Spin':'Giro';
+    const kind=isBonus?'Free Spins':h.kind==='deposit'?'Depósito':h.kind==='withdraw'?'Levantamento':h.kind==='reset'?'Reposição de saldo':h.kind==='gamble'?'Carta':h.kind==='bonus-buy'?(h.mode==='super'?'Compra Super Scatter':'Compra de bónus'):h.bonus?'Free Spin':'Giro';
     const number=hasId?' #'+h.id:'';
     const date=esc(new Date(h.t).toLocaleString('pt-PT'));
     const amounts=isBonus
