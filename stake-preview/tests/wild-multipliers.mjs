@@ -60,14 +60,16 @@ assert.ok(awardedRounds>20,'enough payable WILD cells to exercise presentation')
 const board=[[4,10,10],[4,10,10],[4,10,10],[10,10,10],[10,10,10]];
 ctx.boardForTest=board;
 ctx.awardsForTest=[{c:0,r:0,value:3},{c:1,r:0,value:1},{c:2,r:0,value:5}];
+vm.runInContext('betIndex=BETS.indexOf(0.05)',ctx);
 vm.runInContext('draw(boardForTest,[[0,0],[1,0],[2,0]],awardsForTest)',ctx);
 const reelHtml=el('reels').innerHTML;
-assert.equal((reelHtml.match(/class="wild-badge"/g)||[]).length,3,'3 glowing badges');
-for(const value of ['+3','+1','+5'])assert.ok(reelHtml.includes(value));
+assert.equal((reelHtml.match(/base-valued-coin/g)||[]).length,3,'3 golden coins in winning WILD cells');
+assert.doesNotMatch(reelHtml,/wild-badge|>\+3<|>\+5</,'no multiplier badges on the base reels');
+for(const value of ['0,15','0,05','0,25'])assert.ok(reelHtml.includes(value),'coin shows '+value+' euros');
 ctx.eventForTest={kind:'reels',wildAwards:ctx.awardsForTest,multi:9};
 vm.runInContext('showWildTally(eventForTest)',ctx);
 assert.equal(el('wildTally').hidden,false);
-assert.match(el('wildTallyText').textContent,/WILD \+3 · \+1 · \+5  →  MULTI ×9/);
+assert.equal(el('wildTallyText').textContent,'MOEDAS DOURADAS · 0,15 € · 0,05 € · 0,25 €');
 vm.runInContext('hideWildTally()',ctx);
 assert.equal(el('wildTally').hidden,true);
 const f=freeFeature();
@@ -80,4 +82,4 @@ for(let n=0;n<10;n++){
   const wins=round.events.filter(e=>e.kind==='reels'&&e.wildAwards.length);
   assert.ok(wins.every(evt=>evt.wildAwards.every(item=>item.value>=1&&item.value<=5)));
 }
-console.log('Stake Preview V1.9.8: '+(2500)+' stages, '+awardedRounds+' WILD-winning cascades / '+awardedCells+' valued symbols, badges, free tally and payouts verified.');
+console.log('Stake Preview V1.9.8: '+(2500)+' stages, '+awardedRounds+' WILD-winning cascades / '+awardedCells+' valued symbols, euro-valued gold coins, free tally and payouts verified.');
