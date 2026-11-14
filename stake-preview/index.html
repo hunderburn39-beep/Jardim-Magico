@@ -1775,8 +1775,11 @@ async function animateCascade(boardFinal,oldRemoved,drop=2){
       }
       if(moved){column.appendChild(layer);layers.push(layer)}
     });
-    playRecorded("cascade",Math.min(1.2,1+Math.max(0,drop-2)*.06));
-    await pause(turbo?180:585);
+    // As peças começam a cair em silêncio; o impacto coincide com a
+    // chegada às casas (incluindo a última coluna, em modo normal).
+    await pause(turbo?150:520);
+    if(!skipAnimations)playRecorded("cascade",Math.min(1.2,1+Math.max(0,drop-2)*.06));
+    await pause(turbo?30:65);
   }finally{
     animations.forEach(a=>a.cancel());
     layers.forEach(layer=>layer.remove());
