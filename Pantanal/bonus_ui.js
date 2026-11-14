@@ -72,7 +72,7 @@
      if(multiplier)state.history[0].multiplier=multiplier;
    }
    hooks.save();hooks.update();
-   if(add)hooks.play('big');
+   if(add)hooks.play('bonus-'+kind);
    hooks.showStatus('BÓNUS: +'+hooks.money(add)+' • TOTAL '+hooks.money(state.lastWin));
  }
  function pickButton({grid,count,icon,assetUrl,cols=5}){
@@ -113,7 +113,7 @@
      card.textContent=category===6?'FIM':hooks.money(prize);
      card.style.fontSize='23px';
      if(category===6){running=false;panel.feedback.textContent='FIM DA ESCOLHA · +'+hooks.money(accum);}
-     else {accum+=prize;panel.feedback.textContent='MORANGOS · '+hooks.money(accum)+' CRÉDITOS';hooks.play('line');}
+     else {accum+=prize;panel.feedback.textContent='MORANGOS · '+hooks.money(accum)+' CRÉDITOS';hooks.play('strawberry-pick');}
      remaining--;
      if(running)await wait(250);
    }
