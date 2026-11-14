@@ -24,6 +24,7 @@
   result.superTrigger=result.trigger&&count>0;
   return result;
  };
+ const previousBuy=S.buyBonus;
  const previousBegin=S.begin;
  const previousSettle=S.settle;
  const previousCredit=S.creditNext;
@@ -55,6 +56,20 @@
   delete s.superFinishPending;
   return true;
  }
+ // A compra Super Scatter entra diretamente na mesma cerimónia do dado
+ // que seria ativada por 3 pirâmides + SCATTER numa jogada normal.
+ // O preço já é debitado atomicamente na sessão antes desta marcação.
+ S.buyBonus=function(s,rng,now,mode='regular'){
+  const purchase=previousBuy(s,rng,now,mode);
+  if(mode==='super'){
+   const random=typeof rng==='function'?rng:E.randomFloat;
+   const face=Math.min(FACES.length-1,Math.max(0,Math.floor(random()*FACES.length)));
+   s.feature.superMultiplier=FACES[face];
+   s.feature.superFace=face;
+   s.feature.superRollSeen=false;
+  }
+  return purchase;
+ };
  S.begin=function(s,rng){
   const m=superFactor(s);
   if(m===1)return previousBegin(s,rng);
