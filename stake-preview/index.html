@@ -1242,6 +1242,69 @@ html,body{height:100%;overflow:hidden;background:#051814}
   object-position:center center!important;
   margin:0!important;
 }
+
+/* V3.2 — profundidade 3D nas figuras ORIGINAIS, sem substituir qualquer
+   imagem ou alterar a composição aprovada do fundo do jogo.
+   Luz no rebordo superior, espessura lateral e sombra em camadas.
+   A figura em queda e a figura pousada têm exatamente a mesma aparência. */
+#reelFrame #reels .cell img.jmSymbolArt,
+#reelFrame .rain-symbol img.jmSymbolArt,
+#reelFrame .reel-scroll-symbol img.jmSymbolArt{
+  filter:
+    drop-shadow(-1px -1px 0 rgba(255,252,225,.62))
+    drop-shadow(1px 1px 0 rgba(64,51,31,.82))
+    drop-shadow(2px 3px 0 rgba(23,41,31,.92))
+    drop-shadow(3px 5px 2px rgba(4,23,25,.84))
+    drop-shadow(0 9px 8px rgba(0,9,15,.77))
+    saturate(1.23) contrast(1.1) brightness(1.07)!important;
+}
+/* Brilho dourado só sobre a silhueta premiada, sem caixas ao redor. */
+#reelFrame #reels .cell.winning img.jmSymbolArt{
+  filter:
+    drop-shadow(-1px -1px 0 #fff9d8)
+    drop-shadow(1px 2px 0 rgba(119,78,29,.94))
+    drop-shadow(2px 4px 1px rgba(34,23,13,.86))
+    drop-shadow(0 8px 6px #090f15d9)
+    drop-shadow(0 0 10px #fff4b9)
+    drop-shadow(0 0 20px #ffcf69)
+    saturate(1.28) contrast(1.1)!important;
+}
+/* SCATTER com volume e luz própria, mantendo os efeitos existentes. */
+#reelFrame #reels .cell.scatter-cell img.jmSymbolArt,
+#reelFrame .rain-symbol img.jmSymbolArt[data-symbol-id="9"]{
+  filter:
+    drop-shadow(-1px -1px 0 #ffecffb5)
+    drop-shadow(1px 2px 0 #633b7cdb)
+    drop-shadow(2px 4px 1px #2d1941df)
+    drop-shadow(0 8px 6px #09101bd9)
+    drop-shadow(0 0 13px #cd8cf0)
+    saturate(1.18) contrast(1.08)!important;
+}
+/* WILD e moeda: borda mais metálica, sem trocar as imagens originais. */
+#reelFrame #reels .cell img.jmSymbolArt[data-symbol-id="4"],
+#reelFrame #reels .cell img.jmSymbolArt[data-symbol-id="11"],
+#reelFrame .rain-symbol img.jmSymbolArt[data-symbol-id="4"],
+#reelFrame .rain-symbol img.jmSymbolArt[data-symbol-id="11"]{
+  filter:
+    drop-shadow(-1px -1px 0 #fff4b8)
+    drop-shadow(1px 2px 0 #a57731)
+    drop-shadow(2px 4px 0 #5a371b)
+    drop-shadow(0 8px 7px #0b1319df)
+    drop-shadow(0 0 6px #f9de82a8)
+    saturate(1.22) contrast(1.11)!important;
+}
+#reelFrame #reels .cell .base-valued-coin,
+#holdGrid .coin-slot.filled{
+  background:radial-gradient(circle at 28% 20%,#fffddd 0%,#ffe18b 23%,#dca13f 53%,#a06420 77%,#573113 100%)!important;
+  box-shadow:
+    inset 3px 4px 5px #fff8cfdb,
+    inset -4px -6px 8px #613414c9,
+    0 3px 0 #8a521b,
+    0 8px 9px #061b1fe0,
+    0 0 12px #ffd77b9e!important;
+  text-shadow:0 1px 0 #fff1c9b8,0 -1px 1px #7041115e!important;
+}
+
 </style>
 </head>
 <body>
