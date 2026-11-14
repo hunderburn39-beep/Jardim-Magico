@@ -1222,6 +1222,9 @@ html,body{height:100%;overflow:hidden;background:#051814}
 #reelFrame.frame{background:transparent!important;box-shadow:none!important}
 #reelFrame #reels{background:transparent!important}
 
+/* Quando uma ronda acaba, não mostrar a faixa nem o número sobre as peças. */
+#reelFrame.round-finished .hud{display:none!important}
+
 /* V3.1 — símbolos 98% e intervalo mínimo de 1 px.
    Igual tamanho durante a queda e depois de pousarem, mantendo intacta
    a fotografia original aprovada, a grelha 5x3 e os prémios. */
@@ -2501,7 +2504,9 @@ async function play(mode="base"){
     await playback(record.book);
     settlePendingRound();
     display();
-    $("hud").textContent="✦ RONDA #"+record.id+" CONCLUÍDA ✦";
+    // Não mostrar o número nem uma faixa de "ronda concluída" sobre o jogo.
+    // O identificador continua guardado no histórico para pesquisa e repetição.
+    $("hud").textContent="";
     $("reelFrame").classList.add("round-finished");
     $("dropNum").textContent="0";$("multiNum").textContent="×1";
     if(payout>0){
