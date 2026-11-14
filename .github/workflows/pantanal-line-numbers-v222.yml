@@ -1,0 +1,58 @@
+name: Pantanal v2.22 — números das 25 linhas visíveis
+on:
+  push:
+    paths:
+      - '.github/workflows/pantanal-line-numbers-v222.yml'
+permissions:
+  contents: write
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validar números, moldura e matemática dos prémios
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check Pantanal/frame_layout.js
+          node --check Pantanal/paylines.js
+          node --check Pantanal/reels_motion.js
+          node --check Pantanal/apk_engine.js
+          node Pantanal/tests/frame_layout.test.cjs
+          node Pantanal/tests/reels_motion.test.cjs
+          node Pantanal/tests/apk_engine.test.cjs
+          node Pantanal/tests/bonus_recovery.test.cjs
+          python3 -m py_compile Pantanal/tools/port_line_numbers_v222.py
+      - name: Integrar etiquetas 1–25 e verificar código da página
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 Pantanal/tools/port_line_numbers_v222.py
+          node - <<'JS'
+          const fs=require('fs'),src=fs.readFileSync('Pantanal/index.html','utf8');
+          const js=[...src.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+            .map(v=>v[1]).filter(v=>v.length>1000);
+          if(js.length!==1)throw Error('Falta o script principal do jogo');
+          fs.writeFileSync('/tmp/pantanal-lines-v222.js',js[0]);
+          for(const token of ['frame_layout.js?v=2.22','paylines.js?v=2.22',
+           'PantanalFrameLayout?.setActiveLines(state.lines)']){
+            if(!src.includes(token))throw Error('Não encontrado: '+token);
+          }
+          JS
+          node --check /tmp/pantanal-lines-v222.js
+          git diff --check
+      - name: Publicar Pantanal com os números visíveis na moldura
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Pantanal/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "fix(Pantanal): show all 25 numbered paylines around portrait frame v2.22"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
