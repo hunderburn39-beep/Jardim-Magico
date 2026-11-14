@@ -83,7 +83,19 @@
  g.finishSpin=function(...args){
   const item=this.spinObject,activated=!!item?.result?.trigger;
   // A luz arranca antes de a janela aparecer: o 3.º símbolo fica visível.
-  if(activated){flashAt=performance.now();stats.triggers++;}
+  if(activated){
+   flashAt=performance.now();stats.triggers++;
+   // Se a terceira pirâmide parou no último tambor, finishSpin ocorre
+   // antes de a renderização a conseguir observar: disparar o clarão aqui.
+   if(item&&thirdFlashSpin!==item){
+    const cells=[];
+    for(let c=0;c<5;c++)for(let row=0;row<3;row++)
+     if(item.grid?.[c]?.[row]==='TOMB')cells.push(c+':'+row);
+    if(cells.length>=3){
+     thirdFlashSpin=item;thirdFlashCell=cells[2];thirdFlashAt=flashAt;
+    }
+   }
+  }
   if(activated&&!item?.purchaseReveal){
    this._ritualDelayUntil=performance.now()+1050;
   }
