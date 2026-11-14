@@ -18,6 +18,7 @@
 <link rel="preload" as="image" href="../assets/imagens/d95ddf1f53c88d01c4.png">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-pedra-limpo.svg">
 <link rel="preload" as="image" href="../assets/imagens/jm40-moeda-magica.svg">
+<link rel="preload" as="image" href="assets/jardim-magico-fundo-aprovado-original.png">
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1194,6 +1195,33 @@ html,body{height:100%;overflow:hidden;background:#051814}
   #reelFrame #reels .cell.base-coin-unveiled .base-valued-coin{animation:none!important}
 }
 
+
+/* THE APPROVED FULL PNG: exactly the picture shown to the player.
+   Do not recreate, split, overlay or recolour any part of this artwork.
+   Contain preserves its native 941x1672 ratio; no crop, no distortion. */
+.app{
+  background-color:#082b28!important;
+  background-image:url('assets/jardim-magico-fundo-aprovado-original.png')!important;
+  background-position:center center!important;
+  background-size:contain!important;
+  background-repeat:no-repeat!important;
+}
+.app::before{display:none!important;content:none!important}
+.intro-screen{
+  background-color:#082b28!important;
+  background-image:url('assets/jardim-magico-fundo-aprovado-original.png')!important;
+  background-position:center center!important;
+  background-size:contain!important;
+  background-repeat:no-repeat!important;
+  justify-content:flex-end!important;
+  padding:0 8% max(12%,env(safe-area-inset-bottom))!important;
+}
+/* The approved artwork ALREADY contains the complete Jardim Mágico logo. */
+.logo-wrap,.intro-screen .intro-logo,.intro-screen .intro-subtitle,
+.intro-screen .intro-lead{display:none!important}
+#reelFrame.frame::before{content:none!important;display:none!important}
+#reelFrame.frame{background:transparent!important;box-shadow:none!important}
+#reelFrame #reels{background:transparent!important}
 </style>
 </head>
 <body>
