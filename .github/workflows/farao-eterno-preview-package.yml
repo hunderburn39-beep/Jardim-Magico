@@ -1,0 +1,75 @@
+name: Faraó Eterno V2.6 — pacote jogável de revisão
+
+on:
+  push:
+    branches:
+      - farao-eterno-melhoria-completa-20261113
+    paths:
+      - 'Farao-Eterno/**'
+      - '.github/workflows/farao-eterno-preview-package.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  empacotar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Obter ficheiros do jogo
+        uses: actions/checkout@v4
+      - name: Verificar ficheiros essenciais
+        shell: bash
+        run: |
+          test -s Farao-Eterno/index.html
+          test -s Farao-Eterno/js/engine.js
+          test -s Farao-Eterno/js/economy.js
+          test -s Farao-Eterno/js/super-scatter-core.js
+          test -s Farao-Eterno/js/session.js
+          test -s Farao-Eterno/js/game.js
+          test -d Farao-Eterno/assets
+          grep -q '2.6.0-rc' Farao-Eterno/index.html
+      - name: Criar ZIP com o jogo real, gráficos e sons
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile,ZIP_DEFLATED
+          import subprocess
+          source=Path('Farao-Eterno')
+          out=Path('Farao_Eterno_V26_RC_Jogo_Completo.zip')
+          exclusions={'tests','visual-previews','node_modules','__pycache__','.git'}
+          files=[p for p in source.rglob('*') if p.is_file()
+                 and not any(part in exclusions for part in p.parts)]
+          required=['index.html','js/game.js','js/session.js','js/engine.js',
+                    'js/super-scatter-core.js','js/economy.js']
+          for rel in required:
+              assert (source/rel) in files,f'Falta ficheiro: {rel}'
+          assert any(p.suffix.lower() in ('.webp','.png','.jpg','.jpeg') for p in files)
+          assert any(p.suffix.lower() in ('.mp3','.wav','.ogg') for p in files)
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          instructions=(
+           'FARAÓ ETERNO V2.6 RC — JOGO REAL DE REVISÃO\n'
+           'Créditos fictícios. NÃO está publicado no GitHub Pages.\n\n'
+           'Esta pasta contém o jogo e os seus assets originais.\n'
+           'Para jogar no computador:\n'
+           '1. Descompacta o ZIP.\n'
+           '2. Na pasta onde está Farao-Eterno, executa: python3 -m http.server 8123\n'
+           '3. Abre http://localhost:8123/Farao-Eterno/ no navegador.\n'
+           'No iPhone, o ficheiro local pode exigir servidor HTTP.\n'
+           'A versão pública oficial continua inalterada.\n'
+           'Ramo: farao-eterno-melhoria-completa-20261113\n'
+           'Commit: '+sha+'\n')
+          with ZipFile(out,'w',ZIP_DEFLATED,compresslevel=6) as z:
+              for p in files:z.write(p,p.as_posix())
+              z.writestr('LEIA-ME-PRIMEIRO.txt',instructions)
+          print('JOGO_COMPLETO',len(files),'ficheiros',out.stat().st_size,'bytes',sha)
+          PY
+      - name: Disponibilizar pacote para descarregar (sem publicar o site)
+        uses: actions/upload-artifact@v4
+        with:
+          name: farao-v26-jogo-completo
+          path: Farao_Eterno_V26_RC_Jogo_Completo.zip
+          if-no-files-found: error
+          retention-days: 30
