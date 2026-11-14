@@ -152,32 +152,25 @@
   const p=clamp((raw-starts[row])/spans[row],0,1);
   return p*p*(3-2*p);
  }
- function drawExpansionBeam(x,raw){
+ // Fase individual por tambor: clarão que nasce na figura e desvanece.
+ // Não existe varrimento, scanner nem faixa a percorrer os três símbolos.
+ function drawExpansionPhaseFlash(x,raw){
   if(reducedMotion||raw<=0||raw>=1)return;
-  const top=R.top,h=R.gh*3,beamY=top-42+(h+84)*raw;
-  const power=Math.min(1,raw*8,(1-raw)*10);
-  if(power<=0)return;
-  ctx.save();ctx.beginPath();
-  ctx.rect(x+3,top+7,R.cw-6,h-14);ctx.clip();
-  ctx.globalCompositeOperation='screen';ctx.globalAlpha=.70*power;
-  const light=grad(ctx,0,beamY-47,0,beamY+47,[
-   [0,'rgba(44,178,190,0)'],[.29,'rgba(33,205,214,.10)'],
-   [.49,'rgba(255,223,144,.46)'],[.51,'rgba(255,250,216,.53)'],
-   [.72,'rgba(71,230,228,.13)'],[1,'rgba(44,178,190,0)']
+  const strength=Math.pow(Math.sin(Math.PI*raw),2);
+  if(strength<.025)return;
+  const y=R.top,h=R.gh*3,cx=x+R.cw/2;
+  ctx.save();ctx.beginPath();ctx.rect(x+2,y+4,R.cw-4,h-8);ctx.clip();
+  ctx.globalCompositeOperation='screen';
+  ctx.globalAlpha=.29*strength;
+  ctx.fillStyle=radial(ctx,cx,y+h/2,R.cw*.8,[
+    [0,'rgba(255,244,202,.68)'],
+    [.55,'rgba(243,186,78,.23)'],
+    [1,'rgba(255,203,94,0)']
   ]);
-  ctx.fillStyle=light;ctx.fillRect(x+4,beamY-47,R.cw-8,94);
-  ctx.beginPath();ctx.moveTo(x+9,beamY);ctx.lineTo(x+R.cw-9,beamY);
-  ctx.strokeStyle='rgba(255,238,177,.78)';ctx.lineWidth=2;ctx.stroke();
-  for(let i=0;i<5;i++){
-   const sx=x+16+((i*29+Math.floor(raw*70))%(R.cw-32));
-   const sy=beamY-17+(i*19)%38;
-   ctx.fillStyle=i%2===0?'#fff0b8':'#8ef5e9';
-   ctx.beginPath();ctx.arc(sx,sy,i%2===0?2.2:1.2,0,TAU);ctx.fill();
-  }
-  ctx.restore();
-  ctx.save();ctx.globalAlpha=.48*power;
-  ctx.shadowColor='#73ede3';ctx.shadowBlur=13;
-  rounded(ctx,x+2,top+2,R.cw-4,h-4,7,null,'#d6b975',1.8);
+  ctx.fillRect(x,y,R.cw,h);
+  ctx.shadowColor='#ffe6a5';ctx.shadowBlur=12;
+  ctx.strokeStyle='rgba(255,224,150,'+(.55*strength)+')';
+  ctx.lineWidth=1.7;ctx.strokeRect(x+4,y+5,R.cw-8,h-10);
   ctx.restore();
  }
  function expansionStoneGlint(x,y,p){
@@ -234,7 +227,7 @@
   }
   ctx.restore();
  }
- game.visualV11={layout:R,tile,medallion,version:'2.9.4-soft-temple-glow'};
+ game.visualV11={layout:R,tile,medallion,version:'2.11.0-phased-expansions'};
  game.drawReelSeparators=function(left,top,interval,gh){
   for(let c=1;c<5;c++){
    const x=left+c*interval-(interval-R.cw)/2;
@@ -622,7 +615,10 @@
     const bounce=landing?-8*Math.pow(1-ms/300,2)*Math.cos(ms*.033):0;
     const idx=phaseReveal?phaseReveal.reels.indexOf(c):-1;
     const stamp=phaseReveal?phaseReveal.start+phaseReveal.preDelay+idx*phaseReveal.perReel:0;
-    const raw=phaseReveal&&idx>=0?clamp((t-stamp)/phaseReveal.perReel,0,1):1;
+    // Primeiros 76% revelam as três pedras; últimos 24% fazem pausa
+    // antes de o tambor expansivo seguinte começar.
+    const raw=phaseReveal&&idx>=0
+      ?clamp((t-stamp)/(phaseReveal.perReel*.76),0,1):1;
     const progress=raw*raw*(3-2*raw);
     const expanding=!!(phaseExpanded[c]&&(phaseReveal?idx>=0&&progress>0:this.lastWasFree));
     const ready=!!focus||!this.reveal||t>=this.reveal.end-100;
@@ -666,8 +662,8 @@
       }
      }
     }
-    // O feixe percorre o tambor uma só vez, sincronizado com as três pedras.
-    if(expanding&&phaseReveal)drawExpansionBeam(rx,raw);
+    // Um único clarão local, sem feixe a atravessar o tambor.
+    if(expanding&&phaseReveal)drawExpansionPhaseFlash(rx,raw);
    }
    // A very short transient glow when the real reel stops.
    const since=t-this.landings[c];
@@ -691,7 +687,7 @@
     const position=phaseReveal.reels.indexOf(c);
     if(position<0||!phaseExpanded[c])continue;
     const stamp=phaseReveal.start+(phaseReveal.preDelay||0)+position*phaseReveal.perReel;
-    const p=clamp((t-stamp)/Math.max(1,phaseReveal.perReel),0,1);
+    const p=clamp((t-stamp)/Math.max(1,phaseReveal.perReel*.76),0,1);
     drawExpansionFireHalo(R.left+c*R.step,p,t,fade);
    }
   }
@@ -706,7 +702,8 @@
    const grid=item&&item.stopped[c]?item.grid:this.grid;
    const idx=phaseReveal?phaseReveal.reels.indexOf(c):-1;
    const stamp=phaseReveal?phaseReveal.start+phaseReveal.preDelay+idx*phaseReveal.perReel:0;
-   const raw=phaseReveal&&idx>=0?clamp((t-stamp)/phaseReveal.perReel,0,1):1;
+   const raw=phaseReveal&&idx>=0
+     ?clamp((t-stamp)/(phaseReveal.perReel*.76),0,1):1;
    const progress=raw*raw*(3-2*raw);
    const expanding=!!(phaseExpanded[c]&&(phaseReveal?idx>=0&&progress>0:this.lastWasFree));
    const ready=!!focus||!this.reveal||t>=this.reveal.end-100;
