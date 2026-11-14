@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'stake-preview/index.html'
       - 'stake-preview/tests/public-safari-gameplay.py'
       - 'stake-preview/tests/public-safari-controls.py'
       - '.github/workflows/stake-safari-gameplay.yml'
