@@ -26,6 +26,7 @@ jobs:
           dst=Path('Pantanal/tests/frame_original_reference.jpg')
           im.save(dst,quality=74,optimize=True)
           print("REFERENCE",dst,dst.stat().st_size)
+          print("PICBASE64",base64.b64encode(dst.read_bytes()).decode())
           PY
       - run: |
           git config user.name "github-actions[bot]"
