@@ -149,7 +149,7 @@ class Game {
    if(!this.spinning&&!this.superseded&&x>=reel.left&&x<reel.left+5*reel.step&&y>=reel.top&&y<reel.top+3*reel.gh){
     const col=Math.floor((x-reel.left)/reel.step),row=Math.floor((y-reel.top)/reel.gh);
     if(col>=0&&col<5&&row>=0&&row<3){
-     this.audio.click();this.showSymbolPay(this.grid[col][row]);return;
+     this.audio.click();this.showSymbolPay(this.grid[col][row],col,row);return;
     }
    }
    for(const target of [...this.targets].reverse()){const {x:bx,y:by,w,h,action}=target;if(x>=bx&&y>=by&&x<=bx+w&&y<=by+h){this.audio.click();action();break;}}
@@ -310,21 +310,19 @@ class Game {
     button.addEventListener('pointerdown',ev=>{
      ev.preventDefault();ev.stopPropagation();
      if(this.spinning||this.superseded||!mod.classList.contains('hidden'))return;
-     this.showSymbolPay(this.grid[col][row]);
+     this.showSymbolPay(this.grid[col][row],col,row);
     });
-    for(const eventName of ['pointerup','pointercancel','pointerleave','lostpointercapture']){
-     button.addEventListener(eventName,()=>this.hideSymbolPay());
-    }
-
+    // O balão permanece depois de levantar o dedo, para poder ser lido.
     layer.appendChild(button);this._symbolButtons.push({button,col,row});
    }
-   // iOS Safari may deliver release to the document rather than the button.
-   // Listen in capture phase globally, including touchend, to hide instantly.
-   const release=()=>this.hideSymbolPay();
-   for(const eventName of ['pointerup','pointercancel','touchend','touchcancel','mouseup','blur']){
-    window.addEventListener(eventName,release,{capture:true,passive:true});
-   }
-   document.addEventListener('visibilitychange',()=>{if(document.hidden)release();});
+   // Um toque fora dos símbolos fecha o balão antes do comando atuar.
+   $('stage').addEventListener('pointerdown',ev=>{
+    if(!ev.target.closest?.('#symbol-hit-layer'))this.hideSymbolPay();
+   },true);
+   window.addEventListener('blur',()=>this.hideSymbolPay());
+   document.addEventListener('visibilitychange',()=>{
+    if(document.hidden)this.hideSymbolPay();
+   });
    this._symbolOverlay=layer;
   }
   const canInspect=!this.spinning&&!this.superseded&&mod.classList.contains('hidden');
@@ -511,6 +509,7 @@ class Game {
  }
 
  startSpin(){
+  this.hideSymbolPay();
   if(!mod.classList.contains('hidden')||this.superseded||!this.ready)return;
   this.audio.init();
   if(this.recovered){this.recovered=false;this.announce('Jogada recuperada. O prémio já está no saldo.');}
@@ -940,21 +939,56 @@ class Game {
   modalContent.querySelectorAll('[data-history-win]').forEach(b=>b.onclick=()=>this.showHistoricSpin(id,Number(b.dataset.historyWin),bonusId));
  }
 
- showSymbolPay(symbol){
-  if(this.spinning||this.superseded||!E.PAYS[symbol])return;
+ showSymbolPay(symbol,col,row){
+  if(this.spinning||this.superseded||!this.ready||!mod.classList.contains('hidden')||!E.PAYS[symbol])return;
   this.hideSymbolPay();
-  const stake=this.bet/this.lines;
-  const bubble=document.createElement('div');bubble.id='symbol-pay-bubble';
-  bubble.style.cssText='position:absolute;z-index:9;left:50%;top:43%;transform:translate(-50%,-50%);width:155px;padding:8px 12px;border:2px solid #e1b968;border-radius:11px;background:#14202cf5;box-shadow:0 5px 20px #000b;color:#ffe5a6;font:700 14px/1.5 Arial,sans-serif;pointer-events:none';
-  bubble.innerHTML=[2,3,4,5].map(n=>'<div style="display:flex;justify-content:space-between;gap:12px"><span>'+n+'×</span><span>'+(E.PAYS[symbol][n]?money(E.PAYS[symbol][n]*stake):'—')+'</span></div>').join('')+
-   (symbol==='TOMB'?'<div style="font-size:10px;line-height:1.25;margin-top:5px;color:#a7efe4">Nas Free Spins paga em qualquer posição</div>':'');
+  const table=E.PAYS[symbol],stake=this.bet/this.lines;
+  const bubble=document.createElement('aside');
+  bubble.id='symbol-pay-bubble';
+  bubble.className='farao-symbol-pay-bubble';
+  bubble.setAttribute('role','status');
+  bubble.setAttribute('aria-label','Prémios de '+(iconNames[symbol]||symbol));
+  const payouts=[5,4,3,2].map(n=>{
+   const multiplier=table[n]||0;
+   return '<div class="farao-symbol-pay-row'+(multiplier?'':' unavailable')+'"><span class="farao-symbol-pay-count">×'+n+'</span><strong class="farao-symbol-pay-multi">'+(multiplier?nice(multiplier):'—')+'</strong><span class="farao-symbol-pay-euro">'+(multiplier?euro(multiplier*stake):'—')+'</span></div>';
+  }).join('');
+  bubble.innerHTML='<div class="farao-symbol-pay-title">'+(iconNames[symbol]||symbol)+'</div>'+
+   '<div class="farao-symbol-pay-column-labels"><span>FIG.</span><span>PRÉMIO</span><span>VALOR</span></div>'+
+   '<div class="farao-symbol-pay-rows">'+payouts+'</div>'+
+   '<div class="farao-symbol-pay-foot">Aposta por linha: <b>'+euro(stake)+'</b></div>'+
+   (symbol==='TOMB'?'<div class="farao-symbol-pay-special">SCATTER base: 3 / 4 / 5 pirâmides = 2× / 20× / 200× a aposta. Nas Free Spins, 2+ pagam em qualquer posição.</div>':'');
+  const reel=this.visualV11?.layout||{left:18,top:284,cw:105,gh:129,step:109};
+  if(!Number.isInteger(col)||col<0||col>4||!Number.isInteger(row)||row<0||row>2){
+   let found;
+   for(let c=0;c<5&&!found;c++)for(let r=0;r<3;r++)
+    if(this.grid[c][r]===symbol){found=[c,r];break;}
+   [col,row]=found||[2,1];
+  }
+  const view=this.viewport||{width:$('stage').clientWidth,height:$('stage').clientHeight,scale:1,ox:0,oy:0};
+  const anchorX=view.ox+(reel.left+col*reel.step+reel.cw/2)*view.scale;
+  const anchorY=view.oy+(reel.top+row*reel.gh+reel.gh/2)*view.scale;
   $('stage').appendChild(bubble);
+  const bw=bubble.offsetWidth,bh=bubble.offsetHeight;
+  const gap=8,half=reel.cw*view.scale/2,margin=7;
+  const rightRoom=view.width-anchorX-half-gap-margin;
+  const leftRoom=anchorX-half-gap-margin;
+  const side=rightRoom>=bw?'right':leftRoom>=bw?'left':rightRoom>=leftRoom?'right':'left';
+  const idealX=side==='right'?anchorX+half+gap:anchorX-half-gap-bw;
+  const x=clamp(idealX,margin,Math.max(margin,view.width-bw-margin));
+  const y=clamp(anchorY-bh/2,margin,Math.max(margin,view.height-bh-margin));
+  bubble.dataset.side=side;
+  bubble.style.left=Math.round(x)+'px';
+  bubble.style.top=Math.round(y)+'px';
+  this._symbolBubbleTimeout=setTimeout(()=>this.hideSymbolPay(),7000);
  }
  hideSymbolPay(){
+  clearTimeout(this._symbolBubbleTimeout);
+  this._symbolBubbleTimeout=null;
   document.getElementById('symbol-pay-bubble')?.remove();
  }
 
  openInfo(tab='menu'){
+  this.hideSymbolPay();
   const tabs=`<div class="header-tabs">${[['menu','APOSTA'],['settings','CONFIGURAÇÕES'],['pays','PAGAMENTOS'],['history','HISTÓRICO'],['admin','ADMINISTRAÇÃO']].map(([key,label])=>`<button data-page="${key}" class="${tab===key?'active':''}">${label}</button>`).join('')}</div>`;
   let page='';
   if(tab==='menu'){
@@ -1298,7 +1332,7 @@ class Game {
   // Transparent touch targets follow the 15 symbol cells.
   if(!this.spinning&&!this.superseded)for(let c=0;c<5;c++)for(let row=0;row<3;row++){
    const symbol=this.grid[c][row];
-   this.action(left+c*interval,top+row*gh,cw,gh,()=>this.showSymbolPay(symbol),'Ver prémios de '+(iconNames[symbol]||symbol));
+   this.action(left+c*interval,top+row*gh,cw,gh,()=>this.showSymbolPay(symbol,c,row),'Ver prémios de '+(iconNames[symbol]||symbol));
   }
   this.drawActivePayline(t,left,top,cw,gh,interval);
   rect(23,662,514,11,grad(0,661,0,673,[[0,'#f6e0a4'],[.5,'#a3773e'],[1,'#4d301f']]),'#ffe8a6',4,1.5);
