@@ -121,6 +121,8 @@ with sync_playwright() as p:
     page.locator("#introPlay").click()
     for name,button in [("free","#buyFree"),("hold","#buyHold")]:
         before=snapshot(page)
+        page.locator("#openBonusBuy").click()
+        assert page.locator("#bonusBuyOverlay").is_visible(),"Bonus shop not open"
         page.locator(button).click()
         page.wait_for_function("busy && pendingRound!==null",timeout=12000)
         due=page.evaluate("({mode:pendingRound.mode,payout:pendingRound.payout,id:pendingRound.id})")
