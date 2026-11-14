@@ -7,6 +7,10 @@ on:
     paths:
       - 'Farao-Eterno/**'
       - '.github/workflows/farao-eterno-preview-package.yml'
+  pull_request:
+    paths:
+      - 'Farao-Eterno/**'
+      - '.github/workflows/farao-eterno-preview-package.yml'
   workflow_dispatch:
 
 permissions:
