@@ -1165,6 +1165,35 @@ html,body{height:100%;overflow:hidden;background:#051814}
     drop-shadow(0 0 21px #ffce64)!important;
 }
 
+
+/* V3: a legible natural stage for falling symbols; no printed drums or boxes. */
+.app{
+  background:#082b28 url('assets/jardim-v3-palco-cascata.svg') center center / cover no-repeat!important;
+}
+.intro-screen{
+  background:linear-gradient(180deg,#081a23ad 0%,#07332b91 46%,#05171bec 100%),
+    url('assets/jardim-v3-palco-cascata.svg') center center / cover no-repeat!important;
+}
+/* Lower contrast panel overlay: the stage is painted directly into the SVG scene. */
+#reelFrame.frame::before{
+  opacity:.24!important;
+  background:radial-gradient(ellipse at center,#102f3266,transparent 78%)!important;
+}
+#reelFrame #reels{background:transparent!important}
+/* Base winning coins are presented one by one, with no sudden size change. */
+#reelFrame #reels .cell.base-coin-unveiled .base-valued-coin{
+  animation:baseCoinUnveil .72s cubic-bezier(.16,.83,.36,1) both!important;
+  transform-origin:center;
+}
+@keyframes baseCoinUnveil{
+  0%{opacity:0;transform:translateY(-18px) rotateY(-67deg);filter:brightness(1.9)}
+  55%{opacity:1;transform:translateY(3px) rotateY(6deg);filter:brightness(1.6)}
+  100%{opacity:1;transform:translateY(0) rotateY(0);filter:brightness(1)}
+}
+@media(prefers-reduced-motion:reduce){
+  #reelFrame #reels .cell.base-coin-unveiled .base-valued-coin{animation:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -1674,6 +1703,42 @@ function showWildTally(evt){
   $("wildTallyText").textContent="MOEDAS DOURADAS · "+awards.map(a=>format(a.value*stake)+" €").join(" · ");
   $("wildTally").hidden=false;
   return gained;
+}
+// The bet and awarded factors were fixed by the engine before playback.
+ // Only the visuals and pacing change: reveal each paying base coin separately.
+async function revealBaseCoins(evt){
+  const awards=evt.wildAwards||[];
+  if(!awards.length||evt.free||skipAnimations||
+     Boolean(typeof window!=="undefined"&&window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches)){
+    draw(evt.board,evt.removed,awards);showWildTally(evt);
+    return 0;
+  }
+  const stake=replayBet??BETS[betIndex];
+  draw(evt.board,evt.removed,[]);hideWildTally();
+  const cols=Array.from(document.querySelectorAll(".column"));
+  let shown=[];
+  for(const award of awards){
+    if(skipAnimations)break;
+    await pause(turbo?120:390);
+    if(skipAnimations)break;
+    shown.push(award);
+    const cell=cols[award.c]?.querySelectorAll?.(".cell")?.[award.r];
+    if(cell){
+      cell.innerHTML=baseCoinMarkup(award.value);
+      cell.classList?.add("wild-awarded");
+      cell.classList?.add("base-coin-unveiled");
+    }else{
+      // DOM-free previews and automated tests still reproduce the same values.
+      draw(evt.board,evt.removed,shown);
+    }
+    showWildTally({...evt,wildAwards:shown});
+    prizeCue(award.value*stake,stake,"coin");
+    await pause(turbo?110:660);
+  }
+  // PASSAR, Turbo and replay always end on the entire precomputed award set.
+  draw(evt.board,evt.removed,awards);showWildTally(evt);
+  if(!skipAnimations)await pause(turbo?85:680);
+  return shown.length;
 }
 function hideWildTally(){$("wildTally").hidden=true}
 
@@ -2245,9 +2310,13 @@ async function playback(book){
       hideWildTally();clearWinSparks();
       if(evt.drop===1){cascadeRunning=0;hideCascadeMeter();clearScatterScene();await animateSymbolRain(evt.board);previousRemoved=[]}
       else await animateCascade(evt.board,previousRemoved,evt.drop);
-      draw(evt.board,evt.removed,evt.wildAwards||[]);
-      showWildTally(evt);
-      if((evt.wildAwards||[]).length)playRecorded("wild");
+      if(!evt.free&&(evt.wildAwards||[]).length){
+        await revealBaseCoins(evt);
+      }else{
+        draw(evt.board,evt.removed,evt.wildAwards||[]);
+        showWildTally(evt);
+        if((evt.wildAwards||[]).length)playRecorded("wild");
+      }
       const revealedScatters=showScatterScene(evt.board,Boolean(evt.free));
       if(revealedScatters>0&&!skipAnimations&&(evt.drop>1||!scatterSoundFromReelStops))scatterCue(revealedScatters);
       previousRemoved=evt.removed;
