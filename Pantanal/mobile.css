@@ -122,3 +122,104 @@
   top:calc(50% - 360px);
   z-index:16;
 }
+
+/* Pantanal v2.24 — cenografia Pantanal contemporânea; símbolos intactos. */
+:root{
+ --pantanal-deep:#061e23;
+ --pantanal-glass:rgba(5,28,31,.89);
+ --pantanal-gold:#eed39a;
+ --pantanal-teal:#7db9a0;
+}
+/* A nova arte é uma camada de fundo, não uma substituição das imagens dos tambores. */
+#screen.portrait{
+ background:#061e23 url("./assets/pantanal-modern-wetlands.svg") center center / cover no-repeat!important;
+}
+#screen.portrait #game,
+#screen.portrait #home{
+ background:
+  linear-gradient(180deg,rgba(3,19,24,.17) 0%,rgba(4,27,29,.03) 45%,rgba(1,15,18,.18) 76%,rgba(0,9,13,.4) 100%),
+  url("./assets/pantanal-modern-wetlands.svg") center center / cover no-repeat!important;
+}
+/* Mantém o logótipo Pantanal Mobile já escolhido, sem o substituir. */
+#screen.portrait #home::before,
+#screen.portrait #game::before,
+#screen.portrait #bonusLayer::before{
+ filter:drop-shadow(0 8px 8px #001015) drop-shadow(0 0 16px #d9b4777a)!important;
+ mix-blend-mode:normal!important;
+}
+/* O centro tem contraste suficiente para os animais e outros símbolos originais. */
+#screen.portrait #reelArea::before{
+ background:linear-gradient(165deg,rgba(4,28,30,.97),rgba(5,38,39,.92) 55%,rgba(1,20,24,.97))!important;
+ border:1px solid rgba(190,225,198,.3);
+ box-shadow:inset 0 0 28px rgba(1,18,21,.93),0 12px 48px #001012d1,0 0 44px #69b99c23!important;
+}
+#screen.portrait #reelArea #reelFrame{
+ border:10px ridge #a7ba99!important;
+ border-radius:29px!important;
+ box-shadow:inset 0 0 0 2px #163d37,inset 0 0 18px #b8dcc56e,
+ 0 0 0 2px #264c42,0 12px 30px #001015df,0 0 25px #e2c58342!important;
+}
+#screen.portrait #reelArea #reelFrame::before{
+ border:2px solid #c1d4a2!important;
+ box-shadow:0 0 0 2px #103e33,0 0 18px #5ea18155!important;
+}
+#screen.portrait #reelArea #reelFrame::after{
+ border:2px solid #dbe8bb7e!important;
+}
+#screen.portrait #credit,
+#screen.portrait #win,
+#screen.portrait #bet{
+ color:#fff7d9!important;
+ background:linear-gradient(180deg,#20514ad9,#071f26ed)!important;
+ border:2px solid #c7bb86!important;
+ box-shadow:inset 0 1px 0 #d8ffb94d,0 7px 18px #001114a9!important;
+}
+#screen.portrait #credit::before,
+#screen.portrait #win::before,
+#screen.portrait #bet::before{color:#dbe7b9!important;}
+#screen.portrait #status{
+ color:#fff4c8!important;
+ border-radius:12px;
+ background:linear-gradient(90deg,#061d23c2,#174a46d0,#061d23c2)!important;
+ border:1px solid #97c1a060!important;
+ text-shadow:0 2px 4px #001214,0 0 12px #b8d6a666!important;
+}
+#screen.portrait #pantanalJackpots>div{
+ background:linear-gradient(155deg,rgba(27,71,64,.97),rgba(2,20,28,.97))!important;
+ border:1px solid #cbb97c8f!important;
+ border-radius:13px!important;
+ box-shadow:inset 0 1px 0 #d8f3b12f,0 7px 15px #001316b8!important;
+}
+#screen.portrait #ctrls{
+ background:linear-gradient(180deg,rgba(8,43,43,.77),rgba(2,17,24,.93))!important;
+ border:1px solid rgba(183,203,156,.62)!important;
+ border-top:2px solid #ddc58d!important;
+ border-radius:26px!important;
+ box-shadow:inset 0 2px 15px #72b19a19,0 12px 30px #001216b0!important;
+ backdrop-filter:blur(7px);
+ -webkit-backdrop-filter:blur(7px);
+}
+#screen.portrait #game .menuBtn,
+#screen.portrait #soundSwitch{
+ color:#fff1c2!important;
+ background:linear-gradient(155deg,rgba(24,78,69,.96),rgba(5,27,32,.95))!important;
+ border:2px solid #b9ba8f!important;
+ box-shadow:0 6px 15px #001418ad!important;
+}
+#screen.portrait #lineNumberLabels .lineNumber{
+ color:#fbefd4!important;
+ background:linear-gradient(160deg,#236558,#0a2f36)!important;
+ border-color:#aebd8b!important;
+ box-shadow:0 1px 5px #001313d1!important;
+}
+#screen.portrait #lineNumberLabels .lineNumber.isCurrent{
+ color:#102b28!important;
+ background:linear-gradient(#fff7ca,#bce8ad)!important;
+ box-shadow:0 0 12px #c1f7ba!important;
+}
+#screen.portrait #bonusLayer{
+ background:linear-gradient(#051e25b3,#052224ce),url("./assets/pantanal-modern-wetlands.svg") center/cover no-repeat!important;
+}
+@media(prefers-reduced-motion:reduce){
+ #screen.portrait #ctrls{backdrop-filter:none;-webkit-backdrop-filter:none}
+}
