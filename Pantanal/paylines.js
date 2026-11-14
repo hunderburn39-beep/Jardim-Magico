@@ -1,4 +1,4 @@
-/* Pantanal v2.20: linhas de prémio desenhadas a partir dos resultados reais.
+/* Pantanal v2.22: linhas de prémio desenhadas a partir dos resultados reais.
    Apenas apresentação visual; sem alterações ao RNG, apostas ou pagamentos. */
 (function(){
   'use strict';
@@ -10,6 +10,7 @@
     return n;
   }
   function clear(){
+    window.PantanalFrameLayout?.highlightLine(null);
     ++serial;
     if(timer!==null){clearInterval(timer);timer=null;}
     if(layer){layer.remove();layer=null;}
@@ -56,6 +57,7 @@
       if(current!==serial||layer!==svg)return;
       while(svg.childNodes.length>(preview?2:1))svg.lastChild.remove();
       const w=valid[idx%valid.length];
+      window.PantanalFrameLayout?.highlightLine(w.line);
       const points=coordsText(w);
       svg.appendChild(make('polyline',{points,fill:'none',stroke:'#ffcd36','stroke-width':'12','stroke-linejoin':'round','stroke-linecap':'round',filter:'url(#pantanalWinGlow)',opacity:'.9'}));
       svg.appendChild(make('polyline',{points,fill:'none',stroke:'#542905','stroke-width':'9','stroke-linejoin':'round','stroke-linecap':'round'}));
