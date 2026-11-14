@@ -44,7 +44,18 @@ const url='http://127.0.0.1:8123/index.html?qa=bonus-buy';
    assert.equal(state.history[0].kind,'bonus-buy');
    assert.equal(state.history[0].cost,100);
    assert.equal(state.seq,0,'A compra não cria jogada sem girar');
-   assert.equal(state.modalClosed,false,'O bónus começa pela mensagem de parabéns');
+   assert.equal(state.modalClosed,true,'A compra inicia a rotação antes da janela de Free Spins');
+   const purchased=await page.evaluate(()=>{
+     const spin=window.__faraoGame.spinObject;
+     return {purchaseReveal:spin?.purchaseReveal,mode:spin?.mode,
+       pyramids:spin?.grid.flat().filter(x=>x==='TOMB').length,
+       superCount:spin?.grid.flat().filter(x=>x==='SUPER').length};
+   });
+   assert.deepEqual(purchased,{purchaseReveal:true,mode:'regular',pyramids:3,superCount:0});
+   await page.waitForFunction(()=>window.__faraoGame?.ledger?.feature?.purchaseRevealPending===false,null,{timeout:16000});
+   assert.equal(await page.evaluate(()=>window.__faraoGame.ledger.balanceU),balanceBefore-100*252000,
+     'A rotação de ativação não cobra outra aposta');
+   await page.waitForFunction(()=>document.getElementById('modal-title')?.textContent==='PARABÉNS!',null,{timeout:5000});
    assert.equal(await page.locator('#modal-title').innerText(),'PARABÉNS!');
    assert.match(await page.locator('#modal-content').innerText(),/acesso ao cofre do Faraó Eterno/i);
    assert.match(await page.locator('#modal-content').innerText(),/FREE SPINS/);
