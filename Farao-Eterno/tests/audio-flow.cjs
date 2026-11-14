@@ -48,8 +48,15 @@ async function advance(steps){
 }
 (async()=>{
  await advance(3);
- assert.equal(g.ambientLoop.activeTrack,'normal','Capa deve tocar música normal mesmo ao retomar bónus');
- assert.equal(audios[1].playCount,0,'A capa não pode arrancar o Bonus Ritual');
+ // O iPhone/Safari proíbe autoplay antes do gesto. A capa só pode tocar
+ // o tema normal depois de ENTRAR; o tema bónus fica preparado em silêncio.
+ assert.equal(g.ambientLoop.activeTrack,null,'Não tocar automaticamente antes de um gesto');
+ assert.equal(audios[0].playCount,0,'Tema normal não começa sem toque');
+ assert.equal(audios[1].playCount,0,'Bonus Ritual não começa sem toque');
+ g.audio.unlockMusic(); // simula o gesto real na capa
+ await advance(3);
+ assert.equal(g.ambientLoop.activeTrack,'normal','Capa toca música normal após o toque');
+ assert.equal(audios[1].paused,true,'Bonus Ritual preparado, mas inaudível na capa');
  const normalPlays=audios[0].playCount;
  g.audio.init();await advance(4);
  assert.equal(audios[0].playCount,normalPlays,'Nova inicialização não reinicia a faixa');
