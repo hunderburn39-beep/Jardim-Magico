@@ -32,10 +32,14 @@ let entered=false;
 function enter(){
  if(entered)return;
  entered=true;
- g.audio.init();
- g.audio.unlockMusic?.();
+ // Preparar o estado antes de desbloquear música; durante a compra
+ // recuperada queremos iniciar o tema de bónus, não a faixa normal.
  g._introCoverVisible=false;
  if(!g.superseded)g.paused=false;
+ // AudioContext.resume() e HTMLAudio.play() têm de acontecer neste
+ // mesmo gesto do utilizador no Safari/iOS.
+ g.audio.init();
+ g.audio.unlockMusic?.();
  g.audio.startMusic?.();
  splash.remove();
  if(g.feature&&g.ledger.feature?.purchaseRevealPending){
@@ -122,5 +126,5 @@ g.showSummary=function(...args){
   },420);
  };
 };
-document.documentElement.dataset.faraoIntroFlow='1.0.0';
+document.documentElement.dataset.faraoIntroFlow='1.0.1-ios-audio';
 })();
