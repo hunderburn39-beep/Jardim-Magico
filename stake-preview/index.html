@@ -1221,6 +1221,27 @@ html,body{height:100%;overflow:hidden;background:#051814}
 #reelFrame.frame::before{content:none!important;display:none!important}
 #reelFrame.frame{background:transparent!important;box-shadow:none!important}
 #reelFrame #reels{background:transparent!important}
+
+/* V3.1 — símbolos 98% e intervalo mínimo de 1 px.
+   Igual tamanho durante a queda e depois de pousarem, mantendo intacta
+   a fotografia original aprovada, a grelha 5x3 e os prémios. */
+#reelFrame #reels{
+  gap:1px!important;
+}
+#reelFrame #reels .column{
+  gap:1px!important;
+}
+#reelFrame #reels .cell img.jmSymbolArt,
+#reelFrame .rain-symbol img.jmSymbolArt{
+  --jm-fit:98%!important;
+  width:var(--jm-fit)!important;
+  height:var(--jm-fit)!important;
+  max-width:99%!important;
+  max-height:99%!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  margin:0!important;
+}
 </style>
 </head>
 <body>
