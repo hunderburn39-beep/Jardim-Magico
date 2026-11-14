@@ -1,6 +1,6 @@
 /* Faraó Eterno — ritual do bónus inspirado na cadência da referência.
  * Arte e som originais; nenhuma mudança de RNG, créditos ou premiação.
- * V2.9.3 | 14-11-2026
+ * V2.9.5 | 14-11-2026
  */
 (() => {
  'use strict';
@@ -97,8 +97,8 @@
   if(loaded?.src)return loaded.src;
   return 'assets/'+String(key).toLowerCase()+'.svg';
  }
- function makeWelcome(){
-  const symbol=g.feature?.symbols?.[0];
+ function makeWelcome(symbolOverride){
+  const symbol=symbolOverride||g._ritualTriggerSymbol||g.feature?.symbols?.[0];
   if(!symbol)return;
   shuffleToken++;
   const token=shuffleToken;
@@ -160,8 +160,50 @@
    stats.cardReveals++;cue.chosen();
   },2230);
  }
+
+ // Retirar definitivamente o livro antigo do sorteio. A escolha da figura
+ // já pertence à sessão: o pergaminho mostra-a uma única vez.
+ const oldQueueIntro=g.queueIntro.bind(g);
+ g.queueIntro=function(symbol,from){
+  if(!this.feature)return oldQueueIntro(symbol,from);
+  this.featureIntro=null;
+  // A confirmação do pergaminho/dado passa pelo closeModal original, cujo
+  // código antigo tenta reabrir o livro: não voltar a apresentar a figura.
+  if(this._ritualClosing||this.feature.played===0)return;
+  // Retrigger: em vez do livro anterior, mostrar outro pergaminho com a
+  // nova figura que o motor já acrescentou ao bónus.
+  if(!this.feature.symbols?.includes(symbol))return;
+  this._ritualPendingSymbol=symbol;
+  this._ritualPendingAt=Math.max(performance.now(),Number(from)||0);
+  this._welcome=true;this._awaitBonusStart=true;this._freeStarted=true;
+  const serial=(this._ritualRetriggerSerial||0)+1;
+  this._ritualRetriggerSerial=serial;
+  const showRetrigger=()=>{
+   if(serial!==this._ritualRetriggerSerial||this.superseded||!this.feature)return;
+   if(this.spinning||this.ledger.payout||document.hidden||
+      performance.now()<this._ritualPendingAt||
+      !modal.classList.contains('hidden')){
+    setTimeout(showRetrigger,240);
+    return;
+   }
+   this._ritualTriggerSymbol=symbol;
+   this._welcomeShown=true;
+   this.openModal('NOVO SÍMBOLO EXPANSIVO',
+     '<div class="farao-ceremony">A revelar a nova figura...</div>',true);
+   if(modal.classList.contains('hidden')){
+    this._welcomeShown=false;
+    setTimeout(showRetrigger,240);
+    return;
+   }
+   makeWelcome(symbol);
+  };
+  setTimeout(showRetrigger,Math.max(120,this._ritualPendingAt-performance.now()+30));
+ };
+
  const priorWelcome=g.showFeatureWelcome.bind(g);
  g.showFeatureWelcome=function(...args){
+  // O retrigger aguarda o fim das animações para abrir o seu pergaminho.
+  if(this._ritualPendingSymbol)return;
   if(this._ritualSwitchToDice){
    priorWelcome(...args);
    return;
@@ -187,9 +229,29 @@
  };
  const priorClose=g.closeModal.bind(g);
  g.closeModal=function(...args){
+  // O símbolo só pode ser confirmado pelo botão no próprio pergaminho.
+  // Uma tentativa de fechar pelo X não salta a revelação.
+  if(modal.classList.contains('farao-ritual-modal')&&this._welcomeShown)return;
+  const closingBonus=!!(this._welcomeShown&&this.feature&&
+    (this.feature.played===0||this._ritualTriggerSymbol||this._ritualPendingSymbol)&&
+    (!this.feature.superMultiplier||this.ledger.feature?.superRollSeen));
   shuffleToken++;
   modal.classList.remove('farao-ritual-modal');
-  return priorClose(...args);
+  const wasClosing=this._ritualClosing;
+  this._ritualClosing=true;
+  let result;
+  try{result=priorClose(...args);}
+  finally{this._ritualClosing=wasClosing;}
+  if(closingBonus&&modal.classList.contains('hidden')){
+   // A carta já foi revelada. Não há um segundo livro ou segundo sorteio.
+   // Libertar a continuação automática do motor após o fecho da janela.
+   this.featureIntro=null;
+   this._welcome=false;this._awaitBonusStart=false;this._freeStarted=true;
+   this._ritualPendingSymbol=null;this._ritualTriggerSymbol=null;
+   this._ritualRetriggerSerial=(this._ritualRetriggerSerial||0)+1;
+   this.nextActionAt=Math.max(this.nextActionAt,performance.now()+350);
+  }
+  return result;
  };
 
  // Brilho por cima das pirâmides sem tapar a arte nem os resultados.
@@ -287,6 +349,6 @@
    drawPyramids(t);drawExpansions(t);introPages(t);
   }
  };
- g.bonusRitual={version:'2.9.3',events:stats,mathUnchanged:true};
- document.documentElement.dataset.faraoBonusRitual='2.9.3';
+ g.bonusRitual={version:'2.9.5',events:stats,mathUnchanged:true};
+ document.documentElement.dataset.faraoBonusRitual='2.9.5';
 })();
