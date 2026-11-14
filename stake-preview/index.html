@@ -1468,8 +1468,9 @@ function draw(b,wins=[],wildAwards=[]){
     const k=c+":"+r;
     const val=b[c][r]===4?awarded.get(k):null;
     const coin=Number.isInteger(val)&&val>0;
-    const art=coin?baseCoinMarkup(val):symbolArtworkMarkup(b[c][r]);
-    return '<div class="cell '+(keys.has(k)?"winning ":"")+(coin?"wild-awarded":"")+'">'+art+'</div>';
+    const art=symbolArtworkMarkup(b[c][r]);
+    const visibleArt=coin?baseCoinMarkup(val):art;
+    return '<div class="cell '+(keys.has(k)?"winning ":"")+(coin?"wild-awarded":"")+'">'+visibleArt+'</div>';
   }).join("")+"</div>").join("");
 }
 function showWildTally(evt){
