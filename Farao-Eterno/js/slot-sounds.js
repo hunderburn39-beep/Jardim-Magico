@@ -391,14 +391,17 @@
       if(stage.kind&&stage.kind!=='expansion')continue;
       if(!stage.reels?.length||!stage.perReel)continue;
       const at=stage.start+stage.preDelay;
-      // Um impacto subtil de pedra após cada coluna se transformar.
-      // O conjunto não pode repetir batidas ao redesenhar o canvas.
+      // Três blocos descem e encaixam (topo, meio, base) em cada tambor.
+      // As três pancadas acompanham as três imagens, sem duplicar som.
       if(!stage._stoneHits)stage._stoneHits=new Set();
       stage.reels.forEach((reel,order)=>{
-        const hit=at+(order+1)*stage.perReel;
-        if(t<hit||stage._stoneHits.has(order))return;
-        stage._stoneHits.add(order);
-        if(t-hit<180)this.freeBlockDrop(reel,order);
+        [0.25,0.56,0.89].forEach((fraction,row)=>{
+          const id=order*3+row;
+          const hit=at+(order+fraction)*stage.perReel;
+          if(t<hit||stage._stoneHits.has(id))return;
+          stage._stoneHits.add(id);
+          if(t-hit<190)this.expansionStoneDrop(reel,row);
+        });
       });
       if(stage._laserPlayed||t<at||t>=at+Math.max(160,stage.perReel*.55))continue;
       stage._laserPlayed=true;
@@ -431,6 +434,52 @@
     friction(.115,.070,740+reel*80,0);
     note(depth,57,.145,weight,0,'triangle');
     note(74,53,.11,.021,.035,'sine');
+  };
+  // Pedra a cair e desmoronar: efeito original gerado uma única vez
+  // em memória. Um ataque de granito, impacto grave e pequenos estilhaços.
+  function blockFallBuffer(ac){
+    if(audio._faraoStoneBuffer?.sampleRate===ac.sampleRate)return audio._faraoStoneBuffer;
+    const sr=ac.sampleRate,length=Math.round(sr*.46),buf=ac.createBuffer(1,length,sr),
+      samples=buf.getChannelData(0);
+    let seed=0x73f29b41,low=0,mid=0;
+    const chips=[.055,.115,.187,.262];
+    for(let i=0;i<length;i++){
+      const t=i/sr;
+      seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;
+      const white=(seed>>>0)/2147483648-1;
+      low=low*.984+white*.016;mid=mid*.66+white*.34;
+      // Pancada de bloco maciço + textura granulada da pedra.
+      const body=Math.sin(2*Math.PI*(97*t-56*t*t))*.65*Math.exp(-t*14);
+      const grit=(white*.40+mid*.62)*Math.exp(-t*30);
+      let debris=0;
+      for(let j=0;j<chips.length;j++){
+        const q=t-chips[j];
+        if(q>=0&&q<.095)
+          debris+=(white*.52+mid*.34)*Math.exp(-q*(43+j*5))*(.29-j*.047);
+      }
+      const rumble=low*2.8*Math.exp(-t*12);
+      const attack=Math.min(1,t*650);
+      samples[i]=Math.max(-.95,Math.min(.95,attack*(body+grit*.52+debris+rumble)*.78));
+    }
+    audio._faraoStoneBuffer=buf;
+    return buf;
+  }
+  audio.expansionStoneDrop=function(reel=0,row=0){
+    if(!ready())return;
+    try{
+      const ac=this.ctx,t=ac.currentTime,src=ac.createBufferSource(),
+        lp=ac.createBiquadFilter(),gain=ac.createGain();
+      src.buffer=blockFallBuffer(ac);
+      src.playbackRate.value=1-.065*row+.014*(reel%3);
+      lp.type='lowpass';lp.frequency.value=2100-row*160;
+      gain.gain.value=.36+row*.052;
+      src.connect(lp);lp.connect(gain);gain.connect(output());
+      src.start(t);src.stop(t+.57);
+      src.onended=()=>{try{src.disconnect();lp.disconnect();gain.disconnect();}catch(_){}};
+    }catch(_){
+      // Sem WebAudio disponível, nunca bloquear a revelação da figura.
+      this.freeBlockDrop?.(reel,row);
+    }
   };
   // Dó-ré-mi-fá-sol-lá-si-dó em crescente de tensão e volume.
   // Cada linha premiada repete a escala, com mais intensidade se houver
@@ -491,5 +540,5 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'1.4.9',original:true,realReelStopSample:true,sequenceAlert:true,retriggerTease:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'2.8.0-stone-fall',original:true,realReelStopSample:true,sequenceAlert:true,retriggerTease:true,dynamicReelSpeed:true};
 })();
