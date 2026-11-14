@@ -148,7 +148,8 @@
  // Expansão V2.7.8: cada uma das três pedras entra de cima para baixo.
  // Toda a animação é visual; não toca em probabilidades, prémios ou Free Spins.
  function expansionRowEase(raw,row){
-  const p=clamp((raw-row*.17)/(1-row*.17),0,1);
+  const starts=[0,.32,.64],spans=[.35,.35,.36];
+  const p=clamp((raw-starts[row])/spans[row],0,1);
   return p*p*(3-2*p);
  }
  function drawExpansionBeam(x,raw){
@@ -194,67 +195,85 @@
  // Fogo sagrado nos tambores expandidos: brilho de ouro nas bordas e núcleo
  // turquesa. Apenas desenho; nunca altera os símbolos ou a matemática.
  function drawExpansionFireHalo(x,progress,t,fade=1){
-  const reveal=clamp(progress*2.1,0,1),power=reveal*clamp(fade,0,1);
+  const reveal=clamp(progress*3.0,0,1),power=reveal*clamp(fade,0,1);
   if(power<=.01)return;
   const y=R.top,w=R.cw,h=R.gh*3, bottom=y+h;
-  const flicker=reducedMotion?1:.90+.10*Math.sin(t*.012+x*.17);
+  const flicker=reducedMotion?1:.93+.07*Math.sin(t*.017+x*.17);
   const intensity=power*flicker;
   ctx.save();
   // Só 8 px para dentro do tambor: mantém as imagens completamente legíveis.
   ctx.globalCompositeOperation='screen';
-  ctx.globalAlpha=intensity*.72;
-  ctx.shadowBlur=reducedMotion?0:12;
-  ctx.shadowColor='#ff993c';
-  rounded(ctx,x+1,y+1,w-2,h-2,8,null,'#f4a244',4);
-  ctx.shadowBlur=0;
-  rounded(ctx,x+3,y+3,w-6,h-6,7,null,'#5debe9',1.7);
+  ctx.globalAlpha=intensity*.95;
+  ctx.shadowBlur=reducedMotion?0:23;
+  ctx.shadowColor='#ff8b29';
+  rounded(ctx,x+1,y+1,w-2,h-2,8,null,'#ffba53',6.5);
+  ctx.shadowColor='#64fbef';ctx.shadowBlur=reducedMotion?0:15;
+  rounded(ctx,x+4,y+4,w-8,h-8,7,null,'#69f6e9',2.6);
   ctx.restore();
   if(reducedMotion)return;
   ctx.save();
   ctx.globalCompositeOperation='screen';
+  // Colunas de calor luminosas nas margens, quase sem invadir as imagens.
+  ctx.globalAlpha=intensity*.60;
+  const leftHeat=grad(ctx,x-16,0,x+12,0,[
+   [0,'rgba(255,65,5,0)'],[.34,'rgba(255,92,8,.32)'],
+   [.63,'rgba(255,194,76,.64)'],[1,'rgba(88,241,227,0)']
+  ]);
+  const rightHeat=grad(ctx,x+w-12,0,x+w+16,0,[
+   [0,'rgba(88,241,227,0)'],[.37,'rgba(255,194,76,.64)'],
+   [.66,'rgba(255,92,8,.32)'],[1,'rgba(255,65,5,0)']
+  ]);
+  ctx.fillStyle=leftHeat;ctx.fillRect(x-16,y,28,h);
+  ctx.fillStyle=rightHeat;ctx.fillRect(x+w-12,y,28,h);
+  ctx.restore();
+  ctx.save();
+  ctx.globalCompositeOperation='screen';
   // Cada chama usa só duas formas planas: leve para WebKit/iPhone.
   const sideFlame=(xx,yy,dir,size,wave)=>{
-    const flare=size*(.8+.20*wave),spread=7+flare*.23;
+    const flare=size*(.76+.24*wave),spread=8+flare*.28;
     ctx.beginPath();
     ctx.moveTo(xx,yy+flare*.40);
     ctx.quadraticCurveTo(xx+dir*spread,yy+flare*.04,xx+dir*(11+flare*.22),yy-flare*.70);
     ctx.quadraticCurveTo(xx+dir*3,yy-flare*.20,xx,yy-flare*.35);
     ctx.closePath();
-    ctx.fillStyle='#f4a13d';ctx.fill();
+    ctx.fillStyle='#ff8c20';ctx.fill();
     // Centro azul-turquesa, como uma chama sagrada de templo.
     ctx.beginPath();ctx.moveTo(xx,yy+flare*.21);
     ctx.quadraticCurveTo(xx+dir*4,yy,xx+dir*(5+flare*.08),yy-flare*.36);
     ctx.quadraticCurveTo(xx+dir,yy-flare*.12,xx,yy-flare*.16);
-    ctx.closePath();ctx.fillStyle='#62f1e6';ctx.fill();
+    ctx.closePath();ctx.fillStyle='#86fbec';ctx.fill();
   };
   const rimFlame=(xx,yy,dir,size,wave)=>{
     const flare=size*(.75+.25*wave);
     ctx.beginPath();ctx.moveTo(xx-6,yy);
     ctx.quadraticCurveTo(xx-6+flare*.12,yy+dir*flare*.47,xx,yy+dir*flare);
     ctx.quadraticCurveTo(xx+7,yy+dir*flare*.30,xx+7,yy);
-    ctx.closePath();ctx.fillStyle='#ffd17a';ctx.fill();
+    ctx.closePath();ctx.fillStyle='#ffba49';ctx.fill();
     ctx.beginPath();ctx.moveTo(xx-3,yy);
     ctx.quadraticCurveTo(xx-2,yy+dir*flare*.24,xx,yy+dir*flare*.55);
     ctx.quadraticCurveTo(xx+3,yy+dir*flare*.18,xx+3,yy);
     ctx.closePath();ctx.fillStyle='#55dfe6';ctx.fill();
   };
-  ctx.globalAlpha=intensity*.56;
-  for(let i=0;i<10;i++){
-   const yy=y+20+i*(h-40)/9;
-   const pulse=.5+.5*Math.sin(t*.008+i*1.57+x*.009);
-   sideFlame(x+2,yy,-1,14+i%3*5,pulse);
-   sideFlame(x+w-2,yy,1,13+(i+1)%3*5,1-pulse);
+  ctx.globalAlpha=intensity*.93;
+  ctx.shadowColor='#ff9a36';ctx.shadowBlur=9;
+  for(let i=0;i<11;i++){
+   const yy=y+19+i*(h-38)/10;
+   const pulse=.5+.5*Math.sin(t*.011+i*1.57+x*.009);
+   sideFlame(x+1,yy,-1,23+i%3*7,pulse);
+   sideFlame(x+w-1,yy,1,22+(i+1)%3*7,1-pulse);
   }
-  ctx.globalAlpha=intensity*.47;
+  ctx.shadowBlur=7;
+  ctx.globalAlpha=intensity*.83;
   for(let i=0;i<5;i++){
    const xx=x+14+i*(w-28)/4;
    const pulse=.5+.5*Math.sin(t*.007+i*1.3+x*.01);
-   rimFlame(xx,y+3,-1,12+i%2*5,pulse);
-   rimFlame(xx,bottom-3,1,10+(i+1)%3*4,1-pulse);
+   rimFlame(xx,y+3,-1,19+i%2*6,pulse);
+   rimFlame(xx,bottom-3,1,17+(i+1)%3*5,1-pulse);
   }
   // Faíscas suaves ao redor do aro, sem partículas permanentes.
-  ctx.globalAlpha=intensity*.64;
-  for(let i=0;i<9;i++){
+  ctx.shadowBlur=0;
+  ctx.globalAlpha=intensity*.88;
+  for(let i=0;i<12;i++){
    const phase=t*.00085+i*.173;
    const yy=y+13+((phase%1)*(h-26));
    const xx=i%2===0?x-6-(i%3)*2:x+w+6+(i%3)*2;
@@ -263,7 +282,7 @@
   }
   ctx.restore();
  }
- game.visualV11={layout:R,tile,medallion,version:'2.7.9-fire-halo'};
+ game.visualV11={layout:R,tile,medallion,version:'2.8.0-temple-inferno'};
  game.drawReelSeparators=function(left,top,interval,gh){
   for(let c=1;c<5;c++){
    const x=left+c*interval-(interval-R.cw)/2;
@@ -829,7 +848,7 @@
     for(let i=0;i<keys.length;i++)
       this.drawMiniSymbol(keys[i],294+i*step,bonusesY+(35-size)/2,size);
   }
-  txt('V2.7.9',38,985,10,'#e5c68d',850,'Arial');
+  txt('V2.8.0',38,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
