@@ -9,7 +9,7 @@ const fs=require('node:fs');
  });
  const errors=[];
  page.on('pageerror',e=>errors.push(String(e)));
- await page.goto('http://127.0.0.1:8765/Pantanal/?v=2.21',{waitUntil:'domcontentloaded',timeout:50000});
+ await page.goto('http://127.0.0.1:8765/Pantanal/?v=2.22',{waitUntil:'domcontentloaded',timeout:50000});
  await page.waitForSelector('#screen');
  let baseline=await page.evaluate(()=>({
   scripts:!!window.PantanalApkEngine&&!!window.PantanalBonusUI,
@@ -23,6 +23,10 @@ const fs=require('node:fs');
  assert.equal(await page.locator('#reels .symbol').count(),15);
  await page.locator('#linesBtn').click({force:true});
  await page.waitForSelector('#pantanalPaylines');
+ assert.equal(await page.locator('#lineNumberLabels .lineNumber.isActive').count(),1,
+   'Na seleção de uma linha só o número 1 deve ficar iluminado');
+ assert.equal(await page.locator('#lineNumberLabels .lineNumber').count(),25,
+   'É obrigatório mostrar todos os 25 números na moldura');
  for(let i=0;i<4;i++)await page.locator('#linesBtn').click({force:true});
  const p=await page.evaluate(()=>{
   const r=document.getElementById('reels').getBoundingClientRect();
@@ -38,6 +42,37 @@ const fs=require('node:fs');
  assert(Math.abs(p.overlay.w-p.reels.w)<2);
  assert(Math.abs(p.overlay.h-p.reels.h)<2);
  assert(p.paylines>=25,'Pre-visualizacao completa com 25 linhas');
+ // Todos os 25 números da moldura 9:16 devem caber inteiros fora dos símbolos.
+ const numberLayout=await page.evaluate(()=>{
+   const area=document.getElementById('reelArea').getBoundingClientRect();
+   const reels=document.getElementById('reels').getBoundingClientRect();
+   return [...document.querySelectorAll('#lineNumberLabels [data-line-number]')].map((node,i)=>{
+     const r=node.getBoundingClientRect(),side=node.dataset.side;
+     return {
+       number:Number(node.textContent),
+       data:Number(node.dataset.lineNumber),side,
+       visible:getComputedStyle(node).display!=='none',
+       opacity:parseFloat(getComputedStyle(node).opacity),
+       active:node.classList.contains('isActive'),
+       insideFrame:r.left>=area.left-1&&r.right<=area.right+1&&
+         r.top>=area.top-1&&r.bottom<=area.bottom+1,
+       overlapsReels:r.left<reels.right&&r.right>reels.left&&
+         r.top<reels.bottom&&r.bottom>reels.top
+     };
+   });
+ });
+ assert.equal(numberLayout.length,25);
+ for(let i=0;i<25;i++){
+   const n=numberLayout[i];
+   assert.equal(n.number,i+1,'Número ausente ou fora de ordem');
+   assert.equal(n.data,i+1,'A identificação da linha está errada');
+   assert(n.visible&&n.opacity>=.7,'Número não visível: '+n.number);
+   assert(n.insideFrame,'Número cortado pela moldura: '+n.number);
+   assert(!n.overlapsReels,'Número sobreposto aos símbolos: '+n.number);
+   assert(n.active,'Linha selecionada sem número iluminado: '+n.number);
+   assert.equal(n.side,i<10?'left':i<20?'right':'bottom');
+ }
+
  const centerPortrait=await page.evaluate(()=>{
    const r=document.getElementById('reels').getBoundingClientRect();
    const screen=document.getElementById('screen').getBoundingClientRect();
@@ -77,7 +112,7 @@ const fs=require('node:fs');
 
 
  fs.mkdirSync('Pantanal/tests/screenshots',{recursive:true});
- await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v221-iphone.png',fullPage:false});
+ await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v222-iphone.png',fullPage:false});
  await page.evaluate(()=>{
   window.__modeCalls=0;window.__visualTestState={lastWin:100,credits:1000,totalPaid:0,maxWin:0,history:[{total:100}]};
   window.__visualTestPromise=PantanalBonusUI.launch({
@@ -215,11 +250,13 @@ const fs=require('node:fs');
  });
  assert(centerDesktop<1.5,'Tambores descentrados no modo horizontal');
  assert.equal(await page.locator('#reelArea').count(),1,'Área da moldura perdida ao rodar');
+ assert.equal(await page.locator('#lineNumberLabels').evaluate(el=>getComputedStyle(el).display),'none',
+  'Não duplicar números de linhas sobre a moldura original horizontal');
  assert.equal(await page.locator('#reelFrame').evaluate(el=>getComputedStyle(el).display),'none',
    'Moldura adicional não deve duplicar a original em horizontal');
 
 
- await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v221-desktop.png'});
+ await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v222-desktop.png'});
  const readableErrors=errors.filter(x=>!x.includes('Audio'));
  assert.equal(readableErrors.length,0,'Erros de JS no browser: '+readableErrors.join(' | '));
  console.log(JSON.stringify({success:true,portrait:baseline,lines:p,bonus,desktop,jsErrors:readableErrors},null,2));
