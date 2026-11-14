@@ -1118,6 +1118,53 @@ html,body{height:100%;overflow:hidden;background:#051814}
   #reelFrame .rain-symbol{animation:none!important;will-change:auto}
 }
 
+
+/* PREMIUM GLADES V2.1 — woodland waterfall and grassy stage without boxes */
+.app{
+  background:#0a392b url('assets/jardim-v2-cascata-relva.svg') center center / cover no-repeat!important;
+}
+.intro-screen{
+  background:linear-gradient(180deg,#071d20bf 0%,#0d30239a 40%,#06191bee 100%),
+    url('assets/jardim-v2-cascata-relva.svg') center center / cover no-repeat!important;
+}
+/* Organic, feathered contrast behind the 5x3 falling symbols, never a panel. */
+#reelFrame.frame::before{
+  content:""!important;display:block!important;
+  position:absolute;inset:-3% -1%;z-index:0;pointer-events:none;
+  border:0!important;border-radius:42% / 36%;
+  background:radial-gradient(ellipse at center,
+    #052d296b 0%,#082d2852 36%,#06332922 70%,transparent 94%);
+  box-shadow:none!important;
+}
+#reelFrame #reels{position:relative;z-index:1}
+#reelFrame #reels .cell{isolation:isolate}
+/* The same exact visual geometry for falling and landed artwork.
+   Never change sprite scale at the last frame; only translate vertically. */
+#reelFrame #reels .cell img.jmSymbolArt,
+#reelFrame .rain-symbol img.jmSymbolArt{
+  display:block!important;
+  grid-area:1/1;
+  width:var(--jm-fit,94%)!important;
+  height:var(--jm-fit,94%)!important;
+  max-width:96%!important;
+  max-height:96%!important;
+  min-width:0!important;min-height:0!important;
+  margin:0!important;aspect-ratio:1/1;
+  object-fit:contain!important;object-position:center center!important;
+  place-self:center;
+  filter:drop-shadow(0 4px 3px #041f1ad1)
+    drop-shadow(0 0 5px #e7ffc67d)
+    drop-shadow(0 0 10px #061a20ab)!important;
+}
+#reelFrame #reels .cell.scatter-cell img.jmSymbolArt{
+  filter:drop-shadow(0 0 13px #f8ddff)
+    drop-shadow(0 0 22px #a869dc)!important;
+}
+#reelFrame #reels .cell.winning img.jmSymbolArt{
+  filter:drop-shadow(0 0 10px #fff7c1)
+    drop-shadow(0 0 21px #ffce64)!important;
+}
+
 </style>
 </head>
 <body>
@@ -1990,10 +2037,10 @@ async function animateSymbolRain(boardFinal){
       layer.appendChild(sprite);
       const height=reelsRect.height+rect.height*1.4+entry.r*18;
       const frames=[
-        {transform:"translate3d(0,-"+height+"px,0) scale(.91)",opacity:0,offset:0},
-        {transform:"translate3d(0,-"+Math.min(36,height*.16)+"px,0) scale(1)",opacity:1,offset:.68},
-        {transform:"translate3d(0,7px,0) scale(1.035,.96)",opacity:1,offset:.91},
-        {transform:"translate3d(0,0px,0) scale(1)",opacity:1,offset:1}
+        {transform:"translate3d(0,-"+height+"px,0)",opacity:0,offset:0},
+        {transform:"translate3d(0,-"+Math.min(36,height*.16)+"px,0)",opacity:1,offset:.68},
+        {transform:"translate3d(0,7px,0)",opacity:1,offset:.91},
+        {transform:"translate3d(0,0px,0)",opacity:1,offset:1}
       ];
       animations.push({sprite,frames,timing:{duration:entry.duration,delay:entry.delay,
         easing:"cubic-bezier(.24,.72,.27,1)",fill:"both"}});
