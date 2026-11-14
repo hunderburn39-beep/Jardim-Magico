@@ -1917,7 +1917,7 @@ const BONUS_SIDE=4,BONUS_CELLS=BONUS_SIDE*BONUS_SIDE;
 const BONUS_FACTORS=[2,3,5,10,20,50,100,1000];
 function bonusFactorTotal(){return bonus?.factors.length?bonus.factors.reduce((a,b)=>a+b,0):1;}
 function randomEmptyCells(){const list=[];for(let i=0;i<bonus.cells.length;i++)if(!bonus.cells[i])list.push(i);for(let i=list.length-1;i>0;i--){const j=R(i+1);[list[i],list[j]]=[list[j],list[i]];}return list;}
-function addBonusCoin(i,value){if(bonus.cells[i])return false;const paid=roundedPayout(value*rtpScaleFor('hold'));bonus.cells[i]={kind:'coin',value:paid};bonus.coinsTotal+=paid;return true;}
+function addBonusCoin(i,value){if(bonus.cells[i])return false;const paid=bonus.euroCoinsOnly?Math.round(value):roundedPayout(value*rtpScaleFor('hold'));bonus.cells[i]={kind:'coin',value:paid};bonus.coinsTotal+=paid;return true;}
 function addBonusFactor(i,value){if(bonus.cells[i])return false;bonus.cells[i]={kind:'factor',value};bonus.factors.push(value);return true;}
 function addBonusGem(i,type){if(bonus.cells[i]||bonus.gems[type]>=4)return false;bonus.cells[i]={kind:'gem',type};bonus.gems[type]++;audioFX('gem');if(bonus.gems[type]===4){bonus.jackpot=type;bonus.finished=true;bonus.endReason='jackpot';}return true;}
 function diamondSvg(jp){return `<svg class="bonusCrystal" style="--crystal-main:${jp.color}" viewBox="0 0 100 105" role="img" aria-label="Diamante de cristal" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="facet${jp.mult}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="white" stop-opacity=".96"/><stop offset=".35" stop-color="${jp.color}"/><stop offset="1" stop-color="#18112a"/></linearGradient></defs><path d="M25 10 L75 10 L97 37 L50 98 L3 37 Z" fill="url(#facet${jp.mult})" stroke="#fff4e1" stroke-width="3"/><path d="M25 10 L37 38 L3 37 Z" fill="white" opacity=".46"/><path d="M75 10 L63 38 L97 37 Z" fill="white" opacity=".22"/><path d="M37 38 L63 38 L50 98 Z" fill="white" opacity=".30"/><path d="M3 37 L37 38 L50 98 Z" fill="#130b29" opacity=".32"/><path d="M97 37 L63 38 L50 98 Z" fill="#1d1438" opacity=".45"/><path d="M25 10 L37 38 L63 38 L75 10 Z" fill="white" opacity=".36"/><path d="M50 6 L55 19 L50 15 L45 19Z" fill="white" opacity=".9"/></svg>`;}
@@ -1927,7 +1927,7 @@ function gemProgress(){
 function bonusCellMarkup(c){
  if(c.kind==='gem')return diamondSvg(JACKPOTS[c.type]);
  if(c.kind==='factor')return `<div class="bonusToken factor" aria-label="Multiplicador ${c.value} vezes"><strong>${c.value}×</strong><small>MULTI</small></div>`;
- return `<div class="bonusToken cash" aria-label="Moeda de ${money(c.value)}"><strong>${(c.value/100).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong><small>MOEDA</small></div>`;
+ return `<div class="bonusToken cash" aria-label="Moeda de ${money(c.value)}"><strong>${money(c.value)}</strong><small>MOEDA</small></div>`;
 }
 function renderBonus(newIndices=[]){
  if(!bonus)return;
@@ -1955,12 +1955,14 @@ function renderBonus(newIndices=[]){
   frag.appendChild(el);
  }
  $('bonusGrid').replaceChildren(frag);
+ const factorPanel=$('bonusFactors').closest('.bonusMultiplier');
+ if(factorPanel)factorPanel.style.display=bonus.euroCoinsOnly?'none':'';
  $('bonusFactors').innerHTML=bonus.factors.length?bonus.factors.map(v=>`<span>${v}×</span>`).join(''):'×1';
  const holdFactor=bonusFactorTotal();
  const potential=bonus.coinsTotal*holdFactor;
  const baseMax=Math.min(potential,bonus.stakeBet*MAX_WIN_MULT);
  const basePayable=vaultPayable(baseMax,bonus.stakeBet);
- $('bonusFormula').textContent=`${money(bonus.coinsTotal)} × ${holdFactor} = ${money(potential)} (POTENCIAL)${bonus.jackpot?' + '+bonus.jackpot+' '+money(jackpotPayable(bonus.jackpot,bonus.stakeBet)):''}`;
+ $('bonusFormula').textContent=bonus.euroCoinsOnly?`TOTAL DAS MOEDAS: ${money(bonus.coinsTotal)}${bonus.jackpot?' + '+bonus.jackpot+' '+money(jackpotPayable(bonus.jackpot,bonus.stakeBet)):''}`:`${money(bonus.coinsTotal)} × ${holdFactor} = ${money(potential)} (POTENCIAL)${bonus.jackpot?' + '+bonus.jackpot+' '+money(jackpotPayable(bonus.jackpot,bonus.stakeBet)):''}`;
  const payableLabel=$('jm65BonusPayable');
  if(payableLabel)payableLabel.textContent='BASE PAGÁVEL PELO COFRE: '+money(basePayable)+(basePayable<baseMax?' · LIMITE DE FUNDOS':'')+' · JACKPOTS EM FUNDOS SEPARADOS';
  $('bonusSpin').textContent=bonus.wheelPending?'ROLETA A GIRAR…':bonus.finished?'RECOLHER PRÉMIO':'RODAR BÓNUS';
@@ -1989,7 +1991,7 @@ function flyGemToCounter(index,type){
 function placeRandomBonusItem(index){
  const r=Math.random();
  if(r<.820)return addBonusCoin(index,bonus.stakeBet*pick([1,1,1,2,2,3,5,5,8,10]));
- if(r<.870)return addBonusFactor(index,chooseHoldFactor());
+ if(r<.870)return bonus.euroCoinsOnly?addBonusCoin(index,bonus.stakeBet*chooseHoldFactor()):addBonusFactor(index,chooseHoldFactor());
  const kind=Math.random()<.58?bonus.focus:pick(Object.keys(JACKPOTS));
  return addBonusGem(index,kind);
 }
@@ -1999,14 +2001,13 @@ async function launchBonus(purchase=true,origin='compra'){
  running=true;
  if(purchase){balance-=cost;session.stake+=cost;fundWager(cost);session.bonuses++;log('compra_hold_win',-cost,'Hold & Win 4×4 — 100× aposta');}
  else{session.bonuses++;log(origin==='6_moedas'?'ativacao_6_moedas':'ativacao_cofre',0,origin==='6_moedas'?'Hold & Win 4×4: seis moedas nos cinco tambores':'Hold & Win 4×4 ativado pelo cofre mágico');}
- bonus={left:3,coinsTotal:0,cells:Array(BONUS_CELLS).fill(null),factors:[],gems:{ULTRA:0,MAX:0,MED:0,MIN:0},jackpot:null,focus:pick(Object.keys(JACKPOTS)),finished:false,endReason:null,inMotion:false,stakeBet:BETS[betIdx],origin,rolls:0};
+ bonus={left:3,coinsTotal:0,cells:Array(BONUS_CELLS).fill(null),euroCoinsOnly:true,factors:[],gems:{ULTRA:0,MAX:0,MED:0,MIN:0},jackpot:null,focus:pick(Object.keys(JACKPOTS)),finished:false,endReason:null,inMotion:false,stakeBet:BETS[betIdx],origin,rolls:0};
  const spots=randomEmptyCells();
- for(let i=0;i<7;i++)addBonusCoin(spots[i],bonus.stakeBet*pick([1,2,2,3,5,8,10]));
- addBonusGem(spots[7],bonus.focus);
- if(Math.random()<.012)addBonusFactor(spots[8],chooseHoldFactor());
- renderBonus(spots.slice(0,9));
- spots.slice(0,9).forEach((_,i)=>setTimeout(()=>audioFX('lock'),i*75));
- $('bonusNote').textContent='3 tentativas. Cada símbolo novo repõe as 3. Sem novidades, perdes uma tentativa.';
+ for(let i=0;i<6;i++)addBonusCoin(spots[i],bonus.stakeBet*pick([1,2,2,3,5,8,10]));
+ addBonusGem(spots[6],bonus.focus);
+ renderBonus(spots.slice(0,7));
+ spots.slice(0,7).forEach((_,i)=>setTimeout(()=>audioFX('lock'),i*75));
+ $('bonusNote').textContent='6 moedas iniciais · valores em euros · 3 tentativas. Cada símbolo novo repõe as 3.';
  modal('buyModal',false);soundStart();await showFeatureIntro('hold');modal('bonusModal',true);
  running=false;update();save();return true;
 }
@@ -2019,7 +2020,7 @@ async function animateBonusRoulette(added){
  const reduce=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
  if(reduce){await sleep(100);return;}
  const quick=mode==='turbo',rounds=quick?10:16,frameDelay=quick?49:72;
- const faces=['🪙','2×','💎','✦','🪙','5×','◆','10×','🪙','✧'];
+ const faces=['🪙',money(bonus.stakeBet*2),'💎','✦','🪙',money(bonus.stakeBet*5),'◆',money(bonus.stakeBet*10),'🪙','✧'];
  const landed=new Set(added);
  for(let tick=0;tick<rounds;tick++){
   for(let i=0;i<squares.length;i++){
@@ -2173,7 +2174,7 @@ function showBig(final,base,factor,jp,jackpotWin,capped=null,fromWheel=false,sta
  const tier=window.JM_WINCELEBRATION_V60?.tierFor(final,stake);
  $('bigTitle').textContent=jp?'JACKPOT '+jp+'!':tier?tier.label+'!':'TOTAL HOLD & WIN';
  $('bigAmount').textContent=money(final);
- $('bigMath').textContent=`${money(base)} × ${factor}${jp?' + '+jp+' '+money(jackpotWin):''} = ${money(base*factor+jackpotWin)}${capped?' • PAGO '+money(final)+(capped==='cofre'?' (limite do cofre)':' (limite 5000×)'):''}`;
+ $('bigMath').textContent=`${money(base)}${factor===1?'':' × '+factor}${jp?' + '+jp+' '+money(jackpotWin):''} = ${money(base*factor+jackpotWin)}${capped?' • PAGO '+money(final)+(capped==='cofre'?' (limite do cofre)':' (limite 5000×)'):''}`;
  $('bigWin').classList.add('show');audioFX('big');if(final>0)audioFX('schoolBell');particlesAt(W/2,H/2,'big');
 }
 function drawWinLineMaps(){
