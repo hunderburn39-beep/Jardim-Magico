@@ -15,7 +15,8 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re,base64,io
-          from PIL import Image
+          from PIL import Image,ImageFile
+          ImageFile.LOAD_TRUNCATED_IMAGES=True
           s=Path('Pantanal/index.html').read_text()
           m=re.search(r"'05_telabot\.png'\s*:\s*\"data:image/png;base64,([A-Za-z0-9+/=]+)\"",s)
           if not m: raise Exception('Image atlas missing')
