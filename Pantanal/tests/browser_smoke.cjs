@@ -9,7 +9,7 @@ const fs=require('node:fs');
  });
  const errors=[];
  page.on('pageerror',e=>errors.push(String(e)));
- await page.goto('http://127.0.0.1:8765/Pantanal/?v=2.20',{waitUntil:'domcontentloaded',timeout:50000});
+ await page.goto('http://127.0.0.1:8765/Pantanal/?v=2.21',{waitUntil:'domcontentloaded',timeout:50000});
  await page.waitForSelector('#screen');
  let baseline=await page.evaluate(()=>({
   scripts:!!window.PantanalApkEngine&&!!window.PantanalBonusUI,
@@ -48,9 +48,36 @@ const fs=require('node:fs');
  assert(centerPortrait.delta<1.5,'Tambores descentrados no iPhone');
  assert.equal(centerPortrait.width,611);
  assert.equal(centerPortrait.height,314);
+ const framePortrait=await page.evaluate(()=>{
+  const screen=document.getElementById('screen').getBoundingClientRect();
+  const frame=document.getElementById('reelFrame').getBoundingClientRect();
+  const area=document.getElementById('reelArea').getBoundingClientRect();
+  const reels=document.getElementById('reels').getBoundingClientRect();
+  const ctrls=document.getElementById('ctrls').getBoundingClientRect();
+  return {
+   ratio:area.width/screen.width,
+   frameVisible:getComputedStyle(document.getElementById('reelFrame')).display!=='none',
+   areaX:Math.abs((area.x+area.width/2)-(screen.x+screen.width/2)),
+   areaY:Math.abs((area.y+area.height/2)-(screen.y+screen.height/2)),
+   reelsX:Math.abs((reels.x+reels.width/2)-(area.x+area.width/2)),
+   reelsY:Math.abs((reels.y+reels.height/2)-(area.y+area.height/2)),
+   frameMargin:frame.width-reels.width,
+   spaceToControls:ctrls.top-area.bottom,
+   reelsParent:document.getElementById('reels').parentElement.id
+  };
+ });
+ assert(framePortrait.frameVisible,'Moldura 9:16 não aparece');
+ assert.equal(framePortrait.reelsParent,'reelArea');
+ assert(Math.abs(framePortrait.ratio-.875)<.005,'Proporção da moldura incorreta');
+ for(const key of ['areaX','areaY','reelsX','reelsY']){
+  assert(framePortrait[key]<1.5,'Centragem falhada: '+key+' = '+framePortrait[key]);
+ }
+ assert(framePortrait.frameMargin>30,'Moldura não envolve os tambores');
+ assert(framePortrait.spaceToControls>30,'Moldura sobrepõe os comandos');
+
 
  fs.mkdirSync('Pantanal/tests/screenshots',{recursive:true});
- await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v220-iphone.png',fullPage:false});
+ await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v221-iphone.png',fullPage:false});
  await page.evaluate(()=>{
   window.__modeCalls=0;window.__visualTestState={lastWin:100,credits:1000,totalPaid:0,maxWin:0,history:[{total:100}]};
   window.__visualTestPromise=PantanalBonusUI.launch({
@@ -187,8 +214,12 @@ const fs=require('node:fs');
    return Math.abs(r.left+r.width/2-screen.left-screen.width/2);
  });
  assert(centerDesktop<1.5,'Tambores descentrados no modo horizontal');
+ assert.equal(await page.locator('#reelArea').count(),1,'Área da moldura perdida ao rodar');
+ assert.equal(await page.locator('#reelFrame').evaluate(el=>getComputedStyle(el).display),'none',
+   'Moldura adicional não deve duplicar a original em horizontal');
 
- await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v220-desktop.png'});
+
+ await page.screenshot({path:'Pantanal/tests/screenshots/pantanal-v221-desktop.png'});
  const readableErrors=errors.filter(x=>!x.includes('Audio'));
  assert.equal(readableErrors.length,0,'Erros de JS no browser: '+readableErrors.join(' | '));
  console.log(JSON.stringify({success:true,portrait:baseline,lines:p,bonus,desktop,jsErrors:readableErrors},null,2));
