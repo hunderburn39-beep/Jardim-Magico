@@ -92,6 +92,8 @@
    '<p class="farao-spins-label">PRÉMIO FINAL</p>'+
    '<strong class="super-total-prize" id="super-final-total" aria-label="Prémio final: '+fmt(b.totalU)+'">'+fmt(b.totalU)+'</strong>'+
    '<p class="farao-bonus-rounds">'+b.played+' RODADAS · '+b.retriggers+' RETRIGGERS</p>'+
+   (this._recoveredBonusSummary?
+    '<p class="farao-recovery-note" role="status">SESSÃO RECUPERADA · PRÉMIO PRESERVADO</p>':'')+
    '<button type="button" class="btn farao-gold-btn" id="collect-bonus">RECEBER TESOURO</button>'+
    '</div>',true);
   this.audio?.fanfare?.(3);
