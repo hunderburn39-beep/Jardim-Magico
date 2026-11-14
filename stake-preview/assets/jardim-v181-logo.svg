@@ -1,23 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="940" height="410" viewBox="0 0 940 410" role="img" aria-label="Jardim Mágico — logótipo dourado e verde, totalmente visível">
-<title>Jardim Mágico</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="410" viewBox="0 0 940 410" role="img" aria-label="Jardim Mágico — logótipo 3D dourado e verde com safira azul, flores e ornamentos">
+<title>Jardim Mágico — edição Cascata Premium</title>
 <defs>
- <linearGradient id="wordA" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#f2ffa3"/><stop offset=".18" stop-color="#7bd45d"/><stop offset=".48" stop-color="#227744"/><stop offset=".75" stop-color="#19532e"/><stop offset="1" stop-color="#9add75"/></linearGradient>
- <linearGradient id="wordB" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#fff9d2"/><stop offset=".25" stop-color="#e9a9ff"/><stop offset=".54" stop-color="#b458d9"/><stop offset=".76" stop-color="#622a9c"/><stop offset="1" stop-color="#d9acf5"/></linearGradient>
+ <linearGradient id="wordA" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#fff8cf"/><stop offset=".19" stop-color="#ffe16d"/><stop offset=".49" stop-color="#f5a52a"/><stop offset=".76" stop-color="#b24b0d"/><stop offset="1" stop-color="#ffd467"/></linearGradient>
+ <linearGradient id="wordB" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#f9ffbe"/><stop offset=".21" stop-color="#b6f66c"/><stop offset=".45" stop-color="#4bb543"/><stop offset=".73" stop-color="#147b35"/><stop offset="1" stop-color="#a8ee62"/></linearGradient>
  <linearGradient id="gilt" x1="0" x2=".3" y1="0" y2="1"><stop stop-color="#fffbd9"/><stop offset=".21" stop-color="#fbd77f"/><stop offset=".47" stop-color="#b5651a"/><stop offset=".7" stop-color="#e8ac46"/><stop offset="1" stop-color="#fff7bc"/></linearGradient>
  <linearGradient id="sprig" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#ccf594"/><stop offset=".48" stop-color="#418b49"/><stop offset="1" stop-color="#153e35"/></linearGradient>
- <radialGradient id="gem"><stop stop-color="#fffde8"/><stop offset=".21" stop-color="#f0beff"/><stop offset=".56" stop-color="#ae42d5"/><stop offset="1" stop-color="#522887"/></radialGradient>
+ <radialGradient id="gem"><stop stop-color="#fffcec"/><stop offset=".21" stop-color="#ffadc7"/><stop offset=".56" stop-color="#ec2464"/><stop offset="1" stop-color="#83103c"/></radialGradient>
+ <radialGradient id="sapphire"><stop stop-color="#e5ffff"/><stop offset=".3" stop-color="#81faff"/><stop offset=".65" stop-color="#218cfa"/><stop offset="1" stop-color="#182cc6"/></radialGradient>
+ <linearGradient id="logoWood" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#89572a"/><stop offset=".47" stop-color="#392113"/><stop offset="1" stop-color="#120f14"/></linearGradient>
  <filter id="goldShadow" x="-25%" y="-30%" width="150%" height="160%"><feDropShadow dx="1" dy="8" stdDeviation="5" flood-color="#040d13" flood-opacity=".8"/></filter>
 </defs>
-<!-- Sculpted background ornament: deliberately transparent center, no photo, no crop -->
-<path d="M90 170Q136 104 223 109Q245 52 295 59Q320 23 379 43Q471 11 555 42Q619 23 651 72Q734 48 781 120Q829 125 848 178Q819 243 742 252Q667 337 472 369Q287 346 206 268Q118 270 90 170Z" fill="#093321" opacity=".76" stroke="#0d2d25" stroke-width="12"/>
-<path d="M92 168Q179 87 256 100Q325 12 448 37Q574 5 647 93Q746 74 846 175" stroke="url(#gilt)" stroke-width="7" fill="none" opacity=".75"/>
+<!-- V3 gold-orange and emerald sculpted emblem. Separate from the waterfall stage. -->
+<path d="M90 170Q136 104 223 109Q245 52 295 59Q320 23 379 43Q471 11 555 42Q619 23 651 72Q734 48 781 120Q829 125 848 178Q819 243 742 252Q667 337 472 369Q287 346 206 268Q118 270 90 170Z" fill="url(#logoWood)" opacity=".96" stroke="#30170b" stroke-width="12"/>
+<path d="M92 168Q179 87 256 100Q325 12 448 37Q574 5 647 93Q746 74 846 175" stroke="url(#gilt)" stroke-width="11" fill="none" opacity=".95"/>
+<!-- Blue crystal at crown; metallic sparkle with facets -->
+<path d="M430 45L460 -2L510 2L538 50L476 111Z" fill="url(#sapphire)" stroke="#fff0a9" stroke-width="8"/>
+<path d="M430 45H538L476 111Z" fill="#3dcbf1" opacity=".4"/><path d="M460 -2L476 111L510 2" stroke="#e1fffa" stroke-width="4" opacity=".8" fill="none"/>
+<path d="M443 46L464 12M488 12L512 42" stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity=".9"/>
 <g fill="url(#sprig)" stroke="#ddf9a5" stroke-width="2">
  <path d="M87 240Q29 171 94 118Q148 151 87 240Z"/><path d="M130 267Q46 240 66 170Q131 169 130 267Z"/>
  <path d="M165 95Q105 31 177 16Q205 49 165 95Z"/><path d="M243 51Q231 0 279 15Q296 38 243 51Z"/>
  <path d="M853 240Q911 171 846 118Q792 151 853 240Z"/><path d="M810 267Q894 240 874 170Q809 169 810 267Z"/>
  <path d="M775 95Q835 31 763 16Q735 49 775 95Z"/><path d="M697 51Q709 0 661 15Q644 38 697 51Z"/>
 </g>
-<g fill="#d06fe1" stroke="#ffe4b8" stroke-width="3">
+<g fill="#f35cbb" stroke="#ffdc8e" stroke-width="3">
  <ellipse cx="101" cy="242" rx="21" ry="38" transform="rotate(25 101 242)"/>
  <ellipse cx="101" cy="242" rx="21" ry="38" transform="rotate(85 101 242)"/>
  <ellipse cx="101" cy="242" rx="21" ry="38" transform="rotate(145 101 242)"/>
@@ -26,6 +32,9 @@
  <ellipse cx="839" cy="242" rx="21" ry="38" transform="rotate(-145 839 242)"/>
 </g>
 <circle cx="101" cy="242" r="12" fill="#ffe7a5"/><circle cx="839" cy="242" r="12" fill="#ffe7a5"/>
+<!-- Golden curls at both sides, visually matching the ornate forest stage -->
+<path d="M96 168Q21 124 45 203Q70 234 116 219M847 168Q920 124 899 203Q876 234 829 219" stroke="url(#gilt)" stroke-width="9" fill="none" stroke-linecap="round"/>
+<path d="M151 304Q82 306 62 276Q46 253 69 245M790 303Q857 306 879 276Q897 253 874 245" stroke="url(#gilt)" stroke-width="6" fill="none" stroke-linecap="round"/>
 <g font-family="Georgia,'Times New Roman',serif" font-weight="900" text-anchor="middle" paint-order="stroke fill" stroke-linejoin="round" filter="url(#goldShadow)">
  <text x="470" y="185" font-size="157" letter-spacing="-8" textLength="585" lengthAdjust="spacingAndGlyphs" stroke="#201109" stroke-width="23" fill="#0c241d">Jardim</text>
  <text x="470" y="185" font-size="157" letter-spacing="-8" textLength="585" lengthAdjust="spacingAndGlyphs" stroke="url(#gilt)" stroke-width="13" fill="url(#wordA)">Jardim</text>
