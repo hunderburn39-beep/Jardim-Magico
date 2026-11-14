@@ -623,8 +623,8 @@
      }
     }
     // O feixe percorre o tambor uma só vez, sincronizado com as três pedras.
+    if(expanding&&phaseReveal)drawExpansionBeam(rx,raw);
    }
-   if(expanding&&phaseReveal)drawExpansionBeam(rx,raw);
    // A very short transient glow when the real reel stops.
    const since=t-this.landings[c];
    if(this.landings[c]&&since>=0&&since<240){
