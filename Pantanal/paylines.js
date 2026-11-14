@@ -1,4 +1,4 @@
-/* Pantanal v2.22: linhas de prémio desenhadas a partir dos resultados reais.
+/* Pantanal v2.23: linhas de prémio desenhadas a partir dos resultados reais.
    Apenas apresentação visual; sem alterações ao RNG, apostas ou pagamentos. */
 (function(){
   'use strict';
@@ -72,7 +72,12 @@
       label.appendChild(make('rect',{x:5,y:5,width:220,height:31,rx:8,fill:'#251005',stroke:'#e2aa50','stroke-width':1.5,opacity:.94}));
       const t=make('text',{x:14,y:27,fill:'#fff1a0','font-size':20,'font-weight':'bold','font-family':'Arial,sans-serif'});
       t.textContent=preview?('LINHA '+w.line+' / '+valid.length):('LINHA '+w.line+'  +'+(Number(w.amount)||0));
-      label.appendChild(t);svg.appendChild(label);
+      label.appendChild(t);
+      // O número premiado já fica assinalado na moldura vertical.
+      // Evitar a antiga legenda sobre a primeira linha de símbolos no telemóvel.
+      if(!document.getElementById('screen')?.classList.contains('portrait')){
+        svg.appendChild(label);
+      }
       idx++;
       if(idx>=(preview?valid.length:Math.min(valid.length,10))){
         if(timer!==null){clearInterval(timer);timer=null;}
