@@ -74,6 +74,9 @@ jobs:
                  && grep -q 'buildContinuousReelSymbols' /tmp/stake-preview.html \
                  && grep -q -- '--reel-cell-height' /tmp/stake-preview.html \
                  && grep -q 'symbolArtworkMarkup' /tmp/stake-preview.html \
+                 && grep -q 'V1.9.9 · CASCATAS SUAVES' /tmp/stake-preview.html \
+                 && grep -q 'function cascadeShiftPlan(oldRemoved)' /tmp/stake-preview.html \
+                 && grep -q 'const SFX_GAIN' /tmp/stake-preview.html \
                  && grep -q 'warmSymbolImages' /tmp/stake-preview.html \
                  && grep -q 'assets/figuras-v199/bule-limpo.svg' /tmp/stake-preview.html \
                  && grep -q 'assets/figuras-v199/diamante-limpo.svg' /tmp/stake-preview.html \
