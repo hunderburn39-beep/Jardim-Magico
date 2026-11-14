@@ -1646,7 +1646,7 @@ function reelVisibleTilesAtPhase(symbols,phase){
   const row=Math.max(6,Math.min(12,Math.floor(-offset)));
   return symbols.slice(row,row+4);
 }
-async function brakeRollingReel(state,profile){
+async function brakeRollingReel(state,profile,onStop=null){
   const {strip,viewport,column,rolling,rowHeight}=state;
   if(skipAnimations)return;
   const phase=reelPhaseFromTime(rolling.currentTime,profile.cycleMs);
@@ -1673,6 +1673,7 @@ async function brakeRollingReel(state,profile){
   viewport.remove();
   column.querySelectorAll(".cell").forEach(cell=>cell.classList.add("landing"));
   playRecorded("stop");
+  if(onStop)onStop(state);
 }
 async function animateReelStop(boardFinal){
   const profile=turbo?REEL_SPIN_PROFILE.turbo:REEL_SPIN_PROFILE.normal;
@@ -1688,13 +1689,26 @@ async function animateReelStop(boardFinal){
     strips=mountRollingReels(boardFinal,profile);
     playRecorded("spin");
     await pause(profile.initialRollMs);
-    const stops=[];
+    // Cada tambor termina antes do próximo travar: os restantes continuam a rodar.
+    // O resultado foi definido antes da animação; as moedas só são contadas quando ficam visíveis.
+    let visibleCoins=0,coinRush=false;
     for(let c=0;c<strips.length&&!skipAnimations;c++){
       if(c>0)await pause(profile.stopGapMs);
       if(skipAnimations)break;
-      stops.push(brakeRollingReel(strips[c],profile));
+      await brakeRollingReel(strips[c],profile,()=>{
+        visibleCoins+=boardFinal[c].filter(id=>id===11).length;
+        if(!coinRush&&visibleCoins===5&&c<strips.length-1){
+          coinRush=true;
+          for(let remaining=c+1;remaining<strips.length;remaining++){
+            if(strips[remaining].rolling && !strips[remaining].rolling.cancelled){
+              strips[remaining].rolling.playbackRate=2.1;
+            }
+          }
+          if(typeof say==="function")say("🪙 5 MOEDAS! Os restantes tambores aceleram!","bonus");
+          playRecorded("coin");
+        }
+      });
     }
-    await Promise.all(stops);
   }finally{
     for(const {viewport,rolling,braking} of strips){
       rolling?.cancel();
