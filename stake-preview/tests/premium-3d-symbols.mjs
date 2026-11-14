@@ -8,7 +8,7 @@ const root=join(dirname(fileURLToPath(import.meta.url)),'..');
 const html=readFileSync(join(root,'index.html'),'utf8');
 const css=html.match(/<style>([\s\S]*?)<\/style>/)?.[1];
 assert.ok(css,'The style sheet is present');
-const depth=css.split('/* V3.2 — profundidade 3D')[1]?.split('</style>')[0];
+const depth=css.split('/* V3.2 — profundidade 3D')[1]?.split('/* V3.3:')[0];
 assert.ok(depth,'3D relief must be defined after earlier symbol styles');
 assert.match(depth,/#reelFrame #reels \.cell img\.jmSymbolArt,/);
 assert.match(depth,/#reelFrame \.rain-symbol img\.jmSymbolArt,/);
