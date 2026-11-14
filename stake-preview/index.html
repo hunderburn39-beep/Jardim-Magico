@@ -1324,6 +1324,25 @@ html,body{height:100%;overflow:hidden;background:#051814}
 .bonus-buy-modal #buyHold{background:linear-gradient(145deg,#86612d,#534326 53%,#292c35)}
 .bonus-buy-modal .bonus-btn:disabled{opacity:.5}
 
+
+/* V3.4 — SALDO, APOSTA e APOSTAS RÁPIDAS elevados em ~30% do
+   espaço vertical livre acima dos comandos. Deslocação conjunta de
+   3.5 pontos percentuais do ecrã para manter a distância entre blocos.
+   A imagem original, os símbolos e o botão compacto BÓNUS não mudam. */
+.money-row{top:69.3%!important}
+.bet-shortcuts{top:76.4%!important}
+.notice{top:65.2%!important}
+@media(max-height:700px) and (orientation:portrait){
+  .money-row{top:68.7%!important}
+  .bet-shortcuts{top:76.0%!important}
+  .notice{top:64.8%!important}
+}
+@media(max-height:560px) and (orientation:portrait){
+  .money-row{top:65.8%!important}
+  .bet-shortcuts{top:73.8%!important}
+  .notice{display:none!important}
+}
+
 </style>
 </head>
 <body>
