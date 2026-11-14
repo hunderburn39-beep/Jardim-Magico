@@ -1,6 +1,6 @@
 /* Faraó Eterno — ritual do bónus inspirado na cadência da referência.
  * Arte e som originais; nenhuma mudança de RNG, créditos ou premiação.
- * V2.10.0 | 14-11-2026
+ * V2.11.0 | 14-11-2026
  */
 (() => {
  'use strict';
@@ -71,12 +71,6 @@
    sweep(85,57,1,.063,0,'sine');
    sweep(1176,1568,.48,.018,.20);
   },
-  expand(){
-   sweep(2100,390,.57,.148,0,'sawtooth');
-   hush(.58,.132,5000);
-   sweep(90,52,.71,.172,.16);
-   sweep(523,784,.43,.071,.27);
-  }
  };
 
  const oldFinish=g.finishSpin.bind(g);
@@ -327,31 +321,41 @@
    ctx.restore();
   }
  }
+ // Cada figura/tambor recebe o seu brilho apenas quando chega a sua vez.
+ // Nada de efeitos simultâneos em todos os rolos nem scanners contínuos.
  function drawExpansions(t){
-  const reveal=g.reveal,stages=reveal?.stages||[];
+  const reveal=g.reveal,stages=reveal?.stages||
+    (Array.isArray(reveal?.reels)?[reveal]:[]);
   const R=g.visualV11?.layout;
   if(!R||g.spinning||!g.lastWasFree)return;
   for(const stage of stages){
-   if(stage.kind!=='expansion')continue;
+   if(stage.kind&&stage.kind!=='expansion')continue;
+   if(!stage.reels?.length||!stage.perReel)continue;
    const when=stage.start+(stage.preDelay||0);
-   if(t>=when && !stage._ritualSoundPlayed){
-    stage._ritualSoundPlayed=true;
-    if(t-when<1400){cue.expand();stats.expansionCues++;}
-   }
    if(t<when||t>stage.end)continue;
-   const alpha=clamp((t-when)/350)*clamp((stage.end-t)/400);
-   ctx.save();ctx.globalCompositeOperation='screen';
-   stage.reels?.forEach(reel=>{
+   if(!stage._ritualLitReels)stage._ritualLitReels=new Set();
+   stage.reels.forEach((reel,order)=>{
+    const local=t-(when+order*stage.perReel);
+    if(local<0)return;
+    if(!stage._ritualLitReels.has(order)){
+     stage._ritualLitReels.add(order);
+     stats.expansionCues++;
+    }
+    // O clarão termina antes da pausa de 24%: a peça fica assente.
+    const revealMs=stage.perReel*.76;
+    if(local>=revealMs)return;
+    const alpha=clamp(local/120)*clamp((revealMs-local)/210)*.60;
+    if(alpha<=.005)return;
     const x=R.left+reel*R.step;
-    const pulse=.7+.3*Math.sin(t/90+reel);
-    const left=ctx.createLinearGradient(x,0,x+R.cw,0);
-    left.addColorStop(0,'rgba(255,222,117,'+(alpha*pulse*.70)+')');
-    left.addColorStop(.12,'rgba(255,235,161,'+(alpha*.08)+')');
-    left.addColorStop(.88,'rgba(255,235,161,'+(alpha*.08)+')');
-    left.addColorStop(1,'rgba(255,222,117,'+(alpha*pulse*.70)+')');
-    ctx.fillStyle=left;ctx.fillRect(x,R.top,R.cw,R.gh*3);
+    ctx.save();ctx.globalCompositeOperation='screen';
+    const light=ctx.createLinearGradient(x,0,x+R.cw,0);
+    light.addColorStop(0,'rgba(255,221,125,'+(alpha*.60)+')');
+    light.addColorStop(.12,'rgba(255,235,161,'+(alpha*.08)+')');
+    light.addColorStop(.88,'rgba(255,235,161,'+(alpha*.08)+')');
+    light.addColorStop(1,'rgba(255,221,125,'+(alpha*.60)+')');
+    ctx.fillStyle=light;ctx.fillRect(x,R.top,R.cw,R.gh*3);
+    ctx.restore();
    });
-   ctx.restore();
   }
  }
  function introPages(t){
@@ -370,6 +374,6 @@
    drawPyramids(t);drawExpansions(t);introPages(t);
   }
  };
- g.bonusRitual={version:'2.10.0',events:stats,mathUnchanged:true};
- document.documentElement.dataset.faraoBonusRitual='2.10.0';
+ g.bonusRitual={version:'2.11.0',events:stats,mathUnchanged:true};
+ document.documentElement.dataset.faraoBonusRitual='2.11.0';
 })();
