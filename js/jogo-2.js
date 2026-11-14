@@ -1311,20 +1311,15 @@ function animationPosition(x,y,t){
    const items=tr.holdSymbols;
    return {cur:items[(step+1)%items.length][y],y:y*CH-3*CH*(1-p),old:items[step%items.length][y],oldY:y*CH+3*CH*p};
   }
-  // Ao aparecerem cinco moedas, os tambores por parar passam a rodar
-  // com ciclos mais rápidos; travam sempre nas figuras já sorteadas.
-  if(tr.coinRush){
-   const elapsed=Math.max(0,t-tr.coinRushAt),remaining=tr.start+tr.duration-t;
-   if(remaining>(mode==='turbo'?80:145)){
-    const cycle=mode==='turbo'?70:105,step=Math.floor(elapsed/cycle),p=(elapsed%cycle)/cycle;
-    const items=tr.holdSymbols;
-    return {cur:items[(step+1)%items.length][y],y:y*CH-3*CH*(1-p),old:items[step%items.length][y],oldY:y*CH+3*CH*p};
-   }
-   const brake=mode==='turbo'?80:145,p=Math.max(0,Math.min(1,1-remaining/brake));
-   const ease=1-Math.pow(1-p,3);
-   return {cur:tr.next[y],y:y*CH-3*CH*(1-ease),old:tr.holdSymbols[0][y],oldY:y*CH+3*CH*ease};
+  // As cinco moedas aceleram apenas o andamento da mesma transição.
+  // Mantêm-se as mesmas figuras e a posição do símbolo nunca salta.
+  let p=Math.max(0,Math.min(1,(t-tr.start)/tr.duration));
+  if(tr.coinRush && t>=tr.coinRush.start){
+   const boost=tr.coinRush,q=Math.max(0,Math.min(1,(t-boost.start)/boost.duration));
+   const smooth=q-(1-boost.ratio)*q*(1-q);
+   p=boost.progress+(1-boost.progress)*smooth;
   }
-  const p=Math.max(0,Math.min(1,(t-tr.start)/tr.duration));const ease=1-Math.pow(1-p,3);
+  const ease=1-Math.pow(1-p,3);
   return {cur:tr.next[y],y:y*CH-3*CH*(1-ease),old:tr.old[y],oldY:y*CH+3*CH*ease};
  }
  return {cur:grid[x][y],y:y*CH};
@@ -1531,23 +1526,30 @@ function createScatterSuspense(){
  };
  return state;
 }
-function coinRushArtwork(x){
- return Array.from({length:6},(_,k)=>Array.from({length:3},(_,y)=>({id:regular[(x*5+y+k*2)%regular.length]})));
-}
-function startCoinRush(transition,x){
- if(!transition||transition.scatterHold||transition.coinRush)return;
- const elapsed=performance.now()-transition.start;
- if(elapsed>=transition.duration-(mode==='turbo'?80:145))return;
- transition.coinRush=true;
- transition.coinRushAt=performance.now();
- transition.holdSymbols=coinRushArtwork(x);
+function startCoinRush(transition){
+ if(!transition||transition.scatterHold||transition.coinRush)return false;
+ const now=performance.now(),elapsed=Math.max(0,now-transition.start);
+ const remaining=transition.duration-elapsed;
+ if(remaining<=(mode==='turbo'?55:115))return false;
+ const quickRemaining=remaining/1.5;
+ transition.coinRush={
+  start:now,progress:Math.min(1,elapsed/transition.duration),
+  duration:quickRemaining,ratio:quickRemaining/remaining,finish:now+quickRemaining
+ };
+ return true;
 }
 async function reelDrop(x,next,duration,scatterState=null,coinState=null){
  const old=grid[x];
  const transition={old,next,start:performance.now(),duration};
  transitions[x]=transition;
- if(coinState?.active&&!scatterState?.active)startCoinRush(transition,x);
- await sleep(duration);
+ if(coinState?.active&&!scatterState?.active)startCoinRush(transition);
+ // Verificar o fim da transição porque uma aceleração pode encurtar
+ // a parte restante sem criar uma pausa final ou saltar fotogramas.
+ while(true){
+  const remaining=(transition.coinRush?.finish??transition.start+transition.duration)-performance.now();
+  if(remaining<=0)break;
+  await sleep(Math.min(40,Math.max(1,remaining)));
+ }
  if(scatterState?.active && x>scatterState.triggerColumn){
   // Em modo de suspense, continuar a mostrar símbolos em movimento antes da revelação.
   // A grelha 'next' não é modificada; a pausa apenas prolonga a animação.
@@ -1578,7 +1580,7 @@ async function spinColumns(next){
    if(!this.active&&this.count===5&&x<4){
     this.active=true;
     for(let remaining=x+1;remaining<5;remaining++){
-     if(transitions[remaining])startCoinRush(transitions[remaining],remaining);
+     if(transitions[remaining])startCoinRush(transitions[remaining]);
     }
     notice('🪙 5 MOEDAS! Os restantes tambores aceleram!');
     audioFX('coin');
