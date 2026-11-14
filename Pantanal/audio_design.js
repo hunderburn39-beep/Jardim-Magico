@@ -54,7 +54,7 @@
    if(typeof kind!=='string')return false;
    // Desbloquear AudioContext com a interação inicial de GIRAR.
    if(kind==='reel'){ctx();return false;}
-   const match=/^stop:(\\d)$/.exec(kind);
+   const match=/^stop:(\d)$/.exec(kind);
    if(match){
      const column=Math.min(4,Number(match[1]));
      tone(140-column*8,0,.09,.145,'triangle');
