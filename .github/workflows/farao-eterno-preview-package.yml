@@ -1,4 +1,4 @@
-name: Faraó Eterno V2.6 — pacote jogável de revisão
+name: Faraó Eterno V2.7 — pacote jogável de revisão
 
 on:
   push:
@@ -33,7 +33,7 @@ jobs:
           test -s Farao-Eterno/js/session.js
           test -s Farao-Eterno/js/game.js
           test -d Farao-Eterno/assets
-          grep -q '2.6.0-rc' Farao-Eterno/index.html
+          grep -q '2.7.0-rc' Farao-Eterno/index.html
       - name: Criar ZIP com o jogo real, gráficos e sons
         shell: bash
         run: |
@@ -42,7 +42,7 @@ jobs:
           from zipfile import ZipFile,ZIP_DEFLATED
           import subprocess
           source=Path('Farao-Eterno')
-          out=Path('Farao_Eterno_V26_RC_Jogo_Completo.zip')
+          out=Path('Farao_Eterno_V27_RC_Jogo_Completo.zip')
           exclusions={'tests','visual-previews','node_modules','__pycache__','.git'}
           files=[p for p in source.rglob('*') if p.is_file()
                  and not any(part in exclusions for part in p.parts)]
@@ -54,7 +54,7 @@ jobs:
           assert any(p.suffix.lower() in ('.mp3','.wav','.ogg') for p in files)
           sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
           instructions=(
-           'FARAÓ ETERNO V2.6 RC — JOGO REAL DE REVISÃO\n'
+           'FARAÓ ETERNO V2.7 RC — JOGO REAL DE REVISÃO\n'
            'Créditos fictícios. NÃO está publicado no GitHub Pages.\n\n'
            'Esta pasta contém o jogo e os seus assets originais.\n'
            'Para jogar no computador:\n'
@@ -73,8 +73,8 @@ jobs:
       - name: Disponibilizar pacote para descarregar (sem publicar o site)
         uses: actions/upload-artifact@v4
         with:
-          name: farao-v26-jogo-completo
-          path: Farao_Eterno_V26_RC_Jogo_Completo.zip
+          name: farao-v27-jogo-completo
+          path: Farao_Eterno_V27_RC_Jogo_Completo.zip
           if-no-files-found: error
           retention-days: 30
       - name: Confirmar endereço experimental de revisão para iPhone (sem alterar GitHub Pages)
@@ -84,7 +84,7 @@ jobs:
           ROOT="https://raw.githack.com/hunderburn39-beep/Jardim-Magico/farao-eterno-melhoria-completa-20261113/Farao-Eterno"
           curl -fLsS --retry 2 --connect-timeout 10 --max-time 35 "$ROOT/index.html" -o /tmp/farao-preview-online.html
           grep -q 'Faraó Eterno' /tmp/farao-preview-online.html
-          grep -q '2.6.0-rc' /tmp/farao-preview-online.html
+          grep -q '2.7.0-rc' /tmp/farao-preview-online.html
           curl -fLsS --retry 2 --connect-timeout 10 --max-time 35 "$ROOT/js/engine.js" -o /tmp/farao-preview-engine.js
           grep -q 'TombEngine' /tmp/farao-preview-engine.js
           curl -fLsS --retry 2 --connect-timeout 10 --max-time 35 "$ROOT/assets/temple.webp" -o /tmp/farao-preview-temple.webp
