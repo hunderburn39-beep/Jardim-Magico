@@ -800,7 +800,10 @@
     for(let i=0;i<keys.length;i++)
       this.drawMiniSymbol(keys[i],294+i*step,bonusesY+(35-size)/2,size);
   }
-  txt('V2.8.0',38,985,10,'#e5c68d',850,'Arial');
+  // Mostrar a versão real do ritual carregado, em vez de um número
+  // antigo fixo no HUD. Mudanças futuras no ritual atualizam o rodapé.
+  const displayedVersion=this.bonusRitual?.version||'2.10.0';
+  txt('V'+displayedVersion,45,985,10,'#e5c68d',850,'Arial');
   // Mostrar o mesmo ID gravado na linha correspondente do histórico.
   // Durante a rotação, usar o ID pendente, que S.settle() guarda sem alteração.
   // Nunca inventar um número pela contagem de giros, nem acrescentar zeros.
