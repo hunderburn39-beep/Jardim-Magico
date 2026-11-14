@@ -1413,8 +1413,8 @@ function renderRoundDetails(){
     $("detailStats").textContent=(frame.freeSpin?"FREE SPIN "+frame.freeSpin+" · ":"")+"QUEDA "+frame.drop+" · "+winning+" linha(s) · "+(frame.free?"BRUTO ":"PRÉMIO ")+format((frame.free?(frame.lines||[]).reduce((sum,line)=>sum+line.amount,0):frame.win)/100*record.bet)+(awards.length?" · WILD "+awards.map(a=>"+"+a.value).join(" ")+" → ×"+frame.multi:"");
   }else if((frame.kind==="hold"||frame.kind==="holdEnd")&&Array.isArray(frame.grid)){
     boardEl.classList.add("hold-board");
-    boardEl.innerHTML=frame.grid.slice(0,16).map(v=>'<div class="detail-cell '+(v?"coin":"")+'">'+(v?"×"+Number(v):"✦")+'</div>').join("");
-    $("detailStats").textContent=(frame.kind==="holdEnd"?"HOLD FINAL":"TENTATIVAS "+frame.tries)+" · "+frame.grid.filter(Boolean).length+"/16 moedas · ACUMULADO "+format((100*frame.grid.reduce((sum,v)=>sum+v,0))/100*record.bet);
+    boardEl.innerHTML=frame.grid.slice(0,16).map(v=>'<div class="detail-cell '+(v?"coin":"")+'">'+(v?format(Number(v)*record.bet)+" €":"✦")+'</div>').join("");
+    $("detailStats").textContent=(frame.kind==="holdEnd"?"HOLD FINAL":"TENTATIVAS "+frame.tries)+" · "+frame.grid.filter(Boolean).length+"/16 moedas · ACUMULADO "+format(frame.grid.reduce((sum,v)=>sum+v,0)*record.bet)+" €";
   }
   return true;
 }
@@ -1509,12 +1509,12 @@ function renderHold(grid,tries,previous=[]){
   const stake=replayBet??BETS[betIndex];
   $("holdGrid").innerHTML=grid.map((x,i)=>{
     const filled=Number(x)>0,landed=filled&&!previous[i];
-    return '<div class="coin-slot '+(filled?"filled":"")+(landed?" new-coin":"")+'" aria-label="'+(filled?"Moeda "+x+" vezes, "+format(x*stake)+" créditos":"Casa vazia")+'">'+(filled?'<strong>×'+x+'</strong><small>'+format(x*stake)+'</small>':"✦")+'</div>';
+    return '<div class="coin-slot '+(filled?"filled":"")+(landed?" new-coin":"")+'" aria-label="'+(filled?"Moeda de "+format(x*stake)+" euros":"Casa vazia")+'">'+(filled?'<strong>'+format(x*stake)+' €</strong>':"✦")+'</div>';
   }).join("");
   $("holdLives").innerHTML=Array.from({length:3},(_,i)=>'<span class="hold-life '+(i<tries?"active":"")+'">◆</span>').join("");
   $("holdLives").setAttribute("aria-label","Tentativas restantes: "+tries);
   $("holdTries").textContent="Tentativas: "+tries;
-  $("holdWin").textContent="ACUMULADO "+money(100*grid.reduce((a,b)=>a+b,0));
+  $("holdWin").textContent="ACUMULADO "+money(100*grid.reduce((a,b)=>a+b,0))+" €";
 }
 function hideHoldResult(){
   $("holdOverlay").classList.remove("show");
@@ -1860,10 +1860,10 @@ async function playback(book){
     }else if(evt.kind==="holdEnd"){
       playRecorded("bonus");
       renderHold(evt.grid,0,lastHoldGrid);
-      $("holdText").textContent=evt.filled?"GRELHA COMPLETA! +250×":"HOLD & WIN TERMINADO";
-      $("holdWin").textContent="TOTAL "+money(evt.amount)+" créditos";
-      $("holdSummaryLabel").textContent=evt.filled?"GRELHA COMPLETA · EXTRA +250×":"PRÉMIO FINAL DO HOLD & WIN";
-      $("holdSummaryValue").textContent=money(evt.amount)+" créditos";
+      $("holdText").textContent=evt.filled?"GRELHA COMPLETA! EXTRA "+money(25000)+" €":"HOLD & WIN TERMINADO";
+      $("holdWin").textContent="TOTAL "+money(evt.amount)+" €";
+      $("holdSummaryLabel").textContent=evt.filled?"GRELHA COMPLETA · EXTRA "+money(25000)+" €":"PRÉMIO FINAL DO HOLD & WIN";
+      $("holdSummaryValue").textContent=money(evt.amount)+" €";
       $("holdSummary").hidden=false;
       $("closeHold").hidden=false;
       // Do not auto-dismiss: a real click confirms the end; PASSAR bypasses visual holds.
