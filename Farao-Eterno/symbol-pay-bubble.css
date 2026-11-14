@@ -1,0 +1,62 @@
+/* Faraó Eterno — informação tátil inspirada em um pergaminho egípcio.
+   Apenas apresentação: os valores vêm de TombEngine.PAYS. */
+.farao-symbol-pay-bubble{
+ position:absolute;z-index:8;width:clamp(146px,43%,203px);
+ padding:9px 10px 10px;pointer-events:none;user-select:none;
+ color:#522b64;background:radial-gradient(ellipse at 53% 35%,#fff3d0 0%,#f7dca6 65%,#d6b278 100%);
+ border:3px solid #754388;border-radius:36% 16% 29% 17% / 17% 18% 18% 18%;
+ box-shadow:inset 0 0 0 2px #ffe7b9,inset 0 -8px 16px #aa713020,0 8px 23px #000a,0 0 0 1px #f5cc7b;
+ font:700 12px/1.2 Georgia,'Times New Roman',serif;
+ animation:farao-pay-appear .16s ease-out both;
+}
+.farao-symbol-pay-bubble:before{
+ content:'';position:absolute;top:calc(50% - 8px);
+ width:0;height:0;border-top:9px solid transparent;border-bottom:9px solid transparent;
+ filter:drop-shadow(0 1px 1px #0006);
+}
+.farao-symbol-pay-bubble[data-side="right"]:before{left:-12px;border-right:12px solid #754388}
+.farao-symbol-pay-bubble[data-side="left"]:before{right:-12px;border-left:12px solid #754388}
+.farao-symbol-pay-bubble:after{
+ content:'✦';position:absolute;right:-6px;top:calc(50% - 11px);
+ width:21px;height:21px;display:grid;place-items:center;
+ border:1px solid #f5d48c;border-radius:50%;color:#ffe2a0;
+ background:radial-gradient(circle,#c48b4a,#734022 70%);font-size:13px;
+ box-shadow:0 1px 4px #0009;
+}
+.farao-symbol-pay-bubble[data-side="left"]:after{right:auto;left:-6px}
+.farao-symbol-pay-title{
+ margin:0 1px 5px;text-align:center;font:900 10px/1.15 Georgia,serif;
+ text-transform:uppercase;letter-spacing:.02em;color:#663381;
+ text-shadow:0 1px 0 #fff5dc;
+}
+.farao-symbol-pay-column-labels,.farao-symbol-pay-row{
+ display:grid;grid-template-columns:25px minmax(28px,.6fr) minmax(57px,1fr);
+ align-items:center;column-gap:4px;font-variant-numeric:tabular-nums;
+}
+.farao-symbol-pay-column-labels{
+ padding:0 0 3px;border-bottom:1px solid #b38a55a1;
+ font:800 8px/1 Arial,sans-serif;letter-spacing:.025em;color:#8b6388;
+}
+.farao-symbol-pay-column-labels span:last-child{text-align:right}
+.farao-symbol-pay-row{
+ min-height:22px;padding:2px 0;border-bottom:1px solid #b9916e70;
+}
+.farao-symbol-pay-row:last-child{border-bottom:0}
+.farao-symbol-pay-count{font:bold 13px/1 Georgia,serif;color:#703185}
+.farao-symbol-pay-multi{font:bold 13px/1 Georgia,serif;color:#3c2932;text-align:left}
+.farao-symbol-pay-euro{font:700 10px/1.15 system-ui,-apple-system,sans-serif;color:#553f33;text-align:right;white-space:nowrap}
+.farao-symbol-pay-row.unavailable{opacity:.45}
+.farao-symbol-pay-foot{
+ margin-top:5px;padding-top:5px;border-top:1px solid #a76c765e;
+ font:700 9px/1.25 system-ui,-apple-system,sans-serif;color:#754a54;text-align:center;
+}
+.farao-symbol-pay-foot b{color:#4b264f}
+.farao-symbol-pay-special{
+ margin-top:5px;color:#5d4270;font:700 9px/1.25 system-ui,-apple-system,sans-serif;
+ text-align:center;
+}
+@keyframes farao-pay-appear{
+ from{opacity:0;transform:translateY(6px) scale(.96)}
+ to{opacity:1;transform:translateY(0) scale(1)}
+}
+@media(prefers-reduced-motion:reduce){.farao-symbol-pay-bubble{animation:none}}
