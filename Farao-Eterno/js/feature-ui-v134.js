@@ -179,9 +179,9 @@
    }
  };
  const oldBuy=g.confirmBuyBonus.bind(g);
- g.confirmBuyBonus=function(){
+ g.confirmBuyBonus=function(mode='regular'){
    const before=!!this.feature;
-   oldBuy();
+   oldBuy(mode);
    if(!before&&this.feature){
      this.featureIntro=null;this.v04Celebration=null;
      this._welcome=true;this._awaitBonusStart=true;
