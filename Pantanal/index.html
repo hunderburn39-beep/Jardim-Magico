@@ -1163,4 +1163,55 @@ if(savedBoard){
 renderBoard();update();
 </script><script src="paylines.js?v=2.23"></script>
 <script src="original_rules.js?v=2.13"></script>
-<script src="apk_engine.js?v=2.20"></script><script src="bonus_ui.js?v=2.20"></script><script src="reels_motion.js?v=2.20"></script><script src="frame_layout.js?v=2.23"></script></body></html>
+<script src="apk_engine.js?v=2.20"></script><script src="bonus_ui.js?v=2.20"></script><script src="reels_motion.js?v=2.20"></script><script src="frame_layout.js?v=2.23"></script>
+<!-- PANTANAL MOBILE: ECRÃ DE ENTRADA. Ao continuar aciona o início original, sem alterar o motor. -->
+<style id="pantanal-mobile-splash-style">
+#pantanal-mobile-splash{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;overflow:hidden;isolation:isolate;background:radial-gradient(ellipse 53% 18% at 50% 32%,#ffca38 0%,#fb880d 47%,#b33208 100%);font-family:Georgia,'Times New Roman',serif;touch-action:manipulation}
+#pantanal-mobile-splash::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 34%,#ffce45cc 0%,#ef661422 45%,transparent 67%),linear-gradient(180deg,#5b2015bd 0%,transparent 33%,transparent 56%,#2d1906 100%);z-index:-1}
+#pantanal-mobile-splash .splash-sun{position:absolute;left:50%;top:23%;width:min(80vw,37vh);aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:linear-gradient(180deg,#fff4a4,#ffae00 60%,#fb6009);box-shadow:0 0 100px 35px #ffbf2d79;opacity:.9}
+#pantanal-mobile-splash .splash-landscape{position:absolute;bottom:0;left:0;width:100%;height:48%;object-fit:cover;pointer-events:none}
+#pantanal-mobile-splash .splash-water{position:absolute;bottom:0;left:0;right:0;height:34%;background:repeating-linear-gradient(180deg,transparent 0 11px,#ffba413b 12px 14px,transparent 15px 24px),linear-gradient(#6b2a09c9,#32180cba);mask-image:linear-gradient(transparent 0%,black 24%);opacity:.65}
+#pantanal-mobile-splash .splash-layout{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:space-between;width:min(100%,640px);height:100dvh;min-height:450px;padding:max(env(safe-area-inset-top),4vh) 0 max(env(safe-area-inset-bottom),4vh);z-index:2}
+#pantanal-mobile-splash .splash-logo-area{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0}
+#pantanal-mobile-splash .splash-logo{display:block;width:98%;height:auto;max-height:66dvh;object-fit:contain;mix-blend-mode:screen;filter:drop-shadow(0 9px 4px #120700b8) drop-shadow(0 0 24px #ffb61b9c);animation:pantanalLogoEnter .8s ease-out both}
+#pantanal-mobile-splash .splash-action-area{display:flex;flex-direction:column;align-items:center;gap:14px;padding-bottom:clamp(20px,8vh,100px);width:100%;flex-shrink:0}
+#pantanal-mobile-splash #pantanal-splash-continue{position:relative;min-width:min(78vw,380px);min-height:76px;padding:15px 26px;border:5px solid #ffe59a;border-radius:999px;color:#651608;font:900 clamp(25px,5.5vw,38px)/1 Georgia,serif;letter-spacing:1px;text-shadow:0 1px #fff3a4;background:linear-gradient(180deg,#ffed9a 0%,#ffb127 28%,#ec7706 70%,#c64d00 100%);box-shadow:inset 0 3px 3px #fff8c5,0 7px 0 #602808,0 12px 18px #090600a8,0 0 28px #ffc43969;cursor:pointer;transition:transform .15s ease,filter .15s ease}
+#pantanal-mobile-splash #pantanal-splash-continue:active{transform:translateY(5px) scale(.98);box-shadow:inset 0 2px 4px #fff8c5,0 2px 0 #602808,0 5px 12px #090600a8}
+#pantanal-mobile-splash #pantanal-splash-continue:focus-visible{outline:3px solid white;outline-offset:5px}
+#pantanal-mobile-splash .splash-caption{font:italic bold 16px Arial,sans-serif;letter-spacing:.5px;color:#fff3c4;text-shadow:0 2px 4px #391504}
+#pantanal-mobile-splash.leaving{opacity:0;pointer-events:none;transition:opacity .32s ease-out}
+@keyframes pantanalLogoEnter{from{opacity:0;transform:translateY(26px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(orientation:landscape){#pantanal-mobile-splash .splash-layout{max-width:900px;padding:2vh 0}#pantanal-mobile-splash .splash-logo{width:min(65vw,700px);max-height:59vh}#pantanal-mobile-splash .splash-action-area{padding-bottom:2vh;gap:5px}#pantanal-mobile-splash #pantanal-splash-continue{min-height:52px;padding:9px 24px;font-size:24px}#pantanal-mobile-splash .splash-sun{top:12%;width:min(36vw,60vh)}}
+@media(prefers-reduced-motion:reduce){#pantanal-mobile-splash .splash-logo{animation:none}}
+</style>
+<div id="pantanal-mobile-splash" role="dialog" aria-modal="true" aria-label="Início do Pantanal Mobile">
+<div class="splash-sun" aria-hidden="true"></div>
+<svg class="splash-landscape" viewBox="0 0 430 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="pantanalSavanna" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8f470b" stop-opacity="0"/><stop offset=".5" stop-color="#502709"/><stop offset="1" stop-color="#160e0a"/></linearGradient></defs>
+<path fill="url(#pantanalSavanna)" d="M0 146Q55 120 115 156T240 145T430 148V300H0Z"/>
+<g fill="#23180d"><path d="M55 188 59 122 42 93 49 93 63 115 72 81 77 84 68 122 66 188Z"/><path d="M19 104q10-39 51-32 55-17 81 16-20 16-64 10-25 18-68 6Z"/><path d="M368 194 371 125 350 110 355 108 376 121 389 100 393 104 380 131 381 194Z"/><path d="M330 110q12-31 38-29 40-26 73 20-20 20-48 14-35 10-63-5Z"/></g>
+<path fill="#241a0b" d="M0 231q64-20 148 6t156-3 126 2v64H0Z"/>
+<path fill="#1b160f" d="M0 298 0 210 5 231 11 203 18 242 23 207 31 233 41 210 45 255 57 218 66 259 74 234 89 278 112 300ZM430 300v-105l-9 33-7-17-7 30-10-25-5 35-10-22-5 36-15-25-6 44-15-11-14 27Z"/>
+</svg>
+<div class="splash-water" aria-hidden="true"></div>
+<div class="splash-layout">
+<div class="splash-logo-area"><img class="splash-logo" src="./assets/pantanal-mobile-logo.webp" alt="Pantanal Mobile: animais da savana e lança atravessada no título" width="1000" height="563" fetchpriority="high"></div>
+<div class="splash-action-area"><button type="button" id="pantanal-splash-continue">CONTINUAR</button><span class="splash-caption">Toque para continuar</span></div>
+</div>
+</div>
+<script id="pantanal-mobile-splash-behavior">
+(function(){
+ var splash=document.getElementById('pantanal-mobile-splash');
+ var button=document.getElementById('pantanal-splash-continue');
+ if(!splash||!button)return;
+ button.addEventListener('click',function(){
+   if(button.disabled)return;
+   button.disabled=true;
+   var originalStart=document.getElementById('start');
+   if(originalStart)originalStart.click();
+   splash.classList.add('leaving');
+   window.setTimeout(function(){splash.remove()},360);
+ },{once:true});
+})();
+</script>
+</body></html>
