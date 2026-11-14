@@ -23,6 +23,7 @@ jobs:
           node stake-preview/tests/visual-events.mjs
           node stake-preview/tests/history-replay.mjs
           node stake-preview/tests/audio-assets.mjs
+          node stake-preview/tests/modern-scatter.mjs
           node stake-preview/tests/intro-bonus.mjs
           node stake-preview/tests/paytable.mjs
           node stake-preview/tests/wild-multipliers.mjs
