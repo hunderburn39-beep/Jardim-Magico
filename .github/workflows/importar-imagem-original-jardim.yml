@@ -1,0 +1,38 @@
+name: Importar imagem original aprovada do Jardim Mágico
+on:
+  push:
+    branches:
+      - stake-exact-approved-image-20261114
+    paths:
+      - .github/workflows/importar-imagem-original-jardim.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  imagem-original:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Descarregar o PNG original sem alterações
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stake-preview/assets
+          curl --fail --location --silent --show-error --retry 3 --retry-delay 2 \
+            'https://cdn.openart.ai/openart-uploads/production/attachment-transfers/990273a35c2d19875343e9db97f675b6c1afa1a0f48d18cd8e872a568d85b642.png' \
+            --output stake-preview/assets/jardim-magico-fundo-original-aprovado.png
+          echo 'fac09acce095ad40f9d4930877e8d329941411581efb7fa758c061d1de28dcb2  stake-preview/assets/jardim-magico-fundo-original-aprovado.png' | sha256sum -c -
+          file stake-preview/assets/jardim-magico-fundo-original-aprovado.png
+      - name: Guardar no repositório a imagem aprovada, byte a byte
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.name 'github-actions[bot]'
+          git add stake-preview/assets/jardim-magico-fundo-original-aprovado.png
+          if ! git diff --cached --quiet; then
+            git commit -m 'asset(stake): exact approved 941x1672 PNG, no redraw'
+            git push origin HEAD:stake-exact-approved-image-20261114
+          fi
