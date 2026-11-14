@@ -104,6 +104,8 @@ with sync_playwright() as p:
 
     # Validate free spins purchased through the real visible button.
     before=base["balance"]
+    page.locator("#openBonusBuy").click()
+    assert page.locator("#bonusBuyOverlay").is_visible(),"Bonus shop not open"
     page.locator("#buyFree").click()
     page.wait_for_function("document.querySelector('#freeResultOverlay').classList.contains('show')",timeout=150000)
     free_end=page.evaluate("""()=>{
@@ -135,6 +137,8 @@ with sync_playwright() as p:
 
     # Hold & Win: full 4x4 / 3 attempts in modal, user confirms settlement.
     before=free["balance"]
+    page.locator("#openBonusBuy").click()
+    assert page.locator("#bonusBuyOverlay").is_visible(),"Bonus shop not open"
     page.locator("#buyHold").click()
     page.wait_for_function("document.querySelector('#holdOverlay').classList.contains('show') && !document.querySelector('#closeHold').hidden",timeout=80000)
     hold_end=page.evaluate("""()=>{
