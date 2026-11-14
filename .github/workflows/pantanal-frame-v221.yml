@@ -1,0 +1,55 @@
+name: Pantanal v2.21 — moldura e tambores centrados 9:16
+on:
+  push:
+    paths:
+      - '.github/workflows/pantanal-frame-v221.yml'
+permissions:
+  contents: write
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Testar moldura e matemática existente
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check Pantanal/frame_layout.js
+          node --check Pantanal/reels_motion.js
+          node --check Pantanal/apk_engine.js
+          node --check Pantanal/bonus_ui.js
+          node --check Pantanal/paylines.js
+          node Pantanal/tests/frame_layout.test.cjs
+          node Pantanal/tests/reels_motion.test.cjs
+          node Pantanal/tests/apk_engine.test.cjs
+          node Pantanal/tests/bonus_recovery.test.cjs
+          python3 -m py_compile Pantanal/tools/port_frame_v221.py
+      - name: Integrar geometria vertical e verificar JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 Pantanal/tools/port_frame_v221.py
+          node - <<'JS'
+          const fs=require('fs'),src=fs.readFileSync('Pantanal/index.html','utf8');
+          const chunks=[...src.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(x=>x.length>1000);
+          if(chunks.length!==1)throw Error('Main Pantanal inline script missing');
+          fs.writeFileSync('/tmp/pantanal-v221-inline.js',chunks[0]);
+          if(src.split('frame_layout.js?v=2.21').length!==2)throw Error('Frame module should load once');
+          JS
+          node --check /tmp/pantanal-v221-inline.js
+          git diff --check
+      - name: Publicar somente Pantanal preservando o histórico
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Pantanal/index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(Pantanal): center reels and gold frame together in portrait 9:16 v2.21"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
