@@ -581,7 +581,7 @@ class Game {
     const isLine=group.kind==='line'&&group.count>=3;
     const freeLine=item.free&&isLine;
     const expansionStage=item.free&&group.kind==='expansion';
-    const perReel=expansionStage?(this.turbo?310:460)
+    const perReel=expansionStage?(this.turbo?480:650)
       :freeLine?(this.turbo?390:545)
       :item.free?(this.turbo?185:270):(this.turbo?355:700);
     const preDelay=expansionStage?(this.turbo?175:245)
@@ -596,7 +596,7 @@ class Game {
      win:group.kind==='line'?result.lineWins.find(w=>!w.expanded&&
        w.line===group.line&&w.symbol===group.symbol):null};
     if(group.kind==='expansion')reels.forEach((reel,k)=>
-     this.emitBurst(reelCentre(reel),444,13,'#83ffef',cursor+preDelay+(k+1)*perReel));
+     this.emitBurst(reelCentre(reel),444,13,'#83ffef',cursor+preDelay+(k+.76)*perReel));
     cursor=end+(freeLine?(this.turbo?260:380)
       :item.free?(this.turbo?135:210):(this.turbo?380:840));
     return stage;
@@ -614,14 +614,14 @@ class Game {
    let cursor=finishedAt+90;
    const visualStages=[],rawGroups=[{symbol:null,amount:result.baseTotal+result.scatterWin}];
    for(const candidate of expansions){
-    const start=cursor,preDelay=this.turbo?180:250,perReel=this.turbo?310:460;
+    const start=cursor,preDelay=this.turbo?180:250,perReel=this.turbo?480:650;
     const end=start+preDelay+candidate.reels.length*perReel+(this.turbo?420:650);
     const stage={symbol:candidate.symbol,reels:[...candidate.reels],start,end,preDelay,perReel,
      amount:candidate.amount};
     visualStages.push(stage);
     rawGroups.push({symbol:candidate.symbol,amount:candidate.amount,stage});
     candidate.reels.forEach((reel,k)=>this.emitBurst(reelCentre(reel),444,14,'#83ffef',
-     start+preDelay+k*perReel));
+     start+preDelay+(k+.76)*perReel));
     cursor=end+(this.turbo?180:280);
    }
    this.reveal={start:finishedAt,end:visualStages.at(-1).end,stages:visualStages};
@@ -646,11 +646,11 @@ class Game {
   }else{
    // Conservar o movimento aprovado quando só uma figura é expansiva.
    const reels=item.free?Object.keys(this.expanded).map(Number).sort((a,b)=>a-b):[];
-   const animationEnd=reels.length?250+reels.length*(this.turbo?310:460)+480:0;
+   const animationEnd=reels.length?250+reels.length*(this.turbo?480:650)+480:0;
    for(let k=0;k<reels.length;k++)this.emitBurst(reelCentre(reels[k]),444,16,'#83ffef',
-    finishedAt+(this.turbo?190:250)+k*(this.turbo?310:460));
+    finishedAt+(this.turbo?190:250)+(k+.76)*(this.turbo?480:650));
    this.reveal=reels.length?{start:finishedAt,reels,preDelay:this.turbo?190:250,
-    perReel:this.turbo?310:460,end:finishedAt+animationEnd}:null;
+    perReel:this.turbo?480:650,end:finishedAt+animationEnd}:null;
    this.winCount={start:finishedAt+(this.reveal?animationEnd-280:80),
     duration:item.free?(this.turbo?520:850):(this.turbo?300:540),amount:prize};
    this.nextActionAt=Math.max(this.nextActionAt,this.winCount.start+this.winCount.duration+(item.free?(this.turbo?330:560):250));
