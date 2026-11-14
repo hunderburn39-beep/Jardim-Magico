@@ -95,7 +95,7 @@ await vm.runInContext('playback(bought)',context);
 vm.runInContext('skipAnimations=false',context);
 assert.equal(el('holdOverlay').classList.contains('show'),false,'Hold tem de fechar no fim');
 assert.match(el('holdText').textContent,/HOLD & WIN TERMINADO|GRELHA COMPLETA/);
-assert.match(el('holdWin').textContent,/créditos/);
+assert.match(el('holdWin').textContent,/€$/,'Hold coins are displayed in euros');
 const base=vm.runInContext('generate("base")',context);
 context.base=base;
 await vm.runInContext('playback(base)',context);
