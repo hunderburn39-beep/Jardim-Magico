@@ -1119,6 +1119,7 @@ function skipCurrentAnimations(){
   acknowledgeFreeContinue();
   acknowledgeHoldContinue();
   clearWinSparks();
+  clearScatterScene();
   controls();
   say("A apresentar o resultado final desta jogada…","bonus");
   return true;
@@ -1481,7 +1482,7 @@ async function replayRound(id){
     return true;
   }finally{
     acknowledgeHoldContinue();hideHoldResult();acknowledgeFreeContinue();hideFreeResult();
-    replayBet=null;busy=false;skipAnimations=false;clearPayline();clearFreeHud();hideWildTally();hideFreeResult();clearWinSparks();controls();display();
+    replayBet=null;busy=false;skipAnimations=false;clearPayline();clearFreeHud();hideWildTally();hideFreeResult();clearWinSparks();clearScatterScene();controls();display();
     if(balance!==before||lastWin!==last)throw Error("A repetição alterou o saldo ou o último prémio");
   }
 }
@@ -1490,6 +1491,26 @@ async function replayRound(id){
 function baseCoinMarkup(factor){
   const value=format(factor*(replayBet??BETS[betIndex]));
   return '<span class="coin-slot filled base-valued-coin" aria-label="Moeda dourada de '+value+' euros"><strong>'+value+'</strong><small>€</small></span>';
+}
+function clearScatterScene(){
+  const frame=$("reelFrame"),banner=$("scatterBanner");
+  frame?.classList?.remove("scatter-tease","scatter-bonus");
+  if(banner){banner.hidden=true;banner.textContent=""}
+}
+function showScatterScene(board,free=false){
+  const n=count(board,9),frame=$("reelFrame"),banner=$("scatterBanner");
+  if(!frame||!banner)return n;
+  frame.classList.remove("scatter-tease","scatter-bonus");
+  if(n>=3){
+    frame.classList.add("scatter-bonus");
+    banner.textContent=free?"✦ SCATTER · +15 FREE SPINS ✦":"✦ 3 SCATTER · FREE SPINS ✦";
+    banner.hidden=false;
+  }else if(n===2){
+    frame.classList.add("scatter-tease");
+    banner.textContent=free?"✦ 2 SCATTER · +8 FREE SPINS ✦":"✦ 2 SCATTER · FALTA 1 ✦";
+    banner.hidden=false;
+  }else{banner.hidden=true;banner.textContent=""}
+  return n;
 }
 function draw(b,wins=[],wildAwards=[]){
   const keys=new Set(wins.map(([c,r])=>c+":"+r));
@@ -1500,7 +1521,7 @@ function draw(b,wins=[],wildAwards=[]){
     const coin=Number.isInteger(val)&&val>0;
     const art=symbolArtworkMarkup(b[c][r]);
     const visibleArt=coin?baseCoinMarkup(val):art;
-    return '<div class="cell '+(keys.has(k)?"winning ":"")+(coin?"wild-awarded":"")+'">'+visibleArt+'</div>';
+    return '<div class="cell '+(keys.has(k)?"winning ":"")+(coin?"wild-awarded ":"")+(b[c][r]===9?"scatter-cell":"")+'">'+visibleArt+'</div>';
   }).join("")+"</div>").join("");
 }
 function showWildTally(evt){
@@ -1823,7 +1844,9 @@ async function brakeRollingReel(state,profile,onStop=null){
   playRecorded("stop");
   if(onStop)onStop(state);
 }
+let scatterSoundFromReelStops=false;
 async function animateReelStop(boardFinal){
+  scatterSoundFromReelStops=false;
   const profile=turbo?REEL_SPIN_PROFILE.turbo:REEL_SPIN_PROFILE.normal;
   const reducedMotion=typeof window!=="undefined" &&
     Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
@@ -1839,12 +1862,20 @@ async function animateReelStop(boardFinal){
     await pause(profile.initialRollMs);
     // Os cinco travões trabalham em sobreposição: parar um não congela os outros.
     // As imagens da tira nunca são recriadas durante a spin.
-    let visibleCoins=0,coinRush=false;
+    let visibleCoins=0,coinRush=false,visibleScatters=0;
     const stops=[];
     for(let c=0;c<strips.length&&!skipAnimations;c++){
       if(c>0)await pause(profile.stopGapMs);
       if(skipAnimations)break;
       stops.push(brakeRollingReel(strips[c],profile,()=>{
+        const landed=boardFinal[c].filter(id=>id===9).length;
+        if(landed){
+          visibleScatters+=landed;
+          scatterSoundFromReelStops=true;
+          scatterCue(visibleScatters);
+          const cells=strips[c].column.querySelectorAll?.(".cell")||[];
+          boardFinal[c].forEach((id,row)=>{if(id===9)cells[row]?.classList.add("scatter-revealed")});
+        }
         visibleCoins+=boardFinal[c].filter(id=>id===11).length;
         if(!coinRush&&visibleCoins===5&&c<strips.length-1){
           coinRush=true;
@@ -1981,12 +2012,13 @@ async function playback(book){
       hideFreeResult();clearFreeHud();
     }else if(evt.kind==="reels"){
       hideWildTally();clearWinSparks();
-      if(evt.drop===1){cascadeRunning=0;hideCascadeMeter();await animateReelStop(evt.board);previousRemoved=[]}
+      if(evt.drop===1){cascadeRunning=0;hideCascadeMeter();clearScatterScene();await animateReelStop(evt.board);previousRemoved=[]}
       else await animateCascade(evt.board,previousRemoved,evt.drop);
       draw(evt.board,evt.removed,evt.wildAwards||[]);
       showWildTally(evt);
       if((evt.wildAwards||[]).length)playRecorded("wild");
-      if(evt.board.flat().filter(x=>x===9).length>=2)playRecorded("scatter");
+      const revealedScatters=showScatterScene(evt.board,Boolean(evt.free));
+      if(revealedScatters>0&&!skipAnimations&&(evt.drop>1||!scatterSoundFromReelStops))scatterCue(revealedScatters);
       previousRemoved=evt.removed;
       $("dropNum").textContent=evt.drop;
       $("multiNum").textContent="×"+evt.multi;
@@ -2046,7 +2078,7 @@ async function play(mode="base"){
   warmSymbolImages();
   const bet=BETS[betIndex],cost=bet*(mode==="free"?20:mode==="hold"?30:1);
   if(balance+1e-7<cost){say("Saldo de teste insuficiente: usa o botão + no topo.");return}
-  busy=true;skipAnimations=false;clearFreeHud();hideCascadeMeter();clearWinSparks();controls();
+  busy=true;skipAnimations=false;clearFreeHud();hideCascadeMeter();clearWinSparks();clearScatterScene();controls();
   let committed=false;
   try{
     // Each full outcome is resolved before the round is committed and animated.
@@ -2079,7 +2111,7 @@ async function play(mode="base"){
     $("bonusCurtain").classList.remove("visible");$("bonusCurtain").hidden=true;
     display();
   }finally{
-    busy=false;skipAnimations=false;clearPayline();clearFreeHud();hideWildTally();hideFreeResult();clearWinSparks();controls();
+    busy=false;skipAnimations=false;clearPayline();clearFreeHud();hideWildTally();hideFreeResult();clearWinSparks();clearScatterScene();controls();
     if(autoLeft>0){
       autoLeft--;
       controls();
