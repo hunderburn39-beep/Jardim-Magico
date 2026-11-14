@@ -1,12 +1,14 @@
-/* Pantanal V2.09 — ecrã vertical 9:16, preservando o modo horizontal */
+/* Pantanal V2.11 — ecrã vertical 9:16, preservando o modo horizontal */
 #screen.portrait{
  background:radial-gradient(ellipse 520px 520px at 50% 40%,#ac6126 0%,#65330c 55%,transparent 100%),repeating-linear-gradient(125deg,#231607 0px,#4a3514 72px,#201608 143px),#160d06;
 }
 #screen.portrait #home,#screen.portrait #game,#screen.portrait #bonusLayer{width:800px;height:100%}
 #screen.portrait #home::before,#screen.portrait #game::before{
- content:"PANTANAL";position:absolute;top:9%;left:0;width:100%;text-align:center;
- font:900 93px Georgia,serif;letter-spacing:4px;color:#ffe2a1;-webkit-text-stroke:2px #66380d;
- text-shadow:0 7px #4b2308,0 12px 24px #000,0 0 32px #d8841c;pointer-events:none
+ /* Logótipo Pantanal Mobile ilustrado, em vez do nome escrito. */
+ content:"";position:absolute;left:135px;top:2%;width:530px;height:260px;
+ background:url("./assets/pantanal-mobile-logo.webp") center / contain no-repeat;
+ mix-blend-mode:screen;filter:drop-shadow(0 8px 8px #130800d0) drop-shadow(0 0 15px #edb1397a);
+ z-index:4;pointer-events:none
 }
 #screen.portrait #home img{
  inset:auto;top:calc(48% - 240px);left:0;width:800px;height:480px;
@@ -68,9 +70,11 @@
 }
 #screen.portrait #bonusBg{display:none!important}
 #screen.portrait #bonusLayer::before{
- content:"PANTANAL";position:absolute;top:10%;left:0;width:100%;text-align:center;
- font:900 93px Georgia,serif;letter-spacing:4px;color:#ffe2a1;-webkit-text-stroke:2px #66380d;
- text-shadow:0 6px #4b2308,0 12px 24px #000,0 0 32px #d8841c;pointer-events:none
+ /* Mesma identidade visual no bónus, acima do título da roleta. */
+ content:"";position:absolute;left:135px;top:2%;width:530px;height:260px;
+ background:url("./assets/pantanal-mobile-logo.webp") center / contain no-repeat;
+ mix-blend-mode:screen;filter:drop-shadow(0 8px 8px #130800d0) drop-shadow(0 0 15px #edb1397a);
+ z-index:4;pointer-events:none
 }
 #screen.portrait #bonusLayer::after{
  content:"ROLETA DE BÓNUS";position:absolute;top:23%;left:0;width:100%;
