@@ -1,4 +1,4 @@
-name: Pantanal v2.20 — teste fluidez, centragem e bónus
+name: Pantanal v2.21 — moldura centrada e ecrã 9:16
 on:
   push:
     paths:
@@ -21,7 +21,7 @@ jobs:
           mkdir -p /tmp/pantanal-playwright
           npm install --prefix /tmp/pantanal-playwright --no-save --no-audit --no-fund playwright@1.56.1
           node /tmp/pantanal-playwright/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Testar cinco rolos contínuos, alinhamento e bónus em 9:16
+      - name: Testar a moldura 87,5%, tambores, bónus e rotação
         shell: bash
         run: |
           set -euo pipefail
@@ -32,7 +32,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pantanal-v220-screenshots
+          name: pantanal-v221-screenshots
           path: Pantanal/tests/screenshots/
           if-no-files-found: warn
           retention-days: 10
