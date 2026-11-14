@@ -78,6 +78,33 @@ def check_device(browser, width, height, label, show_image=False):
     assert len(motion)==12,(label,"not all scrolling symbols shown",motion)
     assert all(m["within"] and m["loaded"] and m["ratio"]<=.971 for m in motion),(label,"spinning symbol clipped",motion)
     print("ROLLING_12_SYMBOLS_OK",label,json.dumps(motion,ensure_ascii=False),flush=True)
+    # Validate a live cascade with five actual moving pieces and proper cleanup.
+    fall=page.evaluate("""()=>{
+       const prev=[[0,1,2],[3,5,6],[4,2,8],[7,9,10],[2,1,0]];
+       const next=[[11,1,2],[11,10,3],[4,2,8],[5,9,10],[2,1,0]];
+       draw(prev);
+       window.__qaFall=animateCascade(next,[[0,0],[1,1],[1,2],[3,0]]);
+       const ghosts=[...document.querySelectorAll('.cascade-fall-tile')];
+       return {
+         ghosts:ghosts.length,
+         concealed:document.querySelectorAll('.cascade-concealed').length,
+         moving:ghosts.map(el=>({top:getComputedStyle(el).top,
+           initial:el.style.transform,animations:el.getAnimations().length}))
+       };
+    }""")
+    assert fall["ghosts"]==5 and fall["concealed"]==5,(label,"Cascade motion missing",fall)
+    assert all(x["animations"]>=1 and x["top"]=="0px" for x in fall["moving"]),(label,"Fall animation missing",fall)
+    page.wait_for_function("document.querySelectorAll('.cascade-fall-tile').length===0 && document.querySelectorAll('.cascade-concealed').length===0",timeout=6000)
+    assert page.locator("#reelFrame .cell img.jmSymbolArt").count()==15,(label,"Cell count after cascade")
+    print("CASCADE_FALL_OK",label,json.dumps(fall,ensure_ascii=False),flush=True)
+    sparks=page.evaluate("""()=>{
+       showWinSparks({lines:[{line:1,amount:100,cells:[[0,1],[1,1],[2,1]]}]});
+       const coords=[...document.querySelectorAll('#winSparks .win-spark')]
+         .map(el=>({x:parseFloat(el.style.left),y:parseFloat(el.style.top)}));
+       clearWinSparks();return coords;
+    }""")
+    assert sparks==[{"x":10,"y":50},{"x":30,"y":50},{"x":50,"y":50}],(label,"Sparkles off payline",sparks)
+    print("PAYLINE_SPARKS_OK",label,json.dumps(sparks),flush=True)
     page.close()
 
 with sync_playwright() as p:
