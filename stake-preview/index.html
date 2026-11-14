@@ -1123,7 +1123,7 @@ function symbolArtworkMarkup(id){
   // onerror hides the broken image. The column can never be visually empty.
   return fallback+'<img class="jmSymbolArt" data-symbol-id="'+id+'" alt="'+type.label+'" src="'+type.image+
     '" decoding="sync" loading="eager" draggable="false"'+
-    ' onload="this.previousElementSibling.hidden=true"'+
+    ' onload="this.previousElementSibling&&(this.previousElementSibling.hidden=true)"'+
     ' onerror="this.hidden=true">';
 }
 const WEIGHTS=[10,13,11,10,4,11,10,9,10,4,12,7], LINES=[[1,1,1,1,1],[0,0,0,0,0],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,0,1,2],[1,2,2,1,0],[0,1,1,1,2]],COEFS=[3,4,8,5,10,7,4,4,7,0,0,0],PAY=[0,0,0,7,25,80];
