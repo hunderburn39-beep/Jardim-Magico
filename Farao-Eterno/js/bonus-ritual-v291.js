@@ -1,6 +1,6 @@
 /* Faraó Eterno — ritual do bónus inspirado na cadência da referência.
  * Arte e som originais; nenhuma mudança de RNG, créditos ou premiação.
- * V2.9.9 | 14-11-2026
+ * V2.10.0 | 14-11-2026
  */
 (() => {
  'use strict';
@@ -254,24 +254,24 @@
   return result;
  };
 
- // Brilho por cima das pirâmides sem tapar a arte nem os resultados.
+ // Luz própria nas pirâmides: segue a silhueta do PNG original.
+ // Sem bolas, círculos, órbitas, arcos ou qualquer elemento em rotação.
+ let thirdFlashAt=-1e9,thirdFlashCell=null,thirdFlashSpin=null;
  function halo(x,y,size,t,power=1){
-  const wave=.86+.14*Math.sin(t/115);
-  ctx.save();ctx.globalCompositeOperation='screen';
-  const radius=size*(.78+.12*wave);
-  const grad=ctx.createRadialGradient(x,y,3,x,y,radius);
-  grad.addColorStop(0,'rgba(255,255,226,'+(power*.32)+')');
-  grad.addColorStop(.3,'rgba(255,220,106,'+(power*.23)+')');
-  grad.addColorStop(.7,'rgba(255,156,34,'+(power*.12)+')');
-  grad.addColorStop(1,'rgba(255,132,27,0)');
-  ctx.fillStyle=grad;ctx.fillRect(x-radius,y-radius,radius*2,radius*2);
-  ctx.strokeStyle='rgba(255,236,143,'+(power*.67)+')';
-  ctx.lineWidth=2.1;ctx.shadowColor='#ffe0a4';ctx.shadowBlur=17*power;
-  const a=t/420;ctx.beginPath();ctx.arc(x,y,size*.45,a,a+Math.PI*1.25);ctx.stroke();
-  const spark=.5+.5*Math.sin(t/78+x*.33);
-  const sy=y-size*.36;
-  ctx.fillStyle='rgba(255,248,199,'+(power*spark*.92)+')';
-  ctx.fillRect(x-2,sy-17,4,34);ctx.fillRect(x-17,sy-2,34,4);
+  const img=g.images?.TOMB;
+  if(!img?.complete||!img.naturalWidth||!img.naturalHeight)return;
+  const breath=.88+.12*Math.sin(t*.0045+x*.014);
+  const strength=clamp(power*breath,0,3.2);
+  // A luz é formada pelo alfa da própria imagem, não por um disco desenhado.
+  const scale=Math.min((size*1.34)/img.naturalWidth,
+                       (size*1.70)/img.naturalHeight);
+  const w=img.naturalWidth*scale,h=img.naturalHeight*scale;
+  ctx.save();
+  ctx.globalCompositeOperation='screen';
+  ctx.globalAlpha=clamp(.08+.075*strength,0,.46);
+  ctx.shadowColor='#ffe29a';
+  ctx.shadowBlur=13+strength*11;
+  ctx.drawImage(img,x-w/2,y-h/2,w,h);
   ctx.restore();
  }
  function drawPyramids(t){
@@ -284,24 +284,33 @@
     for(let row=0;row<3;row++)if(spin.grid?.[c]?.[row]==='TOMB')
      points.push([c,row]);
    }
+   // Terceira pirâmide: uma única explosão de luz exatamente na paragem.
+   if(points.length>=3&&spin.result?.trigger&&thirdFlashSpin!==spin){
+    thirdFlashSpin=spin;
+    thirdFlashCell=points[2].join(':');
+    thirdFlashAt=t;
+   }
   }else if(g.lastResult?.trigger && t-flashAt<3700){
    for(let c=0;c<5;c++)
     for(let row=0;row<3;row++)if(g.grid?.[c]?.[row]==='TOMB')
      points.push([c,row]);
   }
-  if(points.length<2)return;
-  const recently=t-flashAt;
-  const burst=recently>=0&&recently<1700 ? 1+1.5*(1-clamp(recently/1700)):1;
-  const intensity=(points.length>=3?1.0:.65)*burst;
+  if(!points.length)return;
+  const elapsed=t-thirdFlashAt;
+  const flashPower=elapsed>=0&&elapsed<1100
+   ?Math.pow(1-elapsed/1100,1.45):0;
   for(const [col,row] of points){
-   halo(R.left+col*R.step+R.cw*.5,
-        R.top+row*R.gh+R.gh*.5,
-        Math.min(R.cw,R.gh)*.8,t,intensity);
+   const id=col+':'+row;
+   // 1ª e 2ª com brilho suave; 3ª faz o clarão branco-dourado.
+   const boost=thirdFlashCell===id?flashPower*2.0:flashPower*.27;
+   const x=R.left+col*R.step+R.cw*.5;
+   const y=R.top+row*R.gh+R.gh*.5;
+   halo(x,y,Math.min(R.cw,R.gh)*.8,t,.85+boost);
   }
-  if(points.length>=3&&recently>=0&&recently<1150){
-   const p=1-clamp(recently/1150);
+  // Clarão breve do conjunto, sem aro e sem objeto a mover-se.
+  if(points.length>=3&&flashPower>.01){
    ctx.save();ctx.globalCompositeOperation='screen';
-   ctx.fillStyle='rgba(255,241,173,'+(.21*p)+')';
+   ctx.fillStyle='rgba(255,244,186,'+(.13*flashPower)+')';
    ctx.fillRect(R.left,R.top,5*R.step,R.gh*3);
    ctx.restore();
   }
@@ -349,6 +358,6 @@
    drawPyramids(t);drawExpansions(t);introPages(t);
   }
  };
- g.bonusRitual={version:'2.9.9',events:stats,mathUnchanged:true};
- document.documentElement.dataset.faraoBonusRitual='2.9.9';
+ g.bonusRitual={version:'2.10.0',events:stats,mathUnchanged:true};
+ document.documentElement.dataset.faraoBonusRitual='2.10.0';
 })();
