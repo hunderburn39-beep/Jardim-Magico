@@ -51,7 +51,23 @@ def check_device(browser, width, height, label, show_image=False):
     }""")
     assert result["columns"]==5 and result["cellCount"]==15,(label,result)
     assert result["frame"]["left"]>=-2 and result["frame"]["right"]<=width+2,(label,"frame outside viewport",result["frame"])
-    assert all(x["within"] and x["loaded"] and x["ratio"]<=.991 for x in result["checks"]),(label,"image outside tile",result["checks"])
+    # ID 9 é o novo SCATTER aprovado: maior que as outras figuras de propósito.
+    assert all(x["loaded"] and (1.15<=x["ratio"]<=1.30 if x["id"]==9 else x["within"] and x["ratio"]<=.991) for x in result["checks"]),(label,"Scatter overlap or ordinary symbol clipping",result["checks"])
+    scatter=page.evaluate("""()=>{
+       const frame=document.querySelector('#reelFrame');
+       const image=frame.querySelector('.cell img.jmSymbolArt[data-symbol-id="9"]');
+       const cell=image.closest('.cell');
+       const ratio=()=>parseFloat(getComputedStyle(image).width)/cell.getBoundingClientRect().width;
+       const normal=ratio();
+       frame.classList.add('scatter-bonus');
+       const bonus=ratio();
+       frame.classList.remove('scatter-bonus');
+       return {normal,bonus,unclipped:getComputedStyle(image).clipPath==='none',z:getComputedStyle(cell).zIndex};
+    }""")
+    assert abs(scatter["normal"]-1.22)<.025,(label,"SCATTER normal deve ter 122%",scatter)
+    assert abs(scatter["bonus"]-1.28)<.025,(label,"SCATTER no bónus deve ter 128%",scatter)
+    assert scatter["unclipped"] and int(scatter["z"])>=30,(label,"SCATTER tem de poder sobrepor outras peças",scatter)
+    print("SCATTER_OVERLAP_OK",label,json.dumps(scatter),flush=True)
     assert all(max(v)<=2 for v in result["alphas"].values()),(label,"nontransparent source corners",result["alphas"])
     # A ghost image can finish loading after its animation layer is removed.
     # Its inline onload must not throw when previousElementSibling is null.
@@ -94,7 +110,7 @@ def check_device(browser, width, height, label, show_image=False):
       el.remove();return checks;
     }""")
     assert len(motion)==12,(label,"not all scrolling symbols shown",motion)
-    assert all(m["within"] and m["loaded"] and m["ratio"]<=.971 for m in motion),(label,"spinning symbol clipped",motion)
+    assert all(m["loaded"] and (1.15<=m["ratio"]<=1.30 if m["id"]==9 else m["within"] and m["ratio"]<=.991) for m in motion),(label,"SCATTER larger during reel scroll, other figures fit",motion)
     print("ROLLING_12_SYMBOLS_OK",label,json.dumps(motion,ensure_ascii=False),flush=True)
     # Validate a live cascade with five actual moving pieces and proper cleanup.
     fall=page.evaluate("""()=>{
