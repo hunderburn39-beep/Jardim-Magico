@@ -1,6 +1,6 @@
 /* Dez imagens individuais aprovadas, sem redesenhar. A piramide TOMB permanece original. */
 window.FARAO_CUSTOM_SYMBOLS = {
-  '10': 'assets/approved-20261113/10.png?v=2.7.3-stone',
+  '10': 'assets/10-pedras-certo.webp?v=2.7.4-rock-confirmed',
   'J': 'assets/approved-20261113/J.png?v=approved-20261113-v2',
   'Q': 'assets/approved-20261113/Q.png?v=approved-20261113-v2',
   'K': 'assets/approved-20261113/K.png?v=approved-20261113-v2',
