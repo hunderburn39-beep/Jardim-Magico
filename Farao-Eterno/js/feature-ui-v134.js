@@ -13,7 +13,7 @@
  const starting=!!(g.feature&&g.feature.played===0);
  g._awaitBonusStart=starting;
  g._freeStarted=!!(g.feature&&g.feature.played>0);
- g._welcome=!!(starting&&!g.ledger.feature?.introSeen);
+ g._welcome=!!(starting&&!g.ledger.feature?.introSeen&&!g.ledger.feature?.purchaseRevealPending);
  g._freeTurbo=false;
  g._savedTurbo=!!g.ledger.settings.turbo;
  g._autoDispatch=false;
@@ -164,18 +164,25 @@
    if(!this.spinObject)return;
    const wasFree=!!this.spinObject.free;
    const triggered=!!this.spinObject.result?.trigger;
+   const purchasedSpin=!!this.spinObject.purchaseReveal;
    oldFinish();
    if(wasFree){
-     // Nada de celebrações de sequências durante o bónus.
      this.v04Celebration=null;
      if(this.pendingSummary)this._awaitBonusStart=false;
    }else if(triggered&&this.feature){
-     this.featureIntro=null; // O livro só abre depois da mensagem inicial.
-     this.v04Celebration=null;
+     this.featureIntro=null;this.v04Celebration=null;
      this._awaitBonusStart=true;this._freeStarted=false;this._freeTurbo=false;
      this._welcome=true;
-     this.nextActionAt=Math.max(now()+400,this.reveal?.end||0);
-     this.showFeatureWelcome();
+     this.nextActionAt=Math.max(now()+(purchasedSpin?1350:400),this.reveal?.end||0);
+     if(purchasedSpin){
+       // Mostrar a combinação de ativação completa antes da cerimónia.
+       window.setTimeout(()=>{
+         if(this.feature&&!this.spinning&&!this.superseded&&
+            document.getElementById('modal')?.classList.contains('hidden')){
+              this.showFeatureWelcome();
+         }
+       },1250);
+     }else this.showFeatureWelcome();
    }
  };
  const oldBuy=g.confirmBuyBonus.bind(g);
@@ -184,8 +191,13 @@
    oldBuy(mode);
    if(!before&&this.feature){
      this.featureIntro=null;this.v04Celebration=null;
-     this._welcome=true;this._awaitBonusStart=true;
-     this._freeStarted=false;this._freeTurbo=false;
+     this._awaitBonusStart=true;this._freeStarted=false;this._freeTurbo=false;
+     if(this.spinning&&this.spinObject?.purchaseReveal){
+       this._welcome=false;
+       return;
+     }
+     // Apenas recuperação de uma compra sem rotação visual pendente.
+     this._welcome=true;
      this.nextActionAt=now()+450;
      this.showFeatureWelcome();
    }
