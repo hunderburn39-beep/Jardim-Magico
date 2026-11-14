@@ -185,6 +185,16 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .coin-slot.filled{background:radial-gradient(circle at 32% 23%,#fff7c9,#edc968 45%,#9e5c18 75%,#68401d);border:3px solid #fff0a9;color:#50230a;box-shadow:0 0 12px #ffdc7f80}
 .coin-slot strong{font-size:clamp(15px,4.8vw,21px);line-height:1.15}
 .coin-slot small{font-size:clamp(9px,2.5vw,11px);font-weight:900;line-height:1.2;white-space:nowrap}
+/* Coin awards use the same golden coin face in base and Hold, instead of +factor badges. */
+.cell .base-valued-coin{position:relative;z-index:3;display:flex;width:94%;max-width:76px;height:auto;aspect-ratio:1;margin:auto;box-shadow:inset 0 2px 5px #fff8c4,0 0 18px #ffdf87a1;animation:coinLand .45s ease-out both;min-width:0}
+.cell .base-valued-coin strong{display:block;font-size:clamp(12px,3.5vw,19px);line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums}
+.cell .base-valued-coin small{display:block;font-size:clamp(9px,2.8vw,12px)}
+/* Ghost coin travels above the modal to the displayed total, while the locked coin stays. */
+.hold-coin-flight{position:fixed;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;aspect-ratio:1;border-radius:50%;border:3px solid #fff0b8;color:#50230a;font-weight:1000;font-size:clamp(11px,3.3vw,17px);white-space:nowrap;background:radial-gradient(circle at 32% 23%,#fff7c9,#edc968 45%,#9e5c18 75%,#68401d);box-shadow:0 0 15px 7px #ffde86aa,0 0 30px #fff6c088;animation:holdCoinFly .62s cubic-bezier(.2,.7,.27,1) both;will-change:transform,opacity}
+@keyframes holdCoinFly{0%{transform:translate(0,0) scale(1);opacity:1}45%{transform:translate(calc(var(--coin-fly-x) * .45),calc(var(--coin-fly-y) * .45 - 32px)) scale(1.18);opacity:1}87%{opacity:1}100%{transform:translate(var(--coin-fly-x),var(--coin-fly-y)) scale(.21);opacity:0}}
+.hold-payout.coin-arrival{animation:holdTotalArrival .28s ease-out}
+@keyframes holdTotalArrival{0%{filter:brightness(2.2);transform:scale(1.12)}100%{filter:brightness(1);transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.hold-coin-flight,.hold-payout.coin-arrival,.cell .base-valued-coin{animation:none!important}}
 /* Money Link: independent reel motion for each unlocked cell and coin-by-coin payout. */
 .coin-slot{position:relative;isolation:isolate}
 .coin-slot.rolling{overflow:hidden;border-color:#c5a56a99;background:linear-gradient(180deg,#16102a,#473458 48%,#16102a)}
@@ -1445,22 +1455,29 @@ async function replayRound(id){
     if(balance!==before||lastWin!==last)throw Error("A repetição alterou o saldo ou o último prémio");
   }
 }
+// Base winning WILD positions show euro-valued gold coins; the actual
+// line math still uses the precomputed multipliers and no extra reward is added.
+function baseCoinMarkup(factor){
+  const value=format(factor*(replayBet??BETS[betIndex]));
+  return '<span class="coin-slot filled base-valued-coin" aria-label="Moeda dourada de '+value+' euros"><strong>'+value+'</strong><small>€</small></span>';
+}
 function draw(b,wins=[],wildAwards=[]){
   const keys=new Set(wins.map(([c,r])=>c+":"+r));
   const awarded=new Map((wildAwards||[]).map(item=>[item.c+":"+item.r,item.value]));
   $("reels").innerHTML=Array.from({length:5},(_,c)=>'<div class="column">'+Array.from({length:3},(_,r)=>{
     const k=c+":"+r;
-    const art=symbolArtworkMarkup(b[c][r]);
     const val=b[c][r]===4?awarded.get(k):null;
-    const badge=Number.isInteger(val)?'<span class="wild-badge" aria-label="WILD mais '+val+'">+'+val+'</span>':"";
-    return '<div class="cell '+(keys.has(k)?"winning ":"")+(badge?"wild-awarded":"")+'">'+art+badge+'</div>';
+    const coin=Number.isInteger(val)&&val>0;
+    const art=coin?baseCoinMarkup(val):symbolArtworkMarkup(b[c][r]);
+    return '<div class="cell '+(keys.has(k)?"winning ":"")+(coin?"wild-awarded":"")+'">'+art+'</div>';
   }).join("")+"</div>").join("");
 }
 function showWildTally(evt){
   const awards=evt.wildAwards||[];
   if(!awards.length){$("wildTally").hidden=true;return}
   const gained=awards.reduce((sum,item)=>sum+item.value,0);
-  $("wildTallyText").textContent="WILD "+awards.map(a=>"+"+a.value).join(" · ")+"  →  MULTI ×"+evt.multi;
+  const stake=replayBet??BETS[betIndex];
+  $("wildTallyText").textContent="MOEDAS DOURADAS · "+awards.map(a=>format(a.value*stake)+" €").join(" · ");
   $("wildTally").hidden=false;
   return gained;
 }
@@ -1555,6 +1572,32 @@ async function animateHoldSpin(evt,previous){
 }
 // Collect each locked coin into a running euro total. The last displayed
 // amount always comes from the precommitted outcome (including full-grid bonus).
+// Clone the coin into a fixed-position layer so the Hold modal cannot clip
+// its flight. Works on Safari and does not touch the settled game state.
+async function flyHoldCoin(index,factor){
+  const grid=$("holdGrid"),target=$("holdWin");
+  const source=grid?.querySelectorAll?.(".coin-slot")?.[index];
+  if(skipAnimations||turbo||!source?.getBoundingClientRect||!target?.getBoundingClientRect||!document.createElement||!document.body?.appendChild)return false;
+  const from=source.getBoundingClientRect(),to=target.getBoundingClientRect();
+  if(!from.width||!from.height||!to.width||!to.height)return false;
+  const diameter=Math.min(74,Math.max(38,from.width));
+  const startX=from.left+(from.width-diameter)/2,startY=from.top+(from.height-diameter)/2;
+  const endX=to.left+to.width/2,endY=to.top+to.height/2;
+  const ghost=document.createElement("span");
+  ghost.className="hold-coin-flight";
+  ghost.setAttribute("aria-hidden","true");
+  ghost.textContent=format(factor*(replayBet??BETS[betIndex]))+" €";
+  ghost.style.left=startX+"px";
+  ghost.style.top=startY+"px";
+  ghost.style.width=diameter+"px";
+  ghost.style.height=diameter+"px";
+  ghost.style.setProperty("--coin-fly-x",(endX-(startX+diameter/2))+"px");
+  ghost.style.setProperty("--coin-fly-y",(endY-(startY+diameter/2))+"px");
+  document.body.appendChild(ghost);
+  try{await pause(620)}
+  finally{ghost.remove?.()}
+  return true;
+}
 async function countHoldWinnings(evt){
   const coins=evt.grid.map((factor,index)=>({factor,index})).filter(item=>item.factor>0);
   $("holdWin").textContent="A CONTAR 0,00 €";
@@ -1565,11 +1608,19 @@ async function countHoldWinnings(evt){
       if(skipAnimations)break;
       const {factor,index}=coins[i];
       slots[index]?.classList.add("collecting");
+      $("holdText").textContent="MOEDA "+(i+1)+"/"+coins.length+" · +"+money(100*factor)+" €";
+      const animated=await flyHoldCoin(index,factor);
+      if(skipAnimations){slots[index]?.classList.remove("collecting");break}
+      if(!animated)await pause(260);
+      if(skipAnimations){slots[index]?.classList.remove("collecting");break}
       subtotal+=100*factor;
       $("holdWin").textContent="A CONTAR "+money(subtotal)+" €";
-      $("holdText").textContent="MOEDA "+(i+1)+"/"+coins.length+" · +"+money(100*factor)+" €";
+      $("holdWin").classList.remove("coin-arrival");
+      // Reflow restarts the impact pulse when consecutive coins land.
+      if($("holdWin").offsetWidth!==undefined)void $("holdWin").offsetWidth;
+      $("holdWin").classList.add("coin-arrival");
       playRecorded("coin",1.12);
-      await pause(260);
+      await pause(110);
       slots[index]?.classList.remove("collecting");
     }
     if(evt.filled&&!skipAnimations){
@@ -1578,6 +1629,7 @@ async function countHoldWinnings(evt){
       await pause(600);
     }
   }
+  $("holdWin").classList.remove("coin-arrival");
   $("holdWin").textContent="TOTAL "+money(evt.amount)+" €";
 }
 function hideHoldResult(){
