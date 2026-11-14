@@ -36,6 +36,7 @@ jobs:
           node stake-preview/tests/v182-layout.mjs
           node stake-preview/tests/reel-speed.mjs
           node stake-preview/tests/premium-gravity.mjs
+          node stake-preview/tests/base-slow-reveal.mjs
           node stake-preview/tests/symbol-images.mjs
       - name: Confirmar GitHub Pages independente das outras publicações
         run: |
