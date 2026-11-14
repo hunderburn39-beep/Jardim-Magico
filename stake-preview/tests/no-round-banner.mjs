@@ -10,7 +10,7 @@ assert.doesNotMatch(js,/\$\("hud"\)\.textContent="✦ RONDA #"/);
 assert.match(js,/\$\("hud"\)\.textContent="";/);
 assert.match(js,/\$\("reelFrame"\)\.classList\.add\("round-finished"\)/);
 assert.match(js,/\$\("reelFrame"\)\.classList\.remove\("round-finished"\)/);
-assert.match(js,/\$\("detailTitle"\)\.textContent="JOGADA #"+record\.id/);
+assert.match(js,/\$\("detailTitle"\)\.textContent="JOGADA #"\+record\.id/);
 assert.match(js,/const record=commitRound\(mode,bet,cost,payout,book\)/);
 assert.match(css,/jardim-magico-fundo-aprovado-original\.png/);
 new Function(js);
