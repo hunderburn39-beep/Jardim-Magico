@@ -846,7 +846,7 @@ function fit(){
 }
 addEventListener('resize',fit);fit();
 function renderBoard(animateCol=-1){const root=el('reels');root.innerHTML='';for(let r=0;r<3;r++)for(let c=0;c<5;c++){const s=document.createElement('div');s.className='symbol';const idx=board[r][c];s.dataset.cell=`${r}-${c}`;s.style.backgroundPosition=`-115px -${idx*102}px`;if(animateCol===c)s.style.filter='blur(2px)';root.appendChild(s)}}
-function showStatus(txt){el('status').textContent=txt||''}function update(){el('credit').textContent=money(state.credits);el('win').textContent=money(state.lastWin);el('bet').textContent=money(BET_LEVELS[state.betIndex]*state.lines);el('autoBtn').style.filter=auto?'drop-shadow(0 0 10px #e9ed61)':'none';el('spinLabel').textContent=spinBusy?'RODANDO':'JOGAR';updateJackpotHUD();}
+function showStatus(txt){el('status').textContent=txt||''}function update(){el('credit').textContent=money(state.credits);el('win').textContent=money(state.lastWin);el('bet').textContent=money(BET_LEVELS[state.betIndex]*state.lines);el('autoBtn').style.filter=auto?'drop-shadow(0 0 10px #e9ed61)':'none';el('spinLabel').textContent=spinBusy?'RODANDO':'JOGAR';updateJackpotHUD();window.PantanalFrameLayout?.setActiveLines(state.lines);}
 function updateJackpotHUD(){
   const game=el('game');if(!game)return;
   let root=el('pantanalJackpots');
@@ -1161,6 +1161,6 @@ if(savedBoard){
  for(let r=0;r<3;r++)for(let c=0;c<5;c++)board[r][c]=pick();
 }
 renderBoard();update();
-</script><script src="paylines.js?v=2.20"></script>
+</script><script src="paylines.js?v=2.22"></script>
 <script src="original_rules.js?v=2.13"></script>
-<script src="apk_engine.js?v=2.20"></script><script src="bonus_ui.js?v=2.20"></script><script src="reels_motion.js?v=2.20"></script><script src="frame_layout.js?v=2.21"></script></body></html>
+<script src="apk_engine.js?v=2.20"></script><script src="bonus_ui.js?v=2.20"></script><script src="reels_motion.js?v=2.20"></script><script src="frame_layout.js?v=2.22"></script></body></html>
