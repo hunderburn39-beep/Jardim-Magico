@@ -53,8 +53,8 @@ for(let i=0;i<12;i++){
   const markup=vm.runInContext('symbolArtworkMarkup(id)',ctx);
   assert.ok(markup.includes('class="symbol-fallback"'),'A visible placeholder always exists');
   assert.ok(markup.includes('src="'+names[i]+'"'),'Artwork uses the original correct source');
-  assert.ok(markup.includes('onload="this.previousElementSibling.hidden=true"'),
-    'Loaded image hides its placeholder');
+  assert.ok(markup.includes('onload="this.previousElementSibling&&(this.previousElementSibling.hidden=true)"'),
+    'Loaded image hides its placeholder only if the placeholder still exists');
   assert.ok(markup.includes('onerror="this.hidden=true"'),
     'A broken image is hidden, with the placeholder still visible');
   assert.ok(markup.includes('decoding="sync" loading="eager"'),
