@@ -40,6 +40,7 @@ jobs:
           node stake-preview/tests/original-approved-background.mjs
           node stake-preview/tests/premium-3d-symbols.mjs
           node stake-preview/tests/no-round-banner.mjs
+          node stake-preview/tests/bonus-shop-compact.mjs
           node stake-preview/tests/symbol-images.mjs
       - name: Confirmar GitHub Pages independente das outras publicações
         run: |

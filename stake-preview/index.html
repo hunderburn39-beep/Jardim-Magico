@@ -1308,6 +1308,22 @@ html,body{height:100%;overflow:hidden;background:#051814}
   text-shadow:0 1px 0 #fff1c9b8,0 -1px 1px #7041115e!important;
 }
 
+
+/* V3.3: uma única compra de bónus discreta junto às apostas rápidas. */
+.bet-shortcuts{gap:clamp(2px,.6vw,5px)!important;left:2%!important;right:2%!important}
+.bet-shortcuts > button{min-width:0;white-space:nowrap}
+.bet-shortcuts #openBonusBuy{flex:0 0 auto;min-width:clamp(62px,16.5vw,78px);height:clamp(27px,3.6svh,34px);padding:3px 5px;border:2px solid #f9dc8b;border-radius:9px;background:linear-gradient(160deg,#856035,#352443 72%,#221c35);box-shadow:0 2px 7px #051b1bc9,inset 0 1px #fff6c15e;color:#ffefb3;font-size:clamp(9px,2.15vw,11px);font-weight:1000;text-shadow:0 1px 2px #21101c}
+.bet-shortcuts #openBonusBuy:active{transform:translateY(2px)}
+.bet-shortcuts #openBonusBuy:disabled{opacity:.45}
+.bonus-buy-modal{max-width:365px;max-height:88svh;overflow-y:auto;text-align:center}
+.bonus-buy-modal h2{font-size:clamp(21px,6.1vw,28px)}
+.bonus-buy-modal p{font-size:12px;line-height:1.5}
+.bonus-buy-modal .bonus-row{position:static!important;z-index:auto!important;top:auto!important;bottom:auto!important;left:auto!important;right:auto!important;display:grid!important;grid-template-columns:1fr!important;gap:12px!important;width:100%!important;height:auto!important;margin:14px 0!important;padding:0!important}
+.bonus-buy-modal .bonus-btn{width:100%;min-height:70px;height:auto!important;padding:11px 10px;border:2.5px solid #f9d992;border-radius:17px;background:linear-gradient(145deg,#9653a4,#542a75 57%,#272344);font-size:clamp(16px,4.1vw,19px);letter-spacing:.02em;box-shadow:0 5px 13px #0e0920c9,inset 0 2px #fff5cb65}
+.bonus-buy-modal .bonus-btn span{display:block;margin-top:5px;color:#fff0bb;font-size:clamp(11px,3vw,14px);font-weight:800}
+.bonus-buy-modal #buyHold{background:linear-gradient(145deg,#86612d,#534326 53%,#292c35)}
+.bonus-buy-modal .bonus-btn:disabled{opacity:.5}
+
 </style>
 </head>
 <body>
@@ -1355,18 +1371,25 @@ html,body{height:100%;overflow:hidden;background:#051814}
    <div class="money"><label>SALDO · CRÉDITOS</label><strong id="balance">1 000,00</strong></div>
    <div class="money"><label>APOSTA · CRÉDITOS</label><div class="bet-controls"><button id="minus" aria-label="Diminuir aposta">−</button><strong id="bet">0,20</strong><button id="plus" aria-label="Aumentar aposta">+</button></div></div>
  </div>
- <div class="bet-shortcuts" aria-label="Escolha rápida de aposta"><span>APOSTA RÁPIDA</span><button type="button" data-bet="0.2">0,20</button><button type="button" data-bet="1">1,00</button><button type="button" data-bet="7.5">7,50</button><button type="button" data-bet="10">10,00</button><button type="button" id="paytableBtn" class="paytable-open" aria-label="Abrir tabela de prémios">▤ PRÉMIOS</button></div>
+ <div class="bet-shortcuts" aria-label="Escolha rápida de aposta"><span>APOSTA RÁPIDA</span><button type="button" data-bet="0.2">0,20</button><button type="button" data-bet="1">1,00</button><button type="button" data-bet="7.5">7,50</button><button type="button" data-bet="10">10,00</button><button type="button" id="paytableBtn" class="paytable-open" aria-label="Abrir tabela de prémios">▤ PRÉMIOS</button><button type="button" id="openBonusBuy" aria-label="Abrir compra de bónus" aria-expanded="false">🎁 BÓNUS</button></div>
  <div class="actions">
   <button class="action-small" id="turbo">⚡ TURBO<br><b id="turboLabel">DESL.</b></button>
   <button class="spin" id="spin"><b>↻</b>RODAR</button>
   <button class="action-small" id="auto" type="button" aria-label="Iniciar cinco rodadas automáticas" aria-pressed="false"><span id="autoHeading">↻ AUTO</span><br><b id="autoLabel">5 GIROS</b></button>
  </div>
- <div class="bonus-row">
-  <button class="bonus-btn" id="buyFree">✦ FREE SPINS <span>Comprar 20× aposta</span></button>
-  <button class="bonus-btn" id="buyHold">◉ HOLD & WIN <span>Comprar 30× aposta</span></button>
- </div>
  <footer class="foot"><b>V1.9.9 · CASCATAS SUAVES</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
+ <div class="overlay" id="bonusBuyOverlay" role="dialog" aria-modal="true" aria-label="Comprar bónus">
+  <div class="modal bonus-buy-modal">
+   <h2>✦ COMPRAR BÓNUS ✦</h2>
+   <p>Escolhe um bónus. O custo é calculado com a aposta atual e só é descontado ao escolheres a opção.</p>
+   <div class="bonus-row">
+    <button type="button" class="bonus-btn" id="buyFree">✦ FREE SPINS <span>20× aposta</span></button>
+    <button type="button" class="bonus-btn" id="buyHold">◉ HOLD &amp; WIN <span>30× aposta</span></button>
+   </div>
+   <button type="button" class="modal-close" id="closeBonusBuy">VOLTAR AO JOGO</button>
+  </div>
+ </div>
  <div class="overlay" id="freeResultOverlay" role="dialog" aria-modal="true" aria-label="Resultado final das Free Spins"><div class="modal free-result-modal"><h2>✦ FREE SPINS ✦</h2><p>O BÓNUS TERMINOU</p><div id="freeResultTotal" class="free-result-total">0,00</div><div class="free-result-math"><span>Jogadas realizadas</span><strong id="freeResultPlayed">15</strong><span>Prémio bruto</span><strong id="freeResultRaw">0,00</strong><span>Multiplicador</span><strong id="freeResultMulti">×1</strong></div><button class="free-continue" id="closeFree" type="button">▶ CONTINUAR</button></div></div>
  <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><button id="holdSkip" class="hold-skip" type="button" aria-label="Passar animação do Hold & Win" hidden>PASSAR ⏩</button><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout" aria-live="polite">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
  <div class="overlay" id="historyOverlay"><div class="modal history-modal"><div class="history-head"><h2>HISTÓRICO</h2><button type="button" id="closeHistory" aria-label="Fechar histórico">×</button></div><p>Últimas 20 jogadas, em créditos fictícios. Procura pelo número e abre os símbolos. REPETIR não cobra nem paga novamente.</p><input id="historySearch" class="history-search" type="search" inputmode="numeric" placeholder="Pesquisar nº da jogada" aria-label="Pesquisar pelo número da jogada"><small id="historyCount" class="history-counter"></small><div id="historyList" class="history-list"></div><button type="button" class="modal-close" id="clearHistory">LIMPAR HISTÓRICO</button></div></div>
@@ -1599,6 +1622,17 @@ function renderPaytable(){
     '<div class="paytable-rule"><strong>MOEDAS:</strong> 6 ou mais numa cascata ativam o Hold & Win 4×4, com 6 moedas iniciais e 3 tentativas renovadas quando cai moeda. Compra direta: <strong>'+format(stake*30)+'</strong> créditos. Grelha cheia: extra de <strong>'+format(stake*250)+'</strong> créditos.</div>'+
     '<div class="paytable-rule"><strong>CASCADE:</strong> as linhas são avaliadas da esquerda para a direita. Cada linha vale independentemente; as peças vencedoras desaparecem e as novas caem. Os multiplicadores de Free Spins aplicam-se no final do bónus.</div>';
   $("paylineSheet").innerHTML=LINES.map((rows,i)=>'<div class="payline-card"><b>'+String(i+1).padStart(2,"0")+'</b><div class="payline-mini">'+rows.map(r=>'<span class="payline-mini-col">'+[0,1,2].map(row=>'<i class="'+(r===row?"active":"")+'"></i>').join("")+'</span>').join("")+'</div></div>').join("");
+}
+function openBonusShop(){
+  if(busy||autoLeft>0)return false;
+  display();
+  $("bonusBuyOverlay").classList.add("show");
+  $("openBonusBuy").setAttribute("aria-expanded","true");
+  return true;
+}
+function closeBonusShop(){
+  $("bonusBuyOverlay").classList.remove("show");
+  $("openBonusBuy").setAttribute("aria-expanded","false");
 }
 function showPaytable(){if(busy)return false;autoLeft=0;controls();renderPaytable();$("paytableOverlay").classList.add("show");return true}
 function hidePaytable(){$("paytableOverlay").classList.remove("show")}
@@ -1875,7 +1909,7 @@ function clearFreeHud(){$("freePanel").hidden=true;$("freePanel").classList.remo
 function finalWinTier(payout,stake){const ratio=payout/stake;return ratio>=100?"SENSACIONAL":ratio>=25?"MEGA WIN":ratio>=10?"BIG WIN":"PRÉMIO TOTAL"}
 function controls(){
   const autoRunning=autoLeft>0;
-  ["spin","minus","plus","buyFree","buyHold","reloadBtn","historyBtn","paytableBtn"].forEach(id=>$(id).disabled=busy||autoRunning);
+  ["spin","minus","plus","openBonusBuy","buyFree","buyHold","reloadBtn","historyBtn","paytableBtn"].forEach(id=>$(id).disabled=busy||autoRunning);
   $("auto").disabled=busy&&!autoRunning;
   $("auto").classList.toggle("auto-running",autoRunning);
   $("auto").setAttribute("aria-pressed",String(autoRunning));
@@ -2553,8 +2587,11 @@ $("holdSkip").addEventListener("click",skipCurrentAnimations);
 $("minus").addEventListener("click",()=>{betIndex=Math.max(0,betIndex-1);display();saveSession()});
 $("plus").addEventListener("click",()=>{betIndex=Math.min(BETS.length-1,betIndex+1);display();saveSession()});
 document.querySelectorAll("[data-bet]").forEach(button=>button.addEventListener("click",()=>{if(busy)return;const wanted=Number(button.dataset.bet),index=BETS.findIndex(v=>v===wanted);if(index!==-1){betIndex=index;display();saveSession();say("Aposta selecionada: "+format(wanted)+" créditos.")}}));
-$("buyFree").addEventListener("click",()=>play("free"));
-$("buyHold").addEventListener("click",()=>play("hold"));
+$("openBonusBuy").addEventListener("click",openBonusShop);
+$("closeBonusBuy").addEventListener("click",closeBonusShop);
+$("bonusBuyOverlay").addEventListener("click",event=>{if(event.target===$("bonusBuyOverlay"))closeBonusShop()});
+$("buyFree").addEventListener("click",()=>{closeBonusShop();void play("free")});
+$("buyHold").addEventListener("click",()=>{closeBonusShop();void play("hold")});
 $("reloadBtn").addEventListener("click",()=>{balance+=250;display();saveSession();say("Adicionados 250 créditos de teste.","bonus")});
 $("turbo").addEventListener("click",()=>{turbo=!turbo;controls()});
 $("auto").addEventListener("click",toggleAuto);
