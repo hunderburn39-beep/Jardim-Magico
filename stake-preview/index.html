@@ -1597,8 +1597,9 @@ async function highlightLines(evt){
 // The final three symbols are at the top, followed by a short bridge and
 // TWO identical 6-symbol loops. We NEVER change its HTML while spinning.
 const REEL_SPIN_PROFILE=Object.freeze({
-  normal:Object.freeze({initialRollMs:1050,brakeMs:900,stopGapMs:245,cycleMs:980}),
-  turbo:Object.freeze({initialRollMs:40,brakeMs:95,stopGapMs:22,cycleMs:340})
+  // Natural roll: normal velocity continues into the brake, with overlapping stops.
+  normal:Object.freeze({initialRollMs:740,brakeMs:540,stopGapMs:390,cycleMs:580}),
+  turbo:Object.freeze({initialRollMs:160,brakeMs:170,stopGapMs:85,cycleMs:200})
 });
 const REEL_LOOP_CELLS=6;
 const REEL_ROLL_START=-12;
@@ -1663,7 +1664,7 @@ async function brakeRollingReel(state,profile,onStop=null){
     {transform:"translate3d(0,0px,0)"}
   ],{
     duration,
-    easing:"cubic-bezier(.36,.34,.35,1)",
+    easing:"cubic-bezier(.44,.48,.65,1)",
     fill:"forwards"
   });
   state.braking=braking;
@@ -1689,26 +1690,31 @@ async function animateReelStop(boardFinal){
     strips=mountRollingReels(boardFinal,profile);
     playRecorded("spin");
     await pause(profile.initialRollMs);
-    // Cada tambor termina antes do próximo travar: os restantes continuam a rodar.
-    // O resultado foi definido antes da animação; as moedas só são contadas quando ficam visíveis.
+    // Os cinco travões trabalham em sobreposição: parar um não congela os outros.
+    // As imagens da tira nunca são recriadas durante a spin.
     let visibleCoins=0,coinRush=false;
+    const stops=[];
     for(let c=0;c<strips.length&&!skipAnimations;c++){
       if(c>0)await pause(profile.stopGapMs);
       if(skipAnimations)break;
-      await brakeRollingReel(strips[c],profile,()=>{
+      stops.push(brakeRollingReel(strips[c],profile,()=>{
         visibleCoins+=boardFinal[c].filter(id=>id===11).length;
         if(!coinRush&&visibleCoins===5&&c<strips.length-1){
           coinRush=true;
           for(let remaining=c+1;remaining<strips.length;remaining++){
-            if(strips[remaining].rolling && !strips[remaining].rolling.cancelled){
-              strips[remaining].rolling.playbackRate=2.1;
+            const state=strips[remaining];
+            if(!state.braking&&state.rolling&&!state.rolling.cancelled){
+              // Aceleração moderada sem alterar o resultado nem reiniciar os fotogramas.
+              if(typeof state.rolling.updatePlaybackRate==="function")state.rolling.updatePlaybackRate(1.5);
+              else state.rolling.playbackRate=1.5;
             }
           }
-          if(typeof say==="function")say("🪙 5 MOEDAS! Os restantes tambores aceleram!","bonus");
+          if(typeof say==="function")say("🪙 5 MOEDAS! Falta uma para o Hold & Win","bonus");
           playRecorded("coin");
         }
-      });
+      }));
     }
+    await Promise.all(stops);
   }finally{
     for(const {viewport,rolling,braking} of strips){
       rolling?.cancel();
