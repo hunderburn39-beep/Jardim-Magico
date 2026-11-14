@@ -1,0 +1,13 @@
+'use strict';
+const assert=require('node:assert/strict');
+const layout=require('../frame_layout.js');
+const motion=require('../reels_motion.js');
+assert.deepEqual(layout.metrics.frame,{width:700,height:398});
+assert.deepEqual(layout.metrics.reels,{width:611,height:314});
+assert.equal(layout.metrics.horizontalOffset,44.5);
+assert.equal(layout.metrics.verticalOffset,42);
+assert.equal(layout.metrics.frame.width/800,0.875);
+assert.equal(motion.metrics.stageWidth,layout.metrics.reels.width);
+assert.equal(motion.metrics.stageHeight,layout.metrics.reels.height);
+assert.equal(layout.mount(null),false);
+console.log('PASS: centered 700x398 gold frame, 611x314 reels and identical overlay coordinates');
