@@ -175,3 +175,20 @@ button.farao-history-row:focus-visible{outline:3px solid #b88d35;outline-offset:
 .modal.farao-theme .farao-admin-warning{color:#ffd777;background:#463116a8;border-radius:6px;padding:8px;font-size:12px}
 .modal.farao-theme .farao-admin-error{min-height:16px;color:#ffb099;font-size:12px;font-weight:800}
 @media(max-width:365px){.farao-admin-metrics{gap:5px}.farao-admin-metric{padding:8px 5px}.modal-inner .header-tabs button{font-size:8px}}
+
+
+/* Compra de Free Spins: pirâmides 100× ou Super Scatter 200×. */
+.farao-buy-options{display:flex;flex-direction:column;gap:13px;color:#222}
+.farao-buy-intro{font:600 13px/1.45 Arial,sans-serif;margin:0 0 2px}
+.farao-buy-option{display:grid;grid-template-columns:68px minmax(0,1fr);gap:8px 12px;align-items:center;padding:12px 10px;background:linear-gradient(130deg,#102436,#071522);border:2px solid #bd9653;border-radius:12px;color:#fbe6b6;box-shadow:0 6px 20px #090d1780}
+.farao-buy-option img{width:66px;height:77px;object-fit:contain;grid-row:1;filter:drop-shadow(0 3px 7px #0008)}
+.farao-buy-option h3{margin:0 0 4px;color:#ffe9b2;font:900 14px/1.25 Georgia,serif;letter-spacing:.03em}
+.farao-buy-option p{font:500 12px/1.4 Arial,sans-serif;margin:3px 0 6px;color:#efe0c7}
+.farao-buy-option strong{display:block;color:#ffdc83;font:900 23px/1.15 Georgia,serif}
+.farao-buy-option small{display:block;color:#c8bea5;font:600 11px Arial,sans-serif;margin-top:2px}
+.farao-buy-option .farao-buy-action{grid-column:1/-1;background:linear-gradient(#f2d58a,#aa752e);color:#211609;border-color:#f8dd95;font:900 13px Arial,sans-serif;min-height:48px;white-space:normal}
+.farao-buy-option .farao-buy-action:disabled{background:#73706a;color:#ddd;border-color:#777;opacity:.6}
+.farao-buy-super{border-color:#8bd3d0;background:linear-gradient(135deg,#1c3453,#081521 70%,#29203b);box-shadow:0 0 16px #56bcc335}
+.farao-buy-super .farao-buy-action{background:linear-gradient(#a6e6e0,#4e93aa);color:#081d30;border-color:#b6fcf5}
+.farao-buy-balance{text-align:center;font:600 12px/1.5 Arial,sans-serif;margin:3px 0;color:#292522}
+.farao-buy-warning{color:#ad2323;font:700 12px/1.4 Arial,sans-serif;margin:0}
