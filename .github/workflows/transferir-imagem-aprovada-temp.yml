@@ -1,0 +1,26 @@
+name: Transferir PNG original verificado (temporário)
+on:
+  push:
+    branches:
+      - stake-imagem-aprovada-png-exato-20261114
+permissions:
+  contents: write
+jobs:
+  copiar_imagem_aprovada:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Guardar imagem original sem redimensionar nem recomprimir
+        run: |
+          set -euo pipefail
+          mkdir -p stake-preview/assets
+          curl --fail --location --retry 5 --retry-delay 2 --max-time 120 --output stake-preview/assets/jardim-magico-fundo-aprovado-original.png 'https://sb-68gx5dx5e5ow.vercel.run/jardim-magico-fundo-aprovado-original.png'
+          printf '%s  %s\n' 'fac09acce095ad40f9d4930877e8d329941411581efb7fa758c061d1de28dcb2' 'stake-preview/assets/jardim-magico-fundo-aprovado-original.png' | sha256sum --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add stake-preview/assets/jardim-magico-fundo-aprovado-original.png
+          git commit -m 'asset: imagem original aprovada com hash verificado'
+          git push origin HEAD:refs/heads/stake-imagem-aprovada-png-exato-20261114
