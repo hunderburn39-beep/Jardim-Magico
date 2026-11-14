@@ -100,7 +100,7 @@
     // Selecionar o símbolo antes de debitar créditos. Nunca criar um giro falso.
     const symbol=E.NORMAL[Math.min(E.NORMAL.length-1,Math.max(0,Math.floor(rng()*E.NORMAL.length)))];
     s.balanceU-=costU;
-    s.feature={left:8,played:0,totalU:0,symbols:[symbol],retriggers:0,purchasedMode:mode};
+    s.feature={left:8,played:0,totalU:0,symbols:[symbol],retriggers:0,purchasedMode:mode,purchaseRevealPending:true};
     s.gambles=0;s.lastBaseWinU=0;s.lastWinU=0;s.last=null;
     s.stats.features++;
     s.stats.stakeU+=costU;
