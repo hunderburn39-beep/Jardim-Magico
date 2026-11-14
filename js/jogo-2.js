@@ -1311,6 +1311,19 @@ function animationPosition(x,y,t){
    const items=tr.holdSymbols;
    return {cur:items[(step+1)%items.length][y],y:y*CH-3*CH*(1-p),old:items[step%items.length][y],oldY:y*CH+3*CH*p};
   }
+  // Ao aparecerem cinco moedas, os tambores por parar passam a rodar
+  // com ciclos mais rápidos; travam sempre nas figuras já sorteadas.
+  if(tr.coinRush){
+   const elapsed=Math.max(0,t-tr.coinRushAt),remaining=tr.start+tr.duration-t;
+   if(remaining>(mode==='turbo'?80:145)){
+    const cycle=mode==='turbo'?70:105,step=Math.floor(elapsed/cycle),p=(elapsed%cycle)/cycle;
+    const items=tr.holdSymbols;
+    return {cur:items[(step+1)%items.length][y],y:y*CH-3*CH*(1-p),old:items[step%items.length][y],oldY:y*CH+3*CH*p};
+   }
+   const brake=mode==='turbo'?80:145,p=Math.max(0,Math.min(1,1-remaining/brake));
+   const ease=1-Math.pow(1-p,3);
+   return {cur:tr.next[y],y:y*CH-3*CH*(1-ease),old:tr.holdSymbols[0][y],oldY:y*CH+3*CH*ease};
+  }
   const p=Math.max(0,Math.min(1,(t-tr.start)/tr.duration));const ease=1-Math.pow(1-p,3);
   return {cur:tr.next[y],y:y*CH-3*CH*(1-ease),old:tr.old[y],oldY:y*CH+3*CH*ease};
  }
@@ -1518,10 +1531,22 @@ function createScatterSuspense(){
  };
  return state;
 }
-async function reelDrop(x,next,duration,scatterState=null){
+function coinRushArtwork(x){
+ return Array.from({length:6},(_,k)=>Array.from({length:3},(_,y)=>({id:regular[(x*5+y+k*2)%regular.length]})));
+}
+function startCoinRush(transition,x){
+ if(!transition||transition.scatterHold||transition.coinRush)return;
+ const elapsed=performance.now()-transition.start;
+ if(elapsed>=transition.duration-(mode==='turbo'?80:145))return;
+ transition.coinRush=true;
+ transition.coinRushAt=performance.now();
+ transition.holdSymbols=coinRushArtwork(x);
+}
+async function reelDrop(x,next,duration,scatterState=null,coinState=null){
  const old=grid[x];
  const transition={old,next,start:performance.now(),duration};
  transitions[x]=transition;
+ if(coinState?.active&&!scatterState?.active)startCoinRush(transition,x);
  await sleep(duration);
  if(scatterState?.active && x>scatterState.triggerColumn){
   // Em modo de suspense, continuar a mostrar símbolos em movimento antes da revelação.
@@ -1541,12 +1566,27 @@ async function reelDrop(x,next,duration,scatterState=null){
  grid[x]=next;transitions[x]=null;
  soundReelLanding();symbolLandingSounds(x);
  if(scatterState)scatterState.onStop(x,next);
+ if(coinState)coinState.onStop(x,next);
 }
 async function spinColumns(next){
  const duration=mode==='turbo'?185:520,stagger=mode==='turbo'?70:215;
  const suspense=createScatterSuspense(),jobs=[];
+ const coinState={
+  count:0,active:false,
+  onStop(x,col){
+   this.count+=col.filter(s=>s?.id==='coin').length;
+   if(!this.active&&this.count===5&&x<4){
+    this.active=true;
+    for(let remaining=x+1;remaining<5;remaining++){
+     if(transitions[remaining])startCoinRush(transitions[remaining],remaining);
+    }
+    notice('🪙 5 MOEDAS! Os restantes tambores aceleram!');
+    audioFX('coin');
+   }
+  }
+ };
  try{
-  for(let x=0;x<5;x++)jobs.push((async()=>{await sleep(stagger*x);await reelDrop(x,next[x],duration,suspense);})());
+  for(let x=0;x<5;x++)jobs.push((async()=>{await sleep(stagger*x);await reelDrop(x,next[x],duration,suspense,coinState);})());
   await Promise.all(jobs);
  }finally{suspense.stop(false);}
 }
