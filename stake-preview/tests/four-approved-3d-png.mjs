@@ -20,7 +20,7 @@ for(const {label,file,bytes,sha} of images){
  assert.equal(buf.readUInt32BE(16),1254);
  assert.equal(buf.readUInt32BE(20),1254);
  assert.equal(buf[25],6,label+' must have a transparent RGBA channel');
- assert.equal((html.match(new RegExp(path.replace(/[.*+?^${ }()|[\]\\]/g,'\\$&'),'g'))||[]).length,2,
+ assert.equal(html.split(path).length-1,2,
   label+' must appear in TYPES and preload exactly once each');
  assert.ok(html.includes('{label:"'+label+'",image:"'+path+'"}'),label+' symbol id mapped');
 }
