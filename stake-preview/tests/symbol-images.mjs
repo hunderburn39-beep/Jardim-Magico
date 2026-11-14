@@ -64,7 +64,7 @@ vm.runInContext('Image=undefined',ctx);
 assert.equal(vm.runInContext('warmSymbolImages()',ctx),0,
   'Game can still show results when the Image constructor is unavailable');
 // V1.9.8: nenhuma imagem sai dos quadrados, nem nos símbolos animados.
-const fitBlock=html.split('/* V1.9.8 — nenhum símbolo pode ultrapassar')[1]?.split('</style>')[0];
+const fitBlock=html.split('/* V1.9.8 — nenhum símbolo pode ultrapassar')[1]?.split('/* PREMIUM HYBRID V2')[0];
 assert.ok(fitBlock,'Reel artwork fitting CSS must be present');
 assert.match(fitBlock,/#reelFrame \.cell img\.jmSymbolArt,/);
 assert.match(fitBlock,/#reelFrame \.reel-scroll-symbol img\.jmSymbolArt/);
@@ -74,5 +74,11 @@ const zooms=Array.from(fitBlock.matchAll(/--jm-fit:\s*(\d+)%/g),m=>Number(m[1]))
 assert.ok(zooms.length>=6);
 assert.ok(zooms.every(p=>p<=96 && p>=80),'All reel images must stay inside their cells');
 assert.doesNotMatch(fitBlock,/--jm-fit:1(?:[1-9]\d|\d{2})%/);
+const currentFit=html.split('/* V3.1 — símbolos 98%')[1]?.split('/* V3.2 — profundidade 3D')[0];
+assert.ok(currentFit,'The latest 98% art sizing rules must be present');
+assert.match(currentFit,/--jm-fit:98%!important/,'All original symbols grow to 98%');
+assert.match(currentFit,/max-width:99%!important/,'Do not crop symbols');
+assert.match(currentFit,/#reelFrame #reels\{\s*gap:1px!important/,'Only 1px between columns');
+assert.match(currentFit,/#reelFrame #reels \.column\{\s*gap:1px!important/,'Only 1px between rows');
 
-console.log('Stake Preview V1.9.8: all 12 genuine figures exist, are preloaded once, and never show empty tiles during Safari decoding or errors.');
+console.log('Stake Preview: 12 genuine figures, original assets, 98% fit with 1px gaps, Safari image fallback and preloading verified.');
