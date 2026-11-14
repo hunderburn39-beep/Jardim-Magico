@@ -61,6 +61,23 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .cell{position:relative;display:grid;place-items:center;min-width:0;min-height:0;background:radial-gradient(ellipse,#b9cbde17,#090d2c54);overflow:hidden;border-bottom:1px solid #dab45a17}
 .cell img{width:110%;height:98%;object-fit:contain;filter:drop-shadow(0 2px 3px #000b) drop-shadow(0 0 6px #f1d49442)}
 .cell img[alt="SCATTER"]{width:113%;height:100%;filter:drop-shadow(0 0 11px #ffe2a66b) drop-shadow(0 2px 2px #000c)}
+/* SCATTER: dedicated aura, anticipation on two, golden shockwave on three. */
+.cell.scatter-cell{isolation:isolate;z-index:2;overflow:visible}
+.cell.scatter-cell::before{content:"";position:absolute;inset:8%;border-radius:50%;pointer-events:none;background:radial-gradient(circle,#ffffff47 0%,#e2a5fc69 28%,#a754d840 49%,transparent 74%);box-shadow:0 0 19px #c987e8a3;animation:scatterHalo 1.5s ease-in-out infinite;z-index:0}
+.cell.scatter-cell img.jmSymbolArt{position:relative;z-index:1;animation:scatterArtifact 1.4s ease-in-out infinite;filter:drop-shadow(0 0 11px #f8dbf0) drop-shadow(0 0 18px #ae66da)}
+.frame.scatter-tease .cell.scatter-cell::before{background:radial-gradient(circle,#fff4ba77,#ac65da77 45%,transparent 75%);box-shadow:0 0 22px #f9d484e0;animation:scatterHalo .66s ease-in-out infinite}
+.frame.scatter-tease .cell.scatter-cell img.jmSymbolArt{animation:scatterTeasePulse .8s ease-in-out infinite}
+.frame.scatter-bonus .cell.scatter-cell::before{inset:-14%;background:radial-gradient(circle,#fff9e1a8 2%,#ffd379aa 32%,#be74f476 55%,transparent 75%);animation:scatterTriggerBurst 1.2s ease-out 2;box-shadow:0 0 36px 8px #ffd47bb8}
+.frame.scatter-bonus .cell.scatter-cell img.jmSymbolArt{animation:scatterTeasePulse .48s ease-in-out 3;filter:drop-shadow(0 0 16px #fff0bc) drop-shadow(0 0 23px #eec86f)}
+.cell.scatter-revealed{background:radial-gradient(#fff1ceaf,#ad74e558 68%,#271a4380)!important;box-shadow:inset 0 0 18px #ffe4a8,0 0 20px #ffc8cb75}
+.scatter-banner{position:absolute;z-index:5;left:50%;bottom:4px;transform:translateX(-50%);border:1.5px solid #ffe3aa;border-radius:999px;padding:6px 13px;max-width:93%;white-space:nowrap;pointer-events:none;text-align:center;font-size:clamp(10px,3.1vw,15px);font-weight:1000;color:#fff3c5;background:linear-gradient(100deg,#4b2864ed,#754375f2,#35215aee);text-shadow:0 0 9px #fff6be;box-shadow:0 0 22px #ffc77c66;animation:scatterBannerArrive .38s ease-out both}
+.frame.scatter-bonus .scatter-banner{background:linear-gradient(100deg,#73501ddd,#a65b40f2,#42235be8);box-shadow:0 0 29px #ffe39fca}
+@keyframes scatterHalo{50%{transform:scale(1.17);opacity:.75}}
+@keyframes scatterArtifact{50%{transform:scale(1.07);filter:drop-shadow(0 0 18px #fff3dd)}}
+@keyframes scatterTeasePulse{50%{transform:scale(1.15);filter:brightness(1.65) drop-shadow(0 0 20px #ffe3a4)}}
+@keyframes scatterTriggerBurst{0%{transform:scale(.65);opacity:.7}45%{transform:scale(1.4);opacity:1}100%{transform:scale(1.8);opacity:0}}
+@keyframes scatterBannerArrive{from{opacity:0;transform:translate(-50%,10px) scale(.8)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.cell.scatter-cell::before,.cell.scatter-cell img.jmSymbolArt,.scatter-banner{animation:none!important}}
 .cell img[alt="WILD"]{width:112%;filter:drop-shadow(0 0 13px #f2b94b8c) drop-shadow(0 2px 2px #000c)}
 .cell .emoji{font-size:clamp(28px,9vw,48px);filter:drop-shadow(0 2px 3px #060b1a);line-height:1}
 .cell .orb{display:grid;place-items:center;width:80%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fffce0,#c7a7fb 25%,#7944bb 59%,#2c1e73);box-shadow:inset 0 0 10px #fff8cf,0 0 16px #bf87fa;color:#fff6c3;font-weight:1000;font-size:clamp(8px,2.5vw,13px);border:2px solid #ffda9b}
@@ -1043,7 +1060,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
   <div><small>ÚLTIMO PRÉMIO</small><strong id="lastWin">0,00</strong></div>
  </div>
  <div id="wildTally" class="wild-tally" hidden><span id="wildTallyText"></span></div>
- <div class="frame" id="reelFrame"><div class="hud"><span id="hud">✦ JARDIM ENCANTADO ✦</span></div><div class="reels" id="reels" aria-label="Cinco tambores, três linhas"></div><svg id="paylineSvg" class="payline-visual" viewBox="0 0 500 300" preserveAspectRatio="none" aria-hidden="true"></svg><div id="winSparks" class="win-sparks" aria-hidden="true"></div><output id="linePrize" class="line-prize" hidden aria-live="off"></output><button id="skipBtn" class="skip-btn" type="button" hidden>PASSAR ⏩</button></div>
+ <div class="frame" id="reelFrame"><div class="hud"><span id="hud">✦ JARDIM ENCANTADO ✦</span></div><div class="reels" id="reels" aria-label="Cinco tambores, três linhas"></div><svg id="paylineSvg" class="payline-visual" viewBox="0 0 500 300" preserveAspectRatio="none" aria-hidden="true"></svg><div id="winSparks" class="win-sparks" aria-hidden="true"></div><div id="scatterBanner" class="scatter-banner" hidden aria-live="off"></div><output id="linePrize" class="line-prize" hidden aria-live="off"></output><button id="skipBtn" class="skip-btn" type="button" hidden>PASSAR ⏩</button></div>
  <div id="cascadeMeter" class="cascade-meter" hidden aria-live="off"><div><small id="cascadeWinLabel">PRÉMIO DA QUEDA</small><strong id="cascadeWinValue">0,00</strong></div><div><small id="cascadeTotalLabel">TOTAL DAS CASCATAS</small><strong id="cascadeTotalValue">0,00</strong></div></div>
  <div id="freePanel" class="free-panel" hidden aria-live="off"><div><small>RESTANTES</small><strong id="freeRemaining">15</strong></div><div><small>BRUTO ACUMULADO</small><strong id="freeRaw">0,00</strong></div><div><small>MULTI</small><strong id="freeMult">×1</strong></div></div>
  <div id="freeRetrigger" class="free-retrigger" hidden aria-live="polite">✦ RETRIGGER +8 FREE SPINS ✦</div>
@@ -1072,6 +1089,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
  <div class="overlay" id="paytableOverlay" role="dialog" aria-modal="true" aria-label="Tabela de prémios Jardim Mágico"><div class="modal paytable-modal"><div class="history-head"><h2>TABELA DE PRÉMIOS</h2><button type="button" id="closePaytable" aria-label="Fechar tabela de prémios">×</button></div><div id="paytableStake" class="paytable-stake"></div><div class="paytable-header"><span>SÍMBOLO</span><span>3 IGUAIS</span><span>4 IGUAIS</span><span>5 IGUAIS</span></div><div id="paytableGrid" class="paytable-grid"></div><div id="paytableRules"></div><h3 style="text-align:center;color:#ffe6a4;font-size:15px;margin:15px 0 5px">10 LINHAS PREMIADAS</h3><div id="paylineSheet" class="payline-sheet"></div><p>Valores em créditos de teste. São regras da simulação local, sem RTP certificado.</p><button class="modal-close" id="closePaytableBottom" type="button">VOLTAR AO JOGO</button></div></div>
  <div class="overlay" id="infoOverlay"><div class="modal"><h2>Jardim Mágico</h2><p>Pré-visualização técnica independente com símbolos do jogo original, cinco tambores, dez linhas, WILD, SCATTER, cascatas, Free Spins e Hold & Win. Cada jogada e cada bónus são calculados inteiramente antes da animação. Os resultados são simulados neste navegador para teste visual, não são resultados certificados do Stake Engine.</p><p>Os créditos servem apenas para experimentar. Não existe dinheiro real, carteira ou casino associado.</p><p>Áudio: efeitos gravados de Kenney (CC0). Música zen: “Meditation Impromptu 01”, Kevin MacLeod (incompetech.com), licença Creative Commons BY 4.0. Para ouvir no iPhone, toca em RODAR ou no botão da música.</p><button class="modal-close" id="closeInfo">FECHAR</button></div></div>
 </main>
+<script src="modern-audio.js"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
