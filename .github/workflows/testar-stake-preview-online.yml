@@ -14,7 +14,7 @@ permissions:
 jobs:
   verificar-online:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - name: Verificar ficheiros e simulações locais
@@ -38,11 +38,11 @@ jobs:
       - name: Confirmar GitHub Pages independente das outras publicações
         run: |
           set -euo pipefail
-          url="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=1.9.8"
+          url="https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/?v=${GITHUB_SHA}"
           echo "A verificar $url"
-          for n in {1..12}; do
+          for n in {1..24}; do
             if curl -fLsS --max-time 10 --connect-timeout 5 "$url" -o /tmp/stake-preview.html; then
-              if grep -q 'Stake Preview V1.9.8' /tmp/stake-preview.html \
+              if grep -Fq 'V1.9.9 · CASCATAS SUAVES' /tmp/stake-preview.html \
                  && grep -q 'id="skipBtn"' /tmp/stake-preview.html \
                  && grep -q 'id="paylineSvg"' /tmp/stake-preview.html \
                  && grep -q 'id="freePanel"' /tmp/stake-preview.html \
@@ -74,7 +74,7 @@ jobs:
                  && grep -q 'buildContinuousReelSymbols' /tmp/stake-preview.html \
                  && grep -q -- '--reel-cell-height' /tmp/stake-preview.html \
                  && grep -q 'symbolArtworkMarkup' /tmp/stake-preview.html \
-                 && grep -q 'V1.9.9 · CASCATAS SUAVES' /tmp/stake-preview.html \
+                 && grep -Fq 'V1.9.9 · CASCATAS SUAVES' /tmp/stake-preview.html \
                  && grep -q 'function cascadeShiftPlan(oldRemoved)' /tmp/stake-preview.html \
                  && grep -q 'const SFX_GAIN' /tmp/stake-preview.html \
                  && grep -q 'warmSymbolImages' /tmp/stake-preview.html \
@@ -97,14 +97,14 @@ jobs:
                 done
                 curl -fLsS --max-time 15 "https://hunderburn39-beep.github.io/Jardim-Magico/stake-preview/assets/figuras-v199/joaninha-limpa.svg" -o /tmp/joaninha-limpa.svg
                 grep -q 'viewBox="20 -12 560 548"' /tmp/joaninha-limpa.svg
-                echo 'CONFIRMADO: Stake Preview V1.9.8 online, com os cinco símbolos transparentes e linhas de prémio.'
+                echo 'CONFIRMADO: Stake Preview V1.9.9 online, figuras transparentes e cascatas suaves.'
                 exit 0
               fi
-              echo "Página ainda não atualizada para V1.9.8 ($n/12)."
+              echo "Página ainda não atualizada para V1.9.9 ($n/24)."
             else
-              echo "Página indisponível ($n/12)."
+              echo "Página indisponível ($n/24)."
             fi
-            sleep 5
+            sleep 10
           done
-          echo '::error::Não foi possível confirmar a página V1.9.8.'
+          echo '::error::A publicação V1.9.9 não foi confirmada no período de verificação.'
           exit 1
