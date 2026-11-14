@@ -1,4 +1,4 @@
-/* Faraó Eterno: equilíbrio do jogo base sem alterar Free Spins nem cofre. */
+/* Faraó Eterno: equilíbrio V2 de jogo base e Free Spins sem alterar a paytable. */
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const E=require('../js/engine.js');
@@ -10,11 +10,11 @@ function seeded(seed=20261113){
   t=t+Math.imul(t^t>>>7,61|t)^t;
   return((t^t>>>14)>>>0)/4294967296;};
 }
-function oldWeights(level,free){
+function baseWeights(level,free){
  const original=free?E.FREE_WEIGHTS:E.WEIGHTS;
- const boost=.58+(level-85)*.145,w={...original};
+ const boost=.70+(level-90)*.006,w={...original};
  for(const k of ['HORUS','MASK','ANUBIS','KING'])w[k]=original[k]*boost;
- w.TOMB=original.TOMB*(.78+(level-85)*.065);
+ w.TOMB=original.TOMB*(free?(0.40+(level-90)*0.004):(0.58+(level-90)*0.006));
  return w;
 }
 test('prémios e 10 linhas mantêm-se na tabela aprovada',()=>{
@@ -23,14 +23,15 @@ test('prémios e 10 linhas mantêm-se na tabela aprovada',()=>{
  assert.equal(E.LINES.length,10);
  assert.equal(E.upperLimit(1),5000);
 });
-test('Free Spins conservam integralmente pesos anteriores a esta alteração',()=>{
+test('Free Spins usam a nova calibração e progridem suavemente de 85 a 95',()=>{
  for(let level=85;level<=95;level++){
-  assert.deepEqual(A.weighted(level,true),oldWeights(level,true));
+  assert.deepEqual(A.weighted(level,true),baseWeights(level,true));
  }
+ assert(A.weighted(95,true).TOMB>A.weighted(85,true).TOMB);
 });
-test('jogo base privilegia Faraó e Anúbis sem mexer no Scatter',()=>{
+test('jogo base preserva reforços de Faraó e Anúbis e Scatter calibrado',()=>{
  for(let level=85;level<=95;level++){
-  const base=oldWeights(level,false),tuned=A.weighted(level,false);
+  const base=baseWeights(level,false),tuned=A.weighted(level,false);
   assert.equal(tuned.KING,base.KING*1.12);
   assert.equal(tuned.ANUBIS,base.ANUBIS*1.05);
   assert.equal(tuned.HORUS,base.HORUS*.94);

@@ -3,8 +3,8 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../js/coin-celebrations.js'),'utf8');
 
-function boot(){
- const nodes={oscillators:0,gains:0,coords:[]};
+function boot({width=1024,reduced=false}={}){
+ const nodes={oscillators:0,samples:0,gains:0,coords:[]};
  const noop=()=>{};
  const sound={
   destination:{},currentTime:1,
@@ -13,6 +13,8 @@ function boot(){
    return {type:'sine',frequency:{setValueAtTime:noop,exponentialRampToValueAtTime:noop},
     connect:noop,disconnect:noop,start:noop,stop:noop};
   },
+  decodeAudioData(){return {then(cb){cb({mockAudio:true});return {catch:noop};}};},
+  createBufferSource(){nodes.samples++;return {buffer:null,playbackRate:{value:1},connect:noop,disconnect:noop,start:noop,stop:noop};},
   createGain(){
    nodes.gains++;
    return {gain:{setValueAtTime:noop,exponentialRampToValueAtTime:noop},
@@ -28,7 +30,7 @@ function boot(){
  };
  const result={lineWins:[],scatterWin:0,expanders:[]};
  const game={
-  audio:{on:true,ctx:sound,out:sound.destination},
+  audio:{on:true,ctx:sound,out:sound.destination,init:noop},
   paused:false,superseded:false,spinning:false,grid:[
    ['10','J','Q'],['K','A','10'],['10','J','K'],['A','10','J'],['Q','K','A']
   ],lastResult:result,baseStage:null,freeStage:null,
@@ -43,8 +45,8 @@ function boot(){
   createElement(tag){assert.equal(tag,'canvas');return {width:0,height:0,getContext:()=>ctx};},
   querySelector:()=>null
  };
- vm.runInNewContext(source,{window:{__faraoGame:game,matchMedia:()=>({matches:false})},
-  document,Math,console,WeakSet,performance:{now:()=>0}},{filename:'coin-celebrations.js'});
+ vm.runInNewContext(source,{window:{__faraoGame:game,innerWidth:width,matchMedia:()=>({matches:reduced})},
+  document,Math,console,WeakSet,Uint8Array,atob:x=>Buffer.from(x,'base64').toString('binary'),performance:{now:()=>0}},{filename:'coin-celebrations.js'});
  return {game,nodes,document};
 }
 test('moedas saem uma vez por linha premiada, sem pagamentos adicionais',()=>{
@@ -55,9 +57,9 @@ test('moedas saem uma vez por linha premiada, sem pagamentos adicionais',()=>{
  game.frame(210);assert.equal(game.coinCelebrations.events.sequences,0,'Não iniciar antes de a linha brilhar');
  game.frame(790);assert.equal(game.coinCelebrations.events.sequences,1);
  assert(game.coinCelebrations.particles>=15);
- const before=nodes.oscillators;
+ const before=nodes.samples;
  game.frame(850);assert.equal(game.coinCelebrations.events.sequences,1);
- assert.equal(nodes.oscillators,before);
+ assert.equal(nodes.samples,before);
  assert(nodes.coords.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)));
 });
 test('cada linha Free Spins tem as suas moedas e som na hora certa',()=>{
@@ -68,22 +70,64 @@ test('cada linha Free Spins tem as suas moedas e som na hora certa',()=>{
  game.frame(2100);assert.equal(game.coinCelebrations.events.sequences,0);
  game.frame(2240);assert.equal(game.coinCelebrations.events.sequences,0,'Aguarda pela linha visível');
  game.frame(2820);assert.equal(game.coinCelebrations.events.sequences,1);
- assert(nodes.oscillators>=18,'Oito ou mais impactos metálicos por linha');
+ assert(nodes.samples>=1,'A linha reproduz um impacto de moedas sincronizado');
 });
 test('a celebração final é mais intensa e não se repete a cada frame',()=>{
  const {game,nodes}=boot();
  game.audio.fanfare(3);
- assert(nodes.oscillators>=45,'Queda longa de moedas no total final');
- const start=nodes.oscillators;
+ assert(nodes.samples>=6,'A celebração final reproduz seis quedas escalonadas');
+ const start=nodes.samples;
  game.v04Celebration={start:100,end:5000};
  game.frame(500);assert.equal(game.coinCelebrations.events.finales,1);
  game.frame(600);assert.equal(game.coinCelebrations.events.finales,1);
- assert.equal(nodes.oscillators,start);
+ assert.equal(nodes.samples,start);
 });
 test('som desligado e jogo em pausa nunca emitem novos impactos',()=>{
  const {game,nodes}=boot();
  game.audio.on=false;game.audio.fanfare(3);
- assert.equal(nodes.oscillators,0);
+ assert.equal(nodes.samples,0);
  game.audio.on=true;game.paused=true;game.audio.fanfare(3);
- assert.equal(nodes.oscillators,0);
+ assert.equal(nodes.samples,0);
+});
+
+
+test('iPhone: vários prémios sucessivos respeitam o orçamento de partículas',()=>{
+ const {game,nodes}=boot({width:390});
+ assert.equal(game.coinCelebrations.maxParticles,68);
+ assert.equal(game.coinCelebrations.maxSparkles,42);
+ assert.equal(game.coinCelebrations.compact,true);
+ const wins=Array.from({length:10},(_,i)=>({
+    kind:'line',win:{count:5,rows:[i%3,i%3,i%3,i%3,i%3],expanded:false,line:i},
+    amount:3,start:500+i*100,preDelay:0,perReel:1,
+    reels:[0,1,2,3,4],end:3000
+ }));
+ game.freeStage=wins[0];
+ for(let i=0;i<wins.length;i++){
+   game.freeStage=wins[i];
+   game.frame(700+i*100);
+   assert(game.coinCelebrations.particles<=68,'Moedas acima do orçamento móvel');
+   assert(game.coinCelebrations.sparkles<=42,'Centelhas acima do orçamento móvel');
+ }
+ assert.equal(game.coinCelebrations.events.sequences,10,
+   'Não perder celebrações de linhas diferentes');
+ const before=nodes.samples;
+ game.frame(1700);
+ assert.equal(game.coinCelebrations.events.sequences,10,
+   'A mesma linha não pode reiniciar a celebração');
+ assert.equal(nodes.samples,before,'Não repetir o impacto');
+});
+test('ecrã grande mantém a riqueza da celebração',()=>{
+ const {game}=boot({width:1100});
+ assert.equal(game.coinCelebrations.maxParticles,105);
+ assert.equal(game.coinCelebrations.maxSparkles,85);
+ assert.equal(game.coinCelebrations.compact,false);
+});
+test('preferência de movimento reduzido elimina a chuva no Canvas',()=>{
+ const {game}=boot({width:390,reduced:true});
+ game.baseStage={win:{count:3,rows:[1,1,1],expanded:false,line:0},
+   amount:2,start:0,end:2000};
+ game.frame(900);
+ assert.equal(game.coinCelebrations.events.sequences,1);
+ assert.equal(game.coinCelebrations.particles,0);
+ assert.equal(game.coinCelebrations.sparkles,0);
 });

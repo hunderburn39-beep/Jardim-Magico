@@ -89,10 +89,15 @@
  }
  function weighted(level,free){
    const original=free?E.FREE_WEIGHTS:E.WEIGHTS;
-   const boost=.58+(level-85)*.145; // 85: jackpots raros; 95: mais frequentes
+   // Calibração V2: reduzir o excesso de prémios nas Free Spins e
+   // manter uma progressão suave entre os níveis 85–95.
+   // Os valores são pesos relativos, NÃO percentagens de RTP garantidas.
+   // A tabela aprovada e o motor E.evaluate permanecem inalterados.
+   const boost=.70+(level-90)*.006;
    const w={...original};
    for(const k of ['HORUS','MASK','ANUBIS','KING'])w[k]=original[k]*boost;
-   w.TOMB=original.TOMB*(.78+(level-85)*.065);
+   const tombScale=free ? (0.40+(level-90)*0.004) : (0.58+(level-90)*0.006);
+   w.TOMB=original.TOMB*tombScale;
    // Equilíbrio V1.4 (exclusivamente jogo base):
    // ligeiramente mais Faraó e Anúbis para criar combinações grandes
    // sem alterar a tabela de pagamentos, os Wilds ou as Free Spins.
@@ -122,9 +127,19 @@
    const free=!!s.feature,bet=S.stake(s),stakeU=U(bet),e=s.economy;
    if(!free&&s.balanceU<stakeU)throw Error('Saldo insuficiente');
    const incomingPrize=free?0:Math.floor(stakeU*e.level/100);
-   const available=e.prizeU+incomingPrize;
-   const maxBonus=U(E.upperLimit(bet))-(free?s.feature.totalU:0);
-   const limit=Math.min(available,Math.max(0,maxBonus));
+   // A camada super-scatter-core.js já reduz temporariamente o cofre
+   // e o teto de 5000× pelo multiplicador em S.begin. Não voltar a
+   // dividir nesta camada: isso reservaria o mesmo prémio duas vezes.
+   // Super Scatter: cada nova unidade base obriga a reservar m unidades
+   // de prémio final, além do extra prometido das rodadas anteriores.
+   // Aplicar a cota ANTES de selecionar a grelha, não só depois do sorteio.
+   const m=free&&[2,3,4,5,8,10].includes(s.feature.superMultiplier)
+     ?s.feature.superMultiplier:1;
+   const reserved=free?(m-1)*s.feature.totalU:0;
+   const available=Math.max(0,e.prizeU+incomingPrize-reserved);
+   const maxBonus=Math.max(0,Math.floor(U(E.upperLimit(bet))/m)-
+     (free?s.feature.totalU:0));
+   const limit=Math.min(Math.floor(available/m),maxBonus);
    const weights=weighted(e.level,free);
    let chosen=null;
    for(let attempt=0;attempt<180;attempt++){
@@ -167,8 +182,15 @@
        p.paylinesVersion===E.PAYLINES_VERSION?E.LINES:E.LEGACY_LINES,
        p.expansionPayVersion===2?'separate':'legacy',
        p.free&&p.towerPayVersion===1?'free-anywhere':'base');
-     const maxPrize=U(E.upperLimit(p.bet))-(p.free?s.feature.totalU:0);
-     const owed=Math.max(0,Math.min(U(result.total),Math.max(0,maxPrize)));
+     // A recuperação de uma jogada Super guardada antes desta versão tem
+     // de usar o mesmo limite de exposição que o novo sorteio.
+     const m=p.free&&[2,3,4,5,8,10].includes(s.feature.superMultiplier)
+       ?s.feature.superMultiplier:1;
+     const reserved=p.free?(m-1)*s.feature.totalU:0;
+     const maxPrize=Math.max(0,Math.floor(U(E.upperLimit(p.bet))/m)-
+       (p.free?s.feature.totalU:0));
+     const affordable=Math.floor(Math.max(0,e.prizeU-reserved)/m);
+     const owed=Math.max(0,Math.min(U(result.total),maxPrize,affordable));
      if(owed>e.prizeU)throw Error('Fundo de prémios insuficiente para pagar esta jogada');
    }
    const out=old.settle(s,...args);

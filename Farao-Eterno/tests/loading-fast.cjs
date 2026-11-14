@@ -12,6 +12,7 @@ const base='http://127.0.0.1:8123/index.html?qa=loading-fast';
         const errors=[];
         page.on('pageerror',error=>errors.push(error.message));
         if(blocked){
+          await page.route('**/assets/approved-20261113/HORUS.png*',route=>route.abort());
           await page.route('**/assets/horus.webp*',route=>route.abort());
           await page.route('**/assets/horus.svg*',route=>route.abort());
         }

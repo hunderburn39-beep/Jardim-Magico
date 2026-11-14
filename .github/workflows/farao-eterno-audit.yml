@@ -1,0 +1,46 @@
+name: Farao Eterno V2 - auditoria
+
+on:
+  push:
+    branches:
+      - farao-eterno-melhoria-completa-20261113
+    paths:
+      - 'Farao-Eterno/**'
+      - '.github/workflows/farao-eterno-audit.yml'
+  pull_request:
+    paths:
+      - 'Farao-Eterno/**'
+      - '.github/workflows/farao-eterno-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auditar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        level: [85, 90, 95]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar sintaxe do motor e das melhorias
+        run: |
+          node --check Farao-Eterno/js/engine.js
+          node --check Farao-Eterno/js/session.js
+          node --check Farao-Eterno/js/super-scatter-core.js
+          node --check Farao-Eterno/js/economy.js
+          node --check Farao-Eterno/js/coin-celebrations.js
+          node --check Farao-Eterno/js/quality-polish-v2.js
+      - name: Testar 6 multiplicadores, pagamentos parciais e recuperação do Safari
+        run: node --test Farao-Eterno/tests/recuperacao-cofre.cjs
+      - name: Auditar 50000 rondas, reentradas e cofre do Super Scatter
+        env:
+          SAMPLES: '50000'
+          LEVEL: ${{ matrix.level }}
+        run: node Farao-Eterno/tests/auditoria-completa.cjs

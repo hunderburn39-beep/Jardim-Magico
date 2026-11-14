@@ -21,6 +21,9 @@
  if(!g.feature&&g.ledger.last?.bonusDone&&
     g.ledger.last.id!==g.ledger.lastSummarySeenId){
    g.pendingSummary=g.ledger.last.bonusDone;
+   // O Safari pode fechar-se depois dos pagamentos, mas antes de o
+   // jogador confirmar o resumo. Não alterar nem creditar nada aqui.
+   g._recoveredBonusSummary=true;
  }
  const oldOpen=g.openModal.bind(g),oldClose=g.closeModal.bind(g);
  g.openModal=function(title,html,themed=false){
@@ -34,6 +37,11 @@
    oldClose();
    modal.classList.remove('farao-theme');
    if(reveal&&this.feature){
+     // Depois do regresso do Safari, um toque para iniciar as Free Spins
+     // retoma também o motor que foi colocado em pausa pelo pagehide.
+     this.paused=false;
+     this.audio.init?.();
+     this.audio.startMusic?.();
      this._welcome=false;this._awaitBonusStart=true;
      this.ledger.feature.introSeen=true;
      this.featureIntro=null;
@@ -66,6 +74,7 @@
     <p class="farao-spins-label">TOTAL DAS FREE SPINS</p>
     <strong class="farao-spins-number">${fmt(S.credits(b.totalU))}</strong>
     <p class="farao-bonus-rounds">${b.played} RODADAS</p>
+    ${this._recoveredBonusSummary?'<p class="farao-recovery-note" role="status">SESSÃO RECUPERADA · PRÉMIO PRESERVADO</p>':''}
     <button type="button" class="btn farao-gold-btn" id="collect-bonus">CONTINUAR</button>
    </div>`,true);
    this.audio?.fanfare?.(3);
@@ -81,7 +90,8 @@
  g.closeModal=function(){
    const closingSummary=!!this._summaryAck;
    this._summaryAck=null;
-   if(closingSummary){this.ledger.lastSummarySeenId=this.ledger.last?.id;this.save();}
+   if(closingSummary){this.ledger.lastSummarySeenId=this.ledger.last?.id;
+     this._recoveredBonusSummary=false;this.save();}
    previousClose();
  };
  g.showCreditMenu=function(){
@@ -209,6 +219,17 @@
  const oldStart=g.startSpin.bind(g);
  g.startSpin=function(){
    const manual=!this._autoDispatch;
+   // Safari em segundo plano suspende o jogo. Durante o bónus, o botão
+   // RETOMAR não deve ser confundido com GIRAR nem criar outra jogada.
+   // O frame continua o giro pendente, ou inicia a próxima Free Spin.
+   if(manual&&this.feature&&this.paused&&!this._welcome&&
+       !this._welcomeShown&&!this.pendingSummary){
+     this.paused=false;
+     this.audio.init?.();
+     this.audio.startMusic?.();
+     this.notice('FREE SPINS RETOMADAS',850);
+     return;
+   }
    if(this.pendingSummary){
      if(manual&&now()>=this.nextActionAt&&!this.ledger.payout){
        this._summaryRequested=true;this.showSummary();

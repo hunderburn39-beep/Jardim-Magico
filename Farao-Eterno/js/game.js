@@ -360,7 +360,9 @@ class Game {
    b.style.width=(w*sc)+'px';b.style.height=(h*scY)+'px';
    b.style.pointerEvents=this.superseded||!mod.classList.contains('hidden')?'none':'auto';
    if(key==='sound')b.setAttribute('aria-label','Áudio: '+this.soundModeLabel+'. Toque para mudar.');
-   if(key==='spin')b.setAttribute('aria-label','Girar ou avançar para a próxima etapa do jogo');
+   // O botão fixo é o que recebe o toque no iPhone: o seu nome acessível
+   // tem de acompanhar o texto real do Canvas (RETOMAR / PARAR / GIRAR).
+   if(key==='spin')b.setAttribute('aria-label',this.paused?'RETOMAR':this.spinning?'PARAR':'GIRAR');
   }
     const root=$('touch-controls');
   while(root.children.length>this.targets.length)root.lastChild.remove();
@@ -370,6 +372,13 @@ class Game {
    b.style.cssText=`position:absolute;pointer-events:auto;touch-action:manipulation;z-index:1;left:${ox+(target.x+target.w/2)*sc}px;top:${oy+(target.y+target.h/2)*sc}px;width:${Math.max(44,target.w*sc)}px;height:${Math.max(44,target.h*scY)}px`;
    // Bind once to the native button; read the current action after every redraw.
    b._faraoAction=target.action;
+   // A camada nativa fixa está acima deste controlo antigo. Não deixar
+   // dois botões sobrepostos disputarem o toque ou a navegação por voz.
+   const mirror=!!this._primaryButtons?.spin&&
+     ['RETOMAR','PARAR','GIRAR'].includes(target.label);
+   if(mirror){b.style.pointerEvents='none';b.tabIndex=-1;
+     b.setAttribute('aria-hidden','true');}
+   else{b.tabIndex=0;b.removeAttribute('aria-hidden');}
    if(!b._faraoBound){
     b._faraoBound=true;
     b.addEventListener('pointerdown',ev=>{

@@ -30,32 +30,40 @@
    '<div class="super-royal-portrait"><img src="assets/super-reference.webp?v=original-reference-1" alt="O Faraó dourado com coroa azul e serpente sagrada"></div>'+
    '<p class="super-intro">As três pirâmides despertaram o Faraó!</p>'+
    '<p class="farao-spins-label">8 FREE SPINS · MULTIPLICADOR DO BÓNUS</p>'+
-   '<div class="super-dice-area"><div class="super-die" id="super-die" role="img" aria-label="Dado de seis faces">'+sides+'</div></div>'+
+   '<div class="super-dice-area"><div class="super-die" id="super-die" role="img" aria-label="Dado de seis faces">'+sides+'</div>'+'<div class="super-die-docked" id="super-die-docked" aria-hidden="true">'+(already?'×'+f.superMultiplier:'?')+'</div></div>'+
    '<div id="super-dice-status" class="super-dice-status" role="status" aria-live="polite">'+
     (already?'MULTIPLICADOR SORTEADO':'LANÇA O DADO SAGRADO')+'</div>'+
    '<strong id="super-dice-result" class="super-multiplier">'+(already?'×'+f.superMultiplier:'?')+'</strong>'+
    '<button type="button" class="btn farao-gold-btn" id="super-roll">'+
     (already?'COMEÇAR FREE SPINS':'LANÇAR DADO')+'</button>'+
    '</div>',true);
-  const die=$('super-die'),btn=$('super-roll'),status=$('super-dice-status'),value=$('super-dice-result');
+  const die=$('super-die'),docked=$('super-die-docked'),area=die.parentElement,
+    btn=$('super-roll'),status=$('super-dice-status'),value=$('super-dice-result');
   if(already)die.style.transform=rotations[face];
   btn.onclick=()=>{
    if(this.ledger.feature.superRollSeen){this.closeModal();return;}
    // O valor já foi sorteado e persistido na criação do bónus:
    // a animação NUNCA sorteia outro número.
-   this.ledger.feature.superRollSeen=true;
-   this.syncLedger();this.save();
+   // Guardar 'dado visto' apenas QUANDO a face aparece. Se o Safari
+   // fechar durante a rotação, o jogador pode repetir a animação, mas
+   // a face matemática já escolhida continua rigorosamente a mesma.
    btn.disabled=true;btn.textContent='A SORTEAR...';
    status.textContent='O FARAÓ LANÇA O DADO';
    value.textContent='✦';
    this.audio?.extra?.();
    this._superRolling=true;
+   area.classList.add('is-rolling');
    die.classList.add('rolling');
    window.setTimeout(()=>{
     this._superRolling=false;
-    if(!die.isConnected)return;
+    if(!die.isConnected||!this.ledger.feature||
+       this.ledger.feature.superMultiplier!==f.superMultiplier)return;
+    this.ledger.feature.superRollSeen=true;
+    this.syncLedger();this.save();
     die.classList.remove('rolling');
+    area.classList.remove('is-rolling');
     die.style.transform=rotations[face];
+    docked.textContent='×'+f.superMultiplier;
     value.textContent='×'+f.superMultiplier;
     status.textContent='TODOS OS PRÉMIOS DAS FREE SPINS ×'+f.superMultiplier;
     btn.disabled=false;btn.textContent='COMEÇAR FREE SPINS';
@@ -82,12 +90,46 @@
     '<div><small>DADO SAGRADO</small><strong>'+b.superMultiplier+'</strong></div>'+
    '</div>'+
    '<p class="farao-spins-label">PRÉMIO FINAL</p>'+
-   '<strong class="super-total-prize">'+fmt(b.totalU)+'</strong>'+
+   '<strong class="super-total-prize" id="super-final-total" aria-label="Prémio final: '+fmt(b.totalU)+'">'+fmt(b.totalU)+'</strong>'+
    '<p class="farao-bonus-rounds">'+b.played+' RODADAS · '+b.retriggers+' RETRIGGERS</p>'+
+   (this._recoveredBonusSummary?
+    '<p class="farao-recovery-note" role="status">SESSÃO RECUPERADA · PRÉMIO PRESERVADO</p>':'')+
    '<button type="button" class="btn farao-gold-btn" id="collect-bonus">RECEBER TESOURO</button>'+
    '</div>',true);
   this.audio?.fanfare?.(3);
-  const ack=()=>{
+  // A contagem é visual. O bónus foi pago pela sessão antes desta janela.
+  // Nunca chamar settle(), creditNext() ou alterar o cofre neste código.
+  const counter=$('super-final-total');
+  const reduce=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const totalU=Number.isSafeInteger(b.totalU)&&b.totalU>=0?b.totalU:0;
+  let finished=false;
+  let raf=0;
+  const finishCount=()=>{
+   if(finished)return;
+   finished=true;
+   if(raf)window.cancelAnimationFrame(raf);
+   counter.textContent=fmt(totalU);
+   counter.classList.add('reached');
+   counter.removeAttribute('aria-busy');
+  };
+  if(!reduce&&totalU>0){
+   const started=performance.now(),duration=2050;
+   counter.textContent=fmt(0);
+   counter.setAttribute('aria-busy','true');
+   const step=now=>{
+    if(!counter.isConnected){finished=true;return;}
+    const progress=Math.min(1,Math.max(0,(now-started)/duration));
+    // Início lento, aceleração progressiva, final com desaceleração.
+    const eased=progress<.5?2*progress*progress:1-Math.pow(-2*progress+2,2)/2;
+    counter.textContent=fmt(Math.min(totalU,Math.floor(totalU*eased)));
+    if(progress>=1){finishCount();return;}
+    raf=window.requestAnimationFrame(step);
+   };
+   raf=window.requestAnimationFrame(step);
+   // Um toque no valor permite apresentar logo o prémio total.
+   counter.addEventListener('pointerdown',finishCount,{once:true});
+  }else counter.classList.add('reached');
+  const ack=()=>{finishCount();
    this.ledger.lastSummarySeenId=this.ledger.last?.id;
    this.save();this.closeModal();
   };
@@ -109,10 +151,14 @@
   if(m===1||!this.visualV11?.layout)return;
   const ctx=$('canvas').getContext('2d');
   ctx.save();
-  ctx.shadowColor='#eec46b';ctx.shadowBlur=9;
-  ctx.fillStyle='#f3d58b';ctx.font='900 14px Georgia,serif';
-  ctx.textAlign='center';
-  ctx.fillText('SUPER SCATTER ×'+m,280,231);
+  // Colocar o dado no espaço livre à direita das Free Spins.
+  // A posição anterior (y=231) atravessava BOA SORTE e o logótipo.
+  ctx.shadowColor='#eec46b';ctx.shadowBlur=8;
+  ctx.fillStyle='#9de5df';ctx.textAlign='center';
+  ctx.font='800 12px Georgia,serif';
+  ctx.fillText('DADO SAGRADO',444,811);
+  ctx.fillStyle='#ffe1a0';ctx.font='900 24px Georgia,serif';
+  ctx.fillText('×'+m,444,844);
   ctx.restore();
  };
  // Explicar as seis faces do novo símbolo na tabela de pagamentos.
