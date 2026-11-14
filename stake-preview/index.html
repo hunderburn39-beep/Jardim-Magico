@@ -6,17 +6,17 @@
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
 <title>Jardim Mágico | Edição Stake Preview V1.9.8</title>
-<link rel="preload" as="image" href="assets/figuras-v197/jm38-caracol-limpo.svg">
+<link rel="preload" as="image" href="assets/figuras-3d-aprovadas-20261114/caracol.png">
 <link rel="preload" as="image" href="assets/figuras-v199/joaninha-limpa.svg">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-flor-azul-limpo.svg">
-<link rel="preload" as="image" href="assets/figuras-v199/bule-limpo.svg">
+<link rel="preload" as="image" href="assets/figuras-3d-aprovadas-20261114/bule.png">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-wild-limpo.svg">
 <link rel="preload" as="image" href="assets/figuras-v199/diamante-limpo.svg">
-<link rel="preload" as="image" href="assets/figuras-v199/cogumelo-limpo.svg">
+<link rel="preload" as="image" href="assets/figuras-3d-aprovadas-20261114/cogumelo.png">
 <link rel="preload" as="image" href="assets/figuras-v199/chapeu-limpo.svg">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-flor-vermelha-limpo.svg">
 <link rel="preload" as="image" href="../assets/imagens/d95ddf1f53c88d01c4.png">
-<link rel="preload" as="image" href="assets/figuras-v197/jm38-pedra-limpo.svg">
+<link rel="preload" as="image" href="assets/figuras-3d-aprovadas-20261114/pedra.png">
 <link rel="preload" as="image" href="../assets/imagens/jm40-moeda-magica.svg">
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
@@ -1343,6 +1343,20 @@ html,body{height:100%;overflow:hidden;background:#051814}
   .notice{display:none!important}
 }
 
+
+/* V3.5 — quatro figuras 3D aprovadas, ficheiros PNG originais.
+   Mostram-se sem redesenho, filtros cromáticos ou máscaras de recorte.
+   O brilho de uma linha premiada continua a destacar a combinação. */
+#reelFrame #reels .cell:not(.winning) img.jmSymbolArt:is([data-symbol-id="0"],[data-symbol-id="3"],[data-symbol-id="6"],[data-symbol-id="10"]),
+#reelFrame .rain-symbol img.jmSymbolArt:is([data-symbol-id="0"],[data-symbol-id="3"],[data-symbol-id="6"],[data-symbol-id="10"]),
+#reelFrame .reel-scroll-symbol img.jmSymbolArt:is([data-symbol-id="0"],[data-symbol-id="3"],[data-symbol-id="6"],[data-symbol-id="10"]){
+  filter:none!important;
+  -webkit-filter:none!important;
+  clip-path:none!important;
+  -webkit-clip-path:none!important;
+  background:transparent!important;
+}
+
 </style>
 </head>
 <body>
@@ -1452,17 +1466,17 @@ function skipCurrentAnimations(){
   return true;
 }
 const TYPES=[
- {label:"CARACOL",image:"assets/figuras-v197/jm38-caracol-limpo.svg"},
+ {label:"CARACOL",image:"assets/figuras-3d-aprovadas-20261114/caracol.png"},
  {label:"JOANINHA",image:"assets/figuras-v199/joaninha-limpa.svg"},
  {label:"FLOR AZUL",image:"assets/figuras-v197/jm38-flor-azul-limpo.svg"},
- {label:"BULE",image:"assets/figuras-v199/bule-limpo.svg"},
+ {label:"BULE",image:"assets/figuras-3d-aprovadas-20261114/bule.png"},
  {label:"WILD",image:"assets/figuras-v197/jm38-wild-limpo.svg"},
  {label:"CRISTAL",image:"assets/figuras-v199/diamante-limpo.svg"},
- {label:"COGUMELO",image:"assets/figuras-v199/cogumelo-limpo.svg"},
+ {label:"COGUMELO",image:"assets/figuras-3d-aprovadas-20261114/cogumelo.png"},
  {label:"CHAPÉU",image:"assets/figuras-v199/chapeu-limpo.svg"},
  {label:"FLOR VERMELHA",image:"assets/figuras-v197/jm38-flor-vermelha-limpo.svg"},
  {label:"SCATTER",image:"../assets/imagens/d95ddf1f53c88d01c4.png"},
- {label:"PEDRA",image:"assets/figuras-v197/jm38-pedra-limpo.svg"},
+ {label:"PEDRA",image:"assets/figuras-3d-aprovadas-20261114/pedra.png"},
  {label:"MOEDA",image:"../assets/imagens/jm40-moeda-magica.svg"}
 ];
 // V1.8.8: warm and decode the 12 unique, verified image assets once.
