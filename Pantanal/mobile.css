@@ -223,3 +223,28 @@
 @media(prefers-reduced-motion:reduce){
  #screen.portrait #ctrls{backdrop-filter:none;-webkit-backdrop-filter:none}
 }
+
+/* Pantanal v2.26 — faixa de resultados separada do logótipo no 9:16.
+ * O logótipo termina perto dos 290px virtuais; o resultado começa depois dele.
+ * Mais específico do que o CSS injetado por frame_layout.js (v2.23).
+ */
+#screen.portrait #game #status{
+ position:absolute!important;
+ top:calc(2% + 280px)!important;
+ left:92px!important;
+ right:92px!important;
+ width:auto!important;
+ height:45px!important;
+ min-height:45px!important;
+ max-height:45px!important;
+ box-sizing:border-box!important;
+ padding:8px 12px!important;
+ font:bold 20px/27px Arial,sans-serif!important;
+ letter-spacing:.3px;
+ text-align:center!important;
+ white-space:nowrap!important;
+ overflow:hidden!important;
+ text-overflow:ellipsis!important;
+ z-index:9!important;
+ pointer-events:none!important;
+}
