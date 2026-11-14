@@ -77,3 +77,16 @@ jobs:
           path: Farao_Eterno_V26_RC_Jogo_Completo.zip
           if-no-files-found: error
           retention-days: 30
+      - name: Confirmar endereço experimental de revisão para iPhone (sem alterar GitHub Pages)
+        continue-on-error: true
+        shell: bash
+        run: |
+          ROOT="https://raw.githack.com/hunderburn39-beep/Jardim-Magico/farao-eterno-melhoria-completa-20261113/Farao-Eterno"
+          curl -fLsS --retry 2 --connect-timeout 10 --max-time 35 "$ROOT/index.html" -o /tmp/farao-preview-online.html
+          grep -q 'Faraó Eterno' /tmp/farao-preview-online.html
+          grep -q '2.6.0-rc' /tmp/farao-preview-online.html
+          curl -fLsS --retry 2 --connect-timeout 10 --max-time 35 "$ROOT/js/engine.js" -o /tmp/farao-preview-engine.js
+          grep -q 'TombEngine' /tmp/farao-preview-engine.js
+          curl -fLsS --retry 2 --connect-timeout 10 --max-time 35 "$ROOT/assets/temple.webp" -o /tmp/farao-preview-temple.webp
+          test $(wc -c < /tmp/farao-preview-temple.webp) -gt 1000
+          echo "PREVIEW_ONLINE_OK $ROOT/index.html"
