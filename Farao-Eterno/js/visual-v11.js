@@ -192,97 +192,49 @@
   ctx.moveTo(gx,gy-9);ctx.lineTo(gx,gy+9);ctx.stroke();ctx.restore();
  }
 
- // Fogo sagrado nos tambores expandidos: brilho de ouro nas bordas e núcleo
- // turquesa. Apenas desenho; nunca altera os símbolos ou a matemática.
+ // V2.9.4 — expansão de luz sagrada: calor subtil, sem parede de chamas.
+ // Apenas a moldura ganha vida; as três figuras mantêm-se totalmente visíveis.
+ // O motor, os símbolos e o som das expansões não são alterados.
  function drawExpansionFireHalo(x,progress,t,fade=1){
-  const reveal=clamp(progress*3.0,0,1),power=reveal*clamp(fade,0,1);
+  const appear=clamp(progress*2.6,0,1),power=appear*clamp(fade,0,1);
   if(power<=.01)return;
-  const y=R.top,w=R.cw,h=R.gh*3, bottom=y+h;
-  const flicker=reducedMotion?1:.93+.07*Math.sin(t*.017+x*.17);
-  const intensity=power*flicker;
+  const y=R.top,w=R.cw,h=R.gh*3;
+  const breathe=reducedMotion?1:.90+.10*Math.sin(t*.005+x*.026);
+  const a=power*breathe;
   ctx.save();
-  // Só 8 px para dentro do tambor: mantém as imagens completamente legíveis.
   ctx.globalCompositeOperation='screen';
-  ctx.globalAlpha=intensity*.95;
-  ctx.shadowBlur=reducedMotion?0:23;
-  ctx.shadowColor='#ff8b29';
-  rounded(ctx,x+1,y+1,w-2,h-2,8,null,'#ffba53',6.5);
-  ctx.shadowColor='#64fbef';ctx.shadowBlur=reducedMotion?0:15;
-  rounded(ctx,x+4,y+4,w-8,h-8,7,null,'#69f6e9',2.6);
+  // Fitas de luz nas margens: largura máxima 6 px dentro do tambor.
+  ctx.globalAlpha=a*.42;
+  ctx.shadowColor='#e9ac4e';ctx.shadowBlur=reducedMotion?0:10;
+  rounded(ctx,x+1,y+1,w-2,h-2,7,null,'#ffcc7b',2.1);
+  ctx.globalAlpha=a*.27;
+  ctx.shadowColor='#7be2db';ctx.shadowBlur=reducedMotion?0:6;
+  rounded(ctx,x+4,y+4,w-8,h-8,5,null,'#9af3e0',1.1);
   ctx.restore();
   if(reducedMotion)return;
-  ctx.save();
-  ctx.globalCompositeOperation='screen';
-  // Colunas de calor luminosas nas margens, quase sem invadir as imagens.
-  ctx.globalAlpha=intensity*.60;
-  const leftHeat=grad(ctx,x-16,0,x+12,0,[
-   [0,'rgba(255,65,5,0)'],[.34,'rgba(255,92,8,.32)'],
-   [.63,'rgba(255,194,76,.64)'],[1,'rgba(88,241,227,0)']
+  ctx.save();ctx.globalCompositeOperation='screen';
+  // Uma luz vertical fina em cada lado, sem laranja sobre a arte.
+  ctx.globalAlpha=a*.28;
+  const amber=grad(ctx,x-5,0,x+8,0,[
+    [0,'rgba(229,147,55,0)'],[.40,'rgba(255,205,128,.57)'],[1,'rgba(255,214,134,0)']
   ]);
-  const rightHeat=grad(ctx,x+w-12,0,x+w+16,0,[
-   [0,'rgba(88,241,227,0)'],[.37,'rgba(255,194,76,.64)'],
-   [.66,'rgba(255,92,8,.32)'],[1,'rgba(255,65,5,0)']
+  ctx.fillStyle=amber;ctx.fillRect(x-5,y+7,13,h-14);
+  const amberRight=grad(ctx,x+w-8,0,x+w+5,0,[
+    [0,'rgba(255,214,134,0)'],[.60,'rgba(255,205,128,.57)'],[1,'rgba(229,147,55,0)']
   ]);
-  ctx.fillStyle=leftHeat;ctx.fillRect(x-16,y,28,h);
-  ctx.fillStyle=rightHeat;ctx.fillRect(x+w-12,y,28,h);
-  ctx.restore();
-  ctx.save();
-  ctx.globalCompositeOperation='screen';
-  // Cada chama usa só duas formas planas: leve para WebKit/iPhone.
-  const sideFlame=(xx,yy,dir,size,wave)=>{
-    const flare=size*(.76+.24*wave),spread=8+flare*.28;
-    ctx.beginPath();
-    ctx.moveTo(xx,yy+flare*.40);
-    ctx.quadraticCurveTo(xx+dir*spread,yy+flare*.04,xx+dir*(11+flare*.22),yy-flare*.70);
-    ctx.quadraticCurveTo(xx+dir*3,yy-flare*.20,xx,yy-flare*.35);
-    ctx.closePath();
-    ctx.fillStyle='#ff8c20';ctx.fill();
-    // Centro azul-turquesa, como uma chama sagrada de templo.
-    ctx.beginPath();ctx.moveTo(xx,yy+flare*.21);
-    ctx.quadraticCurveTo(xx+dir*4,yy,xx+dir*(5+flare*.08),yy-flare*.36);
-    ctx.quadraticCurveTo(xx+dir,yy-flare*.12,xx,yy-flare*.16);
-    ctx.closePath();ctx.fillStyle='#86fbec';ctx.fill();
-  };
-  const rimFlame=(xx,yy,dir,size,wave)=>{
-    const flare=size*(.75+.25*wave);
-    ctx.beginPath();ctx.moveTo(xx-6,yy);
-    ctx.quadraticCurveTo(xx-6+flare*.12,yy+dir*flare*.47,xx,yy+dir*flare);
-    ctx.quadraticCurveTo(xx+7,yy+dir*flare*.30,xx+7,yy);
-    ctx.closePath();ctx.fillStyle='#ffba49';ctx.fill();
-    ctx.beginPath();ctx.moveTo(xx-3,yy);
-    ctx.quadraticCurveTo(xx-2,yy+dir*flare*.24,xx,yy+dir*flare*.55);
-    ctx.quadraticCurveTo(xx+3,yy+dir*flare*.18,xx+3,yy);
-    ctx.closePath();ctx.fillStyle='#55dfe6';ctx.fill();
-  };
-  ctx.globalAlpha=intensity*.93;
-  ctx.shadowColor='#ff9a36';ctx.shadowBlur=9;
-  for(let i=0;i<11;i++){
-   const yy=y+19+i*(h-38)/10;
-   const pulse=.5+.5*Math.sin(t*.011+i*1.57+x*.009);
-   sideFlame(x+1,yy,-1,23+i%3*7,pulse);
-   sideFlame(x+w-1,yy,1,22+(i+1)%3*7,1-pulse);
-  }
-  ctx.shadowBlur=7;
-  ctx.globalAlpha=intensity*.83;
-  for(let i=0;i<5;i++){
-   const xx=x+14+i*(w-28)/4;
-   const pulse=.5+.5*Math.sin(t*.007+i*1.3+x*.01);
-   rimFlame(xx,y+3,-1,19+i%2*6,pulse);
-   rimFlame(xx,bottom-3,1,17+(i+1)%3*5,1-pulse);
-  }
-  // Faíscas suaves ao redor do aro, sem partículas permanentes.
-  ctx.shadowBlur=0;
-  ctx.globalAlpha=intensity*.88;
-  for(let i=0;i<12;i++){
-   const phase=t*.00085+i*.173;
-   const yy=y+13+((phase%1)*(h-26));
-   const xx=i%2===0?x-6-(i%3)*2:x+w+6+(i%3)*2;
-   ctx.beginPath();ctx.arc(xx,yy,i%3===0?1.35:.8,0,TAU);
-   ctx.fillStyle=i%2?'#91f3ed':'#ffe2a2';ctx.fill();
+  ctx.fillStyle=amberRight;ctx.fillRect(x+w-8,y+7,13,h-14);
+  // 4 pontos de luz pequenos, em vez de múltiplas chamas.
+  for(let i=0;i<4;i++){
+   const yy=y+26+((t*.019+i*93+x*.4)%(h-52));
+   const xx=i%2===0?x+3:x+w-3;
+   const sparkle=.55+.45*Math.sin(t*.009+i*2.7);
+   ctx.globalAlpha=a*.34*sparkle;
+   ctx.fillStyle=i===2?'#aaf4df':'#ffe0a0';
+   ctx.beginPath();ctx.arc(xx,yy,i===0?1.5:1.1,0,TAU);ctx.fill();
   }
   ctx.restore();
  }
- game.visualV11={layout:R,tile,medallion,version:'2.8.0-temple-inferno'};
+ game.visualV11={layout:R,tile,medallion,version:'2.9.4-soft-temple-glow'};
  game.drawReelSeparators=function(left,top,interval,gh){
   for(let c=1;c<5;c++){
    const x=left+c*interval-(interval-R.cw)/2;
