@@ -117,6 +117,21 @@ def check_device(browser, width, height, label, show_image=False):
     }""")
     assert sparks==[{"x":10,"y":50},{"x":30,"y":50},{"x":50,"y":50}],(label,"Sparkles off payline",sparks)
     print("PAYLINE_SPARKS_OK",label,json.dumps(sparks),flush=True)
+    # On Safari, the cascade sound should land after the pieces fall,
+    # rather than fire at the start of the animation.
+    if label=="WebKit iPhone compact":
+        landing=page.evaluate("""async()=>{
+          const original=playRecorded,heard=[],start=performance.now();
+          try{
+            playRecorded=(name,gain)=>{if(name==='cascade')heard.push({delay:performance.now()-start,gain});return true;};
+            await animateCascade([[0,1,2],[3,4,5],[6,7,8],[9,10,11],[0,1,2]],[[0,0],[1,1]],4);
+          }finally{playRecorded=original;}
+          return heard;
+        }""")
+        assert len(landing)==1,(label,"Cascade effect played more than once",landing)
+        assert 400<=landing[0]["delay"]<=1600,(label,"Cascade sound before the figures landed",landing)
+        assert 1.05<=landing[0]["gain"]<=1.2,(label,"Gain does not follow cascade depth",landing)
+        print("CASCADE_AUDIO_LANDING_OK",label,json.dumps(landing),flush=True)
     page.close()
 
 with sync_playwright() as p:
