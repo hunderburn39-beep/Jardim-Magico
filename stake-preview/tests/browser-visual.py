@@ -47,6 +47,18 @@ def check_device(browser, width, height, label, show_image=False):
     assert result["frame"]["left"]>=-2 and result["frame"]["right"]<=width+2,(label,"frame outside viewport",result["frame"])
     assert all(x["within"] and x["loaded"] and x["ratio"]<=.971 for x in result["checks"]),(label,"image outside tile",result["checks"])
     assert all(max(v)<=2 for v in result["alphas"].values()),(label,"nontransparent source corners",result["alphas"])
+    # A ghost image can finish loading after its animation layer is removed.
+    # Its inline onload must not throw when previousElementSibling is null.
+    detached=page.evaluate("""()=>{
+      const wrap=document.createElement('div');
+      wrap.innerHTML=symbolArtworkMarkup(6);
+      const img=wrap.querySelector('img.jmSymbolArt');
+      img.remove();
+      img.dispatchEvent(new Event('load'));
+      return img.previousElementSibling===null;
+    }""")
+    assert detached,(label,"Detached cascade image load failed")
+    page.wait_for_timeout(20)
     assert not js_errors,(label,"javascript errors",js_errors)
     print("VIEWPORT_OK",label,json.dumps({"frame":result["frame"],"reels":result["reels"],"images":len(result["checks"]),"alphaCorners":result["alphas"]},ensure_ascii=False),flush=True)
     if show_image:
