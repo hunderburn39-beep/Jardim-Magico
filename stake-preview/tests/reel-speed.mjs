@@ -94,21 +94,21 @@ const testScenario=async(turbo,{skipAt=0,reduced=false,board=final}={})=>{
 const normal=await testScenario(false);
 assert.equal(normal.events.filter(x=>x==="roll").length,5);
 assert.equal(normal.events.filter(x=>x==="brake").length,5);
-assert.equal(normal.pauses[0],1050);
-assert.equal(normal.pauses.filter(x=>x===245).length,4);
+assert.equal(normal.pauses[0],740);
+assert.equal(normal.pauses.filter(x=>x===390).length,4);
 assert.equal(normal.sfx.filter(x=>x==="stop").length,5);
 assert.equal(normal.columns.every(col=>col.mounted[0].children[0].innerHTML.includes("reel-scroll-symbol")),true);
 const turbo=await testScenario(true);
-assert.equal(turbo.pauses[0],40);
+assert.equal(turbo.pauses[0],160);
 const fiveCoinBoard=[[11,11,11],[11,11,0],[11,0,0],[0,1,2],[0,1,2]];
 const coinRush=await testScenario(false,{board:fiveCoinBoard});
-assert.equal(coinRush.rollAnims.filter(a=>a.playbackRate===2.1).length,3,
-  "Three remaining reels spin 2.1 times faster after five coins are revealed");
+assert.equal(coinRush.rollAnims.filter(a=>a.playbackRate===1.5).length,3,
+  "Three remaining reels spin 1.5 times faster after five coins are revealed");
 const sixCoinBoard=[[11,11,11],[11,11,11],[0,1,2],[0,1,2],[0,1,2]];
 const alreadySix=await testScenario(false,{board:sixCoinBoard});
-assert.equal(alreadySix.rollAnims.filter(a=>a.playbackRate===2.1).length,0,
+assert.equal(alreadySix.rollAnims.filter(a=>a.playbackRate===1.5).length,0,
   "No five-coin tease is shown when six coins are already visible");
-assert.equal(turbo.pauses.filter(x=>x===22).length,4);
+assert.equal(turbo.pauses.filter(x=>x===85).length,4);
 const skip=await testScenario(false,{skipAt:1});
 assert.equal(skip.events.filter(x=>x==="brake").length,0);
 assert.equal(skip.sfx.filter(x=>x==="stop").length,0);
