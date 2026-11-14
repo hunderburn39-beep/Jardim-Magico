@@ -87,25 +87,26 @@
     if(Array.isArray(old.history))s.history=old.history.filter(h=>h&&typeof h.t==='string'&&Number.isFinite(h.bet)&&Number.isFinite(h.win)).slice(0,100).map(h=>({...h,kind:h.bonus?'free':'spin'}));
     s.betMultiplier=1;s.settings.sound=old.sound!==false;s.settings.soundMode=s.settings.sound?'all':'mute';s.settings.music=s.settings.sound;compactFreeHistory(s);return validate(s);
   }
-  // Compra voluntária por 100× a aposta TOTAL atual; apenas créditos do jogo.
+  // Compra voluntária: 100× para pirâmides e 200× para Super Scatter; créditos fictícios.
   // A operação é atómica e recuperável no mesmo armazenamento das jogadas.
-  function buyBonus(s,rng=E.randomFloat,now=new Date().toISOString()){
+  function buyBonus(s,rng=E.randomFloat,now=new Date().toISOString(),mode='regular'){
     validate(s);
     if(s.pending||s.payout)throw Error('Existe uma jogada por terminar');
     if(s.feature)throw Error('Já tens um bónus ativo');
     if(s.lines!==10)throw Error('Para comprar o bónus tens de apostar nas 10 linhas');
-    const bet=stake(s),costU=units(bet)*100;
+    if(mode!=='regular'&&mode!=='super')throw Error('Tipo de bónus inválido');
+    const bet=stake(s),costU=units(bet)*(mode==='super'?200:100);
     if(s.balanceU<costU)throw Error('Saldo insuficiente para comprar o bónus');
     // Selecionar o símbolo antes de debitar créditos. Nunca criar um giro falso.
     const symbol=E.NORMAL[Math.min(E.NORMAL.length-1,Math.max(0,Math.floor(rng()*E.NORMAL.length)))];
     s.balanceU-=costU;
-    s.feature={left:8,played:0,totalU:0,symbols:[symbol],retriggers:0};
+    s.feature={left:8,played:0,totalU:0,symbols:[symbol],retriggers:0,purchasedMode:mode};
     s.gambles=0;s.lastBaseWinU=0;s.lastWinU=0;s.last=null;
     s.stats.features++;
     s.stats.stakeU+=costU;
-    s.history.unshift({t:now,kind:'bonus-buy',bet,cost:credits(costU),win:0,symbol});
+    s.history.unshift({t:now,kind:'bonus-buy',bet,cost:credits(costU),win:0,symbol,mode});
     s.history=s.history.slice(0,100);
-    return {costU,bet,symbol,spins:8};
+    return {costU,bet,symbol,spins:8,mode};
   }
   function begin(s,rng=E.randomFloat){
     validate(s);if(s.pending||s.payout)throw Error('Existe uma jogada por terminar');
