@@ -389,9 +389,18 @@
       Array.isArray(reveal.reels)?[reveal]:[];
     for(const stage of stages){
       if(stage.kind&&stage.kind!=='expansion')continue;
-      if(!stage.reels?.length||!stage.perReel||stage._laserPlayed)continue;
+      if(!stage.reels?.length||!stage.perReel)continue;
       const at=stage.start+stage.preDelay;
-      if(t<at||t>=at+Math.max(160,stage.perReel*.55))continue;
+      // Um impacto subtil de pedra após cada coluna se transformar.
+      // O conjunto não pode repetir batidas ao redesenhar o canvas.
+      if(!stage._stoneHits)stage._stoneHits=new Set();
+      stage.reels.forEach((reel,order)=>{
+        const hit=at+(order+1)*stage.perReel;
+        if(t<hit||stage._stoneHits.has(order))return;
+        stage._stoneHits.add(order);
+        if(t-hit<180)this.freeBlockDrop(reel,order);
+      });
+      if(stage._laserPlayed||t<at||t>=at+Math.max(160,stage.perReel*.55))continue;
       stage._laserPlayed=true;
       const reels=stage.reels;
       this.expansionLaserScan(stage.perReel*reels.length/1000+.18,reels[0],reels[reels.length-1]);
