@@ -533,6 +533,20 @@ class Game {
 
  finishSpin(){
   const item=this.spinObject;if(!item)return;
+  if(item.purchaseReveal){
+   // Giro ilustrativo da compra: não é uma aposta e nunca paga duas vezes.
+   this.spinning=false;this.spinObject=null;
+   this.ledger.grid=item.grid.map(col=>col.slice());
+   if(this.ledger.feature)this.ledger.feature.purchaseRevealPending=false;
+   this.landings.fill(performance.now());
+   this.syncLedger();
+   this.lastResult=item.result;this.lastWasFree=false;
+   this.winCells=[];this.expanded={};
+   this.nextActionAt=performance.now()+1250;
+   this.save();
+   this.audio.extra();
+   return;
+  }
   this.spinning=false;this.grid=item.grid;
   const finishedAt=performance.now();
   const result=item.result;
@@ -803,10 +817,50 @@ class Game {
   const t=performance.now();
   this.audio.init();this.audio.startMusic?.();this.audio.extra();
   this.notice(mode==='super'?'SUPER SCATTER COMPRADO · 8 FREE SPINS':'BÓNUS COMPRADO · 8 FREE SPINS',1850,'cyan');
-  this.queueIntro(purchase.symbol,t+320);
+  this.startPurchasedBonusSpin(mode);
  }
 
-   closeModal(){
+   startPurchasedBonusSpin(mode='regular'){
+  // A compra já foi debitada e o bónus guardado. Mostrar a combinação
+  // de ativação nos tambores, sem S.begin/S.settle nem um débito adicional.
+  if(!this.ledger.feature?.purchaseRevealPending||this.spinning)return;
+  mode=mode==='super'?'super':'regular';
+  this._welcome=false;this._welcomeShown=false;
+  this._awaitBonusStart=true;this._freeStarted=false;
+  this.paused=false;this.auto=0;
+  this.featureIntro=null;this.reveal=null;this.lastResult=null;this.lastWin=0;
+  this.winCells=[];this.expanded={};this.v04Celebration=null;
+  const oldGrid=this.grid.map(col=>col.slice());
+  const grid=Array.from({length:5},()=>{const used=new Set();
+   return Array.from({length:3},()=>{
+    const pool=E.NORMAL.filter(name=>!used.has(name));
+    const symbol=pool[Math.min(pool.length-1,Math.floor(this.rng()*pool.length))];
+    used.add(symbol);return symbol;
+   });
+  });
+  // Três pirâmides em três tambores; Super Scatter adicional só na compra 200×.
+  grid[0][0]='TOMB';grid[2][1]='TOMB';grid[4][2]='TOMB';
+  if(mode==='super')grid[3][1]='SUPER';
+  const t=performance.now(),steps=Array.from({length:5},(_,c)=>18+c*3);
+  const show=steps.map((n,c)=>{
+   const strip=Array.from({length:n+10},()=>E.NORMAL[Math.min(E.NORMAL.length-1,Math.floor(this.rng()*E.NORMAL.length))]);
+   for(let r=0;r<3;r++){strip[n+3+r]=oldGrid[c][r];strip[3+r]=grid[c][r];}
+   return strip;
+  });
+  this.spinning=true;this.landings.fill(0);
+  this.spinObject={
+   purchaseReveal:true,mode,free:false,grid,
+   result:{trigger:true,superTrigger:mode==='super',scatterCount:3,
+    superCount:mode==='super'?1:0,scatterWin:0,lineWins:[],expanders:[],total:0},
+   start:t,duration:1550,reelGap:460,
+   stopAt:[t+1550,t+1980,t+2410,t+3460,t+4280],
+   stopped:Array(5).fill(false),steps,show
+  };
+  this.audio.spin();
+  this.save();
+ }
+
+  closeModal(){
   mod.classList.add('hidden');mod.setAttribute('aria-hidden','true');$('touch-controls').inert=false;
   this.nextActionAt=Math.max(this.nextActionAt,performance.now()+350);this.focusBeforeModal?.focus();
  }
