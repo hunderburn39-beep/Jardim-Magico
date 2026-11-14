@@ -1,6 +1,6 @@
 /* Faraó Eterno — ritual do bónus inspirado na cadência da referência.
  * Arte e som originais; nenhuma mudança de RNG, créditos ou premiação.
- * V2.9.5 | 14-11-2026
+ * V2.9.7 | 14-11-2026
  */
 (() => {
  'use strict';
@@ -72,10 +72,10 @@
    sweep(1176,1568,.48,.018,.20);
   },
   expand(){
-   sweep(2100,390,.57,.078,0,'sawtooth');
-   hush(.58,.070,5000);
-   sweep(90,52,.71,.092,.16);
-   sweep(523,784,.43,.038,.27);
+   sweep(2100,390,.57,.090,0,'sawtooth');
+   hush(.58,.081,5000);
+   sweep(90,52,.71,.106,.16);
+   sweep(523,784,.43,.044,.27);
   }
  };
 
@@ -349,6 +349,6 @@
    drawPyramids(t);drawExpansions(t);introPages(t);
   }
  };
- g.bonusRitual={version:'2.9.5',events:stats,mathUnchanged:true};
- document.documentElement.dataset.faraoBonusRitual='2.9.5';
+ g.bonusRitual={version:'2.9.7',events:stats,mathUnchanged:true};
+ document.documentElement.dataset.faraoBonusRitual='2.9.7';
 })();
