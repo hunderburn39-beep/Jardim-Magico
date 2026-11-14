@@ -21,6 +21,9 @@
  if(!g.feature&&g.ledger.last?.bonusDone&&
     g.ledger.last.id!==g.ledger.lastSummarySeenId){
    g.pendingSummary=g.ledger.last.bonusDone;
+   // O Safari pode fechar-se depois dos pagamentos, mas antes de o
+   // jogador confirmar o resumo. Não alterar nem creditar nada aqui.
+   g._recoveredBonusSummary=true;
  }
  const oldOpen=g.openModal.bind(g),oldClose=g.closeModal.bind(g);
  g.openModal=function(title,html,themed=false){
@@ -71,6 +74,7 @@
     <p class="farao-spins-label">TOTAL DAS FREE SPINS</p>
     <strong class="farao-spins-number">${fmt(S.credits(b.totalU))}</strong>
     <p class="farao-bonus-rounds">${b.played} RODADAS</p>
+    ${this._recoveredBonusSummary?'<p class="farao-recovery-note" role="status">SESSÃO RECUPERADA · PRÉMIO PRESERVADO</p>':''}
     <button type="button" class="btn farao-gold-btn" id="collect-bonus">CONTINUAR</button>
    </div>`,true);
    this.audio?.fanfare?.(3);
@@ -86,7 +90,8 @@
  g.closeModal=function(){
    const closingSummary=!!this._summaryAck;
    this._summaryAck=null;
-   if(closingSummary){this.ledger.lastSummarySeenId=this.ledger.last?.id;this.save();}
+   if(closingSummary){this.ledger.lastSummarySeenId=this.ledger.last?.id;
+     this._recoveredBonusSummary=false;this.save();}
    previousClose();
  };
  g.showCreditMenu=function(){
