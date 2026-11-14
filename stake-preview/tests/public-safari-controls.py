@@ -35,7 +35,7 @@ with sync_playwright() as p:
     ready=False
     for attempt in range(35):
         response=page.goto(URL+"&update="+str(attempt),wait_until="domcontentloaded",timeout=45000)
-        if response and response.status==200 and 'id="holdSkip"' in page.content():
+        if response and response.status==200 and 'id="holdSkip"' in page.content() and "V1.9.9 · CASCATAS SUAVES" in page.content() and "function cascadeShiftPlan(oldRemoved)" in page.content():
             ready=True
             break
         print("SAFARI_CONTROLS_PUBLICATION_WAIT",attempt+1,flush=True)
