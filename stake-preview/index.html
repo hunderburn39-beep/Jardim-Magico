@@ -15,7 +15,7 @@
 <link rel="preload" as="image" href="assets/figuras-3d-aprovadas-20261114/cogumelo.png">
 <link rel="preload" as="image" href="assets/figuras-v199/chapeu-limpo.svg">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-flor-vermelha-limpo.svg">
-<link rel="preload" as="image" href="../assets/imagens/d95ddf1f53c88d01c4.png">
+<link rel="preload" as="image" href="assets/figuras-3d-aprovadas-20261114/scatter-3d.png">
 <link rel="preload" as="image" href="assets/figuras-3d-aprovadas-20261114/pedra.png">
 <link rel="preload" as="image" href="../assets/imagens/jm40-moeda-magica.svg">
 <style>
@@ -1357,6 +1357,103 @@ html,body{height:100%;overflow:hidden;background:#051814}
   background:transparent!important;
 }
 
+
+/* V3.6 — SCATTER florido aprovado: PNG original intacto.
+   Os restantes 11 símbolos conservam 98% e 1px de separação.
+   A peça SCATTER ocupa 122% do espaço e sobrepõe as vizinhas;
+   128% durante a revelação/ativação do bónus, sem alterar pagamentos.
+   Sem máscara circular: toda a tipografia SCATTER fica visível. */
+#reelFrame #reels,
+#reelFrame #reels .column,
+#reelFrame #reels .cell{overflow:visible!important}
+#reelFrame #reels .cell.scatter-cell{
+  position:relative!important;
+  isolation:isolate!important;
+  overflow:visible!important;
+  z-index:32!important;
+}
+#reelFrame #reels .cell.scatter-cell img.jmSymbolArt[data-symbol-id="9"]{
+  --jm-fit:122%!important;
+  display:block!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  width:122%!important;
+  height:122%!important;
+  max-width:none!important;
+  max-height:none!important;
+  min-width:0!important;
+  min-height:0!important;
+  aspect-ratio:1/1;
+  margin:0!important;
+  transform:translate(-50%,-50%);
+  transform-origin:center center;
+  object-fit:contain!important;
+  object-position:center center!important;
+  clip-path:none!important;
+  -webkit-clip-path:none!important;
+  pointer-events:none!important;
+  z-index:35!important;
+  animation:scatterOversizeIdle 1.45s ease-in-out infinite;
+  filter:drop-shadow(0 3px 3px #1b0d32d9) drop-shadow(0 0 12px #f5b5ff) drop-shadow(0 0 17px #d67cf0)!important;
+}
+#reelFrame .rain-symbol.scatter-fall{
+  overflow:visible!important;
+  z-index:35!important;
+}
+#reelFrame .rain-symbol.scatter-fall img.jmSymbolArt[data-symbol-id="9"],
+#reelFrame .reel-scroll-symbol img.jmSymbolArt[data-symbol-id="9"]{
+  --jm-fit:122%!important;
+  width:122%!important;
+  height:122%!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+  place-self:center!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  clip-path:none!important;
+  -webkit-clip-path:none!important;
+  pointer-events:none!important;
+  filter:drop-shadow(0 3px 3px #1b0d32d9) drop-shadow(0 0 11px #d37df5)!important;
+}
+#reelFrame .reel-scroll-symbol:has(> img.jmSymbolArt[data-symbol-id="9"]){
+  overflow:visible!important;
+  z-index:7!important;
+}
+#reelFrame #reels .cell.scatter-cell.scatter-revealed img.jmSymbolArt[data-symbol-id="9"],
+#reelFrame #reels .cell.scatter-cell.winning img.jmSymbolArt[data-symbol-id="9"],
+#reelFrame.scatter-bonus #reels .cell.scatter-cell img.jmSymbolArt[data-symbol-id="9"]{
+  --jm-fit:128%!important;
+  width:128%!important;
+  height:128%!important;
+  max-width:none!important;
+  max-height:none!important;
+  animation:scatterOversizeTrigger .48s ease-in-out 3!important;
+  filter:drop-shadow(0 0 12px #fff1bd) drop-shadow(0 0 23px #e5a4ff) drop-shadow(0 0 28px #ffd06a)!important;
+}
+#reelFrame.scatter-tease #reels .cell.scatter-cell img.jmSymbolArt[data-symbol-id="9"]{
+  animation:scatterOversizeTease .8s ease-in-out infinite!important;
+}
+@keyframes scatterOversizeIdle{
+  0%,100%{transform:translate(-50%,-50%) scale(1)}
+  50%{transform:translate(-50%,-50%) scale(1.025)}
+}
+@keyframes scatterOversizeTease{
+  0%,100%{transform:translate(-50%,-50%) scale(1)}
+  50%{transform:translate(-50%,-50%) scale(1.065)}
+}
+@keyframes scatterOversizeTrigger{
+  0%,100%{transform:translate(-50%,-50%) scale(1)}
+  50%{transform:translate(-50%,-50%) scale(1.075)}
+}
+@media(prefers-reduced-motion:reduce){
+  #reelFrame #reels .cell.scatter-cell img.jmSymbolArt[data-symbol-id="9"]{
+    animation:none!important;
+    transform:translate(-50%,-50%)!important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1475,7 +1572,7 @@ const TYPES=[
  {label:"COGUMELO",image:"assets/figuras-3d-aprovadas-20261114/cogumelo.png"},
  {label:"CHAPÉU",image:"assets/figuras-v199/chapeu-limpo.svg"},
  {label:"FLOR VERMELHA",image:"assets/figuras-v197/jm38-flor-vermelha-limpo.svg"},
- {label:"SCATTER",image:"../assets/imagens/d95ddf1f53c88d01c4.png"},
+ {label:"SCATTER",image:"assets/figuras-3d-aprovadas-20261114/scatter-3d.png"},
  {label:"PEDRA",image:"assets/figuras-3d-aprovadas-20261114/pedra.png"},
  {label:"MOEDA",image:"../assets/imagens/jm40-moeda-magica.svg"}
 ];
@@ -2274,7 +2371,7 @@ async function animateSymbolRain(boardFinal){
       const cell=columns[entry.c].querySelectorAll(".cell")[entry.r];
       const rect=cell.getBoundingClientRect();
       const sprite=document.createElement("div");
-      sprite.className="rain-symbol";
+      sprite.className="rain-symbol"+(entry.symbol===9?" scatter-fall":"");
       sprite.style.left=(rect.left-reelsRect.left)+"px";
       sprite.style.top=(rect.top-reelsRect.top)+"px";
       sprite.style.width=rect.width+"px";
