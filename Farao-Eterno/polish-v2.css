@@ -167,3 +167,21 @@
  #stage .farao-treasure-transition.is-visible{display:none;animation:none}
  #stage .farao-treasure-sun{animation:none}
 }
+
+/* V2.7: aviso discreto apenas no resumo de bónus recuperado após Safari.
+   Mantém a janela, a contagem e os botões na posição habitual. */
+.farao-recovery-note {
+  display:block;
+  width:fit-content;
+  max-width:95%;
+  margin:8px auto 9px;
+  padding:5px 11px;
+  border-radius:18px;
+  border:1px solid rgba(120,221,208,.45);
+  background:rgba(6,34,44,.48);
+  color:#a7f6e8;
+  font:700 clamp(10px,2.65vw,13px)/1.4 system-ui,sans-serif;
+  letter-spacing:.06em;
+  text-align:center;
+  text-shadow:0 1px 2px #071522;
+}
