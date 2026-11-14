@@ -356,8 +356,8 @@
       filter.frequency.exponentialRampToValueAtTime(1350,t+d*.48);
       filter.frequency.exponentialRampToValueAtTime(460,t+d);
       breathEnv.gain.setValueAtTime(.0001,t);
-      breathEnv.gain.linearRampToValueAtTime(.134,t+d*.22);
-      breathEnv.gain.setValueAtTime(.115,t+d*.67);
+      breathEnv.gain.linearRampToValueAtTime(.165,t+d*.22);
+      breathEnv.gain.setValueAtTime(.140,t+d*.67);
       breathEnv.gain.exponentialRampToValueAtTime(.0001,t+d+.12);
       breath.connect(filter);filter.connect(breathEnv);breathEnv.connect(bus);
       breath.start(t);breath.stop(t+d+.15);
@@ -369,7 +369,7 @@
       resonance.frequency.setValueAtTime(196,t);
       resonance.frequency.linearRampToValueAtTime(215,t+d);
       resEnv.gain.setValueAtTime(.0001,t);
-      resEnv.gain.linearRampToValueAtTime(.0465,t+d*.34);
+      resEnv.gain.linearRampToValueAtTime(.057,t+d*.34);
       resEnv.gain.exponentialRampToValueAtTime(.0001,t+d+.2);
       resonance.connect(resEnv);resEnv.connect(bus);
       resonance.start(t);resonance.stop(t+d+.23);
@@ -418,22 +418,22 @@
     const shift=Math.max(0,index%4)*.018;
     const sequence=[523.25,659.25,783.99,1046.5];
     // Corpo metálico quente + pequeno suporte grave para dar presença.
-    note(261.63,293.66,.21,.036,0,'triangle');
-    note(sequence[0],sequence[0]*1.07,.155,.062,0,'triangle');
-    note(sequence[1],sequence[1]*1.09,.19,.061,.095,'sine');
-    note(sequence[2],sequence[2]*1.10,.23,.056,.205,'triangle');
-    note(sequence[3]+shift*70,sequence[3]*1.035,.34,.041,.315,'sine');
+    note(261.63,293.66,.21,.055,0,'triangle');
+    note(sequence[0],sequence[0]*1.07,.155,.096,0,'triangle');
+    note(sequence[1],sequence[1]*1.09,.19,.094,.095,'sine');
+    note(sequence[2],sequence[2]*1.10,.23,.086,.205,'triangle');
+    note(sequence[3]+shift*70,sequence[3]*1.035,.34,.064,.315,'sine');
     // Brilho cristalino curto no fim — perceptível em altifalantes de telemóvel.
-    note(1568,1760,.18,.022,.335,'sine');
+    note(1568,1760,.18,.034,.335,'sine');
   };
   // V1.3.55 — impacto de blocos de pedra na revelação dos símbolos.
   // Efeitos originais de síntese: batida baixa + textura de pedra breve.
   audio.freeBlockDrop=function(reel,ordinal=0){
     if(!ready())return;
-    const depth=126-ordinal*5,weight=.052+Math.min(4,ordinal)*.005;
-    friction(.115,.070,740+reel*80,0);
+    const depth=126-ordinal*5,weight=.067+Math.min(4,ordinal)*.006;
+    friction(.115,.090,740+reel*80,0);
     note(depth,57,.145,weight,0,'triangle');
-    note(74,53,.11,.021,.035,'sine');
+    note(74,53,.11,.027,.035,'sine');
   };
   // Pedra a cair e desmoronar: efeito original gerado uma única vez
   // em memória. Um ataque de granito, impacto grave e pequenos estilhaços.
@@ -472,7 +472,7 @@
       src.buffer=blockFallBuffer(ac);
       src.playbackRate.value=1-.065*row+.014*(reel%3);
       lp.type='lowpass';lp.frequency.value=2100-row*160;
-      gain.gain.value=.81+row*.096;
+      gain.gain.value=.99+row*.118;
       src.connect(lp);lp.connect(gain);gain.connect(output());
       src.start(t);src.stop(t+.57);
       src.onended=()=>{try{src.disconnect();lp.disconnect();gain.disconnect();}catch(_){}};
@@ -492,7 +492,7 @@
     notes.forEach((freq,i)=>{
       const rise=i/7;
       const offset=span*(i/7)*(1-.17*rise);
-      const level=Math.min(.128,(.035+.046*rise)*boost);
+      const level=Math.min(.185,(.050+.065*rise)*boost);
       note(freq,freq*1.035,.19-level*.29,level,offset,'triangle');
       note(freq*2,freq*2*.995,.105,level*.18,offset+.018,'sine');
     });
