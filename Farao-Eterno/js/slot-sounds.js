@@ -356,8 +356,8 @@
       filter.frequency.exponentialRampToValueAtTime(1350,t+d*.48);
       filter.frequency.exponentialRampToValueAtTime(460,t+d);
       breathEnv.gain.setValueAtTime(.0001,t);
-      breathEnv.gain.linearRampToValueAtTime(.086,t+d*.22);
-      breathEnv.gain.setValueAtTime(.074,t+d*.67);
+      breathEnv.gain.linearRampToValueAtTime(.099,t+d*.22);
+      breathEnv.gain.setValueAtTime(.085,t+d*.67);
       breathEnv.gain.exponentialRampToValueAtTime(.0001,t+d+.12);
       breath.connect(filter);filter.connect(breathEnv);breathEnv.connect(bus);
       breath.start(t);breath.stop(t+d+.15);
@@ -369,7 +369,7 @@
       resonance.frequency.setValueAtTime(196,t);
       resonance.frequency.linearRampToValueAtTime(215,t+d);
       resEnv.gain.setValueAtTime(.0001,t);
-      resEnv.gain.linearRampToValueAtTime(.030,t+d*.34);
+      resEnv.gain.linearRampToValueAtTime(.0345,t+d*.34);
       resEnv.gain.exponentialRampToValueAtTime(.0001,t+d+.2);
       resonance.connect(resEnv);resEnv.connect(bus);
       resonance.start(t);resonance.stop(t+d+.23);
@@ -472,7 +472,7 @@
       src.buffer=blockFallBuffer(ac);
       src.playbackRate.value=1-.065*row+.014*(reel%3);
       lp.type='lowpass';lp.frequency.value=2100-row*160;
-      gain.gain.value=.52+row*.062;
+      gain.gain.value=.60+row*.071;
       src.connect(lp);lp.connect(gain);gain.connect(output());
       src.start(t);src.stop(t+.57);
       src.onended=()=>{try{src.disconnect();lp.disconnect();gain.disconnect();}catch(_){}};
