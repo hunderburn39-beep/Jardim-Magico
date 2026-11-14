@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {join,dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
+const html=readFileSync(join(dirname(fileURLToPath(import.meta.url)),'..','index.html'),'utf8');
+const css=html.match(/<style>([\s\S]*?)<\/style>/)?.[1]||'';
+const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1]||'';
+assert.match(css,/#reelFrame\.round-finished \.hud\{display:none!important\}/);
+assert.doesNotMatch(js,/\$\("hud"\)\.textContent="✦ RONDA #"/);
+assert.match(js,/\$\("hud"\)\.textContent="";/);
+assert.match(js,/\$\("reelFrame"\)\.classList\.add\("round-finished"\)/);
+assert.match(js,/\$\("reelFrame"\)\.classList\.remove\("round-finished"\)/);
+assert.match(js,/\$\("detailTitle"\)\.textContent="JOGADA #"+record\.id/);
+assert.match(js,/const record=commitRound\(mode,bet,cost,payout,book\)/);
+assert.match(css,/jardim-magico-fundo-aprovado-original\.png/);
+new Function(js);
+console.log('Jardim Mágico: no completed round banner or number; round identity and replay history retained.');
