@@ -38,7 +38,10 @@ function enter(){
  if(!g.superseded)g.paused=false;
  g.audio.startMusic?.();
  splash.remove();
- if(g.feature&&g._welcome&&!g._welcomeShown)g.showFeatureWelcome?.();
+ if(g.feature&&g.ledger.feature?.purchaseRevealPending){
+  // Uma compra interrompida volta a mostrar a rotação antes do bónus.
+  g.startPurchasedBonusSpin(g.ledger.feature.purchasedMode||'regular');
+ }else if(g.feature&&g._welcome&&!g._welcomeShown)g.showFeatureWelcome?.();
 }
 splash.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();enter();},{passive:false});
 splash.addEventListener('click',e=>{e.stopPropagation();enter();});
