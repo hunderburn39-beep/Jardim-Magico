@@ -22,6 +22,7 @@ const tracks={
  bonus:create('assets/bonus-ritual.mp3?v=1.0')
 };
 let active=null,lastRequested=null,lastTick=performance.now(),mixed=false;
+let unlockedByGesture=false; // Safari/iOS: nunca tentar play antes do primeiro toque real.
 const now=()=>performance.now();
 const wanted=()=>!g._introCoverVisible&&!!g.feature?'bonus':'normal';
 const allowed=()=>!QA&&g.soundMode==='all'&&!!g.ledger?.settings?.music&&
@@ -56,7 +57,7 @@ function silence(){
  active=null;lastTick=now();
 }
 function start(name,gesture){
- if(!allowed())return;
+ if(!allowed()||!unlockedByGesture)return;
  const s=tracks[name];
  if(s.pending||(!gesture&&now()<s.retryAfter))return;
  if(!s.el.paused){active=name;return;}
@@ -65,7 +66,7 @@ function start(name,gesture){
  try{p=s.el.play();}
  catch(_){s.pending=false;s.retryAfter=now()+1600;return;}
  Promise.resolve(p).then(()=>{
-  s.pending=false;s.retryAfter=0;
+  s.pending=false;s.retryAfter=0;s.primed=true;
   if(!allowed()||wanted()!==name){
    if(s.level<.001)s.el.pause();
    return;
@@ -91,14 +92,49 @@ function sync(gesture=false){
  }
 }
 fx.startMusic=function(){sync();};
-fx.unlockMusic=function(){sync(true);};
+fx.unlockMusic=function(){
+ // Chamado no próprio gesto do botão ENTRAR ou de um controlo.
+ // Nunca tentar HTMLAudio.play() automaticamente antes deste momento:
+ // uma promessa pendente anterior bloqueava a única tentativa válida no iOS.
+ unlockedByGesture=true;
+ try{fx.ctx?.resume?.().catch(()=>{});}catch(_){}
+ if(!allowed())return;
+ mixer();
+ const desired=wanted();
+ sync(true);
+ // Preparar também a segunda música DENTRO do mesmo gesto. O Safari
+ // permite assim trocar da faixa normal para Free Spins automaticamente,
+ // sem exigir um segundo toque quando o bónus começa.
+ for(const [name,s] of Object.entries(tracks)){
+  if(name===desired||s.primed||s.pending)continue;
+  setLevel(s,0);
+  s.pending=true;
+  let play;
+  try{play=s.el.play();}
+  catch(_){s.pending=false;continue;}
+  Promise.resolve(play).then(()=>{
+   s.pending=false;s.primed=true;
+   if(!allowed()||wanted()!==name){
+    s.el.pause();
+    try{s.el.currentTime=0;}catch(_){}
+   }else active=name;
+  }).catch(()=>{s.pending=false;});
+ }
+};
+
 fx.stopMusic=function(){silence();};
 const baseInit=fx.init.bind(fx);
 fx.init=function(...args){const result=baseInit(...args);mixer();sync();return result;};
 const timer=setInterval(()=>sync(),65);
+// Uma sessão do iOS pode voltar suspensa depois de bloquear o ecrã.
+// Outro toque genuíno permite recuperar WebAudio e uma faixa interrompida.
+const recover=()=>{if(!g._introCoverVisible&&allowed())fx.unlockMusic();};
+document.addEventListener('pointerdown',recover,{capture:true,passive:true});
+document.addEventListener('keydown',recover,{capture:true});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)silence();else sync();});
 g.ambientLoop={
- version:'1.8-cinema-crossfade',
+ version:'1.9.0-ios-audio-unlock',
+ get unlockedByGesture(){return unlockedByGesture;},
  get source(){return active==='bonus'?'Faraó Eterno — Bonus Ritual':"Pharaoh's Ritual";},
  get activeTrack(){return active;},
  get normalReady(){return tracks.normal.el.readyState>=2;},
