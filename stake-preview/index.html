@@ -185,6 +185,15 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .coin-slot.filled{background:radial-gradient(circle at 32% 23%,#fff7c9,#edc968 45%,#9e5c18 75%,#68401d);border:3px solid #fff0a9;color:#50230a;box-shadow:0 0 12px #ffdc7f80}
 .coin-slot strong{font-size:clamp(15px,4.8vw,21px);line-height:1.15}
 .coin-slot small{font-size:clamp(9px,2.5vw,11px);font-weight:900;line-height:1.2;white-space:nowrap}
+/* Money Link: independent reel motion for each unlocked cell and coin-by-coin payout. */
+.coin-slot{position:relative;isolation:isolate}
+.coin-slot.rolling{overflow:hidden;border-color:#c5a56a99;background:linear-gradient(180deg,#16102a,#473458 48%,#16102a)}
+.coin-slot.rolling::before{content:"✦";position:absolute;inset:-55% 0;display:grid;place-items:center;color:#eec76eaa;font-size:34px;animation:holdVacantRoll .38s linear infinite}
+@keyframes holdVacantRoll{from{transform:translateY(-28%);filter:blur(1px)}to{transform:translateY(28%);filter:blur(2px)}}
+.coin-slot.collecting{z-index:2;animation:holdCoinCollect .36s ease-out both;box-shadow:0 0 10px 4px #ffe9a3,0 0 32px 8px #d99a4599}
+.coin-slot.collecting::after{content:"✦";position:absolute;top:-22px;right:-14px;color:#fff5bb;font-size:27px;text-shadow:0 0 15px #fff6a2;pointer-events:none}
+@keyframes holdCoinCollect{0%{transform:scale(1)}48%{transform:scale(1.16);filter:brightness(1.6)}100%{transform:scale(1);filter:brightness(1.15)}}
+@media(prefers-reduced-motion:reduce){.coin-slot.rolling::before,.coin-slot.collecting{animation:none}}
 .hold-stats{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#ffe1ad;font-weight:850;font-size:clamp(11px,3vw,14px)}
 .hold-lives{display:flex;justify-content:center;gap:9px;margin-top:8px}
 .hold-life{display:inline-grid;place-items:center;width:35px;height:29px;background:#b7894b55;border:1px solid #b69870;border-radius:9px;color:#8c7996;opacity:.4;font-size:18px}
@@ -1047,7 +1056,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
  <footer class="foot"><b>V1.9.9 · CASCATAS SUAVES</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="freeResultOverlay" role="dialog" aria-modal="true" aria-label="Resultado final das Free Spins"><div class="modal free-result-modal"><h2>✦ FREE SPINS ✦</h2><p>O BÓNUS TERMINOU</p><div id="freeResultTotal" class="free-result-total">0,00</div><div class="free-result-math"><span>Jogadas realizadas</span><strong id="freeResultPlayed">15</strong><span>Prémio bruto</span><strong id="freeResultRaw">0,00</strong><span>Multiplicador</span><strong id="freeResultMulti">×1</strong></div><button class="free-continue" id="closeFree" type="button">▶ CONTINUAR</button></div></div>
- <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><button id="holdSkip" class="hold-skip" type="button" aria-label="Passar animação do Hold & Win" hidden>PASSAR ⏩</button><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
+ <div class="overlay" id="holdOverlay"><div class="modal hold-modal"><button id="holdSkip" class="hold-skip" type="button" aria-label="Passar animação do Hold & Win" hidden>PASSAR ⏩</button><h2>✦ HOLD & WIN ✦</h2><p id="holdText">6 moedas · 3 tentativas · grelha 4×4</p><div class="hold-lives" id="holdLives" aria-label="Tentativas restantes"><span class="hold-life active">◆</span><span class="hold-life active">◆</span><span class="hold-life active">◆</span></div><div class="hold-grid" id="holdGrid" aria-label="Grelha de 16 moedas"></div><div class="hold-stats"><span id="holdTries">Tentativas: 3</span><span id="holdWin" class="hold-payout" aria-live="polite">0,00</span></div><div id="holdSummary" class="hold-summary" hidden><span id="holdSummaryLabel">PRÉMIO DO BÓNUS</span><strong id="holdSummaryValue">0,00</strong></div><button class="modal-close" id="closeHold" type="button" hidden>▶ CONTINUAR</button></div></div>
  <div class="overlay" id="historyOverlay"><div class="modal history-modal"><div class="history-head"><h2>HISTÓRICO</h2><button type="button" id="closeHistory" aria-label="Fechar histórico">×</button></div><p>Últimas 20 jogadas, em créditos fictícios. Procura pelo número e abre os símbolos. REPETIR não cobra nem paga novamente.</p><input id="historySearch" class="history-search" type="search" inputmode="numeric" placeholder="Pesquisar nº da jogada" aria-label="Pesquisar pelo número da jogada"><small id="historyCount" class="history-counter"></small><div id="historyList" class="history-list"></div><button type="button" class="modal-close" id="clearHistory">LIMPAR HISTÓRICO</button></div></div>
  <div class="overlay" id="detailOverlay"><div class="modal history-modal"><div class="history-head"><h2 id="detailTitle">JOGADA</h2><button type="button" id="closeDetail" aria-label="Fechar detalhes">×</button></div><p id="detailSummary"></p><div id="detailBoard" class="detail-board" aria-label="Símbolos da jogada"></div><div class="detail-nav"><button type="button" id="detailPrev" aria-label="Ver etapa anterior">◀</button><strong id="detailStage">ETAPA 1</strong><button type="button" id="detailNext" aria-label="Ver etapa seguinte">▶</button></div><p id="detailStats" class="detail-stats"></p><button class="detail-replay" id="detailReplay">▶ REPETIR ESTA JOGADA</button></div></div>
  <div class="overlay" id="paytableOverlay" role="dialog" aria-modal="true" aria-label="Tabela de prémios Jardim Mágico"><div class="modal paytable-modal"><div class="history-head"><h2>TABELA DE PRÉMIOS</h2><button type="button" id="closePaytable" aria-label="Fechar tabela de prémios">×</button></div><div id="paytableStake" class="paytable-stake"></div><div class="paytable-header"><span>SÍMBOLO</span><span>3 IGUAIS</span><span>4 IGUAIS</span><span>5 IGUAIS</span></div><div id="paytableGrid" class="paytable-grid"></div><div id="paytableRules"></div><h3 style="text-align:center;color:#ffe6a4;font-size:15px;margin:15px 0 5px">10 LINHAS PREMIADAS</h3><div id="paylineSheet" class="payline-sheet"></div><p>Valores em créditos de teste. São regras da simulação local, sem RTP certificado.</p><button class="modal-close" id="closePaytableBottom" type="button">VOLTAR AO JOGO</button></div></div>
@@ -1505,16 +1514,71 @@ function toggleAuto(){
   void play("base");
   return true;
 }
-function renderHold(grid,tries,previous=[]){
+function renderHold(grid,tries,previous=[],rolling=false){
   const stake=replayBet??BETS[betIndex];
   $("holdGrid").innerHTML=grid.map((x,i)=>{
     const filled=Number(x)>0,landed=filled&&!previous[i];
-    return '<div class="coin-slot '+(filled?"filled":"")+(landed?" new-coin":"")+'" aria-label="'+(filled?"Moeda de "+format(x*stake)+" euros":"Casa vazia")+'">'+(filled?'<strong>'+format(x*stake)+' €</strong>':"✦")+'</div>';
+    const motion=!filled&&rolling?" rolling":"";
+    const label=filled?"Moeda de "+format(x*stake)+" euros":rolling?"Casa vazia a rodar":"Casa vazia";
+    return '<div class="coin-slot '+(filled?"filled":"")+motion+(landed?" new-coin":"")+'" data-position="'+i+'" aria-label="'+label+'">'+(filled?'<strong>'+format(x*stake)+' €</strong>':"✦")+'</div>';
   }).join("");
   $("holdLives").innerHTML=Array.from({length:3},(_,i)=>'<span class="hold-life '+(i<tries?"active":"")+'">◆</span>').join("");
   $("holdLives").setAttribute("aria-label","Tentativas restantes: "+tries);
   $("holdTries").textContent="Tentativas: "+tries;
   $("holdWin").textContent="ACUMULADO "+money(100*grid.reduce((a,b)=>a+b,0))+" €";
+}
+// The outcome is immutable. Intermediate renders reveal coins one by one,
+// without extra RNG draws or extra payout events.
+async function animateHoldSpin(evt,previous){
+  if(evt.turn===0||turbo||skipAnimations||!previous.length){
+    renderHold(evt.grid,evt.tries,previous);
+    if(evt.turn===0)playRecorded("coin");
+    return;
+  }
+  const visible=previous.slice();
+  renderHold(visible,evt.tries,visible,true);
+  $("holdText").textContent="RODADA "+evt.turn+" · AS CASAS LIVRES ESTÃO A RODAR";
+  await pause(340);
+  for(let i=0;i<evt.grid.length;i++){
+    if(skipAnimations)break;
+    if(!visible[i]&&evt.grid[i]){
+      visible[i]=evt.grid[i];
+      renderHold(visible,evt.tries,previous,true);
+      $("holdText").textContent="NOVA MOEDA · +"+money(100*evt.grid[i])+" €";
+      playRecorded("coin",1.15);
+      await pause(300);
+    }
+  }
+  if(!skipAnimations&&!evt.grid.some((value,i)=>value&&!previous[i]))playRecorded("stop");
+  renderHold(evt.grid,evt.tries,evt.grid);
+  $("holdText").textContent="RODADA "+evt.turn+" · "+evt.grid.filter(Boolean).length+"/16 MOEDAS";
+}
+// Collect each locked coin into a running euro total. The last displayed
+// amount always comes from the precommitted outcome (including full-grid bonus).
+async function countHoldWinnings(evt){
+  const coins=evt.grid.map((factor,index)=>({factor,index})).filter(item=>item.factor>0);
+  $("holdWin").textContent="A CONTAR 0,00 €";
+  if(!turbo&&!skipAnimations){
+    const slots=$("holdGrid").querySelectorAll?.(".coin-slot")||[];
+    let subtotal=0;
+    for(let i=0;i<coins.length;i++){
+      if(skipAnimations)break;
+      const {factor,index}=coins[i];
+      slots[index]?.classList.add("collecting");
+      subtotal+=100*factor;
+      $("holdWin").textContent="A CONTAR "+money(subtotal)+" €";
+      $("holdText").textContent="MOEDA "+(i+1)+"/"+coins.length+" · +"+money(100*factor)+" €";
+      playRecorded("coin",1.12);
+      await pause(260);
+      slots[index]?.classList.remove("collecting");
+    }
+    if(evt.filled&&!skipAnimations){
+      $("holdText").textContent="GRELHA COMPLETA · EXTRA "+money(25000)+" €";
+      playRecorded("bonus");
+      await pause(600);
+    }
+  }
+  $("holdWin").textContent="TOTAL "+money(evt.amount)+" €";
 }
 function hideHoldResult(){
   $("holdOverlay").classList.remove("show");
@@ -1870,23 +1934,23 @@ async function playback(book){
         $("closeHold").hidden=true;
         await showBonusCurtain("HOLD & WIN","6 MOEDAS · 3 TENTATIVAS","◉");
       }
-      if(lastHoldGrid.length&&evt.grid.some((value,i)=>value&&!lastHoldGrid[i]))playRecorded("coin");
       $("holdOverlay").classList.add("show");
-      renderHold(evt.grid,evt.tries,lastHoldGrid);
+      await animateHoldSpin(evt,lastHoldGrid);
       $("holdText").textContent="RODADA "+evt.turn+" · "+evt.grid.filter(Boolean).length+"/16 MOEDAS";
-      if(evt.turn)beep(460);
       lastHoldGrid=evt.grid.slice();
-      await pause(turbo?160:580);
+      await pause(turbo?110:260);
     }else if(evt.kind==="holdEnd"){
-      playRecorded("bonus");
       renderHold(evt.grid,0,lastHoldGrid);
+      $("holdSummary").hidden=true;
+      $("closeHold").hidden=true;
+      await countHoldWinnings(evt);
+      if(!skipAnimations)playRecorded("bonus");
       $("holdText").textContent=evt.filled?"GRELHA COMPLETA! EXTRA "+money(25000)+" €":"HOLD & WIN TERMINADO";
-      $("holdWin").textContent="TOTAL "+money(evt.amount)+" €";
       $("holdSummaryLabel").textContent=evt.filled?"GRELHA COMPLETA · EXTRA "+money(25000)+" €":"PRÉMIO FINAL DO HOLD & WIN";
       $("holdSummaryValue").textContent=money(evt.amount)+" €";
       $("holdSummary").hidden=false;
       $("closeHold").hidden=false;
-      // Do not auto-dismiss: a real click confirms the end; PASSAR bypasses visual holds.
+      // Final award is precommitted. Only CONTINUAR settles; PASSAR skips visuals.
       await waitHoldContinue();
       hideHoldResult();
       lastHoldGrid=[];

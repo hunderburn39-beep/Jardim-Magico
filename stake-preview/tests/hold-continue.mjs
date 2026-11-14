@@ -113,4 +113,27 @@ assert.equal(vm.runInContext('pendingHoldContinue',context),null);
 assert.equal(el('holdOverlay').classList.contains('show'),false);
 assert.equal(vm.runInContext('historyRecords.length',context),2,'a second manual confirmation records exactly one new round');
 
+// The count-up is presentation only: it must show each euro coin, then
+// finish on the exact precommitted outcome without touching the balance.
+const countSteps=[];
+const tallyNode=el('holdWin');
+let tallyText=tallyNode.textContent;
+Object.defineProperty(tallyNode,'textContent',{
+  configurable:true,get(){return tallyText},set(value){tallyText=value;countSteps.push(value)}
+});
+const balanceBeforeCount=vm.runInContext('balance',context);
+context.countTest={grid:[1,2,3,...Array(13).fill(0)],amount:600,filled:false};
+vm.runInContext('betIndex=BETS.indexOf(0.05);turbo=false;skipAnimations=false',context);
+await vm.runInContext('countHoldWinnings(countTest)',context);
+assert.deepEqual(countSteps.filter(text=>text.startsWith('A CONTAR')),[
+  'A CONTAR 0,00 €','A CONTAR 0,05 €','A CONTAR 0,15 €','A CONTAR 0,30 €'
+]);
+assert.equal(tallyNode.textContent,'TOTAL 0,30 €');
+assert.equal(vm.runInContext('balance',context),balanceBeforeCount,'coin count never changes balance');
+vm.runInContext('turbo=true',context);
+countSteps.length=0;
+await vm.runInContext('countHoldWinnings(countTest)',context);
+assert.equal(tallyNode.textContent,'TOTAL 0,30 €','turbo shows the same final result');
+assert.ok(!countSteps.some(text=>text.includes('A CONTAR 0,05 €')),'turbo bypasses frame-by-frame counting');
+
 console.log('Stake Preview V1.9.8: Hold 4×4 values at 7,50, three lives, manual CONTINUAR and single settlement verified.');
