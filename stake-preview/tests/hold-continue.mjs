@@ -136,4 +136,26 @@ await vm.runInContext('countHoldWinnings(countTest)',context);
 assert.equal(tallyNode.textContent,'TOTAL 0,30 €','turbo shows the same final result');
 assert.ok(!countSteps.some(text=>text.includes('A CONTAR 0,05 €')),'turbo bypasses frame-by-frame counting');
 
+// Browser geometry: check that a gold coin actually travels from an occupied
+// Hold cell to the totalizer and the temporary flying element is removed.
+const flights=[];
+const slot=el('flightSource');
+slot.getBoundingClientRect=()=>({left:60,top:210,width:64,height:64});
+el('holdGrid').querySelectorAll=(selector)=>selector==='.coin-slot'?[slot]:[];
+tallyNode.getBoundingClientRect=()=>({left:220,top:550,width:120,height:35});
+context.document.createElement=()=>({
+  className:'',textContent:'',style:{setProperty(k,v){this[k]=v}},
+  setAttribute(k,v){this[k]=v},remove(){this.removed=true}
+});
+context.document.body={appendChild(node){flights.push(node)}};
+vm.runInContext('turbo=false;skipAnimations=false',context);
+assert.equal(await vm.runInContext('flyHoldCoin(0,2)',context),true,'Hold coin flight runs when DOM geometry is available');
+assert.equal(flights.length,1,'one real flying coin element appended to document');
+assert.equal(flights[0].textContent,'0,10 €','flight shows the coin stake value');
+assert.equal(flights[0].style['--coin-fly-x'],'188px');
+assert.equal(flights[0].style['--coin-fly-y'],'325.5px');
+assert.equal(flights[0].removed,true,'flying coin is removed after arrival');
+vm.runInContext('skipAnimations=true',context);
+assert.equal(await vm.runInContext('flyHoldCoin(0,2)',context),false,'PASSAR suppresses decorative coin motion');
+
 console.log('Stake Preview V1.9.8: Hold 4×4 values at 7,50, three lives, manual CONTINUAR and single settlement verified.');
