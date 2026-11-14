@@ -1,4 +1,4 @@
-/* Pantanal v2.22 — moldura e tambores no mesmo sistema de coordenadas.
+/* Pantanal v2.23 — moldura e tambores no mesmo sistema de coordenadas.
  * Regras, prémios e rolagem permanecem inalterados.
  */
 (function(root,make){
@@ -54,6 +54,36 @@
     /* Five original vertical lines are identified directly below their reel. */
     '#screen.portrait #lineNumberLabels .lineNumber[data-side="bottom"]{height:27px;top:365px}',
 
+    /* v2.23 – estrutura sem sobreposição para o ecrã vertical. */
+    '#screen.portrait #game>.bg{display:none!important}',
+    '#screen.portrait #reelArea{top:calc(50% - 30px)}',
+    '#screen.portrait #credit,#screen.portrait #win,#screen.portrait #bet{'+
+      'top:calc(50% - 320px);width:200px;height:67px;min-height:67px;z-index:6;box-sizing:border-box;'+
+      'padding:29px 7px 5px;text-align:center;color:#fff0b5;background:linear-gradient(#5b2e0b,#261509);'+
+      'border:2px solid #c99545;border-radius:13px;box-shadow:inset 0 0 12px #d9a04d35,0 4px 12px #0009;'+
+      'font:bold 27px/30px Arial,sans-serif;white-space:nowrap;overflow:hidden}',
+    '#screen.portrait #credit{left:62px}',
+    '#screen.portrait #win{left:300px}',
+    '#screen.portrait #bet{left:538px}',
+    '#screen.portrait #credit::before,#screen.portrait #win::before,#screen.portrait #bet::before{'+
+      'position:absolute;top:5px;left:0;right:0;text-align:center;font:bold 17px Arial,sans-serif;'+
+      'letter-spacing:1.7px;color:#e9bc74}',
+    '#screen.portrait #credit::before{content:"CRÉDITOS"}',
+    '#screen.portrait #win::before{content:"PRÉMIO"}',
+    '#screen.portrait #bet::before{content:"APOSTA"}',
+    '#screen.portrait #status{top:calc(50% + 184px)!important;left:60px;right:60px;'+
+      'height:45px;min-height:0;padding:7px 8px;box-sizing:border-box;overflow:hidden;'+
+      'font:bold 20px/28px Arial,sans-serif;text-align:center;white-space:nowrap;text-overflow:ellipsis}',
+    '#screen.portrait #pantanalJackpots{top:calc(50% + 242px)!important;'+
+      'left:65px!important;width:670px!important;gap:14px!important;z-index:5}',
+    '#screen.portrait #pantanalJackpots>div{box-sizing:border-box;min-height:65px;'+
+      'padding:6px 8px!important;box-shadow:0 4px 12px #0006}',
+    '#screen.portrait #ctrls{bottom:3%!important;height:288px;'+
+      'grid-template-rows:repeat(2,138px);gap:10px}',
+    '#screen.portrait #spinButton{height:135px!important}',
+    '#screen.portrait #spinButton img{height:130px!important;width:137px!important}',
+    '#screen.portrait #ctrls button span{bottom:-1px}',
+    '#screen.portrait #lineNumberLabels .lineNumber{opacity:.97}',
     /* Shift the main original backing and the numeric labels as a unit vertically. */
     '#screen.portrait #game>.bg{top:calc(50% - 240px)}',
     '#screen.portrait #credit,#screen.portrait #win,#screen.portrait #bet{top:calc(50% - 227px)}',
