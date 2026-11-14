@@ -1182,11 +1182,12 @@ async function showBonusCurtain(title,subtitle,mark="✦"){
   try{await pause(turbo?140:700)}
   finally{curtain.classList.remove("visible");curtain.hidden=true}
 }
-function playRecorded(name){
+const SFX_GAIN=Object.freeze({spin:.32,stop:.43,cascade:.64,coin:.55,wild:.56,scatter:.52,win:.60,bonus:.50,click:.42});
+function playRecorded(name,gain=1){
   if(!sound||!canPlayRecorded()||!AUDIO_SFX[name]||document.hidden)return false;
   try{
     const player=new Audio(AUDIO_BASE+AUDIO_SFX[name]);
-    player.volume=name==="spin"?.32:name==="win"?.58:.47;
+    player.volume=Math.min(1,(SFX_GAIN[name]??.47)*Math.max(0,Math.min(1.25,gain)));
     player.loop=name==="spin"; // The reel motor continues until the last reel stops.
     player.preload="auto";
     const pending=player.play();
@@ -1717,7 +1718,7 @@ function cascadeShiftPlan(oldRemoved){
     }));
   });
 }
-async function animateCascade(boardFinal,oldRemoved){
+async function animateCascade(boardFinal,oldRemoved,drop=2){
   draw(boardFinal,[]);
   const plan=cascadeShiftPlan(oldRemoved);
   const columns=Array.from(document.querySelectorAll(".column"));
@@ -1729,7 +1730,7 @@ async function animateCascade(boardFinal,oldRemoved){
       Array.from(col.children).slice(0,plan[c].filter(item=>item.fresh).length)
         .forEach(cell=>cell.classList.add("cascade-in"));
     });
-    if(!skipAnimations)playRecorded("cascade");
+    if(!skipAnimations)playRecorded("cascade",Math.min(1.2,1+Math.max(0,drop-2)*.06));
     await pause(turbo?85:350);
     return;
   }
@@ -1774,7 +1775,7 @@ async function animateCascade(boardFinal,oldRemoved){
       }
       if(moved){column.appendChild(layer);layers.push(layer)}
     });
-    playRecorded("cascade");
+    playRecorded("cascade",Math.min(1.2,1+Math.max(0,drop-2)*.06));
     await pause(turbo?180:585);
   }finally{
     animations.forEach(a=>a.cancel());
@@ -1811,7 +1812,7 @@ async function playback(book){
     }else if(evt.kind==="reels"){
       hideWildTally();clearWinSparks();
       if(evt.drop===1){cascadeRunning=0;hideCascadeMeter();await animateReelStop(evt.board);previousRemoved=[]}
-      else await animateCascade(evt.board,previousRemoved);
+      else await animateCascade(evt.board,previousRemoved,evt.drop);
       draw(evt.board,evt.removed,evt.wildAwards||[]);
       showWildTally(evt);
       if((evt.wildAwards||[]).length)playRecorded("wild");
