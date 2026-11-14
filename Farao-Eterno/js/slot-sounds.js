@@ -318,67 +318,32 @@
     note(659.25,718,.26,.040,.17,'sine');
   };
 
-  // Scanner egípcio contínuo, em vez de vários 'pew' por posição.
-  // Um único varrimento atravessa todos os tambores de cada expansão.
+  // Compatibilidade com sessões antigas: silenciar qualquer varrimento
+  // ainda ativo, mas nunca criar som contínuo nas novas expansões.
   audio.stopExpansionScan=function(){
     const active=this._expansionScan;this._expansionScan=null;
     if(!active||!this.ctx)return;
     try{
       const now=this.ctx.currentTime;
-      active.envelopes.forEach(env=>{
+      active.envelopes?.forEach(env=>{
         env.gain.cancelScheduledValues(now);
         env.gain.setTargetAtTime(.0001,now,.025);
       });
-      active.sources.forEach(src=>{try{src.stop(now+.17);}catch(_){}});
+      active.sources?.forEach(src=>{try{src.stop(now+.17);}catch(_){}});
     }catch(_){}
   };
 
-  audio.expansionLaserScan=function(seconds,firstReel=0,lastReel=4){
+  // Cada tambor expansivo recebe um ataque curto e independente:
+  // subida luminosa + peso de pedra. Não atravessa os cinco tambores.
+  audio.expansionReelCue=function(reel=0){
     if(!ready())return;
-    this.stopExpansionScan();
-    try{
-      const ac=this.ctx,t=ac.currentTime+.008,d=clamp(seconds,.55,3.4);
-      const pan=typeof ac.createStereoPanner==='function'?ac.createStereoPanner():null;
-      const bus=ac.createGain();bus.gain.value=.92;
-      bus.connect(pan||output());
-      if(pan){
-        pan.connect(output());
-        pan.pan.setValueAtTime(clamp((firstReel-2)*.16,-.38,.38),t);
-        pan.pan.linearRampToValueAtTime(clamp((lastReel-2)*.16,-.38,.38),t+d);
-      }
-
-      // Sopro luminoso e contínuo: brilho sem assobios nem disparos repetidos.
-      const breath=ac.createBufferSource(),filter=ac.createBiquadFilter(),
-        breathEnv=ac.createGain();
-      breath.buffer=noiseBuffer();breath.loop=true;
-      filter.type='bandpass';filter.Q.value=.55;
-      filter.frequency.setValueAtTime(520,t);
-      filter.frequency.exponentialRampToValueAtTime(1350,t+d*.48);
-      filter.frequency.exponentialRampToValueAtTime(460,t+d);
-      breathEnv.gain.setValueAtTime(.0001,t);
-      breathEnv.gain.linearRampToValueAtTime(.165,t+d*.22);
-      breathEnv.gain.setValueAtTime(.140,t+d*.67);
-      breathEnv.gain.exponentialRampToValueAtTime(.0001,t+d+.12);
-      breath.connect(filter);filter.connect(breathEnv);breathEnv.connect(bus);
-      breath.start(t);breath.stop(t+d+.15);
-      breath.onended=()=>{try{breath.disconnect();filter.disconnect();breathEnv.disconnect();}catch(_){}};
-
-      // Ressonância discreta de templo/cristal, sem notas curtas em cada linha.
-      const resonance=ac.createOscillator(),resEnv=ac.createGain();
-      resonance.type='sine';
-      resonance.frequency.setValueAtTime(196,t);
-      resonance.frequency.linearRampToValueAtTime(215,t+d);
-      resEnv.gain.setValueAtTime(.0001,t);
-      resEnv.gain.linearRampToValueAtTime(.057,t+d*.34);
-      resEnv.gain.exponentialRampToValueAtTime(.0001,t+d+.2);
-      resonance.connect(resEnv);resEnv.connect(bus);
-      resonance.start(t);resonance.stop(t+d+.23);
-      resonance.onended=()=>{try{resonance.disconnect();resEnv.disconnect();bus.disconnect();pan?.disconnect();}catch(_){}};
-      this._expansionScan={sources:[breath,resonance],envelopes:[breathEnv,resEnv]};
-    }catch(_){/* Nunca impedir a expansão se o áudio falhar. */}
+    friction(.13,.12,2300+reel*70);
+    note(620+reel*21,1040+reel*27,.22,.155,0,'triangle');
+    note(190,96,.27,.18,.025,'sine');
+    note(1310+reel*13,980,.16,.055,.07,'sine');
   };
 
-  audio.updateExpansionLaser=function(t,gameState){
+  audio.updateExpansionPhases=function(t,gameState){
     if(!ready()||gameState.paused||gameState.superseded){
       this.stopExpansionScan();return;
     }
@@ -390,23 +355,25 @@
     for(const stage of stages){
       if(stage.kind&&stage.kind!=='expansion')continue;
       if(!stage.reels?.length||!stage.perReel)continue;
-      const at=stage.start+stage.preDelay;
-      // Três blocos descem e encaixam (topo, meio, base) em cada tambor.
-      // As três pancadas acompanham as três imagens, sem duplicar som.
+      const at=stage.start+(stage.preDelay||0);
+      // Fase 1 = tambor 1, fase 2 = tambor 2, etc.
+      // Cada tambor tem 76% para três impactos, seguidos de 24% em repouso.
+      if(!stage._expansionReelCueSet)stage._expansionReelCueSet=new Set();
       if(!stage._stoneHits)stage._stoneHits=new Set();
       stage.reels.forEach((reel,order)=>{
+        const reelAt=at+order*stage.perReel;
+        if(t>=reelAt&&!stage._expansionReelCueSet.has(order)){
+          stage._expansionReelCueSet.add(order);
+          if(t-reelAt<220)this.expansionReelCue(reel);
+        }
         [0.25,0.56,0.89].forEach((fraction,row)=>{
           const id=order*3+row;
-          const hit=at+(order+fraction)*stage.perReel;
+          const hit=reelAt+fraction*stage.perReel*.76;
           if(t<hit||stage._stoneHits.has(id))return;
           stage._stoneHits.add(id);
           if(t-hit<190)this.expansionStoneDrop(reel,row);
         });
       });
-      if(stage._laserPlayed||t<at||t>=at+Math.max(160,stage.perReel*.55))continue;
-      stage._laserPlayed=true;
-      const reels=stage.reels;
-      this.expansionLaserScan(stage.perReel*reels.length/1000+.18,reels[0],reels[reels.length-1]);
     }
   };
 
@@ -534,11 +501,11 @@
   game.frame=function(t){
     baseFrame(t);
     this.audio.updateReelWhirr?.(t,this.spinObject);
-    this.audio.updateExpansionLaser?.(t,this);
+    this.audio.updateExpansionPhases?.(t,this);
     this.audio.updateFreeLineSounds?.(t,this);
   };
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden)audio.stopReelWhirr();
   });
-  game.slotSounds={version:'2.8.0-stone-fall',original:true,realReelStopSample:true,sequenceAlert:true,retriggerTease:true,dynamicReelSpeed:true};
+  game.slotSounds={version:'2.11.0-individual-expansion-cues',original:true,realReelStopSample:true,sequenceAlert:true,retriggerTease:true,dynamicReelSpeed:true};
 })();
