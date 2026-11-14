@@ -1195,6 +1195,7 @@ function startMusic(){
 function activateAudio(){
   audioActivated=true;
   renderAudioButtons();
+  if(sound)globalThis.GardenModernAudio?.unlock();
   startMusic();
 }
 function enterGarden(){
@@ -1233,8 +1234,19 @@ function playRecorded(name,gain=1){
     return true;
   }catch{return false}
 }
+// Route game cues to the original layered Web Audio engine.
+function scatterCue(level){
+  const cue=level>=3?"scatterTrigger":level===2?"scatterTease":"scatterLand";
+  return (sound&&audioActivated&&!document.hidden&&globalThis.GardenModernAudio?.play(cue))||playRecorded("scatter");
+}
+function prizeCue(amount,stake,phase="line"){
+  if(!(amount>0)||!sound)return false;
+  const ratio=amount/Math.max(.01,stake);
+  const cue=phase==="coin"?"prizeCoin":phase==="final"&&ratio>=10?"prizeFinal":ratio>=10?"prizeLarge":"prizeSmall";
+  return (audioActivated&&!document.hidden&&globalThis.GardenModernAudio?.play(cue))||playRecorded(phase==="coin"?"coin":"win");
+}
 function stopSpinEffect(){if(!currentSpinFx)return;try{currentSpinFx.pause();currentSpinFx.currentTime=0}catch{}currentSpinFx=null}
-function suspendAudio(){backgroundMusic?.pause();stopSpinEffect()}
+function suspendAudio(){backgroundMusic?.pause();stopSpinEffect();globalThis.GardenModernAudio?.suspend()}
 
 const SESSION_KEY="jardim_stake_preview_v07";
 const MAX_SESSION_CHARS=900000;
@@ -1505,10 +1517,10 @@ function hideWildTally(){$("wildTally").hidden=true}
 function display(){ $("balance").textContent=format(balance);$("bet").textContent=format(BETS[betIndex]);$("lastWin").textContent=format(lastWin);document.querySelectorAll("[data-bet]").forEach(button=>{const active=Number(button.dataset.bet)===BETS[betIndex];button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});const freeText=$("buyFree").querySelector?.("span"),holdText=$("buyHold").querySelector?.("span");if(freeText)freeText.textContent="20× · "+format(20*BETS[betIndex])+" créditos";if(holdText)holdText.textContent="30× · "+format(30*BETS[betIndex])+" créditos"}
 function say(s,kind=""){$("notice").className="notice "+kind;$("notice").textContent=s}
 function beep(freq=660){
-  if(freq>=900)return playRecorded("win");
-  if(freq>=700)return playRecorded("win");
-  if(freq>=600)return playRecorded("scatter");
-  if(freq>=450)return playRecorded("coin");
+  if(freq>=900)return (sound&&audioActivated&&globalThis.GardenModernAudio?.play("prizeFinal"))||playRecorded("win");
+  if(freq>=700)return (sound&&audioActivated&&globalThis.GardenModernAudio?.play("prizeSmall"))||playRecorded("win");
+  if(freq>=600)return scatterCue(1);
+  if(freq>=450)return (sound&&audioActivated&&globalThis.GardenModernAudio?.play("prizeCoin"))||playRecorded("coin");
   return playRecorded("stop");
 }
 function toast(title,value,level="normal"){const panel=$("toast");$("toastTitle").textContent=title;$("toastValue").textContent=value;panel.classList.toggle("big-celebration",level==="big");panel.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>{panel.classList.remove("visible");panel.classList.remove("big-celebration")},level==="big"?2200:1450)}
@@ -1581,7 +1593,7 @@ async function animateHoldSpin(evt,previous){
       visible[i]=evt.grid[i];
       renderHold(visible,evt.tries,previous,true);
       $("holdText").textContent="NOVA MOEDA · +"+money(100*evt.grid[i])+" €";
-      playRecorded("coin",1.15);
+      prizeCue(evt.grid[i]*(replayBet??BETS[betIndex]),replayBet??BETS[betIndex],"coin");
       await pause(300);
     }
   }
@@ -1638,7 +1650,7 @@ async function countHoldWinnings(evt){
       // Reflow restarts the impact pulse when consecutive coins land.
       if($("holdWin").offsetWidth!==undefined)void $("holdWin").offsetWidth;
       $("holdWin").classList.add("coin-arrival");
-      playRecorded("coin",1.12);
+      prizeCue(factor*(replayBet??BETS[betIndex]),replayBet??BETS[betIndex],"coin");
       await pause(110);
       slots[index]?.classList.remove("collecting");
     }
@@ -1985,7 +1997,7 @@ async function playback(book){
         showCascadeMeter(evt,cascadeRunning);
         showWinSparks(evt);
         const value=money(amount);
-        say(evt.free?evt.lines.length+" LINHA(S) · BRUTO "+value+" créditos":evt.lines.length+" LINHA(S) · +"+value+" créditos","good");beep(760);
+        say(evt.free?evt.lines.length+" LINHA(S) · BRUTO "+value+" créditos":evt.lines.length+" LINHA(S) · +"+value+" créditos","good");prizeCue(amount/100*(replayBet??BETS[betIndex]),replayBet??BETS[betIndex]);
         await highlightLines(evt);
       }else if(evt.drop===1){clearPayline();hideCascadeMeter();say("Os tambores pararam.")}
       await pause(turbo?100:evt.lines.length?370:175);
@@ -2052,7 +2064,7 @@ async function play(mode="base"){
     if(payout>0){
       const tier=finalWinTier(payout,bet);
       toast(tier,format(payout),payout>=bet*10?"big":"normal");
-      say(tier+": "+format(payout)+" créditos","good");beep(910);
+      say(tier+": "+format(payout)+" créditos","good");prizeCue(payout,bet,"final");
     }else say("Sem prémio nesta jogada. Experimenta novamente.");
   }catch(error){
     console.error(error);
