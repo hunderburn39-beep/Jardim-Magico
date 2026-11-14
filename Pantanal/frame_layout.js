@@ -1,4 +1,4 @@
-/* Pantanal v2.21 — moldura e tambores no mesmo sistema de coordenadas.
+/* Pantanal v2.22 — moldura e tambores no mesmo sistema de coordenadas.
  * Regras, prémios e rolagem permanecem inalterados.
  */
 (function(root,make){
@@ -37,6 +37,23 @@
       'border:2px solid #f3ce79;border-radius:34px;box-shadow:0 0 0 2px #45250c;pointer-events:none}',
     '#screen.portrait #reelArea #reelFrame::after{content:"";position:absolute;inset:5px;'+
       'border:2px solid #f7df9e87;border-radius:17px;pointer-events:none}',
+    /* Numbers belong to the frame, not to the clipped reel viewport. */
+    '#reelArea #lineNumberLabels{display:none}',
+    '#screen.portrait #reelArea #lineNumberLabels{display:block;position:absolute;inset:0;z-index:7;pointer-events:none;overflow:visible}',
+    '#screen.portrait #lineNumberLabels .lineNumber{position:absolute;display:flex;align-items:center;justify-content:center;'+
+      'width:33px;height:27px;box-sizing:border-box;border:2px solid #bd873b;border-radius:8px;'+
+      'font:900 20px/1 Arial,sans-serif;letter-spacing:-.5px;text-align:center;white-space:nowrap;'+
+      'color:#ffeac0;background:linear-gradient(#40250f,#281607);'+
+      'text-shadow:0 1px 1px #000;box-shadow:0 1px 3px #0d0506cf;opacity:.78}',
+    '#screen.portrait #lineNumberLabels .lineNumber.isActive{opacity:1;color:#fff3a7;'+
+      'border-color:#f7c86e;background:linear-gradient(#8a4c16,#44240b);box-shadow:0 0 7px #f1b84772}',
+    '#screen.portrait #lineNumberLabels .lineNumber.isCurrent{opacity:1;color:#1e1203;'+
+      'border-color:#fffac9;background:#ffe67b;box-shadow:0 0 14px #ffe76b;transform:scale(1.14)}',
+    '#screen.portrait #lineNumberLabels .lineNumber[data-side="left"]{left:6px}',
+    '#screen.portrait #lineNumberLabels .lineNumber[data-side="right"]{right:6px}',
+    /* Five original vertical lines are identified directly below their reel. */
+    '#screen.portrait #lineNumberLabels .lineNumber[data-side="bottom"]{height:27px;top:365px}',
+
     /* Shift the main original backing and the numeric labels as a unit vertically. */
     '#screen.portrait #game>.bg{top:calc(50% - 240px)}',
     '#screen.portrait #credit,#screen.portrait #win,#screen.portrait #bet{top:calc(50% - 227px)}',
@@ -46,13 +63,55 @@
    ].join('\n');
    doc.head.appendChild(style);
  }
+ function addLineNumbers(area,doc){
+   let wrapper=doc.getElementById('lineNumberLabels');
+   if(wrapper)return wrapper;
+   wrapper=doc.createElement('div');
+   wrapper.id='lineNumberLabels';
+   wrapper.setAttribute('aria-label','Números das 25 linhas de prémio');
+   // 10 numbers in each side rail; numbers 21–25 below their own columns.
+   for(let line=1;line<=25;line++){
+     const badge=doc.createElement('span');
+     badge.className='lineNumber';
+     badge.dataset.lineNumber=String(line);
+     badge.textContent=String(line);
+     badge.setAttribute('aria-label','Linha '+line);
+     if(line<=20){
+       const index=(line-1)%10;
+       badge.dataset.side=line<=10?'left':'right';
+       badge.style.top=(48+30*index)+'px';
+     }else{
+       const col=line-21;
+       badge.dataset.side='bottom';
+       badge.style.left=(44.5+col*124+57.5-16.5)+'px';
+     }
+     wrapper.appendChild(badge);
+   }
+   area.appendChild(wrapper);
+   return wrapper;
+ }
+ function setActiveLines(n){
+   if(typeof document==='undefined')return;
+   const active=[1,5,9,15,25].includes(Number(n))?Number(n):25;
+   const labels=document.querySelectorAll('#lineNumberLabels [data-line-number]');
+   labels.forEach(label=>label.classList.toggle('isActive',Number(label.dataset.lineNumber)<=active));
+ }
+ function highlightLine(n){
+   if(typeof document==='undefined')return;
+   document.querySelectorAll('#lineNumberLabels [data-line-number]').forEach(label=>
+     label.classList.toggle('isCurrent',Number(label.dataset.lineNumber)===Number(n)));
+ }
  function mount(doc=typeof document!=='undefined'?document:null){
    if(!doc)return false;
    injectCss(doc);
    const reels=doc.getElementById('reels');
    const game=doc.getElementById('game');
    if(!reels||!game)return false;
-   if(doc.getElementById('reelArea'))return true;
+   if(doc.getElementById('reelArea')){
+     addLineNumbers(doc.getElementById('reelArea'),doc);
+     setActiveLines(25);
+     return true;
+   }
    const area=doc.createElement('div');
    area.id='reelArea';
    reels.parentNode.insertBefore(area,reels);
@@ -63,6 +122,8 @@
    frame.id='reelFrame';
    frame.setAttribute('aria-hidden','true');
    area.appendChild(frame);
+   addLineNumbers(area,doc);
+   setActiveLines(25);
    return true;
  }
  if(typeof document!=='undefined'){
@@ -70,7 +131,7 @@
      document.addEventListener('DOMContentLoaded',()=>mount(document),{once:true});
    }else mount(document);
  }
- return Object.freeze({mount,injectCss,metrics:{frame:FRAME,reels:REELS,
+ return Object.freeze({mount,injectCss,setActiveLines,highlightLine,metrics:{frame:FRAME,reels:REELS,
    horizontalOffset:(FRAME.width-REELS.width)/2,
    verticalOffset:(FRAME.height-REELS.height)/2}});
 });
