@@ -61,6 +61,12 @@ vm.runInContext('activateAudio()',ctx);
 assert.equal(played.length,1,'Cada spin não deve reiniciar a música');
 vm.runInContext('playRecorded("spin")',ctx);
 vm.runInContext('playRecorded("stop")',ctx);
+vm.runInContext('playRecorded("cascade",1.2)',ctx);
+const cascadeSound=files.find(f=>f.src.endsWith('/cascade.mp3'));
+assert.ok(cascadeSound,'Cascade uses existing MP3');
+assert.ok(cascadeSound.volume>.7&&cascadeSound.volume<.8,'Deeper cascade is audible without clipping');
+assert.ok(files.find(f=>f.src.endsWith('/stop.mp3')).volume<cascadeSound.volume,
+  'Reel stop must not drown cascade landing');
 vm.runInContext('playRecorded("coin")',ctx);
 vm.runInContext('playRecorded("wild")',ctx);
 assert.ok(played.some(x=>x.endsWith('/spin.mp3')));
