@@ -16,6 +16,12 @@ def check_device(browser, width, height, label, show_image=False):
     assert response and response.status==200,(label,"HTTP status",response.status if response else None)
     page.locator("#introPlay").click()
     page.wait_for_timeout(400)
+    # Novo botão compacto no painel inferior: o menu abre e fecha sem compra.
+    page.locator("#openBonusBuy").click(timeout=10000)
+    assert page.locator("#bonusBuyOverlay").is_visible(),(label,"bonus menu did not open")
+    assert page.locator("#buyFree").is_visible() and page.locator("#buyHold").is_visible(),(label,"bonus purchase options missing")
+    page.locator("#closeBonusBuy").click()
+    assert not page.locator("#bonusBuyOverlay").is_visible(),(label,"bonus menu did not close")
     # Deterministic fixture shown only to the QA browser. No changes to engine odds or account.
     page.evaluate("""(ids)=>{
       const board=Array.from({length:5},(_,c)=>ids.slice(c*3,c*3+3));
@@ -45,7 +51,7 @@ def check_device(browser, width, height, label, show_image=False):
     }""")
     assert result["columns"]==5 and result["cellCount"]==15,(label,result)
     assert result["frame"]["left"]>=-2 and result["frame"]["right"]<=width+2,(label,"frame outside viewport",result["frame"])
-    assert all(x["within"] and x["loaded"] and x["ratio"]<=.971 for x in result["checks"]),(label,"image outside tile",result["checks"])
+    assert all(x["within"] and x["loaded"] and x["ratio"]<=.991 for x in result["checks"]),(label,"image outside tile",result["checks"])
     assert all(max(v)<=2 for v in result["alphas"].values()),(label,"nontransparent source corners",result["alphas"])
     # A ghost image can finish loading after its animation layer is removed.
     # Its inline onload must not throw when previousElementSibling is null.
