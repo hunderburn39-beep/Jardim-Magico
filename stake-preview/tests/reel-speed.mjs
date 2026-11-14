@@ -22,9 +22,9 @@ new vm.Script(bundle);
 const TYPES=Array.from({length:12},(_,id)=>({label:"SYMBOL"+id,image:"/symbols/"+id+".svg"}));
 const final=Array.from({length:5},(_,col)=>[col,(col+1)%12,(col+2)%12]);
 const json=JSON.stringify(final);
-const testScenario=async(turbo,{skipAt=0,reduced=false}={})=>{
+const testScenario=async(turbo,{skipAt=0,reduced=false,board=final}={})=>{
   const events=[],pauses=[],drawn=[],sfx=[],columns=[];
-  let stopFx=0,created=0;
+  let stopFx=0,created=0;const rollAnims=[];
   for(let i=0;i<5;i++)columns.push({
     mounted:[],getBoundingClientRect(){return {height:300}},
     appendChild(v){this.mounted.push(v)},
@@ -58,7 +58,8 @@ const testScenario=async(turbo,{skipAt=0,reduced=false}={})=>{
           assert.ok(frames[0].transform.includes("px,0)"));
           assert.equal(frames[1].transform,"translate3d(0,0px,0)");
         }
-        const a={currentTime:roll?opts.duration*.45:0,cancelled:false,cancel(){this.cancelled=true}};
+        const a={currentTime:roll?opts.duration*.45:0,playbackRate:1,cancelled:false,cancel(){this.cancelled=true}};
+        if(roll)rollAnims.push(a);
         el.anim.push(a);return a;
       }
     };return el;
@@ -74,9 +75,9 @@ const testScenario=async(turbo,{skipAt=0,reduced=false}={})=>{
     pause(ms){pauses.push(ms);if(skipAt&&pauses.length===skipAt)ctx.skipAnimations=true;return Promise.resolve()}
   });
   vm.runInContext(bundle,ctx);
-  ctx.result=final;
+  ctx.result=board;
   await vm.runInContext("animateReelStop(result)",ctx);
-  assert.equal(drawn.at(-1),json,"The predetermined result is preserved");
+  assert.equal(drawn.at(-1),JSON.stringify(board),"The predetermined result is preserved");
   if(reduced){
     assert.equal(created,1,"Reduced motion does not produce scrolling DOM");
     assert.equal(stopFx,0);
@@ -88,7 +89,7 @@ const testScenario=async(turbo,{skipAt=0,reduced=false}={})=>{
     assert.equal(columns.every(col=>col.mounted[0].children[0].anim[0].cancelled),true);
     assert.equal(stopFx,1);
   }
-  return {events,pauses,sfx,columns,created};
+  return {events,pauses,sfx,columns,created,rollAnims};
 };
 const normal=await testScenario(false);
 assert.equal(normal.events.filter(x=>x==="roll").length,5);
@@ -99,6 +100,14 @@ assert.equal(normal.sfx.filter(x=>x==="stop").length,5);
 assert.equal(normal.columns.every(col=>col.mounted[0].children[0].innerHTML.includes("reel-scroll-symbol")),true);
 const turbo=await testScenario(true);
 assert.equal(turbo.pauses[0],40);
+const fiveCoinBoard=[[11,11,11],[11,11,0],[11,0,0],[0,1,2],[0,1,2]];
+const coinRush=await testScenario(false,{board:fiveCoinBoard});
+assert.equal(coinRush.rollAnims.filter(a=>a.playbackRate===2.1).length,3,
+  "Three remaining reels spin 2.1 times faster after five coins are revealed");
+const sixCoinBoard=[[11,11,11],[11,11,11],[0,1,2],[0,1,2],[0,1,2]];
+const alreadySix=await testScenario(false,{board:sixCoinBoard});
+assert.equal(alreadySix.rollAnims.filter(a=>a.playbackRate===2.1).length,0,
+  "No five-coin tease is shown when six coins are already visible");
 assert.equal(turbo.pauses.filter(x=>x===22).length,4);
 const skip=await testScenario(false,{skipAt:1});
 assert.equal(skip.events.filter(x=>x==="brake").length,0);
