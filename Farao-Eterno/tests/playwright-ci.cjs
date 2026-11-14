@@ -293,6 +293,109 @@ async function test(name,engine){
   assert(!badge.some(x=>x.label.startsWith('SUPER SCATTER ×')&&x.y<300),
     'O multiplicador continua em cima do logótipo');
   await page.screenshot({path:path.join(OUTPUT,'farao-v2-'+name+'-free-resumidas.png')});
+  // V2.7: simular a última parcela premiada JÁ gravada no Safari.
+  // O motor deve completar o pagamento ao reabrir, mostrar o resumo uma
+  // única vez e não duplicar nada em reaberturas subsequentes.
+  for(const kind of ['super','classic']){
+    const checkpoint=await page.evaluate(kind=>{
+      const g=window.__faraoGame,S=window.FaraoSession;
+      g.closeModal();g.auto=0;g.paused=true;g.spinning=false;
+      g.spinObject=null;g.sequencePlayback=null;g.pendingSummary=null;
+      g.ledger.feature=null;g.ledger.pending=null;g.ledger.payout=null;
+      g._welcomeShown=false;g._welcome=false;g._awaitBonusStart=false;
+      const baseU=S.units(24),partU=S.units(2);
+      const extraU=kind==='super'?baseU*4:0;
+      const summary={played:8,retriggers:0,symbols:['Q'],totalU:baseU+extraU};
+      if(kind==='super')Object.assign(summary,{
+        superBaseTotalU:baseU,superExtraU:extraU,
+        superMultiplier:5,superExtraCredited:false
+      });
+      g.ledger.last={id:g.ledger.sequence,bonusDone:summary};
+      g.ledger.lastSummarySeenId=null;
+      // Primeira linha já creditada antes da falha do Safari.
+      g.ledger.payout={id:g.ledger.sequence,totalU:partU*2,next:1,
+        groups:[{kind:'line',amountU:partU},{kind:'line',amountU:partU}]};
+      g.ledger.balanceU+=partU;g.ledger.stats.winU+=partU;
+      g.ledger.economy.prizeU-=partU*2;
+      g.ledger.economy.totals.winsU+=partU*2;
+      if(extraU)g.ledger.superFinishPending={extraU,multiplier:5};
+      else delete g.ledger.superFinishPending;
+      S.validate(g.ledger);g.syncLedger();g.save();
+      return {
+        balance:g.ledger.balanceU,wins:g.ledger.stats.winU,
+        fund:g.ledger.economy.prizeU,pending:partU,extra:extraU,
+        id:g.ledger.sequence
+      };
+    },kind);
+    await page.reload({waitUntil:'domcontentloaded',timeout:30000});
+    await page.waitForFunction(()=>{
+      const title=document.getElementById('modal-title')?.textContent;
+      return !document.getElementById('modal')?.classList.contains('hidden')&&
+        (title==='TESOURO SUPER SCATTER'||title==='TESOURO DO FARAÓ');
+    },null,{timeout:12000});
+    const restored=await page.evaluate(()=>{
+      const g=window.__faraoGame;
+      return {
+        balance:g.ledger.balanceU,wins:g.ledger.stats.winU,
+        fund:g.ledger.economy.prizeU,payout:g.ledger.payout,
+        pending:g.ledger.superFinishPending,
+        credited:g.ledger.last?.bonusDone?.superExtraCredited,
+        recovered:g._recoveredBonusSummary,
+        notice:document.querySelector('.farao-recovery-note')?.textContent,
+        title:document.getElementById('modal-title')?.textContent,
+        id:g.ledger.last?.id,seen:g.ledger.lastSummarySeenId
+      };
+    });
+    assert.equal(restored.balance,checkpoint.balance+checkpoint.pending+checkpoint.extra,
+      kind+' não retomou o saldo da última parcela corretamente');
+    assert.equal(restored.wins,checkpoint.wins+checkpoint.pending+checkpoint.extra,
+      kind+' perdeu ou duplicou prémios no Safari');
+    assert.equal(restored.fund,checkpoint.fund-checkpoint.extra,
+      kind+' alterou o cofre incorretamente');
+    assert.equal(restored.payout,null,kind+' deixou uma linha por pagar');
+    assert.equal(restored.pending,undefined,kind+' deixou a responsabilidade extra pendente');
+    if(kind==='super')assert.equal(restored.credited,true,'Extra Super não ficou marcado como pago');
+    assert(restored.recovered&&/SESSÃO RECUPERADA/.test(restored.notice||''),
+      kind+' não assinalou a recuperação da janela final');
+    assert.notEqual(restored.seen,restored.id,'O resumo foi marcado como lido sem confirmação');
+    await page.screenshot({path:path.join(OUTPUT,'farao-v2-'+name+'-resumo-recuperado-'+kind+'.png')});
+    // Fechar novamente sem confirmar: tem de abrir o mesmo resumo, sem pagar.
+    await page.reload({waitUntil:'domcontentloaded',timeout:30000});
+    await page.waitForFunction(()=>{
+      const t=document.getElementById('modal-title')?.textContent;
+      return !document.getElementById('modal')?.classList.contains('hidden')&&
+        (t==='TESOURO SUPER SCATTER'||t==='TESOURO DO FARAÓ');
+    },null,{timeout:12000});
+    const twice=await page.evaluate(()=>{
+      const s=window.__faraoGame.ledger;
+      return {balance:s.balanceU,wins:s.stats.winU,fund:s.economy.prizeU};
+    });
+    assert.equal(twice.balance,restored.balance,'Segundo reload duplicou o saldo');
+    assert.equal(twice.wins,restored.wins,'Segundo reload duplicou o prémio');
+    assert.equal(twice.fund,restored.fund,'Segundo reload voltou a retirar fundo');
+    // Fechar pelo X evita iniciar um giro pago (o botão CONTINUAR arranca outro).
+    await page.locator('#close-modal').click({timeout:5000});
+    const ack=await page.evaluate(()=>{
+      const g=window.__faraoGame;
+      return {seen:g.ledger.lastSummarySeenId,id:g.ledger.last.id,
+        recovery:g._recoveredBonusSummary};
+    });
+    assert.equal(ack.seen,ack.id,'Resumo fechado sem registar confirmação');
+    assert.equal(ack.recovery,false,'Aviso de recuperação permaneceu ativo');
+    await page.reload({waitUntil:'domcontentloaded',timeout:30000});
+    await page.waitForFunction(()=>window.__faraoGame?.ready,null,{timeout:20000});
+    await page.waitForTimeout(1750);
+    const afterAck=await page.evaluate(()=>{
+      const g=window.__faraoGame;
+      return {balance:g.ledger.balanceU,wins:g.ledger.stats.winU,
+        seen:g.ledger.lastSummarySeenId,id:g.ledger.last?.id,
+        modal:document.getElementById('modal').classList.contains('hidden')};
+    });
+    assert.equal(afterAck.balance,restored.balance,kind+' cobrou outra jogada sem tocar');
+    assert.equal(afterAck.wins,restored.wins,kind+' pagou após confirmação do resumo');
+    assert.equal(afterAck.seen,afterAck.id,'A confirmação perdeu-se no Safari');
+    assert(afterAck.modal,'Resumo já confirmado voltou a aparecer');
+  }
   assert.deepEqual(failedResources,[],'Assets não encontrados');
   assert.deepEqual(errors,[],'Erros JS inesperados');
   console.log(name.toUpperCase()+' V2 PASS · arte '+v.loaded+'/'+v.total+
