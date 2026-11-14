@@ -18,6 +18,7 @@
 <link rel="preload" as="image" href="../assets/imagens/d95ddf1f53c88d01c4.png">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-pedra-limpo.svg">
 <link rel="preload" as="image" href="../assets/imagens/jm40-moeda-magica.svg">
+<link rel="preload" as="image" href="assets/jardim-magico-fundo-original-aprovado.png">
 <style>
 :root{color-scheme:dark;--gold:#fce3a0;--deep:#151024;--mint:#8eeac4;--muted:#c7b9d4}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1192,6 +1193,52 @@ html,body{height:100%;overflow:hidden;background:#051814}
 }
 @media(prefers-reduced-motion:reduce){
   #reelFrame #reels .cell.base-coin-unveiled .base-valued-coin{animation:none!important}
+}
+
+
+/* EXACT APPROVED IMAGE — raw PNG bytes preserved, logo and ornaments INCLUDED.
+   No SVG redraw, no overlays on the artwork, no second logo. */
+.app{
+  background-image:url('assets/jardim-magico-fundo-original-aprovado.png')!important;
+  background-color:#071b17!important;
+  background-position:center center!important;
+  background-repeat:no-repeat!important;
+  background-size:100% 100%!important;
+}
+.app::before,.app:before{display:none!important;content:none!important}
+#reelFrame.frame::before,#reelFrame.frame::after{display:none!important;content:none!important}
+/* The logo is part of the approved image; do not draw any other logo on top. */
+.app > .logo-wrap{display:none!important}
+.app > .scene-fx{display:none!important}
+/* Start screen uses the very same image, without a tinted duplicate background. */
+#introScreen.intro-screen{
+  background:transparent!important;
+  justify-content:flex-end!important;
+  padding:0 7% max(8%,env(safe-area-inset-bottom))!important;
+  gap:11px!important;
+}
+#introScreen .intro-logo,#introScreen .intro-subtitle,#introScreen .intro-lead{display:none!important}
+#introScreen .intro-play{
+  width:min(100%,320px);
+  min-height:54px;
+  border-radius:20px;
+  border:2px solid #ffe7a2;
+  background:linear-gradient(145deg,#0b6e4df4,#0c463be8);
+  box-shadow:0 4px 16px #000c,inset 0 1px #ffffff66;
+}
+#introScreen .intro-note{
+  background:#071a16b6;border-radius:9px;padding:5px 8px;
+  font-size:10px;color:#f7e8cc;
+}
+/* Gold separator is on the original image: keep the play area transparent. */
+#reelFrame.frame,#reelFrame #reels,#reelFrame #reels .column,#reelFrame #reels .cell{
+  background:transparent!important;
+}
+/* Keep scoreboard clear of embedded logo and the ornamental red gem. */
+.app > .statline{top:21.7%!important;height:3.65%!important}
+.app > .statline>div{
+  padding:1px 2px!important;background:#103a2bc9!important;
+  border:1px solid #f5d286d0!important;
 }
 
 </style>
