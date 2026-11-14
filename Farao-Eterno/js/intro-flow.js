@@ -85,18 +85,38 @@ g.advanceStage=function(...args){
 };
 const oldSummary=g.showSummary.bind(g);
 g.showSummary=function(...args){
- if(this.pendingSummary&&!this.spinning&&!this.ledger.payout&&now()>=this.nextActionAt)this._summaryRequested=true;
+ if(this.pendingSummary&&!this.spinning&&!this.ledger.payout&&now()>=this.nextActionAt)
+  this._summaryRequested=true;
  oldSummary(...args);
- if(!this._summaryAck||modal.classList.contains('hidden'))return;
+ if(modal.classList.contains('hidden'))return;
  const btn=document.getElementById('collect-bonus');
- if(!btn||btn.dataset.faraoSpinContinue)return;
- btn.dataset.faraoSpinContinue='true';btn.textContent='GIRAR';
- btn.setAttribute('aria-label','Voltar ao jogo e girar');
+ if(!btn||btn.dataset.faraoSpinContinue==='true')return;
+ // Um só toque: o botão GIRAR fecha a janela e lança a próxima jogada.
+ // Aplicar tanto ao final normal como ao Super Scatter, sem depender
+ // do estado temporário _summaryAck de outras camadas visuais.
+ btn.dataset.faraoSpinContinue='true';
+ btn.textContent='GIRAR';
+ btn.setAttribute('aria-label','Fechar o resultado e girar novamente');
  const acknowledge=btn.onclick;
  btn.onclick=()=>{
-  acknowledge?.();
-  setTimeout(()=>{
-   if(this.superseded||this._introCoverVisible||this.feature||this.spinning||!modal.classList.contains('hidden'))return;
+  if(btn.disabled)return;
+  btn.disabled=true;
+  // A confirmação credita zero: o total já foi liquidado pelo motor.
+  if(typeof acknowledge==='function')acknowledge();
+  else {
+   this.ledger.lastSummarySeenId=this.ledger.last?.id;
+   this.save();
+   this.closeModal();
+  }
+  this.auto=0;
+  this._summaryAck=null;
+  this._summaryRequested=false;
+  // O fecho aplica um bloqueio de 350 ms; respeitar o intervalo.
+  window.setTimeout(()=>{
+   if(this.superseded||this._introCoverVisible||this.feature||this.spinning||
+     this.ledger.pending||this.ledger.payout||
+     !modal.classList.contains('hidden'))return;
+   this.paused=false;
    this.nextActionAt=Math.min(this.nextActionAt,now()-1);
    this.startSpin();
   },420);
