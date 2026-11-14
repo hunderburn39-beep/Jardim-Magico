@@ -232,8 +232,15 @@ class Game {
    ankh.src=window.FARAO_CUSTOM_SYMBOLS.MASK_ALT;
    this.images.MASK_ALT=ankh;
   }
+  // Fundo de reserva independente: evita um ecrã vazio durante o carregamento.
+  const templeReserve=new Image();
+  templeReserve.onload=()=>{if(!this.temple)this.temple=templeReserve;};
+  templeReserve.src='assets/temple_back.svg?v=2.7.1-bgfix';
   const img=new Image();
   img.onload=()=>{
+   // Mostrar imediatamente o WebP original, mesmo sem pós-processamento.
+   this.temple=img;
+   try{
    // Restaurado o cenário original preferido, com as linhas douradas laterais
    // corrigidas e sem alterar a moldura ou o logótipo 3D sobre os tambores.
    // The thin gold line beside the title is baked into the background artwork.
@@ -276,11 +283,16 @@ class Game {
     pc.fillStyle=glow;pc.fillRect(x-184,105,368,368);
    }
    this.temple=polished;
+   }catch(err){
+    // Safari e alguns CDNs bloqueiam leitura de píxeis: desenhar o original.
+    this.temple=img;
+    console.warn('Faraó Eterno: a usar o fundo original sem pós-processamento',err);
+   }
   };
   img.onerror=()=>{
-   if(!img.fallback){img.fallback=true;img.src='assets/temple_back.svg';}
+   if(!img.fallback){img.fallback=true;img.src='assets/temple_back.svg?v=2.7.1-bgfix';}
   };
-  img.src='assets/temple.webp?v=1.3.14';
+  img.src='assets/temple.webp?v=2.7.1-bgfix';
  }
 
   action(x,y,w,h,fn,label='Ação'){this.targets.push({x,y,w,h,action:fn,label});}
