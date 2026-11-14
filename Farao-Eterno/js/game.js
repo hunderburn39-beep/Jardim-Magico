@@ -581,12 +581,16 @@ class Game {
     const reels=[...group.reels];
     const isLine=group.kind==='line'&&group.count>=3;
     const freeLine=item.free&&isLine;
-    const perReel=freeLine?(this.turbo?390:545)
+    const expansionStage=item.free&&group.kind==='expansion';
+    const perReel=expansionStage?(this.turbo?310:460)
+      :freeLine?(this.turbo?390:545)
       :item.free?(this.turbo?185:270):(this.turbo?355:700);
-    const preDelay=freeLine?(this.turbo?185:260)
+    const preDelay=expansionStage?(this.turbo?175:245)
+      :freeLine?(this.turbo?185:260)
       :item.free?(this.turbo?110:160):(this.turbo?170:340);
     const creditAt=cursor+preDelay+Math.max(1,reels.length)*perReel;
-    const end=creditAt+(freeLine?(this.turbo?800:1200)
+    const end=creditAt+(expansionStage?(this.turbo?420:650)
+      :freeLine?(this.turbo?800:1200)
       :item.free?(this.turbo?350:530):(this.turbo?670:1250));
     const stage={...group,index,start:cursor,preDelay,perReel,
      reels,creditAt,end,amount:S.credits(group.amountU),
@@ -611,7 +615,7 @@ class Game {
    let cursor=finishedAt+90;
    const visualStages=[],rawGroups=[{symbol:null,amount:result.baseTotal+result.scatterWin}];
    for(const candidate of expansions){
-    const start=cursor,preDelay=this.turbo?180:250,perReel=this.turbo?200:310;
+    const start=cursor,preDelay=this.turbo?180:250,perReel=this.turbo?310:460;
     const end=start+preDelay+candidate.reels.length*perReel+(this.turbo?420:650);
     const stage={symbol:candidate.symbol,reels:[...candidate.reels],start,end,preDelay,perReel,
      amount:candidate.amount};
@@ -643,11 +647,11 @@ class Game {
   }else{
    // Conservar o movimento aprovado quando só uma figura é expansiva.
    const reels=item.free?Object.keys(this.expanded).map(Number).sort((a,b)=>a-b):[];
-   const animationEnd=reels.length?250+reels.length*(this.turbo?200:300)+480:0;
+   const animationEnd=reels.length?250+reels.length*(this.turbo?310:460)+480:0;
    for(let k=0;k<reels.length;k++)this.emitBurst(reelCentre(reels[k]),444,16,'#83ffef',
-    finishedAt+(this.turbo?190:250)+k*(this.turbo?200:300));
+    finishedAt+(this.turbo?190:250)+k*(this.turbo?310:460));
    this.reveal=reels.length?{start:finishedAt,reels,preDelay:this.turbo?190:250,
-    perReel:this.turbo?200:300,end:finishedAt+animationEnd}:null;
+    perReel:this.turbo?310:460,end:finishedAt+animationEnd}:null;
    this.winCount={start:finishedAt+(this.reveal?animationEnd-280:80),
     duration:item.free?(this.turbo?520:850):(this.turbo?300:540),amount:prize};
    this.nextActionAt=Math.max(this.nextActionAt,this.winCount.start+this.winCount.duration+(item.free?(this.turbo?330:560):250));
