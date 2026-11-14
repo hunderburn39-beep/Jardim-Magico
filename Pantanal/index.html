@@ -1055,7 +1055,7 @@ async function spin(){
    :null;
  state.history.unshift({at:new Date().toLocaleString('pt-PT'),stake,lines:state.lines,board:board.map(x=>x.slice()),wins,total,bonus:bonusTrigger});
  save();update();spinBusy=false;
- if(wins.length){showStatus(`${wins.length} LINHA${wins.length!==1?'S':''} PREMIADA${wins.length!==1?'S':''} • ${money(total)} CRÉDITOS`);const special=false;if(special)await celebrateSpecial(wins,total);else{play(window.PantanalSoundFX?.classifyWin(total,stake)||(total>=100?'big':'win'));flashWin(wins)}}else{showStatus('BOA SORTE!')}
+ if(wins.length){showStatus(`${wins.length} LINHA${wins.length!==1?'S':''} PREMIADA${wins.length!==1?'S':''} • ${money(total)} CRÉDITOS`);const special=false;if(special)await celebrateSpecial(wins,total);else{if(!jackpotNames.length)play(window.PantanalSoundFX?.classifyWin(total,stake)||(total>=100?'big':'win'));flashWin(wins)}}else{showStatus('BOA SORTE!')}
  if(jackpotNames.length){showStatus('ACUMULADO: '+jackpotNames.join(' • '));play('jackpot');}
  if(bonusTrigger){
    auto=false;await wait(450);
