@@ -42,7 +42,7 @@ with sync_playwright() as p:
     for attempt in range(28):
         response=page.goto(ROOT+"&ready="+str(attempt),wait_until="domcontentloaded",timeout=45000)
         source=page.content()
-        if response and response.status==200 and "function moneyDetailed(v)" in source and "assets/figuras-v199/joaninha-limpa.svg" in source:
+        if response and response.status==200 and "function moneyDetailed(v)" in source and "assets/figuras-v199/joaninha-limpa.svg" in source and "V1.9.9 · CASCATAS SUAVES" in source and "function cascadeShiftPlan(oldRemoved)" in source and "const SFX_GAIN" in source:
             published=True
             break
         print("GAMEPLAY_SITE_WAIT",attempt+1,flush=True)
