@@ -84,11 +84,6 @@
     '#screen.portrait #spinButton img{height:130px!important;width:137px!important}',
     '#screen.portrait #ctrls button span{bottom:-1px}',
     '#screen.portrait #lineNumberLabels .lineNumber{opacity:.97}',
-    /* Shift the main original backing and the numeric labels as a unit vertically. */
-    '#screen.portrait #game>.bg{top:calc(50% - 240px)}',
-    '#screen.portrait #credit,#screen.portrait #win,#screen.portrait #bet{top:calc(50% - 227px)}',
-    '#screen.portrait #status{top:calc(50% + 222px)}',
-    '#screen.portrait #pantanalJackpots{top:calc(50% + 315px)!important}',
     '@media (prefers-reduced-motion:reduce){#screen.portrait #reelArea #reelFrame{box-shadow:inset 0 0 0 3px #5b3516,0 8px 22px #000d}}'
    ].join('\n');
    doc.head.appendChild(style);
