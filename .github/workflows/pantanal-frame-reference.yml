@@ -1,0 +1,34 @@
+name: Pantanal — verificar geometria da moldura original
+on:
+  push:
+    paths: ['.github/workflows/pantanal-frame-reference.yml']
+permissions: {contents: write}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,base64,io
+          from PIL import Image
+          s=Path('Pantanal/index.html').read_text()
+          m=re.search(r"'05_telabot\.png'\s*:\s*\"data:image/png;base64,([A-Za-z0-9+/=]+)\"",s)
+          if not m: raise Exception('Image atlas missing')
+          im=Image.open(io.BytesIO(base64.b64decode(m.group(1)))).convert('RGB')
+          print("BACKGROUND DIMENSIONS",im.size)
+          im.thumbnail((800,480))
+          dst=Path('Pantanal/tests/frame_original_reference.jpg')
+          im.save(dst,quality=74,optimize=True)
+          print("REFERENCE",dst,dst.stat().st_size)
+          PY
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Pantanal/tests/frame_original_reference.jpg
+          git commit -m "test(Pantanal): keep original background frame reference for 9:16 centering"
+          git pull --rebase origin main
+          git push origin HEAD:main
