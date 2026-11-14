@@ -1,6 +1,6 @@
 /* Faraó Eterno — ritual do bónus inspirado na cadência da referência.
  * Arte e som originais; nenhuma mudança de RNG, créditos ou premiação.
- * V2.9.2 | 14-11-2026
+ * V2.9.3 | 14-11-2026
  */
 (() => {
  'use strict';
@@ -131,6 +131,14 @@
    if(btn.disabled)return;
    shuffleToken++;
    modal.classList.remove('farao-ritual-modal');
+   // Super Scatter: o pergaminho passa ao dado sem fechar o modal.
+   // O bloqueio de fecho antes do sorteio permanece ativo.
+   if(g.feature?.superMultiplier && !g.ledger.feature?.superRollSeen){
+    g._ritualSwitchToDice=true;
+    g._welcomeShown=false;
+    try{g.showFeatureWelcome();}finally{g._ritualSwitchToDice=false;}
+    return;
+   }
    g.closeModal();
   };
   let tick=0;
@@ -154,6 +162,10 @@
  }
  const priorWelcome=g.showFeatureWelcome.bind(g);
  g.showFeatureWelcome=function(...args){
+  if(this._ritualSwitchToDice){
+   priorWelcome(...args);
+   return;
+  }
   if(this._ritualDelayUntil && performance.now()<this._ritualDelayUntil){
    if(!scheduled){
     scheduled=true;
@@ -165,8 +177,12 @@
    }
    return;
   }
+  const wasAlreadyVisible=!!this._welcomeShown;
   priorWelcome(...args);
-  if(this.feature&&this._welcomeShown&&!modal.classList.contains('hidden'))
+  if(wasAlreadyVisible)return;
+  // Num reload a meio da animação, a face já persistida não é sorteada de novo.
+  if(this.feature&&this._welcomeShown&&!modal.classList.contains('hidden')&&
+     !(this.feature.superMultiplier&&this.ledger.feature?.superRollSeen))
    makeWelcome();
  };
  const priorClose=g.closeModal.bind(g);
@@ -271,6 +287,6 @@
    drawPyramids(t);drawExpansions(t);introPages(t);
   }
  };
- g.bonusRitual={version:'2.9.2',events:stats,mathUnchanged:true};
- document.documentElement.dataset.faraoBonusRitual='2.9.2';
+ g.bonusRitual={version:'2.9.3',events:stats,mathUnchanged:true};
+ document.documentElement.dataset.faraoBonusRitual='2.9.3';
 })();
