@@ -144,7 +144,53 @@
   if(sym==='TOMB')return;
   game.drawIcon(sym,x,y,R.cw,R.gh,win,t);
  }
- game.visualV11={layout:R,tile,medallion,version:'1.2-wide-reels-9x16'};
+
+ // Expansão V2.7.8: cada uma das três pedras entra de cima para baixo.
+ // Toda a animação é visual; não toca em probabilidades, prémios ou Free Spins.
+ function expansionRowEase(raw,row){
+  const p=clamp((raw-row*.17)/(1-row*.17),0,1);
+  return p*p*(3-2*p);
+ }
+ function drawExpansionBeam(x,raw){
+  if(reducedMotion||raw<=0||raw>=1)return;
+  const top=R.top,h=R.gh*3,beamY=top-42+(h+84)*raw;
+  const power=Math.min(1,raw*8,(1-raw)*10);
+  if(power<=0)return;
+  ctx.save();ctx.beginPath();
+  ctx.rect(x+3,top+7,R.cw-6,h-14);ctx.clip();
+  ctx.globalCompositeOperation='screen';ctx.globalAlpha=.70*power;
+  const light=grad(ctx,0,beamY-47,0,beamY+47,[
+   [0,'rgba(44,178,190,0)'],[.29,'rgba(33,205,214,.10)'],
+   [.49,'rgba(255,223,144,.46)'],[.51,'rgba(255,250,216,.53)'],
+   [.72,'rgba(71,230,228,.13)'],[1,'rgba(44,178,190,0)']
+  ]);
+  ctx.fillStyle=light;ctx.fillRect(x+4,beamY-47,R.cw-8,94);
+  ctx.beginPath();ctx.moveTo(x+9,beamY);ctx.lineTo(x+R.cw-9,beamY);
+  ctx.strokeStyle='rgba(255,238,177,.78)';ctx.lineWidth=2;ctx.stroke();
+  for(let i=0;i<5;i++){
+   const sx=x+16+((i*29+Math.floor(raw*70))%(R.cw-32));
+   const sy=beamY-17+(i*19)%38;
+   ctx.fillStyle=i%2===0?'#fff0b8':'#8ef5e9';
+   ctx.beginPath();ctx.arc(sx,sy,i%2===0?2.2:1.2,0,TAU);ctx.fill();
+  }
+  ctx.restore();
+  ctx.save();ctx.globalAlpha=.48*power;
+  ctx.shadowColor='#73ede3';ctx.shadowBlur=13;
+  rounded(ctx,x+2,top+2,R.cw-4,h-4,7,null,'#d6b975',1.8);
+  ctx.restore();
+ }
+ function expansionStoneGlint(x,y,p){
+  if(reducedMotion||p<=0||p>=1)return;
+  const power=Math.max(0,1-Math.abs(p-.62)/.3);
+  if(power<=0)return;
+  const gx=x+R.cw*.72,gy=y+R.gh*.3;
+  ctx.save();ctx.globalAlpha=power*.75;
+  ctx.shadowColor='#ffe6a0';ctx.shadowBlur=10;
+  ctx.strokeStyle='#fff5cb';ctx.lineWidth=1.5;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(gx-7,gy);ctx.lineTo(gx+7,gy);
+  ctx.moveTo(gx,gy-9);ctx.lineTo(gx,gy+9);ctx.stroke();ctx.restore();
+ }
+ game.visualV11={layout:R,tile,medallion,version:'2.7.8-expansion-stones'};
  game.drawReelSeparators=function(left,top,interval,gh){
   for(let c=1;c<5;c++){
    const x=left+c*interval-(interval-R.cw)/2;
@@ -546,23 +592,39 @@
      const elapsed=hitAt>=0?t-hitAt:-1;
      const settling=elapsed>=0&&elapsed<290;
      const drop=settling?-25*Math.pow(1-elapsed/290,2)*Math.cos(elapsed*.032):0;
-     const ease=expanding?progress:0;
+     const ease=expanding
+       ?(phaseReveal?(reducedMotion?(raw>=.6?1:0):expansionRowEase(raw,r)):1):0;
      if(ease<1){
       ctx.save();ctx.globalAlpha=1-ease;
       tileAt(grid[c][r],rx,yy+bounce+drop,t,win&&!expanding);ctx.restore();
      }
      if(expanding&&ease>0){
       ctx.save();ctx.globalAlpha=ease;
-      const pulse=1+.035*Math.sin(Math.PI*ease);
-      ctx.translate(rx+cw/2,yy+gh/2);ctx.scale(pulse,pulse);ctx.translate(-rx-cw/2,-yy-gh/2);
+      // A nova figura cai com profundidade, encaixa e estabiliza.
+      if(!reducedMotion&&phaseReveal){
+       const zoom=.83+.17*ease+.055*Math.sin(Math.PI*ease);
+       const fall=-27*Math.pow(1-ease,2)+4*Math.sin(ease*Math.PI*2)*(1-ease);
+       ctx.translate(rx+cw/2,yy+gh/2);
+       ctx.scale(zoom,zoom);
+       ctx.translate(-rx-cw/2,-yy-gh/2+fall);
+       ctx.shadowColor='#79f3e4';ctx.shadowBlur=12*(1-ease);
+      }
       tileAt(phaseExpanded[c].symbol,rx,yy,t,win);ctx.restore();
-      ctx.save();ctx.shadowColor='#68ffe5';ctx.shadowBlur=10;ctx.strokeStyle='rgba(133,255,225,'+(.35+.55*ease)+')';ctx.lineWidth=2;
-      rounded(ctx,rx+3,yy+10,cw-6,gh-20,8,null,ctx.strokeStyle,2);
-      ctx.restore();
+      if(phaseReveal&&!reducedMotion){
+       expansionStoneGlint(rx,yy,ease);
+       const edge=Math.sin(Math.PI*ease);
+       if(edge>.05){
+        ctx.save();ctx.globalAlpha=.64*edge;
+        ctx.shadowColor='#89f2e9';ctx.shadowBlur=12;
+        rounded(ctx,rx+4,yy+12,cw-8,gh-24,7,null,'#aaeadd',1.7);
+        ctx.restore();
+       }
+      }
      }
     }
-    // As pirâmides são desenhadas depois de todos os tambores.
+    // O feixe percorre o tambor uma só vez, sincronizado com as três pedras.
    }
+   if(expanding&&phaseReveal)drawExpansionBeam(rx,raw);
    // A very short transient glow when the real reel stops.
    const since=t-this.landings[c];
    if(this.landings[c]&&since>=0&&since<240){
@@ -589,7 +651,6 @@
    const raw=phaseReveal&&idx>=0?clamp((t-stamp)/phaseReveal.perReel,0,1):1;
    const progress=raw*raw*(3-2*raw);
    const expanding=!!(phaseExpanded[c]&&(phaseReveal?idx>=0&&progress>0:this.lastWasFree));
-   const ease=expanding?progress:0;
    const ready=!!focus||!this.reveal||t>=this.reveal.end-100;
    const since=this.landings[c]&&t-this.landings[c];
    const bounce=this.landings[c]&&since>=0&&since<300
@@ -598,6 +659,8 @@
     const base=grid[c][r]==='TOMB';
     const expanded=expanding&&phaseExpanded[c].symbol==='TOMB';
     if(!base&&!expanded)continue;
+    const ease=expanding
+      ?(phaseReveal?(reducedMotion?(raw>=.6?1:0):expansionRowEase(raw,r)):1):0;
     const alpha=expanded?ease:1-ease;
     if(alpha<=0)continue;
     const yy=R.top+r*R.gh;
