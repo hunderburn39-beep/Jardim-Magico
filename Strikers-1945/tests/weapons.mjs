@@ -5,8 +5,8 @@ const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFac
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 const expected=[
  {name:'P-38 Lightning',primary:2,missiles:2,weapon:'DUPLO'},
- {name:'Spitfire',primary:2,missiles:1,weapon:'RAJADA'},
- {name:'Zero',primary:3,missiles:0,weapon:'LEQUE'},
+ {name:'Spitfire',primary:2,missiles:2,weapon:'RAJADA'},
+ {name:'Zero',primary:3,missiles:2,weapon:'LEQUE'},
  {name:'Mustang',primary:1,missiles:2,weapon:'PESADO'}
 ];
 for(let craft=0;craft<4;craft++){
@@ -36,10 +36,11 @@ for(let craft=0;craft<4;craft++){
  });
  const rockets=salvo.bullets.filter(b=>b.kind==='missile');
  assert.equal(rockets.length,spec.missiles,spec.name+' salva secundária');
+ assert(rockets.every(b=>b.variant===craft),spec.name+' identidade visual própria dos mísseis');
  if(craft===0||craft===3){
   assert(rockets.some(b=>b.fromWing===false),spec.name+' deve lançar mísseis pela cauda');
  }
- if(craft===1||craft===3){
+ if(craft===1||craft===2||craft===3){
   assert(rockets.some(b=>b.fromWing===true),spec.name+' deve ter foguetes laterais');
  }
  if(craft===3){
@@ -56,10 +57,18 @@ for(let craft=0;craft<4;craft++){
   assert(Math.abs(after[1].angle-before[1].angle)>.05,'Míssil lateral curva para o alvo');
   assert(after[0].targetX<180&&after[1].targetX>180,'Mantêm alvos em lados diferentes');
  }
+ const fx=await page.evaluate(variant=>{
+  const t=window.__strikersTest;t.detonate(variant);return t.snapshot();
+ },craft);
+ assert(fx.waves.some(w=>w.style===['electric','fire','plasma','heavy'][craft]),spec.name+' explosão temática');
+ assert(fx.waves.some(w=>w.color===['#83eaff','#ffc363','#9eff89','#ff7959'][craft]),spec.name+' cor de explosão');
+ assert(fx.audioState==='running'||fx.audioState==='suspended',spec.name+' contexto de áudio criado');
+ await page.waitForTimeout(95);
+ await page.screenshot({path:'strikers-explosion-'+craft+'.png'});
  await page.waitForTimeout(250);
  await page.screenshot({path:'strikers-weapon-'+craft+'.png'});
  console.log(spec.name+': '+primaries.length+' tiros base, '+rockets.length+' foguetes na arma evoluída');
 }
 assert.deepEqual(errors,[],'Sem erros JavaScript nos quatro aviões');
 await browser.close();
-console.log('STRIKERS V3: quatro armamentos, mísseis laterais/cauda e orientação por alvo VALIDADOS.');
+console.log('STRIKERS V3.2: quatro sistemas, modelos de mísseis, explosões específicas e som iniciado VALIDADOS.');
