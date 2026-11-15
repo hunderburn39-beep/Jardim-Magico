@@ -10,7 +10,7 @@
  const UPDATE_KEY='farao-auto-update-v1';
  const safeGet=(key)=>{try{return localStorage.getItem(key);}catch{return null;}};
  const safeSet=(key,value)=>{try{localStorage.setItem(key,value);return true;}catch{return false;}};
- const escapeHTML=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;':'&quot;',"'":'&#39;'}[c]));
+ const escapeHTML=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const uuid=()=>crypto.randomUUID?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(16)),v=>v.toString(16).padStart(2,'0')).join('');
  let machineId=safeGet(ID_KEY);
  if(!machineId||!/^[a-zA-Z0-9_-]{8,64}$/.test(machineId)){machineId='farao-'+uuid();safeSet(ID_KEY,machineId);}
