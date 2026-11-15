@@ -1,4 +1,4 @@
-name: "Strikers 1945 | Testes HTML5 iPhone V3"
+name: "Strikers 1945 | Testes HTML5 iPhone V3.2"
 on:
   push:
     branches: [main]
@@ -35,8 +35,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: strikers1945-v3-previews
+          name: strikers1945-v32-previews
           path: |
             strikers-v2-preview.png
             strikers-weapon-*.png
+            strikers-explosion-*.png
           if-no-files-found: ignore
