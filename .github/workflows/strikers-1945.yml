@@ -1,4 +1,4 @@
-name: "Strikers 1945 | Teste HTML5 iPhone V2"
+name: "Strikers 1945 | Testes HTML5 iPhone V3"
 on:
   push:
     branches: [main]
@@ -29,10 +29,14 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/strikers-server.log 2>&1 &
       - name: Testar gráfícos, gestos para baixo, botões e execução
         run: node Strikers-1945/tests/smoke.mjs
+      - name: Validar 4 armamentos, mísseis e trajetórias laterais
+        run: node Strikers-1945/tests/weapons.mjs
       - name: Guardar imagem de verificação
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: strikers1945-v2-preview
-          path: strikers-v2-preview.png
+          name: strikers1945-v3-previews
+          path: |
+            strikers-v2-preview.png
+            strikers-weapon-*.png
           if-no-files-found: ignore
