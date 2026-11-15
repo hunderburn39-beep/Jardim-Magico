@@ -506,6 +506,23 @@ function loop(t){if(!last)last=t;const dt=clamp((t-last)/1000,0,.034);last=t;fra
 function pos(e){const r=game.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
 game.addEventListener('pointerdown',e=>{if(mode!=='play')return;e.preventDefault();audioInit();const p=pos(e);drag={id:e.pointerId,x:p.x,y:p.y,dx:clamp(player.x-p.x,-50,50),dy:clamp(player.y-p.y,-50,50)};try{game.setPointerCapture(e.pointerId)}catch(err){}});game.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;e.preventDefault();const p=pos(e);drag.x=p.x;drag.y=p.y});function release(e){if(drag&&e.pointerId===drag.id)drag=null}game.addEventListener('pointerup',release);game.addEventListener('pointercancel',release);shell.addEventListener('touchmove',e=>{if(mode==='play'&&e.cancelable)e.preventDefault()},{passive:false});shell.addEventListener('touchstart',e=>{if(mode==='play'&&e.target===game&&e.cancelable)e.preventDefault()},{passive:false});window.addEventListener('blur',()=>{key={};drag=null});window.addEventListener('keydown',e=>{key[e.code]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.code==='KeyB'&&!e.repeat)bomb();if(e.code==='Escape'||e.code==='KeyP')pause(mode==='play');if(e.code==='Enter'&&mode==='menu')start()});window.addEventListener('keyup',e=>{key[e.code]=false});
 for(let i=0;i<CRAFT.length;i++){let p=CRAFT[i],btn=document.createElement('button');btn.className='planeCard'+(!i?' selected':'');btn.setAttribute('aria-label','Escolher '+p.name);btn.innerHTML=`<canvas width="160" height="115"></canvas><strong>${p.name}</strong><small>${p.desc}</small>`;$('#planeGrid').append(btn);let c=btn.querySelector('canvas').getContext('2d');c.scale(2,2);drawPlane(c,40,28,1.5,p.tint,p.trim,p.shape);btn.addEventListener('click',()=>{selected=i;document.querySelectorAll('.planeCard').forEach((el,j)=>el.classList.toggle('selected',j===i));beep('power')})}
-$('#startBtn').addEventListener('click',start);$('#restartBtn').addEventListener('click',start);$('#homeBtn').addEventListener('click',home);$('#resumeBtn').addEventListener('click',()=>pause(false));$('#exitBtn').addEventListener('click',home);UI.pauseBtn.addEventListener('click',()=>pause(true));UI.bombBtn.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();bomb()});$('#soundBtn').addEventListener('click',()=>{audio=!audio;$('#soundBtn').textContent=audio?'♫ SOM LIGADO':'♫ SOM DESLIGADO';if(audio)audioInit()});window.addEventListener('contextmenu',e=>e.preventDefault());if("serviceWorker" in navigator && location.protocol==="https:")navigator.serviceWorker.register("./sw.js").catch(()=>{});setBg();loop(performance.now());
+$('#startBtn').addEventListener('click',start);$('#restartBtn').addEventListener('click',start);$('#homeBtn').addEventListener('click',home);$('#resumeBtn').addEventListener('click',()=>pause(false));$('#exitBtn').addEventListener('click',home);UI.pauseBtn.addEventListener('click',()=>pause(true));UI.bombBtn.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();bomb()});$('#soundBtn').addEventListener('click',()=>{audio=!audio;$('#soundBtn').textContent=audio?'♫ SOM LIGADO':'♫ SOM DESLIGADO';if(audio)audioInit()});window.addEventListener('contextmenu',e=>e.preventDefault());if("serviceWorker" in navigator && location.protocol==="https:")navigator.serviceWorker.register("./sw.js").catch(()=>{});// Test-only instrumentation for the browser regression suite; never active in production.
+if((location.hostname==='127.0.0.1'||location.hostname==='localhost')&&new URLSearchParams(location.search).get('test')==='1'){
+ window.__strikersTest=Object.freeze({
+  snapshot:()=>({
+   craft:player?.craft,level:player?.level,waveCount:waves.length,
+   bullets:bullets.map(b=>({kind:b.kind||'shot',owner:b.owner,x:b.x,y:b.y,vx:b.vx,vy:b.vy,
+    angle:b.angle,age:b.age,side:b.side,fromWing:b.fromWing,targetX:b.target?.x??null,targetY:b.target?.y??null}))
+  }),
+  resetShots:()=>{bullets=[];},
+  spawnTarget:(x,y)=>spawn('bomber',x,y),
+  setLevel:l=>{if(player)player.level=clamp(l,1,4)},
+  prime:()=>{if(player){player.fire=0;player.rocketCd=0}},
+  stopRockets:()=>{if(player)player.rocketCd=99},
+  launch:(side,wing)=>{if(player)fireMissile(player,side,!!wing,4)},
+  advance:(seconds)=>{const n=Math.ceil(seconds/(1/60));for(let i=0;i<n;i++)update(seconds/n)}
+ });
+}
+setBg();loop(performance.now());
 })();
 </script></body></html>
