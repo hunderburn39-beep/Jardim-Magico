@@ -160,3 +160,11 @@ O prémio **individual** de cada queda aparece no centro da grelha, sem caixas, 
 - Tempo no ecrã: 2,35 s em giro normal e 1,25 s em Turbo.
 
 O histórico detalhado, RTP, tabela de pagamentos, máximo de 5.000× e regras WILD mantêm-se inalterados. Demo de créditos virtuais.
+
+## V20 — SUPER SCATTER e martelo de Zeus
+
+- O novo símbolo **SUPER SCATTER** usa a arte do SCATTER com identificação e brilho próprios. Só a entrada do SUPER SCATTER aciona a animação do martelo de Zeus; multiplicadores não a acionam.
+- O SUPER SCATTER conta para os 3 SCATTER que ativam Free Spins. Se aparecerem 4 SCATTER normais e 1 SUPER SCATTER na mesma grelha, o bónus ganha automaticamente um prémio adicional de **200× aposta**, sujeito ao teto acumulado de 5 000×.
+- Nas Free Spins iniciadas por SUPER SCATTER, todas as 49 casas começam em **2×**. Cada vitória que ocupa novamente a mesma casa duplica a orbe para 4×, 8×, 16× etc., até 1 024×. As orbes persistem entre as Free Spins.
+- O teto de **5 000×** é acumulado entre a ronda base, o prémio garantido e as Free Spins. Ao atingi-lo, a sessão fica bloqueada, também depois de recarregar a página, até à ação de levantamento **de créditos virtuais**.
+- A versão web é uma demonstração, sem sistema de pagamentos, sem dinheiro real nem RTP certificado. A ação de levantamento virtual reinicia a sessão com 1 000 créditos de demonstração e não representa uma transferência bancária.
