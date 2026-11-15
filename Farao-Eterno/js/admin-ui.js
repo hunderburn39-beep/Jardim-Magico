@@ -26,6 +26,7 @@
    const e=status(),t=e.totals,profit=e.techDueU+e.merchantDueU,locked=isBusy();
    const heading=(text)=>'<h3 class="farao-admin-heading">'+text+'</h3>';
    const metric=(label,amount)=>'<div class="farao-admin-metric"><span>'+label+'</span><strong>'+val(amount)+'</strong></div>';
+   const period=e.periodNumber||1,net=window.FaraoMachineNetwork;
    const dashboard='<div class="farao-admin-panel">'+
      '<p class="farao-admin-top">Cofres e movimentos desta sessão neste navegador.</p>'+
      '<div class="farao-admin-metrics">'+
@@ -39,6 +40,7 @@
       metric('Lucro do comerciante já levantado',t.merchantCollectedU)+
       metric('Apostas/compra de bónus',t.stakesU)+
       metric('Prémios atribuídos',t.winsU)+'</div>'+
+     '<p class="farao-admin-note">Período de contadores: <b>'+period+'</b> · Giros pagos: <b>'+g.ledger.stats.paid+'</b> · Free Spins: <b>'+g.ledger.stats.free+'</b> · Bónus: <b>'+g.ledger.stats.features+'</b></p>'+
      heading('Comissões: total obrigatório 100%')+
      field('admin-tech','Comissão do técnico (%)',e.technicianPercent,'number',
        'min="0" max="100" step="1" inputmode="numeric"')+
@@ -64,6 +66,12 @@
      '<div class="farao-admin-actions">'+button('admin-change-admin','ADMINISTRADOR')+
        button('admin-change-deposit','DEPÓSITOS')+
        button('admin-change-withdraw','LEVANTAMENTOS')+'</div>'+
+     heading('Contadores e relatórios')+
+     '<p class="farao-admin-note">Limpar contadores inicia um novo período a zeros. O saldo, os cofres, os créditos de lucro e o histórico de jogadas NÃO são apagados. Os períodos anteriores ficam arquivados.</p>'+
+     '<p class="farao-admin-note">Períodos arquivados: '+(e.periods?.length||0)+'</p>'+
+     '<div class="farao-admin-actions">'+button('admin-reset-counters','LIMPAR CONTADORES')+
+       button('admin-export-report','EXPORTAR RELATÓRIO')+'</div>'+
+     (net?net.adminHTML():'')+
      '<p class="farao-admin-note">Alterações de cofres, taxas e códigos são bloqueadas durante uma jogada ou bónus ativo.</p>'+
      (locked?'<p class="farao-admin-warning">Termina as Free Spins para alterar estas definições.</p>':'')+
      '<p id="farao-admin-error" class="farao-admin-error" role="alert"></p>'+
@@ -85,6 +93,9 @@
    });
    for(const role of ['admin','deposit','withdraw'])
      $('admin-change-'+role).onclick=()=>g.openAdminPinChange(role);
+   $('admin-reset-counters').onclick=()=>g.openAdminCounterReset();
+   $('admin-export-report').onclick=()=>g.exportAdminReport();
+   net?.bindAdmin(errors);
    $('admin-logout').onclick=()=>{
      g._adminAuthenticated=false;g.openInfo('admin');
    };
@@ -111,6 +122,48 @@
    $('admin-login-code').focus();
  };
  g.openAdminDashboard=adminPage;
+ g.exportAdminReport=function(){
+  if(!this._adminAuthenticated)return;
+  const econ=status(),s=this.ledger;
+  const report={
+   generatedAt:new Date().toISOString(),machineId:window.FaraoMachineNetwork?.machineId||null,
+   currentPeriod:econ.periodNumber||1,stats:{...s.stats},totals:{...econ.totals},
+   balanceU:s.balanceU,prizeFundU:econ.prizeU,technicianDueU:econ.techDueU,
+   merchantDueU:econ.merchantDueU,technicianPercent:econ.technicianPercent,
+   merchantPercent:econ.merchantPercent,prizeProfile:econ.level,
+   closedPeriods:econ.periods||[],audit:econ.log||[],
+   history:s.history.map(item=>({id:item.id||null,kind:item.kind,date:item.t,
+     bet:item.bet||0,win:item.win||0,amount:item.amount||0}))
+  };
+  const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download='farao-relatorio-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+ };
+ g.openAdminCounterReset=function(){
+  if(!this._adminAuthenticated){this.openAdminLogin();return;}
+  if(isBusy()){errors('Termina primeiro a jogada e os bónus');return;}
+  const oldPeriod=status().periodNumber||1;
+  this.openModal('NOVO PERÍODO DE CONTADORES',
+   '<div class="farao-admin-panel"><p><b>ATENÇÃO:</b> Os totais e os contadores de giros passam a zero. Os saldos e os cofres mantêm-se. O período '+oldPeriod+' será arquivado.</p>'+
+   field('admin-reset-pin','Confirma o código de administrador','', 'password',
+     'inputmode="numeric" autocomplete="off" maxlength="12"')+
+   field('admin-reset-confirm','Escreve LIMPAR para confirmar','', 'text',
+     'autocomplete="off" placeholder="LIMPAR"')+
+   '<p id="farao-admin-error" class="farao-admin-error" role="alert"></p>'+
+   button('admin-reset-confirm-button','CONFIRMAR LIMPEZA')+
+   '<button class="btn" type="button" id="admin-reset-cancel">CANCELAR</button>'+note+'</div>',true);
+  $('admin-reset-confirm-button').onclick=()=>guard(()=>{
+   if(!E.checkPin(this.ledger,'admin',$('admin-reset-pin').value))
+    throw Error('Código de administrador incorreto');
+   if($('admin-reset-confirm').value.trim().toUpperCase()!=='LIMPAR')
+    throw Error('Escreve LIMPAR para confirmar');
+   E.resetCounters(this.ledger);
+   this.openAdminDashboard();
+  });
+  $('admin-reset-cancel').onclick=()=>this.openAdminDashboard();
+ };
  g.openAdminPinChange=function(role){
    if(!this._adminAuthenticated){this.openAdminLogin();return;}
    if(isBusy()){this.openAdminDashboard();return;}
