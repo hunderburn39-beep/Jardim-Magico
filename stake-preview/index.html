@@ -1454,6 +1454,34 @@ html,body{height:100%;overflow:hidden;background:#051814}
   }
 }
 
+
+/* V3.7 — ganho visual de ativação do bónus COMPRADO, não um segundo prémio.
+   Com 6 moedas mostramos a contagem vencedora no jogo principal antes de
+   iniciar a grelha 4x4 do Hold & Win. O SCATTER usa os seus 128% aprovados. */
+#reelFrame.hold-purchase-trigger #reels .cell:has(> img.jmSymbolArt[data-symbol-id="11"]){
+  position:relative!important;
+  z-index:18!important;
+  overflow:visible!important;
+}
+#reelFrame.hold-purchase-trigger #reels .cell img.jmSymbolArt[data-symbol-id="11"]{
+  animation:purchaseCoinPulse .7s ease-in-out 2;
+  filter:drop-shadow(0 2px 3px #37240bd8)
+    drop-shadow(0 0 12px #fff0a9)
+    drop-shadow(0 0 23px #ffd365)!important;
+}
+#reelFrame.hold-purchase-trigger .scatter-banner{
+  background:linear-gradient(100deg,#70521de9,#c08a39ed,#51401de9)!important;
+  color:#fff3c3!important;
+  box-shadow:0 0 21px #ffdb7abd!important;
+}
+@keyframes purchaseCoinPulse{
+  0%,100%{filter:drop-shadow(0 0 8px #ffd874);opacity:1}
+  50%{filter:drop-shadow(0 0 24px #fff3a8);opacity:1}
+}
+@media(prefers-reduced-motion:reduce){
+  #reelFrame.hold-purchase-trigger #reels .cell img.jmSymbolArt[data-symbol-id="11"]{animation:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -1702,6 +1730,19 @@ function rand(){if(globalThis.crypto?.getRandomValues){const a=new Uint32Array(1
 function pick(values,weights){let x=rand()*weights.reduce((a,b)=>a+b,0);for(let i=0;i<values.length;i++){x-=weights[i];if(x<0)return values[i]}return values.at(-1)}
 function board(free=false){const w=WEIGHTS.map((x,i)=>free&&i===9?2:x);return Array.from({length:5},()=>Array.from({length:3},()=>pick(TYPES.map((_,i)=>i),w)))}
 function count(b,id){return b.flat().filter(v=>v===id).length}
+// Purchased bonuses first display ONE recognisable winning activation spin.
+// This is a presentation-only reel board: it cannot award lines, debit another
+// bet, generate a second feature or modify the previously generated payout.
+// The same trigger event is persisted for replay and session recovery.
+function purchasedBonusTriggerBoard(mode){
+  if(mode!=="free"&&mode!=="hold")throw Error("Tipo de bónus comprado inválido");
+  const result=[[0,1,2],[2,3,5],[5,6,7],[7,8,0],[1,2,3]];
+  const positions=mode==="free"
+    ?[[0,1],[2,0],[4,2]]
+    :[[0,0],[0,2],[1,1],[2,1],[3,0],[4,2]];
+  for(const [c,r] of positions)result[c][r]=mode==="free"?9:11;
+  return result;
+}
 function evaluate(b){let lines=[],used=new Map();for(let j=0;j<LINES.length;j++){const line=LINES[j],chain=line.map((r,c)=>b[c][r]);const first=chain.find(s=>s!==4)??4;const pair=chain[0]===4&&chain[1]===4;let amount=pair?55:0,matched=pair?2:0;if(![9,10,11].includes(first)){let n=0;for(const s of chain){if(s!==first&&s!==4)break;n++}if(n>=3){amount+=(COEFS[first]||0)*PAY[n];matched=n}}if(amount){const cells=line.slice(0,matched).map((r,c)=>[c,r]);cells.forEach(([c,r])=>used.set(c+":"+r,[c,r]));lines.push({line:j+1,amount,cells})}}return {lines,removed:[...used.values()]}}
 function collapse(b,removed,free){const gone=new Set(removed.map(x=>x.join(":")));const w=WEIGHTS.map((x,i)=>free&&i===9?2:x);return b.map((column,c)=>{const kept=column.filter((_,r)=>!gone.has(c+":"+r));return Array.from({length:3-kept.length},()=>pick(TYPES.map((_,i)=>i),w)).concat(kept)})}
 function stages(free=false){
@@ -1727,7 +1768,7 @@ function freeFeature(){let events=[{kind:"freeStart",remaining:15,raw:0,multi:1}
 function holdFeature(){// Seis moedas iniciais; depois cada casa vazia tem probabilidade independente de receber moeda.
 // Probabilidade fixa por casa: nao varia com aposta, saldo, numero de rondas ou premio.
 const chancePerEmpty=.08,initial=[46,28,16,8,2],extra=[42,30,16,8,3,1];let grid=Array(16).fill(0),positions=Array.from({length:16},(_,i)=>i);for(let i=0;i<6;i++){let n=Math.floor(rand()*positions.length);grid[positions.splice(n,1)[0]]=pick([1,2,3,5,10],initial)}let events=[{kind:"hold",grid:[...grid],tries:3,turn:0}],tries=3,turn=0;while(tries&&grid.some(x=>!x)){turn++;let newCoins=0;for(let i=0;i<16;i++){if(!grid[i]&&rand()<chancePerEmpty){grid[i]=pick([1,2,3,5,10,20],extra);newCoins++}}tries=newCoins?3:tries-1;events.push({kind:"hold",grid:[...grid],tries,turn})}const filled=grid.every(Boolean),amount=100*grid.reduce((a,b)=>a+b,0)+(filled?25000:0);events.push({kind:"holdEnd",grid:[...grid],amount,filled});return {events,amount}}
-function generate(mode){const events=[],cost=mode==="base"?1:mode==="free"?20:30;let payout=0;if(mode==="base"){const s=stages(false);events.push(...s.events);payout+=s.paid;if(s.scatter>=3){const f=freeFeature();events.push(...f.events);payout+=f.amount}else if(s.coins>=6){const h=holdFeature();events.push(...h.events);payout+=h.amount}}else if(mode==="free"){const f=freeFeature();events.push(...f.events);payout=f.amount}else{const h=holdFeature();events.push(...h.events);payout=h.amount}return{cost,payout,events}}
+function generate(mode){const events=[],cost=mode==="base"?1:mode==="free"?20:30;let payout=0;if(mode==="base"){const s=stages(false);events.push(...s.events);payout+=s.paid;if(s.scatter>=3){const f=freeFeature();events.push(...f.events);payout+=f.amount}else if(s.coins>=6){const h=holdFeature();events.push(...h.events);payout+=h.amount}}else if(mode==="free"){const f=freeFeature();events.push({kind:"purchaseTrigger",mode:"free",board:purchasedBonusTriggerBoard("free")},...f.events);payout=f.amount}else{const h=holdFeature();events.push({kind:"purchaseTrigger",mode:"hold",board:purchasedBonusTriggerBoard("hold")},...h.events);payout=h.amount}return{cost,payout,events}}
 function format(x){return x.toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})}
 function prizeForSymbol(typeIndex,count,stake=BETS[betIndex]){
   if(!Number.isInteger(typeIndex)||typeIndex<0||typeIndex>8||![3,4,5].includes(count))return 0;
@@ -1870,7 +1911,7 @@ function renderHistory(){
 }
 function showHistory(){if(busy)return;autoLeft=0;controls();$("historySearch").value="";renderHistory();$("historyOverlay").classList.add("show")}
 function hideHistory(){$("historyOverlay").classList.remove("show")}
-function detailFrames(record){return record.book.events.filter(evt=>evt.kind==="reels"||evt.kind==="hold"||evt.kind==="holdEnd")}
+function detailFrames(record){return record.book.events.filter(evt=>evt.kind==="purchaseTrigger"||evt.kind==="reels"||evt.kind==="hold"||evt.kind==="holdEnd")}
 function openRoundDetails(id){
   if(busy)return false;
   const record=historyRecords.find(r=>r.id===id);
@@ -1891,7 +1932,7 @@ function renderRoundDetails(){
   $("detailStage").textContent=frames.length?"ETAPA "+(detailFrameIndex+1)+" / "+frames.length:"SEM SÍMBOLOS";
   if(!frame){$("detailBoard").innerHTML="";$("detailStats").textContent="Sem dados visuais nesta jogada.";return true}
   const boardEl=$("detailBoard");
-  if(frame.kind==="reels"&&Array.isArray(frame.board)){
+  if((frame.kind==="reels"||frame.kind==="purchaseTrigger")&&Array.isArray(frame.board)){
     boardEl.classList.remove("hold-board");
     let cells=[];
     for(let row=0;row<3;row++)for(let col=0;col<5;col++){
@@ -1909,7 +1950,11 @@ function renderRoundDetails(){
       }
     }
     const winning=(frame.lines||[]).length;
-    $("detailStats").textContent=(frame.freeSpin?"FREE SPIN "+frame.freeSpin+" · ":"")+"QUEDA "+frame.drop+" · "+winning+" linha(s) · "+(frame.free?"BRUTO ":"PRÉMIO ")+format((frame.free?(frame.lines||[]).reduce((sum,line)=>sum+line.amount,0):frame.win)/100*record.bet)+(awards.length?" · WILD "+awards.map(a=>"+"+a.value).join(" ")+" → ×"+frame.multi:"");
+    if(frame.kind==="purchaseTrigger"){
+      $("detailStats").textContent=frame.mode==="free"
+        ?"ATIVAÇÃO DO BÓNUS COMPRADO · 3 SCATTER · SEM PRÉMIO ADICIONAL"
+        :"ATIVAÇÃO DO BÓNUS COMPRADO · 6 MOEDAS · SEM PRÉMIO ADICIONAL";
+    }else $("detailStats").textContent=(frame.freeSpin?"FREE SPIN "+frame.freeSpin+" · ":"")+"QUEDA "+frame.drop+" · "+winning+" linha(s) · "+(frame.free?"BRUTO ":"PRÉMIO ")+format((frame.free?(frame.lines||[]).reduce((sum,line)=>sum+line.amount,0):frame.win)/100*record.bet)+(awards.length?" · WILD "+awards.map(a=>"+"+a.value).join(" ")+" → ×"+frame.multi:"");
   }else if((frame.kind==="hold"||frame.kind==="holdEnd")&&Array.isArray(frame.grid)){
     boardEl.classList.add("hold-board");
     boardEl.innerHTML=frame.grid.slice(0,16).map(v=>'<div class="detail-cell '+(v?"coin":"")+'">'+(v?format(Number(v)*record.bet)+" €":"✦")+'</div>').join("");
@@ -1943,7 +1988,7 @@ function baseCoinMarkup(factor){
 }
 function clearScatterScene(){
   const frame=$("reelFrame"),banner=$("scatterBanner");
-  frame?.classList?.remove("scatter-tease","scatter-bonus");
+  frame?.classList?.remove("scatter-tease","scatter-bonus","hold-purchase-trigger");
   if(banner){banner.hidden=true;banner.textContent=""}
 }
 function showScatterScene(board,free=false){
@@ -2559,12 +2604,41 @@ async function animateCascade(boardFinal,oldRemoved,drop=2){
       .forEach(cell=>cell.classList.remove("cascade-concealed")));
   }
 }
+// A purchased bonus begins with its visible triggering spin on the main 5x3 reels.
+// The bonus outcome and debit are already saved; this sequence does not calculate
+// rewards or issue a second settlement, and PASSAR may skip it safely.
+async function showPurchasedBonusTrigger(evt){
+  const frame=$("reelFrame"),banner=$("scatterBanner");
+  clearPayline();hideCascadeMeter();hideWildTally();clearWinSparks();clearScatterScene();
+  $("dropNum").textContent="0";$("multiNum").textContent="×1";
+  $("hud").textContent="✦ ATIVAÇÃO DO BÓNUS COMPRADO ✦";
+  say(evt.mode==="free"?"BÓNUS COMPRADO · A revelar 3 SCATTER…":"BÓNUS COMPRADO · A revelar 6 MOEDAS…","bonus");
+  await animateReelStop(evt.board);
+  if(skipAnimations)return;
+  if(evt.mode==="free"){
+    if(count(evt.board,9)!==3)throw Error("Ativação Free Spins sem 3 SCATTER");
+    showScatterScene(evt.board,false);
+    if(!scatterSoundFromReelStops)scatterCue(3);
+    say("3 SCATTER! FREE SPINS ATIVADAS!","bonus");
+  }else{
+    if(count(evt.board,11)!==6)throw Error("Ativação Hold & Win sem 6 moedas");
+    frame.classList.add("hold-purchase-trigger");
+    banner.textContent="✦ 6 MOEDAS · HOLD & WIN ATIVADO ✦";
+    banner.hidden=false;
+    playRecorded("coin");
+    say("6 MOEDAS! HOLD & WIN ATIVADO!","bonus");
+  }
+  await pause(turbo?200:1200);
+  clearScatterScene();
+}
 async function playback(book){
   $("reelFrame").classList.remove("round-finished");
   let previousRemoved=[],lastHoldGrid=[],cascadeRunning=0;
   clearPayline();hideCascadeMeter();clearWinSparks();
   for(const evt of book.events){
-    if(evt.kind==="freeStart"){
+    if(evt.kind==="purchaseTrigger"){
+      await showPurchasedBonusTrigger(evt);
+    }else if(evt.kind==="freeStart"){
       $("freeRetrigger").hidden=true;
       await showBonusCurtain("FREE SPINS","15 RODADAS MÁGICAS","✦");
       updateFreeHud(evt.remaining,evt.raw,evt.multi);
