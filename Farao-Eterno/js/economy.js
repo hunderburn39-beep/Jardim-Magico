@@ -258,8 +258,30 @@
    e.totals[role==='technician'?'techCollectedU':'merchantCollectedU']+=amount;
    log(s,'collect-'+role,amount);
  }
+ // Fecha o período estatístico sem alterar cofres, créditos ou numeração de jogadas.
+ // O período anterior permanece arquivado e é enviado no próximo snapshot remoto.
+ function resetCounters(s){
+   S.validate(s);requireIdle(s);
+   const e=validateEconomy(s);
+   const totals={...e.totals},stats={...s.stats};
+   const now=date(),period={
+     id:(e.periodNumber||1),startedAt:e.periodStartedAt||null,closedAt:now,
+     totals,stats,balanceU:s.balanceU,prizeU:e.prizeU,
+     techDueU:e.techDueU,merchantDueU:e.merchantDueU
+   };
+   e.periods=Array.isArray(e.periods)?e.periods:[];
+   e.periods.unshift(period);
+   e.periods=e.periods.slice(0,24);
+   e.periodNumber=period.id+1;
+   e.periodStartedAt=now;
+   for(const key of Object.keys(e.totals))e.totals[key]=0;
+   for(const key of ['paid','free','stakeU','winU','features'])s.stats[key]=0;
+   log(s,'period-reset',0,'Fechado período '+period.id);
+   S.validate(s);
+   return period;
+ }
  const api={ensure,validateEconomy,freshEco,checkPin,setLevel,setSplit,changePin,
-   adjustFund,collect,amountUnits,weighted};
+   adjustFund,collect,amountUnits,weighted,resetCounters};
  S.economy=api;
  return api;
 });
