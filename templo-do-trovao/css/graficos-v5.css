@@ -203,3 +203,19 @@ body.asset-fallback .symbol-bitmap::after,body:not(.assets-ready) .symbol-bitmap
 @media(prefers-reduced-motion:reduce){
   .board .cell .cluster-spot{animation:none!important}
 }
+
+/* V20 Super Scatter / Zeus: o martelo aparece apenas quando chega o símbolo especial. */
+.board .cell.super-scatter{overflow:visible;z-index:6;filter:drop-shadow(0 0 13px #85eaff);animation:superScatterPulse 1.05s ease-in-out infinite alternate}
+.board .cell.super-scatter .symbol-bitmap{transform:scale(1.08);filter:brightness(1.45) drop-shadow(0 0 13px #6aeaff)}
+.board .cell.super-scatter .super-crest{position:absolute;top:-7%;left:0;right:0;z-index:14;text-align:center;font:900 clamp(8px,1.3vw,17px) Georgia,serif;color:#fff4b7;text-shadow:0 1px #59310f,0 0 8px #7afaff;pointer-events:none}
+@keyframes superScatterPulse{from{filter:drop-shadow(0 0 8px #5bc8ff)}to{filter:drop-shadow(0 0 21px #fff8aa) drop-shadow(0 0 10px #7eeaff)}}
+.god-column{isolation:isolate}
+.god-column .super-hammer{position:absolute;z-index:7;width:15%;height:36%;left:77%;top:24%;opacity:0;pointer-events:none;transform-origin:50% 87%;transform:rotate(70deg)}
+.god-column .super-hammer:before{content:"";position:absolute;left:42%;top:10%;height:90%;width:16%;border:2px solid #b87933;border-radius:8px;background:linear-gradient(90deg,#65391f,#edbd70,#704024)}
+.god-column .super-hammer:after{content:"";position:absolute;left:4%;top:0;width:94%;height:29%;border:2px solid #fbe4a6;border-radius:7px;background:linear-gradient(140deg,#fff6c4,#d6a241 48%,#704021 90%);box-shadow:0 0 16px #a5efff}
+.god-column.super-summon .super-hammer{animation:zeusRaiseHammer 1.4s ease-in-out both}
+.god-column.super-summon .god-art{animation:zeusRaiseBody 1.4s ease-in-out both!important}
+@keyframes zeusRaiseHammer{0%{opacity:0;transform:rotate(70deg) translateY(20%)}16%{opacity:1}55%{opacity:1;transform:rotate(-35deg) translateY(-15%)}78%{opacity:1;transform:rotate(-35deg) translateY(-15%)}100%{opacity:0;transform:rotate(70deg)}}
+@keyframes zeusRaiseBody{0%,100%{transform:translateY(0)}55%{transform:translateY(-2%) rotate(-3deg)}}
+@media(orientation:portrait){.god-column.super-summon{display:block;position:absolute;z-index:12;right:0;top:24%;width:23%;height:32%;pointer-events:none}.god-column.super-summon .god-label{display:none}}
+@media(prefers-reduced-motion:reduce){.board .cell.super-scatter,.god-column.super-summon .super-hammer,.god-column.super-summon .god-art{animation:none!important}.god-column.super-summon .super-hammer{opacity:1;transform:rotate(-35deg)}}
