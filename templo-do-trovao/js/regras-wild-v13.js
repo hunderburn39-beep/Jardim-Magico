@@ -81,12 +81,12 @@
  // O modo clássico mantém draw() original; o modo clusters usa drawCluster().
  const CLUSTER_KINDS=[...KINDS];
  const CLUSTER_WEIGHTS=[8,8,9,10,12,14,15,15,15];
- const CLUSTER_CONFIG={base:{scatter:.0105,wild:.039},
-                       bonus:{scatter:.015,wild:.052}};
+ const CLUSTER_CONFIG={base:{scatter:.0105,superShare:.09,wild:.039},
+                       bonus:{scatter:.015,superShare:.09,wild:.052}};
  function drawCluster(bonus,id,rng){
    const cfg=bonus?CLUSTER_CONFIG.bonus:CLUSTER_CONFIG.base;
    const n=rng();
-   if(n<cfg.scatter)return {id,kind:"scatter"};
+   if(n<cfg.scatter)return {id,kind:rng()<cfg.superShare?"super_scatter":"scatter"};
    if(n<cfg.scatter+cfg.wild){
      return {id,kind:"wild",value:pick(WILD_VALUES,WILD_WEIGHTS,rng)};
    }
