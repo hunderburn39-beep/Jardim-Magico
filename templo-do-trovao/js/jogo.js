@@ -8,7 +8,7 @@
   const SYMBOLS = ["crown","ring","goblet","hourglass","ruby","sapphire","emerald","amethyst","amber"];
   const RULES=window.TrovaoRules;
   if(!RULES)throw Error("Motor WILD indisponível");
-  const LABELS = {crown:"Coroa",ring:"Anel",goblet:"Cálice",hourglass:"Ampulheta",ruby:"Rubi",sapphire:"Safira",emerald:"Esmeralda",amethyst:"Ametista",amber:"Âmbar",wild:"WILD"};
+  const LABELS = {super_scatter:"Super Scatter",crown:"Coroa",ring:"Anel",goblet:"Cálice",hourglass:"Ampulheta",ruby:"Rubi",sapphire:"Safira",emerald:"Esmeralda",amethyst:"Ametista",amber:"Âmbar",wild:"WILD"};
   const WEIGHTS = [5,6,6,7,8,9,9,9,9];
   const MULT_VALUES = [2,3,4,5,6,8,10,12,15,20,25,50,100,250,500];
   const MULT_WEIGHTS = [28,21,15,11,8,6,4,3,2,1.5,1,.45,.18,.045,.012];
@@ -24,12 +24,12 @@
   function scatterMultiplier(n){return n>=6?100:n===5?5:n===4?3:0}
   // Recortes do atlas 3D (5 colunas, 3 linhas); as 11 peças têm arte própria.
   const SPRITES=Object.freeze({
-    sapphire:[0,0],emerald:[1,0],amber:[2,0],amethyst:[3,0],ruby:[4,0],
+    super_scatter:[4,1],sapphire:[0,0],emerald:[1,0],amber:[2,0],amethyst:[3,0],ruby:[4,0],
     goblet:[0,1],ring:[1,1],hourglass:[2,1],crown:[3,1],scatter:[4,1],mult:[0,2]
   });
   const FALLBACK=Object.freeze({
     sapphire:"💎",emerald:"🔺",amber:"🔶",amethyst:"🔻",ruby:"❤️",wild:"🌟",
-    goblet:"🏆",ring:"💍",hourglass:"⌛",crown:"👑",scatter:"⚡",mult:"✦"
+    goblet:"🏆",ring:"💍",hourglass:"⌛",crown:"👑",scatter:"⚡",super_scatter:"⚡",mult:"✦"
   });
   function spriteStyle(kind){
     const xy=SPRITES[kind];
@@ -77,7 +77,7 @@
     balance:INITIAL_CREDITS,betIndex:4,busy:false,bonus:false,
     freeLeft:0,bonusWon:0,bonusMult:0,autoRemaining:0,cancelAuto:false,
     turbo:false,sound:true,grid:[],currentWin:0,cascade:0,
-    spots:RULES.emptySpots(),bonusSpinsUsed:0,visibleMult:1
+    spots:RULES.emptySpots(),bonusSpinsUsed:0,visibleMult:1,superBonus:false,cycleWon:0
   };
   let ctx = null, holdTimer = null, longFired = false, modalOpen = false;
   let landingTimers = [];
@@ -101,7 +101,19 @@
   }
   function newSymbol(){return RULES.drawCluster(state.bonus,nextId++,rand)}
   function makeGrid(){return Array.from({length:SIZE},newSymbol)}
-  function countScatter(grid){return grid.filter(s=>s.kind==="scatter").length}
+  function countScatter(grid){return grid.filter(s=>s.kind==="scatter"||s.kind==="super_scatter").length}
+  function regularScatters(grid){return grid.filter(s=>s.kind==="scatter").length}
+  function containsSuper(grid){return grid.some(s=>s.kind==="super_scatter")}
+  let hammerTimer;
+  function raiseSuperHammer(){
+    const zeus=document.querySelector(".god-column");if(!zeus)return;
+    let hammer=zeus.querySelector(".super-hammer");
+    if(!hammer){hammer=document.createElement("span");hammer.className="super-hammer";hammer.setAttribute("aria-hidden","true");zeus.appendChild(hammer)}
+    zeus.classList.remove("super-summon");void zeus.offsetWidth;
+    zeus.classList.add("super-summon");clearTimeout(hammerTimer);
+    hammerTimer=setTimeout(()=>zeus.classList.remove("super-summon"),1500);
+    window.TrovaoScene?.burst();sfx("scatter");
+  }
   function getWins(grid,cap){return RULES.clusterScore(grid,PAY_TABLE,currentBet(),state.spots,cap)}
   function tumble(grid,matchedPositions){
     return RULES.tumbleClusters(grid,matchedPositions,newSymbol);
@@ -127,9 +139,12 @@
           v.textContent=symbol.kind==="wild"?"×"+symbol.value:symbol.value+"×";
           tile.appendChild(v);
         }
+        if(symbol.kind==="super_scatter"){
+          const crest=document.createElement("span");crest.className="super-crest";crest.textContent="SUPER";tile.appendChild(crest);
+        }
         tileCache.set(symbol.id,tile);
       }
-      tile.className="cell "+(symbol.kind==="scatter"?"scatter":symbol.kind==="mult"?"multiplier":symbol.kind==="wild"?"wild":"");
+      tile.className="cell "+(symbol.kind==="super_scatter"?"scatter super-scatter":symbol.kind==="scatter"?"scatter":symbol.kind==="mult"?"multiplier":symbol.kind==="wild"?"wild":"");
       const col=index%COLS,row=Math.floor(index/COLS);
       const was=options.fallFrom?.get(symbol.id);
       if(options.dropIds?.has(symbol.id)||options.fallFrom){
@@ -154,7 +169,7 @@
         tile.classList.add(spot>1?"spot-active":"spot-marked");
       }else if(spotTag){spotTag.remove()}
       if(options.matchPositions?.has(index))tile.classList.add("winner");
-      if(options.scatterGlow&&symbol.kind==="scatter")tile.classList.add("scat-hit");
+      if(options.scatterGlow&&(symbol.kind==="scatter"||symbol.kind==="super_scatter"))tile.classList.add("scat-hit");
       tile.dataset.kind=symbol.kind;
       tile.setAttribute("aria-label",symbol.kind==="mult"?"Multiplicador "+symbol.value+" vezes":symbol.kind==="wild"?"WILD "+symbol.value+" vezes":symbol.kind==="scatter"?"Scatter":LABELS[symbol.kind]);
       fragment.appendChild(tile);
@@ -177,7 +192,7 @@
         }
       }
       // O áudio do SCATTER continua sincronizado com o pousar da peça.
-      const scat=landings.filter(landing=>landing.kind==="scatter");
+      const scat=landings.filter(landing=>(landing.kind==="scatter"||landing.kind==="super_scatter"));
       if(scat.length)landingTimers.push(window.setTimeout(()=>sfx("scatter"),scat[0].when));
     }
     const lastLanding=landings.reduce((max,landing)=>Math.max(max,landing.when),0);
@@ -279,9 +294,9 @@
     el.buyCost.textContent=money(currentBet()*100);
     el.win.textContent=money(state.bonus?state.bonusWon:state.currentWin);
     el.free.textContent=state.bonus?String(state.freeLeft):"—";
-    el.freeHint.textContent=state.bonus?"TOTAL BÓNUS "+money(state.bonusWon):"3 SCATTER = 10 FREE SPINS";
+    el.freeHint.textContent=state.bonus?(state.superBonus?"SUPER SCATTER • ORBES ×2":"TOTAL BÓNUS "+money(state.bonusWon)):"3 SCATTER = 10 FREE SPINS";
     el.mult.textContent=RULES.maxActiveSpot(state.spots)+"×";
-    el.multHint.textContent=state.bonus?"SPOTS PERSISTENTES":"SPOTS ATÉ 1024×";
+    el.multHint.textContent=state.superBonus?"TODAS AS CASAS PARTEM DE ×2":state.bonus?"SPOTS PERSISTENTES":"SPOTS ATÉ 1024×";
     el.cascades.textContent=String(state.cascade);
     el.spin.classList.toggle("spinning",state.busy);
     el.spin.classList.toggle("auto-mode",state.autoRemaining>0);
@@ -332,6 +347,7 @@
       '<p><b>SCATTER:</b> 3, 4, 5, 6 ou 7+ símbolos ativam 10, 12, 15, 20 ou 30 Free Spins. Durante o bónus os SCATTER voltam a acrescentar giros, até 200 na sessão.</p>'+
       '<p><b>WILD (1×–5×):</b> ajuda a ligar os grupos das nove peças, sem substituir SCATTER. Cada Wild só pode participar uma vez por queda.</p>'+
       '<p><b>Multiplicadores:</b> cada vitória marca as posições. Se voltarem a vencer, sobem para ×2, ×4, ×8... ×1024. Os valores das casas do grupo somam-se. Durante Free Spins mantêm-se entre giros.</p>'+
+      '<p><b>SUPER SCATTER:</b> 3 SCATTER no total, incluindo um SUPER, ativam Free Spins especiais: todas as 49 casas começam em ×2 e cada vitória nessa casa duplica para ×4, ×8... ×1024. Quatro SCATTER normais e um SUPER no mesmo ecrã dão 200× adicionais, incluídos no teto de 5 000×.</p>'+ 
       '<p><b>Comprar bónus:</b> 100× a aposta em créditos virtuais. Limite de 5 000× a aposta por ciclo.</p>'+
       '<p class="note">Tabela nova 5+ que substitui as probabilidades clássicas 8+. RTP ainda não calibrado/certificado. Créditos exclusivamente fictícios.</p></div>',
       [{text:"FECHAR TABELA",secondary:true}]);
@@ -355,7 +371,7 @@
     state.busy=true;el.fx?.replaceChildren();
     if(!bonusSpin){
       state.balance=Math.round((state.balance-bet)*100)/100;
-      state.spots=RULES.emptySpots();state.currentWin=0;
+      state.spots=RULES.emptySpots();state.currentWin=0;state.cycleWon=0;
     }else{
       state.freeLeft=Math.max(0,state.freeLeft-1);
       state.bonusSpinsUsed++;
@@ -369,12 +385,15 @@
     window.TrovaoHistory?.startSpin({bet,bonus:bonusSpin,grid:state.grid});
     const incoming=new Set(state.grid.map(x=>x.id));
     const fallFinished=render(state.grid,{dropIds:incoming});
+    if(containsSuper(state.grid))raiseSuperHammer();
     await pause(fallFinished+(state.turbo?75:130));
 
     let paid=0,steps=0,freeAward=0;
-    const cap=Math.max(0,MAX_WIN_X*bet-(bonusSpin?state.bonusWon:0));
+    let superSeen=containsSuper(state.grid),superGuarantee=superSeen&&regularScatters(state.grid)>=4;
+    const cap=Math.max(0,MAX_WIN_X*bet-(bonusSpin?state.cycleWon:0));
     for(;;){
       const scatters=countScatter(state.grid);
+      if(containsSuper(state.grid)){superSeen=true;if(regularScatters(state.grid)>=4)superGuarantee=true}
       freeAward=Math.max(freeAward,RULES.freeSpinAward(scatters));
       const left=Math.max(0,cap-paid);
       if(left<.009||steps>=45)break;
@@ -399,6 +418,7 @@
 
       const oldPositions=new Map(state.grid.map((cell,index)=>[cell.id,index]));
       state.grid=tumble(state.grid,wins.matchedPositions);
+      if(state.grid.some(s=>s.kind==="super_scatter"&&!oldPositions.has(s.id)))raiseSuperHammer();
       const bornIds=new Set(state.grid.filter(cell=>!oldPositions.has(cell.id)).map(cell=>cell.id));
       window.TrovaoHistory?.recordFall(state.grid,bornIds);
       sfx("tumble");
@@ -409,8 +429,9 @@
     const total=Math.min(cap,Math.round(paid*100)/100);
     if(bonusSpin){
       state.bonusWon=Math.round((state.bonusWon+total)*100)/100;
+      state.cycleWon=Math.round((state.cycleWon+total)*100)/100;
     }else{
-      state.currentWin=total;
+      state.currentWin=total;state.cycleWon=total;
       state.balance=Math.round((state.balance+total)*100)/100;
     }
     if(total>0){
@@ -441,29 +462,36 @@
       window.TrovaoScene?.burst();
       sfx("scatter");await pause(state.turbo?350:1150);setOverlay("");
     }
-    if(bonusSpin&&(state.bonusWon>=MAX_WIN_X*bet-.001||state.bonusSpinsUsed>=200)){
+    if(bonusSpin&&(state.cycleWon>=MAX_WIN_X*bet-.001||state.bonusSpinsUsed>=200)){
       state.freeLeft=0;
     }
     refresh();state.busy=false;refresh();
     if(bonusSpin&&state.freeLeft<=0){
       await finishBonus();
     }else if(!bonusSpin&&freeAward>0){
-      await startBonus(freeAward);
+      await startBonus(freeAward,superSeen,superGuarantee);
     }else if(!bonusSpin){
       await showBig(state.currentWin);
     }
     return true;
   }
-  async function startBonus(count=10){
-    state.bonus=true;
+  async function startBonus(count=10,withSuper=false,guarantee=false){
+    state.bonus=true;state.superBonus=withSuper;
     state.freeLeft=Math.min(200,Math.max(1,count));
     state.bonusWon=0;state.bonusMult=0;state.bonusSpinsUsed=0;
-    state.spots=RULES.emptySpots();
+    state.spots=withSuper?Array(SIZE).fill(2):RULES.emptySpots();
+    if(guarantee){
+      const award=Math.min(200*currentBet(),Math.max(0,MAX_WIN_X*currentBet()-state.cycleWon));
+      state.bonusWon=Math.round(award*100)/100;
+      state.cycleWon=Math.round((state.cycleWon+state.bonusWon)*100)/100;
+      setOverlay("⚡ SUPER SCATTER • 200× ⚡");sfx("bigwin");refresh();
+      await pause(state.turbo?430:1300);setOverlay("");
+    }
     el.free.parentElement.classList.add("bonus-active");
-    setMsg("BÓNUS ATIVO • "+state.freeLeft+" FREE SPINS");refresh();
+    setMsg((withSuper?"SUPER SCATTER • ORBES ×2 • ":"BÓNUS ATIVO • ")+state.freeLeft+" FREE SPINS");refresh();
     window.TrovaoScene?.burst();
     await pause(state.turbo?180:400);
-    while(state.bonus&&state.freeLeft>0&&state.bonusSpinsUsed<200){
+    while(state.bonus&&state.freeLeft>0&&state.bonusSpinsUsed<200&&state.cycleWon<MAX_WIN_X*currentBet()-.001){
       const ok=await playSpin();
       if(!ok)break;
       await pause(state.turbo?120:340);
@@ -472,7 +500,7 @@
   }
   async function finishBonus(){
     if(!state.bonus)return;
-    state.bonus=false;state.freeLeft=0;state.bonusMult=0;
+    state.bonus=false;state.superBonus=false;state.freeLeft=0;state.bonusMult=0;
     state.balance=Math.round((state.balance+state.bonusWon)*100)/100;
     state.currentWin=Math.round(state.bonusWon*100)/100;
     const win=state.currentWin;
@@ -524,7 +552,7 @@
         if(state.balance<cost){openModal("SALDO INSUFICIENTE","<p>Não tens créditos virtuais suficientes para comprar o bónus.</p>",[{text:"REPOR 1 000 €",action:refill},{text:"FECHAR",secondary:true}]);return}
         state.balance=Math.round((state.balance-cost)*100)/100;state.busy=true;refresh();
         setOverlay("⚡ FREE SPINS ⚡");await pause(state.turbo?200:800);setOverlay("");
-        state.busy=false;await startBonus(10);
+        state.busy=false;state.cycleWon=0;await startBonus(10);
       }},{text:"CANCELAR",secondary:true}]);
   }
   function refill(){
