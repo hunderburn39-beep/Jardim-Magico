@@ -77,7 +77,7 @@
     balance:INITIAL_CREDITS,betIndex:4,busy:false,bonus:false,
     freeLeft:0,bonusWon:0,bonusMult:0,autoRemaining:0,cancelAuto:false,
     turbo:false,sound:true,grid:[],currentWin:0,cascade:0,
-    spots:RULES.emptySpots(),bonusSpinsUsed:0,visibleMult:1,superBonus:false,cycleWon:0
+    spots:RULES.emptySpots(),bonusSpinsUsed:0,visibleMult:1,superBonus:false,cycleWon:0,lockedMaxWin:false
   };
   let ctx = null, holdTimer = null, longFired = false, modalOpen = false;
   let landingTimers = [];
@@ -300,13 +300,14 @@
     el.cascades.textContent=String(state.cascade);
     el.spin.classList.toggle("spinning",state.busy);
     el.spin.classList.toggle("auto-mode",state.autoRemaining>0);
+    el.spin.disabled=state.lockedMaxWin;
     el.spinLabel.textContent=state.autoRemaining>0?"AUTO "+state.autoRemaining:state.busy?"A RODAR":"GIRAR";
     el.spinGlyph.textContent=state.autoRemaining>0?"⟳":"↻";
     el.spinSub.textContent=state.autoRemaining>0?"TOCAR PARA PARAR":state.bonus?"BÓNUS ATIVO":"MANTER 1 S = AUTO";
     el.turbo.classList.toggle("active",state.turbo);
     el.turbo.querySelector("small").textContent=state.turbo?"ON":"OFF";
     el.turbo.setAttribute("aria-pressed",String(state.turbo));
-    const lock=state.busy||state.bonus||state.autoRemaining>0;
+    const lock=state.busy||state.bonus||state.autoRemaining>0||state.lockedMaxWin;
     $("btnBuy").disabled=lock;$("betDown").disabled=lock;$("betUp").disabled=lock;
   }
   function openModal(title,html,buttons=[]){
@@ -360,7 +361,7 @@
     sfx("bigwin");await pause(state.turbo?420:1250);el.big.classList.add("hidden");
   }
   async function playSpin(){
-    if(state.busy)return false;
+    if(state.busy||state.lockedMaxWin)return false;
     const bonusSpin=state.bonus,bet=currentBet();
     if(!bonusSpin&&state.balance+1e-9<bet){
       openModal("SALDO INSUFICIENTE",
@@ -472,6 +473,7 @@
       await startBonus(freeAward,superSeen,superGuarantee);
     }else if(!bonusSpin){
       await showBig(state.currentWin);
+      if(state.cycleWon>=MAX_WIN_X*bet-.001)await enterMaxWin();
     }
     return true;
   }
@@ -484,7 +486,7 @@
       const award=Math.min(200*currentBet(),Math.max(0,MAX_WIN_X*currentBet()-state.cycleWon));
       state.bonusWon=Math.round(award*100)/100;
       state.cycleWon=Math.round((state.cycleWon+state.bonusWon)*100)/100;
-      setOverlay("⚡ SUPER SCATTER • 200× ⚡");sfx("bigwin");refresh();
+      setOverlay("⚡ SUPER SCATTER • "+Math.round(award/currentBet())+"× GARANTIDOS ⚡");sfx("bigwin");refresh();
       await pause(state.turbo?430:1300);setOverlay("");
     }
     el.free.parentElement.classList.add("bonus-active");
@@ -511,9 +513,31 @@
     setOverlay("BÓNUS: "+money(win));sfx("reward");
     await showBig(win,"PRÉMIO DO BÓNUS");
     await pause(state.turbo?220:750);setOverlay("");
+    if(state.cycleWon>=MAX_WIN_X*currentBet()-.001)await enterMaxWin();
+  }
+  async function enterMaxWin(){
+    if(state.lockedMaxWin)return;
+    state.lockedMaxWin=true;state.autoRemaining=0;state.cancelAuto=true;
+    setOverlay("⚡ MAX WIN • 5 000× ⚡");sfx("bigwin");window.TrovaoScene?.burst();
+    try{localStorage.setItem("trovao_max_win_lock",JSON.stringify({locked:true,balance:state.balance,betIndex:state.betIndex,win:state.cycleWon}))}catch(_){}
+    refresh();await pause(state.turbo?440:1400);openMaxWinModal();
+  }
+  function openMaxWinModal(){
+    openModal("MAX WIN • 5 000×",
+      "<p>Chegaste ao prémio máximo desta sessão: <b>"+money(state.cycleWon)+"</b>.</p>"+
+      "<p>Os giros ficam bloqueados até ao levantamento de créditos virtuais. O protótipo não permite dinheiro real.</p>",
+      [{text:"LEVANTAR CRÉDITOS VIRTUAIS",action:withdrawVirtual}]);
+  }
+  function withdrawVirtual(){
+    if(!state.lockedMaxWin)return;
+    state.lockedMaxWin=false;state.balance=INITIAL_CREDITS;state.cycleWon=0;
+    state.currentWin=0;state.autoRemaining=0;state.cancelAuto=true;
+    state.spots=RULES.emptySpots();state.grid=makeGrid();
+    try{localStorage.removeItem("trovao_max_win_lock")}catch(_){}
+    setOverlay("");setMsg("LEVANTAMENTO VIRTUAL CONCLUÍDO • NOVA SESSÃO");render(state.grid);refresh();
   }
   async function startNormal(){
-    if(state.busy||state.bonus||modalOpen)return;
+    if(state.busy||state.bonus||state.lockedMaxWin||modalOpen)return;
     if(state.autoRemaining>0){stopAuto();return}
     await playSpin();
   }
@@ -522,7 +546,7 @@
   }
   async function runAuto(){
     state.cancelAuto=false;
-    while(state.autoRemaining>0&&!state.cancelAuto){
+    while(state.autoRemaining>0&&!state.cancelAuto&&!state.lockedMaxWin){
       if(state.busy||state.bonus){await pause(250);continue}
       state.autoRemaining--;refresh();
       const ok=await playSpin();if(!ok){stopAuto();break}
@@ -532,7 +556,7 @@
     state.autoRemaining=0;refresh();
   }
   function showAutoOptions(){
-    if(state.busy||state.bonus||modalOpen)return;
+    if(state.busy||state.bonus||state.lockedMaxWin||modalOpen)return;
     openModal("RODADAS AUTOMÁTICAS",
       '<span class="auto-symbol">⚡ ✦ ⚡</span>'+
       '<p class="auto-instructions">Escolhe as rodadas que os deuses vão girar. '+
@@ -543,7 +567,7 @@
     el.modal.querySelector(".modal")?.classList.add("auto-modal");
   }
     function buyBonus(){
-    if(state.busy||state.bonus||state.autoRemaining>0)return;
+    if(state.busy||state.bonus||state.autoRemaining>0||state.lockedMaxWin)return;
     const cost=currentBet()*100;
     openModal("COMPRAR 10 FREE SPINS",
       "<p>Ativar 10 rodadas grátis por <b>"+money(cost)+"</b> em créditos virtuais?</p>"+
@@ -556,12 +580,12 @@
       }},{text:"CANCELAR",secondary:true}]);
   }
   function refill(){
-    if(state.busy||state.bonus)return;
+    if(state.busy||state.bonus||state.lockedMaxWin)return;
     state.balance=Math.round((state.balance+INITIAL_CREDITS)*100)/100;
     setMsg("1 000 € EM CRÉDITOS VIRTUAIS ADICIONADOS");refresh();
   }
   function changeBet(delta){
-    if(state.busy||state.bonus||state.autoRemaining>0)return;
+    if(state.busy||state.bonus||state.autoRemaining>0||state.lockedMaxWin)return;
     state.betIndex=Math.max(0,Math.min(BETS.length-1,state.betIndex+delta));refresh();
   }
   // Clique curto roda; manter 1 segundo abre o menu de auto-spins.
@@ -611,5 +635,14 @@
   window.TrovaoAudio?.setEnabled(state.sound);
   $("btnSound").textContent=state.sound?"♫":"♪";
   preflightSymbols();
+  try{
+    const saved=JSON.parse(localStorage.getItem("trovao_max_win_lock")||"null");
+    if(saved?.locked){
+      state.lockedMaxWin=true;state.balance=Number(saved.balance)||INITIAL_CREDITS;
+      state.betIndex=Math.max(0,Math.min(BETS.length-1,Number(saved.betIndex)||0));
+      state.cycleWon=Number(saved.win)||0;
+      setOverlay("⚡ MAX WIN • LEVANTAMENTO PENDENTE ⚡");openMaxWinModal();
+    }
+  }catch(_){}
   state.grid=makeGrid();render(state.grid);refresh();
 })();
