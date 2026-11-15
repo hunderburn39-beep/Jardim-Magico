@@ -11,7 +11,7 @@ body{background:radial-gradient(ellipse at 50% 50%,#182867 0%,#060b26 45%,#03051
 #controls button:active{transform:scale(.96)}
 #alert{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 6px);left:50%;transform:translateX(-50%);padding:5px 9px;color:#aecbdf;font-size:10px;background:#030c21cc;border-radius:8px;white-space:nowrap;pointer-events:none;opacity:.65}
 @media(max-width:650px){#controls{gap:5px;left:5px;top:5px}#controls button{font-size:10px; padding:5px 7px;min-height:27px}#alert{display:none}}
-</style></head><body><div id="shell"><canvas id="game" width="941" height="1672" aria-label="Jogo de blocos. Uma peça cai de cada vez e espera pela escolha de uma das quatro posições de encaixe. Acede aos comandos por toque ou teclado." role="application"></canvas></div>
+</style></head><body><div id="shell"><canvas id="game" width="941" height="1672" aria-label="Jogo de blocos. Uma peça cai de cada vez e espera pela escolha de uma das três posições apoiadas em baixo. Acede aos comandos por toque ou teclado." role="application"></canvas></div>
 <div id="controls"><button id="soundBtn" title="Alternar som">🔊 Som</button><button id="musicBtn" title="Alternar música">♫ Música</button><button id="resetBtn" title="Reiniciar jogo">↻ Novo</button></div><div id="alert">1–4 encaixar · R rodar · N mais encaixes · H guardar · P pausa</div>
 <script>
 (()=>{'use strict';
@@ -55,36 +55,38 @@ score=0;lines=0;level=1;combo=0;mult=1;seconds=120;lastTs=0;particles=[];shake=0
 spawnPiece();sound('start');}
 function canFit(p,x,y){if(!p)return false;for(const [dx,dy] of cells(p)){const xx=x+dx,yy=y+dy;if(xx<0||xx>=C||yy<0||yy>=R||grid[yy][xx])return false}return true}
 function landingY(p,x){if(!canFit(p,x,0))return -1;let y=0;while(canFit(p,x,y+1))y++;return y}
-// Encaixe livre em toda a grelha: não apenas na altura da queda vertical.
-// É válido sempre que a peça tocar noutra peça (inclusive lateralmente), ou no chão.
+// A peça cai SEMPRE na vertical: só pode pousar onde encontra apoio abaixo.
+// Contacto lateral, no topo ou com a parede NÃO cria uma posição de encaixe.
+// Só propomos posições alcançáveis por gravidade (sem atravessar outras pedras).
 function candidateScores(p){
  if(!p)return [];
- const squares=cells(p),pw=p.cells[0].length,ph=p.cells.length,arr=[];
- for(let y=0;y<=R-ph;y++)for(let x=0;x<=C-pw;x++){
-  if(!canFit(p,x,y))continue;
+ const squares=cells(p),pw=p.cells[0].length,arr=[];
+ for(let x=0;x<=C-pw;x++){
+  const y=landingY(p,x);
+  if(y<0)continue;
   const own=new Set(squares.map(([dx,dy])=>(x+dx)+','+(y+dy)));
-  let side=0,bottom=0,top=0,wall=0;const rows=new Map();
+  const rows=new Map();let bottom=0,side=0;
   for(const [dx,dy] of squares){
    const xx=x+dx,yy=y+dy;
    rows.set(yy,(rows.get(yy)||0)+1);
-   for(const [sx,sy] of [[-1,0],[1,0],[0,-1],[0,1]]){
-    const nx=xx+sx,ny=yy+sy;
-    if(own.has(nx+','+ny))continue;
-    if(ny===R){bottom+=2;continue}
-    if(nx<0||nx>=C){wall++;continue}
-    if(ny>=0&&grid[ny][nx]){if(sx)side++;else if(sy===1)bottom++;else top++}
+   // Apenas o contacto POR BAIXO serve de apoio.
+   if(yy+1===R)bottom++;
+   else if(!own.has(xx+','+(yy+1))&&grid[yy+1][xx])bottom++;
+   // O contacto lateral serve só para desempatar pontos, não para validar.
+   for(const sx of [-1,1]){
+    const nx=xx+sx;
+    if(nx>=0&&nx<C&&!own.has(nx+','+yy)&&grid[yy][nx])side++;
    }
   }
-  // Sem contacto com blocos ou com o chão: não deixar a peça no ar.
-  if(side+bottom+top===0)continue;
+  if(bottom===0)continue; // garantia: nunca suspensa nem presa à lateral
   let linesReady=0,almost=0;
   for(const [ry,added] of rows){
    const filled=grid[ry].filter(Boolean).length+added;
    if(filled===C)linesReady++;
    else if(filled>=8)almost++;
   }
-  const fit=linesReady*220+almost*22+side*13+bottom*10+top*3+Math.min(3,wall)*.5+y*.6;
-  arr.push({x,y,fit,side,bottom,top,contact:side+bottom+top});
+  const fit=linesReady*220+almost*22+bottom*20+side*2+y*.6;
+  arr.push({x,y,fit,side,bottom,top:0,contact:bottom});
  }
  return arr.sort((a,b)=>b.fit-a.fit);
 }
@@ -114,24 +116,14 @@ function selectThree(p){
     if(picked.some(z=>posKey(z)===posKey(o)))continue;
     const distance=picked.length?Math.min(...picked.map(z=>Math.hypot((o.x-z.x)*1.5,(o.y-z.y)*.9))):0;
     const sameArea=picked.some(z=>overlaps(o,z));
-    const value=o.fit*.28+distance*24+(o.side>0&&!o.bottom?22:0)-(sameArea?500:0);
+    const value=o.fit*.28+distance*24-(sameArea?500:0);
     if(value>best){best=value;at=k}
    }
    if(at<0)break;
    picked.push(pool.splice(at,1)[0]);
   }
  }
- // Garantir que os encaixes laterais novos também são percorridos,
- // em vez de voltar a escolher o mesmo contorno a cada rotação.
- const lateralFresh=fresh.filter(o=>o.side>0&&!o.bottom);
- if(lateralFresh.length){
-  const center=(C-p.cells[0].length)/2;
-  const best=lateralFresh.slice().sort((a,b)=>
-   (b.fit*.2-Math.abs(b.x-center)*20-Math.abs(b.y-14)*2)-
-   (a.fit*.2-Math.abs(a.x-center)*20-Math.abs(a.y-14)*2)
-  )[0];
-  picked.push(best);
- }
+  // Mostrar três posições pousadas sobre blocos ou sobre o chão.
  take(fresh);
  // Se restarem menos de três posições novas, completar as três cartas
  // com posições antigas distintas, sem ocultar as novas que faltavam.
@@ -151,7 +143,7 @@ function spawnPiece(p){
  // Uma peça pode encaixar na vertical mesmo que na horizontal não caiba.
  for(let n=0;n<4;n++){options=selectThree(active);if(options.length)break;rotate(active);rotation=(rotation+90)%360;}
  selected=0;if(!options.length){finish('SEM ENCAIXES');return}
- phase='incoming';phaseT=0;dropChoice=null;show('VEM UMA PEÇA…',1050);
+ phase='incoming';phaseT=0;dropChoice=null;show('A PEÇA VAI POUSAR…',1050);
 }
 function makeNewOptions({keepWaiting=false}={}){
  options=selectThree(active);selected=0;
@@ -161,14 +153,14 @@ function makeNewOptions({keepWaiting=false}={}){
 }
 function chooseAt(opt){
  if(!started||paused||finished||phase!=='waiting'||!opt||!canFit(active,opt.x,opt.y))return false;
- // Revalidar contacto no momento de colocar para não permitir peças a flutuar.
+ // Revalidar a altura de pouso por gravidade, com apoio por baixo.
  const valid=candidateScores(active).some(o=>o.x===opt.x&&o.y===opt.y);
  if(!valid)return false;
  dropChoice={...opt};phase='settling';phaseT=0;sound('rotate');return true;
 }
 function choose(i){if(!options[i])return false;selected=i;return chooseAt(options[i]);}
 function settle(){if(!active||!dropChoice)return;const p=active,{x,y}=dropChoice;
-if(!canFit(p,x,y)){makeNewOptions();return}
+if(!canFit(p,x,y)||landingY(p,x)!==y){makeNewOptions();return}
 for(const [dx,dy]of cells(p)){grid[y+dy][x+dx]=p.type;addParticles(BX+(x+dx+.5)*CW,BY+(y+dy+.5)*CH,COLORS[p.type],3)}
 score+=cells(p).length*10*mult;
 const completed=[];for(let row=0;row<R;row++)if(grid[row].every(Boolean))completed.push(row);
@@ -221,13 +213,20 @@ for(const [dx,dy]of cells(p)){const cx=x+dx,cy=y+dy;if(cx<0||cx>=C||cy<0||cy>=R)
 function text(s,x,y,size=34,color='#ffffff',align='center',glow=10){g.save();g.textAlign=align;g.textBaseline='middle';g.font=`950 ${size}px system-ui,Arial`;g.lineJoin='round';g.shadowBlur=glow;g.shadowColor=color;g.fillStyle=color;g.fillText(s,x,y);g.restore()}
 function background(){if(artReady)g.drawImage(art,0,0,W,H);else{g.fillStyle=gradient(0,H,'#071740','#030515');g.fillRect(0,0,W,H)}}
 function smooth(t){t=Math.max(0,Math.min(1,t));return t*t*(3-2*t)}
-function activePosition(){if(!active)return null;const spawnX=Math.floor((C-active.cells[0].length)/2),topY=1.8;
-if(phase==='incoming'){const t=smooth(phaseT/.78);return {x:spawnX,y:-4.6+(topY+4.6)*t,alpha:1}}
-if(phase==='waiting')return {x:spawnX,y:topY+.07*Math.sin(performance.now()/350),alpha:1};
-if(phase==='settling'&&dropChoice){const t=Math.min(1,phaseT/.88),head=.25;
-if(t<head)return{x:spawnX+(dropChoice.x-spawnX)*smooth(t/head),y:topY,alpha:1};
-const f=(t-head)/(1-head);return{x:dropChoice.x,y:topY+(dropChoice.y-topY)*(f*f),alpha:1}}
-return null}
+function activePosition(){
+ if(!active)return null;
+ const target=options[selected]||options[0];
+ if(!target)return null;
+ // A peça entra verticalmente até POUSAR no encaixe inicial.
+ if(phase==='incoming'){
+  const t=smooth(phaseT/.78);
+  return {x:target.x,y:-active.cells.length+(target.y+active.cells.length)*t,alpha:1};
+ }
+ // Em espera, a peça fica no encaixe apoiado, sem flutuar ou oscilar.
+ if(phase==='waiting')return {x:target.x,y:target.y,alpha:.62};
+ if(phase==='settling'&&dropChoice)return {x:dropChoice.x,y:dropChoice.y,alpha:1};
+ return null;
+}
 function drawBoard(){g.save();roundRect(BX-2,BY-2,BW+4,BH+4,7);g.clip();const grad=g.createLinearGradient(0,BY,0,BY+BH);grad.addColorStop(0,'#07152e');grad.addColorStop(.52,'#0a193d');grad.addColorStop(1,'#07122b');g.fillStyle=grad;g.fillRect(BX,BY,BW,BH);
 const rg=g.createRadialGradient(BX+BW*.52,BY+BH*.58,20,BX+BW/2,BY+BH/2,670);rg.addColorStop(0,'rgba(29,52,130,.19)');rg.addColorStop(1,'rgba(0,0,0,.35)');g.fillStyle=rg;g.fillRect(BX,BY,BW,BH);
 g.strokeStyle='#2545797c';g.lineWidth=1.6;g.beginPath();for(let x=0;x<=C;x++){const xx=BX+x*CW;g.moveTo(xx,BY);g.lineTo(xx,BY+BH)}for(let y=0;y<=R;y++){const yy=BY+y*CH;g.moveTo(BX,yy);g.lineTo(BX+BW,yy)}g.stroke();
@@ -255,7 +254,7 @@ neonBox(NEXT.x+8,NEXT.y+7,NEXT.w-18,NEXT.h-21);if(queue[0])paintPiece({type:queu
 neonBox(MULTI.x+8,MULTI.y+10,MULTI.w-17,MULTI.h-39);text('×'+mult,822,562,66);
 // Cover original static invitation while retaining the neon plaque / room art.
 g.save();g.fillStyle='#03153dec';g.strokeStyle='#4aaaff';g.lineWidth=3;g.shadowColor='#3867ff';g.shadowBlur=9;roundRect(208,1158,526,71,15);g.fill();g.stroke();g.restore();
-text('ESCOLHE ONDE ENCAIXAR',470,1185,28,'#ffffff');
+text('ESCOLHE ONDE POUSAR',470,1185,28,'#ffffff');
 if(started&&active&&!finished){
  const seen=seenPlacements.get(shapeKey(active));
  text('GIRO '+rotation+'°  ·  '+(seen?.size||0)+' / '+totalPlacements+' POSIÇÕES VISTAS',470,1213,17,'#7ee9ff');
@@ -289,8 +288,8 @@ function musicTick(){if(!audioCtx||!musicOn||!soundOn||!started||paused||finishe
 function coords(e){const b=cv.getBoundingClientRect();return{x:(e.clientX-b.left)*W/b.width,y:(e.clientY-b.top)*H/b.height}}
 function pointerDown(e){e.preventDefault();emitSound();const{x,y}=coords(e);pointer={x,y,down:true,startX:x,startY:y};try{cv.setPointerCapture(e.pointerId)}catch(_){}}
 function pointerMove(e){if(!pointer.down)return;const{x,y}=coords(e);pointer.x=x;pointer.y=y}
-// O toque no tabuleiro não fica limitado aos três contornos automáticos:
-// localiza qualquer encaixe que toque nas peças existentes, inclusive de lado.
+// O toque no tabuleiro pode escolher qualquer pouso vertical válido,
+ // desde que a peça fique apoiada sobre blocos inferiores ou no chão.
 function closestValidContact(px,py){
  if(!active||!inBoard(px,py))return null;
  const gx=Math.floor((px-BX)/CW),gy=Math.floor((py-BY)/CH);
@@ -328,7 +327,7 @@ if(phase==='waiting'&&inBoard(x,y)){
   else selected=-1;
   chooseAt(direct);return;
  }
- show('NÃO CABE AQUI • RODA PARA TENTAR',1200);sound('bad');return;
+ show('SEM APOIO AQUI • RODA OU MAIS 3',1200);sound('bad');return;
 }}
 cv.addEventListener('pointerdown',pointerDown);cv.addEventListener('pointermove',pointerMove);cv.addEventListener('pointerup',pointerUp);cv.addEventListener('pointercancel',()=>{pointer.down=false});cv.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();if(k==='p'||k==='escape'){if(started)pause();return}
@@ -344,14 +343,14 @@ document.getElementById('resetBtn').addEventListener('click',()=>{emitSound();st
 initGrid();queue=[];bag=[];refillQ();
 let tick=0;function loop(t){const dt=Math.min(.06,lastTs?(t-lastTs)/1000:0);lastTs=t;
 if(started&&!paused&&!finished){seconds=Math.max(0,seconds-dt);if(seconds===0)finish('TEMPO ESGOTADO');
-if(phase==='incoming'){phaseT+=dt;if(phaseT>=.78){phase='waiting';phaseT=0;show('TOCA NUM DOS 3 ENCAIXES',1600)}}
+if(phase==='incoming'){phaseT+=dt;if(phaseT>=.78){phase='waiting';phaseT=0;show('ESCOLHE 1 DOS 3 POUSOS',1600)}}
 else if(phase==='settling'){phaseT+=dt;if(phaseT>=.88)settle()}
 else if(phase==='between'){phaseT+=dt;if(phaseT>=.48)spawnPiece()}
 musicNext+=dt;if(musicNext>.25){musicNext=0;if((tick++%2)===0)musicTick()}}
 shake=Math.max(0,shake-dt*25);draw(dt);requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
-// Read-only diagnostic snapshot for automated layout/gameplay checks.
-window.__neonStatus=()=>({phase,score,lines,active:active?.type||null,shape:active?shapeKey(active):null,rotation,optionTurn,validPlacements:active?candidateScores(active).length:0,remaining:remainingPlacements(),seen:seenPlacements.get(active?shapeKey(active):'')?.size||0,sidePlacements:active?candidateScores(active).filter(o=>o.side>0&&!o.bottom).length:0,options:options.map(({x,y,side,bottom})=>({x,y,side,bottom})),finished,paused});
+// Diagnóstico de todos os pousos: nenhum pode ser lateral ou suspenso.
+window.__neonStatus=()=>({phase,score,lines,active:active?.type||null,shape:active?shapeKey(active):null,rotation,optionTurn,validPlacements:active?candidateScores(active).length:0,remaining:remainingPlacements(),seen:seenPlacements.get(active?shapeKey(active):'')?.size||0,sidePlacements:active?candidateScores(active).filter(o=>o.side>0&&!o.bottom).length:0,floatingPlacements:active?candidateScores(active).filter(o=>o.bottom===0).length:0,gravityPlacements:active?candidateScores(active).filter(o=>landingY(active,o.x)===o.y).length:0,options:options.map(({x,y,side,bottom})=>({x,y,side,bottom})),finished,paused});
 })();
 
 </script></body></html>
