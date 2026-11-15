@@ -1,0 +1,38 @@
+name: "Strikers 1945 | Teste HTML5 iPhone V2"
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Strikers-1945/index.html'
+      - 'Strikers-1945/tests/**'
+      - '.github/workflows/strikers-1945.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright e Chromium
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Iniciar servidor HTML5 local
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/strikers-server.log 2>&1 &
+      - name: Testar gráfícos, gestos para baixo, botões e execução
+        run: node Strikers-1945/tests/smoke.mjs
+      - name: Guardar imagem de verificação
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: strikers1945-v2-preview
+          path: strikers-v2-preview.png
+          if-no-files-found: ignore
