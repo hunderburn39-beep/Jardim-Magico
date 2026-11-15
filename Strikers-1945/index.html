@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#061223"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg" type="image/svg+xml"><title>Strikers 1945 — HTML5 Air Combat</title><style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overscroll-behavior:none;background:#030916;color:#fff;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Arial Narrow',sans-serif}body{display:flex;justify-content:center;align-items:center;overflow:hidden}button{font:inherit;cursor:pointer;touch-action:manipulation}#shell{width:min(100vw,calc(100dvh * .5625));height:min(100dvh,calc(100vw * 1.7777778));position:relative;background:#082638;overflow:hidden;isolation:isolate;box-shadow:0 0 70px #000;touch-action:none}canvas#game{width:100%;height:100%;display:block;touch-action:none}#scan{pointer-events:none;position:absolute;inset:0;opacity:.07;background:repeating-linear-gradient(0deg,transparent 0 3px,#020910 4px 5px)}#hud{position:absolute;top:0;left:0;right:0;pointer-events:none;display:none;background:linear-gradient(#001221f0,#00132183,transparent);padding:calc(9px + env(safe-area-inset-top)*.25) 12px 19px;text-shadow:0 1px 4px #000}#hud .line{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:2px;color:#b9d9f0;font-weight:800}#hud .scores{display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:900;color:#fff;line-height:1.3;font-variant-numeric:tabular-nums}#hud .meter{height:3px;background:#273950;margin-top:5px;overflow:hidden;display:none}#bossfill{height:100%;width:100%;background:linear-gradient(90deg,#f73d3d,#ffdc66);transition:width .1s}#pauseBtn{position:absolute;top:calc(9px + env(safe-area-inset-top)*.25);right:10px;z-index:4;background:#061727c9;border:1px solid #81bddfa0;border-radius:9px;width:33px;height:30px;color:#dcefff;display:none;font-size:16px}#bottom{position:absolute;bottom:calc(12px + env(safe-area-inset-bottom)*.25);left:11px;right:11px;z-index:3;display:none;pointer-events:none;justify-content:space-between;align-items:end}#bottom .hint{font-size:9px;color:#c8e9fc94;letter-spacing:1px;max-width:155px;font-weight:800;text-shadow:0 2px 5px #001}#bombBtn{pointer-events:auto;border:2px solid #ffe084;background:radial-gradient(circle at 35% 20%,#ffda69,#d65328 65%,#6d1621);box-shadow:0 0 20px #ff981359,inset 0 2px 7px #fff5;border-radius:100%;width:72px;height:72px;color:white;font-size:10px;font-weight:900;letter-spacing:1px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}#bombBtn b{font-size:28px;line-height:1}#bombBtn:active{transform:scale(.94)}.screen{position:absolute;inset:0;z-index:5;background:linear-gradient(180deg,#031125b9 0%,#07172beb 34%,#020816ee 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px 16px;gap:11px;overflow-y:auto}#menu{justify-content:space-around;padding-top:24px;padding-bottom:20px}.title{font-family:Impact,'Arial Narrow',system-ui,sans-serif;line-height:.85;font-size:clamp(46px,12vw,75px);letter-spacing:3px;text-shadow:0 3px #371d0d,0 5px #010611,0 0 20px #ff9b3460;color:#f7f8f4;transform:skew(-5deg);white-space:nowrap}.title span{display:block;color:#ffc65a;font-size:1.12em;letter-spacing:5px}.eyebrow{letter-spacing:3px;font-size:10px;font-weight:900;color:#85d5f4}.intro{color:#cee9ffca;font-size:12px;line-height:1.5;max-width:300px}.planeGrid{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.planeCard{border:1px solid #5a8eab90;border-radius:10px;background:linear-gradient(145deg,#244461bf,#07192fda);color:white;padding:5px;min-height:94px;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}.planeCard.selected{border:2px solid #ffd272;background:linear-gradient(140deg,#295276,#0b273b);box-shadow:inset 0 0 15px #ffb42f20,0 0 14px #ffb12b54}.planeCard canvas{height:57px;width:80px}.planeCard strong{font-size:11px;letter-spacing:1px}.planeCard small{font-size:9px;color:#bcdff3}.cta{min-height:47px;width:min(100%,290px);border:1px solid #ffeb91;border-radius:8px;color:#101824;background:linear-gradient(#ffe490,#ffb83e);box-shadow:0 4px 0 #a04d1f,0 0 20px #ffb9394f;font-size:17px;letter-spacing:2px;font-weight:1000}.cta:active{transform:translateY(3px);box-shadow:0 1px 0 #a04d1f}.secondary{border:1px solid #639fbe;border-radius:8px;background:#06233e;color:#e8f7ff;padding:10px 20px;font-weight:900;letter-spacing:1px}.meta{font-size:10px;letter-spacing:1px;color:#a4cde3}.screen h2{font-size:36px;letter-spacing:2px;text-shadow:0 0 20px #ffb759;margin:0;color:#ffda7a}.screen p{font-size:13px;line-height:1.5;margin:0;color:#c5ddef}.stats{font-size:24px;font-weight:1000;color:#fff}.hide{display:none!important}#rotate{position:absolute;right:4px;bottom:4px;z-index:1;color:#fff1;font-size:8px}#notice{position:absolute;left:20px;right:20px;top:27%;font-size:24px;z-index:3;font-weight:1000;text-align:center;letter-spacing:3px;color:#ffe49b;text-shadow:0 3px 7px #000,0 0 18px #ff8b37;pointer-events:none;opacity:0;transition:opacity .3s}#notice.show{opacity:1}@media(max-height:540px){#menu{gap:4px;padding:8px 12px}.title{font-size:36px}.intro{display:none}.planeCard{min-height:60px;gap:0;padding:1px}.planeCard canvas{height:32px}.cta{min-height:36px}.eyebrow,.meta{font-size:8px}}@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;background:#030916;color:#fff;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Arial Narrow',sans-serif}body{display:flex;justify-content:center;align-items:center;overflow:hidden}button{font:inherit;cursor:pointer;touch-action:manipulation}#shell{width:min(100vw,calc(100dvh * .5625));height:min(100dvh,calc(100vw * 1.7777778));position:relative;background:#082638;overflow:hidden;isolation:isolate;box-shadow:0 0 70px #000;touch-action:none}canvas#game{width:100%;height:100%;display:block;touch-action:none}#scan{pointer-events:none;position:absolute;inset:0;opacity:.07;background:repeating-linear-gradient(0deg,transparent 0 3px,#020910 4px 5px)}#hud{position:absolute;top:0;left:0;right:0;pointer-events:none;display:none;background:linear-gradient(#001221f0,#00132183,transparent);padding:calc(9px + env(safe-area-inset-top)*.25) 12px 19px;text-shadow:0 1px 4px #000}#hud .line{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:2px;color:#b9d9f0;font-weight:800}#hud .scores{display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:900;color:#fff;line-height:1.3;font-variant-numeric:tabular-nums}#hud .meter{height:3px;background:#273950;margin-top:5px;overflow:hidden;display:none}#bossfill{height:100%;width:100%;background:linear-gradient(90deg,#f73d3d,#ffdc66);transition:width .1s}#pauseBtn{position:absolute;top:calc(9px + env(safe-area-inset-top)*.25);right:10px;z-index:4;background:#061727c9;border:1px solid #81bddfa0;border-radius:9px;width:33px;height:30px;color:#dcefff;display:none;font-size:16px}#bottom{position:absolute;bottom:calc(12px + env(safe-area-inset-bottom)*.25);left:11px;right:11px;z-index:3;display:none;pointer-events:none;justify-content:space-between;align-items:end}#bottom .hint{font-size:9px;color:#c8e9fc94;letter-spacing:1px;max-width:155px;font-weight:800;text-shadow:0 2px 5px #001}#bombBtn{pointer-events:auto;border:2px solid #ffe084;background:radial-gradient(circle at 35% 20%,#ffda69,#d65328 65%,#6d1621);box-shadow:0 0 20px #ff981359,inset 0 2px 7px #fff5;border-radius:100%;width:72px;height:72px;color:white;font-size:10px;font-weight:900;letter-spacing:1px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}#bombBtn b{font-size:28px;line-height:1}#bombBtn:active{transform:scale(.94)}.screen{position:absolute;inset:0;z-index:5;background:linear-gradient(180deg,#031125b9 0%,#07172beb 34%,#020816ee 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px 16px;gap:11px;overflow-y:auto}#menu{justify-content:space-around;padding-top:24px;padding-bottom:20px}.title{font-family:Impact,'Arial Narrow',system-ui,sans-serif;line-height:.85;font-size:clamp(46px,12vw,75px);letter-spacing:3px;text-shadow:0 3px #371d0d,0 5px #010611,0 0 20px #ff9b3460;color:#f7f8f4;transform:skew(-5deg);white-space:nowrap}.title span{display:block;color:#ffc65a;font-size:1.12em;letter-spacing:5px}.eyebrow{letter-spacing:3px;font-size:10px;font-weight:900;color:#85d5f4}.intro{color:#cee9ffca;font-size:12px;line-height:1.5;max-width:300px}.planeGrid{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.planeCard{border:1px solid #5a8eab90;border-radius:10px;background:linear-gradient(145deg,#244461bf,#07192fda);color:white;padding:5px;min-height:94px;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}.planeCard.selected{border:2px solid #ffd272;background:linear-gradient(140deg,#295276,#0b273b);box-shadow:inset 0 0 15px #ffb42f20,0 0 14px #ffb12b54}.planeCard canvas{height:57px;width:80px}.planeCard strong{font-size:11px;letter-spacing:1px}.planeCard small{font-size:9px;color:#bcdff3}.cta{min-height:47px;width:min(100%,290px);border:1px solid #ffeb91;border-radius:8px;color:#101824;background:linear-gradient(#ffe490,#ffb83e);box-shadow:0 4px 0 #a04d1f,0 0 20px #ffb9394f;font-size:17px;letter-spacing:2px;font-weight:1000}.cta:active{transform:translateY(3px);box-shadow:0 1px 0 #a04d1f}.secondary{border:1px solid #639fbe;border-radius:8px;background:#06233e;color:#e8f7ff;padding:10px 20px;font-weight:900;letter-spacing:1px}.meta{font-size:10px;letter-spacing:1px;color:#a4cde3}.screen h2{font-size:36px;letter-spacing:2px;text-shadow:0 0 20px #ffb759;margin:0;color:#ffda7a}.screen p{font-size:13px;line-height:1.5;margin:0;color:#c5ddef}.stats{font-size:24px;font-weight:1000;color:#fff}.hide{display:none!important}#rotate{position:absolute;right:4px;bottom:4px;z-index:1;color:#fff1;font-size:8px}#notice{position:absolute;left:20px;right:20px;top:27%;font-size:24px;z-index:3;font-weight:1000;text-align:center;letter-spacing:3px;color:#ffe49b;text-shadow:0 3px 7px #000,0 0 18px #ff8b37;pointer-events:none;opacity:0;transition:opacity .3s}#notice.show{opacity:1}@media(max-height:540px){#menu{gap:4px;padding:8px 12px}.title{font-size:36px}.intro{display:none}.planeCard{min-height:60px;gap:0;padding:1px}.planeCard canvas{height:32px}.cta{min-height:36px}.eyebrow,.meta{font-size:8px}}@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head><body><main id="shell" aria-label="Strikers 1945 — jogo de aviões"><canvas id="game" width="720" height="1280"></canvas><div id="scan"></div><div id="hud"><div class="line"><span>SCORE</span><span id="stageLabel">STAGE 01</span><span style="padding-right:34px">BEST</span></div><div class="scores"><span id="score">0000000</span><span id="hearts">♥ ♥ ♥</span><span id="best">0000000</span></div><div class="meter" id="bossMeter"><div id="bossfill"></div></div></div><button id="pauseBtn" aria-label="Pausa">Ⅱ</button><div id="bottom"><span class="hint">ARRASTA PARA MOVER<br>DISPARO AUTOMÁTICO</span><button id="bombBtn" aria-label="Lançar bomba"><b>✹</b><span id="bombCount">BOMBAS × 2</span></button></div><div id="notice"></div><section class="screen" id="menu"><div><div class="eyebrow">ARCADE AIR COMBAT · HTML5</div><div class="title">STRIKERS<span>1945</span></div><p class="intro">Combates aéreos, esquadrilhas, melhorias, chefes e seis missões. Escolhe o teu avião.</p></div><div class="planeGrid" id="planeGrid"></div><button id="startBtn" class="cta">▶ INICIAR MISSÃO</button><div class="meta">iPHONE · TOUCH · SEM ROM · SEM EMULADOR<br>ÁUDIO GERADO NO JOGO</div></section><section class="screen hide" id="pauseScreen"><div class="eyebrow">MISSÃO EM PAUSA</div><h2>PAUSA</h2><p>Arrasta para pilotar. O disparo é automático.<br>Usa a bomba para limpar os projéteis.</p><button class="cta" id="resumeBtn">▶ CONTINUAR</button><button class="secondary" id="soundBtn">♫ SOM LIGADO</button><button class="secondary" id="exitBtn">MENU INICIAL</button></section><section class="screen hide" id="finishScreen"><div id="resultEyebrow" class="eyebrow">FIM DA MISSÃO</div><h2 id="resultTitle">GAME OVER</h2><p id="resultText">Fim de missão</p><div class="stats" id="resultScore">0000000</div><button class="cta" id="restartBtn">↻ JOGAR NOVAMENTE</button><button class="secondary" id="homeBtn">ESCOLHER AVIÃO</button></section></main><script>
 (()=>{'use strict';
-const W=360,H=640,PI=Math.PI,TAU=PI*2,$=s=>document.querySelector(s),game=$('#game'),ctx=game.getContext('2d',{alpha:false}),shell=$('#shell');
+const BUILD='2.0';const W=360,H=640,PI=Math.PI,TAU=PI*2,$=s=>document.querySelector(s),game=$('#game'),ctx=game.getContext('2d',{alpha:false}),shell=$('#shell');
 const UI={menu:$('#menu'),pause:$('#pauseScreen'),finish:$('#finishScreen'),hud:$('#hud'),bottom:$('#bottom'),pauseBtn:$('#pauseBtn'),bombBtn:$('#bombBtn'),bossMeter:$('#bossMeter'),bossfill:$('#bossfill'),score:$('#score'),best:$('#best'),hearts:$('#hearts'),stage:$('#stageLabel'),bombCount:$('#bombCount'),notice:$('#notice')};
 const CRAFT=[{name:'P-38 LIGHTNING',desc:'Tiro duplo · equilibrado',tint:'#d6e7e5',trim:'#4cb5d9',speed:245,rate:.14,power:1,shape:0},{name:'SPITFIRE',desc:'Rápido · rajada',tint:'#b4cb91',trim:'#f8d174',speed:285,rate:.12,power:.82,shape:1},{name:'ZERO',desc:'Ágil · tiro disperso',tint:'#e5e2bd',trim:'#e96348',speed:315,rate:.18,power:.93,shape:2},{name:'MUSTANG',desc:'Arma pesada · blindado',tint:'#e5be85',trim:'#e2582b',speed:235,rate:.19,power:1.42,shape:3}];
 const THEMES=[{name:'PACÍFICO',top:'#072a48',bot:'#12658b',land:'#4c805b',soil:'#96a76a',detail:'#183e3e'},{name:'ILHAS TROPICAIS',top:'#063e5e',bot:'#2088a6',land:'#54854e',soil:'#b5b66f',detail:'#224c37'},{name:'DESERTO',top:'#9e8862',bot:'#d4b47b',land:'#95835d',soil:'#e4cb8a',detail:'#766141'},{name:'COSTA EM GUERRA',top:'#324c56',bot:'#596b64',land:'#425b4b',soil:'#859875',detail:'#1b3339'},{name:'MONTANHAS',top:'#51758a',bot:'#a0c2cb',land:'#5d7674',soil:'#dae5da',detail:'#253f4b'},{name:'ATAQUE NOTURNO',top:'#060d29',bot:'#253159',land:'#24444d',soil:'#465d71',detail:'#0b202e'}];
@@ -17,17 +17,159 @@ function tone(freq,d,amp,type){try{let o=ac.createOscillator(),g=ac.createGain()
 function resize(){const dpr=Math.min(window.devicePixelRatio||1,2),w=Math.round(W*dpr),h=Math.round(H*dpr);if(game.width!==w||game.height!==h){game.width=w;game.height=h}ctx.setTransform(dpr,0,0,dpr,0,0)}resize();window.addEventListener('resize',resize);
 function polygon(c,pts,fill,stroke,line=1){c.beginPath();c.moveTo(pts[0],pts[1]);for(let i=2;i<pts.length;i+=2)c.lineTo(pts[i],pts[i+1]);c.closePath();c.fillStyle=fill;c.fill();if(stroke){c.strokeStyle=stroke;c.lineWidth=line;c.stroke()}}
 function circle(c,x,y,r,color){c.fillStyle=color;c.beginPath();c.arc(x,y,r,0,TAU);c.fill()}
-function drawPlane(c,x,y,s,color,trim,shape,tilt=0,enemy=false){c.save();c.translate(x,y);c.rotate(tilt);c.scale(s,s*(enemy?-1:1));c.shadowColor='#03091388';c.shadowBlur=7;c.shadowOffsetY=2;
-const wing=shape===2?22:shape===3?27:shape===0?26:23;polygon(c,[-6,1,-wing,6,-wing-2,13,-9,11,-6,18,-4,24,4,24,6,18,9,11,wing+2,13,wing,6,6,1,5,-19,0,-27,-5,-19],color,'#092231',1.4);
-polygon(c,[-5,11,-14,19,-13,23,-4,20,4,20,13,23,14,19,5,11],trim);polygon(c,[-4,-14,4,-14,6,18,0,26,-6,18],color,'#315160',1);
-polygon(c,[-4,-7,0,-15,4,-7,3,9,-3,9],'#243d53','#e7f5ef',.8);circle(c,0,0,2.8,'#b5e5f3');c.fillStyle=trim;c.fillRect(-wing+5,7,6,2);c.fillRect(wing-11,7,6,2);
-if(shape===0){c.fillStyle='#1b3743';c.fillRect(-19,3,4,14);c.fillRect(15,3,4,14);circle(c,-17,19,3.4,'#e8ebcd');circle(c,17,19,3.4,'#e8ebcd')}else if(shape===3){polygon(c,[-4,16,-6,23,0,21,6,23,4,16],trim)}else{c.strokeStyle=trim;c.lineWidth=2;c.beginPath();c.moveTo(-wing+1,11);c.lineTo(wing-1,11);c.stroke()}c.restore()}
-function makeBg(n){const theme=THEMES[(n-1)%THEMES.length],c=document.createElement('canvas');c.width=W;c.height=960;const g=c.getContext('2d');const grd=g.createLinearGradient(0,0,W,0);grd.addColorStop(0,theme.top);grd.addColorStop(.5,theme.bot);grd.addColorStop(1,theme.top);g.fillStyle=grd;g.fillRect(0,0,W,960);let seed=179+n*923;const R=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
-for(let i=0;i<520;i++){let x=R()*W,y=R()*960;g.strokeStyle=`rgba(224,244,248,${.028+R()*.12})`;g.lineWidth=.5+R();g.beginPath();g.moveTo(x,y);g.lineTo(x+(2+R()*13),y);g.stroke()}
-const count=n===3?18:11;for(let j=0;j<count;j++){let x=20+R()*320,y=R()*960,rx=18+R()*60,ry=27+R()*96,pts=[];for(let k=0;k<15;k++){let a=k/15*TAU,r=.7+.48*R();pts.push(x+Math.cos(a)*rx*r,y+Math.sin(a)*ry*r)}g.beginPath();g.moveTo(pts[0],pts[1]);for(let k=2;k<pts.length;k+=2)g.lineTo(pts[k],pts[k+1]);g.closePath();g.lineWidth=6;g.strokeStyle=theme.soil;g.stroke();g.fillStyle=theme.land;g.fill();for(let t=0;t<23;t++){let xx=x+(R()-.5)*rx*1.5,yy=y+(R()-.5)*ry*1.5;if(Math.hypot((xx-x)/rx,(yy-y)/ry)<.66){g.fillStyle=R()>.5?theme.detail:theme.soil;g.fillRect(xx,yy,1+R()*4,2+R()*7)}}if(R()>.45){g.save();g.translate(x,y);g.rotate((R()-.5)*1);g.fillStyle='#1f303b';g.fillRect(-10,-14,20,28);g.fillStyle='#85979e';g.fillRect(-6,-9,12,18);g.strokeStyle='#d2ca98';g.lineWidth=2;g.beginPath();g.moveTo(0,-28);g.lineTo(0,25);g.stroke();g.restore()}}
-for(let i=0;i<24;i++){let x=R()*W,y=R()*960;g.fillStyle='#bedbdf18';g.beginPath();g.ellipse(x,y,13+R()*35,4+R()*9,-.3,0,TAU);g.fill()}return c}
+function drawPlane(c,x,y,s,color,trim,shape,tilt=0,enemy=false){
+ c.save();c.translate(x,y);c.rotate(tilt);c.scale(s,s*(enemy?-1:1));
+ const wing=shape===3?29:shape===0?27:shape===2?24:26;
+ const metal=c.createLinearGradient(-wing,-23,wing,22);
+ metal.addColorStop(0,'#ffffff');metal.addColorStop(.15,color);metal.addColorStop(.57,color);metal.addColorStop(1,'#526d70');
+ // Body-shadow and wing tips
+ c.shadowColor='#010911a8';c.shadowBlur=11;c.shadowOffsetY=4;
+ polygon(c,[-7,3,-wing,6,-wing-3,14,-10,13,-8,20,-5,23,5,23,8,20,10,13,wing+3,14,wing,6,7,3,6,-20,0,-31,-6,-20],metal,'#0a2736',1.3);
+ c.shadowBlur=0;c.shadowOffsetY=0;
+ const shade=c.createLinearGradient(-22,0,22,0);
+ shade.addColorStop(0,'#0e26367d');shade.addColorStop(.24,'#ffffff1c');shade.addColorStop(.55,'#ffffff34');shade.addColorStop(1,'#0616268c');
+ polygon(c,[-9,6,-wing+2,8,-wing-2,13,-8,13,-6,19,6,19,8,13,wing+2,13,wing-2,8,9,6],shade);
+ // Individual aircraft wing profiles, metal ribs, insignia
+ c.strokeStyle='#1836427b';c.lineWidth=.9;c.beginPath();c.moveTo(-wing+4,11);c.lineTo(-7,8);c.moveTo(wing-4,11);c.lineTo(7,8);c.stroke();
+ c.strokeStyle='#e4f7edab';c.lineWidth=1;c.beginPath();c.moveTo(-wing+5,8);c.lineTo(-10,7);c.moveTo(wing-5,8);c.lineTo(10,7);c.stroke();
+ const tail=c.createLinearGradient(-6,13,6,23);tail.addColorStop(0,trim);tail.addColorStop(1,'#4a5868');
+ polygon(c,[-5,12,-16,20,-15,25,-3,21,3,21,15,25,16,20,5,12],tail,'#183140',.75);
+ polygon(c,[-5,-17,0,-32,5,-17,7,18,2,25,-2,25,-7,18],metal,'#203b47',1.3);
+ c.fillStyle='#17313b6b';c.fillRect(-3,-22,1.2,40);
+ // Raised cockpit canopy and highlights
+ const canopy=c.createLinearGradient(-5,-8,6,6);canopy.addColorStop(0,'#d0ffff');canopy.addColorStop(.38,'#61abbc');canopy.addColorStop(.73,'#203e61');canopy.addColorStop(1,'#0a1b39');
+ polygon(c,[-4,-9,0,-18,4,-9,4,7,-4,7],canopy,'#e8f7f6',.8);
+ c.strokeStyle='#f0ffff8c';c.lineWidth=.8;c.beginPath();c.moveTo(-2,-7);c.lineTo(-1,-14);c.stroke();
+ // Propeller animation and engine nacelles
+ const spin=(Math.sin(frame*.75)+1)*.5;
+ c.strokeStyle='#e5faff68';c.lineWidth=1.8;c.beginPath();c.moveTo(-9+spin*3,-28);c.lineTo(9-spin*3,-28);c.stroke();
+ circle(c,0,-27,2.5,'#edf0d8');
+ if(shape===0){
+   for(const side of [-1,1]){
+     const xx=side*18;
+     polygon(c,[xx-4,4,xx+4,4,xx+4,21,xx,25,xx-4,21],metal,'#224253',.8);
+     circle(c,xx,16,3.3,'#2a4557');
+     c.strokeStyle='#e0f2f5b8';c.lineWidth=1.5;c.beginPath();c.moveTo(xx-6,7);c.lineTo(xx+6,7);c.stroke();
+   }
+ } else if(shape===1){
+   polygon(c,[-21,6,-17,2,-9,5,-9,10,-19,15],'#507650aa');
+   polygon(c,[21,6,17,2,9,5,9,10,19,15],'#507650aa');
+ } else if(shape===2){
+   for(const side of [-1,1]){circle(c,side*17,9,4,trim);circle(c,side*17,9,2.7,'#a8352f')}
+ }else{
+   c.strokeStyle=trim;c.lineWidth=2;c.beginPath();c.moveTo(-24,11);c.lineTo(-11,10);c.moveTo(11,10);c.lineTo(24,11);c.stroke();
+   polygon(c,[-4,16,-6,23,0,22,6,23,4,16],trim);
+ }
+ // Vents and rivets to give the vehicle depth
+ c.strokeStyle='#f7fbf399';c.lineWidth=.65;c.beginPath();c.moveTo(-5,15);c.lineTo(-4,20);c.moveTo(5,15);c.lineTo(4,20);c.stroke();
+ for(let side of [-1,1])for(let yy of [10,13,16])circle(c,side*9,yy,.55,'#142c39');
+ c.restore();
+}
+function makeBg(n){
+ const theme=THEMES[(n-1)%THEMES.length],c=document.createElement('canvas');c.width=W;c.height=960;
+ const g=c.getContext('2d');let seed=(192571+n*918271)>>>0;const R=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
+ const sea=[1,2,4,6].includes(n);
+ const ocean=g.createLinearGradient(0,0,W,960);
+ ocean.addColorStop(0,theme.top);ocean.addColorStop(.48,theme.bot);ocean.addColorStop(1,theme.top);
+ g.fillStyle=ocean;g.fillRect(0,0,W,960);
+ // Scaled surface texture, currents, ripples
+ for(let i=0;i<780;i++){
+  const x=R()*W,y=R()*960,len=1+R()*18;
+  g.strokeStyle=sea?('rgba(186,239,244,'+(.015+R()*.11)+')'):('rgba(252,235,182,'+(.025+R()*.10)+')');
+  g.lineWidth=.4+R()*1.3;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+len*.5,y+R()*2,x+len,y);g.stroke();
+ }
+ if(n===3||n===5){ // desert and mountain relief: winding terrain bands
+  for(let row=0;row<12;row++){
+   let y=row*83-25,x=R()*100-50;
+   g.strokeStyle=row%2?'#f2dfb51e':'#132a331b';g.lineWidth=12+R()*34;
+   g.beginPath();g.moveTo(x,y);g.bezierCurveTo(140,y+33,210,y-36,420,y+26);g.stroke();
+  }
+ }
+ const count=n===3?7:n===5?15:15;
+ for(let j=0;j<count;j++){
+  const x=12+R()*336,y=R()*960,rx=(n===5?27:24)+R()*60,ry=(n===5?27:35)+R()*80;
+  const points=[];let q=.5+R()*.5;
+  for(let k=0;k<24;k++){const a=k/24*TAU,rr=.8+R()*.26;points.push([x+Math.cos(a)*rx*rr,y+Math.sin(a)*ry*rr])}
+  function island(scale,fill,stroke,width=0){
+   g.beginPath();for(let k=0;k<24;k++){let p=points[k],px=x+(p[0]-x)*scale,py=y+(p[1]-y)*scale;if(k===0)g.moveTo(px,py);else g.lineTo(px,py)}g.closePath();g.fillStyle=fill;g.fill();
+   if(stroke){g.strokeStyle=stroke;g.lineWidth=width;g.stroke()}
+  }
+  if(sea){island(1.16,'#2f708159','#61dae83b',3);island(1.08,theme.soil,theme.soil,3)}
+  else island(1.07,theme.soil,theme.soil,2);
+  const soil=g.createLinearGradient(x-rx,y-ry,x+rx,y+ry);soil.addColorStop(0,theme.detail);soil.addColorStop(.45,theme.land);soil.addColorStop(1,theme.soil);
+  island(.94,soil,'#071e2348',2);
+  // forest canopy and rocky ridges at varying elevations
+  for(let t=0;t<75;t++){
+   const xx=x+(R()-.5)*rx*1.7,yy=y+(R()-.5)*ry*1.7;
+   if(Math.hypot((xx-x)/rx,(yy-y)/ry)>.74)continue;
+   const rad=.8+R()*4.7;
+   if(n===3){
+    g.fillStyle=R()>.6?'#f8dfae90':'#9e694584';g.fillRect(xx,yy,rad*2,rad*.55)
+   }else if(n===5){
+    polygon(g,[xx,yy-rad*1.9,xx-rad,yy+rad,xx+rad,yy+rad],R()>.42?'#bed0cfaa':'#2a4c58a0');
+    g.strokeStyle='#e0edef77';g.lineWidth=.8;g.beginPath();g.moveTo(xx,yy-rad*1.9);g.lineTo(xx-2,yy+rad*.3);g.stroke();
+   }else{
+    circle(g,xx+1.6,yy+1.8,rad+1,'#091c1d68');
+    circle(g,xx,yy,rad,R()>.5?'#204d40':'#2b6550');
+    circle(g,xx-.7,yy-.8,rad*.48,'#6a997070');
+   }
+  }
+  if(j%3===0){ // compact fortified post / hangar
+   g.save();g.translate(x,y);g.rotate((R()-.5)*1.1);
+   g.fillStyle='#101e29a6';g.fillRect(-12,-11,28,28);
+   g.fillStyle=n===6?'#536276':'#b8b9a2';g.fillRect(-14,-15,25,22);
+   g.fillStyle='#243a43';g.fillRect(-10,-12,17,16);
+   g.strokeStyle='#e8dbab77';g.lineWidth=1.5;g.strokeRect(-14,-15,25,22);
+   g.fillStyle='#ddaa5b';g.fillRect(-4,-11,5,4);
+   g.restore();
+  }
+ }
+ if(n===3||n===4||n===6){ // runway with landing strip markings
+  g.save();g.translate(178,460);g.rotate(n===3?.13:-.08);
+  g.fillStyle='#0e20236d';g.fillRect(-29,-208,65,432);
+  g.fillStyle=n===3?'#78766c':'#2a4349';g.fillRect(-26,-208,58,422);
+  g.strokeStyle='#e2d9ac99';g.lineWidth=2;g.strokeRect(-23,-203,52,414);
+  g.fillStyle='#ffecd5b5';for(let y=-191;y<197;y+=30)g.fillRect(0,y,4,15);
+  for(let y of [-170,160]){g.fillRect(-17,y,12,3);g.fillRect(10,y,12,3)}
+  g.restore();
+ }
+ if(n===2||n===4){ // shipping and dockside silhouettes
+  for(let j=0;j<6;j++){
+   const x=30+R()*300,y=R()*960;
+   g.fillStyle='#5cebf322';g.beginPath();g.ellipse(x,y+13,10,29,0,0,TAU);g.fill();
+   g.save();g.translate(x,y);g.rotate((R()-.5)*.5);
+   polygon(g,[0,-23,-7,-11,-8,12,0,27,8,12,7,-11],'#273a48','#97b4b8',1);
+   g.fillStyle='#bed0c8';g.fillRect(-5,-5,10,13);g.fillStyle='#172931';g.fillRect(-3,0,6,7);
+   g.restore();
+  }
+ }
+ if(n===6){ // runway lights and spotlights visible at night
+  for(let i=0;i<95;i++){const x=R()*W,y=R()*960;circle(g,x,y,R()>.93?2.2:.9,R()>.3?'#fbd787b8':'#88c3e59c')}
+ }
+ // Soft cloud shadows over the ground
+ for(let i=0;i<38;i++){const x=R()*W,y=R()*960,rx=12+R()*43;g.fillStyle='#00172412';g.beginPath();g.ellipse(x,y,rx,4+R()*12,R()*.5,0,TAU);g.fill()}
+ return c;
+}
 function setBg(){bgTile=makeBg(stage);bgTheme=stage;bgShift=0}
-function drawBackground(dt){if(bgTheme!==stage)setBg();bgShift=(bgShift+dt*(stage===6?43:68))%960;ctx.drawImage(bgTile,0,bgShift-960,W,960);ctx.drawImage(bgTile,0,bgShift,W,960);let gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#06101c28');gr.addColorStop(.5,'#00000000');gr.addColorStop(1,'#00111a30');ctx.fillStyle=gr;ctx.fillRect(0,0,W,H)}
+function drawBackground(dt){
+ if(bgTheme!==stage)setBg();
+ bgShift=(bgShift+dt*(stage===6?43:68))%960;
+ ctx.drawImage(bgTile,0,bgShift-960,W,960);ctx.drawImage(bgTile,0,bgShift,W,960);
+ // Atmospheric parallax cloud banks: layer above terrain, below combat
+ ctx.save();
+ for(let i=0;i<4;i++){
+  let x=((i*139+frame*.105)%510)-75,y=((i*203+bgShift*.37)%820)-90;
+  const fog=ctx.createRadialGradient(x,y,3,x,y,61+i*8);
+  fog.addColorStop(0,stage===6?'#c6d2ee24':'#edf9f338');
+  fog.addColorStop(.42,stage===6?'#b5c9e317':'#d7f0ed24');
+  fog.addColorStop(1,'#ffffff00');
+  ctx.fillStyle=fog;ctx.beginPath();ctx.ellipse(x,y,61+i*8,26+i*6,.12,0,TAU);ctx.fill();
+ }
+ const vignette=ctx.createRadialGradient(W/2,H/2,100,W/2,H/2,390);
+ vignette.addColorStop(0,'#04141c00');vignette.addColorStop(1,'#02111c75');
+ ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
+ ctx.restore();
+}
 function addParticle(x,y,color,count=10,speed=120,life=.5){for(let i=0;i<count;i++){let a=rand(0,TAU),v=rand(speed*.15,speed);sparks.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,r:rand(1,4),c:color,life:life*rand(.55,1.45),max:life*1.5})}if(sparks.length>460)sparks.splice(0,sparks.length-460)}
 function shoot(x,y,vx,vy,owner,damage=1,color='#7de9ff',r=3){bullets.push({x,y,vx,vy,owner,damage,color,r});if(bullets.length>380)bullets.splice(0,bullets.length-380)}
 function burst(x,y,angle,count,speed,spread,damage){for(let i=0;i<count;i++){let a=angle+(i-(count-1)/2)*spread;shoot(x,y,Math.cos(a)*speed,Math.sin(a)*speed,'enemy',damage||1,'#ff9869',4.5)}}
@@ -58,7 +200,7 @@ function drawBullet(b){ctx.save();ctx.shadowBlur=9;ctx.shadowColor=b.color;ctx.f
 function drawScene(dt){ctx.save();if(shake>0)ctx.translate(rand(-shake,shake),rand(-shake,shake));drawBackground(dt);if(mode==='menu'){drawPlane(ctx,180+Math.sin(frame*.019)*36,455+Math.cos(frame*.017)*9,2.05,'#c4d8d9','#e9ae63',0,Math.sin(frame*.01)*.12);drawPlane(ctx,65+Math.sin(frame*.013)*20,185,1.4,'#d9b37e','#d9493b',1,0,true);drawPlane(ctx,292+Math.cos(frame*.018)*19,258,1.3,'#c9d4a2','#d5a37a',2,0,true)}for(let e of enemies)drawEnemy(e);drawBoss();for(let p of pups){let wave=Math.sin(p.t*6)*3;ctx.save();ctx.translate(p.x,p.y);ctx.shadowColor=p.type==='power'?'#fff33d':'#ff7554';ctx.shadowBlur=15;circle(ctx,0,0,13,p.type==='power'?'#e2b439':'#ca483c');circle(ctx,0,0,9,'#132839');ctx.fillStyle='#fff7d1';ctx.font='bold 16px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.type==='power'?'P':'B',0,wave/5);ctx.restore()}for(let b of bullets)drawBullet(b);if(player&&(player.inv<=0||Math.floor(totalTime*12)%2===0)){ctx.save();ctx.shadowColor='#79dcff';ctx.shadowBlur=12;drawPlane(ctx,player.x,player.y,1.05,CRAFT[player.craft].tint,CRAFT[player.craft].trim,CRAFT[player.craft].shape,player.roll);ctx.restore()}for(let p of sparks){ctx.globalAlpha=clamp(p.life/p.max,0,1);circle(ctx,p.x,p.y,p.r,p.c)}ctx.globalAlpha=1;for(let f of floats){ctx.globalAlpha=1-f.t/.8;ctx.textAlign='center';ctx.font='bold 11px system-ui';ctx.fillStyle='#ffdd88';ctx.shadowColor='#001521';ctx.shadowBlur=4;ctx.fillText(f.label,f.x,f.y)}ctx.globalAlpha=1;if(flash){ctx.fillStyle=`rgba(255,233,191,${flash*.48})`;ctx.fillRect(0,0,W,H)}ctx.restore()}
 function loop(t){if(!last)last=t;const dt=clamp((t-last)/1000,0,.034);last=t;frame++;update(dt);drawScene(mode==='pause'||mode==='end'?0:dt);anim=requestAnimationFrame(loop)}
 function pos(e){const r=game.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height}}
-game.addEventListener('pointerdown',e=>{if(mode!=='play')return;e.preventDefault();audioInit();const p=pos(e);drag={id:e.pointerId,x:p.x,y:p.y,dx:clamp(player.x-p.x,-50,50),dy:clamp(player.y-p.y,-50,50)};try{game.setPointerCapture(e.pointerId)}catch(err){}});game.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;e.preventDefault();const p=pos(e);drag.x=p.x;drag.y=p.y});function release(e){if(drag&&e.pointerId===drag.id)drag=null}game.addEventListener('pointerup',release);game.addEventListener('pointercancel',release);window.addEventListener('blur',()=>{key={};drag=null;if(mode==='play')pause(true)});window.addEventListener('keydown',e=>{key[e.code]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.code==='KeyB'&&!e.repeat)bomb();if(e.code==='Escape'||e.code==='KeyP')pause(mode==='play');if(e.code==='Enter'&&mode==='menu')start()});window.addEventListener('keyup',e=>{key[e.code]=false});
+game.addEventListener('pointerdown',e=>{if(mode!=='play')return;e.preventDefault();audioInit();const p=pos(e);drag={id:e.pointerId,x:p.x,y:p.y,dx:clamp(player.x-p.x,-50,50),dy:clamp(player.y-p.y,-50,50)};try{game.setPointerCapture(e.pointerId)}catch(err){}});game.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;e.preventDefault();const p=pos(e);drag.x=p.x;drag.y=p.y});function release(e){if(drag&&e.pointerId===drag.id)drag=null}game.addEventListener('pointerup',release);game.addEventListener('pointercancel',release);shell.addEventListener('touchmove',e=>{if(mode==='play'&&e.cancelable)e.preventDefault()},{passive:false});shell.addEventListener('touchstart',e=>{if(mode==='play'&&e.target===game&&e.cancelable)e.preventDefault()},{passive:false});window.addEventListener('blur',()=>{key={};drag=null});window.addEventListener('keydown',e=>{key[e.code]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.code==='KeyB'&&!e.repeat)bomb();if(e.code==='Escape'||e.code==='KeyP')pause(mode==='play');if(e.code==='Enter'&&mode==='menu')start()});window.addEventListener('keyup',e=>{key[e.code]=false});
 for(let i=0;i<CRAFT.length;i++){let p=CRAFT[i],btn=document.createElement('button');btn.className='planeCard'+(!i?' selected':'');btn.setAttribute('aria-label','Escolher '+p.name);btn.innerHTML=`<canvas width="160" height="115"></canvas><strong>${p.name}</strong><small>${p.desc}</small>`;$('#planeGrid').append(btn);let c=btn.querySelector('canvas').getContext('2d');c.scale(2,2);drawPlane(c,40,28,1.5,p.tint,p.trim,p.shape);btn.addEventListener('click',()=>{selected=i;document.querySelectorAll('.planeCard').forEach((el,j)=>el.classList.toggle('selected',j===i));beep('power')})}
 $('#startBtn').addEventListener('click',start);$('#restartBtn').addEventListener('click',start);$('#homeBtn').addEventListener('click',home);$('#resumeBtn').addEventListener('click',()=>pause(false));$('#exitBtn').addEventListener('click',home);UI.pauseBtn.addEventListener('click',()=>pause(true));UI.bombBtn.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();bomb()});$('#soundBtn').addEventListener('click',()=>{audio=!audio;$('#soundBtn').textContent=audio?'♫ SOM LIGADO':'♫ SOM DESLIGADO';if(audio)audioInit()});window.addEventListener('contextmenu',e=>e.preventDefault());if("serviceWorker" in navigator && location.protocol==="https:")navigator.serviceWorker.register("./sw.js").catch(()=>{});setBg();loop(performance.now());
 })();
