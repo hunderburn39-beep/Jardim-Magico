@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><title>BLACKLINE PINBALL — versão Safari 9:16</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;background:#050607;overflow:hidden;touch-action:none;font-family:Arial,Helvetica,sans-serif}
+#root{display:flex;justify-content:center;align-items:center;width:100%;height:100%;background:radial-gradient(ellipse at 50% 55%,#25252a 0%,#08090a 38%,#020304 78%)}
+#stage{position:relative;flex:none;width:min(100vw,56.25vh);height:min(100vh,177.77778vw);aspect-ratio:9/16;background:#0b0d10;overflow:hidden;box-shadow:0 4px 24px #000,0 0 0 1px #48423c}canvas{width:100%;height:100%;display:block}
+button{position:absolute;z-index:3;border-radius:5px;color:#e6e4df;font-family:Arial,Helvetica,sans-serif;font-size:clamp(9px,1.65vh,12px);font-weight:800;line-height:1.1;letter-spacing:.055em;background:linear-gradient(180deg,#38393c 0%,#1c1e21 52%,#0c0f13 100%);border:1px solid #77736b;box-shadow:inset 0 1px 0 #8887807e,inset 0 -2px 0 #050506,0 3px 5px #000a;text-shadow:0 1px 2px #000;touch-action:none;cursor:pointer;white-space:nowrap}
+button:active,button.down{border-color:#e1b878;background:linear-gradient(180deg,#796544,#3a3224,#171b20);color:#fff2db;box-shadow:inset 0 2px 5px #060606,0 1px 3px #000}#sound,#full{top:2.4%;height:3.6%;width:20%;font-size:clamp(8px,1.35vh,12px)}#sound{left:4%}#full{right:4%}
+#nudge,#theme{top:auto;bottom:10%;height:3.55%;width:21%;font-size:clamp(8px,1.3vh,12px)}#nudge{left:5%}#theme{right:5%}
+#left,#right,#launch{bottom:1.4%;height:6.7%;border-radius:5px;font-size:clamp(10px,1.55vh,15px)}#left{left:4.2%;width:33%;border-bottom:3px solid #6b8793}#right{right:4.2%;width:33%;border-bottom:3px solid #6b8793}#launch{left:39.5%;width:21%;border-color:#947959;border-bottom:3px solid #95723c;background:linear-gradient(180deg,#4a4334,#161a1d);font-size:clamp(9px,1.37vh,13px)}
+#start{left:50%;top:50%;transform:translate(-50%,-50%);width:63%;height:6%;border:1px solid #c9a776;background:linear-gradient(180deg,#554a36,#1b2228);z-index:5;font-size:clamp(12px,1.8vh,18px);letter-spacing:.15em;box-shadow:0 0 20px #000,0 0 4px #f0ad5c77}
+#banner{position:absolute;left:50%;top:43%;transform:translateX(-50%);width:76%;pointer-events:none;z-index:3;text-align:center;color:#f4d1a0;font-weight:900;white-space:pre-line;font-size:clamp(11px,1.8vh,18px);letter-spacing:.06em;text-shadow:0 2px 10px #000,0 0 10px #9b694c;line-height:1.4}
+@media (max-height:500px){button{font-size:10px}}
+
+#bootMessage{position:absolute;z-index:8;left:8%;top:33%;width:84%;padding:18px;border:1px solid #ba9361;border-radius:9px;background:#10191ded;color:#f1e0c1;text-align:center;box-shadow:0 6px 25px #000;font-size:clamp(12px,1.65vh,18px);line-height:1.5}
+#bootMessage a{display:block;margin:13px auto 0;padding:12px;color:#fff2de;border:1px solid #bd9658;border-radius:6px;text-decoration:none;font-weight:bold;background:#5a4730}
+
+</style></head><body><div id="root"><div id="stage"><div id="bootMessage">O jogo não consegue arrancar neste visualizador de ficheiros.<a href="https://hunderburn39-beep.github.io/Jardim-Magico/Blackline-Pinball/" target="_blank" rel="noopener">ABRIR O JOGO NO SAFARI</a></div><canvas id="game" width="540" height="960" aria-label="Blackline Pinball, jogo arcade 9:16"></canvas>
+<button id="sound">SOM ON</button><button id="full">ECRÃ</button><button id="nudge">ABANAR</button><button id="theme">MESA</button>
+<button id="left" aria-label="Flipper esquerdo">FLIPPER E</button><button id="launch" aria-label="Lançar bola">LANÇAR</button><button id="right" aria-label="Flipper direito">FLIPPER D</button>
+<button id="start">INICIAR JOGO</button><div id="banner"></div></div></div>
+<script>
+(()=>{'use strict';
+// WebKit compatibility: canvas roundRect fallback for older embedded viewers.
+if(typeof CanvasRenderingContext2D!=='undefined'&&!CanvasRenderingContext2D.prototype.roundRect){
+ CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+  r=Math.max(0,Math.min(Number(Array.isArray(r)?r[0]:r)||0,Math.abs(w)/2,Math.abs(h)/2));
+  this.moveTo(x+r,y);this.lineTo(x+w-r,y);this.quadraticCurveTo(x+w,y,x+w,y+r);
+  this.lineTo(x+w,y+h-r);this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  this.lineTo(x+r,y+h);this.quadraticCurveTo(x,y+h,x,y+h-r);
+  this.lineTo(x,y+r);this.quadraticCurveTo(x,y,x+r,y);this.closePath();
+  return this;
+ };
+}
+window.addEventListener('error',function(e){
+ const warn=document.getElementById('bootMessage');
+ if(warn){warn.style.display='block';warn.firstChild.textContent='Erro ao iniciar o jogo. Abre o jogo diretamente no Safari.';}
+});
+
+const $=x=>document.getElementById(x),canvas=$('game'),ctx=canvas.getContext('2d');const W=540,H=960,TWOPI=Math.PI*2;
+const tables=[
+ {name:'MAIN CIRCUIT',color:'#68b0c0',accent:'#cda56b',bg:'#111c22',goal:'A / B / C / D'},
+ {name:'RED FOUNDRY',color:'#ca7754',accent:'#ffc17e',bg:'#291716',goal:'A / B / C / D'},
+ {name:'BLUE CHAMBER',color:'#759cbc',accent:'#e0c190',bg:'#152334',goal:'A / B / C / D'},
+ {name:'GREEN CORE',color:'#88a892',accent:'#d7bc77',bg:'#1a2823',goal:'A / B / C / D'}];
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const GRAVITY=.48, SURFACE_FRICTION=.994, FLIPPER_IDLE_RESTITUTION=.075;let table=0,score=0,best=0,balls=3,nudges=3,active=false,inPlay=false,inShooter=true,frame=0,mode='ready',targetLit=[false,false,false,false],finishedBoards=0,ballBonus=0,tiltWarning=0;
+try{best=+(localStorage.getItem('pinball9best')||0)}catch(e){}
+let ball={x:476,y:790,vx:0,vy:0,r:9,trail:[]};let pressed={left:false,right:false},level={left:0,right:0},deltaFlips={left:0,right:0};let bannerLeft=0,popups=[],particles=[],lastHit={},audio=null,master=null,musicOn=true,beat=0,nextBeat=0;
+const targets=[{x:161,y:216,r:15},{x:229,y:191,r:15},{x:300,y:191,r:15},{x:373,y:216,r:15}];
+const bumpers=[{x:185,y:329,r:29,points:250},{x:354,y:326,r:29,points:500},{x:269,y:448,r:34,points:1000}];
+const pins=[{x:113,y:528,r:11},{x:414,y:528,r:11},{x:174,y:590,r:13},{x:367,y:589,r:13}];
+const rails=[
+ // Inlane guides stop *before* the flipper pivots, keeping a clear approach for the ball.
+ [100,694,132,730], [440,694,408,730],
+ // Outer lower apron retains the ball and guides it inwards, never behind the flippers.
+ [58,804,148,764], [482,804,392,764]
+];
+function beep(f,d=.12,type='sine',v=.14,slide=0){if(!audio||!musicOn)return;let o=audio.createOscillator(),gain=audio.createGain(),t=audio.currentTime;o.type=type;o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(35,f+slide),t+d);gain.gain.setValueAtTime(v,t);gain.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(gain);gain.connect(master);o.start(t);o.stop(t+d+.01)}
+function initAudio(){if(audio)return;let C=window.AudioContext||window.webkitAudioContext;if(!C)return;audio=new C();master=audio.createGain();master.gain.value=.24;master.connect(audio.destination)}
+function fx(type){if(type==='flip'){beep(128,.035,'triangle',.25,-65);beep(56,.09,'sawtooth',.07,-22)};if(type==='impact'){beep(640+Math.random()*230,.19,'sine',.26,-180);beep(205,.056,'triangle',.10,-90)}if(type==='shoot'){beep(77,.12,'sawtooth',.13,90);beep(205,.25,'triangle',.19,660)};if(type==='lost')beep(350,.48,'triangle',.15,-270);if(type==='bonus'){beep(515,.19,'sine',.19,260);beep(820,.31,'triangle',.13,190)}}
+function song(){if(!audio||!musicOn)return;const scales=[[130.81,164.81,196,261.63,329.63],[146.83,174.61,220,293.66,349.23],[110,164.81,220,261.63,329.63],[123.47,185,246.94,311.13,370]][table];let n=[0,2,4,2,1,3,4,2][beat%8];beep(scales[n],.13,'triangle',.036);if(beat%4===0)beep(scales[0]/2,.20,'sine',.06);beat++}
+function notify(s,t=100){$('banner').textContent=s;bannerLeft=t}
+function resetBall(){ball={x:476,y:790,vx:0,vy:0,r:9,trail:[]};inPlay=false;inShooter=true;ballBonus=0;mode='ready'}
+function start(){initAudio();if(audio&&audio.state==='suspended')audio.resume();score=0;balls=3;nudges=3;table=0;finishedBoards=0;targetLit.fill(false);resetBall();active=true;$('start').style.display='none';notify('PREPARADO!\nLANÇA A BOLA',95);fx('bonus')}
+function launch(){if(!active){start();return}if(inPlay)return;inPlay=true;mode='shoot';ball.x=476;ball.y=793;ball.vx=0;ball.vy=-20;fx('shoot');notify('BOA SORTE!',55)}
+function nextTable(manual=false){table=(table+1)%4;targetLit.fill(false);finishedBoards+=!manual?1:0;if(!manual)award(3500,267,245);notify('FIELD '+(table+1)+' / 4\n'+tables[table].name,115);fx('bonus')}
+function nudge(){if(!active||!inPlay||nudges<=0)return;ball.vx+=(Math.random()-.5)*5;ball.vy-=3;nudges--;tiltWarning++;notify('ABANÃO!',32);fx('flip');if(tiltWarning>=4){notify('TILT!\nFLIPPERS BLOQUEADOS',70);mode='tilt';setTimeout(()=>{if(mode==='tilt')mode='play'},1600)}}
+function award(n,x,y){score+=n;ballBonus+=n;best=Math.max(best,score);if(score===best){try{localStorage.setItem('pinball9best',best)}catch(e){}}popups.push({x,y,t:55,label:'+'+n});for(let i=0;i<11;i++){let a=i*TWOPI/11;particles.push({x,y,vx:Math.cos(a)*(2+Math.random()*2),vy:Math.sin(a)*(2+Math.random()*2),life:29})}}
+function wall(x,y,xa,ya,xb,yb,rad=0,restitution=.56,extra=0){
+ const dx=xb-xa,dy=yb-ya,t=clamp(((x-xa)*dx+(y-ya)*dy)/(dx*dx+dy*dy||1),0,1);
+ const px=xa+t*dx,py=ya+t*dy,dist=Math.hypot(x-px,y-py),reach=ball.r+rad;
+ if(dist>=reach)return false;
+ const nx=(x-px)/(dist||1),ny=(y-py)/(dist||1);
+ ball.x=px+nx*(reach+.06);ball.y=py+ny*(reach+.06);
+ const vn=ball.vx*nx+ball.vy*ny;
+ if(vn<0){
+   // Low-energy contact is a slide, not a bounce. Rails dissipate energy.
+   const e=vn>-.85?0:restitution;
+   ball.vx-=(1+e)*vn*nx;ball.vy-=(1+e)*vn*ny;
+   ball.vx*=SURFACE_FRICTION;ball.vy*=SURFACE_FRICTION;
+ }
+ if(extra&&vn<-.8&&ball.vy>0)ball.vy-=extra;
+ return {t,nx,ny};
+}
+function hitCircle(obj,restitution=1.10,pts=0,key=''){
+ let dx=ball.x-obj.x,dy=ball.y-obj.y,d=Math.hypot(dx,dy),r=ball.r+obj.r;
+ if(d>=r)return false;
+ if(d<.01){dx=.5;dy=-1;d=Math.hypot(dx,dy)}
+ const nx=dx/d,ny=dy/d;
+ ball.x=obj.x+(r+.12)*nx;ball.y=obj.y+(r+.12)*ny;
+ const vn=ball.vx*nx+ball.vy*ny;
+ if(vn<0){
+   let e=Math.abs(vn)<.75?.05:restitution;
+   ball.vx-=(1+e)*vn*nx;ball.vy-=(1+e)*vn*ny;
+   // Coil bumpers provide one active kick when struck, not every stationary frame.
+   if(pts&&frame-(lastHit[key]??-100)>12&&Math.abs(vn)>.7){
+     const kick=Math.max(0,3.9-(ball.vx*nx+ball.vy*ny));
+     ball.vx+=nx*kick;ball.vy+=ny*kick;
+   }
+ }
+ if(pts&&Math.abs(vn)>.7&&frame-(lastHit[key]??-100)>12){
+   lastHit[key]=frame;award(pts,obj.x,obj.y);fx('impact');
+ }
+ return true;
+}
+function flipperGeometry(side){const v=level[side],rest=.25,up=-.82,theta=rest+(up-rest)*v,sign=side==='left'?1:-1,pivotX=side==='left'?157:383,baseY=757,L=88;return [pivotX,baseY,pivotX+sign*L*Math.cos(theta),baseY+L*Math.sin(theta)]}
+function flipCollision(side){
+ const [ax,ay,bx,by]=flipperGeometry(side),dx=bx-ax,dy=by-ay;
+ const t=clamp(((ball.x-ax)*dx+(ball.y-ay)*dy)/(dx*dx+dy*dy),0,1);
+ const x=ax+t*dx,y=ay+t*dy,r=ball.r+11,d=Math.hypot(ball.x-x,ball.y-y);
+ if(d>r||ball.y>Math.max(ay,by)+ball.r+1)return;
+ let nx=(ball.x-x)/(d||1),ny=(ball.y-y)/(d||1);
+ // The underside is not a spring: the ball is only hit by the upper rubber surface.
+ const moving=mode!=='tilt'&&pressed[side]&&deltaFlips[side]>.025;
+ if(ny>0.12){
+   if(!moving)return;
+   // Rising rubber sweeps upward across the incoming ball; resolve on its top side.
+   const size=Math.hypot(dx,dy);
+   nx=(side==='left'?dy:-dy)/size;ny=-Math.abs(dx)/size;
+ }
+ ball.x=x+nx*(r+.06);ball.y=y+ny*(r+.06);
+ let vn=ball.vx*nx+ball.vy*ny;
+ if(vn<0){
+   // A resting flipper absorbs momentum, so the ball settles and rolls towards the tip.
+   const e=pressed[side]&&level[side]>.9?.28:(vn<-.9?FLIPPER_IDLE_RESTITUTION:0);
+   ball.vx-=(1+e)*vn*nx;ball.vy-=(1+e)*vn*ny;
+   ball.vx*=SURFACE_FRICTION;ball.vy*=SURFACE_FRICTION;
+ }
+ // Powered shot only during the upward stroke. Holding a flipper must not pump energy.
+ const poweredKey='power'+side;
+ if(moving&&frame-(lastHit[poweredKey]??-100)>4){
+   const power=7.5+4.0*t+Math.min(3.5,deltaFlips[side]*12);
+   ball.vy=Math.min(ball.vy,-power);
+   ball.vx+=(side==='left'?1:-1)*(1+1.5*t);
+   lastHit[poweredKey]=frame;
+   fx('flip');
+ }
+}
+function loseBall(){inPlay=false;mode='ready';fx('lost');balls--;if(balls>0){notify('BOLA PERDIDA\n'+balls+' RESTANTES',110);resetBall()}else{active=false;notify('FIM DO JOGO\n'+score.toLocaleString('pt-PT')+' PONTOS',9999);$('start').textContent='NOVO JOGO';$('start').style.display='block'}}
+function physics(){if(!active||!inPlay)return;
+ const steps=4;for(let k=0;k<steps;k++){
+ ball.vy+=GRAVITY/steps;ball.vx*=.9987;ball.vy*=.9992;let speed=Math.hypot(ball.vx,ball.vy);if(speed>23){ball.vx*=23/speed;ball.vy*=23/speed}
+ ball.x+=ball.vx/steps;ball.y+=ball.vy/steps;
+ if(inShooter){ball.x=clamp(ball.x,466,485);if(ball.y<154){inShooter=false;mode='play';ball.x=454;ball.y=150;ball.vx=-5.6;ball.vy=-8.1;notify('EM JOGO!',32)}else continue;}
+ if(ball.y<148){ball.y=148;ball.vy=Math.abs(ball.vy)*.88}
+ if(ball.x<61){ball.x=61;ball.vx=Math.abs(ball.vx)*.84}if(ball.x>455){ball.x=455;ball.vx=-Math.abs(ball.vx)*.84}
+ for(let i=0;i<rails.length;i++)wall(ball.x,ball.y,...rails[i],6,.52);
+ // Slingshot rubbers physically match the triangular guides seen on the playfield.
+ // They guide the ball back into the flipper approach lanes instead of acting as decoration.
+ wall(ball.x,ball.y,109,622,155,676,4,.74);
+ wall(ball.x,ball.y,155,676,109,693,4,.58);
+ wall(ball.x,ball.y,431,622,385,676,4,.74);
+ wall(ball.x,ball.y,385,676,431,693,4,.58);
+ // Inlane gates are continuous solid walls: there is no hidden drain behind flippers.
+ if(ball.y>747){if(ball.x<151){ball.x=151;ball.vx=Math.abs(ball.vx)*.83}if(ball.x>389){ball.x=389;ball.vx=-Math.abs(ball.vx)*.83}}
+ for(let i=0;i<bumpers.length;i++)hitCircle(bumpers[i],1.48,bumpers[i].points,'b'+i);
+ for(let i=0;i<pins.length;i++)hitCircle(pins[i],1.25,100,'p'+i);
+ for(let i=0;i<targets.length;i++){if(hitCircle(targets[i],1.12,0,'t'+i)) {if(frame-(lastHit['t'+i]??-100)>14){lastHit['t'+i]=frame;award(targetLit[i]?150:500,targets[i].x,targets[i].y);targetLit[i]=true;fx('impact');if(targetLit.every(Boolean)){nextTable(false)}}}}
+ flipCollision('left');flipCollision('right');
+ // Drain ONLY below the two flipper tips, leaving no way to slip behind the bats.
+ if(ball.y>817&&ball.x>237&&ball.x<303){loseBall();break}
+ // Under the flippers there is only the center exit; other points are solid apron.
+ if(ball.y>818){if(ball.x<=237||ball.x>=303){ball.y=818;ball.vy=-Math.abs(ball.vy)*.6;ball.vx+=(ball.x<270?2:-2)}}
+ }
+ if(inPlay){ball.trail.push([ball.x,ball.y]);if(ball.trail.length>12)ball.trail.shift()}
+}
+function line(x1,y1,x2,y2,color,w=3){ctx.strokeStyle=color;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function box(x,y,w,h,r,fill,stroke,sw=2){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=sw;ctx.stroke()}}
+function txt(str,x,y,size=20,color='#fff',align='center',weight=800){ctx.font=`${weight} ${size}px system-ui,sans-serif`;ctx.textAlign=align;ctx.textBaseline='middle';ctx.fillStyle=color;ctx.fillText(str,x,y)}
+function light(color,blur){ctx.shadowColor=color;ctx.shadowBlur=blur}
+// BLACKLINE arcade cabinet — vector artwork and hardware details are drawn in canvas.
+function poly(coords,fill,stroke,sw=1){ctx.beginPath();ctx.moveTo(...coords[0]);for(let i=1;i<coords.length;i++)ctx.lineTo(...coords[i]);ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=sw;ctx.stroke()}}
+function gradRect(x,y,w,h,cols){let gr=ctx.createLinearGradient(x,y,x+w,y+h);for(const [t,c] of cols)gr.addColorStop(t,c);ctx.fillStyle=gr;ctx.fillRect(x,y,w,h)}
+function screw(x,y,r=4){ctx.fillStyle='#060709';ctx.beginPath();ctx.arc(x+1,y+1,r+1.5,0,TWOPI);ctx.fill();let gg=ctx.createRadialGradient(x-1,y-1,.4,x,y,r);gg.addColorStop(0,'#d0c9bc');gg.addColorStop(.4,'#8b8d8b');gg.addColorStop(1,'#3b3b38');ctx.beginPath();ctx.arc(x,y,r,0,TWOPI);ctx.fillStyle=gg;ctx.fill();line(x-r*.55,y+r*.35,x+r*.55,y-r*.35,'#303234',1.6)}
+function steelStroke(x1,y1,x2,y2,w=9){ctx.lineCap='round';line(x1+1,y1+2,x2+1,y2+2,'#000a',w+4);line(x1,y1,x2,y2,'#636c70',w);line(x1-1,y1-2,x2-1,y2-2,'#dce2dc',Math.max(1,w*.3))}
+function metalPlate(x,y,w,h,r=6){box(x+2,y+4,w,h,r,'#020306');let gr=ctx.createLinearGradient(x,y,x+w,y+h);gr.addColorStop(0,'#71746f');gr.addColorStop(.09,'#2c3234');gr.addColorStop(.46,'#161d20');gr.addColorStop(.84,'#272b2e');gr.addColorStop(1,'#888883');box(x,y,w,h,r,gr,'#676d6b',1.5);line(x+5,y+4,x+w-5,y+4,'#a4a397',1)}
+function lamp(x,y,r,color,lit=true){ctx.beginPath();ctx.arc(x,y,r+3,0,TWOPI);ctx.fillStyle='#090b0d';ctx.fill();ctx.strokeStyle='#767771';ctx.lineWidth=1.8;ctx.stroke();let gg=ctx.createRadialGradient(x-2,y-2,1,x,y,r);gg.addColorStop(0,lit?'#fff6de':'#4a4841');gg.addColorStop(.29,lit?color:'#424543');gg.addColorStop(1,lit?'#5a3628':'#1a1d20');ctx.fillStyle=gg;if(lit)light(color,10);ctx.beginPath();ctx.arc(x,y,r,0,TWOPI);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#ffffff66';ctx.beginPath();ctx.ellipse(x-r*.25,y-r*.35,r*.4,r*.18,-.25,0,TWOPI);ctx.fill()}
+function starScrew(x,y){screw(x,y,3.7)}
+function bumper(b,i,a){const hot=(frame-(lastHit['b'+i]||-400)<11),rr=b.r+7;
+ ctx.fillStyle='#080a0b';ctx.beginPath();ctx.arc(b.x+2,b.y+5,rr+7,0,TWOPI);ctx.fill();
+ let rim=ctx.createLinearGradient(b.x-rr,b.y-rr,b.x+rr,b.y+rr);rim.addColorStop(0,'#f6f1e4');rim.addColorStop(.19,'#585f61');rim.addColorStop(.4,'#b1b9ba');rim.addColorStop(.69,'#242a2d');rim.addColorStop(1,'#b9bdbb');ctx.fillStyle=rim;ctx.beginPath();ctx.arc(b.x,b.y,rr,0,TWOPI);ctx.fill();
+ ctx.beginPath();ctx.arc(b.x,b.y,b.r+1,0,TWOPI);ctx.fillStyle='#0c1013';ctx.fill();ctx.lineWidth=3;ctx.strokeStyle=a.accent;ctx.stroke();if(hot)light('#ffd49b',22);
+ const fill=ctx.createRadialGradient(b.x-10,b.y-12,2,b.x,b.y,b.r);fill.addColorStop(0,hot?'#ffe6ab':'#a1885e');fill.addColorStop(.27,hot?'#d97d47':'#493b2b');fill.addColorStop(1,'#11191c');ctx.fillStyle=fill;ctx.beginPath();ctx.arc(b.x,b.y,b.r-6,0,TWOPI);ctx.fill();ctx.shadowBlur=0;
+ txt(b.points+'',b.x,b.y+1,15,hot?'#fff0ca':'#e1c695','center',900);for(let j=0;j<8;j++){let ang=j*Math.PI/4;ctx.strokeStyle='#a6aba5';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(b.x+Math.cos(ang)*(b.r-3),b.y+Math.sin(ang)*(b.r-3));ctx.lineTo(b.x+Math.cos(ang)*(b.r+1),b.y+Math.sin(ang)*(b.r+1));ctx.stroke()}
+}
+function flipperArt(side,a){const [ax,ay,bx,by]=flipperGeometry(side),isL=side==='left';let ang=Math.atan2(by-ay,bx-ax);ctx.save();ctx.translate(ax,ay);ctx.rotate(ang);
+ ctx.fillStyle='#050607a0';ctx.beginPath();ctx.ellipse(43,7,48,16,0,0,TWOPI);ctx.fill();
+ ctx.fillStyle='#7b7770';ctx.beginPath();ctx.roundRect(0,-11,88,22,11);ctx.fill();
+ let fg=ctx.createLinearGradient(0,-10,0,11);fg.addColorStop(0,'#f2e8d8');fg.addColorStop(.17,'#c0b3a5');fg.addColorStop(.34,'#b27c59');fg.addColorStop(.7,'#4e2921');fg.addColorStop(1,'#261d1a');ctx.fillStyle=fg;ctx.beginPath();ctx.roundRect(0,-9,86,18,9);ctx.fill();
+ ctx.strokeStyle='#fff3d0aa';ctx.lineWidth=1.7;ctx.beginPath();ctx.moveTo(10,-5);ctx.lineTo(74,-5);ctx.stroke();ctx.restore();
+ let pi=ctx.createRadialGradient(ax-3,ay-4,2,ax,ay,14);pi.addColorStop(0,'#dad8c9');pi.addColorStop(.33,'#7d7c73');pi.addColorStop(1,'#343839');ctx.fillStyle=pi;ctx.beginPath();ctx.arc(ax,ay,13,0,TWOPI);ctx.fill();screw(ax,ay,5);
+ // Mechanical metal pivot bracket and coil housings.
+ const foot=isL?110:430;metalPlate(foot-16,794,32,22,4);screw(foot-10,805,3);screw(foot+10,805,3)
+}
+function render(){const a=tables[table],hot=a.accent;
+ ctx.clearRect(0,0,W,H);gradRect(0,0,W,H,[[0,'#07090b'],[.5,'#141516'],[1,'#050608']]);
+ // Exterior cabinet: machined stainless steel and aged champagne-gold edging.
+ metalPlate(12,10,516,937,16);box(17,15,506,927,13,'#080a0e','#a98e62',2.5);box(24,22,492,914,11,'#151819','#545e5f',2);
+ // Satin horizontal scan lines in the header, physically recessed numeric display.
+ gradRect(29,28,482,113,[[0,'#111518'],[.42,'#343537'],[.6,'#111519'],[1,'#090b0d']]);
+ ctx.fillStyle='#0b0c0e';ctx.fillRect(37,36,466,94);
+ for(let y=37;y<130;y+=3){ctx.strokeStyle='#ffffff04';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(40,y);ctx.lineTo(500,y);ctx.stroke()}
+ txt('B L A C K L I N E',270,43,21,'#d6c3a1','center',900);txt('PROFESSIONAL  ·  ARCADE PINBALL',270,65,10,'#8e948f','center',600);
+ // Amber seven-segment-inspired score display.
+ box(158,77,224,45,4,'#050707','#5e635e',1.5);
+ txt(score.toString().padStart(7,'0'),270,97,31,'#eeb66a','center',900);
+ txt('BALL',73,95,12,'#a1a4a0','center',700);txt(String(balls),73,116,17,'#e8d7b7');
+ txt('HI',464,95,12,'#a1a4a0');txt(best.toLocaleString('pt-PT'),464,116,12,'#e8d7b7');
+ ctx.fillStyle='#3c4140';ctx.fillRect(37,130,466,4);ctx.fillStyle='#b89a70';ctx.fillRect(37,133,466,2);
+ // The real playing surface is nearly full frame, with glass reflections and metal side channels.
+ metalPlate(30,140,480,695,13);
+ const play=ctx.createLinearGradient(42,145,500,836);play.addColorStop(0,a.bg);play.addColorStop(.37,'#121d23');play.addColorStop(.72,'#10161a');play.addColorStop(1,'#070a0c');box(41,147,458,680,8,play,'#96918a',1.5);
+ ctx.save();ctx.beginPath();ctx.roundRect(45,150,450,674,5);ctx.clip();
+ // Durable screen-printed circuit under the glass.
+ for(let x=62;x<486;x+=21){ctx.strokeStyle='#fff';ctx.globalAlpha=.018;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,153);ctx.lineTo(x,823);ctx.stroke()}ctx.globalAlpha=1;
+ ctx.strokeStyle=a.color;ctx.globalAlpha=.21;ctx.lineWidth=2;
+ for(let k=0;k<4;k++){ctx.beginPath();ctx.moveTo(65+8*k,172);ctx.bezierCurveTo(95+13*k,235,49+6*k,390,114+9*k,509);ctx.stroke();ctx.beginPath();ctx.moveTo(470-8*k,172);ctx.bezierCurveTo(437-13*k,235,494-6*k,390,422-9*k,509);ctx.stroke()}ctx.globalAlpha=1;
+ // Prominent nickel-plated guide rails and upper return arch.
+ ctx.strokeStyle='#000';ctx.lineCap='round';ctx.lineWidth=13;ctx.beginPath();ctx.moveTo(63,625);ctx.lineTo(62,226);ctx.quadraticCurveTo(57,167,116,163);ctx.lineTo(413,163);ctx.quadraticCurveTo(455,169,455,203);ctx.stroke();
+ ctx.strokeStyle='#9badae';ctx.lineWidth=8;ctx.stroke();ctx.strokeStyle='#e3e6df';ctx.lineWidth=2;ctx.stroke();
+ // Shooter lane separation; bright chrome outer channel.
+ steelStroke(462,205,462,805,8);steelStroke(490,202,490,810,7);
+ for(let yy=755;yy>=280;yy-=80){poly([[473,yy+7],[476,yy-1],[479,yy+7]],'#af9466');}
+ ctx.save();ctx.translate(477,538);ctx.rotate(-Math.PI/2);txt('BALL LAUNCH',0,0,10,'#b8a78b','center',800);ctx.restore();
+ // Industrial backwall and 4 individual mechanical drop targets.
+ metalPlate(118,177,299,74,8);txt('TARGET BANK   ·   UNLOCK NEXT FIELD',267,194,11,'#b9ada0','center',800);
+ for(let i=0;i<4;i++){
+   const t=targets[i],lit=targetLit[i],xx=t.x,yy=t.y;const metal=ctx.createLinearGradient(xx-16,yy-16,xx+16,yy+16);metal.addColorStop(0,lit?'#a47745':'#79868a');metal.addColorStop(.45,lit?'#493a2b':'#293338');metal.addColorStop(1,'#11191d');
+   box(xx-17,yy-18,34,39,3,metal,lit?'#e2b16b':'#879397',2);
+   if(lit)light('#e0a464',10);txt('ABCD'[i],xx,yy+1,20,lit?'#ffdeb0':'#e5e9e3');ctx.shadowBlur=0;
+   lamp(xx,yy+31,4,hot,lit)
+ }
+ // Lower inserts and lane labels, laser-etched into metal.
+ txt('BUMPERS',271,294,13,'#a9b0ac','center',700);
+ for(let i=0;i<bumpers.length;i++)bumper(bumpers[i],i,a);
+ // Central electromechanical turbine with radial machining and etched fasteners.
+ ctx.save();ctx.translate(268,539);let cr=ctx.createRadialGradient(-20,-24,7,0,0,99);cr.addColorStop(0,'#536064');cr.addColorStop(.34,'#172126');cr.addColorStop(.67,'#0b1114');cr.addColorStop(1,'#4c5353');ctx.fillStyle=cr;ctx.beginPath();ctx.arc(0,0,92,0,TWOPI);ctx.fill();ctx.strokeStyle='#a59a86';ctx.lineWidth=3;ctx.stroke();
+ for(let i=0;i<24;i++){let phi=i*Math.PI/12;const rad=78;line(Math.cos(phi)*rad,Math.sin(phi)*rad,Math.cos(phi)*87,Math.sin(phi)*87,'#676d6e',2)}
+ for(let k=0;k<8;k++){ctx.rotate(Math.PI/4);poly([[18,-4],[65,-12],[70,6],[18,10]],'#272f30','#737f7b',1)}
+ ctx.fillStyle='#070a0d';ctx.beginPath();ctx.arc(0,0,25,0,TWOPI);ctx.fill();ctx.strokeStyle='#a59a83';ctx.lineWidth=5;ctx.stroke();lamp(0,0,11,hot,true);ctx.restore();
+ for(let i=0;i<pins.length;i++){const p=pins[i];screw(p.x,p.y,8);lamp(p.x,p.y,3,hot,(frame%180)<110)}
+ txt('MAIN POWER',267,655,14,'#b9a17c','center',900);
+ lamp(229,678,7,hot,targetLit.filter(Boolean).length>=2);lamp(267,678,7,hot,targetLit.filter(Boolean).length>=3);lamp(305,678,7,hot,targetLit.every(Boolean));
+ // Lower apron and slingshot geometry, marked with brushed copper rubbers.
+ for(let side of [-1,1]){const mx=side<0?105:435,sign=side<0?1:-1;poly([[mx,617],[mx+sign*54,677],[mx,693]],'#473b32','#ae7d55',3);line(mx+sign*4,623,mx+sign*49,676,'#edc7a0',2);line(mx+sign*49,680,mx+sign*4,690,'#edc7a0',2);screw(mx,633,5)}
+ // Actual colliders are the illuminated stainless rails, not invisible decorations.
+ for(const r of rails)steelStroke(...r,9);
+ // Keep a visible and physical free lane from each slingshot to its flipper.
+ steelStroke(151,760,151,815,7);steelStroke(389,760,389,815,7);
+ // The flipper tips incline down towards the real central drain. The ball rolls inward.
+ poly([[247,791],[293,791],[308,827],[232,827]],'#000103','#997d58',1);txt('DRAIN',270,819,9,'#876d50');
+ // Genuine two-piece tapered flipper bats: red rubber, gold pivots, realistic shadows.
+ flipperArt('left',a);flipperArt('right',a);
+ // Mechanical steel ball, with strong specular reflection instead of a glowing cartoon circle.
+ if(inPlay){for(let i=0;i<ball.trail.length;i++){const p=ball.trail[i];ctx.globalAlpha=(i/ball.trail.length)*.1;ctx.fillStyle='#e1f3f0';ctx.beginPath();ctx.arc(p[0],p[1],2.4,0,TWOPI);ctx.fill()}ctx.globalAlpha=1}
+ ctx.fillStyle='#0009';ctx.beginPath();ctx.ellipse(ball.x+4,ball.y+5,ball.r*1.1,ball.r*.8,0,0,TWOPI);ctx.fill();
+ let bg=ctx.createRadialGradient(ball.x-4,ball.y-5,1,ball.x,ball.y,11.5);bg.addColorStop(0,'#ffffff');bg.addColorStop(.16,'#f1f4f3');bg.addColorStop(.4,'#a8afb0');bg.addColorStop(.67,'#566063');bg.addColorStop(.87,'#c1c5c2');bg.addColorStop(1,'#171e22');ctx.fillStyle=bg;ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,TWOPI);ctx.fill();
+ // Flashing game events, but no toy-like confetti.
+ for(const z of particles){ctx.globalAlpha=Math.max(0,z.life/29)*.55;ctx.fillStyle=hot;ctx.beginPath();ctx.arc(z.x,z.y,1.7,0,TWOPI);ctx.fill()}ctx.globalAlpha=1;
+ for(const q of popups){ctx.globalAlpha=q.t/55;txt(q.label,q.x,q.y,17,'#f6d399')}ctx.globalAlpha=1;
+ // Glass: subtle diagonal showroom reflection, preserving target visibility.
+ poly([[53,153],[131,153],[54,452]],'#ffffff08');poly([[431,153],[477,153],[492,394]],'#ffffff07');ctx.restore();
+ // Locking cabinet screws, external edging and restrained HUD.
+ for(const [x,y] of [[38,147],[501,147],[36,837],[503,837],[34,20],[505,20]])starScrew(x,y);
+ gradRect(26,842,488,89,[[0,'#313331'],[.13,'#141718'],[.82,'#111315'],[1,'#363b3d']]);
+ line(35,842,505,842,'#b2976a',2);
+ txt('FIELD '+(table+1)+'/4   ·   ALVOS '+targetLit.filter(Boolean).length+'/4',270,864,13,'#ddc9a9','center',800);
+ // Brushed side bezel reflections.
+ ctx.fillStyle='#ffffff0c';ctx.fillRect(26,146,3,688);ctx.fillStyle='#ffffff0c';ctx.fillRect(511,146,3,688);
+}
+
+function update(){frame++;for(const side of ['left','right']){const old=level[side],to=pressed[side]?1:0;level[side]+=(to-level[side])*(pressed[side]?.45:.28);deltaFlips[side]=Math.max(0,level[side]-old)}
+ if(bannerLeft>0&&--bannerLeft===0)$('banner').textContent='';for(let i=popups.length-1;i>=0;i--){popups[i].y-=.6;if(--popups[i].t<=0)popups.splice(i,1)}for(let i=particles.length-1;i>=0;i--){let q=particles[i];q.x+=q.vx;q.y+=q.vy;q.vy+=.09;if(--q.life<=0)particles.splice(i,1)}
+ if(audio&&musicOn&&performance.now()>nextBeat){song();nextBeat=performance.now()+225}
+ physics();render();requestAnimationFrame(update)}
+function setFlipper(side,on){pressed[side]=on;$(side).classList.toggle('down',on);if(on&&audio)fx('flip')}
+for(let side of ['left','right']){let b=$(side);b.addEventListener('pointerdown',e=>{e.preventDefault();try{b.setPointerCapture?.(e.pointerId)}catch(err){}setFlipper(side,true)});for(let ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>setFlipper(side,false))}
+$('start').onclick=start;$('launch').onclick=launch;$('nudge').onclick=nudge;$('theme').onclick=()=>nextTable(true);
+$('sound').onclick=()=>{musicOn=!musicOn;$('sound').textContent=musicOn?'SOM ON':'♪ SOM OFF';if(musicOn){initAudio();audio.resume();nextBeat=0}};
+$('full').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen?.();else $('stage').requestFullscreen?.().catch(()=>notify('ABRE A JANELA MAIOR',75))};
+window.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','Space','ArrowUp'].includes(e.code))e.preventDefault();if(e.code==='ArrowLeft'||e.code==='KeyA')setFlipper('left',true);if(e.code==='ArrowRight'||e.code==='KeyD')setFlipper('right',true);if(!e.repeat&&['Space','ArrowUp'].includes(e.code))launch();if(!e.repeat&&e.code==='KeyN')nudge();if(!e.repeat&&e.code==='KeyT')nextTable(true);if(!e.repeat&&e.code==='KeyM')$('sound').click()});window.addEventListener('keyup',e=>{if(['ArrowLeft','KeyA'].includes(e.code))setFlipper('left',false);if(['ArrowRight','KeyD'].includes(e.code))setFlipper('right',false)});window.addEventListener('blur',()=>{setFlipper('left',false);setFlipper('right',false)});
+render();$('bootMessage').style.display='none';requestAnimationFrame(update);
+})();
+</script></body></html>
