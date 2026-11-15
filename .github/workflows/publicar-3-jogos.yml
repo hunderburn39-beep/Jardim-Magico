@@ -257,7 +257,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Confirmar Blocos Neon V3 online (HTTP 200)
+      - name: Confirmar Blocos Neon V5 online (HTTP 200)
         continue-on-error: true
         shell: bash
         env:
@@ -267,15 +267,15 @@ jobs:
           url="${SITE_URL%/}/Blocos-Neon/index.html?sha=${GITHUB_SHA}"
           for tentativa in {1..12}; do
             if curl -fLsS --max-time 20 --connect-timeout 8 "$url" -o /tmp/blocos-neon-publicado.html \
-               && grep -q 'Blocos Neon' /tmp/blocos-neon-publicado.html \
-               && grep -q 'MAIS 3' /tmp/blocos-neon-publicado.html; then
-              echo "Blocos Neon V3 publicado: HTTP 200 e três encaixes confirmados."
+               && grep -q 'Blocos Neon V5' /tmp/blocos-neon-publicado.html \
+               && grep -q 'MAIS 2' /tmp/blocos-neon-publicado.html; then
+              echo "Blocos Neon V5 publicado: HTTP 200, dois encaixes e escolha manual confirmados."
               exit 0
             fi
             echo "Blocos Neon: tentativa ${tentativa}/12..."
             sleep 5
           done
-          echo "::warning::Blocos Neon V3 indisponível no GitHub Pages."
+          echo "::warning::Blocos Neon V5 indisponível no GitHub Pages."
           exit 1
 
       - name: Confirmar Stake Preview (sem bloquear futuras versões)
