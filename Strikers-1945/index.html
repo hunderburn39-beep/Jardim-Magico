@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#061223"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg" type="image/svg+xml"><title>Strikers 1945 — HTML5 Air Combat</title><style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;background:radial-gradient(ellipse at 50% 45%,#143e5b 0%,#09253e 42%,#020b19 100%);color:#fff;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Arial Narrow',sans-serif}body{display:flex;justify-content:center;align-items:center;overflow:hidden}button{font:inherit;cursor:pointer;touch-action:manipulation}#shell{width:min(100vw,calc(100dvh * .5625));height:min(100dvh,calc(100vw * 1.7777778));position:relative;background:#082638;overflow:hidden;isolation:isolate;box-shadow:0 0 70px #000;touch-action:none}canvas#game{width:100%;height:100%;display:block;touch-action:none}#scan{pointer-events:none;position:absolute;inset:0;opacity:.035;background:repeating-linear-gradient(0deg,transparent 0 3px,#020910 4px 5px)}#hud{position:absolute;top:0;left:0;right:0;pointer-events:none;display:none;background:linear-gradient(#001221f0,#00132183,transparent);padding:calc(9px + env(safe-area-inset-top)*.25) 12px 19px;text-shadow:0 1px 4px #000}#hud .line{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:2px;color:#b9d9f0;font-weight:800}#hud .scores{padding-right:45px;display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:900;color:#fff;line-height:1.3;font-variant-numeric:tabular-nums}#hud .meter{height:3px;background:#273950;margin-top:5px;overflow:hidden;display:none}#bossfill{height:100%;width:100%;background:linear-gradient(90deg,#f73d3d,#ffdc66);transition:width .1s}#pauseBtn{position:absolute;top:calc(9px + env(safe-area-inset-top)*.25);right:10px;z-index:4;background:#061727c9;border:1px solid #81bddfa0;border-radius:9px;width:33px;height:30px;color:#dcefff;display:none;font-size:16px}#bottom{position:absolute;bottom:calc(12px + env(safe-area-inset-bottom)*.25);left:11px;right:11px;z-index:3;display:none;pointer-events:none;justify-content:space-between;align-items:end}#bottom .hint{font-size:9px;color:#c8e9fc94;letter-spacing:1px;max-width:155px;font-weight:800;text-shadow:0 2px 5px #001}#bombBtn{touch-action:none;pointer-events:auto;border:2px solid #ffe084;background:radial-gradient(circle at 35% 20%,#ffda69,#d65328 65%,#6d1621);box-shadow:0 0 20px #ff981359,inset 0 2px 7px #fff5;border-radius:100%;width:72px;height:72px;color:white;font-size:10px;font-weight:900;letter-spacing:1px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}#bombBtn b{font-size:28px;line-height:1}#bombBtn:active{transform:scale(.94)}.screen{position:absolute;inset:0;z-index:5;background:linear-gradient(180deg,#031125b9 0%,#07172beb 34%,#020816ee 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px 16px;gap:11px;overflow-y:auto}#menu{justify-content:space-around;padding-top:24px;padding-bottom:20px}.title{font-family:Impact,'Arial Narrow',system-ui,sans-serif;line-height:.85;font-size:clamp(46px,12vw,75px);letter-spacing:3px;text-shadow:0 3px #371d0d,0 5px #010611,0 0 20px #ff9b3460;color:#f7f8f4;transform:skew(-5deg);white-space:nowrap}.title span{display:block;color:#ffc65a;font-size:1.12em;letter-spacing:5px}.eyebrow{letter-spacing:3px;font-size:10px;font-weight:900;color:#85d5f4}.intro{color:#cee9ffca;font-size:12px;line-height:1.5;max-width:300px}.planeGrid{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.planeCard{border:1px solid #5a8eab90;border-radius:10px;background:linear-gradient(145deg,#244461bf,#07192fda);color:white;padding:5px;min-height:94px;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}.planeCard.selected{border:2px solid #ffd272;background:linear-gradient(140deg,#295276,#0b273b);box-shadow:inset 0 0 15px #ffb42f20,0 0 14px #ffb12b54}.planeCard canvas{height:57px;width:80px}.planeCard strong{font-size:11px;letter-spacing:1px}.planeCard small{font-size:9px;color:#bcdff3}.cta{min-height:47px;width:min(100%,290px);border:1px solid #ffeb91;border-radius:8px;color:#101824;background:linear-gradient(#ffe490,#ffb83e);box-shadow:0 4px 0 #a04d1f,0 0 20px #ffb9394f;font-size:17px;letter-spacing:2px;font-weight:1000}.cta:active{transform:translateY(3px);box-shadow:0 1px 0 #a04d1f}.secondary{border:1px solid #639fbe;border-radius:8px;background:#06233e;color:#e8f7ff;padding:10px 20px;font-weight:900;letter-spacing:1px}.meta{font-size:10px;letter-spacing:1px;color:#a4cde3}.screen h2{font-size:36px;letter-spacing:2px;text-shadow:0 0 20px #ffb759;margin:0;color:#ffda7a}.screen p{font-size:13px;line-height:1.5;margin:0;color:#c5ddef}.stats{font-size:24px;font-weight:1000;color:#fff}.hide{display:none!important}#rotate{position:absolute;right:4px;bottom:4px;z-index:1;color:#fff1;font-size:8px}#notice{position:absolute;left:20px;right:20px;top:27%;font-size:24px;z-index:3;font-weight:1000;text-align:center;letter-spacing:3px;color:#ffe49b;text-shadow:0 3px 7px #000,0 0 18px #ff8b37;pointer-events:none;opacity:0;transition:opacity .3s}#notice.show{opacity:1}@media(max-height:540px){#menu{gap:4px;padding:8px 12px}.title{font-size:36px}.intro{display:none}.planeCard{min-height:60px;gap:0;padding:1px}.planeCard canvas{height:32px}.cta{min-height:36px}.eyebrow,.meta{font-size:8px}}@media(prefers-reduced-motion:reduce){*{transition:none!important}}
-</style></head><body><main id="shell" aria-label="Strikers 1945 — jogo de aviões"><canvas id="game" width="720" height="1280"></canvas><div id="scan"></div><div id="hud"><div class="line"><span>SCORE</span><span id="stageLabel">STAGE 01</span><span style="padding-right:34px">BEST</span></div><div class="scores"><span id="score">0000000</span><span id="hearts">♥ ♥ ♥</span><span id="best">0000000</span></div><div class="meter" id="bossMeter"><div id="bossfill"></div></div></div><button id="pauseBtn" aria-label="Pausa (apenas botão)">Ⅱ</button><div id="bottom"><span class="hint">ARRASTA PARA PILOTAR<br><span id="weaponHint">ARMAS AUTOMÁTICAS</span></span><button id="bombBtn" aria-label="Lançar bomba"><b>✹</b><span id="bombCount">BOMBAS × 2</span></button></div><div id="notice"></div><section class="screen" id="menu"><div><div class="eyebrow">ARCADE AIR COMBAT · HTML5</div><div class="title">STRIKERS<span>1945</span></div><p class="intro">Combates aéreos, esquadrilhas, melhorias, chefes e seis missões. Escolhe o teu avião.</p></div><div class="planeGrid" id="planeGrid"></div><button id="startBtn" class="cta">▶ INICIAR MISSÃO</button><div class="meta">iPHONE · TOUCH · SEM ROM · SEM EMULADOR<br>VERSÃO 3.1 · ARMAS E MÍSSEIS</div></section><section class="screen hide" id="pauseScreen"><div class="eyebrow">MISSÃO EM PAUSA</div><h2>PAUSA</h2><p>Arrasta para pilotar. O disparo é automático.<br>Usa a bomba para limpar os projéteis.</p><button class="cta" id="resumeBtn">▶ CONTINUAR</button><button class="secondary" id="soundBtn">♫ SOM LIGADO</button><button class="secondary" id="exitBtn">MENU INICIAL</button></section><section class="screen hide" id="finishScreen"><div id="resultEyebrow" class="eyebrow">FIM DA MISSÃO</div><h2 id="resultTitle">GAME OVER</h2><p id="resultText">Fim de missão</p><div class="stats" id="resultScore">0000000</div><button class="cta" id="restartBtn">↻ JOGAR NOVAMENTE</button><button class="secondary" id="homeBtn">ESCOLHER AVIÃO</button></section></main><script>
+</style></head><body><main id="shell" aria-label="Strikers 1945 — jogo de aviões"><canvas id="game" width="720" height="1280"></canvas><div id="scan"></div><div id="hud"><div class="line"><span>SCORE</span><span id="stageLabel">STAGE 01</span><span style="padding-right:34px">BEST</span></div><div class="scores"><span id="score">0000000</span><span id="hearts">♥ ♥ ♥</span><span id="best">0000000</span></div><div class="meter" id="bossMeter"><div id="bossfill"></div></div></div><button id="pauseBtn" aria-label="Pausa (apenas botão)">Ⅱ</button><div id="bottom"><span class="hint">ARRASTA PARA PILOTAR<br><span id="weaponHint">ARMAS AUTOMÁTICAS</span></span><button id="bombBtn" aria-label="Lançar bomba"><b>✹</b><span id="bombCount">BOMBAS × 2</span></button></div><div id="notice"></div><section class="screen" id="menu"><div><div class="eyebrow">ARCADE AIR COMBAT · HTML5</div><div class="title">STRIKERS<span>1945</span></div><p class="intro">Combates aéreos, esquadrilhas, melhorias, chefes e seis missões. Escolhe o teu avião.</p></div><div class="planeGrid" id="planeGrid"></div><button id="startBtn" class="cta">▶ INICIAR MISSÃO</button><div class="meta">iPHONE · TOUCH · SEM ROM · SEM EMULADOR<br>VERSÃO 3.2 · MÍSSEIS 3D E SONS</div></section><section class="screen hide" id="pauseScreen"><div class="eyebrow">MISSÃO EM PAUSA</div><h2>PAUSA</h2><p>Arrasta para pilotar. O disparo é automático.<br>Usa a bomba para limpar os projéteis.</p><button class="cta" id="resumeBtn">▶ CONTINUAR</button><button class="secondary" id="soundBtn">♫ SOM LIGADO</button><button class="secondary" id="exitBtn">MENU INICIAL</button></section><section class="screen hide" id="finishScreen"><div id="resultEyebrow" class="eyebrow">FIM DA MISSÃO</div><h2 id="resultTitle">GAME OVER</h2><p id="resultText">Fim de missão</p><div class="stats" id="resultScore">0000000</div><button class="cta" id="restartBtn">↻ JOGAR NOVAMENTE</button><button class="secondary" id="homeBtn">ESCOLHER AVIÃO</button></section></main><script>
 (()=>{'use strict';
-const BUILD='3.0';const W=360,H=640,PI=Math.PI,TAU=PI*2,$=s=>document.querySelector(s),game=$('#game'),ctx=game.getContext('2d',{alpha:false}),shell=$('#shell');
+const BUILD='3.2';const W=360,H=640,PI=Math.PI,TAU=PI*2,$=s=>document.querySelector(s),game=$('#game'),ctx=game.getContext('2d',{alpha:false}),shell=$('#shell');
 const UI={menu:$('#menu'),pause:$('#pauseScreen'),finish:$('#finishScreen'),hud:$('#hud'),bottom:$('#bottom'),pauseBtn:$('#pauseBtn'),bombBtn:$('#bombBtn'),bossMeter:$('#bossMeter'),bossfill:$('#bossfill'),score:$('#score'),best:$('#best'),hearts:$('#hearts'),stage:$('#stageLabel'),bombCount:$('#bombCount'),notice:$('#notice'),weaponHint:$('#weaponHint')};
 const CRAFT=[
 {name:'P-38 LIGHTNING',desc:'Canhões duplos + mísseis da cauda',weapon:'DUPLO + MÍSSEIS',tint:'#d6e7e5',trim:'#4cb5d9',speed:245,rate:.15,power:1,rocketDelay:1.45,shape:0},
 {name:'SPITFIRE',desc:'Rajadas rápidas + foguetes laterais',weapon:'RAJADA + LATERAIS',tint:'#b4cb91',trim:'#f8d174',speed:285,rate:.105,power:.84,rocketDelay:2.35,shape:1},
-{name:'ZERO',desc:'Leque de tiros + ondas diagonais',weapon:'LEQUE + ONDAS',tint:'#e5e2bd',trim:'#e96348',speed:315,rate:.185,power:.9,rocketDelay:0,shape:2},
+{name:'ZERO',desc:'Leque + micromísseis verdes',weapon:'LEQUE + MICROMÍSSEIS',tint:'#e5e2bd',trim:'#e96348',speed:315,rate:.185,power:.9,rocketDelay:1.95,shape:2},
 {name:'MUSTANG',desc:'Canhão pesado + mísseis teleguiados',weapon:'PESADO + TELEG.',tint:'#e5be85',trim:'#e2582b',speed:235,rate:.22,power:1.45,rocketDelay:1.05,shape:3}
 ];
 const THEMES=[{name:'PACÍFICO',top:'#072a48',bot:'#12658b',land:'#4c805b',soil:'#96a76a',detail:'#183e3e'},{name:'ILHAS TROPICAIS',top:'#063e5e',bot:'#2088a6',land:'#54854e',soil:'#b5b66f',detail:'#224c37'},{name:'DESERTO',top:'#9e8862',bot:'#d4b47b',land:'#95835d',soil:'#e4cb8a',detail:'#766141'},{name:'COSTA EM GUERRA',top:'#324c56',bot:'#596b64',land:'#425b4b',soil:'#859875',detail:'#1b3339'},{name:'MONTANHAS',top:'#51758a',bot:'#a0c2cb',land:'#5d7674',soil:'#dae5da',detail:'#253f4b'},{name:'ATAQUE NOTURNO',top:'#060d29',bot:'#253159',land:'#24444d',soil:'#465d71',detail:'#0b202e'}];
@@ -17,6 +17,47 @@ try{best=+(localStorage.getItem('strikers45_best_v1')||0)}catch(e){}
 const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.min(b,Math.max(a,v));const pad=v=>String(Math.floor(v)).padStart(7,'0');const rnd=(a,b)=>Math.floor(rand(a,b));
 function audioInit(){if(!audio)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}}
 function beep(type){if(!audio||!ac)return;try{const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);let f=350,d=.12,amp=.038,w='square';if(type==='shot'){f=590;d=.065;amp=.014;w='sawtooth'}if(type==='hit'){f=118;d=.15;amp=.075;w='triangle'}if(type==='boom'){f=85;d=.32;amp=.14;w='sawtooth'}if(type==='power'){f=720;d=.22;amp=.06;w='sine'}if(type==='bomb'){f=170;d=.55;amp=.12;w='sawtooth'}if(type==='warn'){f=620;d=.34;amp=.09}if(type==='rocket'){f=220;d=.12;amp=.028;w='triangle'}if(type==='missileHit'){f=95;d=.28;amp=.09;w='sawtooth'}o.type=w;o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(Math.max(35,f*(type==='power'?1.6:.4)),t+d);g.gain.setValueAtTime(amp,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.start(t);o.stop(t+d+.01)}catch(e){}}
+let missileNoise=null,lastLaunchSfx=-100,lastImpactSfx=-100;
+function getMissileNoise(){
+ if(!ac)return null;
+ if(missileNoise&&missileNoise.sampleRate===ac.sampleRate)return missileNoise;
+ const length=Math.floor(ac.sampleRate*.55),buf=ac.createBuffer(1,length,ac.sampleRate),data=buf.getChannelData(0);
+ for(let i=0;i<length;i++)data[i]=Math.random()*2-1;
+ missileNoise=buf;return buf;
+}
+// Original, layered engine whine + filtered exhaust + impact bass. No sound files.
+function missileSfx(phase,variant=0){
+ if(!audio||!ac||ac.state!=='running')return;
+ try{
+  const t=ac.currentTime,hit=phase==='impact';
+  if(hit){if(t-lastImpactSfx<.07)return;lastImpactSfx=t}
+  else{if(t-lastLaunchSfx<.105)return;lastLaunchSfx=t}
+  const duration=hit?[.27,.32,.18,.49][variant]:[.24,.19,.14,.34][variant];
+  const fA=hit?[170,135,235,100][variant]:[180,290,390,125][variant];
+  const fB=hit?[39,43,79,30][variant]:[650,820,1120,430][variant];
+  const osc=ac.createOscillator(),gain=ac.createGain();
+  osc.type=hit?'sawtooth':'triangle';osc.frequency.setValueAtTime(fA,t);
+  osc.frequency.exponentialRampToValueAtTime(fB,t+duration);
+  gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(hit?.055:.023,t+.012);
+  gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
+  osc.connect(gain);gain.connect(ac.destination);osc.start(t);osc.stop(t+duration+.015);
+  const src=ac.createBufferSource(),filter=ac.createBiquadFilter(),ng=ac.createGain();
+  src.buffer=getMissileNoise();filter.type=hit?'lowpass':'bandpass';filter.Q.value=hit?.65:1.1;
+  filter.frequency.setValueAtTime(hit?1500:560,t);
+  filter.frequency.exponentialRampToValueAtTime(hit?180:Math.min(3800,fB*2),t+duration);
+  ng.gain.setValueAtTime(.0001,t);
+  ng.gain.exponentialRampToValueAtTime(hit?[.06,.06,.035,.09][variant]:[.034,.03,.02,.046][variant],t+.012);
+  ng.gain.exponentialRampToValueAtTime(.0001,t+duration);
+  src.connect(filter);filter.connect(ng);ng.connect(ac.destination);
+  src.start(t);src.stop(t+duration+.017);
+  if(hit&&variant===3){
+   const bass=ac.createOscillator(),g=ac.createGain();bass.type='sine';
+   bass.frequency.setValueAtTime(73,t);bass.frequency.exponentialRampToValueAtTime(32,t+.4);
+   g.gain.setValueAtTime(.055,t);g.gain.exponentialRampToValueAtTime(.0001,t+.4);
+   bass.connect(g);g.connect(ac.destination);bass.start(t);bass.stop(t+.42);
+  }
+ }catch(e){}
+}
 function musicTick(){if(mode!=='play'||!ac||!audio)return;const tick=Math.floor(totalTime*4.4);if(tick===musicTick.previous)return;musicTick.previous=tick;if(tick%2===0){const f=[110,110,146.8,98,110,164.8,146.8,98][Math.floor(tick/2)%8];tone(f,.13,.018,'triangle')}if(tick%4===2)tone(440,.04,.009,'square')}
 function tone(freq,d,amp,type){try{let o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;o.type=type;o.frequency.value=freq;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(amp,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.start(t);o.stop(t+d+.02)}catch(e){}}
 function resize(){const dpr=Math.min(window.devicePixelRatio||1,2),w=Math.round(W*dpr),h=Math.round(H*dpr);if(game.width!==w||game.height!==h){game.width=w;game.height=h}ctx.setTransform(dpr,0,0,dpr,0,0)}resize();window.addEventListener('resize',resize);
@@ -201,16 +242,16 @@ function acquireTarget(x,y,side=0){
  return best;
 }
 function fireMissile(p,side,fromWing=false,power=1){
- // Tail launch: rocket first exits below the fuselage, curves forward;
- // wing launch: moves sideways before tracking a nearby enemy.
- const x=p.x+side*(fromWing?22:12),y=p.y+(fromWing?7:24);
- const angle=-PI/2+side*(fromWing?1.22:.64);
- const missile={x,y,vx:Math.cos(angle)*105,vy:Math.sin(angle)*105,
-  owner:'player',kind:'missile',damage:power,angle,speed:110,turn:fromWing?3.7:4.2,
-  target:acquireTarget(x,y,side),side,fromWing,age:0,life:3.2,trail:[],trailCd:0,
-  color:fromWing?'#ffc77a':'#83e8ff',r:7};
- bullets.push(missile);if(bullets.length>320)bullets.splice(0,bullets.length-320);
- if(Math.random()<.6)beep('rocket');
+ const variant=p.craft,x=p.x+side*(fromWing?23:12),y=p.y+(fromWing?7:24);
+ const spread=[.57,1.16,.96,.72][variant],angle=-PI/2+side*(fromWing?spread:spread*.83);
+ const color=['#82e4ff','#ffb864','#a4ff9b','#ff7c5e'][variant];
+ bullets.push({x,y,vx:Math.cos(angle)*105,vy:Math.sin(angle)*105,
+  owner:'player',kind:'missile',variant,damage:power,angle,
+  speed:[128,145,165,105][variant],turn:[4.1,4.6,5.7,3.3][variant],
+  target:acquireTarget(x,y,side),side,fromWing,age:0,
+  life:[3.4,2.9,2.7,3.8][variant],trail:[],trailCd:0,color,r:[8,7,6,10][variant]});
+ if(bullets.length>320)bullets.splice(0,bullets.length-320);
+ missileSfx('launch',variant);
 }
 function fireWeapons(p,c,dt){
  p.fire-=dt;p.rocketCd-=dt;
@@ -257,11 +298,13 @@ function fireWeapons(p,c,dt){
    fireMissile(p,p.rocketSide,false,scale*3.1);
    if(level>=3)fireMissile(p,-p.rocketSide,false,scale*2.25);
   }else if(p.craft===1){
-   if(level>=2){
-    p.rocketSide*=-1;
-    fireMissile(p,p.rocketSide,true,scale*2.4);
-    if(level>=4)fireMissile(p,-p.rocketSide,true,scale*2.1);
-   }
+   p.rocketSide*=-1;
+   fireMissile(p,p.rocketSide,true,scale*2.1);
+   if(level>=3)fireMissile(p,-p.rocketSide,true,scale*1.8);
+  }else if(p.craft===2){
+   p.rocketSide*=-1;
+   fireMissile(p,p.rocketSide,true,scale*1.6);
+   if(level>=3)fireMissile(p,-p.rocketSide,true,scale*1.3);
   }else if(p.craft===3){
    p.rocketSide*=-1;
    fireMissile(p,p.rocketSide,false,scale*4.2);
@@ -291,14 +334,36 @@ function updateMissile(b,dt){
  b.trail=b.trail.filter(p=>p.life>0);
 }
 function missileImpact(b,target){
- waves.push({x:b.x,y:b.y,r:4,life:.35,max:.35,color:'#ffca6e'});
- if(waves.length>24)waves.shift();
- addParticle(b.x,b.y,'#ffc16f',15,160,.48);
- addParticle(b.x,b.y,'#e8faff',6,115,.2);
+ const type=b.variant??0;
+ const cfg=[
+  {color:'#83eaff',core:'#edffff',radius:36,life:.41,count:19,style:'electric'},
+  {color:'#ffc363',core:'#fff5bb',radius:30,life:.31,count:24,style:'fire'},
+  {color:'#9eff89',core:'#f0ffbf',radius:23,life:.29,count:15,style:'plasma'},
+  {color:'#ff7959',core:'#fff1ad',radius:53,life:.62,count:39,style:'heavy'}
+ ][type];
+ const x=b.x,y=b.y;
+ waves.push({x,y,r:5,life:cfg.life,max:cfg.life,color:cfg.color,
+  core:cfg.core,style:cfg.style,blast:cfg.radius});
+ if(type===3)waves.push({x,y,r:3,delay:.08,life:.72,max:.72,color:'#ffb177',
+  core:'#fff4b4',style:'heavyRing',blast:62});
+ if(type===0)waves.push({x,y,r:2,delay:.09,life:.24,max:.24,color:'#e0fdff',
+  core:'#ffffff',style:'electric',blast:43});
+ if(waves.length>32)waves.splice(0,waves.length-32);
+ addParticle(x,y,cfg.color,cfg.count,[195,175,190,260][type],[.52,.48,.38,.75][type]);
+ addParticle(x,y,cfg.core,Math.floor(cfg.count*.45),110,.24);
+ if(type===2){
+  for(let i=0;i<7;i++){const a=i*TAU/7+totalTime;
+   waves.push({x:x+Math.cos(a)*12,y:y+Math.sin(a)*12,r:2,
+    life:.21,max:.21,color:'#d5ffa4',core:'#eaffdb',style:'plasma',blast:12});
+  }
+ }
  if(target)damage(target,b.damage);
- for(const e of enemies)if(e.active&&e!==target&&Math.hypot(e.x-b.x,e.y-b.y)<24)damage(e,b.damage*.28);
- if(boss&&boss!==target&&Math.hypot(boss.x-b.x,boss.y-b.y)<68)damage(boss,b.damage*.22);
- if(Math.random()<.68)beep('missileHit');
+ const splash=[22,24,18,42][type],factor=[.28,.27,.22,.46][type];
+ for(const e of [...enemies])if(e.active&&e!==target&&Math.hypot(e.x-x,e.y-y)<splash)
+  damage(e,b.damage*factor);
+ if(boss&&boss!==target&&Math.hypot(boss.x-x,boss.y-y)<splash+25)damage(boss,b.damage*factor);
+ shake=Math.max(shake,[2,2.5,1.5,6][type]);
+ missileSfx('impact',type);
 }
 function burst(x,y,angle,count,speed,spread,damage){for(let i=0;i<count;i++){let a=angle+(i-(count-1)/2)*spread;shoot(x,y,Math.cos(a)*speed,Math.sin(a)*speed,'enemy',damage||1,'#ff9869',4.5)}}
 function enemyFire(e){if(!player)return;const a=Math.atan2(player.y-e.y,player.x-e.x),f=stage;switch(e.kind){case 'fighter':burst(e.x,e.y+14,a,1,135+f*6,0);break;case 'bomber':burst(e.x,e.y+18,a,3,112+f*6,.18);break;case 'tank':burst(e.x,e.y+10,a,2,110+f*7,.1);break;case 'ship':burst(e.x,e.y+12,a,4,110+f*5,.2);break}}
