@@ -43,6 +43,41 @@ await page.waitForFunction(()=>window.StrikersROM?.isLoaded(),null,{timeout:3000
 await page.waitForFunction(()=>window.StrikersFlightReplay?.ready(),null,{timeout:30000});
 assert.equal(await page.evaluate(()=>window.StrikersFlightReplay.stats().frames),116,'116 instantes originais dos caças descodificados');
 
+const flightMotion=await page.evaluate(()=>{
+ const api=window.StrikersFlightReplay,seen=new Map();
+ let samples=0,moving=0,blend=0,fade=0,duplicate=0,maxJump=0,changedCodes=0;
+ api.reset();
+ for(let i=0;i<=47*30;i++){
+  const current=api.test.smooth(i/30);
+  const slots=new Set();
+  for(const e of current){
+   samples++;
+   if(slots.has(e.id))duplicate++;
+   slots.add(e.id);
+   if(e.mix>0&&e.mix<1)blend++;
+   if(e.alpha>.02&&e.alpha<1)fade++;
+   const previous=seen.get(e.uid);
+   if(previous){
+    const delta=Math.hypot(e.x-previous.x,e.y-previous.y);
+    maxJump=Math.max(maxJump,delta);
+    if(delta>.4)moving++;
+    if(e.code!==previous.code)changedCodes++;
+   }
+   seen.set(e.uid,e);
+  }
+ }
+ api.reset();
+ return {samples,moving,blend,fade,duplicate,maxJump,changedCodes};
+});
+assert(flightMotion.samples>1200,'Há caças nos fotogramas da primeira fase');
+assert(flightMotion.moving>300,'Os inimigos percorrem trajetórias animadas');
+assert(flightMotion.blend>20,'As viragens usam transições dos sprites originais');
+assert(flightMotion.fade>10,'Entradas e saídas de inimigos são suavizadas');
+assert.equal(flightMotion.duplicate,0,'O mesmo slot da ROM não é duplicado no ecrã');
+assert(flightMotion.maxJump<70,'Um avião persistente não pode teletransportar-se entre fotogramas');
+console.log('Teste de fluidez da fase 1:',flightMotion);
+
+
 await page.waitForFunction(()=>window.StrikersOriginalStage1?.ready(),null,{timeout:30000});
 assert(await page.locator('#romPreview').isVisible(),'Pré-visualização visível');
 assert(await page.locator('#romInspectBtn').isVisible(),'Ligação ao inspetor dos sprites visível');
@@ -120,4 +155,4 @@ assert((await page.locator('#groupImg').evaluate(x=>x.width))===192,'Sprite 4x4 
 await page.screenshot({path:'strikers-v42-sprites.png'});
 assert.deepEqual(errors,[],'Sem erros JavaScript');
 await browser.close();
-console.log('STRIKERS V5.4: sprites originais em jogo, caças e bombardeiros, 4bpp packed MSB, word-swap, LUT, 122 frames da fase 1 integrados, vista e cache VALIDADOS.');
+console.log('STRIKERS V5.5: sprites originais em jogo, caças e bombardeiros, 4bpp packed MSB, word-swap, LUT, 122 frames da fase 1 integrados, vista e cache VALIDADOS.');
