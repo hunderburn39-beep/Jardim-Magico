@@ -67,7 +67,9 @@ assert.equal(state.stats.spriteTiles,65536);
 assert.equal(state.stats.lutEntries,131072);
 assert.equal(state.scene,null,'Não inventar um mapa arcade a partir dos sprites');
 await page.locator('#startBtn').click();await page.waitForTimeout(150);
-assert((await page.locator('#romBadge').innerText()).includes('FUNDO HTML5'),'Indicação honesta no jogo');
+await page.waitForFunction(()=>window.StrikersOriginalStage1?.ready(),null,{timeout:15000});
+assert.equal(await page.evaluate(()=>window.StrikersOriginalStage1.info().frames),122,'122 capturas reais do tilemap presentes');
+assert((await page.locator('#romBadge').innerText()).includes('FUNDO ORIGINAL'),'Fundo da fase 1 deve estar integrado na jogabilidade');
 await page.screenshot({path:'strikers-v42-background.png'});
 await page.goto(url+'inspector.html',{waitUntil:'load'});
 await page.waitForFunction(()=>window.StrikersROM?.isLoaded(),null,{timeout:30000});
@@ -83,4 +85,4 @@ assert((await page.locator('#groupImg').evaluate(x=>x.width))===192,'Sprite 4x4 
 await page.screenshot({path:'strikers-v42-sprites.png'});
 assert.deepEqual(errors,[],'Sem erros JavaScript');
 await browser.close();
-console.log('STRIKERS V4.2: 4bpp packed MSB, word-swap, bancos u20/u22/u21/u23, LUT u1, fundos sem falsificações, vista e cache VALIDADOS.');
+console.log('STRIKERS V5: 4bpp packed MSB, word-swap, LUT, 122 frames da fase 1 integrados, vista e cache VALIDADOS.');
