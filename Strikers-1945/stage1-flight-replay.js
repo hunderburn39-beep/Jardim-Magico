@@ -5,7 +5,7 @@
    Interpolation and collision/fire mechanics are adaptations, not the arcade AI. */
 (()=>{'use strict';
 const DATA='./stage1-plane-frames.b64';
-let frames=null,palettes=new Map(),busy=null,tracks=new Map(),cache=new Map(),timeLast=-1;
+let frames=null,palettes=new Map(),busy=null,tracks=new Map(),cache=new Map(),timeLast=-1,nextSerial=0;
 const validKinds=new Set([10,11,12,23,25,27,28]);
 function dimensions(rawX,rawY){
  const nx=((rawX>>9)&7)+1,ny=((rawY>>9)&7)+1;
@@ -69,7 +69,7 @@ function ensure(){
  busy=prepare().catch(e=>{console.warn('Strikers plane replay:',e);busy=null;return false});
  return busy;
 }
-function reset(){tracks.clear();timeLast=-1}
+function reset(){tracks.clear();timeLast=-1;nextSerial=0}
 function snapshot(time){
  if(!frames)return null;
  // Match the same 47-second timeline used by the reconstructed stage-1 background.
@@ -86,6 +86,7 @@ function snapshot(time){
 // A sprite-RAM slot is not a permanent aircraft ID. Compare screen position,
  // size and graphic family before associating two captured frames.
 function role(e){
+ if(e.nx>=5&&e.ny<=3)return 'ground';
  if(e.nx>=5||e.ny>=5)return 'bomber';
  if(e.nx>=3||e.ny>=3)return 'ground';
  return 'fighter';
@@ -146,7 +147,7 @@ function sync(time){
    (Math.abs(e.lastCode-item.code)>2200));
   if(!e||reused){
    const heavy=role(item)==='bomber',ground=role(item)==='ground';
-   e={kind:ground?'romGround':'romPlane',romFlight:true,active:true,
+   e={kind:ground?'romGround':'romPlane',romFlight:true,uid:++nextSerial,active:true,
     score:heavy?1900:ground?650:400,hp:heavy?21:ground?11:4,
     max:heavy?21:ground?11:4,fire:ground?2.4:1.1+((id*7)%11)*.11,age:0,t:0,
     drop:heavy?'gold':null,x,y};
@@ -181,7 +182,7 @@ function sync(time){
   if(current.has(item.id)&&related(current.get(item.id),item))continue;
   if(t<.78)continue;
   // The old slot can be unrelated: do not overwrite a visible old aircraft.
-  if(current.has(item.id)&&t<.97)continue;
+  if(current.has(item.id))continue;
   record(item,null,clamp01((t-.78)/.22));
  }
  for(const id of tracks.keys())if(!seen.has(id))tracks.delete(id);
