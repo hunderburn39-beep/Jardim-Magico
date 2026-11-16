@@ -875,12 +875,15 @@ if((location.hostname==='127.0.0.1'||location.hostname==='localhost')&&new URLSe
  window.__strikersTest=Object.freeze({
   snapshot:()=>({
    craft:player?.craft,level:player?.level,waveCount:waves.length,
+   activeEnemies:enemies.filter(e=>e.active).map(e=>({kind:e.kind,x:e.x,y:e.y})),airbaseCue,stageTime,
+   romSkinTest:window.StrikersROM?.isLoaded()?Object.keys(ROM_ENEMY_SKINS).map(k=>({kind:k,canvas:!!romEnemySprite(k)})):[],
    waves:waves.map(w=>({style:w.style||'default',color:w.color,blast:w.blast,r:w.r})),
    audioState:ac?.state??null,
    bullets:bullets.map(b=>({kind:b.kind||'shot',variant:b.variant??null,owner:b.owner,x:b.x,y:b.y,vx:b.vx,vy:b.vy,
     angle:b.angle,age:b.age,side:b.side,fromWing:b.fromWing,targetX:b.target?.x??null,targetY:b.target?.y??null}))
   }),
   resetShots:()=>{bullets=[];},
+  invulnerable:()=>{if(player)player.inv=999},
   spawnTarget:(x,y)=>spawn('bomber',x,y),
   setLevel:l=>{if(player)player.level=clamp(l,1,4)},
   prime:()=>{if(player){player.fire=0;player.rocketCd=0}},
