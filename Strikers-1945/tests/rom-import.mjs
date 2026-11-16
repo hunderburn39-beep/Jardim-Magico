@@ -35,7 +35,7 @@ function zip(){
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
-const url='http://127.0.0.1:8765/Strikers-1945/';
+const url='http://127.0.0.1:8765/Strikers-1945/?test=1';
 await page.goto(url,{waitUntil:'load'});
 assert(await page.locator('#romLoadBtn').isVisible(),'Importação visível no menu');
 await page.locator('#romFile').setInputFiles({name:'s1945.zip',mimeType:'application/zip',buffer:zip()});
@@ -70,6 +70,16 @@ await page.locator('#startBtn').click();await page.waitForTimeout(150);
 await page.waitForFunction(()=>window.StrikersOriginalStage1?.ready(),null,{timeout:15000});
 assert.equal(await page.evaluate(()=>window.StrikersOriginalStage1.info().frames),122,'122 capturas reais do tilemap presentes');
 assert((await page.locator('#romBadge').innerText()).includes('FUNDO ORIGINAL'),'Fundo da fase 1 deve estar integrado na jogabilidade');
+const arts=await page.evaluate(()=>{
+  const t=window.__strikersTest;t.invulnerable();return t.snapshot().romSkinTest;
+});
+assert(arts.length>=7&&arts.every(a=>a.canvas),'Todos os tipos de inimigos devem descodificar sprites originais');
+await page.evaluate(()=>{const t=window.__strikersTest;t.invulnerable();t.advance(10)});
+const battle=await page.evaluate(()=>window.__strikersTest.snapshot());
+assert(battle.airbaseCue>=3,'Entradas da primeira fase de acordo com sequência planeada');
+assert(battle.activeEnemies.some(e=>e.kind==='bomber'),'Bombardeiros originais devem aparecer na primeira fase');
+assert(battle.activeEnemies.some(e=>e.kind==='fighter'||e.kind==='red'),'Caças originais devem aparecer na primeira fase');
+await page.screenshot({path:'strikers-v52-enemies.png'});
 await page.screenshot({path:'strikers-v42-background.png'});
 await page.goto(url+'inspector.html',{waitUntil:'load'});
 await page.waitForFunction(()=>window.StrikersROM?.isLoaded(),null,{timeout:30000});
@@ -85,4 +95,4 @@ assert((await page.locator('#groupImg').evaluate(x=>x.width))===192,'Sprite 4x4 
 await page.screenshot({path:'strikers-v42-sprites.png'});
 assert.deepEqual(errors,[],'Sem erros JavaScript');
 await browser.close();
-console.log('STRIKERS V5: 4bpp packed MSB, word-swap, LUT, 122 frames da fase 1 integrados, vista e cache VALIDADOS.');
+console.log('STRIKERS V5.2: sprites originais em jogo, caças e bombardeiros, 4bpp packed MSB, word-swap, LUT, 122 frames da fase 1 integrados, vista e cache VALIDADOS.');
