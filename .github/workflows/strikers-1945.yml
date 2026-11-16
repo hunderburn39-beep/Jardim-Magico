@@ -1,9 +1,10 @@
-name: "Strikers 1945 | Testes HTML5 iPhone V3.2"
+name: "Strikers 1945 | Testes HTML5 iPhone V4"
 on:
   push:
     branches: [main]
     paths:
       - 'Strikers-1945/index.html'
+      - 'Strikers-1945/original-rom.js'
       - 'Strikers-1945/tests/**'
       - '.github/workflows/strikers-1945.yml'
   workflow_dispatch:
@@ -31,13 +32,16 @@ jobs:
         run: node Strikers-1945/tests/smoke.mjs
       - name: Validar 4 armamentos, mísseis e trajetórias laterais
         run: node Strikers-1945/tests/weapons.mjs
+      - name: Testar importação privada da ROM e reconstrução dos seis cenários
+        run: node Strikers-1945/tests/rom-import.mjs
       - name: Guardar imagem de verificação
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: strikers1945-v32-previews
+          name: strikers1945-v4-previews
           path: |
             strikers-v2-preview.png
             strikers-weapon-*.png
             strikers-explosion-*.png
+            strikers-rom-mode.png
           if-no-files-found: ignore
