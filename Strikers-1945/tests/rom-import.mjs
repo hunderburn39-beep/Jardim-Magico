@@ -79,6 +79,19 @@ const battle=await page.evaluate(()=>window.__strikersTest.snapshot());
 assert(battle.airbaseCue>=3,'Entradas da primeira fase de acordo com sequência planeada');
 assert(battle.activeEnemies.some(e=>e.kind==='bomber'),'Bombardeiros originais devem aparecer na primeira fase');
 assert(battle.activeEnemies.some(e=>e.kind==='fighter'||e.kind==='red'),'Caças originais devem aparecer na primeira fase');
+
+// Recreate the large bomber's fast diagonal sweep from recorded sprite-RAM positions.
+await page.evaluate(()=>{const t=window.__strikersTest;t.disableFire();t.advance(8.9)});
+const big1=await page.evaluate(()=>window.__strikersTest.snapshot());
+const plane1=big1.activeEnemies.find(e=>e.kind==='swooper');
+assert(plane1,'Bombardeiro grande de trajetória original deve entrar aos ~18,7 segundos');
+await page.evaluate(()=>window.__strikersTest.advance(.7));
+const big2=await page.evaluate(()=>window.__strikersTest.snapshot());
+const plane2=big2.activeEnemies.find(e=>e.kind==='swooper');
+assert(plane2,'Bombardeiro original deve continuar a atravessar o ecrã');
+assert(plane2.x<plane1.x-45,'Bombardeiro deve fazer a passagem lateral rápida para a esquerda');
+assert(plane2.y<plane1.y-25,'Bombardeiro deve subir durante a passagem, tal como na captura');
+await page.screenshot({path:'strikers-v53-big-bomber.png'});
 await page.screenshot({path:'strikers-v52-enemies.png'});
 await page.screenshot({path:'strikers-v42-background.png'});
 await page.goto(url.split('?')[0]+'inspector.html',{waitUntil:'load'});
@@ -96,4 +109,4 @@ assert((await page.locator('#groupImg').evaluate(x=>x.width))===192,'Sprite 4x4 
 await page.screenshot({path:'strikers-v42-sprites.png'});
 assert.deepEqual(errors,[],'Sem erros JavaScript');
 await browser.close();
-console.log('STRIKERS V5.2: sprites originais em jogo, caças e bombardeiros, 4bpp packed MSB, word-swap, LUT, 122 frames da fase 1 integrados, vista e cache VALIDADOS.');
+console.log('STRIKERS V5.3: sprites originais em jogo, caças e bombardeiros, 4bpp packed MSB, word-swap, LUT, 122 frames da fase 1 integrados, vista e cache VALIDADOS.');
