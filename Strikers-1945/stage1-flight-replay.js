@@ -155,6 +155,9 @@ function sync(time){
    tracks.set(id,e);
   }
   e.id=id;e.w=item.w;e.h=item.h;e.x=x;e.y=y;
+   // Keep the genuine ROM frames but normalize oversized bomber silhouettes for a narrow phone.
+   e.visualScale=role(item)==='bomber'?Math.min(1,166/Math.max(item.w,item.h)):1;
+   e.renderW=e.w*e.visualScale;e.renderH=e.h*e.visualScale;
   e.source=item;e.sprite=item;e.lastCode=item.code;e.palette=item.palette;
   e.heavy=role(item)==='bomber';e.role=role(item);e.alpha=fade;
   if(continuous){
@@ -217,7 +220,7 @@ function sprite(item){
   }
  }
  c.putImageData(im,0,0);
- if(cache.size>260)cache.delete(cache.keys().next().value);
+ if(cache.size>160)cache.delete(cache.keys().next().value);
  cache.set(key,canvas);
  return canvas;
 }
@@ -226,16 +229,17 @@ function draw(ctx,e){
  const sheet=sprite(e.sprite);if(!sheet)return false;
  const alpha=(e.alpha??1)*(e.visualAlpha??1);if(alpha<=.02)return true;
  ctx.save();ctx.imageSmoothingEnabled=false;const baseAlpha=ctx.globalAlpha;ctx.globalAlpha=baseAlpha*alpha;
- const dx=e.x-e.w/2,dy=e.y-e.h/2;
+ const rw=e.renderW??e.w,rh=e.renderH??e.h;
+ const dx=e.x-rw/2,dy=e.y-rh/2;
  // Cross-dissolve real animation frames for only ~75ms at each change.
  // The original ROM supplies both silhouettes; no fake 2D rotation.
  if(e.spriteFrom&&e.spriteTo&&e.spriteFrom!==e.spriteTo){
   const t=e.spriteMix;
   const old=sprite(e.spriteFrom),up=sprite(e.spriteTo);
-  if(old&&up){ctx.globalAlpha=baseAlpha*alpha*(1-t);ctx.drawImage(old,dx,dy,e.w,e.h);
-   ctx.globalAlpha=baseAlpha*alpha*t;ctx.drawImage(up,dx,dy,e.w,e.h);}
-  else ctx.drawImage(sheet,dx,dy,e.w,e.h);
- }else ctx.drawImage(sheet,dx,dy,e.w,e.h);
+  if(old&&up){ctx.globalAlpha=baseAlpha*alpha*(1-t);ctx.drawImage(old,dx,dy,rw,rh);
+   ctx.globalAlpha=baseAlpha*alpha*t;ctx.drawImage(up,dx,dy,rw,rh);}
+  else ctx.drawImage(sheet,dx,dy,rw,rh);
+ }else ctx.drawImage(sheet,dx,dy,rw,rh);
  ctx.restore();return true;
 }
 const api=Object.freeze({ensure,ready,sync,draw,reset,
