@@ -83,34 +83,106 @@ function snapshot(time){
  const a=frames[low],b=frames[Math.min(low+1,frames.length-1)];
  return {a,b,t:b===a?0:Math.min(1,Math.max(0,(frame-a.frame)/(b.frame-a.frame))),expired:false};
 }
+// A sprite-RAM slot is not a permanent aircraft ID. Compare screen position,
+ // size and graphic family before associating two captured frames.
+function role(e){
+ if(e.nx>=5||e.ny>=5)return 'bomber';
+ if(e.nx>=3||e.ny>=3)return 'ground';
+ return 'fighter';
+}
+function related(a,b){
+ if(!a||!b||role(a)!==role(b))return false;
+ if(Math.abs(a.w-b.w)>85||Math.abs(a.h-b.h)>85)return false;
+ if(a.palette!==b.palette&&Math.abs(a.code-b.code)>320)return false;
+ if(Math.hypot(a.x-b.x,a.y-b.y)>245)return false;
+ return true;
+}
+const MAX_KEYFRAME_JUMP=245;
+function clamp01(t){return Math.max(0,Math.min(1,t))}
+function hermite(a,b,prev,next,t){
+ const d=b-a;
+ // Estimate tangent from adjacent real captures. Linear fallback when missing.
+ let m0=prev===null?d:(b-prev)*.5;
+ let m1=next===null?d:(next-a)*.5;
+ const limit=Math.max(30,Math.abs(d)*1.6);
+ m0=Math.max(-limit,Math.min(limit,m0));m1=Math.max(-limit,Math.min(limit,m1));
+ const t2=t*t,t3=t2*t;
+ return (2*t3-3*t2+1)*a+(t3-2*t2+t)*m0+(-2*t3+3*t2)*b+(t3-t2)*m1;
+}
+function frameAt(i){return frames[Math.max(0,Math.min(frames.length-1,i))]}
 function sync(time){
  if(!ready())return [];
  if(time<timeLast-.1)reset();
  timeLast=time;
  const f=snapshot(time);if(!f||f.expired)return [];
- const later=new Map(f.b.items.map(x=>[x.id,x])),result=[],seen=new Set();
- for(const item of f.a.items){
-  let prior=tracks.get(item.id),future=later.get(item.id),x=item.x,y=item.y;
-  const canLerp=future&&Math.abs(item.w-future.w)<20&&Math.abs(item.h-future.h)<20&&
-   Math.hypot(future.x-item.x,future.y-item.y)<155;
-  if(canLerp){x+=(future.x-item.x)*f.t;y+=(future.y-item.y)*f.t}
-  // Frame source slots are reused: respawn only on a substantial jump/type change.
-  const reused=prior&&(
-   Math.hypot(prior.x-x,prior.y-y)>150||
-   (Math.abs(prior.lastCode-item.code)>1000&&prior.palette!==item.palette)||
-   (Math.abs(prior.w-item.w)>90));
-  if(!prior||reused){
-   const heavy=item.nx>=5||item.ny>=5;
-   prior={kind:'romPlane',romFlight:true,active:true,score:heavy?1900:400,
-    hp:heavy?21:4,max:heavy?21:4,
-    fire:1.1+((item.id*7)%11)*.11,age:0,t:0,
-    drop:heavy?'gold':null,x,y};
-   tracks.set(item.id,prior);
+ const ai=frames.indexOf(f.a),prev=frameAt(ai-1),next=frameAt(ai+2);
+ const before=new Map(prev.items.map(it=>[it.id,it]));
+ const future=new Map(f.b.items.map(it=>[it.id,it]));
+ const after=new Map(next.items.map(it=>[it.id,it]));
+ const current=new Map(f.a.items.map(it=>[it.id,it]));
+ const result=[],seen=new Set(),t=clamp01(f.t);
+ function record(item,other,fade=1){
+  if(fade<=.025)return;
+  const id=item.id;
+  let e=tracks.get(id);
+  const continuous=related(item,other);
+  let x=item.x,y=item.y;
+  if(continuous){
+   const beforeItem=before.get(id),afterItem=after.get(id);
+   const p=related(beforeItem,item)?beforeItem:null;
+   const n=related(other,afterItem)?afterItem:null;
+   x=hermite(item.x,other.x,p?.x??null,n?.x??null,t);
+   y=hermite(item.y,other.y,p?.y??null,n?.y??null,t);
+   // Limit cubic overshoot; banked aircraft never teleport off the flight corridor.
+   const minX=Math.min(item.x,other.x)-22,maxX=Math.max(item.x,other.x)+22;
+   const minY=Math.min(item.y,other.y)-22,maxY=Math.max(item.y,other.y)+22;
+   x=Math.max(minX,Math.min(maxX,x));y=Math.max(minY,Math.min(maxY,y));
   }
-  prior.x=x;prior.y=y;prior.w=item.w;prior.h=item.h;prior.sprite=item;
-  prior.lastCode=item.code;prior.palette=item.palette;prior.id=item.id;
-  prior.heavy=item.nx>=5||item.ny>=5;seen.add(item.id);
-  if(prior.active&&x>-150&&x<510&&y>-190&&y<810)result.push(prior);
+  const prevItem=e?.source;
+  const reused=!!e&&(
+   !related(prevItem,item)&&Math.hypot((prevItem?.x??x)-item.x,(prevItem?.y??y)-item.y)>90||
+   e.role!==role(item)||
+   Math.hypot(e.x-x,e.y-y)>MAX_KEYFRAME_JUMP||
+   (Math.abs(e.lastCode-item.code)>2200));
+  if(!e||reused){
+   const heavy=role(item)==='bomber',ground=role(item)==='ground';
+   e={kind:ground?'romGround':'romPlane',romFlight:true,active:true,
+    score:heavy?1900:ground?650:400,hp:heavy?21:ground?11:4,
+    max:heavy?21:ground?11:4,fire:ground?2.4:1.1+((id*7)%11)*.11,age:0,t:0,
+    drop:heavy?'gold':null,x,y};
+   tracks.set(id,e);
+  }
+  e.id=id;e.w=item.w;e.h=item.h;e.x=x;e.y=y;
+  e.source=item;e.sprite=item;e.lastCode=item.code;e.palette=item.palette;
+  e.heavy=role(item)==='bomber';e.role=role(item);e.alpha=fade;
+  if(continuous){
+   e.vx=(other.x-item.x)/Math.max(.016,(f.b.frame-f.a.frame)/60);
+   e.vy=(other.y-item.y)/Math.max(.016,(f.b.frame-f.a.frame)/60);
+   // The two real sprite codes represent the changing silhouette in a turn.
+   // Dissolve briefly between them instead of spinning a flat image.
+   const mix=clamp01((t-.43)/.14);
+   if(item.code!==other.code||item.attr!==other.attr){
+    e.sprite= mix>.5?other:item;
+    e.spriteFrom=item;e.spriteTo=other;e.spriteMix=mix;
+   }else{e.spriteMix=0;e.spriteFrom=null;e.spriteTo=null}
+  }else{e.vx=0;e.vy=0;e.spriteMix=0;e.spriteFrom=null;e.spriteTo=null}
+  if(e.active&&x>-150&&x<510&&y>-190&&y<810)result.push(e);
+  seen.add(id);
+ }
+ for(const item of f.a.items){
+  const other=future.get(item.id);
+  const same=related(item,other);
+  // Fade out at a recorded exit/replacement; prevents snapping to another plane.
+  const alpha=same?1:clamp01((1-t)/.24);
+  record(item,same?other:null,alpha);
+ }
+ // Introduce aircraft newly present in the next capture without a harsh pop.
+ for(const item of f.b.items){
+  if(current.has(item.id)&&related(current.get(item.id),item))continue;
+  if(t<.78)continue;
+  // The old slot can be unrelated: do not overwrite a visible old aircraft.
+  if(current.has(item.id)&&t<.97)continue;
+  record(item,null,clamp01((t-.78)/.22));
  }
  for(const id of tracks.keys())if(!seen.has(id))tracks.delete(id);
  return result;
@@ -149,19 +221,28 @@ function sprite(item){
 }
 function draw(ctx,e){
  if(!e.romFlight||!ready()||!e.sprite)return false;
- const asset=sprite(e.sprite);
- if(!asset)return false;
- ctx.save();ctx.imageSmoothingEnabled=false;
- ctx.drawImage(asset,e.x-e.w/2,e.y-e.h/2,e.w,e.h);
+ const sheet=sprite(e.sprite);if(!sheet)return false;
+ const alpha=e.alpha??1;if(alpha<=.02)return true;
+ ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha*=alpha;
+ const dx=e.x-e.w/2,dy=e.y-e.h/2;
+ // Cross-dissolve real animation frames for only ~75ms at each change.
+ // The original ROM supplies both silhouettes; no fake 2D rotation.
+ if(e.spriteFrom&&e.spriteTo&&e.spriteFrom!==e.spriteTo){
+  const t=e.spriteMix;
+  const old=sprite(e.spriteFrom),up=sprite(e.spriteTo);
+  if(old&&up){ctx.globalAlpha=alpha*(1-t);ctx.drawImage(old,dx,dy,e.w,e.h);
+   ctx.globalAlpha=alpha*t;ctx.drawImage(up,dx,dy,e.w,e.h);}
+  else ctx.drawImage(sheet,dx,dy,e.w,e.h);
+ }else ctx.drawImage(sheet,dx,dy,e.w,e.h);
  ctx.restore();return true;
 }
 const api=Object.freeze({ensure,ready,sync,draw,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,flightTime:47}),
+ stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,flightTime:47,interpolation:'hermite',spriteBlend:true}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
  parsed:()=>!!frames
  }):undefined});
 window.StrikersFlightReplay=api;
-window.addEventListener('strikers-rom-ready',()=>api.ensure());
+window.addEventListener('strikers-rom-ready',()=>{cache.clear();reset();api.ensure()});
 if(window.StrikersROM?.isLoaded())api.ensure();
 })();
