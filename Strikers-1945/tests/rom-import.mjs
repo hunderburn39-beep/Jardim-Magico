@@ -83,6 +83,7 @@ await page.screenshot({path:'strikers-v52-enemies.png'});
 await page.screenshot({path:'strikers-v42-background.png'});
 await page.goto(url+'inspector.html',{waitUntil:'load'});
 await page.waitForFunction(()=>window.StrikersROM?.isLoaded(),null,{timeout:30000});
+await page.locator('#viewer').waitFor({state:'visible',timeout:15000});
 assert(await page.locator('#viewer').isVisible(),'O inspetor restaurou os dados via IndexedDB');
 const canvas=page.locator('#assetGrid');assert((await canvas.evaluate(x=>x.width))===512);
 await page.locator('#kind').selectOption('sprite');
