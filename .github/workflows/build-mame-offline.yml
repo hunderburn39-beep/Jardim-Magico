@@ -1,0 +1,34 @@
+name: "Preparar ferramenta livre de captura de fundos (MAME)"
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/build-mame-offline.yml']
+permissions:
+  contents: read
+jobs:
+  make:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Instalar MAME do repositório Ubuntu
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends mame
+          /usr/games/mame -listfull s1945 | head -15
+      - name: Criar pacote binário portátil sem ROM comercial
+        run: |
+          mkdir -p runtime/lib
+          cp /usr/games/mame runtime/mame
+          ldd /usr/games/mame | awk '/=> \//{print $3} /^\s*\//{print $1}' | while read -r so; do
+            test -f "$so" && cp -L "$so" runtime/lib/ || true
+          done
+          cp /lib64/ld-linux-x86-64.so.2 runtime/lib/ || true
+          tar -czf mame-runtime.tar.gz runtime
+          ls -lh mame-runtime.tar.gz
+      - name: Exportar MAME para descodificação local
+        uses: actions/upload-artifact@v4
+        with:
+          name: mame-offline-extractor
+          path: mame-runtime.tar.gz
+          retention-days: 1
+          compression-level: 0
