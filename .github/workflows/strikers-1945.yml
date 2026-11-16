@@ -1,10 +1,11 @@
-name: "Strikers 1945 | Testes HTML5 iPhone V4"
+name: "Strikers 1945 | Testes HTML5 iPhone V4.2"
 on:
   push:
     branches: [main]
     paths:
       - 'Strikers-1945/index.html'
       - 'Strikers-1945/original-rom.js'
+      - 'Strikers-1945/inspector.html'
       - 'Strikers-1945/tests/**'
       - '.github/workflows/strikers-1945.yml'
   workflow_dispatch:
@@ -38,10 +39,12 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: strikers1945-v4-previews
+          name: strikers1945-v42-previews
           path: |
             strikers-v2-preview.png
             strikers-weapon-*.png
             strikers-explosion-*.png
             strikers-rom-mode.png
+            strikers-v42-background.png
+            strikers-v42-sprites.png
           if-no-files-found: ignore
