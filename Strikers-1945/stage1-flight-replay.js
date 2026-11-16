@@ -94,6 +94,7 @@ function role(e){
 function related(a,b){
  if(!a||!b||role(a)!==role(b))return false;
  if(Math.abs(a.w-b.w)>85||Math.abs(a.h-b.h)>85)return false;
+ if(Math.abs(a.code-b.code)>700)return false;
  if(a.palette!==b.palette&&Math.abs(a.code-b.code)>320)return false;
  if(Math.hypot(a.x-b.x,a.y-b.y)>245)return false;
  return true;
@@ -240,6 +241,7 @@ function draw(ctx,e){
 const api=Object.freeze({ensure,ready,sync,draw,reset,
  stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,flightTime:47,interpolation:'hermite',spriteBlend:true}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
+ smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code})),
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
  parsed:()=>!!frames
  }):undefined});
