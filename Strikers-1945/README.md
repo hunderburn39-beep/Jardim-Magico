@@ -1,3 +1,21 @@
+# Strikers 1945 HTML5 — V5.8
+
+## Melhorias após gravação no iPhone (16/11/2026)
+
+- Quatro vidas iniciais e proteção mais longa entre impactos; aviso de perda de vida no ecrã.
+- HUD mostra `♥ N` num indicador mais nítido.
+- Área de contacto de aviões grandes centrada na fuselagem e mais pequena, reduzindo colisões que pareciam injustas.
+- Disparos inimigos aguardam 6,5 segundos na primeira fase, dando tempo de adaptação.
+- Aviões grandes ficam mais transparentes ao cruzar a zona do jogador, sem alterar os pixels nem as dimensões dos sprites extraídos da ROM.
+- Tiros ciano ligeiramente mais espessos para se distinguirem melhor do fundo.
+- Cache offline atualizado para V5.8, reduzindo o risco de o Safari apresentar a versão anterior.
+
+**Jogar:** https://hunderburn39-beep.github.io/Jardim-Magico/Strikers-1945/?v=5.8
+
+**Estado:** mudanças publicadas no código; ainda requer validação visual no Safari real.
+
+---
+
 # Strikers 1945 HTML5 — V5.7
 
 Jogo independente de aviões com controlos táteis e quatro armamentos. **Não é o jogo comercial original emulado**.
