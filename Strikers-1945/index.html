@@ -36,6 +36,7 @@ const ROM_ENEMY_SKINS={
  ship:[{code:21691,nx:3,ny:8,pal:23}]
 };
 const romEnemyCache=new Map();
+window.addEventListener('strikers-rom-ready',()=>romEnemyCache.clear());
 function romEnemySprite(name,variant=0){
  const skins=ROM_ENEMY_SKINS[name],rom=window.StrikersROM;
  if(!skins||!rom?.isLoaded())return null;
@@ -79,10 +80,12 @@ function drawRomEnemy(e){
 // First-airbase formations adapted from observed MAME frame times.
 // This is not the original enemy AI program; all pictured sprites are genuine ROM artwork.
 const AIRBASE_WAVES=[
- [3.0,'line',0],[5.8,'red',0],[8.4,'line',1],[11,'turrets',0],
- [13.5,'bomber',0],[16.5,'red',1],[19,'line',2],[22,'turrets',1],
- [25,'bomber',1],[28,'line',1],[31,'red',0],[34,'turrets',2],
- [37,'fortress',0],[41,'line',0],[44.5,'red',1]
+ // MAME observations: ground targets at start; small planes by 4s;
+ // large gray bombers near 8–16s; silver four-engine bombers from 20s onward.
+ [0.8,'turrets',0],[4.0,'line',0],[5.2,'red',0],[8.1,'bomber',0],
+ [11.8,'turrets',1],[13.2,'line',1],[16.0,'bomber',1],[19.7,'fortress',0],
+ [23.5,'line',2],[25.0,'fortress',1],[28.5,'fortress',2],
+ [32.0,'red',1],[35.8,'line',0],[39.7,'fortress',0],[43.5,'line',1]
 ];
 let airbaseCue=0;
 function airbaseWave(){
@@ -558,7 +561,7 @@ for(let i=bullets.length-1;i>=0;i--){
   bullets.splice(i,1);hitPlayer()
  }
 }
-for(let i=pups.length-1;i>=0;i--){let p=pups[i];p.y+=55*dt;p.t+=dt;if(p.y>H+20){pups.splice(i,1);continue}if(player&&Math.hypot(p.x-player.x,p.y-player.y)<22){if(p.type==='power')player.level=clamp(player.level+1,1,4);else player.bombs=Math.min(player.bombs+1,5);score+=750;message(p.type==='power'?'POWER UP!':'BOMBA EXTRA',.7);beep('power');addParticle(p.x,p.y,'#fff7a5',17,90,.4);pups.splice(i,1);updateUI()}}
+for(let i=pups.length-1;i>=0;i--){let p=pups[i];p.y+=55*dt;p.t+=dt;if(p.y>H+20){pups.splice(i,1);continue}if(player&&Math.hypot(p.x-player.x,p.y-player.y)<22){if(p.type==='power')player.level=clamp(player.level+1,1,4);else if(p.type==='bomb')player.bombs=Math.min(player.bombs+1,5);else if(p.type==='gold')score+=[200,500,1000,2000][Math.floor(p.t*2)%4];score+=p.type==='gold'?0:750;message(p.type==='power'?'POWER UP!':p.type==='gold'?'OURO BÓNUS':'BOMBA EXTRA',.7);beep('power');addParticle(p.x,p.y,'#fff7a5',17,90,.4);pups.splice(i,1);updateUI()}}
 for(let i=sparks.length-1;i>=0;i--){let p=sparks[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.pow(.13,dt);p.vy*=Math.pow(.13,dt);p.life-=dt;if(p.life<=0)sparks.splice(i,1)}for(let i=floats.length-1;i>=0;i--){floats[i].y-=dt*26;floats[i].t+=dt;if(floats[i].t>.8)floats.splice(i,1)}for(let i=waves.length-1;i>=0;i--){const w=waves[i];if(w.delay>0){w.delay-=dt;continue}w.life-=dt;w.r+=dt*(w.blast?Math.max(65,w.blast/w.max*.9):120);if(w.life<=0)waves.splice(i,1)}flash=Math.max(0,flash-dt*2);shake=Math.max(0,shake-dt*25);updateUI()}
 function drawEnemy(e){
  if(drawRomEnemy(e))return;
