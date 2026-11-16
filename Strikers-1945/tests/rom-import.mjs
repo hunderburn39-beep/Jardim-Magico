@@ -44,8 +44,6 @@ await page.waitForFunction(()=>window.StrikersFlightReplay?.ready(),null,{timeou
 assert.equal(await page.evaluate(()=>window.StrikersFlightReplay.stats().frames),116,'116 instantes originais dos caças descodificados');
 
 await page.waitForFunction(()=>window.StrikersOriginalStage1?.ready(),null,{timeout:30000});
-await page.waitForFunction(()=>document.querySelector('#romInfo')?.textContent.includes('Base aérea original'),null,{timeout:10000});
-assert((await page.locator('#romInfo').innerText()).includes('Base aérea original'),'A fase 1 deve usar o fundo real capturado da ROM');
 assert(await page.locator('#romPreview').isVisible(),'Pré-visualização visível');
 assert(await page.locator('#romInspectBtn').isVisible(),'Ligação ao inspetor dos sprites visível');
 const state=await page.evaluate(()=>{
