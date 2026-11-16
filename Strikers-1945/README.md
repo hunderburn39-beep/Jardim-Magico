@@ -1,3 +1,24 @@
+# Strikers 1945 HTML5 — V5.7
+
+Jogo independente de aviões com controlos táteis e quatro armamentos. **Não é o jogo comercial original emulado**.
+
+## Alterações na V5.7 — leitura visual
+
+- Fundo da missão ligeiramente escurecido, mantendo os pixels originais da base aérea quando a ROM local está carregada.
+- Nas sequências de voo capturadas da ROM, não são acrescentados alvos de solo artificiais por cima dos alvos já capturados.
+- Os aviões e instalações de solo são desenhados em camadas separadas. Os aviões grandes não mudam de tamanho, mas tornam-se suavemente transparentes apenas ao cruzar a zona do jogador.
+- Tiros do jogador: raios estreitos ciano; tiros inimigos: vermelho-alaranjado de centro claro e contorno escuro, facilmente identificáveis.
+- A quantidade de tiros inimigos simultâneos fica limitada para melhorar a leitura no iPhone; o limite sobe progressivamente de fase para fase.
+- Redução da intensidade de rastos de mísseis, explosões, vibração de impacto e efeitos luminosos.
+- Pequeno marcador ciano no avião controlado pelo jogador e dicas de controlo ocultadas depois dos primeiros sete segundos.
+- O distintivo de ROM deixa de cobrir a zona de jogo (a importação continua disponível).
+
+**Jogar:** https://hunderburn39-beep.github.io/Jardim-Magico/Strikers-1945/?v=5.7
+
+**Nota:** é um remake HTML5 com gráficos da ROM fornecida localmente pelo utilizador; não é emulação integral do arcade.
+
+---
+
 # Strikers 1945 HTML5 — V5.6
 
 Jogo independente de aviões com controlos táteis e quatro armamentos. **Não é o jogo comercial original emulado**.
