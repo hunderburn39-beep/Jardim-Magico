@@ -909,6 +909,7 @@ if((location.hostname==='127.0.0.1'||location.hostname==='localhost')&&new URLSe
   setLevel:l=>{if(player)player.level=clamp(l,1,4)},
   prime:()=>{if(player){player.fire=0;player.rocketCd=0}},
   stopRockets:()=>{if(player)player.rocketCd=99},
+  disableFire:()=>{if(player){player.fire=999;player.rocketCd=999}},
   launch:(side,wing)=>{if(player)fireMissile(player,side,!!wing,4)},
   detonate:(variant)=>{if(player)missileImpact({x:player.x,y:player.y-105,damage:1,variant},null)},
   advance:(seconds)=>{const n=Math.ceil(seconds/(1/60));for(let i=0;i<n;i++)update(seconds/n)}
