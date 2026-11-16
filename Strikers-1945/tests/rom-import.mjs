@@ -88,18 +88,21 @@ const animation=await page.evaluate(()=>{
 assert(animation.a.length>0&&animation.b.length>0,'Fotogramas originais com aviões disponíveis');
 assert(animation.a.join(',')!==animation.b.join(','),'Códigos dos sprites mudam durante as curvas e viragens');
 
-// Recreate the large bomber's fast diagonal sweep from recorded sprite-RAM positions.
-await page.evaluate(()=>{const t=window.__strikersTest;t.disableFire();t.advance(8.9)});
-const big1=await page.evaluate(()=>window.__strikersTest.snapshot());
-const plane1=big1.activeEnemies.find(e=>e.kind==='swooper');
-assert(plane1,'Bombardeiro grande de trajetória original deve entrar aos ~18,7 segundos');
+// Enemy aircraft now follow the recorded ROM sprite stream, not the old synthetic swooper.
+await page.evaluate(()=>{const t=window.__strikersTest;t.disableFire();t.resetShots();t.advance(8.9)});
+const before=await page.evaluate(()=>window.__strikersTest.snapshot());
+assert(before.flightEnemies.length>0,'A fase original deve conter aeronaves capturadas pela ROM');
 await page.evaluate(()=>window.__strikersTest.advance(.7));
-const big2=await page.evaluate(()=>window.__strikersTest.snapshot());
-const plane2=big2.activeEnemies.find(e=>e.kind==='swooper');
-assert(plane2,'Bombardeiro original deve continuar a atravessar o ecrã');
-assert(plane2.x<plane1.x-45,'Bombardeiro deve fazer a passagem lateral rápida para a esquerda');
-assert(plane2.y<plane1.y-25,'Bombardeiro deve subir durante a passagem, tal como na captura');
-await page.screenshot({path:'strikers-v53-big-bomber.png'});
+const after=await page.evaluate(()=>window.__strikersTest.snapshot());
+assert(after.flightEnemies.length>0,'A fase original deve continuar a apresentar aviões');
+const ids=new Map(before.flightEnemies.map(e=>[e.id,e]));
+const moving=after.flightEnemies.filter(e=>ids.has(e.id)).map(e=>({new:e,old:ids.get(e.id)}))
+ .filter(v=>Math.hypot(v.new.x-v.old.x,v.new.y-v.old.y)>8);
+assert(moving.length>0,'Os aviões capturados devem executar trajetórias dinâmicas, não ficar parados');
+console.log('Caças reais em movimento:',moving.slice(0,4).map(v=>({id:v.new.id,
+ anterior:[Math.round(v.old.x),Math.round(v.old.y)],
+ atual:[Math.round(v.new.x),Math.round(v.new.y)]})));
+await page.screenshot({path:'strikers-v54-flight-turns.png'});
 await page.screenshot({path:'strikers-v52-enemies.png'});
 await page.screenshot({path:'strikers-v42-background.png'});
 await page.goto(url.split('?')[0]+'inspector.html',{waitUntil:'load'});
@@ -117,4 +120,4 @@ assert((await page.locator('#groupImg').evaluate(x=>x.width))===192,'Sprite 4x4 
 await page.screenshot({path:'strikers-v42-sprites.png'});
 assert.deepEqual(errors,[],'Sem erros JavaScript');
 await browser.close();
-console.log('STRIKERS V5.3: sprites originais em jogo, caças e bombardeiros, 4bpp packed MSB, word-swap, LUT, 122 frames da fase 1 integrados, vista e cache VALIDADOS.');
+console.log('STRIKERS V5.4: sprites originais em jogo, caças e bombardeiros, 4bpp packed MSB, word-swap, LUT, 122 frames da fase 1 integrados, vista e cache VALIDADOS.');
