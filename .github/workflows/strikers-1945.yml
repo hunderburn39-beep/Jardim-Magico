@@ -1,4 +1,4 @@
-name: "Strikers 1945 | Testes HTML5 iPhone V5.2"
+name: "Strikers 1945 | Testes HTML5 iPhone V5.4"
 on:
   push:
     branches: [main]
@@ -39,11 +39,18 @@ jobs:
         run: node Strikers-1945/tests/rom-import.mjs
       - name: Validar original Arcade com Service Worker e ROM local
         run: node Strikers-1945/tests/arcade-mode.mjs
+      - name: Disponibilizar código do remake para validação local
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: strikers1945-v54-site
+          path: Strikers-1945/
+          retention-days: 3
       - name: Guardar imagem de verificação
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: strikers1945-v43-previews
+          name: strikers1945-v54-previews
           path: |
             strikers-v2-preview.png
             strikers-weapon-*.png
