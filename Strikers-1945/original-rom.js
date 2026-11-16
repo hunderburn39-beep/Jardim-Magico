@@ -13,6 +13,45 @@
   {name:'NOITE',start:14336,end:16384,stops:['#101d35','#344869','#668394','#c8cdbd']}
  ];
  let gfx=null,cache=new Map();
+ // The user's selected graphic bytes remain on their device in IndexedDB.
+ const DB='strikers1945-user-rom-art-v1', STORE='assets', KEY='u34';
+ function openDb(){
+  return new Promise((resolve,reject)=>{
+   if(!globalThis.indexedDB)return reject(Error('IndexedDB não disponível'));
+   const req=indexedDB.open(DB,1);
+   req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(STORE))req.result.createObjectStore(STORE)};
+   req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+  });
+ }
+ async function saveLocal(a){
+  const db=await openDb();
+  try{await new Promise((resolve,reject)=>{
+   const tx=db.transaction(STORE,'readwrite');
+   tx.objectStore(STORE).put(a,KEY);
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+  })}finally{db.close()}
+ }
+ async function readLocal(){
+  const db=await openDb();
+  try{return await new Promise((resolve,reject)=>{
+   const tx=db.transaction(STORE,'readonly'),req=tx.objectStore(STORE).get(KEY);
+   req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+  })}finally{db.close()}
+ }
+ function activate(raw,restored=false){
+  const bytes=raw instanceof Uint8Array?raw:new Uint8Array(raw);
+  if(bytes.length!==2097152)throw Error('Os gráficos guardados têm tamanho inválido.');
+  gfx=bytes;cache.clear();
+  dispatchEvent(new CustomEvent('strikers-rom-ready',{detail:{restored}}));
+ }
+ async function restore(){
+  try{
+   const raw=await readLocal();
+   if(!raw)return false;
+   activate(raw,true);return true;
+  }catch(e){return false}
+ }
+
  const rgb=s=>[1,3,5].map(k=>parseInt(s.slice(k,k+2),16));
  function palette(stops){
   const v=stops.map(rgb),out=[];
@@ -84,7 +123,7 @@
    const nl=v.getUint16(pos+28,true),extra=v.getUint16(pos+30,true),comment=v.getUint16(pos+32,true),lh=v.getUint32(pos+42,true);
    const name=d.decode(raw.subarray(pos+46,pos+46+nl));
    pos+=46+nl+extra+comment;
-   if(name.toLowerCase()!==target.toLowerCase())continue;
+   if(name.split('/').pop().toLowerCase()!==target.toLowerCase())continue;
    if(length>16*1024*1024||v.getUint32(lh,true)!==0x04034b50)throw Error('Entrada ROM inválida.');
    const start=lh+30+v.getUint16(lh+26,true)+v.getUint16(lh+28,true),blob=raw.subarray(start,start+compressed);
    if(method===0)return blob.slice();
@@ -102,10 +141,13 @@
   if(!file)throw Error('Seleciona s1945.zip.');
   const raw=await zipMember(file,'u34.bin');
   if(raw.length!==2097152)throw Error('A ROM tem gráficos de tamanho inesperado.');
-  gfx=raw;cache.clear();
+  activate(raw,false);
   await new Promise(r=>setTimeout(r,10));scene(1);
-  dispatchEvent(new Event('strikers-rom-ready'));
-  return 'ROM carregada localmente. Reconstrução experimental ativada.';
+  let saved=false;
+  try{await saveLocal(raw);saved=true}catch(e){}
+  return saved?'Blocos da ROM carregados e guardados neste iPhone.':'Blocos da ROM carregados. O Safari não permitiu guardar para a próxima visita.';
  }
- window.StrikersROM=Object.freeze({load,scene,isLoaded:()=>!!gfx});
+ window.StrikersROM=Object.freeze({load,scene,isLoaded:()=>!!gfx,restore});
+ // Restore the asset automatically on subsequent visits, without asking for the ZIP again.
+ restore().catch(()=>{});
 })();
