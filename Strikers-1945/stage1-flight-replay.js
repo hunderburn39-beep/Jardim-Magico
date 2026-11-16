@@ -72,8 +72,12 @@ function ensure(){
 function reset(){tracks.clear();timeLast=-1}
 function snapshot(time){
  if(!frames)return null;
- const frame=480+Math.max(0,time)*60;
- if(frame>frames[frames.length-1].frame+16)return {a:frames.at(-1),b:frames.at(-1),t:1,expired:true};
+ // Match the same 47-second timeline used by the reconstructed stage-1 background.
+ // Background and enemies now advance through their captured emulated frames together.
+ const firstFrame=frames[0].frame,lastFrame=frames[frames.length-1].frame;
+ const progress=Math.max(0,time)/47;
+ const frame=firstFrame+progress*(lastFrame-firstFrame);
+ if(time>47.25)return {a:frames[frames.length-1],b:frames[frames.length-1],t:1,expired:true};
  let low=0,high=frames.length-1;
  while(low<high){const m=(low+high+1)>>1;if(frames[m].frame<=frame)low=m;else high=m-1}
  const a=frames[low],b=frames[Math.min(low+1,frames.length-1)];
@@ -152,7 +156,7 @@ function draw(ctx,e){
  ctx.restore();return true;
 }
 const api=Object.freeze({ensure,ready,sync,draw,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size}),
+ stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,flightTime:47}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
  parsed:()=>!!frames
