@@ -111,89 +111,143 @@ function drawPlane(c,x,y,s,color,trim,shape,tilt=0,enemy=false){
  for(let side of [-1,1])for(let yy of [10,13,16])circle(c,side*9,yy,.55,'#142c39');
  c.restore();
 }
-function makeBg(n){const original=window.StrikersROM?.scene(n);if(original)return original;
- const theme=THEMES[(n-1)%THEMES.length],c=document.createElement('canvas');c.width=W;c.height=960;
- const g=c.getContext('2d');let seed=(192571+n*918271)>>>0;const R=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
- const sea=[1,2,4,6].includes(n);
- const ocean=g.createLinearGradient(0,0,W,960);
- ocean.addColorStop(0,theme.top);ocean.addColorStop(.48,theme.bot);ocean.addColorStop(1,theme.top);
- g.fillStyle=ocean;g.fillRect(0,0,W,960);
- // Scaled surface texture, currents, ripples
- for(let i=0;i<780;i++){
-  const x=R()*W,y=R()*960,len=1+R()*18;
-  g.strokeStyle=sea?('rgba(186,239,244,'+(.015+R()*.11)+')'):('rgba(252,235,182,'+(.025+R()*.10)+')');
-  g.lineWidth=.4+R()*1.3;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+len*.5,y+R()*2,x+len,y);g.stroke();
- }
- if(n===3||n===5){ // desert and mountain relief: winding terrain bands
-  for(let row=0;row<12;row++){
-   let y=row*83-25,x=R()*100-50;
-   g.strokeStyle=row%2?'#f2dfb51e':'#132a331b';g.lineWidth=12+R()*34;
-   g.beginPath();g.moveTo(x,y);g.bezierCurveTo(140,y+33,210,y-36,420,y+26);g.stroke();
-  }
- }
- const count=n===3?7:n===5?15:15;
- for(let j=0;j<count;j++){
-  const x=12+R()*336,y=R()*960,rx=(n===5?27:24)+R()*60,ry=(n===5?27:35)+R()*80;
-  const points=[];let q=.5+R()*.5;
-  for(let k=0;k<24;k++){const a=k/24*TAU,rr=.8+R()*.26;points.push([x+Math.cos(a)*rx*rr,y+Math.sin(a)*ry*rr])}
-  function island(scale,fill,stroke,width=0){
-   g.beginPath();for(let k=0;k<24;k++){let p=points[k],px=x+(p[0]-x)*scale,py=y+(p[1]-y)*scale;if(k===0)g.moveTo(px,py);else g.lineTo(px,py)}g.closePath();g.fillStyle=fill;g.fill();
-   if(stroke){g.strokeStyle=stroke;g.lineWidth=width;g.stroke()}
-  }
-  if(sea){island(1.16,'#2f708159','#61dae83b',3);island(1.08,theme.soil,theme.soil,3)}
-  else island(1.07,theme.soil,theme.soil,2);
-  const soil=g.createLinearGradient(x-rx,y-ry,x+rx,y+ry);soil.addColorStop(0,theme.detail);soil.addColorStop(.45,theme.land);soil.addColorStop(1,theme.soil);
-  island(.94,soil,'#071e2348',2);
-  // forest canopy and rocky ridges at varying elevations
-  for(let t=0;t<75;t++){
-   const xx=x+(R()-.5)*rx*1.7,yy=y+(R()-.5)*ry*1.7;
-   if(Math.hypot((xx-x)/rx,(yy-y)/ry)>.74)continue;
-   const rad=.8+R()*4.7;
-   if(n===3){
-    g.fillStyle=R()>.6?'#f8dfae90':'#9e694584';g.fillRect(xx,yy,rad*2,rad*.55)
-   }else if(n===5){
-    polygon(g,[xx,yy-rad*1.9,xx-rad,yy+rad,xx+rad,yy+rad],R()>.42?'#bed0cfaa':'#2a4c58a0');
-    g.strokeStyle='#e0edef77';g.lineWidth=.8;g.beginPath();g.moveTo(xx,yy-rad*1.9);g.lineTo(xx-2,yy+rad*.3);g.stroke();
+function makeBg(n){
+ // Independent HTML5 fallback: continuous aerial terrain, NOT a purported dump of arcade VRAM.
+ // No collage of random 16x16 ROM tiles. Real Psikyo pixels can be inspected in inspector.html.
+ const c=document.createElement('canvas');c.width=W;c.height=960;
+ const g=c.getContext('2d'),low=document.createElement('canvas');
+ low.width=180;low.height=480;
+ const ctx=low.getContext('2d',{alpha:false}),im=ctx.createImageData(180,480);
+ let seed=(Math.imul(n,911381)+19742)>>>0;
+ const rng=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
+ const ocean=[1,2,4].includes(n);
+ const westWater=n!==2;
+ const TAU2=Math.PI*2;
+ const shore=(y)=>{
+  const t=TAU2*y/960;
+  return (n===1?148:n===2?223:183)+83*Math.sin(t+n*.7)+42*Math.sin(2*t-n*.9)+16*Math.sin(5*t+n*.4);
+ };
+ const colorPal=[
+  {sea:[6,47,80],land:[45,95,65],ridge:[61,111,72]},
+  {sea:[8,72,94],land:[69,113,67],ridge:[89,135,86]},
+  {sea:[12,54,86],land:[155,125,83],ridge:[183,151,99]},
+  {sea:[26,66,87],land:[80,98,78],ridge:[121,129,107]},
+  {sea:[10,79,101],land:[78,99,94],ridge:[124,141,125]},
+  {sea:[11,30,57],land:[43,62,73],ridge:[76,91,103]}
+ ][n-1]||{sea:[8,45,75],land:[55,87,80],ridge:[88,102,105]};
+ const clampColor=v=>Math.round(Math.min(255,Math.max(0,v)));
+ for(let yy=0;yy<480;yy++){
+  const y=yy*2,t=TAU2*y/960,edge=shore(y);
+  for(let xx=0;xx<180;xx++){
+   const x=xx*2,landside=westWater?x-edge:edge-x;
+   const wet=ocean&&landside<0;
+   const broad=Math.sin(x*.037+t*2.2)+Math.sin(x*.1-t*5.3)*.34;
+   const fine=Math.sin(x*.18+t*7.4)*.24+Math.cos(x*.21-t*12)*.13;
+   const m=broad*.5+fine;
+   const o=(yy*180+xx)*4;
+   let r,gc,bl;
+   if(wet){
+    const depth=-landside;
+    const shallow=Math.max(0,1-depth/80);
+    const sparkle=(Math.sin(x*.2+Math.sin(t*17)*2)+Math.sin(x*.52-t*20))*.45;
+    r=colorPal.sea[0]+shallow*31+m*3+sparkle*2;
+    gc=colorPal.sea[1]+shallow*58+m*7+sparkle*7;
+    bl=colorPal.sea[2]+shallow*38+m*6+sparkle*7;
+    if(depth<5){r=155+sparkle*12;gc=193+sparkle*9;bl=171+sparkle*9}
    }else{
-    circle(g,xx+1.6,yy+1.8,rad+1,'#091c1d68');
-    circle(g,xx,yy,rad,R()>.5?'#204d40':'#2b6550');
-    circle(g,xx-.7,yy-.8,rad*.48,'#6a997070');
+    const relief= n===5?Math.sin(x*.032-t*2.7)*26+Math.sin(x*.08+t*5)*15:Math.sin(x*.06+t*2)*9;
+    r=colorPal.land[0]+m*14+relief;
+    gc=colorPal.land[1]+m*17+relief;
+    bl=colorPal.land[2]+m*10+relief*.8;
+    const beach=ocean&&landside<16;
+    if(beach){const f=(16-landside)/16;r=r*(1-f)+f*(n===4?152:194);gc=gc*(1-f)+f*(n===4?164:188);bl=bl*(1-f)+f*(n===4?144:139)}
+    if(n===3){r+=29*Math.sin(x*.016+t*7);gc+=18*Math.sin(x*.016+t*7)}
+    if(n===5){const snow=Math.max(0,(relief-20)/25);r+=snow*65;gc+=snow*65;bl+=snow*62}
    }
-  }
-  if(j%3===0){ // compact fortified post / hangar
-   g.save();g.translate(x,y);g.rotate((R()-.5)*1.1);
-   g.fillStyle='#101e29a6';g.fillRect(-12,-11,28,28);
-   g.fillStyle=n===6?'#536276':'#b8b9a2';g.fillRect(-14,-15,25,22);
-   g.fillStyle='#243a43';g.fillRect(-10,-12,17,16);
-   g.strokeStyle='#e8dbab77';g.lineWidth=1.5;g.strokeRect(-14,-15,25,22);
-   g.fillStyle='#ddaa5b';g.fillRect(-4,-11,5,4);
-   g.restore();
+   if(n===6){r*=.59;gc*=.67;bl*=.82}
+   im.data[o]=clampColor(r);im.data[o+1]=clampColor(gc);
+   im.data[o+2]=clampColor(bl);im.data[o+3]=255;
   }
  }
- if(n===3||n===4||n===6){ // runway with landing strip markings
-  g.save();g.translate(178,460);g.rotate(n===3?.13:-.08);
-  g.fillStyle='#0e20236d';g.fillRect(-29,-208,65,432);
-  g.fillStyle=n===3?'#78766c':'#2a4349';g.fillRect(-26,-208,58,422);
-  g.strokeStyle='#e2d9ac99';g.lineWidth=2;g.strokeRect(-23,-203,52,414);
-  g.fillStyle='#ffecd5b5';for(let y=-191;y<197;y+=30)g.fillRect(0,y,4,15);
-  for(let y of [-170,160]){g.fillRect(-17,y,12,3);g.fillRect(10,y,12,3)}
+ ctx.putImageData(im,0,0);
+ g.imageSmoothingEnabled=true;g.drawImage(low,0,0,W,960);
+ const drawPath=(coords,width,color)=>{g.beginPath();g.moveTo(coords[0][0],coords[0][1]);for(let i=1;i<coords.length;i++)g.lineTo(coords[i][0],coords[i][1]);g.strokeStyle=color;g.lineWidth=width;g.lineCap='round';g.lineJoin='round';g.stroke()};
+ // A continuous coastal road, bridges and runway: geometry follows land rather than random islands.
+ const road=[];
+ for(let y=0;y<=960;y+=10){
+  const coast=shore(y),x=ocean?(westWater?coast+65:coast-65):175+39*Math.sin(TAU2*y/960+n);
+  road.push([Math.max(20,Math.min(340,x)),y]);
+ }
+ drawPath(road,12,'#14242a4e');drawPath(road,7,n===3?'#c4b18b':'#53625b');
+ drawPath(road,1.5,'#d6d0a07a');
+ if(n===5){ // valley river and ridgelines
+  const river=[];for(let y=0;y<=960;y+=8)river.push([85+36*Math.sin(TAU2*y/960+.25)+16*Math.sin(TAU2*3*y/960),y]);
+  drawPath(river,27,'#3b676e90');drawPath(river,17,'#5d99a9b2');drawPath(river,5,'#aac9be48');
+  for(let i=0;i<10;i++){
+   const y=60+i*86,t=TAU2*y/960;
+   g.beginPath();g.ellipse(280+19*Math.sin(t*2),y,60,19,.2,0,TAU);
+   g.fillStyle=i%2?'#9fae9c38':'#d8e9d12a';g.fill();
+  }
+ }
+ if(n===3){ // desert dunes, with long horizontal wind-carved tracks
+  for(let i=0;i<23;i++){
+   const y=i*47+20,x=50+30*Math.sin(i*.89),length=160+130*rng();
+   g.strokeStyle=i%2?'#cbb38644':'#6e583944';g.lineWidth=2+rng()*5;g.beginPath();
+   g.moveTo(x-45,y);g.bezierCurveTo(x+20,y-22,x+length*.6,y+19,x+length,y+4);g.stroke();
+  }
+ }
+ // Airbases are single coherent complexes, not isolated small tiles.
+ for(const [index,y0] of [190,690].entries()){
+  const center=ocean?(westWater?Math.max(120,Math.min(315,shore(y0)+104)):Math.max(45,Math.min(245,shore(y0)-104))):n===5?265:235;
+  g.save();g.translate(center,y0);g.rotate(index?-.11:.07);
+  g.fillStyle='#081e2261';g.fillRect(-35,-104,75,213);
+  g.fillStyle=n===3?'#6d6558':n===6?'#314651':'#4d5e60';g.fillRect(-33,-101,67,204);
+  g.strokeStyle='#acb6aa';g.lineWidth=1.5;g.strokeRect(-30,-98,61,198);
+  g.strokeStyle=n===6?'#e4bf7694':'#e5e6c383';g.lineWidth=3;g.setLineDash([14,16]);
+  g.beginPath();g.moveTo(0,-93);g.lineTo(0,96);g.stroke();g.setLineDash([]);
+  // hangars and defence buildings
+  for(let i=0;i<5;i++){
+   const y=-84+i*39,x=i%2===0?-52:43;
+   g.fillStyle='#08202c8f';g.fillRect(x+3,y+4,23,16);
+   g.fillStyle=n===3?'#b6a68c':'#9ca9a1';g.fillRect(x,y,23,16);
+   g.fillStyle='#30424a';g.fillRect(x+2,y+2,19,12);
+   g.fillStyle='#d8e4dc90';g.fillRect(x+2,y+2,19,2);
+  }
+  for(let i=-86;i<=88;i+=17){
+   g.fillStyle=n===6?'#ffe4a0a9':'#e9e4cb66';
+   g.fillRect(-34,i,2,2);g.fillRect(32,i,2,2);
+  }
   g.restore();
  }
- if(n===2||n===4){ // shipping and dockside silhouettes
-  for(let j=0;j<6;j++){
-   const x=30+R()*300,y=R()*960;
-   g.fillStyle='#5cebf322';g.beginPath();g.ellipse(x,y+13,10,29,0,0,TAU);g.fill();
-   g.save();g.translate(x,y);g.rotate((R()-.5)*.5);
-   polygon(g,[0,-23,-7,-11,-8,12,0,27,8,12,7,-11],'#273a48','#97b4b8',1);
-   g.fillStyle='#bed0c8';g.fillRect(-5,-5,10,13);g.fillStyle='#172931';g.fillRect(-3,0,6,7);
+ // Vegetation, rock clusters and military roads at sensible coordinates.
+ const forest=n===1||n===2||n===4;
+ for(let i=0;i<(forest?490:n===3?110:220);i++){
+  const x=10+rng()*340,y=18+rng()*923;
+  const d=westWater?x-shore(y):shore(y)-x;
+  if(ocean&&d<23)continue;
+  // Do not cover the airfield or road with vegetation.
+  if(Math.abs(x-(ocean?(westWater?shore(y)+65:shore(y)-65):175+39*Math.sin(TAU2*y/960+n)))<12)continue;
+  const radius=1+rng()*(forest?3.9:2.8);
+  g.fillStyle='#051b224a';g.beginPath();g.ellipse(x+2,y+3,radius+2,radius*.55,0,0,TAU);g.fill();
+  if(forest){
+   g.fillStyle=rng()>.45?'#244b3b':'#426a4b';g.beginPath();g.arc(x,y,radius,0,TAU);g.fill();
+   g.fillStyle='#9cb57f51';g.beginPath();g.arc(x-radius*.32,y-radius*.35,radius*.5,0,TAU);g.fill();
+  }else{
+   g.fillStyle=n===3?'#806b53b9':n===5?'#c5d2c8b2':'#6d8c929c';
+   g.beginPath();g.ellipse(x,y,radius*1.5,radius*.8,rng(),0,TAU);g.fill();
+  }
+ }
+ if(ocean){ // ships actually float in water, with wakes
+  for(let i=0;i<6;i++){
+   const y=65+i*143,x=westWater?Math.max(18,shore(y)-60-rng()*65):Math.min(340,shore(y)+60+rng()*65);
+   g.fillStyle='#b1eff02f';g.beginPath();g.ellipse(x,y+17,10,34,0,0,TAU);g.fill();
+   g.save();g.translate(x,y);g.rotate((rng()-.5)*.25);
+   polygon(g,[0,-23,-10,-10,-11,15,0,25,11,15,10,-10],'#2e454d','#94b7b6',.8);
+   g.fillStyle='#adbdb5';g.fillRect(-6,-8,12,17);g.fillStyle='#1b333c';g.fillRect(-4,-6,8,8);
    g.restore();
   }
  }
- if(n===6){ // runway lights and spotlights visible at night
-  for(let i=0;i<95;i++){const x=R()*W,y=R()*960;circle(g,x,y,R()>.93?2.2:.9,R()>.3?'#fbd787b8':'#88c3e59c')}
- }
- // Soft cloud shadows over the ground
- for(let i=0;i<38;i++){const x=R()*W,y=R()*960,rx=12+R()*43;g.fillStyle='#00172412';g.beginPath();g.ellipse(x,y,rx,4+R()*12,R()*.5,0,TAU);g.fill()}
+ if(n===6)for(let i=0;i<140;i++){let x=rng()*W,y=rng()*960;g.fillStyle=rng()>.4?'#ffcb6a83':'#8cd3e292';g.fillRect(x,y,1.8,1.8)}
  return c;
 }
 function setBg(){bgTile=makeBg(stage);bgTheme=stage;bgShift=0}
