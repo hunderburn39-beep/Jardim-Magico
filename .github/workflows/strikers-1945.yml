@@ -1,4 +1,4 @@
-name: "Strikers 1945 | Testes HTML5 iPhone V4.3"
+name: "Strikers 1945 | Testes HTML5 iPhone V5.2"
 on:
   push:
     branches: [main]
@@ -51,5 +51,6 @@ jobs:
             strikers-rom-mode.png
             strikers-v42-background.png
             strikers-v42-sprites.png
+            strikers-v52-enemies.png
             strikers-arcade-mode.png
           if-no-files-found: ignore
