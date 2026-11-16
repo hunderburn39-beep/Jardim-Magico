@@ -21,6 +21,7 @@ try{
   const fadedCollision=t.testContact({kind:'romPlane',romFlight:true,role:'bomber',x:180,y:520,w:220,h:180,alpha:.3});
   const farFuselageCollision=t.testContact({kind:'romPlane',romFlight:true,role:'bomber',x:235,y:520,w:220,h:180,alpha:1});
   const closeFuselageCollision=t.testContact({kind:'romPlane',romFlight:true,role:'bomber',x:195,y:520,w:220,h:180,alpha:1});
+  const reducedWingCollision=t.testContact({kind:'romPlane',romFlight:true,role:'bomber',x:224,y:520,w:220,h:180,renderW:135,renderH:105,alpha:1});
   t.addGround('tank',180,520);
   t.advance(1/60);
   const afterGround=t.snapshot().playerHP;
@@ -32,18 +33,19 @@ try{
   t.addEnemyShot(100,520,10000,0);
   t.advance(.016);
   return {firstHP,groundCollision,fadedCollision,farFuselageCollision,
-    closeFuselageCollision,afterGround,afterBulletHP:afterBullet.playerHP,
+    closeFuselageCollision,reducedWingCollision,afterGround,afterBulletHP:afterBullet.playerHP,
     afterBulletInv:afterBullet.playerInv,afterSecond:t.snapshot().playerHP};
  });
- assert.equal(result.firstHP,3,'Initial lives');
+ assert.equal(result.firstHP,4,'Initial lives');
  assert.equal(result.groundCollision,false,'Ground replay art must not collide');
  assert.equal(result.fadedCollision,false,'Fading sprite must not hit player');
  assert.equal(result.farFuselageCollision,false,'Far wing cannot count as fuselage hit');
  assert.equal(result.closeFuselageCollision,true,'Visible central fuselage must collide');
- assert.equal(result.afterGround,3,'Standing on tank does not remove life');
- assert.equal(result.afterBulletHP,2,'Fast bullet crossing cockpit removes one life');
+ assert.equal(result.reducedWingCollision,false,'Scaled ROM aircraft wing outside visible fuselage must not collide');
+ assert.equal(result.afterGround,4,'Standing on tank does not remove life');
+ assert.equal(result.afterBulletHP,3,'Fast bullet crossing cockpit removes one life');
  assert(result.afterBulletInv>2.5,'Hit must activate protection');
- assert.equal(result.afterSecond,2,'Invulnerable player cannot lose a second life');
+ assert.equal(result.afterSecond,3,'Invulnerable player cannot lose a second life');
  // Visual clarity: the projectile cap stops an entire wall of enemy bullets.
  const clutter=await page.evaluate(()=>{
   const t=window.__strikersTest;
@@ -57,7 +59,7 @@ try{
  });
  assert(clutter.enemyShots<=16,'Stage 1 must cap enemy bullets to 16');
  assert.equal(clutter.romBadge,'none','No ROM badge covering the playing field');
- assert.match(clutter.build,/VERSÃO 5\.7/,'Correct visible build');
+ assert.match(clutter.build,/VERSÃO 6\.0/,'Correct visible build');
  assert.deepEqual(errors,[],'No browser JS errors');
- console.log('STRIKERS V5.7: ground, fuselage, fade, swept bullet, invulnerability OK');
+ console.log('STRIKERS V6.0: ground, fuselage, fade, swept bullet, invulnerability OK');
 }finally{await browser.close()}
