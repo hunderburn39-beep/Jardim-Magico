@@ -1,6 +1,22 @@
-# Strikers 1945 HTML5 — V4.2
+# Strikers 1945 HTML5 — V5.6
 
 Jogo independente de aviões com controlos táteis e quatro armamentos. **Não é o jogo comercial original emulado**.
+
+## Alterações na V5.6
+
+- Os alvos terrestres (tanques, navios, torres e sprites de solo da captura) já não destroem o avião por sobreposição visual: apenas os projéteis e os aviões em voo contam como perigo.
+- Aviões grandes usam uma área de contacto elíptica, focada na fuselagem, em vez de um círculo demasiado largo.
+- Aviões capturados da ROM só podem colidir ou disparar quando estão suficientemente visíveis, evitando tiros e impactos durante o aparecimento.
+- Deteção por segmento para projéteis inimigos rápidos, reduzindo falhas de colisão entre fotogramas.
+- Após um impacto, há 3 segundos de proteção e os projéteis inimigos imediatamente à volta do jogador são neutralizados.
+- O desenho deixa de consumir recursos continuamente durante o menu de pausa, o fim de partida e quando a página não está visível.
+- Testes de regressão adicionados para colisões de solo, aviões em voo, aparição de inimigos e projéteis rápidos.
+
+**Jogar:** https://hunderburn39-beep.github.io/Jardim-Magico/Strikers-1945/?v=5.6
+
+**Nota:** a V5.6 melhora o remake HTML5; não reproduz integralmente a IA, matemática de dano, mapas e padrões de voo do arcade original.
+
+---
 
 ## Alterações na V4.2
 
