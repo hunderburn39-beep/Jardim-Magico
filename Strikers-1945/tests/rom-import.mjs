@@ -40,6 +40,9 @@ await page.goto(url,{waitUntil:'load'});
 assert(await page.locator('#romLoadBtn').isVisible(),'Importação visível no menu');
 await page.locator('#romFile').setInputFiles({name:'s1945.zip',mimeType:'application/zip',buffer:zip()});
 await page.waitForFunction(()=>window.StrikersROM?.isLoaded(),null,{timeout:30000});
+await page.waitForFunction(()=>window.StrikersFlightReplay?.ready(),null,{timeout:30000});
+assert.equal(await page.evaluate(()=>window.StrikersFlightReplay.stats().frames),116,'116 instantes originais dos caças descodificados');
+
 assert((await page.locator('#romInfo').innerText()).includes('paletas')||
  (await page.locator('#romInfo').innerText()).includes('cenário'), 'O jogo não deve fingir que os fundos são do arcade');
 assert(await page.locator('#romPreview').isVisible(),'Pré-visualização visível');
@@ -77,8 +80,14 @@ assert(arts.length>=7&&arts.every(a=>a.canvas),'Todos os tipos de inimigos devem
 await page.evaluate(()=>{const t=window.__strikersTest;t.invulnerable();t.advance(10)});
 const battle=await page.evaluate(()=>window.__strikersTest.snapshot());
 assert(battle.airbaseCue>=3,'Entradas da primeira fase de acordo com sequência planeada');
-assert(battle.activeEnemies.some(e=>e.kind==='bomber'),'Bombardeiros originais devem aparecer na primeira fase');
-assert(battle.activeEnemies.some(e=>e.kind==='fighter'||e.kind==='red'),'Caças originais devem aparecer na primeira fase');
+assert(battle.flightEnemies.length>0,'Os inimigos da fase 1 devem usar fotogramas capturados da ROM');
+assert(battle.flightEnemies.some(e=>e.code>=9000),'Cada avião tem um código de sprite real');
+const animation=await page.evaluate(()=>{
+ const t=window.__strikersTest;
+ return {a:t.flightSource(12).map(i=>i.code),b:t.flightSource(15).map(i=>i.code)};
+});
+assert(animation.a.length>0&&animation.b.length>0,'Fotogramas originais com aviões disponíveis');
+assert(animation.a.join(',')!==animation.b.join(','),'Códigos dos sprites mudam durante as curvas e viragens');
 
 // Recreate the large bomber's fast diagonal sweep from recorded sprite-RAM positions.
 await page.evaluate(()=>{const t=window.__strikersTest;t.disableFire();t.advance(8.9)});
