@@ -224,16 +224,16 @@ function sprite(item){
 function draw(ctx,e){
  if(!e.romFlight||!ready()||!e.sprite)return false;
  const sheet=sprite(e.sprite);if(!sheet)return false;
- const alpha=e.alpha??1;if(alpha<=.02)return true;
- ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha*=alpha;
+ const alpha=(e.alpha??1)*(e.visualAlpha??1);if(alpha<=.02)return true;
+ ctx.save();ctx.imageSmoothingEnabled=false;const baseAlpha=ctx.globalAlpha;ctx.globalAlpha=baseAlpha*alpha;
  const dx=e.x-e.w/2,dy=e.y-e.h/2;
  // Cross-dissolve real animation frames for only ~75ms at each change.
  // The original ROM supplies both silhouettes; no fake 2D rotation.
  if(e.spriteFrom&&e.spriteTo&&e.spriteFrom!==e.spriteTo){
   const t=e.spriteMix;
   const old=sprite(e.spriteFrom),up=sprite(e.spriteTo);
-  if(old&&up){ctx.globalAlpha=alpha*(1-t);ctx.drawImage(old,dx,dy,e.w,e.h);
-   ctx.globalAlpha=alpha*t;ctx.drawImage(up,dx,dy,e.w,e.h);}
+  if(old&&up){ctx.globalAlpha=baseAlpha*alpha*(1-t);ctx.drawImage(old,dx,dy,e.w,e.h);
+   ctx.globalAlpha=baseAlpha*alpha*t;ctx.drawImage(up,dx,dy,e.w,e.h);}
   else ctx.drawImage(sheet,dx,dy,e.w,e.h);
  }else ctx.drawImage(sheet,dx,dy,e.w,e.h);
  ctx.restore();return true;
