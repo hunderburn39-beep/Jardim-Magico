@@ -44,6 +44,20 @@ try{
  assert.equal(result.afterBulletHP,2,'Fast bullet crossing cockpit removes one life');
  assert(result.afterBulletInv>2.5,'Hit must activate protection');
  assert.equal(result.afterSecond,2,'Invulnerable player cannot lose a second life');
+ // Visual clarity: the projectile cap stops an entire wall of enemy bullets.
+ const clutter=await page.evaluate(()=>{
+  const t=window.__strikersTest;
+  t.resetShots();t.setInv(100);t.disableFire();
+  for(let i=0;i<65;i++)t.addEnemyShot(200,180,0,140);
+  return {
+   enemyShots:t.snapshot().bullets.filter(b=>b.owner==='enemy').length,
+   romBadge:document.querySelector('#romBadge').style.display,
+   build:document.querySelector('#menu .meta')?.textContent
+  };
+ });
+ assert(clutter.enemyShots<=16,'Stage 1 must cap enemy bullets to 16');
+ assert.equal(clutter.romBadge,'none','No ROM badge covering the playing field');
+ assert.match(clutter.build,/VERSÃO 5\.7/,'Correct visible build');
  assert.deepEqual(errors,[],'No browser JS errors');
- console.log('STRIKERS V5.6: ground, fuselage, fade, swept bullet, invulnerability OK');
+ console.log('STRIKERS V5.7: ground, fuselage, fade, swept bullet, invulnerability OK');
 }finally{await browser.close()}
