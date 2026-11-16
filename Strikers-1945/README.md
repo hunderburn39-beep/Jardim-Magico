@@ -1,3 +1,28 @@
+# Strikers 1945 HTML5 — V6.0 (16/11/2026)
+
+Revisão de jogabilidade e apresentação para iPhone, sobre a base V5.8.
+Os pixels das aeronaves continuam a vir da ROM local fornecida pelo jogador.
+
+## Principais melhorias
+
+- Escala visual normalizada de bombardeiros capturados, sem distorcer a imagem original.
+- Hitboxes dos aviões da ROM ajustadas à dimensão renderizada (fuselagem, não asas).
+- Comando táctil relativo ao ponto onde o dedo começou: deixa de haver saltos ao tocar longe do avião.
+- Seguimento de dedo interpolado e inclinação suave da aeronave.
+- Paleta de fundo mais legível, cor atmosférica pré-renderizada e partículas de profundidade discretas.
+- Trilhos suaves dos tiros inimigos e aviso visual quando um projétil está próximo.
+- Combos por eliminações em sequência e avisos de vidas perdidas.
+- Interface de vidas e bombas mais clara, com botão de bomba menos intrusivo.
+- Atualização do HUD apenas quando os valores mudam, e redução adaptativa da resolução em equipamentos lentos.
+- Service worker V6.0 para não misturar recursos antigos e novos.
+- Testes Playwright para colisões, toque relativo, armas, importação da ROM e pausas (workflow GitHub Actions).
+
+**Jogar:** https://hunderburn39-beep.github.io/Jardim-Magico/Strikers-1945/?v=6.0
+
+**Limitações:** remake independente HTML5, não é a emulação integral de Strikers 1945. A fase 1 usa dados de fundo e voo capturados, quando a ROM está carregada localmente; as restantes fases continuam com cenários próprios. A verificação final no Safari de um iPhone real continua necessária.
+
+---
+
 # Strikers 1945 HTML5 — V5.8
 
 ## Melhorias após gravação no iPhone (16/11/2026)
