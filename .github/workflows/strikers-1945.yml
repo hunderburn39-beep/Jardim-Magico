@@ -1,9 +1,10 @@
-name: "Strikers 1945 | Testes HTML5 iPhone V6.0"
+name: "Strikers 1945 | Arcade original V7 + testes remake V6.1"
 on:
   push:
     branches: [main]
     paths:
       - 'Strikers-1945/index.html'
+      - 'Strikers-1945/remake.html'
       - 'Strikers-1945/original-rom.js'
       - 'Strikers-1945/inspector.html'
       - 'Strikers-1945/arcade.html'
@@ -51,14 +52,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: strikers1945-v60-site
+          name: strikers1945-v70-site
           path: Strikers-1945/
           retention-days: 3
       - name: Guardar imagem de verificação
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: strikers1945-v60-previews
+          name: strikers1945-v70-previews
           path: |
             strikers-v2-preview.png
             strikers-v6-touch.png

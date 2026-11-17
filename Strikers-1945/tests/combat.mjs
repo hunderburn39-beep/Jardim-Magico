@@ -7,7 +7,7 @@ const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,
 const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 try{
- await page.goto('http://127.0.0.1:8765/Strikers-1945/?test=1',{waitUntil:'load'});
+ await page.goto('http://127.0.0.1:8765/Strikers-1945/remake.html?test=1',{waitUntil:'load'});
  await page.locator('#startBtn').click();
  const result=await page.evaluate(()=>{
   const t=window.__strikersTest;

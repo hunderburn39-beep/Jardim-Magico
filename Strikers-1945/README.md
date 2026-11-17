@@ -1,3 +1,17 @@
+# Strikers 1945 — V7.0: modo original como entrada principal (17/11/2026)
+
+**Abrir:** https://hunderburn39-beep.github.io/Jardim-Magico/Strikers-1945/?v=7.0
+
+O endereço principal passa a carregar o arcade original através de EmulatorJS (FBNeo) com s1945.zip escolhido pelo utilizador e mantido apenas no IndexedDB do Safari. Não publicar a ROM no repositório. Os inimigos, as trajetórias, as fases, as colisões e os sons passam a ser do próprio jogo emulado, não são gerados pelo remake JavaScript.
+
+- Apresentação adaptada ao iPhone; os controlos táteis são fornecidos pelo emulador.
+- A versão HTML5 reconstruída anterior permanece em remake.html.
+- O acesso legado arcade.html permanece disponível.
+- O Service Worker responde à ROM fornecida localmente por roms/s1945.zip; o cache não inclui a ROM.
+- Ainda não foi validada uma sessão completa no Safari do iPhone. O emulador exige ligação à Internet no primeiro arranque e ROM compatível com FBNeo.
+
+---
+
 # Strikers 1945 HTML5 — V6.1: auditoria de trajetórias
 
 **Data da revisão:** 17/11/2026. **Abrir:** https://hunderburn39-beep.github.io/Jardim-Magico/Strikers-1945/?v=6.1

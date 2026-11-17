@@ -7,7 +7,7 @@ const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFac
 const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 try{
- await page.goto('http://127.0.0.1:8765/Strikers-1945/?test=1',{waitUntil:'load'});
+ await page.goto('http://127.0.0.1:8765/Strikers-1945/remake.html?test=1',{waitUntil:'load'});
  assert.match(await page.locator('#menu .meta').innerText(),/VERSÃO 6\.1/);
  await page.locator('#startBtn').click();
  await page.evaluate(()=>{window.__strikersTest?.setInv(100);window.__strikersTest?.disableFire()});

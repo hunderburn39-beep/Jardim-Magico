@@ -1,5 +1,5 @@
-const CACHE='strikers-1945-html5-v6.1';
-const ASSETS=['./','./index.html','./icon.svg','./manifest.webmanifest','./original-rom.js','./stage1-partA.js','./stage1-partB.js','./stage1-background.js','./stage1-flight-replay.js','./stage1-plane-frames.b64','./inspector.html','./arcade.html'];
+const CACHE='strikers-1945-original-arcade-v7.0';
+const ASSETS=['./','./index.html','./icon.svg','./manifest.webmanifest','./original-rom.js','./stage1-partA.js','./stage1-partB.js','./stage1-background.js','./stage1-flight-replay.js','./stage1-plane-frames.b64','./inspector.html','./arcade.html','./remake.html'];
 const ROM_ROUTE=new URL('./roms/s1945.zip',self.registration.scope).pathname;
 const DB='strikers1945-user-arcade-v1',STORE='files',KEY='s1945.zip';
 
@@ -19,7 +19,7 @@ self.addEventListener('install',e=>{
  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
 });
 self.addEventListener('activate',e=>{
- e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('strikers-1945-html5-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
+ e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>(k.startsWith('strikers-1945-html5-')||k.startsWith('strikers-1945-original-arcade-'))&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
 });
 self.addEventListener('fetch',e=>{
  const req=e.request,url=new URL(req.url);
