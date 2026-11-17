@@ -478,9 +478,15 @@ function shadowPlan(enemies){
   const sh=native.get(owner.uid);
   const w=owner.renderW??owner.w,h=owner.renderH??owner.h;
   if(sh){
-   const separated=Math.hypot(sh.x-owner.x,sh.y-owner.y)>=28;
    const sw=sh.renderW??sh.w,hh=sh.renderH??sh.h;
-   plan.push({kind:'native',entity:sh,x:separated?sh.x:owner.x-48,y:separated?sh.y:owner.y-48,w:separated?sw:Math.min(sw,w*.65),h:separated?hh:Math.min(hh,h*.65),alpha:.79});
+   // Preserve the measured reduced hardware projection. For the large
+   // silhouette whose recorded centre can overlap the fuselage (LUT 21460),
+   // blend the corrective separation continuously instead of snapping
+   // between geometries at an arbitrary 28-pixel threshold.
+   const distance=Math.hypot(sh.x-owner.x,sh.y-owner.y);
+   const u=sh.projection?1:clamp01((distance-28)/36),mix=u*u*(3-2*u);
+   const lerp=(a,b)=>a+(b-a)*mix;
+   plan.push({kind:'native',entity:sh,x:lerp(owner.x-48,sh.x),y:lerp(owner.y-48,sh.y),w:lerp(Math.min(sw,w*.65),sw),h:lerp(Math.min(hh,h*.65),hh),alpha:.79});
   }else{
    plan.push({kind:'silhouette',entity:owner,x:owner.x-48,y:owner.y-48,w:w*17/32,h:h*17/32,alpha:.66});
   }
