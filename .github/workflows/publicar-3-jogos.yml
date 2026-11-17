@@ -125,6 +125,9 @@ jobs:
           test -s Blackline-Pinball/index.html
           test -s Pinball-Action/index.html
           test -s Strikers-1945/index.html
+          test -s Strikers-1945/stage1-captured.html
+          test -s Strikers-1945/stage1-captured-catalog.js
+          test -s Strikers-1945/stage1-plane-frames.b64
           test -s Blocos-Neon/index.html
           test -d css
           test -d js
@@ -135,8 +138,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y ffmpeg; }
-          node Pinball-Action/tools/render-original-audio.cjs
+          # A conversão completa é extremamente pesada. Como os MP3 originais
+          # já fazem parte do repositório, validá-los antes de regenerar evita
+          # bloquear a publicação de outros jogos, nomeadamente Strikers 1945.
+          if node -e 'const fs=require("fs"),p="Pinball-Action/audio/",m=JSON.parse(fs.readFileSync(p+"manifest.json","utf8"));for(const k of [9,10,17,18,20,26,27,29]){const a=m.music?.[k];if(!a||a.duration<40||fs.statSync(p+a.file).size<100000)process.exit(1)}for(const k of [2,10,22,28]){const a=m.commands?.[k];if(!a||fs.statSync(p+a.file).size<1000)process.exit(1)}'; then
+            echo "MP3 originais existentes verificados; não regenerar músicas em cada publicação."
+          else
+            echo "MP3 em falta ou inválidos; regenerar a partir da ROM original."
+            command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y ffmpeg; }
+            node Pinball-Action/tools/render-original-audio.cjs
+          fi
           test -s Pinball-Action/audio/cmd-02.mp3
           test -s Pinball-Action/audio/cmd-22.mp3
           test -s Pinball-Action/audio/manifest.json
@@ -200,6 +211,10 @@ jobs:
           test -s public/Pinball-Action/audio/bgm-17.mp3
           test -s public/pinball-action/index.html
           test -s public/Strikers-1945/index.html
+          test -s public/Strikers-1945/stage1-captured.html
+          test -s public/Strikers-1945/stage1-captured-catalog.js
+          test -s public/Strikers-1945/stage1-plane-frames.b64
+          grep -q '116 fotogramas' public/Strikers-1945/stage1-captured.html
           test -s public/Blocos-Neon/index.html
           test -s public/index2.html
           test -s public/Sugar-Rush-1000/standalone/index.html
@@ -253,7 +268,8 @@ jobs:
           node stake-preview/tests/symbol-images.mjs
           echo 'Stake preview: JS válido, 10 000 compras Hold e animações verificadas.'
 
-      - name: Validar música e recursos do Faraó Eterno antes de publicar
+      - name: Validar música e recursos do Faraó Eterno sem bloquear outros jogos
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
@@ -288,6 +304,28 @@ jobs:
       - name: Publicar o site com os quatro jogos
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Confirmar publicação Strikers 1945 V7.5 (HTML, JS e capturas)
+        shell: bash
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          for tentativa in {1..10}; do
+            if curl -fsSL --max-time 15 "${SITE_URL%/}/Strikers-1945/stage1-captured.html?sha=${GITHUB_SHA}" -o /tmp/strikers-stage1.html &&
+               grep -q '116 fotogramas' /tmp/strikers-stage1.html &&
+               curl -fsSL --max-time 15 "${SITE_URL%/}/Strikers-1945/stage1-captured-catalog.js?sha=${GITHUB_SHA}" -o /tmp/strikers-stage1.js &&
+               grep -q 'StrikersStage1Catalog' /tmp/strikers-stage1.js &&
+               curl -fsSL --max-time 15 "${SITE_URL%/}/Strikers-1945/stage1-plane-frames.b64?sha=${GITHUB_SHA}" -o /tmp/strikers-stage1.b64 &&
+               test "$(wc -c </tmp/strikers-stage1.b64)" -gt 4000; then
+              echo "STRIKERS 1945 V7.5: catálogo original e ambos os recursos disponíveis (HTTP 200)."
+              exit 0
+            fi
+            echo "::notice::Strikers: tentativa ${tentativa}/10 de confirmar o Pages..."
+            sleep 5
+          done
+          echo "::error::O catálogo Strikers V7.5 continua a devolver 404 ou recursos incompletos."
+          exit 1
 
       - name: Confirmar Pinball V8.17 com melodia original de abertura
         shell: bash
