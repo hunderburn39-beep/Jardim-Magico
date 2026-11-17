@@ -1,4 +1,4 @@
-name: "Strikers 1945 | Arcade original V7 + testes remake V6.1"
+name: "Strikers 1945 | Reconstrução ROM completa V7.1 e testes"
 on:
   push:
     branches: [main]
