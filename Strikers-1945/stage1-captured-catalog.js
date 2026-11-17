@@ -1,5 +1,6 @@
 /* Strikers 1945: frame-register-based catalog, NOT a CPU emulator.
- * 116 captured MAME moments; graphics come from the user's privately loaded ROM.
+ * 116 captured MAME moments; 17-bit sprite code includes attr bit 0.
+ * Graphics come from the user's privately loaded ROM.
  * Classes are size-only visual groups, not proven game roles. */
 (()=>{'use strict';
 const DATA='./stage1-plane-frames.b64',SUPPORTED=new Set([10,11,12,23,25,27,28]);
@@ -37,7 +38,7 @@ async function prepare(){
    frameLast=frame;
    for(let k=0;k<n;k++){
     if(off+9>raw.length)throw Error('Registo de sprite incompleto.');
-    const id=raw[off],rx=dv.getUint16(off+1),ry=dv.getUint16(off+3),attr=dv.getUint16(off+5),code=dv.getUint16(off+7);off+=9;
+    const id=raw[off],rx=dv.getUint16(off+1),ry=dv.getUint16(off+3),attr=dv.getUint16(off+5),code=dv.getUint16(off+7)|((attr&1)<<16);off+=9;
     const palette=(attr>>8)&63;
     if(!SUPPORTED.has(palette))continue;
     const dims=dimensions(rx,ry);
