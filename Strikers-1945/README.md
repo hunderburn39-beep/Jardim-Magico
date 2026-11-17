@@ -1,3 +1,15 @@
+# Strikers 1945 V7.7 — sombras de terreno e manobras curvas (17/11/2026)
+
+- Os sprites pretos de silhueta de avião, incluindo LUT 21460, são interpretados como **sombras projetadas no terreno**. São renderizados com os próprios píxeis da ROM fornecida localmente, numa camada anterior à dos aviões. Não disparam, não são atingidos e não dão pontuação.
+- A deteção de sombras adicionais utiliza o tamanho do sprite, a ocupação e a luminosidade dos píxeis efetivamente descodificados com a paleta original. Esta deteção é heurística e deve ser validada imagem a imagem.
+- A trajetória interpolada deixou de ser obrigada a ficar dentro do retângulo entre duas amostras consecutivas. Preserva curvas suaves com ultrapassagem limitada a 20 píxeis quando há evidência no percurso capturado, em vez de achatar manobras.
+- **Loops completos ainda por confirmar:** os 116 momentos amostrados da primeira fase não fornecem necessariamente todos os fotogramas de uma volta acrobática. Não se afirma que a animação inteira tenha sido recuperada.
+- A ferramenta de catálogo identifica LUT 21460 como sombra do avião. O projeto continua independente, sem emulador e sem publicar dados ROM no repositório.
+
+**Versão HTML5:** https://hunderburn39-beep.github.io/Jardim-Magico/Strikers-1945/?v=7.7
+
+---
+
 # Strikers 1945 V7.5 — sprites da RAM capturados na primeira fase (17/11/2026)
 
 - `stage1-captured-catalog.js`: lê as 116 amostras originais de registos MAME da primeira fase, contendo código LUT, atributos de espelhamento, dimensões em tiles, paleta xRGB555 e fase de cores, fotogramas e número de ocorrências.
