@@ -164,5 +164,55 @@
       "peak": 0.388,
       "bytes": 9449
     }
+  },
+  "music": {
+    "9": {
+      "file": "bgm-09.mp3",
+      "duration": 52,
+      "origin": "ROM a-e3.bin via Z80 + AY8910",
+      "bytes": 625103
+    },
+    "10": {
+      "file": "bgm-10.mp3",
+      "duration": 52,
+      "origin": "ROM a-e3.bin via Z80 + AY8910",
+      "bytes": 625103
+    },
+    "17": {
+      "file": "bgm-17.mp3",
+      "duration": 52,
+      "origin": "ROM a-e3.bin via Z80 + AY8910",
+      "bytes": 625103
+    },
+    "18": {
+      "file": "bgm-18.mp3",
+      "duration": 52,
+      "origin": "ROM a-e3.bin via Z80 + AY8910",
+      "bytes": 625103
+    },
+    "20": {
+      "file": "bgm-20.mp3",
+      "duration": 52,
+      "origin": "ROM a-e3.bin via Z80 + AY8910",
+      "bytes": 625103
+    },
+    "26": {
+      "file": "bgm-26.mp3",
+      "duration": 52,
+      "origin": "ROM a-e3.bin via Z80 + AY8910",
+      "bytes": 625103
+    },
+    "27": {
+      "file": "bgm-27.mp3",
+      "duration": 52,
+      "origin": "ROM a-e3.bin via Z80 + AY8910",
+      "bytes": 625103
+    },
+    "29": {
+      "file": "bgm-29.mp3",
+      "duration": 52,
+      "origin": "ROM a-e3.bin via Z80 + AY8910",
+      "bytes": 625103
+    }
   }
 }
