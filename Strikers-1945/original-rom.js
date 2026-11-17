@@ -5,10 +5,13 @@
    All ROM bytes are provided by the player via local File API; never uploaded. */
 (()=>{'use strict';
 const W=16,H=16,TILE_BYTES=128,NAME_ORDER=['u20.bin','u22.bin','u21.bin','u23.bin'];
-const SIZES={'u34.bin':2097152,'u20.bin':2097152,'u22.bin':2097152,'u21.bin':2097152,'u23.bin':2097152,'u1.bin':262144};
-const expectedCRC={'u34.bin':0xaaf83e23,'u20.bin':0x28a27fee,'u22.bin':0xca152a32,'u21.bin':0xc5d60ea9,'u23.bin':0x48710332,'u1.bin':0xdee22654};
-const DB='strikers1945-graphics-decoder-v2',STORE='rom',KEY='original-graphics';
+const SIZES={'2s.u40':262144,'3s.u41':262144,'3-u63.bin':131072,'u34.bin':2097152,'u20.bin':2097152,'u22.bin':2097152,'u21.bin':2097152,'u23.bin':2097152,'u1.bin':262144,'u61.bin':2097152};
+const expectedCRC={'2s.u40':0x9b10062a,'3s.u41':0xf87e871a,'3-u63.bin':0x42d40ae1,'u34.bin':0xaaf83e23,'u20.bin':0x28a27fee,'u22.bin':0xca152a32,'u21.bin':0xc5d60ea9,'u23.bin':0x48710332,'u1.bin':0xdee22654,'u61.bin':0xa839cf47};
+const DB='strikers1945-native-all10-v1',STORE='rom',KEY='original-all10';
 let gfx=null,sprites=null,lut=null,verified=false,assetSheets=new Map(),restoring=null;
+let program=null,soundProgram=null,opl4Samples=null,resetPC=null,resetSP=null;
+const CRC_TABLE=Uint32Array.from({length:256},(_,n)=>{let c=n;for(let j=0;j<8;j++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);return c>>>0});
+function crc32(bytes){let c=0xffffffff;for(let i=0;i<bytes.length;i++)c=CRC_TABLE[(c^bytes[i])&255]^(c>>>8);return (c^0xffffffff)>>>0}
 function storage(){
  return new Promise((res,rej)=>{
   if(!indexedDB)return rej(Error('Armazenamento indisponível'));
@@ -58,7 +61,8 @@ async function zipEntries(file){
    decoded=new Uint8Array(await new Response(new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
   }else throw Error('Método ZIP não suportado em '+name);
   if(decoded.length!==size)throw Error(name+' não descomprimiu corretamente.');
-  names[name]={bytes:decoded,crcMatch:crc===expectedCRC[name]};
+  const computed=crc32(decoded);
+  names[name]={bytes:decoded,crcMatch:computed===expectedCRC[name],archiveCrcMatch:crc===computed};
  }
  for(const name of Object.keys(SIZES))if(!names[name])throw Error('Falta '+name+' na ROM. Escolhe s1945.zip completo.');
  return names;
@@ -76,6 +80,14 @@ function activate(parts,isRestore){
  const d=parts['u1.bin'];
  lut=new Uint16Array(131072);
  for(let i=0;i<lut.length;i++)lut[i]=d[i*2]|(d[i*2+1]<<8);
+ const low=parts['2s.u40'],high=parts['3s.u41'];
+ if(!low||!high||!parts['3-u63.bin']||!parts['u61.bin'])throw Error('Falta o programa principal, programa de som ou amostras originais.');
+ // MAME ROM_LOAD32_WORD_SWAP: 2s.u40 occupies byte lanes 0/1, 3s.u41 lanes 2/3.
+ // The original native 68EC020 program begins with reset SP=0xffff8000 and PC=0x00000400.
+ program=new Uint8Array(0x100000);program.fill(0xff);
+ for(let i=0;i<low.length;i+=2){const at=(i>>1)*4;program[at]=low[i+1];program[at+1]=low[i];program[at+2]=high[i+1];program[at+3]=high[i]}
+ soundProgram=parts['3-u63.bin'];opl4Samples=parts['u61.bin'];
+ const dv=new DataView(program.buffer);resetSP=dv.getUint32(0);resetPC=dv.getUint32(4);
  verified=!!parts.__verified;
  assetSheets.clear();
  dispatchEvent(new CustomEvent('strikers-rom-ready',{detail:{restored:isRestore,verified}}));
@@ -147,13 +159,13 @@ function spriteGroup(start=0,nx=4,ny=4,{scale=3,palette='gray',transparent=15}={
 async function load(file){
  if(!file)throw Error('Escolhe o ficheiro s1945.zip.');
  const all=await zipEntries(file);
- const p={__verified:Object.values(all).every(x=>x.crcMatch)};
+ const p={__verified:Object.values(all).every(x=>x.crcMatch&&x.archiveCrcMatch)};
  for(const name of Object.keys(SIZES))p[name]=all[name].bytes;
  activate(p,false);
  let saved=false;
  try{await saveLocal(p);saved=true}catch(e){}
- return 'ROM interpretada: 16 384 tiles de fundo, 65 536 tiles de sprite, 131 072 entradas LUT. '+
-  (p.__verified?'CRC correspondente à versão World. ':'CRC da versão não confirmado. ')+
+ return '10/10 ROMs importadas: programa original 68EC020, programa de som, 2 MiB de amostras OPL4, 16 384 tiles de cenário, 65 536 tiles de sprite e 131 072 entradas LUT. '+
+  (p.__verified?'Todos os CRC32 originais confirmados. ':'Atenção: CRC de pelo menos uma ROM não corresponde à versão World. ')+
   (saved?'Guardada neste iPhone.':'Importada apenas nesta sessão.');
 }
 async function restore(){
@@ -166,7 +178,11 @@ async function restore(){
 function scene(){return null}
 window.StrikersROM=Object.freeze({
  load,restore,scene,rawPixel:pixel,atlas,spriteGroup,isLoaded:()=>!!gfx,
- isVerified:()=>verified,stats:()=>({tiles:16384,spriteTiles:65536,lutEntries:131072,verified}),
+ isVerified:()=>verified,stats:()=>({chips:program?10:0,tiles:16384,spriteTiles:65536,lutEntries:131072,programBytes:program?.length||0,soundProgramBytes:soundProgram?.length||0,opl4SampleBytes:opl4Samples?.length||0,resetPC,resetSP,undumpedMCU:'4-u59.bin',verified}),
+ // Full-code audit via local ROM, not CPU emulation. The PIC16C57 security chip (4-u59.bin) was never dumped.
+ codeInfo:()=>program?Object.freeze({architecture:'68EC020',resetPC,resetSP,programBytes:program.length,soundCpu:'Z80 compatible',soundProgramBytes:soundProgram.length,opl4Bytes:opl4Samples.length,protectionMcuDumped:false}):null,
+ programWord:addr=>program&&Number.isInteger(addr)&&addr>=0&&addr+1<program.length?(program[addr]<<8)|program[addr+1]:null,
+ soundBytes:(start=0,length=16)=>soundProgram?Array.from(soundProgram.slice(Math.max(0,start|0),Math.max(0,start|0)+Math.max(0,Math.min(64,length|0)))):[],
  // Test-only introspection to validate nibble and endianness against actual ROM fixtures.
  test:(location.hostname==='127.0.0.1'||location.hostname==='localhost')?Object.freeze({lookup:i=>lut?.[i],pixel:(k,id,x,y,byLut)=>pixel(k,id,x,y,byLut)}):undefined
 });
