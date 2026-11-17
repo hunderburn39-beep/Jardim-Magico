@@ -29,7 +29,9 @@ class PBAudioAY {
    this.noiseBit=this.lfsr&1;
   }
   const envPeriod=((r[12]<<8)|r[11])||1;
-  this.envPhase+=1500000/(256*envPeriod*this.sr);
+  // AY envelope advances one of its 16 shape steps every clock/(16*period).
+  // The former /256 factor stretched envelopes 16x: distorted melody, echo.
+  this.envPhase+=1500000/(16*envPeriod*this.sr);
   while(this.envPhase>=1){
    this.envPhase-=1;
    if(!this.envDone){
