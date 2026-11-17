@@ -1,6 +1,6 @@
 import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
-const url='http://127.0.0.1:8765/Strikers-1945/';
+const url='http://127.0.0.1:8765/Strikers-1945/remake.html';
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
 const exceptions=[];
