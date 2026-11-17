@@ -8,7 +8,7 @@ const errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 try{
  await page.goto('http://127.0.0.1:8765/Strikers-1945/?test=1',{waitUntil:'load'});
- assert.match(await page.locator('#menu .meta').innerText(),/VERSÃO 6\.0/);
+ assert.match(await page.locator('#menu .meta').innerText(),/VERSÃO 6\.1/);
  await page.locator('#startBtn').click();
  await page.evaluate(()=>{window.__strikersTest?.setInv(100);window.__strikersTest?.disableFire()});
  const initial=await page.evaluate(()=>window.__strikersTest.snapshot());
