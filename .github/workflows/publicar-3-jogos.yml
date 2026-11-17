@@ -450,6 +450,25 @@ jobs:
           echo "::warning::Classic Slot indisponivel no GitHub Pages. Verificar configuracao de Pages."
           exit 1
 
+      - name: Confirmar URL do catálogo Strikers 1945 no Pages
+        continue-on-error: true
+        shell: bash
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          url="${SITE_URL%/}/Strikers-1945/stage1-captured.html"
+          for tentativa in $(seq 1 15); do
+            if curl -fLsS --connect-timeout 8 --max-time 18 "$url?deploy=${GITHUB_SHA}" -o /tmp/strikers-catalogo-publicado.html && grep -q "Catálogo de sprites observados" /tmp/strikers-catalogo-publicado.html; then
+              echo "Strikers 1945 catálogo publicado: HTTP 200 e conteúdo confirmado."
+              exit 0
+            fi
+            echo "Strikers 1945 ainda não disponível — tentativa ${tentativa}/15."
+            sleep 8
+          done
+          echo "::error::Strikers 1945 devolve 404 ou não tem o HTML esperado. Verificar Settings > Pages > Source = GitHub Actions e os logs da publicação."
+          exit 1
+
   recuperar_strikers:
     name: Recuperar Pages sem bloquear nos testes dos outros jogos
     needs: preparar
@@ -497,3 +516,22 @@ jobs:
       - name: Publicar todos os jogos sem bloquear o Strikers
         id: recuperar
         uses: actions/deploy-pages@v4
+
+      - name: Confirmar URL do catálogo Strikers 1945 no Pages
+        continue-on-error: true
+        shell: bash
+        env:
+          SITE_URL: ${{ steps.recuperar.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          url="${SITE_URL%/}/Strikers-1945/stage1-captured.html"
+          for tentativa in $(seq 1 15); do
+            if curl -fLsS --connect-timeout 8 --max-time 18 "$url?deploy=${GITHUB_SHA}" -o /tmp/strikers-catalogo-publicado.html && grep -q "Catálogo de sprites observados" /tmp/strikers-catalogo-publicado.html; then
+              echo "Strikers 1945 catálogo publicado: HTTP 200 e conteúdo confirmado."
+              exit 0
+            fi
+            echo "Strikers 1945 ainda não disponível — tentativa ${tentativa}/15."
+            sleep 8
+          done
+          echo "::error::Strikers 1945 devolve 404 ou não tem o HTML esperado. Verificar Settings > Pages > Source = GitHub Actions e os logs da publicação."
+          exit 1
