@@ -1053,6 +1053,7 @@ if((location.hostname==='127.0.0.1'||location.hostname==='localhost')&&new URLSe
  window.__strikersTest=Object.freeze({
   snapshot:()=>({
    craft:player?.craft,level:player?.level,playerHP:player?.hp,playerInv:player?.inv,playerX:player?.x,playerY:player?.y,waveCount:waves.length,
+   nativePlayerAsset:!!player&&!!nativePlayerSprite(player.craft),
    activeEnemies:enemies.filter(e=>e.active).map(e=>({kind:e.kind,x:e.x,y:e.y})),airbaseCue,stageTime,
    flightStats:window.StrikersFlightReplay?.stats(),
    flightEnemies:enemies.filter(e=>e.romFlight).map(e=>({id:e.id,uid:e.uid,role:e.role,alpha:e.alpha,spriteMix:e.spriteMix,code:e.sprite?.code,x:e.x,y:e.y,w:e.w,h:e.h,active:e.active})),
