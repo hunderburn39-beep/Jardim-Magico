@@ -52,9 +52,9 @@
    if(!t){t=this.P.Texture.from(image);t.source.scaleMode='linear';this.images.set(image,t);}
    return t;
   }
-  invalidateSprites(){
+  invalidateSprites(only=null){
    for(const [canvas,t] of this.images){
-    if(canvas===this.boardImage||canvas===this.frontImage)continue;
+    if(canvas===this.boardImage||canvas===this.frontImage||(only&&!only.has(canvas)))continue;
     this.pending.push(t);this.images.delete(canvas);
    }
   }
