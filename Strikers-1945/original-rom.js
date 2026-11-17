@@ -10,6 +10,7 @@ const expectedCRC={'2s.u40':0x9b10062a,'3s.u41':0xf87e871a,'3-u63.bin':0x42d40ae
 const DB='strikers1945-native-all10-v1',STORE='rom',KEY='original-all10';
 let gfx=null,sprites=null,lut=null,verified=false,assetSheets=new Map(),restoring=null;
 let program=null,soundProgram=null,opl4Samples=null,resetPC=null,resetSP=null;
+let waveTable=[];
 const CRC_TABLE=Uint32Array.from({length:256},(_,n)=>{let c=n;for(let j=0;j<8;j++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);return c>>>0});
 function crc32(bytes){let c=0xffffffff;for(let i=0;i<bytes.length;i++)c=CRC_TABLE[(c^bytes[i])&255]^(c>>>8);return (c^0xffffffff)>>>0}
 function storage(){
@@ -87,11 +88,40 @@ function activate(parts,isRestore){
  program=new Uint8Array(0x100000);program.fill(0xff);
  for(let i=0;i<low.length;i+=2){const at=(i>>1)*4;program[at]=low[i+1];program[at+1]=low[i];program[at+2]=high[i+1];program[at+3]=high[i]}
  soundProgram=parts['3-u63.bin'];opl4Samples=parts['u61.bin'];
+ waveTable=parseOpl4Waves(opl4Samples);
  const dv=new DataView(program.buffer);resetSP=dv.getUint32(0);resetPC=dv.getUint32(4);
  verified=!!parts.__verified;
  assetSheets.clear();
  dispatchEvent(new CustomEvent('strikers-rom-ready',{detail:{restored:isRestore,verified}}));
 }
+// Yamaha YMF278B sample ROM: wave headers are 12 bytes, 256 slots occupy 0x0C00 bytes.
+// This is a native PCM decoder for auditing original recorded waveforms, not a chip emulator.
+// The original Z80/LZ8420M program still has to be analysed for note timing/pitch/envelopes.
+function parseOpl4Waves(rom){
+ const waves=[];
+ if(!rom||rom.byteLength<0x0c00)return waves;
+ for(let id=0;id<256;id++){
+  const o=id*12,format=rom[o]>>>6,offset=((rom[o]&63)<<16)|(rom[o+1]<<8)|rom[o+2],
+   loop=(rom[o+3]<<8)|rom[o+4],
+   length=0x10000-((rom[o+5]<<8)|rom[o+6]);
+  // The supplied 1995 Strikers bank uses 8-bit signed PCM; reject blank headers.
+  if(format!==0||offset<0x0c00||length<1||offset+length>rom.length||loop>=length)continue;
+  waves.push(Object.freeze({id,offset,length,loop,bits:8}));
+ }
+ return waves;
+}
+function pcmWave(id){
+ if(!Number.isInteger(id)||!opl4Samples)return null;
+ const info=waveTable.find(w=>w.id===id);
+ if(!info)return null;
+ const samples=new Float32Array(info.length);
+ for(let i=0;i<info.length;i++){
+  const n=opl4Samples[info.offset+i];
+  samples[i]=(n<128?n:n-256)/128;
+ }
+ return samples;
+}
+function waveInfos(){return waveTable.map(w=>({...w}))}
 function rawPixel(raw,tileId,x,y){
  if(!raw||!Number.isInteger(tileId)||tileId<0||tileId>=raw.length/TILE_BYTES||x<0||x>15||y<0||y>15)return 0;
  // MAME: 16*16x4 packed MSB (high nibble first), ROM_LOAD16_WORD_SWAP (bytes reversed each 16-bit word).
@@ -178,10 +208,12 @@ async function restore(){
 function scene(){return null}
 window.StrikersROM=Object.freeze({
  load,restore,scene,rawPixel:pixel,atlas,spriteGroup,isLoaded:()=>!!gfx,
- isVerified:()=>verified,stats:()=>({chips:program?10:0,tiles:16384,spriteTiles:65536,lutEntries:131072,programBytes:program?.length||0,soundProgramBytes:soundProgram?.length||0,opl4SampleBytes:opl4Samples?.length||0,resetPC,resetSP,undumpedMCU:'4-u59.bin',verified}),
+ isVerified:()=>verified,stats:()=>({chips:program?10:0,tiles:16384,spriteTiles:65536,lutEntries:131072,programBytes:program?.length||0,soundProgramBytes:soundProgram?.length||0,opl4SampleBytes:opl4Samples?.length||0,opl4WaveCount:waveTable.length,resetPC,resetSP,undumpedMCU:'4-u59.bin',verified}),
  // Full-code audit via local ROM, not CPU emulation. The PIC16C57 security chip (4-u59.bin) was never dumped.
  codeInfo:()=>program?Object.freeze({architecture:'68EC020',resetPC,resetSP,programBytes:program.length,soundCpu:'Z80 compatible',soundProgramBytes:soundProgram.length,opl4Bytes:opl4Samples.length,protectionMcuDumped:false}):null,
  programWord:addr=>program&&Number.isInteger(addr)&&addr>=0&&addr+1<program.length?(program[addr]<<8)|program[addr+1]:null,
+ opl4WaveInfo:waveInfos,
+ opl4PCM:pcmWave,
  soundBytes:(start=0,length=16)=>soundProgram?Array.from(soundProgram.slice(Math.max(0,start|0),Math.max(0,start|0)+Math.max(0,Math.min(64,length|0)))):[],
  // Test-only introspection to validate nibble and endianness against actual ROM fixtures.
  test:(location.hostname==='127.0.0.1'||location.hostname==='localhost')?Object.freeze({lookup:i=>lut?.[i],pixel:(k,id,x,y,byLut)=>pixel(k,id,x,y,byLut)}):undefined

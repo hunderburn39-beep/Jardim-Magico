@@ -12,6 +12,7 @@ function zip(){
    'u22.bin':[0x56,0x78],'u21.bin':[0x9a,0xbc],'u23.bin':[0xde,0xf0]};
   if(patterns[name]){raw[0]=patterns[name][0];raw[1]=patterns[name][1]}
   if(name==='2s.u40')raw.set([0xff,0xff,0x00,0x00,0x00,0x00,0x00,0x00],0);
+  if(name==='u61.bin'){raw.set([0,12,0,0,8,0xff,0xf7,0,0xf0,0,0xff,0],0);raw[0x0c00]=64;raw[0x0c01]=192;raw[0x0c02]=32;}
   if(name==='3s.u41')raw.set([0x00,0x80,0x00,0x04,0xe8,0x98,0xe8,0x98],0);
   if(name==='u1.bin'){ // ROM_REGION16_LE: LUT[0..4] map into all four graphics banks
    const indices=[0,1,16384,32768,49152];
@@ -49,6 +50,10 @@ assert.equal(fullRom.resetPC,0x400,'68EC020 reset vector comes from real ROM lan
 assert.equal(await page.evaluate(()=>window.StrikersROM.programWord(0)),0xffff,'Program words are assembled big-endian');
 assert.equal(fullRom.soundProgramBytes,131072,'Programa Z80/LZ8420M recuperado');
 assert.equal(fullRom.opl4Bytes,2097152,'Banco OPL4 recuperado');
+const opl4Info=await page.evaluate(()=>window.StrikersROM.opl4WaveInfo());
+assert.equal(opl4Info.length,1,'Wave table of test fixture has exactly one valid sample');
+assert.equal(opl4Info[0].offset,0xc00,'Sample audio data starts after the Yamaha header table');
+assert.deepEqual(await page.evaluate(()=>Array.from(window.StrikersROM.opl4PCM(0).slice(0,3))),[0.5,-0.5,0.25],'8-bit signed PCM decoded without synthesis');
 assert.equal(fullRom.protectionMcuDumped,false,'MCU de proteção não está presente no dump');
 await page.waitForFunction(()=>window.StrikersFlightReplay?.ready(),null,{timeout:30000});
 assert.equal(await page.evaluate(()=>window.StrikersFlightReplay.stats().frames),116,'116 instantes originais dos caças descodificados');
