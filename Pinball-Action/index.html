@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V8.17 — melodia original da introdução</title><style>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V8.18 — 3 AY originais em tempo real</title><style>
 :root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;background:#040409;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 body{display:flex;align-items:center;justify-content:center}#app{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;width:100%;height:100dvh;max-height:100dvh;padding:max(8px,env(safe-area-inset-top)) 6px max(8px,env(safe-area-inset-bottom))}
 #display{height:auto;max-height:calc(100dvh - 176px - env(safe-area-inset-top) - env(safe-area-inset-bottom));width:min(calc((100dvh - 176px)*224/256),100vw - 12px,540px);aspect-ratio:224/256;flex-shrink:1;overflow:hidden;box-shadow:0 0 0 3px #242028,0 0 22px #171119;outline:1px solid #77707b;background:#000}
@@ -317,6 +317,45 @@ const arcadeAudio=(()=>{
  const available=new Set(ids),preload=[2,1,10,22,12,13,28];
  const raw=new Map(),decoded=new Map(),decoding=new Map(),waiting=new Map(),played=new Map(),active=new Set();
  const musicRaw=new Map(),musicDecoded=new Map(),musicDecoding=new Map();
+ // Primary audio engine: 1985 ROM drives one Z80 and all 3 AY-3-8910 chips.
+ // Never restart a recording at an arbitrary 52-second boundary.
+ let chipNode=null,chipGain=null,chipLoading=null,chipFailed=false;
+ const chipQueue=[];
+ function queueChip(cmd){
+  if(chipNode){chipNode.port.postMessage({type:'command',command:cmd&255});return;}
+  if(chipQueue.length>=128)chipQueue.shift();
+  chipQueue.push(cmd&255);
+ }
+ function startChipEngine(){
+  if(chipNode||chipLoading||chipFailed||!context)return;
+  if(!context.audioWorklet||!window.AudioWorkletNode){
+   chipFailed=true;
+   for(const cmd of chipQueue.splice(0))fromRom(cmd);
+   return;
+  }
+  const src=new URL('audio/rom-psg-worklet.js?v=818',document.baseURI).href;
+  chipLoading=context.audioWorklet.addModule(src).then(()=>{
+   const node=new AudioWorkletNode(context,'pb-original-psg',{
+    numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2]
+   });
+   const level=context.createGain();
+   level.gain.value=enabled ? .88 : 0;
+   node.connect(level);level.connect(context.destination);
+   chipNode=node;chipGain=level;
+   stop();stopIntro();stopBackground();
+   for(const cmd of chipQueue.splice(0))queueChip(cmd);
+   const b=document.getElementById('sound');
+   if(b&&enabled){b.textContent='🔊 3 CHIPS';b.title='ROM Z80 + 3 AY-3-8910 em tempo real';}
+  }).catch(err=>{
+   chipFailed=true;
+   errorMessage='Motor AY indisponível; a usar os MP3 da ROM: '+String(err);
+   const b=document.getElementById('sound');if(b)b.title=errorMessage;
+   const backlog=chipQueue.splice(0);
+   boot();
+   for(const cmd of backlog)fromRom(cmd);
+  }).finally(()=>{chipLoading=null;});
+ }
+
  function fail(e){errorMessage=String(e?.message||e);const b=document.getElementById('sound');if(b){b.title=errorMessage;b.textContent='⚠ SOM ORIGINAL';}}
  function urlFor(prefix,cmd){return new URL('audio/'+prefix+String(cmd).padStart(2,'0')+'.mp3?v=817',document.baseURI);}
  function getRaw(cmd){
@@ -333,8 +372,7 @@ const arcadeAudio=(()=>{
    .catch(e=>{musicRaw.delete(cmd);throw e;}));
   return musicRaw.get(cmd);
  }
- for(const cmd of preload)getRaw(cmd).catch(()=>{});
- getMusicRaw(10).catch(()=>{});
+ // MP3 fallback assets are loaded only if native sound emulation is unavailable.
  function decode(cmd){
   if(decoded.has(cmd))return Promise.resolve(decoded.get(cmd));
   if(!context)return Promise.resolve(null);
@@ -358,6 +396,13 @@ const arcadeAudio=(()=>{
   if(n){try{n.stop()}catch{}try{n.disconnect()}catch{}}
  }
  function playIntro(){
+  if(!chipFailed){
+   if(introDone||!enabled||document.hidden)return;
+   if(!boot())return;
+   introDone=true;
+   if(!chipQueue.includes(2))queueChip(2);
+   return;
+  }
   if(introDone||introRequested||!enabled||document.hidden)return;
   if(!boot()||!context)return;
   introRequested=true;
@@ -413,6 +458,13 @@ const arcadeAudio=(()=>{
  }
  function fromRom(command){
   commands++;const cmd=command&255;
+  if(!chipFailed){
+   if(cmd===2)introDone=true;
+   if(musicCommands.has(cmd))backgroundCommand=cmd;
+   queueChip(cmd);
+   if(context&&!chipNode&&!chipLoading)startChipEngine();
+   return;
+  }
   if(cmd===254||cmd===255){stop();stopBackground();backgroundCommand=null;waiting.clear();return;}
   if(cmd===2&&(introRequested||introSource))return; // Avoid two overlapping credit jingles.
   // Original Z80 controls the selected table's music and its transitions.
@@ -433,6 +485,10 @@ const arcadeAudio=(()=>{
    backgroundGain=context.createGain();backgroundGain.gain.value=.65;backgroundGain.connect(context.destination);
   }catch(e){fail(e);return false;}
   if(context.state!=='running')context.resume().catch(fail);
+  if(!chipFailed){
+   startChipEngine();
+   if(!chipFailed)return true;
+  }
   for(const c of preload)decode(c);
   decodeMusic(10);
   if(backgroundCommand!==null)startBackground(backgroundCommand);
@@ -440,16 +496,17 @@ const arcadeAudio=(()=>{
  }
  function toggle(){
   enabled=!enabled;
-  if(enabled){boot();if(backgroundCommand!==null)startBackground(backgroundCommand);}
-  else{stop();stopBackground();stopIntro();introRequested=false;waiting.clear();}
-  if(context&&gain)gain.gain.setTargetAtTime(enabled?.95:0,context.currentTime,.015);
-  const b=document.getElementById('sound');if(b){b.textContent=enabled?'🔊 ORIGINAL MP3':'🔇 SEM SOM';b.setAttribute('aria-pressed',String(enabled));}
+  if(enabled){boot();if(chipFailed&&backgroundCommand!==null)startBackground(backgroundCommand);}
+  else if(chipFailed){stop();stopBackground();stopIntro();introRequested=false;waiting.clear();}
+  if(context&&gain)gain.gain.setTargetAtTime(enabled ? .95 : 0,context.currentTime,.015);
+  if(context&&chipGain)chipGain.gain.setTargetAtTime(enabled ? .88 : 0,context.currentTime,.015);
+  const b=document.getElementById('sound');if(b){b.textContent=enabled?(chipNode?'🔊 3 CHIPS':'🔊 ORIGINAL MP3'):'🔇 SEM SOM';b.setAttribute('aria-pressed',String(enabled));}
  }
  function restore(){
   if(enabled&&context?.state==='suspended')context.resume().catch(fail);
-  if(enabled&&backgroundCommand!==null)startBackground(backgroundCommand);
+  if(enabled&&chipFailed&&backgroundCommand!==null)startBackground(backgroundCommand);
  }
- return {boot,fromRom,toggle,restore,playIntro,startBackground,state:()=>({enabled,context:context?.state||'não iniciado',ready:decoded.size>0,loaded:decoded.size,engine:'ROM original por mesa em MP3',introPlayed:introDone,introPlaying:!!introSource,backgroundCommand,backgroundPlaying:!!backgroundSource,commands,error:errorMessage}),debug:()=>({loaded:decoded.size,pending:decoding.size,introPlaying:!!introSource,backgroundPlaying:!!backgroundSource,backgroundPlayingCmd,error:errorMessage})};
+ return {boot,fromRom,toggle,restore,playIntro,startBackground,state:()=>({enabled,context:context?.state||'não iniciado',ready:decoded.size>0,loaded:decoded.size,engine:chipNode?'Z80 original e 3 AY-3-8910 em tempo real':chipFailed?'MP3 original de reserva':'a carregar chips originais',introPlayed:introDone,introPlaying:!!introSource,backgroundCommand,backgroundPlaying:chipNode?true:!!backgroundSource,chipReady:!!chipNode,chipFailed,chipQueued:chipQueue.length,commands,error:errorMessage}),debug:()=>({loaded:decoded.size,pending:decoding.size,introPlaying:!!introSource,backgroundPlaying:!!backgroundSource,backgroundPlayingCmd,chipReady:!!chipNode,chipFailed,chipQueued:chipQueue.length,error:errorMessage})};
 })();
 function arcadeSound(command){arcadeAudio.fromRom(command);}
 // One physical press = one audio action. iOS may send pointerdown + touchstart
