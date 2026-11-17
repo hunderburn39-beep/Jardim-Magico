@@ -422,13 +422,63 @@ function draw(ctx,e){
  ctx.drawImage(sheet,e.x-rw/2,e.y-rh/2,rw,rh);
  ctx.restore();return true;
 }
-const api=Object.freeze({ensure,ready,sync,draw,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'palette-10 reduced projections and paired ROM silhouettes',flightFacing:'per-LUT native heading, lateral bomber mirror, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:false}),
+// Build a separate terrain pass. Captured shadows win; when the capture
+// contains no projection for a large airborne sprite, use its own ROM alpha.
+// The offset and half-size zoom are based on the recorded B-35 projection,
+// not a claimed exact reconstruction of the missing bomber shadow.
+const shadowSilhouettes=new WeakMap();
+function shadowPlan(enemies){
+ const owners=new Map(enemies.filter(e=>e.romFlight&&e.active&&e.role==='bomber'&&(e.alpha??1)>.025).map(e=>[e.uid,e]));
+ const native=new Map(),plan=[];
+ for(const sh of enemies){
+  if(sh.kind!=='romShadow'||sh.active===false||(sh.alpha??1)<=.025||sh.ownerRef?.active===false)continue;
+  const owner=owners.get(sh.ownerId);
+  if(!owner){plan.push({kind:'native',entity:sh,x:sh.x,y:sh.y,w:sh.renderW??sh.w,h:sh.renderH??sh.h,alpha:.79});continue}
+  const previous=native.get(owner.uid);
+  if(!previous||(sh.alpha??1)>(previous.alpha??1))native.set(owner.uid,sh);
+ }
+ for(const owner of owners.values()){
+  const sh=native.get(owner.uid);
+  const w=owner.renderW??owner.w,h=owner.renderH??owner.h;
+  if(sh){
+   const separated=Math.hypot(sh.x-owner.x,sh.y-owner.y)>=28;
+   const sw=sh.renderW??sh.w,hh=sh.renderH??sh.h;
+   plan.push({kind:'native',entity:sh,x:separated?sh.x:owner.x-48,y:separated?sh.y:owner.y-48,w:separated?sw:Math.min(sw,w*.65),h:separated?hh:Math.min(hh,h*.65),alpha:.79});
+  }else{
+   plan.push({kind:'silhouette',entity:owner,x:owner.x-48,y:owner.y-48,w:w*17/32,h:h*17/32,alpha:.66});
+  }
+ }
+ return plan;
+}
+function drawShadows(ctx,enemies){
+ if(!ready())return;
+ for(const p of shadowPlan(enemies)){
+  const e=p.entity;
+  let sheet=sprite(e.sprite);if(!sheet)continue;
+  if(p.kind==='silhouette'){
+   let mask=shadowSilhouettes.get(sheet);
+   if(!mask){
+    mask=document.createElement('canvas');mask.width=sheet.width;mask.height=sheet.height;
+    const c=mask.getContext('2d');c.drawImage(sheet,0,0);
+    c.globalCompositeOperation='source-in';c.fillStyle='#000';c.fillRect(0,0,mask.width,mask.height);
+    shadowSilhouettes.set(sheet,mask);
+   }
+   sheet=mask;
+  }
+  ctx.save();ctx.imageSmoothingEnabled=false;
+  ctx.globalAlpha*=p.alpha*(e.alpha??1)*(e.visualAlpha??1);
+  ctx.drawImage(sheet,p.x-p.w/2,p.y-p.h/2,p.w,p.h);
+  ctx.restore();
+ }
+}
+const api=Object.freeze({ensure,ready,sync,draw,drawShadows,reset,
+ stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'captured projections, separated overlapping bomber shadows and ROM alpha fallback',flightFacing:'per-LUT native heading, lateral bomber mirror, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:false}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
  smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,rawId:e.rawId,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code,vx:e.vx,vy:e.vy,turn:e.visualTurn,attr:e.sprite.attr,originalAttr:e.originalSprite.attr,facingMask:e.facingMask,alignment:e.alignment,pitch:e.pitch,projection:e.projection,palette:e.palette,ownerId:e.ownerId,active:e.active})),
  links:()=>{if(!linked&&frames)linkAll();return {...linkStats}},
  destroy:(uid)=>{const e=tracks.get(uid);if(e)e.active=false;return !!e},
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
+ shadowPlan:(entities)=>shadowPlan(entities),
  parsed:()=>!!frames
  }):undefined});
 window.StrikersFlightReplay=api;
