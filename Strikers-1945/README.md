@@ -1,3 +1,12 @@
+# Strikers 1945 — V7.2 | Amostras sonoras originais da ROM (17/11/2026)
+
+- O ficheiro u61.bin contém cabeçalhos Yamaha OPL4 de 12 bytes seguidos das amostras PCM. Foram identificadas 105 entradas utilizáveis na ROM original World, até ao índice 104 (há entradas repetidas nos índices finais).
+- O descodificador nativo lê o offset, tamanho, ponto de loop e áudio PCM 8-bit com sinal diretamente dos dados importados no navegador; não gera sons novos.
+- O catálogo de audição está em `audio-rom.html`. A reprodução de cada amostra a 16 kHz é apenas uma pré-audição técnica, **não é a banda sonora do jogo nem implica que o tom, a sequência ou os envelopes estejam reconstruídos**.
+- O motor principal continua com partes sintetizadas/adaptadas de testes anteriores. A reconstrução fiel de comandos do Z80/LZ8420M, sequências de notas e utilização dos sons precisa de mais investigação antes de substituir o áudio provisório da jogabilidade.
+- Teste com ROM sintética garante cabeçalho 0x0C00, descodificação de amostras 8-bit e contagem de entrada; verificações automáticas não substituem teste real no Safari.
+
+---
 # Strikers 1945 — V7.1 | Projeto de reconstrução nativa sem emulador (17/11/2026)
 
 **Abrir:** https://hunderburn39-beep.github.io/Jardim-Magico/Strikers-1945/?v=7.1
