@@ -56,5 +56,17 @@ jobs:
             echo "Sons originais ja publicados."
           else
             git commit -m "Pinball Action: publicar efeitos MP3 extraidos da ROM original"
-            git push
+            # O repositorio recebe commits de outros jogos enquanto os MP3 sao gerados.
+            # Rebase evita perder alteracoes entretanto publicadas.
+            for tentativa in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main
+              if git push origin HEAD:main; then
+                echo "MP3 originais publicados sem sobrepor outras alteracoes."
+                exit 0
+              fi
+              sleep 2
+            done
+            echo "::error::Nao foi possivel publicar os MP3 apos 3 tentativas."
+            exit 1
           fi
