@@ -118,11 +118,11 @@ function isTerrainShadow(e){
 }
 function role(e){
  if(isTerrainShadow(e))return 'shadow';
- // Airbase/terrain decorations move with the original stage-1 scrolling.
- // LUT 21691/21715 are stationary aircraft on the airfield; their 32px
- // scrolling between 32-frame captures was formerly misread as backward flight.
- if([21691,21715].includes(e.code)||e.palette===23||e.palette===27)return 'ground';
- if([21769,21781,21787,21811].includes(e.code))return 'fighter';
+ // B-35 flying wing silhouettes are AIRBORNE enemies, never terrain scenery.
+ // Stage scroll can mimic an apparently reversed direction; correct heading
+ // instead of suppressing collision, fire and enemy gameplay.
+ if([21691,21715].includes(e.code))return 'bomber';
+ if([21312,21769,21781,21787,21811].includes(e.code))return 'fighter';
  if(e.palette===28||e.nx>=5||e.ny>=5)return 'bomber';
  if(e.nx>=3||e.ny>=3)return 'ground';
  return 'fighter';
@@ -132,6 +132,8 @@ function nativeNoseAngle(e){
  // Measured visually from the original ROM tile assemblies (portrait).
  // Angle is relative to the top of screen: left negative, right positive.
  if(e.role==='fighter'&&((code>=9300&&code<12000)||[21769,21781,21787,21811].includes(code)))return 0;
+ if(e.role==='fighter'&&code===21312)return Math.PI/4;
+ if(e.role==='bomber'&&[21691,21715].includes(code))return 0;
  // The diagonal four-engine originals must not travel tail-first.
  if(e.role==='bomber'&&code>=21312&&code<=21330&&Math.max(e.source?.nx??0,e.source?.ny??0)>=5)return Math.PI/4;
  if((e.role==='bomber'||e.role==='shadow')&&[21424,21460].includes(code))return -Math.PI/4;
