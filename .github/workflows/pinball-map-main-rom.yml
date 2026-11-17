@@ -18,7 +18,7 @@ jobs:
           node - <<'JS'
           const fs=require('fs'),vm=require('vm');
           const html=fs.readFileSync('Pinball-Action/index.html','utf8');
-          const rom=JSON.parse(html.match(/window\\.PB_ROM=(\\{.*?\\});\\s*<\\/script>/s)[1]);
+          const rom=JSON.parse(html.split('window.PB_ROM=')[1].split(';</script>')[0]);
           const st=html.indexOf('const FS = 0x80'),ed=html.indexOf('</script>',st);
           const sandbox={Uint8Array,Array,console};
           vm.runInNewContext(html.slice(st,ed),sandbox,{timeout:5000});
