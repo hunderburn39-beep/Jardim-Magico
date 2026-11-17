@@ -242,6 +242,72 @@ function decodeRomBase64(s){
  }
  return result.subarray(0,n);
 }
+// Z80 instruction T-state timing. The earlier average (7 per opcode)
+// slowed down 4-T-state instructions, stretching music and creating echoes.
+const Z80_LOW_T=[
+ 4,10,7,6,4,4,7,4, 4,11,7,6,4,4,7,4,
+ 8,10,7,6,4,4,7,4, 12,11,7,6,4,4,7,4,
+ 7,10,16,6,4,4,7,4, 7,11,16,6,4,4,7,4,
+ 7,10,13,6,11,11,10,4, 7,11,13,6,4,4,7,4
+];
+const Z80_HIGH_T=[
+ 5,10,10,10,10,11,7,11, 5,10,10,8,10,17,7,11,
+ 5,10,10,11,10,11,7,11, 5,4,10,11,10,4,7,11,
+ 5,10,10,19,10,11,7,11, 5,4,10,4,10,8,7,11,
+ 5,10,10,4,10,11,7,11, 5,6,10,4,10,4,7,11
+];
+function z80InstructionCycles(mem,pc,nextPc,flags){
+ const op=mem[pc&65535],a=pc&65535;
+ let cycles;
+ if(op<0x40)cycles=Z80_LOW_T[op];
+ else if(op<0x80)cycles=(op===0x76)?4:((op&7)===6||((op>>3)&7)===6?7:4);
+ else if(op<0xc0)cycles=(op&7)===6?7:4;
+ else cycles=Z80_HIGH_T[op-0xc0];
+ if(op===0x10)return nextPc===((a+2)&65535)?8:13; // DJNZ
+ if(op===0x20||op===0x28||op===0x30||op===0x38)
+  return nextPc===((a+2)&65535)?7:12; // JR cc
+ if(op>=0xc0&&(op&0xc7)===0xc0){
+  const cond=(op>>3)&7;
+  const f=flags;
+  const valid=[!(f&0x40),!!(f&0x40),!(f&1),!!(f&1),!(f&4),!!(f&4),!(f&0x80),!!(f&0x80)][cond];
+  return valid?11:5; // RET cc
+ }
+ if(op>=0xc4&&(op&0xc7)===0xc4){
+  const cond=(op>>3)&7;
+  const f=flags;
+  const valid=[!(f&0x40),!!(f&0x40),!(f&1),!!(f&1),!(f&4),!!(f&4),!(f&0x80),!!(f&0x80)][cond];
+  return valid?17:10; // CALL cc
+ }
+ if(op===0xcb){
+  const cb=mem[(a+1)&65535],r=cb&7;
+  return r!==6?8:((cb&0xc0)===0x40?12:15);
+ }
+ if(op===0xed){
+  const ed=mem[(a+1)&65535],x=ed>>6,z=ed&7,y=(ed>>3)&7;
+  if(x===1)return [12,12,15,20,8,14,8,9][z];
+  if(x===2&&y>=4&&z<=3)return nextPc===a?21:16;
+  return 8;
+ }
+ if(op===0xdd||op===0xfd){
+  const indexed=mem[(a+1)&65535];
+  if(indexed===0xcb)return 23; // DD/FD CB d op
+  let t;
+  if(indexed<0x40)t=Z80_LOW_T[indexed];
+  else if(indexed<0x80)t=indexed===0x76?4:((indexed&7)===6||((indexed>>3)&7)===6?7:4);
+  else if(indexed<0xc0)t=(indexed&7)===6?7:4;
+  else t=Z80_HIGH_T[indexed-0xc0];
+  if(indexed===0x34||indexed===0x35)return 23;
+  if(indexed===0x36)return 19;
+  if(indexed===0x22||indexed===0x2a)return 20;
+  if(indexed===0xe3)return 23;
+  if(indexed===0xe9)return 8;
+  if(indexed===0xf9)return 10;
+  if((indexed>=0x40&&indexed<0xc0)&&
+   ((indexed&7)===6||((indexed>>3)&7)===6))return 19;
+  return t+4;
+ }
+ return cycles;
+}
 class PinballSoundProcessor extends AudioWorkletProcessor{
  constructor(){
   super();
@@ -296,7 +362,7 @@ class PinballSoundProcessor extends AudioWorkletProcessor{
   const c=this.ctc[0];
   if(c?.enabled&&c.counter){
    c.cycles++;
-   if(c.cycles>=c.constant){c.cycles=0;if(c.control&128)this.pending[0]++;}
+   if(c.cycles>=c.constant){c.cycles=0;if(c.control&128)this.pending[0]=1;}
   }
  }
  timer(cycles){
@@ -306,7 +372,7 @@ class PinballSoundProcessor extends AudioWorkletProcessor{
    const period=c.prescale*c.constant;
    if(c.cycles>=period){
     const n=Math.floor(c.cycles/period);c.cycles-=n*period;
-    if(c.control&128)this.pending[ch]=Math.min(8,this.pending[ch]+n);
+    if(c.control&128)this.pending[ch]=1; // Z80 CTC latches an IRQ; it does not queue echoing repeats
    }
   }
  }
@@ -325,13 +391,10 @@ class PinballSoundProcessor extends AudioWorkletProcessor{
      }
     }
    }
-   const pc=this.cpu.pc,op=this.mem[pc];
-   // Average cycle accounting for timer drift. Hardware PSG pitches are clock-based.
-   let cycles=op===0xed?16:op===0xdd||op===0xfd?17:op===0xcb?9:
-    (op===0xcd||op===0xc9||op===0xc3||op===0xd3||op===0xdb)?13:
-    (op===0x21||op===0x31||op===0x01||op===0x11||op===0x22||op===0x2a||op===0x32||op===0x3a)?10:
-    (op===0xc5||op===0xd5||op===0xe5||op===0xf5||op===0xc1||op===0xd1||op===0xe1||op===0xf1)?11:7;
+   const pc=this.cpu.pc,op=this.mem[pc],flags=this.cpu.f;
    if(!this.cpu.halt)this.cpu.step();
+   const cycles=this.cpu.halt&&pc===this.cpu.pc?4:
+    z80InstructionCycles(this.mem,pc,this.cpu.pc,flags);
    if(op===0xed&&this.mem[(pc+1)&65535]===0x4d)this.inService=-1;
    this.timer(cycles);
    this.debt-=cycles;
