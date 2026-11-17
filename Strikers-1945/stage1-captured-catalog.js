@@ -6,7 +6,10 @@
 const DATA='./stage1-plane-frames.b64',SUPPORTED=new Set([10,11,12,23,25,27,28]);
 let loaded=false,job=null,groups=null,items=null,moments=0,rawItems=0,frameFirst=0,frameLast=0;
 function dimensions(rx,ry){
- const nx=((rx>>9)&7)+1,ny=((ry>>9)&7)+1;
+ // EP1's six non-square graphics store their tile extents transposed.
+ // Verified on the supplied original ROM: 21691/21715 need 3×8,
+ // and 21769/21781/21787/21811 need 2×3 in the row-major renderer.
+ const nx=((ry>>9)&7)+1,ny=((rx>>9)&7)+1;
  return {nx,ny};
 }
 function classOf(e){
