@@ -14,7 +14,7 @@ try{
  assert(ready,'Original captured sprite RAM stream must load');
  const data=await page.evaluate(()=>{
    const api=window.StrikersFlightReplay,seen=new Map();
-   let duplicates=0,steps=0,maxJump=0,b35=0,big=0,shadows=0,corrected=0,pitch=0,wrong=0,spinning=0,pitchFlips=0,invalidFlips=0;
+   let duplicates=0,steps=0,maxJump=0,b35=0,big=0,shadows=0,corrected=0,pitch=0,wrong=0,spinning=0,pitchFlips=0,invalidFlips=0,horizontalBig=0,wrongHorizontalBig=0;
    let prev=new Map(),projectionCount=0,projectionCombat=0,pairedVisible=0,deathProbe=null;
    for(let frame=0;frame<=3680;frame++){
     const t=frame/60,es=api.test.smooth(t),ids=new Set(),current=new Map();
@@ -26,7 +26,11 @@ try{
      current.set(e.uid,e);
      if(e.projection){projectionCount++;if(e.role!=='shadow')projectionCombat++;if(visibleIds.has(e.ownerId)){pairedVisible++;if(!deathProbe&&frame>0)deathProbe={t,owner:e.ownerId,shadow:e.uid};}}
      if(e.turn!==0)spinning++;
-     if(e.facingMask!==0&&e.facingMask!==0xc000)invalidFlips++;
+     if(e.facingMask!==0&&e.facingMask!==0xc000&& !((e.code===21316||e.role==='shadow')&&[0x4000,0x8000].includes(e.facingMask)))invalidFlips++;
+     if(e.code===21316&&e.role==='bomber'&&Math.abs(e.vx)>=8&&Math.abs(e.vx)>=2*Math.abs(e.vy)){
+      horizontalBig++;
+      if((e.attr&0x4000)!==0||((e.attr&0x8000)!==0)!==(e.vx<0))wrongHorizontalBig++;
+     }
      if(e.facingMask)corrected++;
      if(e.pitch&&e.role!=='shadow'){pitch++;if(e.facingMask)pitchFlips++}
      if(!e.pitch&&e.role!=='ground'&&e.role!=='shadow'&&e.alignment!==null&&e.alignment<-.281)wrong++;
@@ -40,7 +44,7 @@ try{
    }
    const stats=api.stats();let deathPersistence=false;
    if(deathProbe){api.reset();api.test.smooth(deathProbe.t);api.test.destroy(deathProbe.owner);const after=api.test.smooth(deathProbe.t+1/60);deathPersistence=!after.some(e=>e.uid===deathProbe.owner||e.uid===deathProbe.shadow);}
-   return {stats,steps,maxJump,duplicates,b35,big,shadows,corrected,pitch,wrong,spinning,pitchFlips,invalidFlips,projectionCount,projectionCombat,pairedVisible,deathPersistence};
+   return {stats,steps,maxJump,duplicates,b35,big,shadows,corrected,pitch,wrong,spinning,pitchFlips,invalidFlips,horizontalBig,wrongHorizontalBig,projectionCount,projectionCombat,pairedVisible,deathPersistence};
  });
  assert.equal(data.stats.frames,116);
  assert.equal(data.stats.matching.projectionRecords,287,'All reduced palette-10 records accounted for');
@@ -57,6 +61,8 @@ try{
  assert.equal(data.spinning,0,'No artificial canvas rotation');
  assert.equal(data.pitchFlips,0,'Actual pitch/roll animation keeps captured hardware orientation');
  assert.equal(data.invalidFlips,0,'Only original hardware flip flags alter tiles');
+ assert(data.horizontalBig>10,'Lateral four-engine formation is visible');
+ assert.equal(data.wrongHorizontalBig,0,'Lateral bombers face along travel with an upward nose');
  assert.deepEqual(errors,[],'No browser JavaScript errors');
- console.log('STRIKERS V8.4 TERRAIN PROJECTION AUDIT:',JSON.stringify(data));
+ console.log('STRIKERS V8.6 BOMBER ORIENTATION AUDIT:',JSON.stringify(data));
 }finally{await browser.close()}
