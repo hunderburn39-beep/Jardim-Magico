@@ -182,6 +182,7 @@ function orientFrame(item,vx,vy){
  return {...item,attr,orientationMask:0xc000};
 }
 // Match full consecutive sprite lists, not their transient display-list slots.
+let edgeExit=null;
 let linked=false,linkStats={pairs:0,changedSlots:0,tracks:0,maxStep:0};
 function clamp01(t){return Math.max(0,Math.min(1,t))}
 function family(e){return e.code<20000?0:1}
@@ -260,7 +261,13 @@ function linkAll(){
   pairShadows(curr.items);
   for(const a of curr.items){if(a.projection){projectionRecords++;if(a.ownerTrack)pairedProjections++}else if(a.code===21460&&a.ownerTrack)pairedLargeShadows++}
  }
- linkStats={pairs,changedSlots,tracks:serial,maxStep,projectionRecords,pairedProjections,pairedLargeShadows};linked=true;
+ // The right B-35 (LUT 21715) is parked in the captured session: x=412,
+ // y cycles 464..498 for about 19 seconds. This is a capture-dependent
+ // hold, not a verified arcade flight path. Continue its measured entry
+ // direction after the first downward pass, instead of replaying that loop.
+ const anchor=frames.find(f=>f.frame===2016)?.items.find(e=>e.code===21715&&e.x>=360&&Math.abs(e.y-498)<4&&e.role==='bomber');
+ edgeExit=anchor?{frame:anchor.frame,x:anchor.x,y:anchor.y,ids:new Set(frames.filter(f=>f.frame>=anchor.frame&&f.frame<=3072).flatMap(f=>f.items.filter(e=>e.code===21715&&e.role==='bomber'&&Math.abs(e.x-anchor.x)<=12).map(e=>e.trackId)))}:null;
+ linkStats={pairs,changedSlots,tracks:serial,maxStep,projectionRecords,pairedProjections,pairedLargeShadows,edgeExitTracks:edgeExit?.ids.size??0};linked=true;
 }
 function curve(a,b,p,n,t){
  const d=b-a;let m0=p===null?d:(b-p)*.5,m1=n===null?d:(n-a)*.5;
@@ -281,6 +288,11 @@ function edgePosition(a,elapsed,incoming){
  // Keep entering/exiting objects moving, but never extrapolate a whole pass.
  return {x:a.x+(a.x-b.x)*d,y:a.y+(a.y-b.y)*d};
 }
+// Smooth continuation: starts at the recorded point, exits through the lower-right.
+function continuedEdgePosition(plan,frame){
+ const age=Math.max(0,(frame-plan.frame)/60);
+ return {x:plan.x+10*age*age/(1+age),y:plan.y+60*age,vx:10*age*(2+age)/((1+age)*(1+age)),vy:60};
+}
 function sync(time){
  if(!ready())return [];
  if(!linked)linkAll();
@@ -289,6 +301,7 @@ function sync(time){
  timeLast=time;
  const f=snapshot(time);if(!f||f.expired){tracks.clear();return []}
  const result=[],seen=new Set(),t=clamp01(f.t),dt=(f.b.frame-f.a.frame)/60;
+ const captureFrame=f.a.frame+(f.b.frame-f.a.frame)*t;
  function record(item,other,fade,pos){
   const id=item.trackId,kind=item.role,heavy=kind==='bomber',ground=kind==='ground',shadow=kind==='shadow';
   seen.add(id);
@@ -317,6 +330,11 @@ function sync(time){
    if(neighbor){const span=(neighbor.frame-item.frame)/60;e.vx=(neighbor.x-item.x)/span;e.vy=(neighbor.y-item.y)/span}
    else{e.vx=0;e.vy=0}
   }
+  e.replayOffsetX=0;e.replayOffsetY=0;
+  if(edgeExit&&captureFrame>=edgeExit.frame&&edgeExit.ids.has(id)){
+   const p=continuedEdgePosition(edgeExit,captureFrame);
+   e.replayOffsetX=p.x-e.x;e.replayOffsetY=p.y-e.y;e.x=p.x;e.y=p.y;e.vx=p.vx;e.vy=p.vy;
+  }
   // Preserve genuine pitch-loop frames and apply only confirmed inversions.
   // Never cross-dissolve two different silhouettes into a double aircraft.
   e.originalSprite=e.sprite;e.sprite=orientFrame(e.sprite,e.vx,e.vy);
@@ -342,6 +360,7 @@ function sync(time){
   const owner=shadow.ownerId!==null?tracks.get(shadow.ownerId):null;
   if(owner&&seen.has(owner.uid)){
    shadow.ownerRef=owner;
+   shadow.x+=owner.replayOffsetX??0;shadow.y+=owner.replayOffsetY??0;
    shadow.sprite={...shadow.originalSprite,attr:shadow.originalSprite.attr^owner.facingMask};
    shadow.facingMask=owner.facingMask;
    if(!owner.active)shadow.alpha=0;
@@ -350,7 +369,7 @@ function sync(time){
  }
  // Keep destroyed objects so they cannot return when their RAM slot changes.
  for(const id of tracks.keys())if(!seen.has(id))tracks.delete(id);
- return result.filter(e=>e.alpha>.025);
+ return result.filter(e=>e.alpha>.025&&e.x>-(e.renderW/2)-24&&e.x<360+e.renderW/2+24&&e.y>-(e.renderH/2)-24&&e.y<640+e.renderH/2+24);
 }
 function sprite(item){
  const key=[item.code,item.attr,item.nx,item.ny,item.phase].join(':');
