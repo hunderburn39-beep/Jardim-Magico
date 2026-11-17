@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#10091c">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Pinball Action V8.38 — Entrada</title>
+<title>Pinball Action V8.39 — Entrada</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080711;overscroll-behavior:none;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -36,11 +36,24 @@ h1 .bottom{display:block;color:#fef6e5;font-size:.78em;letter-spacing:.03em}
 @media(orientation:landscape) and (max-height:550px){.original-logo{width:min(52vh,300px)}}
 #technical{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));z-index:3;background:#211b31;border:1px solid #ae92be;color:#e9dcef;border-radius:7px;padding:8px 12px;font-size:12px;font-weight:700;touch-action:manipulation;cursor:pointer}
 #technical:disabled{opacity:.4}
+#settings-button{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:calc(max(10px,env(safe-area-inset-bottom)) + 40px);z-index:3;background:#211b31;border:1px solid #ae92be;color:#e9dcef;border-radius:7px;padding:8px 12px;font-size:12px;font-weight:700;touch-action:manipulation;cursor:pointer}
+#settings-button:disabled{opacity:.4}
+#settings[hidden]{display:none!important}
+#settings{position:fixed;inset:0;z-index:20;overflow:auto;overscroll-behavior:contain;background:#090a10;color:#eee;padding:max(18px,env(safe-area-inset-top)) 18px max(20px,env(safe-area-inset-bottom));text-align:left}
+#settings .settings-inner{max-width:500px;margin:auto}
+#settings h2{font-size:20px;color:#f5ce82;margin:4px 0 8px}
+#settings h3{font-size:13px;letter-spacing:.12em;color:#bda3ce;margin:19px 0 8px}
+#settings label{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #34303d;font-size:14px}
+#settings select{font:inherit;font-size:16px;padding:7px 4px;max-width:54%;min-width:110px;color:#eee;border:1px solid #675b78;border-radius:6px;background:#252133}
+#settings .settings-buttons{display:flex;flex-wrap:wrap;gap:9px;margin:15px 0}
+#settings button{flex:1;font:inherit;font-weight:750;padding:12px 8px;background:#292438;color:#faf2dc;border:1px solid #a793b5;border-radius:8px;cursor:pointer}
+#settings #save-settings{background:#22603e;border-color:#8bcf9c}
+#dip-status{font-size:12px;color:#dcc6e9}
 </style>
 </head>
 <body>
 <!-- The actual game exists in a DIFFERENT document. It cannot appear before ENTRAR. -->
-<iframe id="arcade" src="./game-v838.html" title="Pinball Action — máquina original" allow="autoplay" aria-hidden="true"></iframe>
+<iframe id="arcade" src="./game-v839.html" title="Pinball Action — máquina original" allow="autoplay" aria-hidden="true"></iframe>
 <section id="intro" aria-label="Entrada no Pinball Action">
  <div class="panel">
   <div class="kicker">ARCADE ORIGINAL · 1985</div>
@@ -66,9 +79,18 @@ h1 .bottom{display:block;color:#fef6e5;font-size:.78em;letter-spacing:.03em}
   <p id="message" role="status" aria-live="polite">A preparar a máquina original</p>
   <button id="silent" type="button" hidden>Entrar sem som</button>
  </div>
- <div class="version">V8.38</div>
+ <div class="version">V8.39</div>
  <button id="technical" type="button" disabled>TESTE TÉCNICO</button>
+ <button id="settings-button" type="button" disabled>CONFIGURAÇÃO</button>
 </section>
+<section id="settings" hidden aria-label="Configuração da máquina">
+<div class="settings-inner">
+<h2>PINBALL ACTION · CONFIGURAÇÃO</h2>
+<p style="font-size:13px;color:#d1c9da;margin:6px 0">Interruptores originais SW1 / SW2 · Tehkan 1985</p>
+<div id="dip-fields"></div>
+<p id="dip-status" role="status"></p>
+<div class="settings-buttons"><button id="save-settings" type="button">GUARDAR</button><button id="reset-settings" type="button">ORIGINAL</button><button id="close-settings" type="button">SAIR</button></div>
+</div></section>
 <script>
 (()=>{
 'use strict';
@@ -79,6 +101,46 @@ const message=document.getElementById('message');
 const silent=document.getElementById('silent');
 const technical=document.getElementById('technical');
 let testing=false;
+const settings=document.getElementById('settings'),settingsButton=document.getElementById('settings-button'),dipStatus=document.getElementById('dip-status');
+const levels=[[0,'Fácil'],[1,'Médio'],[2,'Difícil'],[3,'Muito difícil']];
+// Exact electrical values from original SW1 / SW2 hardware mapping.
+const fields=[
+ ['sw1',3,'Fichas B',[[0,'1 ficha / 1 crédito'],[1,'1 ficha / 2 créditos'],[2,'1 ficha / 3 créditos'],[3,'1 ficha / 6 créditos']]],
+ ['sw1',12,'Fichas A',[[4,'2 fichas / 1 crédito'],[0,'1 ficha / 1 crédito'],[8,'1 ficha / 2 créditos'],[12,'1 ficha / 3 créditos']]],
+ ['sw1',48,'Número de bolas',[[48,'2'],[0,'3'],[16,'4'],[32,'5']]],
+ ['sw1',128,'Som de demonstração',[[0,'Ligado'],[128,'Desligado']]],
+ ['sw2',7,'Bola extra (pontos)',[[1,'70k / 200k / 1000k'],[4,'100k / 300k / 1000k'],[0,'70k / 200k'],[3,'100k / 300k'],[6,'200k / 1000k'],[2,'100k'],[5,'200k'],[7,'Nenhuma']]],
+ ['sw2',8,'Dificuldade Extra',[[0,'Fácil'],[8,'Difícil']]],
+ ['sw2',48,'Flippers',levels.map(([v,t])=>[v*16,t])],
+ ['sw2',192,'Saídas laterais',levels.map(([v,t])=>[v*64,t])]
+];
+const dipFields=document.getElementById('dip-fields');let prevBank='';
+for(const field of fields){
+ const [bank,mask,label,opts]=field;
+ if(bank!==prevBank){const h=document.createElement('h3');h.textContent=bank.toUpperCase()+' · DIP';dipFields.append(h);prevBank=bank;}
+ const row=document.createElement('label');row.textContent=label;
+ const select=document.createElement('select');select.setAttribute('aria-label',label);
+ for(const [v,t] of opts){const opt=document.createElement('option');opt.value=v;opt.textContent=t;select.append(opt);}
+ field.push(select);row.append(select);dipFields.append(row);
+}
+function showDips(d){
+ for(const [bank,mask,,,el] of fields)el.value=String(d[bank]&mask);
+ dipStatus.textContent='Máquina vertical · configurações reais da ROM';
+}
+settingsButton.addEventListener('click',()=>{
+ const w=child();if(!w||opening||entered||testing)return;
+ showDips(w.__PB_DIP_GET());settings.hidden=false;
+});
+document.getElementById('reset-settings').addEventListener('click',()=>showDips({sw1:64,sw2:0}));
+document.getElementById('close-settings').addEventListener('click',()=>{settings.hidden=true;});
+document.getElementById('save-settings').addEventListener('click',()=>{
+ const w=child(),d={sw1:64,sw2:0};if(!w)return;
+ for(const [bank,mask,,,el] of fields)d[bank]|=Number(el.value)&mask;
+ if(!w.__PB_DIP_SET(d.sw1,d.sw2)){dipStatus.textContent='Não foi possível aplicar as opções.';return;}
+ try{localStorage.setItem('pb-original-dips-v1',JSON.stringify(d));}catch{dipStatus.textContent='Aplicado nesta sessão; armazenamento indisponível.';return;}
+ settings.hidden=true;
+ message.textContent='Configurações guardadas · prontas para jogar';
+});
 let ready=false,opening=false,entered=false,interval=null,lastTouch=-Infinity;
 function child(){
  try{
@@ -95,6 +157,7 @@ function readyCheck(){
  ready=true;
  button.disabled=false;
  technical.disabled=typeof child().__PB_DIAGNOSTIC_START!=='function';
+ settingsButton.disabled=typeof child().__PB_DIP_SET!=='function';
  button.textContent='ENTRAR';
  message.textContent='Carrega em ENTRAR para ouvir a música de título e abrir o jogo';
 }
@@ -130,7 +193,7 @@ function begin(){
  message.textContent='A iniciar a música original do título…';
  // Crucial for Safari: call the SAME-ORIGIN game AudioContext inside this
  // exact physical touch/click gesture, not in a post-load or timer callback.
- try{w.__PB_ENTER_ARCADE();}catch(e){
+ try{w.__PB_ENTER_ARCADE();if(typeof w.__PB_DEMO_SOUNDS==='function'&&!w.__PB_DEMO_SOUNDS()){reveal(w);return;}}catch(e){
   opening=false;button.disabled=false;button.textContent='ENTRAR';
   message.textContent='Não foi possível ativar o áudio. Volta a tocar em ENTRAR.';
   silent.hidden=false;
