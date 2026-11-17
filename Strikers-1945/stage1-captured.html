@@ -24,7 +24,7 @@ button{cursor:pointer;font-weight:800}button:disabled{opacity:.45}select{flex:1}
 <div class="controls"><label for="group">Tamanho</label><select id="group"><option value="todos">Todos os registos</option><option value="pequenos">Pequenos (1–2 blocos)</option><option value="medios">Médios (3–4 blocos)</option><option value="grandes">Grandes (5–8 blocos)</option></select><button id="csv" disabled>Exportar CSV</button></div>
 <div id="stats">Ainda sem resultados.</div>
 <div id="previewBox"><canvas id="selected" width="96" height="96"></canvas><pre id="details">Seleciona uma imagem para ver os dados originais.</pre></div>
-<h2>Registos gráficos distintos</h2><div id="results"></div>
+<h2>Registos gráficos distintos</h2><p class="notes">Cada entrada corresponde a um agrupamento do hardware: pode representar uma formação de vários aviões, uma sombra ou partes de uma animação. Não significa necessariamente uma aeronave individual já identificada. As cores escuras também podem ser próprias da paleta capturada.</p><div id="results"></div>
 <div class="controls"><button id="back" disabled>◀ Anteriores</button><strong id="pagination">—</strong><button id="forward" disabled>Seguintes ▶</button></div>
 <p class="notes">Os registos indicam código de sprite, atributos, cores de RAM, dimensões e instantes capturados. Não mostram, por si sós, a inteligência artificial, a identidade dos seis aviões selecionáveis nem a lista completa de todas as fases. A ROM não sai do teu dispositivo.</p>
 <script src="./original-rom.js"></script><script src="./stage1-captured-catalog.js"></script>
