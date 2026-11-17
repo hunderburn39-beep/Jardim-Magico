@@ -57,7 +57,7 @@ async function prepare(){
    const palette=(attr>>8)&63;
    if(!validKinds.has(palette))continue;
    const dims=dimensions(xraw,yraw);
-   items.push({id,code,attr,phase,palette,...dims});
+   items.push({id,code,attr,phase,palette,rawX:xraw,rawY:yraw,projection:palette===10&&(xraw>>>12)===15&&(yraw>>>12)===15,...dims});
   }
   result.push({frame,items});
  }
@@ -73,7 +73,8 @@ function ensure(){
  busy=prepare().catch(e=>{console.warn('Strikers plane replay:',e);busy=null;return false});
  return busy;
 }
-function reset(){tracks.clear();timeLast=-1}
+const destroyedTracks=new Set();
+function reset(){tracks.clear();destroyedTracks.clear();timeLast=-1}
 function snapshot(time){
  if(!frames)return null;
  // Match the same 47-second timeline used by the reconstructed stage-1 background.
@@ -94,6 +95,8 @@ function snapshot(time){
 // hostile aircraft. Determine this from their original palette/pixels, rather
 // than manufacturing a blurred copy of the aircraft sprite.
 function isTerrainShadow(e){
+ // Reduced palette-10 records match full-size planes at a (48,48) offset.
+ if(e.projection)return true;
  if(e.nx<4||e.ny<4)return false;
  const key=[e.code,e.attr,e.nx,e.ny,e.palette,e.phase].join(':');
  if(shadowCache.has(key))return shadowCache.get(key);
@@ -220,11 +223,30 @@ function assign(cost){
  }
  const result=Array(n).fill(-1);for(let j=1;j<=m;j++)if(p[j])result[p[j]-1]=j-1;return result;
 }
+// Match same-capture terrain projections; modular distance never changes flight positions.
+function wrapDelta(a,b){const d=a-b;return d-1024*Math.round(d/1024)}
+function pairShadows(items){
+ const shadows=items.filter(e=>e.role==='shadow');
+ const owners=items.filter(e=>e.role==='fighter'||e.role==='bomber');
+ if(!shadows.length||!owners.length)return;
+ const costs=shadows.map(sh=>[...owners.map(o=>{
+  if(sh.projection){
+   if(sh.code!==o.code||((sh.attr^o.attr)&0xc000))return 1e6;
+   return Math.hypot(wrapDelta(o.x,sh.x)-48,o.y-sh.y-48);
+  }
+  if(sh.code!==21460||o.code!==21424)return 1e6;
+  return Math.hypot(wrapDelta(o.x,sh.x),o.y-sh.y)*.14;
+ }),...shadows.map(()=>11)]);
+ const links=assign(costs);
+ for(let i=0;i<shadows.length;i++){
+  const j=links[i];if(j>=0&&j<owners.length&&costs[i][j]<11)shadows[i].ownerTrack=owners[j].trackId;
+ }
+}
 function linkAll(){
  if(linked)return;
- let serial=0,pairs=0,changedSlots=0,maxStep=0;
+ let serial=0,pairs=0,changedSlots=0,maxStep=0,projectionRecords=0,pairedProjections=0,pairedLargeShadows=0;
  for(let i=0;i<frames.length;i++){
-  const curr=frames[i];for(const a of curr.items){a.frame=curr.frame;a.role=role(a);a.prev=null;a.next=null;a.trackId=0}
+  const curr=frames[i];for(const a of curr.items){a.frame=curr.frame;a.role=role(a);a.prev=null;a.next=null;a.trackId=0;a.ownerTrack=null}
   if(i){const old=frames[i-1].items,now=curr.items,dt=(curr.frame-frames[i-1].frame)/60;
    const unmatched=184, costs=old.map(a=>[...now.map(b=>matchCost(a,b,dt)),...old.map(()=>unmatched)]);
    const matches=assign(costs);
@@ -235,8 +257,10 @@ function linkAll(){
    }
   }
   for(const a of curr.items)if(!a.trackId)a.trackId=++serial;
+  pairShadows(curr.items);
+  for(const a of curr.items){if(a.projection){projectionRecords++;if(a.ownerTrack)pairedProjections++}else if(a.code===21460&&a.ownerTrack)pairedLargeShadows++}
  }
- linkStats={pairs,changedSlots,tracks:serial,maxStep};linked=true;
+ linkStats={pairs,changedSlots,tracks:serial,maxStep,projectionRecords,pairedProjections,pairedLargeShadows};linked=true;
 }
 function curve(a,b,p,n,t){
  const d=b-a;let m0=p===null?d:(b-p)*.5,m1=n===null?d:(n-a)*.5;
@@ -261,6 +285,7 @@ function sync(time){
  if(!ready())return [];
  if(!linked)linkAll();
  if(time<timeLast-.1)reset();
+ for(const e of tracks.values())if(!e.active&&e.role!=='shadow')destroyedTracks.add(e.uid);
  timeLast=time;
  const f=snapshot(time);if(!f||f.expired){tracks.clear();return []}
  const result=[],seen=new Set(),t=clamp01(f.t),dt=(f.b.frame-f.a.frame)/60;
@@ -268,7 +293,7 @@ function sync(time){
   const id=item.trackId,kind=item.role,heavy=kind==='bomber',ground=kind==='ground',shadow=kind==='shadow';
   seen.add(id);
   let e=tracks.get(id);
-  if(!e){e={id,uid:id,kind:shadow?'romShadow':ground?'romGround':'romPlane',romFlight:true,active:true,
+  if(!e){e={id,uid:id,kind:shadow?'romShadow':ground?'romGround':'romPlane',romFlight:true,active:!destroyedTracks.has(id),
    score:shadow?0:heavy?1900:ground?650:400,hp:shadow?Infinity:heavy?21:ground?11:4,max:shadow?Infinity:heavy?21:ground?11:4,
    fire:shadow?Infinity:ground?2.4:1.1+((id*7)%11)*.11,age:0,t:0,drop:heavy?'gold':null};tracks.set(id,e)}
   // Preserve object identity, hit points and destruction across re-ordered slots.
@@ -299,6 +324,7 @@ function sync(time){
   const nose=noseVector(e.sprite),speed=Math.hypot(e.vx,e.vy);
   e.alignment=nose&&speed>=34?(nose.x*e.vx+nose.y*e.vy)/speed:null;
   e.pitch=hasPitchChange(e.originalSprite);
+  e.projection=item.projection;e.ownerId=e.originalSprite.ownerTrack??item.ownerTrack??null;e.ownerRef=null;
   const halfW=e.renderW/2,halfH=e.renderH/2;
   if(e.active&&fade>.025&&e.x>-halfW-24&&e.x<360+halfW+24&&e.y>-halfH-24&&e.y<640+halfH+24)result.push(e);
  }
@@ -311,19 +337,16 @@ function sync(time){
  if(f.a!==f.b)for(const b of f.b.items)if(!b.prev||b.prev.frame!==f.a.frame){
   if(t>=.5)record(b,null,clamp01((t-.5)*2),edgePosition(b,(1-t)*dt,true));
  }
- // The original matching terrain shadow follows its owning bomber's exact
- // flip mask, even if the two captured positions have minor rounding error.
- for(const shadow of result)if(shadow.role==='shadow'&&shadow.sprite.code===21460){
-  let owner=null,dist=36;
-  for(const e of tracks.values())if(e.role==='bomber'&&e.source?.code===21424){
-   const d=Math.hypot(e.x-shadow.x,e.y-shadow.y);
-   if(d<dist){dist=d;owner=e}
-  }
-  if(owner){
+ // Decorative projections retain captured ground position and scale.
+ for(const shadow of result)if(shadow.role==='shadow'){
+  const owner=shadow.ownerId!==null?tracks.get(shadow.ownerId):null;
+  if(owner&&seen.has(owner.uid)){
+   shadow.ownerRef=owner;
    shadow.sprite={...shadow.originalSprite,attr:shadow.originalSprite.attr^owner.facingMask};
    shadow.facingMask=owner.facingMask;
    if(!owner.active)shadow.alpha=0;
   }
+  if(shadow.ownerId!==null&&destroyedTracks.has(shadow.ownerId))shadow.alpha=0;
  }
  // Keep destroyed objects so they cannot return when their RAM slot changes.
  for(const id of tracks.keys())if(!seen.has(id))tracks.delete(id);
@@ -348,7 +371,8 @@ function sprite(item){
     const u=flipX?15-px:px,v=flipY?15-py:py;
     const pix=window.StrikersROM.rawPixel('sprite',code,u,v,true);
     if(pix===15)continue;
-    const rgb=colors[pix],ix=dy*16+py,iy=item.nx*16-1-(dx*16+px);
+    // The projection retains ROM transparency; palette 10 is not live aircraft paint.
+    const rgb=item.projection?0:colors[pix],ix=dy*16+py,iy=item.nx*16-1-(dx*16+px);
     const p=(iy*cx+ix)*4;
     o[p]=((rgb>>10)&31)*255/31|0;o[p+1]=((rgb>>5)&31)*255/31|0;
     o[p+2]=(rgb&31)*255/31|0;o[p+3]=255;
@@ -364,17 +388,18 @@ function sprite(item){
 function draw(ctx,e){
  if(!e.romFlight||!ready()||!e.sprite)return false;
  const sheet=sprite(e.sprite);if(!sheet)return false;
- const alpha=(e.alpha??1)*(e.visualAlpha??1);if(alpha<=.02)return true;
+ const alpha=(e.alpha??1)*(e.visualAlpha??1);if(alpha<=.02||e.ownerRef?.active===false)return true;
  ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha*=alpha;
  const rw=e.renderW??e.w,rh=e.renderH??e.h;
  ctx.drawImage(sheet,e.x-rw/2,e.y-rh/2,rw,rh);
  ctx.restore();return true;
 }
 const api=Object.freeze({ensure,ready,sync,draw,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'ROM silhouettes + palette',flightFacing:'per-LUT native heading, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:false}),
+ stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'palette-10 reduced projections and paired ROM silhouettes',flightFacing:'per-LUT native heading, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:false}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
- smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,rawId:e.rawId,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code,vx:e.vx,vy:e.vy,turn:e.visualTurn,attr:e.sprite.attr,originalAttr:e.originalSprite.attr,facingMask:e.facingMask,alignment:e.alignment,pitch:e.pitch})),
+ smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,rawId:e.rawId,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code,vx:e.vx,vy:e.vy,turn:e.visualTurn,attr:e.sprite.attr,originalAttr:e.originalSprite.attr,facingMask:e.facingMask,alignment:e.alignment,pitch:e.pitch,projection:e.projection,palette:e.palette,ownerId:e.ownerId,active:e.active})),
  links:()=>{if(!linked&&frames)linkAll();return {...linkStats}},
+ destroy:(uid)=>{const e=tracks.get(uid);if(e)e.active=false;return !!e},
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
  parsed:()=>!!frames
  }):undefined});
