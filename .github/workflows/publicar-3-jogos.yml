@@ -131,26 +131,13 @@ jobs:
           test -d assets
           echo "Todos os quatro jogos existem."
 
-      - name: Gerar MP3 a partir da ROM original
-        continue-on-error: true
+      - name: Validar ROM de áudio e entrada do Pinball Action
         shell: bash
         run: |
           set -euo pipefail
-          command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y ffmpeg; }
-          node Pinball-Action/tools/render-original-audio.cjs
-          test -s Pinball-Action/audio/cmd-02.mp3
-          test -s Pinball-Action/audio/cmd-22.mp3
-          test -s Pinball-Action/audio/manifest.json
-          test -s Pinball-Action/audio/bgm-10.mp3
-          test -s Pinball-Action/audio/bgm-17.mp3
-          node - <<'JS'
-          const fs=require('fs');
-          const m=JSON.parse(fs.readFileSync('Pinball-Action/audio/manifest.json','utf8'));
-          for(const command of [9,10,17,18,20,26,27,29]){
-            if(!m.music?.[command]||m.music[command].duration<40)throw Error('Música original curta: '+command);
-          }
-          console.log('Oito faixas originais continuas presentes e validadas.');
-          JS
+          node --check Pinball-Action/audio/rom-psg-worklet.js
+          test -s Pinball-Action/entrada-v829.html
+          test -s Pinball-Action/game-v829.html
 
       - name: Criar único site, com pastas independentes
         shell: bash
@@ -195,10 +182,9 @@ jobs:
           test -s public/Classic-Slot/index.html
           test -s public/Blackline-Pinball/index.html
           test -s public/Pinball-Action/index.html
-          test -s public/Pinball-Action/audio/cmd-02.mp3
-          test -s public/Pinball-Action/audio/cmd-22.mp3
-          test -s public/Pinball-Action/audio/bgm-10.mp3
-          test -s public/Pinball-Action/audio/bgm-17.mp3
+          test -s public/Pinball-Action/entrada-v829.html
+          test -s public/Pinball-Action/game-v829.html
+          test -s public/Pinball-Action/audio/rom-psg-worklet.js
           test -s public/pinball-action/index.html
           test -s public/Strikers-1945/index.html
           test -s public/Strikers-1945/stage1-captured.html
@@ -217,7 +203,7 @@ jobs:
           echo "Pantanal: /Pantanal/"
           echo "Classic Slot: /Classic-Slot/"
           echo "Blackline Pinball: /Blackline-Pinball/"
-          echo "Pinball Action V8.17: /Pinball-Action/"
+          echo "Pinball Action: /Pinball-Action/"
           echo "Strikers 1945 HTML5: /Strikers-1945/"
           echo "Blocos Neon V3: /Blocos-Neon/"
           echo "Sugar Rush original Phaser offline: /index2.html"
@@ -295,26 +281,18 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Confirmar Pinball V8.17 com melodia original de abertura
+      - name: Confirmar Pinball Action online (entrada, jogo e áudio original)
         shell: bash
         continue-on-error: true
         env:
           SITE_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
           set -euo pipefail
-          for i in {1..10}; do
-            if curl -fsSL --max-time 20 "${SITE_URL%/}/Pinball-Action/?sha=${GITHUB_SHA}" -o /tmp/pinball.html &&
-               grep -q 'Pinball Action V8.17' /tmp/pinball.html &&
-               curl -fsSL --max-time 20 "${SITE_URL%/}/Pinball-Action/audio/cmd-02.mp3" -o /tmp/rom-original.mp3 &&
-               curl -fsSL --max-time 20 "${SITE_URL%/}/Pinball-Action/audio/bgm-10.mp3" -o /tmp/rom-original-music.mp3 &&
-               test "$(wc -c < /tmp/rom-original-music.mp3)" -gt 200000 &&
-               test "$(wc -c < /tmp/rom-original.mp3)" -gt 1000; then
-              echo 'Pinball Action V8.17: HTML e MP3 originais disponíveis (HTTP 200)'
-              exit 0
-            fi
-            sleep 5
+          for file in index.html entrada-v829.html game-v829.html audio/rom-psg-worklet.js; do
+            curl -fsSL --retry 3 --retry-delay 2 --max-time 20 "${SITE_URL%/}/Pinball-Action/$file?sha=${GITHUB_SHA}" -o /tmp/pinball-check
+            test -s /tmp/pinball-check
+            echo "$file: HTTP 200"
           done
-          exit 1
 
       - name: Confirmar Blocos Neon V6 online (HTTP 200)
         continue-on-error: true
