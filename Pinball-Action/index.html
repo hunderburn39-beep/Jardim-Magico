@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#10091c">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Pinball Action V8.79 — Entrada</title>
+<title>Pinball Action V8.80 — Entrada</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080711;overscroll-behavior:none;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -47,37 +47,49 @@ h1 .bottom{display:block;color:#fef6e5;font-size:.78em;letter-spacing:.03em}
 #settings button{flex:1;font:inherit;font-weight:750;padding:12px 8px;background:#292438;color:#faf2dc;border:1px solid #a793b5;border-radius:8px;cursor:pointer}
 #settings #save-settings{background:#22603e;border-color:#8bcf9c}
 #dip-status{font-size:12px;color:#dcc6e9}
+/* Remastered cabinet marquee; original logo geometry remains intact. */
+#intro{background:radial-gradient(ellipse at 50% 27%,#20394f 0%,#121e35 36%,#070b16 72%);isolation:isolate}
+#intro:before{opacity:1;background:linear-gradient(145deg,transparent 20%,#91d8ff16 20.2%,#91d8ff09 33%,transparent 33.2%),repeating-linear-gradient(135deg,#ffffff04 0px,#ffffff04 1px,transparent 1px,transparent 8px);z-index:-1}
+#intro:after{content:"";position:absolute;inset:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));border:1px solid #94b6d24a;border-radius:22px;pointer-events:none;z-index:-1;box-shadow:inset 0 0 28px #000a,0 0 0 4px #0005}
+.original-logo{filter:drop-shadow(0 7px 0 #050916) drop-shadow(0 0 20px #6486d85c) drop-shadow(0 14px 20px #000a)}
+.kicker{color:#c2d9ed;letter-spacing:.24em}
+.rule{height:2px;width:min(90%,310px);background:linear-gradient(90deg,transparent,#57788b,#f0fbff,#57788b,transparent)}
+#enter{border:2px solid #c4e3e9;background:linear-gradient(170deg,#67c3a6,#176b5a 39%,#10443e 75%,#207868);box-shadow:inset 0 2px 1px #ffffff6b,0 5px 0 #071b22,0 12px 26px #000a;color:#effffa;text-shadow:0 1px 3px #001a16}
+#enter:active{box-shadow:inset 0 2px 9px #0007,0 2px #071b22}
+#settings-button{background:linear-gradient(#314253,#161f2b);border-color:#71899e;color:#e7f2fa}
 </style>
 </head>
 <body>
 <!-- The actual game exists in a DIFFERENT document. It cannot appear before ENTRAR. -->
-<iframe id="arcade" src="./game-v879.html" title="Pinball Action — máquina original" allow="autoplay" aria-hidden="true"></iframe>
+<iframe id="arcade" src="./game-v880.html" title="Pinball Action — máquina original" allow="autoplay" aria-hidden="true"></iframe>
 <section id="intro" aria-label="Entrada no Pinball Action">
  <div class="panel">
   <div class="kicker">ARCADE ORIGINAL · 1985</div>
   <h1 class="original-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 835 545" role="img" aria-label="Pinball Action">
-<g stroke="#171117" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" fill-rule="evenodd">
-<path fill="#ff7aa5" d="M65 26 L198 26 C254 26 306 57 306 101 C306 159 237 190 124 209 L96 309 L25 309 Z M159 97 L190 97 C216 97 229 106 229 127 C229 151 191 176 132 183 Z"/>
-<path fill="#ff9a4c" d="M222 169 H289 L243 306 H191 Z"/>
-<path fill="#ffb700" d="M293 169 H357 L367 251 L381 169 H433 L385 306 H348 L338 205 L302 306 H267 Z"/>
-<path fill="#ffff00" d="M437 169 H478 C515 169 532 182 532 203 C532 217 524 229 509 236 C526 242 526 259 518 276 C510 297 490 306 469 306 H407 Z M481 207 L472 232 C486 232 498 222 497 214 C496 208 490 206 481 207 Z M461 252 L453 283 C473 283 490 273 496 262 C500 253 487 249 461 252 Z"/>
-<path fill="#ffab01" d="M567 169 H637 V328 L562 273 L496 344 Z M623 192 L568 261 L617 274 Z"/>
-<path fill="#00ac00" d="M667 169 H721 L693 273 L723 267 L711 306 H641 Z"/>
-<path fill="#95e651" d="M753 169 H810 L772 269 L816 264 L806 306 H730 Z"/>
-<path fill="#ff7aa5" d="M120 254 H216 V492 L104 426 L26 518 Z M193 310 L111 414 L175 428 Z"/>
-<path fill="#ff00dc" d="M335 367 C321 344 292 346 275 354 C235 371 210 413 221 453 C231 489 285 511 329 471 L309 421 C293 442 277 456 272 451 C263 442 278 404 299 386 L310 415 Z"/>
-<path fill="#ff00fe" d="M349 351 H466 L447 403 L425 380 L392 489 H342 L380 390 L333 412 Z"/>
-<path fill="#b000ff" d="M469 348 H537 L488 489 H447 Z"/>
-<path fill="#0094fe" d="M593 347 C637 343 660 375 654 418 C645 467 610 500 566 497 C523 495 506 465 512 426 C519 380 555 348 593 347 Z M589 385 C575 376 560 398 559 420 C556 437 562 453 575 449 C590 444 603 423 604 406 C604 396 600 389 589 385 Z"/>
-<path fill="#00aae8" d="M665 349 H732 L741 432 L755 349 H811 L773 488 H737 L719 391 L683 488 H641 Z"/>
-</g></svg></h1>
+<defs><linearGradient id="logo-face-0" x1="0" y1="0" x2=".22" y2="1"><stop offset="0" stop-color="#ffdce8"/><stop offset=".19" stop-color="#ff9ebd"/><stop offset=".47" stop-color="#ff7aa5"/><stop offset=".66" stop-color="#c75f81"/><stop offset=".78" stop-color="#ff8bb1"/><stop offset="1" stop-color="#91465e"/></linearGradient><path id="logo-letter-0" d="M65 26 L198 26 C254 26 306 57 306 101 C306 159 237 190 124 209 L96 309 L25 309 Z M159 97 L190 97 C216 97 229 106 229 127 C229 151 191 176 132 183 Z"/>
+<linearGradient id="logo-face-1" x1="0" y1="0" x2=".22" y2="1"><stop offset="0" stop-color="#ffe5d0"/><stop offset=".19" stop-color="#ffb57c"/><stop offset=".47" stop-color="#ff9a4c"/><stop offset=".66" stop-color="#c7783b"/><stop offset=".78" stop-color="#ffa763"/><stop offset="1" stop-color="#91582b"/></linearGradient><path id="logo-letter-1" d="M222 169 H289 L243 306 H191 Z"/>
+<linearGradient id="logo-face-2" x1="0" y1="0" x2=".22" y2="1"><stop offset="0" stop-color="#ffecbd"/><stop offset=".19" stop-color="#ffca45"/><stop offset=".47" stop-color="#ffb700"/><stop offset=".66" stop-color="#c78f00"/><stop offset=".78" stop-color="#ffc021"/><stop offset="1" stop-color="#916800"/></linearGradient><path id="logo-letter-2" d="M293 169 H357 L367 251 L381 169 H433 L385 306 H348 L338 205 L302 306 H267 Z"/>
+<linearGradient id="logo-face-3" x1="0" y1="0" x2=".22" y2="1"><stop offset="0" stop-color="#ffffbd"/><stop offset=".19" stop-color="#ffff45"/><stop offset=".47" stop-color="#ffff00"/><stop offset=".66" stop-color="#c7c700"/><stop offset=".78" stop-color="#ffff21"/><stop offset="1" stop-color="#919100"/></linearGradient><path id="logo-letter-3" d="M437 169 H478 C515 169 532 182 532 203 C532 217 524 229 509 236 C526 242 526 259 518 276 C510 297 490 306 469 306 H407 Z M481 207 L472 232 C486 232 498 222 497 214 C496 208 490 206 481 207 Z M461 252 L453 283 C473 283 490 273 496 262 C500 253 487 249 461 252 Z"/>
+<linearGradient id="logo-face-4" x1="0" y1="0" x2=".22" y2="1"><stop offset="0" stop-color="#ffe9bd"/><stop offset=".19" stop-color="#ffc246"/><stop offset=".47" stop-color="#ffab01"/><stop offset=".66" stop-color="#c78501"/><stop offset=".78" stop-color="#ffb622"/><stop offset="1" stop-color="#916101"/></linearGradient><path id="logo-letter-4" d="M567 169 H637 V328 L562 273 L496 344 Z M623 192 L568 261 L617 274 Z"/>
+<linearGradient id="logo-face-5" x1="0" y1="0" x2=".22" y2="1"><stop offset="0" stop-color="#bde9bd"/><stop offset=".19" stop-color="#45c245"/><stop offset=".47" stop-color="#00ac00"/><stop offset=".66" stop-color="#008600"/><stop offset=".78" stop-color="#21b721"/><stop offset="1" stop-color="#006200"/></linearGradient><path id="logo-letter-5" d="M667 169 H721 L693 273 L723 267 L711 306 H641 Z"/>
+<linearGradient id="logo-face-6" x1="0" y1="0" x2=".22" y2="1"><stop offset="0" stop-color="#e3f9d2"/><stop offset=".19" stop-color="#b2ed80"/><stop offset=".47" stop-color="#95e651"/><stop offset=".66" stop-color="#74b33f"/><stop offset=".78" stop-color="#a3e968"/><stop offset="1" stop-color="#55832e"/></linearGradient><path id="logo-letter-6" d="M753 169 H810 L772 269 L816 264 L806 306 H730 Z"/>
+<linearGradient id="logo-face-7" x1="0" y1="0" x2=".22" y2="1"><stop offset="0" stop-color="#ffdce8"/><stop offset=".19" stop-color="#ff9ebd"/><stop offset=".47" stop-color="#ff7aa5"/><stop offset=".66" stop-color="#c75f81"/><stop offset=".78" stop-color="#ff8bb1"/><stop offset="1" stop-color="#91465e"/></linearGradient><path id="logo-letter-7" d="M120 254 H216 V492 L104 426 L26 518 Z M193 310 L111 414 L175 428 Z"/>
+<linearGradient id="logo-face-8" x1="0" y1="0" x2=".22" y2="1"><stop offset="0" stop-color="#ffbdf6"/><stop offset=".19" stop-color="#ff45e5"/><stop offset=".47" stop-color="#ff00dc"/><stop offset=".66" stop-color="#c700ac"/><stop offset=".78" stop-color="#ff21e1"/><stop offset="1" stop-color="#91007d"/></linearGradient><path id="logo-letter-8" d="M335 367 C321 344 292 346 275 354 C235 371 210 413 221 453 C231 489 285 511 329 471 L309 421 C293 442 277 456 272 451 C263 442 278 404 299 386 L310 415 Z"/>
+<linearGradient id="logo-face-9" x1="0" y1="0" x2=".22" y2="1"><stop offset="0" stop-color="#ffbdff"/><stop offset=".19" stop-color="#ff45fe"/><stop offset=".47" stop-color="#ff00fe"/><stop offset=".66" stop-color="#c700c6"/><stop offset=".78" stop-color="#ff21fe"/><stop offset="1" stop-color="#910091"/></linearGradient><path id="logo-letter-9" d="M349 351 H466 L447 403 L425 380 L392 489 H342 L380 390 L333 412 Z"/>
+<linearGradient id="logo-face-10" x1="0" y1="0" x2=".22" y2="1"><stop offset="0" stop-color="#eabdff"/><stop offset=".19" stop-color="#c545ff"/><stop offset=".47" stop-color="#b000ff"/><stop offset=".66" stop-color="#8900c7"/><stop offset=".78" stop-color="#ba21ff"/><stop offset="1" stop-color="#640091"/></linearGradient><path id="logo-letter-10" d="M469 348 H537 L488 489 H447 Z"/>
+<linearGradient id="logo-face-11" x1="0" y1="0" x2=".22" y2="1"><stop offset="0" stop-color="#bde3ff"/><stop offset=".19" stop-color="#45b1fe"/><stop offset=".47" stop-color="#0094fe"/><stop offset=".66" stop-color="#0073c6"/><stop offset=".78" stop-color="#21a2fe"/><stop offset="1" stop-color="#005491"/></linearGradient><path id="logo-letter-11" d="M593 347 C637 343 660 375 654 418 C645 467 610 500 566 497 C523 495 506 465 512 426 C519 380 555 348 593 347 Z M589 385 C575 376 560 398 559 420 C556 437 562 453 575 449 C590 444 603 423 604 406 C604 396 600 389 589 385 Z"/>
+<linearGradient id="logo-face-12" x1="0" y1="0" x2=".22" y2="1"><stop offset="0" stop-color="#bde9f9"/><stop offset=".19" stop-color="#45c1ee"/><stop offset=".47" stop-color="#00aae8"/><stop offset=".66" stop-color="#0085b5"/><stop offset=".78" stop-color="#21b5eb"/><stop offset="1" stop-color="#006184"/></linearGradient><path id="logo-letter-12" d="M665 349 H732 L741 432 L755 349 H811 L773 488 H737 L719 391 L683 488 H641 Z"/></defs>
+<g transform="translate(0 13)" stroke="#0a0c15" stroke-width="11" stroke-linejoin="round" stroke-linecap="round" fill-rule="evenodd"><use href="#logo-letter-0" fill="#111827"/><use href="#logo-letter-1" fill="#111827"/><use href="#logo-letter-2" fill="#111827"/><use href="#logo-letter-3" fill="#111827"/><use href="#logo-letter-4" fill="#111827"/><use href="#logo-letter-5" fill="#111827"/><use href="#logo-letter-6" fill="#111827"/><use href="#logo-letter-7" fill="#111827"/><use href="#logo-letter-8" fill="#111827"/><use href="#logo-letter-9" fill="#111827"/><use href="#logo-letter-10" fill="#111827"/><use href="#logo-letter-11" fill="#111827"/><use href="#logo-letter-12" fill="#111827"/></g>
+<g transform="translate(0 7)" stroke="#171725" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" fill-rule="evenodd"><use href="#logo-letter-0" fill="#703649"/><use href="#logo-letter-1" fill="#704421"/><use href="#logo-letter-2" fill="#705100"/><use href="#logo-letter-3" fill="#707000"/><use href="#logo-letter-4" fill="#704b00"/><use href="#logo-letter-5" fill="#004c00"/><use href="#logo-letter-6" fill="#426524"/><use href="#logo-letter-7" fill="#703649"/><use href="#logo-letter-8" fill="#700061"/><use href="#logo-letter-9" fill="#700070"/><use href="#logo-letter-10" fill="#4d0070"/><use href="#logo-letter-11" fill="#004170"/><use href="#logo-letter-12" fill="#004b66"/></g>
+<g transform="translate(0 0)" stroke="#22222e" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" fill-rule="evenodd"><use href="#logo-letter-0" fill="url(#logo-face-0)"/><use href="#logo-letter-1" fill="url(#logo-face-1)"/><use href="#logo-letter-2" fill="url(#logo-face-2)"/><use href="#logo-letter-3" fill="url(#logo-face-3)"/><use href="#logo-letter-4" fill="url(#logo-face-4)"/><use href="#logo-letter-5" fill="url(#logo-face-5)"/><use href="#logo-letter-6" fill="url(#logo-face-6)"/><use href="#logo-letter-7" fill="url(#logo-face-7)"/><use href="#logo-letter-8" fill="url(#logo-face-8)"/><use href="#logo-letter-9" fill="url(#logo-face-9)"/><use href="#logo-letter-10" fill="url(#logo-face-10)"/><use href="#logo-letter-11" fill="url(#logo-face-11)"/><use href="#logo-letter-12" fill="url(#logo-face-12)"/></g>
+<g transform="translate(0 -0.75)" stroke="rgba(255,255,255,.56)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" fill-rule="evenodd"><use href="#logo-letter-0" fill="none"/><use href="#logo-letter-1" fill="none"/><use href="#logo-letter-2" fill="none"/><use href="#logo-letter-3" fill="none"/><use href="#logo-letter-4" fill="none"/><use href="#logo-letter-5" fill="none"/><use href="#logo-letter-6" fill="none"/><use href="#logo-letter-7" fill="none"/><use href="#logo-letter-8" fill="none"/><use href="#logo-letter-9" fill="none"/><use href="#logo-letter-10" fill="none"/><use href="#logo-letter-11" fill="none"/><use href="#logo-letter-12" fill="none"/></g></svg></h1>
   <div class="rule"></div>
   <p class="subtitle">HD REMASTER · SOM ORIGINAL</p>
   <button id="enter" type="button" disabled>A CARREGAR…</button>
   <p id="message" role="status" aria-live="polite">A preparar a máquina original</p>
   <button id="silent" type="button" hidden>Entrar sem som</button>
  </div>
- <div class="version">V8.79</div>
+ <div class="version">V8.80</div>
 
  <button id="settings-button" type="button" disabled>CONFIGURAÇÃO</button>
 </section>
