@@ -383,8 +383,10 @@ const arcadeAudio=(()=>{
  // Called ONLY for real original-ROM music commands. Effects cannot stop it.
  function startBackground(cmd=backgroundCommand){
   if(!musicCommands.has(cmd))return;
-  if(cmd!==backgroundCommand){backgroundCommand=cmd;stopBackground();}
-  stopIntro(); // The table soundtrack replaces the title jingle.
+  if(cmd!==backgroundCommand){
+   backgroundCommand=cmd;stopBackground();
+   stopIntro(); // Only a real ROM music change ends the title jingle.
+  }
   if(!enabled||document.hidden||!context||!backgroundGain)return;
   if(backgroundSource&&backgroundPlayingCmd===cmd)return;
   if(!musicDecoded.has(cmd)){
