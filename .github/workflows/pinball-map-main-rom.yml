@@ -1,0 +1,38 @@
+name: Pinball Action - rastrear comandos reais da ROM principal
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/pinball-map-main-rom.yml'
+permissions:
+  contents: read
+jobs:
+  rom-trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rastrear audio emitido pela CPU principal original
+        shell: bash
+        run: |
+          node - <<'JS'
+          const fs=require('fs'),vm=require('vm');
+          const html=fs.readFileSync('Pinball-Action/index.html','utf8');
+          const rom=JSON.parse(html.match(/window\\.PB_ROM=(\\{.*?\\});\\s*<\\/script>/s)[1]);
+          const st=html.indexOf('const FS = 0x80'),ed=html.indexOf('</script>',st);
+          const sandbox={Uint8Array,Array,console};
+          vm.runInNewContext(html.slice(st,ed),sandbox,{timeout:5000});
+          const mem=Uint8Array.from(atob(rom.snapshot),c=>c.charCodeAt(0));
+          const state=JSON.parse(rom.state);
+          let frame=0,lastScroll=0;
+          const cmds=[],cpu=new sandbox.PBZ80(mem,state,{sound:(cmd)=>{cmds.push([frame,cmd,cpu.pc.toString(16),cpu.scroll]);if(cmds.length<=120)console.log('SOUND',frame,'cmd',cmd,'pc',cpu.pc.toString(16),'scroll',cpu.scroll)}});
+          for(frame=0;frame<520;frame++){
+            cpu.io.system=frame>=3&&frame<18?1:frame>=25&&frame<48?4:0;
+            cpu.io.p1=frame>=65&&frame<90?1:0;
+            for(let i=0;i<6500;i++){if(cpu.halt)break;cpu.step();}
+            cpu.nmi();
+            if(frame%30===0 || cpu.scroll!==lastScroll)console.log('FRAME',frame,'scroll',cpu.scroll,'credits',mem[0xc013],'pc',cpu.pc.toString(16),'c0d',mem[0xc00d],'c1b',mem[0xc01b]);
+            lastScroll=cpu.scroll;
+          }
+          console.log('TOTAL',cmds.length,'COUNTS',JSON.stringify(cmds.reduce((o,x)=>(o[x[1]]=(o[x[1]]||0)+1,o),{})));
+          JS
