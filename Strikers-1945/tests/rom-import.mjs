@@ -68,7 +68,7 @@ const flightOrientation=await page.evaluate(()=>{
  for(let t=0;t<61;t+=.18)for(const e of replay.test.smooth(t))
   observed.push(e);
  replay.reset();
- return {b35:observed.filter(e=>[21691,21715].includes(e.code)),
+ return {b35:observed.filter(e=>[21691,21715].includes(e.code)&&!e.projection),
   wrong:observed.filter(e=>!e.pitch&&e.role!=='ground'&&e.role!=='shadow'&&e.alignment!==null&&e.alignment<-.281).length,
   corrected:observed.filter(e=>e.facingMask).length,pitch:observed.filter(e=>e.pitch).length};
 });
