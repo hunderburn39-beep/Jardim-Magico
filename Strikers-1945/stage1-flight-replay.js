@@ -62,7 +62,7 @@ async function prepare(){
   result.push({frame,items});
  }
  if(offset!==bytes.length)throw Error('Captura com dados adicionais não reconhecidos');
- frames=result;palettes=banks;tracks.clear();cache.clear();shadowCache.clear();timeLast=-1;
+ frames=result;palettes=banks;tracks.clear();cache.clear();shadowCache.clear();timeLast=-1;linked=false;
  dispatchEvent(new Event('strikers-flight-ready'));return true;
 }
 function ready(){return !!frames&&!!window.StrikersROM?.isLoaded()}
@@ -126,118 +126,124 @@ function role(e){
  if(e.nx>=3||e.ny>=3)return 'ground';
  return 'fighter';
 }
-function related(a,b){
- if(!a||!b||role(a)!==role(b))return false;
- if(Math.abs(a.w-b.w)>85||Math.abs(a.h-b.h)>85)return false;
- if(Math.abs(a.code-b.code)>700)return false;
- // One RAM slot can be recycled for another aircraft with similar graphics.
- // A palette-bank change means a new tracked object, not a banked turn.
- if(a.palette!==b.palette)return false;
- if(Math.hypot(a.x-b.x,a.y-b.y)>220)return false;
- return true;
-}
-const MAX_KEYFRAME_JUMP=245;
+// Match full consecutive sprite lists, not their transient display-list slots.
+let linked=false,linkStats={pairs:0,changedSlots:0,tracks:0,maxStep:0};
 function clamp01(t){return Math.max(0,Math.min(1,t))}
-function hermite(a,b,prev,next,t){
- const d=b-a;
- // Estimate tangent from adjacent real captures. Linear fallback when missing.
- let m0=prev===null?d:(b-prev)*.5;
- let m1=next===null?d:(next-a)*.5;
- const limit=Math.max(30,Math.abs(d)*1.6);
+function family(e){return e.code<20000?0:1}
+function nearField(e){return e.x+e.w/2>=-100&&e.x-e.w/2<=460&&e.y+e.h/2>=-100&&e.y-e.h/2<=740}
+function matchCost(a,b,dt){
+ if(a.palette!==b.palette||a.role!==b.role||family(a)!==family(b))return 1e6;
+ const cd=Math.abs(a.code-b.code),ds=Math.abs(a.w-b.w)+Math.abs(a.h-b.h);
+ if(cd>700||ds>125)return 1e6;
+ const dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy);
+ if(dist>Math.min(255,500*dt+24))return 1e6;
+ if(!nearField(a)&&!nearField(b)&&dist>95)return 1e6;
+ const p=a.prev,dt0=p?Math.max(1/60,(a.frame-p.frame)/60):dt;
+ const vx=p?(a.x-p.x)/dt0:0,vy=p?(a.y-p.y)/dt0:0;
+ // Velocity prediction is a tie-breaker, not an obligation to fly straight:
+ // the captured positions can support reversals and banked turns.
+ const pred=p?Math.hypot(dx-vx*dt,dy-vy*dt):dist;
+ let cost=p?.52*dist+.48*Math.min(pred,dist+115):dist;
+ cost+=Math.min(46,cd*.09)+ds*.22;
+ if(a.id===b.id)cost-=3;
+ return Math.max(0,cost);
+}
+// Rectangular minimum-cost assignment; dummy columns allow each old sprite
+// to leave rather than falsely linking to a distant new aircraft.
+function assign(cost){
+ const n=cost.length,m=cost[0]?.length||0;if(!n)return [];
+ const u=Array(n+1).fill(0),v=Array(m+1).fill(0),p=Array(m+1).fill(0),way=Array(m+1).fill(0);
+ for(let i=1;i<=n;i++){
+  p[0]=i;let j0=0;const minv=Array(m+1).fill(Infinity),used=Array(m+1).fill(false);
+  do{used[j0]=true;const i0=p[j0];let delta=Infinity,j1=0;
+   for(let j=1;j<=m;j++)if(!used[j]){
+    const c=cost[i0-1][j-1]-u[i0]-v[j];
+    if(c<minv[j]){minv[j]=c;way[j]=j0}
+    if(minv[j]<delta){delta=minv[j];j1=j}
+   }
+   for(let j=0;j<=m;j++)if(used[j]){u[p[j]]+=delta;v[j]-=delta}else minv[j]-=delta;
+   j0=j1;
+  }while(p[j0]!==0);
+  do{const j1=way[j0];p[j0]=p[j1];j0=j1}while(j0);
+ }
+ const result=Array(n).fill(-1);for(let j=1;j<=m;j++)if(p[j])result[p[j]-1]=j-1;return result;
+}
+function linkAll(){
+ if(linked)return;
+ let serial=0,pairs=0,changedSlots=0,maxStep=0;
+ for(let i=0;i<frames.length;i++){
+  const curr=frames[i];for(const a of curr.items){a.frame=curr.frame;a.role=role(a);a.prev=null;a.next=null;a.trackId=0}
+  if(i){const old=frames[i-1].items,now=curr.items,dt=(curr.frame-frames[i-1].frame)/60;
+   const unmatched=184, costs=old.map(a=>[...now.map(b=>matchCost(a,b,dt)),...old.map(()=>unmatched)]);
+   const matches=assign(costs);
+   for(let k=0;k<old.length;k++){const j=matches[k];if(j<0||j>=now.length||costs[k][j]>=unmatched)continue;
+    const a=old[k],b=now[j];a.next=b;b.prev=a;b.trackId=a.trackId;pairs++;
+    if(a.id!==b.id)changedSlots++;
+    maxStep=Math.max(maxStep,Math.hypot(a.x-b.x,a.y-b.y));
+   }
+  }
+  for(const a of curr.items)if(!a.trackId)a.trackId=++serial;
+ }
+ linkStats={pairs,changedSlots,tracks:serial,maxStep};linked=true;
+}
+function curve(a,b,p,n,t){
+ const d=b-a;let m0=p===null?d:(b-p)*.5,m1=n===null?d:(n-a)*.5;
+ const limit=Math.max(24,Math.abs(d)*1.5);
  m0=Math.max(-limit,Math.min(limit,m0));m1=Math.max(-limit,Math.min(limit,m1));
  const t2=t*t,t3=t2*t;
  return (2*t3-3*t2+1)*a+(t3-2*t2+t)*m0+(-2*t3+3*t2)*b+(t3-t2)*m1;
 }
-function frameAt(i){return frames[Math.max(0,Math.min(frames.length-1,i))]}
+function position(a,b,t){
+ const p=a.prev,n=b.next,allowance=Math.min(18,Math.max(4,Math.hypot(b.x-a.x,b.y-a.y)*.12));
+ return {x:Math.max(Math.min(a.x,b.x)-allowance,Math.min(Math.max(a.x,b.x)+allowance,curve(a.x,b.x,p?.x??null,n?.x??null,t))),
+ y:Math.max(Math.min(a.y,b.y)-allowance,Math.min(Math.max(a.y,b.y)+allowance,curve(a.y,b.y,p?.y??null,n?.y??null,t)))};
+}
+function edgePosition(a,elapsed,incoming){
+ const b=incoming?a.next:a.prev;
+ if(!b)return {x:a.x,y:a.y};
+ const dt=Math.max(1/60,Math.abs(b.frame-a.frame)/60),d=Math.min(.14,Math.max(0,elapsed))/dt;
+ // Keep entering/exiting objects moving, but never extrapolate a whole pass.
+ return {x:a.x+(a.x-b.x)*d,y:a.y+(a.y-b.y)*d};
+}
 function sync(time){
  if(!ready())return [];
+ if(!linked)linkAll();
  if(time<timeLast-.1)reset();
  timeLast=time;
- const f=snapshot(time);if(!f||f.expired)return [];
- const ai=frames.indexOf(f.a),prev=frameAt(ai-1),next=frameAt(ai+2);
- const before=new Map(prev.items.map(it=>[it.id,it]));
- const future=new Map(f.b.items.map(it=>[it.id,it]));
- const after=new Map(next.items.map(it=>[it.id,it]));
- const current=new Map(f.a.items.map(it=>[it.id,it]));
- const result=[],seen=new Set(),t=clamp01(f.t);
- function record(item,other,fade=1,incoming=false){
-  if(fade<=.025)return;
-  const id=item.id,entryKey=incoming?'incoming:'+id:id;
-  if(!incoming&&tracks.has('incoming:'+id)){
-   const pending=tracks.get('incoming:'+id);
-   if(related(pending.source,item)){tracks.set(id,pending);tracks.delete('incoming:'+id)}
-  }
-  let e=tracks.get(entryKey);
-  const continuous=related(item,other);
-  let x=item.x,y=item.y;
-  if(continuous){
-   const beforeItem=before.get(id),afterItem=after.get(id);
-   const p=related(beforeItem,item)?beforeItem:null;
-   const n=related(other,afterItem)?afterItem:null;
-   x=hermite(item.x,other.x,p?.x??null,n?.x??null,t);
-   y=hermite(item.y,other.y,p?.y??null,n?.y??null,t);
-   // Preserve bounded arc curvature between actual keyframes. Clamping to
-   // the endpoints flattened recorded hairpins and loop-shaped manoeuvres.
-   // No new manoeuvres are inserted: the points still come from RAM captures.
-   const minX=Math.min(item.x,other.x),maxX=Math.max(item.x,other.x);
-   const minY=Math.min(item.y,other.y),maxY=Math.max(item.y,other.y);
-   const allowance=Math.min(20,Math.max(4,Math.hypot(other.x-item.x,other.y-item.y)*.15));
-   x=Math.max(minX-allowance,Math.min(maxX+allowance,x));
-   y=Math.max(minY-allowance,Math.min(maxY+allowance,y));
-  }
-  const prevItem=e?.source;
-  const reused=!!e&&(
-   !related(prevItem,item)&&Math.hypot((prevItem?.x??x)-item.x,(prevItem?.y??y)-item.y)>90||
-   e.role!==role(item)||
-   Math.hypot(e.x-x,e.y-y)>MAX_KEYFRAME_JUMP||
-   (Math.abs(e.lastCode-item.code)>2200));
-  if(!e||reused){
-   const kind=role(item),heavy=kind==='bomber',ground=kind==='ground',shadow=kind==='shadow';
-   e={kind:shadow?'romShadow':ground?'romGround':'romPlane',romFlight:true,uid:++nextSerial,active:true,
-    score:shadow?0:heavy?1900:ground?650:400,hp:shadow?Infinity:heavy?21:ground?11:4,
-    max:shadow?Infinity:heavy?21:ground?11:4,fire:shadow?Infinity:ground?2.4:1.1+((id*7)%11)*.11,age:0,t:0,
-    drop:heavy?'gold':null,x,y};
-   tracks.set(entryKey,e);
-  }
-  e.id=id;e.w=item.w;e.h=item.h;e.x=x;e.y=y;
-   // Keep the genuine ROM frames but normalize oversized bomber silhouettes for a narrow phone.
-   e.visualScale=role(item)==='bomber'?Math.min(1,166/Math.max(item.w,item.h)):1;
-   e.renderW=e.w*e.visualScale;e.renderH=e.h*e.visualScale;
-  e.source=item;e.sprite=item;e.lastCode=item.code;e.palette=item.palette;
-  e.heavy=role(item)==='bomber';e.role=role(item);e.alpha=fade;
-  if(continuous){
-   e.vx=(other.x-item.x)/Math.max(.016,(f.b.frame-f.a.frame)/60);
-   e.vy=(other.y-item.y)/Math.max(.016,(f.b.frame-f.a.frame)/60);
-   // The two real sprite codes represent the changing silhouette in a turn.
-   // Dissolve briefly between them instead of spinning a flat image.
-   const mix=clamp01((t-.43)/.14);
-   if(item.code!==other.code||item.attr!==other.attr){
-    e.sprite= mix>.5?other:item;
-    e.spriteFrom=item;e.spriteTo=other;e.spriteMix=mix;
-   }else{e.spriteMix=0;e.spriteFrom=null;e.spriteTo=null}
-  }else{e.vx=0;e.vy=0;e.spriteMix=0;e.spriteFrom=null;e.spriteTo=null}
-  const halfW=(e.renderW??e.w)*.5,halfH=(e.renderH??e.h)*.5;
-  if(e.active&&x>-halfW-24&&x<360+halfW+24&&y>-halfH-24&&y<640+halfH+24)result.push(e);
-  seen.add(entryKey);
+ const f=snapshot(time);if(!f||f.expired){tracks.clear();return []}
+ const result=[],seen=new Set(),t=clamp01(f.t),dt=(f.b.frame-f.a.frame)/60;
+ function record(item,other,fade,pos){
+  const id=item.trackId,kind=item.role,heavy=kind==='bomber',ground=kind==='ground',shadow=kind==='shadow';
+  seen.add(id);
+  let e=tracks.get(id);
+  if(!e){e={id,uid:id,kind:shadow?'romShadow':ground?'romGround':'romPlane',romFlight:true,active:true,
+   score:shadow?0:heavy?1900:ground?650:400,hp:shadow?Infinity:heavy?21:ground?11:4,max:shadow?Infinity:heavy?21:ground?11:4,
+   fire:shadow?Infinity:ground?2.4:1.1+((id*7)%11)*.11,age:0,t:0,drop:heavy?'gold':null};tracks.set(id,e)}
+  // Preserve object identity, hit points and destruction across re-ordered slots.
+  e.rawId=item.id;e.x=pos.x;e.y=pos.y;e.w=other?item.w+(other.w-item.w)*t:item.w;e.h=other?item.h+(other.h-item.h)*t:item.h;
+  e.visualScale=heavy?Math.min(1,166/Math.max(e.w,e.h)):1;
+  e.renderW=e.w*e.visualScale;e.renderH=e.h*e.visualScale;e.source=item;e.sprite=item;e.lastCode=item.code;e.palette=item.palette;
+  e.heavy=heavy;e.role=kind;e.alpha=fade;e.spriteMix=0;e.spriteFrom=null;e.spriteTo=null;
+  if(other&&dt>0){
+   e.vx=(other.x-item.x)/dt;e.vy=(other.y-item.y)/dt;
+   if(item.code!==other.code||item.attr!==other.attr||item.phase!==other.phase){
+    const mix=clamp01((t-.45)/.10);
+    e.sprite=mix>.5?other:item;e.spriteFrom=item;e.spriteTo=other;e.spriteMix=mix;
+   }
+  }else{e.vx=0;e.vy=0}
+  const halfW=e.renderW/2,halfH=e.renderH/2;
+  if(e.active&&fade>.025&&e.x>-halfW-24&&e.x<360+halfW+24&&e.y>-halfH-24&&e.y<640+halfH+24)result.push(e);
  }
- for(const item of f.a.items){
-  const other=future.get(item.id);
-  const same=related(item,other);
-  // Fade out at a recorded exit/replacement; prevents snapping to another plane.
-  // Fade out the departing slot in the middle of a capture interval.
-  // Do not show a replacement sprite as if it were the same airplane.
-  const alpha=same?1:clamp01((.54-t)/.28);
-  record(item,same?other:null,alpha);
+ for(const a of f.a.items){
+  if(f.a===f.b){record(a,null,1,{x:a.x,y:a.y});continue}
+  const b=a.next;
+  if(b&&b.frame===f.b.frame)record(a,b,1,position(a,b,t));
+  else record(a,null,clamp01(1-t*2),edgePosition(a,t*dt,false));
  }
- // Introduce aircraft newly present in the next capture without a harsh pop.
- for(const item of f.b.items){
-  const previous=current.get(item.id);
-  if(previous&&related(previous,item))continue;
-  if(t<.55)continue;
-  // Re-used slot: a distinct incoming aircraft must have a distinct identity.
-  // At the next captured frame its track is promoted to the regular slot ID.
-  record(item,null,clamp01((t-.55)/.45),!!previous);
+ if(f.a!==f.b)for(const b of f.b.items)if(!b.prev||b.prev.frame!==f.a.frame){
+  if(t>=.5)record(b,null,clamp01((t-.5)*2),edgePosition(b,(1-t)*dt,true));
  }
+ // Keep destroyed objects so they cannot return when their RAM slot changes.
  for(const id of tracks.keys())if(!seen.has(id))tracks.delete(id);
  return result;
 }
@@ -292,13 +298,14 @@ function draw(ctx,e){
  ctx.restore();return true;
 }
 const api=Object.freeze({ensure,ready,sync,draw,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,terrainShadowDetection:'ROM silhouettes + palette',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'monotone-hermite',spriteBlend:true}),
+ stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'ROM silhouettes + palette',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:true}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
- smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code})),
+ smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,rawId:e.rawId,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code})),
+ links:()=>{if(!linked&&frames)linkAll();return {...linkStats}},
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
  parsed:()=>!!frames
  }):undefined});
 window.StrikersFlightReplay=api;
-window.addEventListener('strikers-rom-ready',()=>{cache.clear();shadowCache.clear();reset();api.ensure()});
+window.addEventListener('strikers-rom-ready',()=>{cache.clear();shadowCache.clear();linked=false;reset();api.ensure()});
 if(window.StrikersROM?.isLoaded())api.ensure();
 })();
