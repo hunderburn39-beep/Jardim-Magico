@@ -6,8 +6,13 @@ const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 const base='http://127.0.0.1:8765/Strikers-1945/';
 await page.goto(base,{waitUntil:'load'});
-assert(await page.locator('#choose').isVisible(),'Página principal inicia em modo arcade original');
-assert.equal(await page.locator('#startBtn').count(),0,'O remake já não ocupa a página principal');
+assert(await page.locator('#romLoadBtn').isVisible(),'Novo motor nativo exige ROM original');
+assert(await page.locator('#startBtn').isVisible(),'A reconstrução HTML5 deve abrir como modo principal');
+assert.equal(await page.locator('#choose').count(),0,'O emulador não pode ser o modo principal');
+const mainHtml=await page.content();
+assert(!mainHtml.includes('EJS_core'), 'Não executar emulador na página principal');
+await page.locator('#startBtn').click();
+assert(await page.locator('#menu').isVisible(),'Não iniciar jogo de fantasia antes da ROM');
 await page.goto(base+'arcade.html',{waitUntil:'load'});
 assert(await page.locator('#choose').isVisible(),'Botão para importar a ROM');
 assert(await page.locator('#launch').isDisabled(),'Original não arranca sem a ROM');
