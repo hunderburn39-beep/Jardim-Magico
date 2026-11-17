@@ -508,6 +508,31 @@ function drawShadows(ctx,enemies){
   ctx.restore();
  }
 }
+// Numeric capture audit, intentionally available only on the local test host.
+function auditMotion(){
+ if(!linked)linkAll();
+ let segments=0,reversals=0,shadowOwnerSwitches=0,bomberLinks=0;
+ for(const fr of frames)for(const a of fr.items){
+  const b=a.next;if(!b)continue;
+  if(a.role==='shadow'){
+   if(a.ownerTrack!==b.ownerTrack)shadowOwnerSwitches++;
+   continue;
+  }
+  if(a.role==='ground')continue;
+  segments++;if(a.role==='bomber')bomberLinks++;
+  let flagged=false;
+  for(const axis of ['x','y']){
+   const d=b[axis]-a[axis];let last=a[axis];
+   for(let k=1;k<=32;k++){
+    const v=position(a,b,k/32)[axis];
+    if(d===0?Math.abs(v-a[axis])>1e-6:(v-last)*Math.sign(d)<-1e-6)flagged=true;
+    last=v;
+   }
+  }
+  if(flagged)reversals++;
+ }
+ return {segments,reversals,shadowOwnerSwitches,bomberLinks};
+}
 const api=Object.freeze({ensure,ready,sync,draw,drawShadows,reset,
  stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'captured projections, separated overlapping bomber shadows and ROM alpha fallback',flightFacing:'per-LUT native heading, lateral bomber mirror, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-monotone-hermite',spriteBlend:false}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
@@ -519,6 +544,7 @@ const api=Object.freeze({ensure,ready,sync,draw,drawShadows,reset,
  edgePosition:(item,elapsed,incoming)=>edgePosition(item,elapsed,incoming),
  edgeExitPlan:()=>edgeExit?{frame:edgeExit.frame,x:edgeExit.x,y:edgeExit.y,vx:edgeExit.vx,vy:edgeExit.vy}:null,
  terminalState:(item,frame)=>terminalState(item,frame),
+ auditMotion:()=>auditMotion(),
  parsed:()=>!!frames
  }):undefined});
 window.StrikersFlightReplay=api;
