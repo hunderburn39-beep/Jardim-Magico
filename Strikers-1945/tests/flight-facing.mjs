@@ -12,6 +12,23 @@ try{
  await page.addScriptTag({url:'http://127.0.0.1:8765/Strikers-1945/stage1-flight-replay.js'});
  const ready=await page.evaluate(()=>window.StrikersFlightReplay.ensure());
  assert(ready,'Original captured sprite RAM stream must load');
+ const shadowChecks=await page.evaluate(()=>{
+  const shadowPlan=window.StrikersFlightReplay.test.shadowPlan;
+  const assert=(p,m)=>{if(!p)throw Error(m)};
+const owner={uid:7,romFlight:true,active:true,role:'bomber',alpha:1,x:200,y:300,w:192,h:192};
+const sh={uid:8,kind:'romShadow',active:true,ownerId:7,ownerRef:owner,x:200,y:300,w:192,h:192,alpha:1};
+let p=shadowPlan([owner]);assert(p.length===1&&p[0].kind==='silhouette'&&p[0].x===152&&p[0].y===252&&p[0].w===102,'Missing shadow fallback');
+p=shadowPlan([owner,sh]);assert(p.length===1&&p[0].kind==='native'&&p[0].x===152&&p[0].y===252,'Overlapping native shadow offset');
+p=shadowPlan([owner,{...sh,x:152,y:252,w:102,h:102}]);assert(p.length===1&&p[0].x===152&&p[0].w===102,'Keep separated native projection');
+p=shadowPlan([owner,sh,{...sh,uid:9,alpha:.5}]);assert(p.length===1,'No duplicate projection');
+p=shadowPlan([{...owner,active:false},{...sh,ownerRef:{...owner,active:false}}]);assert(p.length===0,'Destroyed owner loses shadow');
+p=shadowPlan([{...owner,role:'ground'}]);assert(p.length===0,'No fake ground target shadow');
+p=shadowPlan([{...owner,role:'fighter'}]);assert(p.length===0,'No change to fighters');
+p=shadowPlan([{...owner,x:210,y:325}]);assert(p[0].x===162&&p[0].y===277,'Shadow follows displacement');
+p=shadowPlan([owner,{...sh,ownerId:null,ownerRef:null,uid:9,x:0}]);assert(p.length===2,'Unpaired original remains visible');
+return 9;
+ });
+ assert.equal(shadowChecks,9,'Bomber ground shadow regression');
  const data=await page.evaluate(()=>{
    const api=window.StrikersFlightReplay,seen=new Map();
    let duplicates=0,steps=0,maxJump=0,b35=0,big=0,shadows=0,corrected=0,pitch=0,wrong=0,spinning=0,pitchFlips=0,invalidFlips=0,horizontalBig=0,wrongHorizontalBig=0;
@@ -64,5 +81,5 @@ try{
  assert(data.horizontalBig>10,'Lateral four-engine formation is visible');
  assert.equal(data.wrongHorizontalBig,0,'Lateral bombers face along travel with an upward nose');
  assert.deepEqual(errors,[],'No browser JavaScript errors');
- console.log('STRIKERS V8.6 BOMBER ORIENTATION AUDIT:',JSON.stringify(data));
+ console.log('STRIKERS V8.7 BOMBER ORIENTATION AND SHADOW AUDIT:',JSON.stringify(data));
 }finally{await browser.close()}
