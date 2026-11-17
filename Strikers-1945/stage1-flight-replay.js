@@ -16,6 +16,10 @@ function dimensions(rawX,rawY){
  const nativeW=nx*(32-zx)/2,nativeH=ny*(32-zy)/2;
  // Psikyo native 224×320: rotate to portrait and crop 22 px per side.
  const cx=(ry-22+nativeH*.5)*2,cy=(320-rx-nativeW*.5)*2;
+ // The EP1 capture's non-square graphics have transposed extents.
+ // All six non-square LUT codes were verified against the original ROM.
+ // Retain recorded centre/trajectory; swap the image extents and display size.
+ if(nx!==ny)return {x:cx,y:cy,w:nativeW*2,h:nativeH*2,nx:ny,ny:nx};
  return {x:cx,y:cy,w:nativeH*2,h:nativeW*2,nx,ny};
 }
 async function prepare(){
@@ -49,7 +53,7 @@ async function prepare(){
   for(let j=0;j<countItems;j++){
    if(offset+9>bytes.length)throw Error('Sprite incompleto');
    const id=bytes[offset],xraw=view.getUint16(offset+1),yraw=view.getUint16(offset+3);
-   const attr=view.getUint16(offset+5),code=view.getUint16(offset+7);offset+=9;
+   const attr=view.getUint16(offset+5),code=view.getUint16(offset+7)|((attr&1)<<16);offset+=9;
    const palette=(attr>>8)&63;
    if(!validKinds.has(palette))continue;
    const dims=dimensions(xraw,yraw);
@@ -114,6 +118,9 @@ function isTerrainShadow(e){
 }
 function role(e){
  if(isTerrainShadow(e))return 'shadow';
+ // Visually confirmed complete aircraft in the actual ROM, not ground assets.
+ if([21691,21715].includes(e.code))return 'bomber';
+ if([21769,21781,21787,21811].includes(e.code))return 'fighter';
  if(e.nx>=5&&e.ny<=3)return 'ground';
  if(e.nx>=5||e.ny>=5)return 'bomber';
  if(e.nx>=3||e.ny>=3)return 'ground';
