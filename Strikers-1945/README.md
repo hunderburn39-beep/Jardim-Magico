@@ -1,3 +1,30 @@
+# Strikers 1945 HTML5 — V6.1: auditoria de trajetórias
+
+**Data da revisão:** 17/11/2026. **Abrir:** https://hunderburn39-beep.github.io/Jardim-Magico/Strikers-1945/?v=6.1
+
+## Resultados diretamente medidos nos dados de MAME capturados
+
+| Fonte | Contagem | Frames emulados | Duração entre extremos |
+| --- | ---: | ---: | ---: |
+| Registos de sprites/aeronaves | 116 capturas | 480–4160 | 61,33 s |
+| Tilemaps e paletas de fundo | 122 capturas | 496–2432 | 32,27 s |
+
+Na auditoria dos registos de aviões, foram encontrados **893 sprites enumerados nas capturas**, **674 pares consecutivos com o mesmo identificador de memória** e **263 pares não compatíveis com o mesmo objeto**. Mudanças de coordenadas de aproximadamente 896–992 píxeis surgem na reutilização de registos; não devem ser interpoladas como movimento físico. O ficheiro `tests/trajectory-audit.mjs` permite repetir a análise.
+
+## Correções implementadas
+
+1. **Cronologia real:** reproduzir os registos dos aviões na escala dos 60 frames/s capturados, e não acelerar uma sequência de 61,33 s para 47 s.
+2. **Identidade de cada aeronave:** distinguir saída, nova entrada e reutilização do mesmo slot; um novo inimigo já não herda indevidamente a trajetória e a vida do anterior.
+3. **Interpolação:** limitar curvas aos extremos efetivamente capturados, reduzindo desvios artificiais, e recusar ligações de sprites de paletas incompatíveis.
+4. **Visibilidade:** retirar do desenho inimigos com centro e dimensões totalmente fora do ecrã; colisão e dano seguem a aeronave redimensionada.
+5. **Ataques sintéticos:** nas fases não capturadas, usar curvas de entrada e saída sem prender as aeronaves às margens; escalonar temporizadores de tiro para evitar disparos simultâneos artificiais.
+6. **Fundo da fase 1:** sincronizar o desfasamento inicial de 16 frames entre as duas fontes. A partir do último tilemap original disponível, prolongar o movimento do cenário por **reutilização da última captura**: é uma extrapolação visual explícita, não uma afirmação de reconstrução integral.
+7. **Verificações:** Playwright cobre controlos no iPhone, colisões, continuidade dos voos, arma e importação privada da ROM. Os testes de integração gráfica usam um ZIP de teste sintético, pelo que não substituem a inspeção no Safari com a ROM original fornecida pelo jogador.
+
+**Limite:** este projeto é um remake HTML5 com dados parciais da primeira fase, não um emulador do código de IA/voo e dos mapas completos de Strikers 1945. Para fidelidade total falta capturar os tilemaps posteriores e a lógica original dos inimigos.
+
+---
+
 # Strikers 1945 HTML5 — V6.0 (16/11/2026)
 
 Revisão de jogabilidade e apresentação para iPhone, sobre a base V5.8.
