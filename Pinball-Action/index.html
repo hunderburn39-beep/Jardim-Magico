@@ -399,6 +399,7 @@ const arcadeAudio=(()=>{
   if(!chipFailed){
    if(introDone||!enabled||document.hidden)return;
    if(!boot())return;
+   if(chipFailed){playIntro();return;} // In old Safari, play the original ROM MP3 instead.
    introDone=true;
    if(!chipQueue.includes(2))queueChip(2);
    return;
