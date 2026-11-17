@@ -127,23 +127,56 @@ function role(e){
  if(e.nx>=3||e.ny>=3)return 'ground';
  return 'fighter';
 }
-function nativeNoseAngle(e){
- const code=e.sprite?.code??e.source?.code??-1;
- // Measured visually from the original ROM tile assemblies (portrait).
- // Angle is relative to the top of screen: left negative, right positive.
- if(e.role==='fighter'&&((code>=9300&&code<12000)||[21769,21781,21787,21811].includes(code)))return 0;
- if(e.role==='fighter'&&code===21312)return Math.PI/4;
- if(e.role==='bomber'&&[21691,21715].includes(code))return 0;
- // The diagonal four-engine originals must not travel tail-first.
- if(e.role==='bomber'&&code>=21312&&code<=21330&&Math.max(e.source?.nx??0,e.source?.ny??0)>=5)return Math.PI/4;
- if((e.role==='bomber'||e.role==='shadow')&&[21424,21460].includes(code))return -Math.PI/4;
- return null;
+// Directions inspected on 106 actual ROM sprite/flip combinations, not
+// inferred from sprite size or palette. Degrees clockwise from screen top.
+// Reference flags are the hardware flip bits for the inspected tile assembly.
+// Pitch/roll frames with ambiguous projected nose retain their original flags.
+const NOSE_GROUPS=[
+ [1,180,[9583,9587,9591,9595,9599,9603]],
+ [1,165,[9655,9659]],
+ [1,150,[9663,9667,9671,9675]],
+ [1,135,[9679,9683]],
+ [1,120,[9687,9691]],
+ [1,105,[9695,9699]],
+ [1,90,[9703,9707,9711,9715,9787]],
+ [0,90,[9775,9779]],
+ [0,180,[9919,9923,9935,9939]],
+ [0,0,[9967,9971,9999,10003,10031,10035,10047,10051]],
+ [0,45,[21316]],
+ [0,-45,[21424,21460]],
+ [0,0,[21691,21715,21769,21781,21787,21811]],
+ [1,180,[21817,21825,21833,21837,21845,21853,21909,21913,21917,21921,21925]],
+ [1,0,[21857,21861,21865,21869,21929,21933,21937,21941,21949,21953,21957,21981,21985,21989]]
+];
+const NOSE_DATA=new Map();
+for(const [flags,deg,codes] of NOSE_GROUPS)for(const code of codes)NOSE_DATA.set(code,{flags,deg});
+function noseVector(item,attr=item.attr){
+ const spec=NOSE_DATA.get(item.code);if(!spec)return null;
+ const angle=spec.deg*Math.PI/180,flip=(attr>>14)^spec.flags;
+ return {x:Math.sin(angle)*(flip&2?-1:1),y:-Math.cos(angle)*(flip&1?-1:1)};
 }
-function turnTowards(from,to,step){
- let delta=Math.atan2(Math.sin(to-from),Math.cos(to-from));
- // Pick a consistent direction for exact 180-degree reversals.
- if(Math.abs(Math.abs(delta)-Math.PI)<1e-5)delta=Math.PI;
- return from+Math.max(-step,Math.min(step,delta));
+function isPitchFamily(code){return (code>=9827&&code<=10051)||(code>=21857&&code<=21989)}
+// A pitch loop can face the camera or briefly show the underside while its
+// projected screen motion continues sideways. Never fake a turn in this family.
+function hasPitchChange(item){
+ if(!isPitchFamily(item.code))return false;
+ let p=item,n=item;
+ for(let i=0;i<3;i++){
+  p=p?.prev;n=n?.next;
+  if((p&&isPitchFamily(p.code)&&p.code!==item.code)||(n&&isPitchFamily(n.code)&&n.code!==item.code))return true;
+ }
+ return false;
+}
+function orientFrame(item,vx,vy){
+ const nose=noseVector(item),speed=Math.hypot(vx,vy);
+ if(!nose||speed<34||item.role==='ground'||hasPitchChange(item))return item;
+ const dot=(nose.x*vx+nose.y*vy)/speed;
+ if(dot>-.28)return item;
+ // A 180-degree inversion uses the exact original tiles with both hardware
+ // flips. No continuous canvas rotation / paper-like spinning or guessed art.
+ // Opposite heading must be a material improvement over the captured frame.
+ const attr=item.attr^0xc000;
+ return {...item,attr,orientationMask:0xc000};
 }
 // Match full consecutive sprite lists, not their transient display-list slots.
 let linked=false,linkStats={pairs:0,changedSlots:0,tracks:0,maxStep:0};
@@ -228,7 +261,6 @@ function sync(time){
  if(!ready())return [];
  if(!linked)linkAll();
  if(time<timeLast-.1)reset();
- const displayDt=timeLast<0?0:Math.max(0,Math.min(.07,time-timeLast));
  timeLast=time;
  const f=snapshot(time);if(!f||f.expired){tracks.clear();return []}
  const result=[],seen=new Set(),t=clamp01(f.t),dt=(f.b.frame-f.a.frame)/60;
@@ -246,27 +278,27 @@ function sync(time){
   e.renderW=e.w*e.visualScale;e.renderH=e.h*e.visualScale;e.source=item;e.sprite=item;e.lastCode=item.code;e.palette=item.palette;
   e.heavy=heavy;e.role=kind;e.alpha=fade;e.spriteMix=0;e.spriteFrom=null;e.spriteTo=null;
   if(other&&dt>0){
-   e.vx=(other.x-item.x)/dt;e.vy=(other.y-item.y)/dt;
+   // Use the local tangent of the curve being drawn, not its entire chord.
+   const h=.0125,lo=Math.max(0,t-h),hi=Math.min(1,t+h);
+   const p0=position(item,other,lo),p1=position(item,other,hi);
+   const span=Math.max(1e-5,(hi-lo)*dt);
+   e.vx=(p1.x-p0.x)/span;e.vy=(p1.y-p0.y)/span;
    if(item.code!==other.code||item.attr!==other.attr||item.phase!==other.phase){
-    const mix=clamp01((t-.45)/.10);
-    e.sprite=mix>.5?other:item;e.spriteFrom=item;e.spriteTo=other;e.spriteMix=mix;
+    e.spriteMix=clamp01((t-.45)/.10);
+    e.sprite=e.spriteMix>.5?other:item;
    }
-  }else{e.vx=0;e.vy=0}
-  // Compensate only confirmed tail-first travel with an original ROM frame.
-  // Preserve sideways banked animation; never turn parked airfield artwork.
-  // Rotate its true ROM shadow together with the matching bomber silhouette.
-  const nose=nativeNoseAngle(e);
-  if(nose!==null){
-   const speed=Math.hypot(e.vx,e.vy);
-   if(speed>35){
-    const alignment=(Math.sin(nose)*e.vx-Math.cos(nose)*e.vy)/speed;
-    if(alignment<-.24)e.targetTurn=Math.PI;
-    else if(alignment>.32)e.targetTurn=0;
-    if(e.visualTurn===undefined)e.visualTurn=e.targetTurn??0;
-   }
-   if(e.visualTurn===undefined)e.visualTurn=0;
-   e.visualTurn=turnTowards(e.visualTurn,e.targetTurn??0,displayDt*6.4);
-  }else{e.visualTurn=0;e.targetTurn=0}
+  }else{
+   const last=item.prev,next=item.next,neighbor=next||last;
+   if(neighbor){const span=(neighbor.frame-item.frame)/60;e.vx=(neighbor.x-item.x)/span;e.vy=(neighbor.y-item.y)/span}
+   else{e.vx=0;e.vy=0}
+  }
+  // Preserve genuine pitch-loop frames and apply only confirmed inversions.
+  // Never cross-dissolve two different silhouettes into a double aircraft.
+  e.originalSprite=e.sprite;e.sprite=orientFrame(e.sprite,e.vx,e.vy);
+  e.facingMask=e.sprite.attr^e.originalSprite.attr;e.visualTurn=0;
+  const nose=noseVector(e.sprite),speed=Math.hypot(e.vx,e.vy);
+  e.alignment=nose&&speed>=34?(nose.x*e.vx+nose.y*e.vy)/speed:null;
+  e.pitch=hasPitchChange(e.originalSprite);
   const halfW=e.renderW/2,halfH=e.renderH/2;
   if(e.active&&fade>.025&&e.x>-halfW-24&&e.x<360+halfW+24&&e.y>-halfH-24&&e.y<640+halfH+24)result.push(e);
  }
@@ -279,9 +311,23 @@ function sync(time){
  if(f.a!==f.b)for(const b of f.b.items)if(!b.prev||b.prev.frame!==f.a.frame){
   if(t>=.5)record(b,null,clamp01((t-.5)*2),edgePosition(b,(1-t)*dt,true));
  }
+ // The original matching terrain shadow follows its owning bomber's exact
+ // flip mask, even if the two captured positions have minor rounding error.
+ for(const shadow of result)if(shadow.role==='shadow'&&shadow.sprite.code===21460){
+  let owner=null,dist=36;
+  for(const e of tracks.values())if(e.role==='bomber'&&e.source?.code===21424){
+   const d=Math.hypot(e.x-shadow.x,e.y-shadow.y);
+   if(d<dist){dist=d;owner=e}
+  }
+  if(owner){
+   shadow.sprite={...shadow.originalSprite,attr:shadow.originalSprite.attr^owner.facingMask};
+   shadow.facingMask=owner.facingMask;
+   if(!owner.active)shadow.alpha=0;
+  }
+ }
  // Keep destroyed objects so they cannot return when their RAM slot changes.
  for(const id of tracks.keys())if(!seen.has(id))tracks.delete(id);
- return result;
+ return result.filter(e=>e.alpha>.025);
 }
 function sprite(item){
  const key=[item.code,item.attr,item.nx,item.ny,item.phase].join(':');
@@ -319,26 +365,15 @@ function draw(ctx,e){
  if(!e.romFlight||!ready()||!e.sprite)return false;
  const sheet=sprite(e.sprite);if(!sheet)return false;
  const alpha=(e.alpha??1)*(e.visualAlpha??1);if(alpha<=.02)return true;
- ctx.save();ctx.imageSmoothingEnabled=false;const baseAlpha=ctx.globalAlpha;ctx.globalAlpha=baseAlpha*alpha;
+ ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha*=alpha;
  const rw=e.renderW??e.w,rh=e.renderH??e.h;
- const dx=-rw/2,dy=-rh/2;
- ctx.translate(e.x,e.y);
- if(e.visualTurn)ctx.rotate(e.visualTurn);
- // Cross-dissolve real animation frames for only ~75ms at each change.
- // The original ROM supplies both silhouettes; no fake 2D rotation.
- if(e.spriteFrom&&e.spriteTo&&e.spriteFrom!==e.spriteTo){
-  const t=e.spriteMix;
-  const old=sprite(e.spriteFrom),up=sprite(e.spriteTo);
-  if(old&&up){ctx.globalAlpha=baseAlpha*alpha*(1-t);ctx.drawImage(old,dx,dy,rw,rh);
-   ctx.globalAlpha=baseAlpha*alpha*t;ctx.drawImage(up,dx,dy,rw,rh);}
-  else ctx.drawImage(sheet,dx,dy,rw,rh);
- }else ctx.drawImage(sheet,dx,dy,rw,rh);
+ ctx.drawImage(sheet,e.x-rw/2,e.y-rh/2,rw,rh);
  ctx.restore();return true;
 }
 const api=Object.freeze({ensure,ready,sync,draw,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'ROM silhouettes + palette',flightFacing:'tail-first alignment of ROM fighter and bomber graphics with paired shadows',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:true}),
+ stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'ROM silhouettes + palette',flightFacing:'per-LUT native heading, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:false}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
- smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,rawId:e.rawId,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code,vx:e.vx,vy:e.vy,turn:e.visualTurn})),
+ smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,rawId:e.rawId,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code,vx:e.vx,vy:e.vy,turn:e.visualTurn,attr:e.sprite.attr,originalAttr:e.originalSprite.attr,facingMask:e.facingMask,alignment:e.alignment,pitch:e.pitch})),
  links:()=>{if(!linked&&frames)linkAll();return {...linkStats}},
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
  parsed:()=>!!frames
