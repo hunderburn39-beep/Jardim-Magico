@@ -29,6 +29,12 @@ p=shadowPlan([owner,{...sh,ownerId:null,ownerRef:null,uid:9,x:0}]);assert(p.leng
 return 9;
  });
  assert.equal(shadowChecks,9,'Bomber ground shadow regression');
+ const motion=await page.evaluate(()=>window.StrikersFlightReplay.test.auditMotion());
+ assert(motion.segments>300&&motion.bomberLinks>70,'Real captured aircraft segments included');
+ assert.equal(motion.reversals,0,'No invented coordinate reversals');
+ assert.equal(motion.shadowOwnerSwitches,0,'Paired shadows retain their owner');
+ const plan=await page.evaluate(()=>window.StrikersFlightReplay.test.edgeExitPlan());
+ assert.deepEqual(plan,{frame:1984,x:412,y:474,vx:0,vy:60},'Continuation preserves measured velocity');
  const data=await page.evaluate(()=>{
    const api=window.StrikersFlightReplay,seen=new Map();
    let duplicates=0,steps=0,maxJump=0,b35=0,big=0,shadows=0,corrected=0,pitch=0,wrong=0,spinning=0,pitchFlips=0,invalidFlips=0,horizontalBig=0,wrongHorizontalBig=0;
@@ -81,5 +87,5 @@ return 9;
  assert(data.horizontalBig>10,'Lateral four-engine formation is visible');
  assert.equal(data.wrongHorizontalBig,0,'Lateral bombers face along travel with an upward nose');
  assert.deepEqual(errors,[],'No browser JavaScript errors');
- console.log('STRIKERS V8.7 BOMBER ORIENTATION AND SHADOW AUDIT:',JSON.stringify(data));
+ console.log('STRIKERS V8.8 BOMBER ORIENTATION, MOTION AND SHADOW AUDIT:',JSON.stringify(data));
 }finally{await browser.close()}
