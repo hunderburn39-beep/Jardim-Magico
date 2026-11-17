@@ -337,7 +337,7 @@ const arcadeAudio=(()=>{
   const b=button();if(!b)return;
   const running=context?.state==='running',ready=!!node&&running;
   b.textContent=!enabled?'🔇 SEM SOM':!userUnlocked?'🔊 ATIVAR SOM':
-   ready&&(titleAudible||gameStarting)?'🔊 3 CHIPS':errors?'🔊 ATIVAR SOM':'🔊 A INICIAR…';
+   ready&&(titleAudible||gameStarting)?'🔊 SOM':errors?'🔊 ATIVAR SOM':'🔊 A INICIAR…';
   b.setAttribute('aria-pressed',String(enabled&&ready));
   b.title=errors||'Som da ROM original — três chips AY';
  }
