@@ -1,3 +1,12 @@
+# Strikers 1945 V7.5 — sprites da RAM capturados na primeira fase (17/11/2026)
+
+- `stage1-captured-catalog.js`: lê as 116 amostras originais de registos MAME da primeira fase, contendo código LUT, atributos de espelhamento, dimensões em tiles, paleta xRGB555 e fase de cores, fotogramas e número de ocorrências.
+- `stage1-captured.html`: novo navegador visual por tamanho com páginas de 24 sprites, renderização pixel-perfect a partir de s1945.zip guardado no Safari e exportação CSV de todas as combinações observadas. Sem emulador.
+- Os grupos **pequenos (1–2 blocos), médios (3–4) e grandes (5–8)** representam somente o tamanho da imagem. Não demonstram sozinho se é caça, bombardeiro, chefe, instalação, tiro ou power-up.
+- O motor de jogo principal mantém temporários e continua em reconstrução. A nova página documenta elementos realmente observados e não o conjunto completo das seis fases.
+- Todo o código e capturas de registos (sem pixels ROM) estão no GitHub. O ZIP da ROM e as folhas PNG extraídas dos chips não foram publicados no repositório.
+
+---
 # Strikers 1945 V7.4 — primeiro sprite ROM dentro do motor do jogador (17/11/2026)
 
 O visualizador `sprites-rom.html` permite selecionar um sprite da ROM e aplicá-lo provisoriamente no motor Canvas do jogador P-38, P-51, Spitfire ou Zero. Quando existe uma referência guardada, o motor desenha os píxeis originais a partir dos chips fornecidos pelo utilizador no lugar do desenho vetorial sintético anterior. A mudança é reversível limpando os dados locais do browser.
