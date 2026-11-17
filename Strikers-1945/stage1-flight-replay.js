@@ -278,17 +278,20 @@ function linkAll(){
  edgeExit=anchor?{frame:anchor.frame,x:anchor.x,y:anchor.y,ids:new Set(frames.filter(f=>f.frame>=anchor.frame&&f.frame<=3072).flatMap(f=>f.items.filter(e=>e.code===21715&&e.role==='bomber'&&Math.abs(e.x-anchor.x)<=12).map(e=>e.trackId)))}:null;
  linkStats={pairs,changedSlots,tracks:serial,maxStep,projectionRecords,pairedProjections,pairedLargeShadows,edgeExitTracks:edgeExit?.ids.size??0};linked=true;
 }
+// Monotone cubic interpolation. A zero-length axis stays fixed; a genuine
+// reversal happens at the recorded knot, not at an invented overshoot.
 function curve(a,b,p,n,t){
- const d=b-a;let m0=p===null?d:(b-p)*.5,m1=n===null?d:(n-a)*.5;
- const limit=Math.max(24,Math.abs(d)*1.5);
- m0=Math.max(-limit,Math.min(limit,m0));m1=Math.max(-limit,Math.min(limit,m1));
+ const d=b-a;if(d===0)return a;
+ const slope=(l,r)=>l*r<=0?0:2*l*r/(l+r);
+ let m0=p===null?d:slope(a-p,d),m1=n===null?d:slope(d,n-b);
  const t2=t*t,t3=t2*t;
  return (2*t3-3*t2+1)*a+(t3-2*t2+t)*m0+(-2*t3+3*t2)*b+(t3-t2)*m1;
 }
 function position(a,b,t){
- const p=a.prev,n=b.next,allowance=Math.min(18,Math.max(4,Math.hypot(b.x-a.x,b.y-a.y)*.12));
- return {x:Math.max(Math.min(a.x,b.x)-allowance,Math.min(Math.max(a.x,b.x)+allowance,curve(a.x,b.x,p?.x??null,n?.x??null,t))),
- y:Math.max(Math.min(a.y,b.y)-allowance,Math.min(Math.max(a.y,b.y)+allowance,curve(a.y,b.y,p?.y??null,n?.y??null,t)))};
+ const p=a.prev,n=b.next;
+ const bounded=(x,y,v)=>Math.max(Math.min(x,y),Math.min(Math.max(x,y),v));
+ return {x:bounded(a.x,b.x,curve(a.x,b.x,p?.x??null,n?.x??null,t)),
+ y:bounded(a.y,b.y,curve(a.y,b.y,p?.y??null,n?.y??null,t))};
 }
 function edgePosition(a,elapsed,incoming){
  const b=incoming?a.next:a.prev;
@@ -472,7 +475,7 @@ function drawShadows(ctx,enemies){
  }
 }
 const api=Object.freeze({ensure,ready,sync,draw,drawShadows,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'captured projections, separated overlapping bomber shadows and ROM alpha fallback',flightFacing:'per-LUT native heading, lateral bomber mirror, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:false}),
+ stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'captured projections, separated overlapping bomber shadows and ROM alpha fallback',flightFacing:'per-LUT native heading, lateral bomber mirror, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-monotone-hermite',spriteBlend:false}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
  smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,rawId:e.rawId,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code,vx:e.vx,vy:e.vy,turn:e.visualTurn,attr:e.sprite.attr,originalAttr:e.originalSprite.attr,facingMask:e.facingMask,alignment:e.alignment,pitch:e.pitch,projection:e.projection,palette:e.palette,ownerId:e.ownerId,active:e.active})),
  links:()=>{if(!linked&&frames)linkAll();return {...linkStats}},
