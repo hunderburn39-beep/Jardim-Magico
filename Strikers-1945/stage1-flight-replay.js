@@ -305,10 +305,14 @@ function position(a,b,t){
 }
 function edgePosition(a,elapsed,incoming){
  const b=incoming?a.next:a.prev;
- if(!b)return {x:a.x,y:a.y};
- const dt=Math.max(1/60,Math.abs(b.frame-a.frame)/60),d=Math.min(.14,Math.max(0,elapsed))/dt;
- // Keep entering/exiting objects moving, but never extrapolate a whole pass.
- return {x:a.x+(a.x-b.x)*d,y:a.y+(a.y-b.y)*d};
+ if(!b)return {x:a.x,y:a.y,vx:0,vy:0};
+ const span=(b.frame-a.frame)/60;
+ if(!span)return {x:a.x,y:a.y,vx:0,vy:0};
+ const vx=(b.x-a.x)/span,vy=(b.y-a.y)/span;
+ // The invisible half of the capture interval is the extrapolation limit.
+ // Previously the fixed 0.14 s cap froze a still-visible sprite while fading.
+ const d=Math.min(Math.abs(span)*.5,Math.max(0,elapsed))*(incoming?-1:1);
+ return {x:a.x+vx*d,y:a.y+vy*d,vx,vy};
 }
 // Smooth continuation: starts at the recorded point, exits through the lower-right.
 function continuedEdgePosition(plan,frame){
@@ -347,6 +351,8 @@ function sync(time){
     e.spriteMix=clamp01((t-.45)/.10);
     e.sprite=e.spriteMix>.5?other:item;
    }
+  }else if(Number.isFinite(pos.vx)&&Number.isFinite(pos.vy)){
+   e.vx=pos.vx;e.vy=pos.vy;
   }else{
    const last=item.prev,next=item.next,neighbor=next||last;
    if(neighbor){const span=(neighbor.frame-item.frame)/60;e.vx=(neighbor.x-item.x)/span;e.vy=(neighbor.y-item.y)/span}
@@ -492,6 +498,7 @@ const api=Object.freeze({ensure,ready,sync,draw,drawShadows,reset,
  destroy:(uid)=>{const e=tracks.get(uid);if(e)e.active=false;return !!e},
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
  shadowPlan:(entities)=>shadowPlan(entities),
+ edgePosition:(item,elapsed,incoming)=>edgePosition(item,elapsed,incoming),
  parsed:()=>!!frames
  }):undefined});
 window.StrikersFlightReplay=api;
