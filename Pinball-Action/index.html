@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V8.23 — som no primeiro toque</title><style>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V8.24 — música automática ao abrir</title><style>
 :root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;background:#040409;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 body{display:flex;align-items:center;justify-content:center}#app{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;width:100%;height:100dvh;max-height:100dvh;padding:max(8px,env(safe-area-inset-top)) 6px max(8px,env(safe-area-inset-bottom))}
 #display{height:auto;max-height:calc(100dvh - 176px - env(safe-area-inset-top) - env(safe-area-inset-bottom));width:min(calc((100dvh - 176px)*224/256),100vw - 12px,540px);aspect-ratio:224/256;flex-shrink:1;overflow:hidden;box-shadow:0 0 0 3px #242028,0 0 22px #171119;outline:1px solid #77707b;background:#000}
@@ -357,6 +357,7 @@ const arcadeAudio=(()=>{
  }
  function flush(){
   if(!node||context?.state!=='running')return;
+  userUnlocked=true;
   if(titleRequested&&!gameStarting&&!titleDispatched){
    queuedCommand=null;sendChipCommand(TITLE_COMMAND);
   }else if(queuedCommand!==null){
@@ -412,6 +413,18 @@ const arcadeAudio=(()=>{
   }
   bootCount++;status();return true;
  }
+ function autoStart(){
+  // Try audible autoplay immediately, if the browser permits it.
+  if(!enabled||gameStarting||titleAudible||titleDispatched)return;
+  titleRequested=true;
+  boot(false);
+  flush();
+ }
+ function unlockIfNeeded(){
+  // A normal interaction unlocks a restricted AudioContext. Never unmute
+  // a player who explicitly muted, nor restart a title already playing.
+  if(enabled&&(!userUnlocked||context?.state!=='running'))activate();
+ }
  function activate(){
   enabled=true;
   if(!gameStarting&&!titleDispatched&&!titleAudible)titleRequested=true;
@@ -440,7 +453,7 @@ const arcadeAudio=(()=>{
  function state(){return {enabled,engine:'Z80 original + três AY-3-8910 (sem MP3)',
   context:context?.state||'não iniciado',ready:!!node,chipReady:!!node,commands,lastCommand,queuedCommand,
   titleDispatched,titleRequested,titleAudible,gameStarting,userUnlocked,error:errors};}
- return {boot,fromRom,toggle,restore,playIntro,gameStart,startBackground,activate,state,debug:()=>({...state(),bootCount})};
+ return {boot,fromRom,toggle,restore,playIntro,gameStart,startBackground,activate,autoStart,unlockIfNeeded,state,debug:()=>({...state(),bootCount})};
 })();
 function arcadeSound(command){arcadeAudio.fromRom(command);}
 // A touch is handled on release, and its compatibility click is ignored.
@@ -455,15 +468,15 @@ soundButton.addEventListener('click',e=>{
  if(performance.now()-lastSoundTouch<800){e.preventDefault();return;}
  arcadeAudio.toggle();
 });
-let lastCanvasTouch=-Infinity;
-canvas.addEventListener('touchend',e=>{
- if(e.cancelable)e.preventDefault();
- lastCanvasTouch=performance.now();
- if(!arcadeAudio.state().gameStarting)arcadeAudio.playIntro();
-},{passive:false});
-canvas.addEventListener('click',()=>{
- if(performance.now()-lastCanvasTouch>=800&&!arcadeAudio.state().gameStarting)arcadeAudio.playIntro();
-});
+// On a browser that blocks autoplay, any ordinary game interaction can
+// unlock audio. The sound button keeps its own single-action mute handler.
+function unlockFromGameGesture(e){
+ if(e.isTrusted===false||e.target===soundButton||soundButton.contains(e.target))return;
+ arcadeAudio.unlockIfNeeded();
+}
+document.addEventListener('touchend',unlockFromGameGesture,{capture:true,passive:true});
+document.addEventListener('click',unlockFromGameGesture,true);
+document.addEventListener('keydown',unlockFromGameGesture,true);
 // Controller bits from the original Tehkan hardware port definitions.
 // MAME / ROM validation: P1 BUTTON3 (0x01) launches the ball; BUTTON4 (0x04) is SHAKE.
 // Correct input bits retain the V8.5 mapping and long-press safeguards.
@@ -595,6 +608,8 @@ function frame(now){
  requestAnimationFrame(frame);
 }
 render();requestAnimationFrame(frame);
+// Start the original title ROM command as soon as the site opens.
+arcadeAudio.autoStart();
 // Debug/test API (not visible in production).
 if(window.PB_TEST||new URLSearchParams(location.search).has('test')) window.__pbRom={
  state:()=>({pc:cpu.pc,sp:cpu.sp,credits:memory[0xc013],queuedStart:queuedStart?.key||null,score:memory.slice(0xc000,0xc010).join(','),steps:cpu.steps,scroll:cpu.scroll,frames,nmi:cpu.nmiEnable,flipped:cpu.flipped,memChecksum:memory.slice(0xd000,0xe600).reduce((a,b)=>a+b,0)}),
