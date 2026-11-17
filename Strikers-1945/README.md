@@ -1,3 +1,15 @@
+# Strikers 1945 V8.2 — orientação e identificação corretas (17/11/2026)
+
+- Corrigida a interpretação do B-35 (LUT 21691 e 21715): é uma **asa voadora inimiga**, não um elemento fixo de cenário. Mantém colisões, disparos e pontos.
+- As coordenadas vêm das 116 capturas originais, com associação de aeronaves entre posições mesmo quando os registos da RAM mudam de índice.
+- Para os modelos de aviões identificados diretamente nos sprites originais, a direção do nariz é comparada com o deslocamento observado. Apenas em trajetórias claramente invertidas o sprite original é rodado 180° de forma gradual.
+- O bombardeiro diagonal LUT 21424 e a sombra correspondente LUT 21460 recebem a mesma correção de orientação; modelos 21316, 21312 e caças pequenos também são tratados de acordo com o respetivo nariz.
+- A reconstrução continua baseada em amostras; movimentos completos não capturados, como loops rápidos, ainda não podem ser garantidos equivalentes ao arcade.
+
+[Ver V8.2](https://hunderburn39-beep.github.io/Jardim-Magico/Strikers-1945/?v=8.2)
+
+---
+
 # Strikers 1945 V7.7 — sombras de terreno e manobras curvas (17/11/2026)
 
 - Os sprites pretos de silhueta de avião, incluindo LUT 21460, são interpretados como **sombras projetadas no terreno**. São renderizados com os próprios píxeis da ROM fornecida localmente, numa camada anterior à dos aviões. Não disparam, não são atingidos e não dão pontuação.
