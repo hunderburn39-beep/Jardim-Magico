@@ -44,6 +44,8 @@ jobs:
         run: node Strikers-1945/tests/combat.mjs
       - name: Validar controlo tátil relativo no iPhone
         run: node Strikers-1945/tests/touch-v6.mjs
+      - name: Validar orientação dos aviões, B-35 e sombra real com capturas da ROM
+        run: node Strikers-1945/tests/flight-facing.mjs
       - name: Testar importação privada da ROM e reconstrução dos seis cenários
         run: node Strikers-1945/tests/rom-import.mjs
       - name: Validar original Arcade com Service Worker e ROM local
