@@ -172,7 +172,16 @@ function hasPitchChange(item){
 }
 function orientFrame(item,vx,vy){
  const nose=noseVector(item),speed=Math.hypot(vx,vy);
- if(!nose||speed<34||item.role==='ground'||hasPitchChange(item))return item;
+ if(!nose||item.role==='ground'||hasPitchChange(item))return item;
+ // LUT 21316 is the diagonal four-engine aircraft in the lateral formation.
+ // A 180-degree flip points its nose down despite a horizontal path. Mirror
+ // the original hardware axes instead, retaining the upward diagonal pitch.
+ // The portrait rotation maps hardware Y onto screen X and hardware X onto Y.
+ if(item.code===21316&&item.role==='bomber'&&Math.abs(vx)>=8&&Math.abs(vx)>=2*Math.abs(vy)){
+  const mask=(nose.x*vx<0?0x8000:0)|(nose.y>0?0x4000:0);
+  return mask?{...item,attr:item.attr^mask,orientationMask:mask}:item;
+ }
+ if(speed<34)return item;
  const dot=(nose.x*vx+nose.y*vy)/speed;
  if(dot>-.28)return item;
  // A 180-degree inversion uses the exact original tiles with both hardware
@@ -414,7 +423,7 @@ function draw(ctx,e){
  ctx.restore();return true;
 }
 const api=Object.freeze({ensure,ready,sync,draw,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'palette-10 reduced projections and paired ROM silhouettes',flightFacing:'per-LUT native heading, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:false}),
+ stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'palette-10 reduced projections and paired ROM silhouettes',flightFacing:'per-LUT native heading, lateral bomber mirror, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:false}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
  smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,rawId:e.rawId,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code,vx:e.vx,vy:e.vy,turn:e.visualTurn,attr:e.sprite.attr,originalAttr:e.originalSprite.attr,facingMask:e.facingMask,alignment:e.alignment,pitch:e.pitch,projection:e.projection,palette:e.palette,ownerId:e.ownerId,active:e.active})),
  links:()=>{if(!linked&&frames)linkAll();return {...linkStats}},
