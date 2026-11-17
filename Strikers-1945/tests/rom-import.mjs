@@ -31,7 +31,7 @@ function zip(){
   directory.push(ch,n);
  }
  const cd=Buffer.concat(directory),local=Buffer.concat(parts),e=Buffer.alloc(22);
- e.writeUInt32LE(0x06054b50,0);e.writeUInt16LE(6,8);e.writeUInt16LE(6,10);
+ e.writeUInt32LE(0x06054b50,0);e.writeUInt16LE(directory.length/2,8);e.writeUInt16LE(directory.length/2,10);
  e.writeUInt32LE(cd.length,12);e.writeUInt32LE(local.length,16);
  return Buffer.concat([local,cd,e]);
 }
@@ -42,7 +42,8 @@ const url='http://127.0.0.1:8765/Strikers-1945/remake.html?test=1';
 await page.goto(url,{waitUntil:'load'});
 assert(await page.locator('#romLoadBtn').isVisible(),'Importação visível no menu');
 await page.locator('#romFile').setInputFiles({name:'s1945.zip',mimeType:'application/zip',buffer:zip()});
-await page.waitForFunction(()=>window.StrikersROM?.isLoaded(),null,{timeout:30000});
+await page.waitForFunction(()=>window.StrikersROM?.isLoaded(),null,{timeout:30000})
+ .catch(async err=>{console.error('ROM import status:',await page.locator('#romInfo').textContent());throw err});
 const fullRom=await page.evaluate(()=>window.StrikersROM.codeInfo());
 assert.equal(fullRom.programBytes,1048576,'Programa original 68EC020: 1 MiB interleaved');
 assert.equal(fullRom.resetSP,0xffff8000,'Original reset stack recovered from two interleaved chips');
