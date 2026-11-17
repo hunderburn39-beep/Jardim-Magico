@@ -83,11 +83,11 @@ function snapshot(time){
  // Captures are 60 Hz MAME frames: 480..4160 is 61.33 s, not 47 s.
  // Never compress the recorded flight path; the background uses the same clock.
  const frame=firstFrame+Math.max(0,time)*60;
- if(frame>lastFrame+15)return {a:frames[frames.length-1],b:frames[frames.length-1],t:1,expired:true};
+ if(frame>=lastFrame+15)return {a:frames[frames.length-1],b:frames[frames.length-1],t:1,frame,expired:true};
  let low=0,high=frames.length-1;
  while(low<high){const m=(low+high+1)>>1;if(frames[m].frame<=frame)low=m;else high=m-1}
  const a=frames[low],b=frames[Math.min(low+1,frames.length-1)];
- return {a,b,t:b===a?0:Math.min(1,Math.max(0,(frame-a.frame)/(b.frame-a.frame))),expired:false};
+ return {a,b,t:b===a?0:Math.min(1,Math.max(0,(frame-a.frame)/(b.frame-a.frame))),frame,expired:false};
 }
 // A sprite-RAM slot is not a permanent aircraft ID. Compare screen position,
  // size and graphic family before associating two captured frames.
@@ -317,6 +317,12 @@ function edgePosition(a,elapsed,incoming){
  const d=Math.min(Math.abs(span)*.5,Math.max(0,elapsed))*(incoming?-1:1);
  return {x:a.x+vx*d,y:a.y+vy*d,vx,vy};
 }
+// The capture ends mid-flight. Use the existing bounded edge extrapolation
+// for the quarter-second handover instead of freezing and popping sprites.
+function terminalState(item,frame){
+ const elapsed=Math.max(0,(frame-item.frame)/60);
+ return {pos:edgePosition(item,elapsed,false),fade:clamp01(1-elapsed/.25)};
+}
 // Extrapolate only the last confirmed direction and speed of this particular
 // captured flight. Do not manufacture sideways acceleration or a new turn.
 function makeEdgeExit(anchor){
@@ -339,7 +345,7 @@ function sync(time){
  timeLast=time;
  const f=snapshot(time);if(!f||f.expired){tracks.clear();return []}
  const result=[],seen=new Set(),t=clamp01(f.t),dt=(f.b.frame-f.a.frame)/60;
- const captureFrame=f.a.frame+(f.b.frame-f.a.frame)*t;
+ const captureFrame=f.frame;
  function record(item,other,fade,pos){
   const id=item.trackId,kind=item.role,heavy=kind==='bomber',ground=kind==='ground',shadow=kind==='shadow';
   seen.add(id);
@@ -387,7 +393,7 @@ function sync(time){
   if(e.active&&fade>.025&&e.x>-halfW-24&&e.x<360+halfW+24&&e.y>-halfH-24&&e.y<640+halfH+24)result.push(e);
  }
  for(const a of f.a.items){
-  if(f.a===f.b){record(a,null,1,{x:a.x,y:a.y});continue}
+  if(f.a===f.b){const tail=terminalState(a,captureFrame);record(a,null,tail.fade,tail.pos);continue}
   const b=a.next;
   if(b&&b.frame===f.b.frame)record(a,b,1,position(a,b,t));
   else record(a,null,clamp01(1-t*2),edgePosition(a,t*dt,false));
@@ -512,6 +518,7 @@ const api=Object.freeze({ensure,ready,sync,draw,drawShadows,reset,
  shadowPlan:(entities)=>shadowPlan(entities),
  edgePosition:(item,elapsed,incoming)=>edgePosition(item,elapsed,incoming),
  edgeExitPlan:()=>edgeExit?{frame:edgeExit.frame,x:edgeExit.x,y:edgeExit.y,vx:edgeExit.vx,vy:edgeExit.vy}:null,
+ terminalState:(item,frame)=>terminalState(item,frame),
  parsed:()=>!!frames
  }):undefined});
 window.StrikersFlightReplay=api;
