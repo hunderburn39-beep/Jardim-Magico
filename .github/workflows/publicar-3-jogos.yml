@@ -24,6 +24,9 @@ on:
       - 'Pantanal/**'
       - 'Classic-Slot/**'
       - 'Blackline-Pinball/**'
+      - 'Pinball-Action/**'
+      - 'pinball-action/**'
+      - 'pinball-action.html'
       - 'Strikers-1945/**'
       - 'Blocos-Neon/**'
       - '.github/workflows/publicar-3-jogos.yml'
@@ -120,6 +123,7 @@ jobs:
           test -s Pantanal/index.html
           test -s Classic-Slot/index.html
           test -s Blackline-Pinball/index.html
+          test -s Pinball-Action/index.html
           test -s Strikers-1945/index.html
           test -s Blocos-Neon/index.html
           test -d css
@@ -137,7 +141,8 @@ jobs:
           cp -a css js assets public/
           cp -a jardim-phaser jardim-3d public/
           cp -a stake-preview public/
-          cp -a templo-do-trovao Farao-Eterno Halloween Raspadinha-100X Pantanal Classic-Slot Blackline-Pinball Strikers-1945 Blocos-Neon public/
+          cp -a templo-do-trovao Farao-Eterno Halloween Raspadinha-100X Pantanal Classic-Slot Blackline-Pinball Pinball-Action pinball-action Strikers-1945 Blocos-Neon public/
+          cp pinball-action.html public/
           mkdir -p public/Sugar-Rush-1000
           cp -a Sugar-Rush-1000/standalone public/Sugar-Rush-1000/
           mkdir -p public/Sugar-Rush-1000/play
@@ -168,6 +173,8 @@ jobs:
           test -s public/Pantanal/index.html
           test -s public/Classic-Slot/index.html
           test -s public/Blackline-Pinball/index.html
+          test -s public/Pinball-Action/index.html
+          test -s public/pinball-action/index.html
           test -s public/Strikers-1945/index.html
           test -s public/Blocos-Neon/index.html
           test -s public/index2.html
@@ -181,6 +188,7 @@ jobs:
           echo "Pantanal: /Pantanal/"
           echo "Classic Slot: /Classic-Slot/"
           echo "Blackline Pinball: /Blackline-Pinball/"
+          echo "Pinball Action V8.12: /Pinball-Action/"
           echo "Strikers 1945 HTML5: /Strikers-1945/"
           echo "Blocos Neon V3: /Blocos-Neon/"
           echo "Sugar Rush original Phaser offline: /index2.html"
