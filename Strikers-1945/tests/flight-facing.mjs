@@ -15,20 +15,22 @@ try{
  const data=await page.evaluate(()=>{
    const api=window.StrikersFlightReplay,seen=new Map();
    let duplicates=0,steps=0,maxJump=0,b35=0,big=0,shadows=0,corrected=0,pitch=0,wrong=0,spinning=0,pitchFlips=0,invalidFlips=0;
-   let prev=new Map();
+   let prev=new Map(),projectionCount=0,projectionCombat=0,pairedVisible=0,deathProbe=null;
    for(let frame=0;frame<=3680;frame++){
     const t=frame/60,es=api.test.smooth(t),ids=new Set(),current=new Map();
+    const visibleIds=new Set(es.filter(e=>e.role!=='shadow').map(e=>e.uid));
     for(const e of es){
      if(ids.has(e.uid))duplicates++;ids.add(e.uid);
      const p=prev.get(e.uid);
      if(p){maxJump=Math.max(maxJump,Math.hypot(e.x-p.x,e.y-p.y));steps++}
      current.set(e.uid,e);
+     if(e.projection){projectionCount++;if(e.role!=='shadow')projectionCombat++;if(visibleIds.has(e.ownerId)){pairedVisible++;if(!deathProbe&&frame>0)deathProbe={t,owner:e.ownerId,shadow:e.uid};}}
      if(e.turn!==0)spinning++;
      if(e.facingMask!==0&&e.facingMask!==0xc000)invalidFlips++;
      if(e.facingMask)corrected++;
-     if(e.pitch){pitch++;if(e.facingMask)pitchFlips++}
+     if(e.pitch&&e.role!=='shadow'){pitch++;if(e.facingMask)pitchFlips++}
      if(!e.pitch&&e.role!=='ground'&&e.role!=='shadow'&&e.alignment!==null&&e.alignment<-.281)wrong++;
-     if([21691,21715].includes(e.code)){
+     if([21691,21715].includes(e.code)&&!e.projection){
        b35++;if(e.role!=='bomber')throw Error('B-35 treated as ground');
      }
      if([21316,21424].includes(e.code))big++;
@@ -36,9 +38,15 @@ try{
     }
     prev=current;
    }
-   return {stats:api.stats(),steps,maxJump,duplicates,b35,big,shadows,corrected,pitch,wrong,spinning,pitchFlips,invalidFlips};
+   const stats=api.stats();let deathPersistence=false;
+   if(deathProbe){api.reset();api.test.smooth(deathProbe.t);api.test.destroy(deathProbe.owner);const after=api.test.smooth(deathProbe.t+1/60);deathPersistence=!after.some(e=>e.uid===deathProbe.owner||e.uid===deathProbe.shadow);}
+   return {stats,steps,maxJump,duplicates,b35,big,shadows,corrected,pitch,wrong,spinning,pitchFlips,invalidFlips,projectionCount,projectionCombat,pairedVisible,deathPersistence};
  });
  assert.equal(data.stats.frames,116);
+ assert.equal(data.stats.matching.projectionRecords,287,'All reduced palette-10 records accounted for');
+ assert(data.stats.matching.pairedProjections>100,'Same-code offset matches support the projection classification');
+ assert.equal(data.projectionCombat,0,'Terrain projections are never enemies');
+ assert(data.pairedVisible>100&&data.deathPersistence,'Paired projections vanish when their owner is destroyed');
  assert.equal(data.duplicates,0,'No aircraft duplicated in same visible frame');
  assert(data.steps>500,'Enough neighboring visible samples');
  assert(data.maxJump<16,'No visible aircraft teleports at 60 Hz');
@@ -50,5 +58,5 @@ try{
  assert.equal(data.pitchFlips,0,'Actual pitch/roll animation keeps captured hardware orientation');
  assert.equal(data.invalidFlips,0,'Only original hardware flip flags alter tiles');
  assert.deepEqual(errors,[],'No browser JavaScript errors');
- console.log('STRIKERS V8.3 LUT DIRECTION AUDIT:',JSON.stringify(data));
+ console.log('STRIKERS V8.4 TERRAIN PROJECTION AUDIT:',JSON.stringify(data));
 }finally{await browser.close()}
