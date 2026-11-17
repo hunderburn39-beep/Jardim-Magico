@@ -37,6 +37,8 @@ jobs:
         run: node Strikers-1945/tests/smoke.mjs
       - name: Validar 4 armamentos, mísseis e trajetórias laterais
         run: node Strikers-1945/tests/weapons.mjs
+      - name: Auditar posições reais, trajetórias e reutilização dos registos de sprites
+        run: node Strikers-1945/tests/trajectory-audit.mjs
       - name: Validar colisões, proteção e tamanho real dos aviões
         run: node Strikers-1945/tests/combat.mjs
       - name: Validar controlo tátil relativo no iPhone
