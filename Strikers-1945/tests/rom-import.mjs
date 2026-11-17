@@ -62,6 +62,23 @@ const linkage=await page.evaluate(()=>window.StrikersFlightReplay.test.links());
 assert(linkage.changedSlots>200,'Continuous aircraft must survive display-list slot changes');
 assert(linkage.pairs>500,'Adjacent captured sprites should be linked globally');
 assert(linkage.maxStep<255,'No association across a wrapped coordinate or distant position');
+const flightOrientation=await page.evaluate(()=>{
+ const replay=window.StrikersFlightReplay,observed=[];
+ replay.reset();
+ for(let t=0;t<61;t+=.18)for(const e of replay.test.smooth(t))
+  observed.push({code:e.code,role:e.role,vy:e.vy,turn:e.turn,alpha:e.alpha});
+ replay.reset();
+ return {
+  airbase:observed.filter(e=>[21691,21715].includes(e.code)),
+  downward:observed.filter(e=>e.role==='fighter'&&e.vy>65&&e.turn>2.6),
+  airborne:observed.filter(e=>e.role==='fighter')
+ };
+});
+assert(flightOrientation.airbase.length>0,'Original airfield aircraft captured');
+assert(flightOrientation.airbase.every(e=>e.role==='ground'),'Parked aircraft do not fly backwards with map scroll');
+assert(flightOrientation.airborne.length>20,'Flying fighter sprites remain intact');
+console.log('Orientation audit: airbase',flightOrientation.airbase.length,
+ 'fighters',flightOrientation.airborne.length,'downward-facing corrections',flightOrientation.downward.length);
 console.log('Aircraft trajectory linkage:',linkage);
 const recordedSeconds=await page.evaluate(()=>window.StrikersFlightReplay.stats().flightTime);
 assert(Math.abs(recordedSeconds-61.33333)<.05,'A captura MAME deve ocupar os 61,33 segundos reais, sem compressão de tempo');
