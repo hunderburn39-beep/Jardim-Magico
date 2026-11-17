@@ -127,11 +127,15 @@ function role(e){
  if(e.nx>=3||e.ny>=3)return 'ground';
  return 'fighter';
 }
-function knownNoseUpFighter(e){
+function nativeNoseAngle(e){
  const code=e.sprite?.code??e.source?.code??-1;
- // These ROM graphic families show the plane nose toward the top of the
- // rotated portrait playfield, unlike scenery and banked large aircraft.
- return e.role==='fighter'&&((code>=9300&&code<12000)||[21769,21781,21787,21811].includes(code));
+ // Measured visually from the original ROM tile assemblies (portrait).
+ // Angle is relative to the top of screen: left negative, right positive.
+ if(e.role==='fighter'&&((code>=9300&&code<12000)||[21769,21781,21787,21811].includes(code)))return 0;
+ // The diagonal four-engine originals must not travel tail-first.
+ if(e.role==='bomber'&&code>=21312&&code<=21330&&Math.max(e.source?.nx??0,e.source?.ny??0)>=5)return Math.PI/4;
+ if((e.role==='bomber'||e.role==='shadow')&&[21424,21460].includes(code))return -Math.PI/4;
+ return null;
 }
 function turnTowards(from,to,step){
  let delta=Math.atan2(Math.sin(to-from),Math.cos(to-from));
@@ -246,15 +250,17 @@ function sync(time){
     e.sprite=mix>.5?other:item;e.spriteFrom=item;e.spriteTo=other;e.spriteMix=mix;
    }
   }else{e.vx=0;e.vy=0}
-  // Keep original sprite frames. For the small nose-up fighter families only,
-  // compensate for the missing intermediate bank frames in the sparse capture
-  // when the aircraft is moving clearly backwards (toward bottom of screen).
-  // No auto-rotation on ground sprites, bomber silhouettes or terrain shadows.
-  if(knownNoseUpFighter(e)){
-   const speed=Math.hypot(e.vx,e.vy),dominantY=Math.abs(e.vy)>Math.abs(e.vx)*1.18;
-   if(speed>35&&dominantY){
-    e.targetTurn=e.vy>0?Math.PI:0;
-    if(e.visualTurn===undefined)e.visualTurn=e.targetTurn;
+  // Compensate only confirmed tail-first travel with an original ROM frame.
+  // Preserve sideways banked animation; never turn parked airfield artwork.
+  // Rotate its true ROM shadow together with the matching bomber silhouette.
+  const nose=nativeNoseAngle(e);
+  if(nose!==null){
+   const speed=Math.hypot(e.vx,e.vy);
+   if(speed>35){
+    const alignment=(Math.sin(nose)*e.vx-Math.cos(nose)*e.vy)/speed;
+    if(alignment<-.24)e.targetTurn=Math.PI;
+    else if(alignment>.32)e.targetTurn=0;
+    if(e.visualTurn===undefined)e.visualTurn=e.targetTurn??0;
    }
    if(e.visualTurn===undefined)e.visualTurn=0;
    e.visualTurn=turnTowards(e.visualTurn,e.targetTurn??0,displayDt*6.4);
@@ -328,7 +334,7 @@ function draw(ctx,e){
  ctx.restore();return true;
 }
 const api=Object.freeze({ensure,ready,sync,draw,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'ROM silhouettes + palette',flightFacing:'reverse-only on verified nose-up fighter families',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:true}),
+ stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'ROM silhouettes + palette',flightFacing:'tail-first alignment of ROM fighter and bomber graphics with paired shadows',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:true}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
  smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,rawId:e.rawId,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code,vx:e.vx,vy:e.vy,turn:e.visualTurn})),
  links:()=>{if(!linked&&frames)linkAll();return {...linkStats}},
