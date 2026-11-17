@@ -769,7 +769,7 @@ function paintMainIllustration(g){
  }
  mask.addPath(new Path2D('M119 32 L126 31 L169 99 L164 109 L117 43 Z'));
  mask.addPath(new Path2D('M7 114 L45 76 L54 84 L15 132 Z'));
- g.clip(mask,'evenodd');
+ g.clip(shape);g.clip(mask,'evenodd');
  const fill=(d,paint)=>{g.fillStyle=paint;g.fill(new Path2D(d));};
  const stroke=(d,paint,w,alpha=1)=>{g.save();g.globalAlpha=alpha;g.lineWidth=w;g.lineCap='round';g.lineJoin='round';g.strokeStyle=paint;g.stroke(new Path2D(d));g.restore();};
  const linear=(x,y,X,Y,stops)=>{const q=g.createLinearGradient(x,y,X,Y);for(const [a,c] of stops)q.addColorStop(a,c);return q;};
@@ -814,6 +814,44 @@ function paintMainIllustration(g){
  g.restore();return true;
 }
 
+
+// The ten original playfield inserts are not separate sprite RAM
+// objects. Read their exact silhouette and live palette from the board.
+const mainInserts=[[101,81,192],[123,81,240],[77,96,192],[147,96,240],[65,122,192],[160,122,240],[77,145,192],[147,145,240],[100,162,224],[123,162,224]];
+function mainInsertBounds(pixels){
+ const out=[];
+ for(const [x,y,base] of mainInserts){
+  let l=256,r=-1,t=256,b=-1,n=0;
+  for(let dy=-9;dy<=9;dy++)for(let dx=-9;dx<=9;dx++){
+   const X=x+dx,Y=y+dy,p=pixels[(239-X)*256+Y];
+   if(p<base||p>base+3)continue;
+   l=Math.min(l,X);r=Math.max(r,X);t=Math.min(t,Y);b=Math.max(b,Y);n++;
+  }
+  if(n>=65&&r-l>=9&&b-t>=9&&r-l<=18&&b-t<=18)out.push({base,cx:(l+r+1)/2,cy:(t+b+1)/2,rx:(r-l+1)/2,ry:(b-t+1)/2});
+ }
+ return out;
+}
+function paintMainInserts(g){
+ if(typeof Path2D!=='function'||(cpu.flipped&1)||!isMainPrint(memory))return 0;
+ const inserts=mainInsertBounds(bgPixels);
+ g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
+ for(const o of inserts){
+  const {base,cx,cy,rx,ry}=o;
+  g.save();g.translate(cx,cy);g.scale(rx,ry);
+  const circle=(r,ink)=>{g.fillStyle=ink;g.beginPath();g.arc(0,0,r,0,Math.PI*2);g.fill();};
+  const border=g.createLinearGradient(-.8,-.8,.8,.8);
+  for(const [t,c] of [[0,materialTone(base+3,.52)],[.26,colorAt(base+3)],[.47,materialTone(base+2,-.42)],[.72,materialTone(base+3,.2)],[1,materialTone(base+1,-.65)]])border.addColorStop(t,c);
+  circle(.97,colorAt(base));circle(.87,border);circle(.72,materialTone(base+2,-.22));
+  const glass=g.createRadialGradient(-.28,-.3,.04,.04,.05,.8);
+  for(const [t,c] of [[0,materialTone(base+1,.68)],[.27,materialTone(base+1,.24)],[.67,colorAt(base+2)],[1,materialTone(base+2,-.45)]])glass.addColorStop(t,c);
+  circle(.65,glass);
+  for(let i=0;i<8;i++){g.save();g.rotate(i*Math.PI/4);const q=new Path2D('M0 -.09 L.14 -.6 L.35 -.49 L.13 -.03 Z');g.fillStyle=i%2?materialTone(base+3,-.12):materialTone(base+3,.3);g.fill(q);g.restore();}
+  circle(.12,materialTone(base+3,.7));
+  g.restore();
+ }
+ g.restore();return inserts.length;
+}
+
 function rebuildHDBoard(){
  // Board colours can flash repeatedly while the tile map stays fixed.
  // Retain bounded, full-resolution variants of the exact same artwork.
@@ -848,7 +886,7 @@ function rebuildHDBoard(){
  boardCtx.imageSmoothingEnabled=false;boardCtx.drawImage(boardUnder,0,0);
  boardCtx.drawImage(boardInk,0,0,256,256);
  const print=redrawPrintedHalftones(boardCtx);stats.printCells=print.cells;stats.printPatches=print.patches;stats.printRegions=print.regions||0;
- stats.handIllustrated=paintMainIllustration(boardCtx);
+ stats.handIllustrated=paintMainIllustration(boardCtx);stats.mainInserts=paintMainInserts(boardCtx);
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;hdBoardDirty=false;renderStats.boardFull++;
  const cached=document.createElement('canvas');cached.width=cached.height=SIZE;
  cached.getContext('2d',{alpha:false}).drawImage(hdBoard,0,0);
