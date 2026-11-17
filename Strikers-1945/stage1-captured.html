@@ -24,6 +24,7 @@ button{cursor:pointer;font-weight:800}button:disabled{opacity:.45}select{flex:1}
 <div class="controls"><label for="group">Tamanho</label><select id="group"><option value="todos">Todos os registos</option><option value="pequenos">Pequenos (1–2 blocos)</option><option value="medios">Médios (3–4 blocos)</option><option value="grandes">Grandes (5–8 blocos)</option></select><button id="csv" disabled>Exportar CSV</button></div>
 <div id="stats">Ainda sem resultados.</div>
 <div id="previewBox"><canvas id="selected" width="96" height="96"></canvas><pre id="details">Seleciona uma imagem para ver os dados originais.</pre></div>
+<p class="notes"><strong>Nota sobre as silhuetas:</strong> LUT 21460 é uma sombra de avião desenhada no terreno, não um caça preto. Alguns aviões fazem loops e viragens; os fotogramas capturados mostram apenas momentos dessas manobras, não toda a animação.</p>
 <h2>Registos gráficos distintos</h2><p class="notes">Cada entrada corresponde a um agrupamento do hardware: pode representar uma formação de vários aviões, uma sombra ou partes de uma animação. Não significa necessariamente uma aeronave individual já identificada. As cores escuras também podem ser próprias da paleta capturada.</p><div id="results"></div>
 <div class="controls"><button id="back" disabled>◀ Anteriores</button><strong id="pagination">—</strong><button id="forward" disabled>Seguintes ▶</button></div>
 <p class="notes">Os registos indicam código de sprite, atributos, cores de RAM, dimensões e instantes capturados. Não mostram, por si sós, a inteligência artificial, a identidade dos seis aviões selecionáveis nem a lista completa de todas as fases. A ROM não sai do teu dispositivo.</p>
@@ -35,7 +36,7 @@ const PAGE=24;let page=0;
 function status(t){$('#status').textContent=t}
 function chosen(e){
  cat.draw($('#selected'),e);
- $('#details').textContent='LUT: '+e.code+'\\nAtributos: 0x'+e.attr.toString(16)+'\\nPaleta RAM: '+e.palette+' · fase '+e.phase+'\\nBlocos: '+e.nx+' × '+e.ny+'\\nFotogramas: '+e.firstFrame+' até '+e.lastFrame+'\\nOcorrências: '+e.occurrences+'\\nClasse dimensional: '+e.group+'\\nIdentidade: por confirmar';
+ $('#details').textContent='LUT: '+e.code+'\\nAtributos: 0x'+e.attr.toString(16)+'\\nPaleta RAM: '+e.palette+' · fase '+e.phase+'\\nBlocos: '+e.nx+' × '+e.ny+'\\nFotogramas: '+e.firstFrame+' até '+e.lastFrame+'\\nOcorrências: '+e.occurrences+'\\nClasse dimensional: '+e.group+'\\nInterpretação: '+(e.code===21460?'SOMBRA DE AVIÃO NO TERRENO':'identidade por confirmar');
 }
 function render(){
  if(!cat.ready()||!rom.isLoaded())return;
@@ -49,7 +50,7 @@ function render(){
  for(const e of items){
   const btn=document.createElement('button');btn.className='entry';btn.type='button';
   const can=document.createElement('canvas'),line=document.createElement('small'),second=document.createElement('small');
-  cat.draw(can,e);line.textContent='LUT '+e.code;second.textContent=e.nx+'×'+e.ny+' · RAM '+e.palette;
+  cat.draw(can,e);line.textContent='LUT '+e.code+(e.code===21460?' · SOMBRA':'');second.textContent=e.nx+'×'+e.ny+' · RAM '+e.palette;
   btn.append(can,line,second);btn.addEventListener('click',()=>chosen(e));grid.append(btn);
  }
  if(items.length)chosen(items[0]);
