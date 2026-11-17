@@ -29,6 +29,13 @@ p=shadowPlan([owner,{...sh,ownerId:null,ownerRef:null,uid:9,x:0}]);assert(p.leng
 return 9;
  });
  assert.equal(shadowChecks,9,'Bomber ground shadow regression');
+ const marginChecks=await page.evaluate(()=>{
+  const plan=window.StrikersFlightReplay.test.visibleShadowPlan;
+  const owner={uid:7,romFlight:true,active:true,role:'bomber',alpha:1,x:454,y:300,w:192,h:192};
+  const shadow={uid:8,kind:'romShadow',role:'shadow',active:true,ownerId:7,ownerRef:owner,x:406,y:252,w:102,h:102,alpha:1,projection:true};
+  return [plan([],[owner]).length,plan([owner],[owner]).length,plan([],[{...owner,active:false}]).length,plan([],[owner,shadow]).length,plan([shadow],[owner,shadow]).length];
+ });
+ assert.deepEqual(marginChecks,[1,1,0,1,1],'Visible terrain shadows survive aircraft culling without duplicates');
  const motion=await page.evaluate(()=>window.StrikersFlightReplay.test.auditMotion());
  assert(motion.segments>300&&motion.bomberLinks>70,'Real captured aircraft segments included');
  assert.equal(motion.reversals,0,'No invented coordinate reversals');
