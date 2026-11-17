@@ -284,8 +284,9 @@ function linkAll(){
  // y cycles 464..498 for about 19 seconds. This is a capture-dependent
  // hold, not a verified arcade flight path. Continue its measured entry
  // direction after the first downward pass, instead of replaying that loop.
- const anchor=frames.find(f=>f.frame===2016)?.items.find(e=>e.code===21715&&e.x>=360&&Math.abs(e.y-498)<4&&e.role==='bomber');
- edgeExit=anchor?{frame:anchor.frame,x:anchor.x,y:anchor.y,ids:new Set(frames.filter(f=>f.frame>=anchor.frame&&f.frame<=3072).flatMap(f=>f.items.filter(e=>e.code===21715&&e.role==='bomber'&&Math.abs(e.x-anchor.x)<=12).map(e=>e.trackId)))}:null;
+ // Last sample of the uniform descent, before the repeating hold.
+ const anchor=frames.find(f=>f.frame===1984)?.items.find(e=>e.code===21715&&e.x>=360&&Math.abs(e.y-474)<4&&e.role==='bomber');
+ edgeExit=makeEdgeExit(anchor);
  linkStats={pairs,changedSlots,tracks:serial,maxStep,projectionRecords,pairedProjections,pairedLargeShadows,edgeExitTracks:edgeExit?.ids.size??0};linked=true;
 }
 // Monotone cubic interpolation. A zero-length axis stays fixed; a genuine
@@ -299,6 +300,8 @@ function curve(a,b,p,n,t){
 }
 function position(a,b,t){
  const p=a.prev,n=b.next;
+ if(edgeExit&&edgeExit.ids.has(a.trackId)&&b.frame===edgeExit.frame)
+  return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};
  const bounded=(x,y,v)=>Math.max(Math.min(x,y),Math.min(Math.max(x,y),v));
  return {x:bounded(a.x,b.x,curve(a.x,b.x,p?.x??null,n?.x??null,t)),
  y:bounded(a.y,b.y,curve(a.y,b.y,p?.y??null,n?.y??null,t))};
@@ -314,10 +317,19 @@ function edgePosition(a,elapsed,incoming){
  const d=Math.min(Math.abs(span)*.5,Math.max(0,elapsed))*(incoming?-1:1);
  return {x:a.x+vx*d,y:a.y+vy*d,vx,vy};
 }
-// Smooth continuation: starts at the recorded point, exits through the lower-right.
+// Extrapolate only the last confirmed direction and speed of this particular
+// captured flight. Do not manufacture sideways acceleration or a new turn.
+function makeEdgeExit(anchor){
+ if(!anchor||!anchor.prev||!anchor.prev.prev)return null;
+ const prior=anchor.prev.prev,span=(anchor.frame-prior.frame)/60;
+ if(span<=0)return null;
+ const vx=(anchor.x-prior.x)/span,vy=(anchor.y-prior.y)/span;
+ if(Math.abs(vx)>5||vy<20||vy>150)return null;
+ return {frame:anchor.frame,x:anchor.x,y:anchor.y,vx,vy,ids:new Set([anchor.trackId])};
+}
 function continuedEdgePosition(plan,frame){
  const age=Math.max(0,(frame-plan.frame)/60);
- return {x:plan.x+10*age*age/(1+age),y:plan.y+60*age,vx:10*age*(2+age)/((1+age)*(1+age)),vy:60};
+ return {x:plan.x+plan.vx*age,y:plan.y+plan.vy*age,vx:plan.vx,vy:plan.vy};
 }
 function sync(time){
  if(!ready())return [];
@@ -499,6 +511,7 @@ const api=Object.freeze({ensure,ready,sync,draw,drawShadows,reset,
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
  shadowPlan:(entities)=>shadowPlan(entities),
  edgePosition:(item,elapsed,incoming)=>edgePosition(item,elapsed,incoming),
+ edgeExitPlan:()=>edgeExit?{frame:edgeExit.frame,x:edgeExit.x,y:edgeExit.y,vx:edgeExit.vx,vy:edgeExit.vy}:null,
  parsed:()=>!!frames
  }):undefined});
 window.StrikersFlightReplay=api;
