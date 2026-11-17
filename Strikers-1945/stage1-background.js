@@ -69,7 +69,10 @@
  function draw(ctx,stageTime,w=360,h=640){
   if(!frames||!window.StrikersROM?.isLoaded())return false;
   const first=frames[0],last=frames.at(-1);
-  const originalSeconds=(last.frame-first.frame)/60;
+  // Aircraft capture starts at MAME frame 480 and the tilemap at 496.
+  // Align the absolute emulated frame clocks, not merely elapsed seconds.
+  const replayOrigin=window.StrikersFlightReplay?.ready()?window.StrikersFlightReplay.stats().earliestFrame:first.frame;
+  const originalSeconds=(last.frame-replayOrigin)/60;
   // This tilemap capture ends at 2432 (32.27 s), whereas the airplane RAM
   // runs until frame 4160 (61.33 s). Avoid a frozen scene after the last map.
   if(stageTime>=originalSeconds){
@@ -86,7 +89,7 @@
    ctx.restore();return true;
   }
   // Use native 60 Hz timing while actual map frames exist.
-  const target=Math.max(first.frame,Math.min(last.frame,first.frame+stageTime*60));
+  const target=Math.max(first.frame,Math.min(last.frame,replayOrigin+stageTime*60));
   let i=Math.min(frames.length-1,Math.max(0,Math.floor((target-frames[0].frame)/16)));
   while(i<frames.length-1&&frames[i+1].frame<=target)i++;
   while(i>0&&frames[i].frame>target)i--;
@@ -101,7 +104,7 @@
  }
  function ready(){return !!frames&&!!window.StrikersROM?.isLoaded()}
  window.StrikersOriginalStage1=Object.freeze({ensure,ready,draw,preview:()=>frames?frameCanvas(5):null,
-  info:()=>({frames:frames?.length??0,originalWidth:224,originalHeight:320,firstFrame:frames?.[0]?.frame??null,lastFrame:frames?.at(-1)?.frame??null,recordedSeconds:frames?(frames.at(-1).frame-frames[0].frame)/60:null,extrapolation:'repeated-last-capture',stage:1})});
+  info:()=>({frames:frames?.length??0,originalWidth:224,originalHeight:320,firstFrame:frames?.[0]?.frame??null,lastFrame:frames?.at(-1)?.frame??null,recordedSeconds:frames?(frames.at(-1).frame-frames[0].frame)/60:null,extrapolation:'repeated-last-capture',firstFlightFrame:window.StrikersFlightReplay?.stats()?.earliestFrame??null,stage:1})});
  window.addEventListener('strikers-rom-ready',()=>ensure());
  if(window.StrikersROM?.isLoaded())ensure();
 })();
