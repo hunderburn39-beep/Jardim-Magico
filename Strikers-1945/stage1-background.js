@@ -68,8 +68,25 @@
  }
  function draw(ctx,stageTime,w=360,h=640){
   if(!frames||!window.StrikersROM?.isLoaded())return false;
-  // The 60 Hz MAME frame clock must match the aircraft capture; no 47 s compression.
-  const target=Math.max(frames[0].frame,Math.min(frames[frames.length-1].frame,frames[0].frame+stageTime*60));
+  const first=frames[0],last=frames.at(-1);
+  const originalSeconds=(last.frame-first.frame)/60;
+  // This tilemap capture ends at 2432 (32.27 s), whereas the airplane RAM
+  // runs until frame 4160 (61.33 s). Avoid a frozen scene after the last map.
+  if(stageTime>=originalSeconds){
+   const prior=frames.at(-2),deltaFrames=Math.max(1,last.frame-prior.frame);
+   const rawSpeed=(last.scroll-prior.scroll)*120/deltaFrames;
+   const scrollSpeed=Number.isFinite(rawSpeed)&&rawSpeed>35&&rawSpeed<225?rawSpeed:110;
+   const offset=((stageTime-originalSeconds)*scrollSpeed)%h;
+   const still=frameCanvas(frames.length-1);
+   ctx.save();ctx.imageSmoothingEnabled=false;
+   // Extrapolation ONLY: recycle the final recorded map tile to sustain
+   // camera motion. The missing original map data cannot be reconstructed.
+   ctx.drawImage(still,22,0,180,320,0,offset-h,w,h);
+   ctx.drawImage(still,22,0,180,320,0,offset,w,h);
+   ctx.restore();return true;
+  }
+  // Use native 60 Hz timing while actual map frames exist.
+  const target=Math.max(first.frame,Math.min(last.frame,first.frame+stageTime*60));
   let i=Math.min(frames.length-1,Math.max(0,Math.floor((target-frames[0].frame)/16)));
   while(i<frames.length-1&&frames[i+1].frame<=target)i++;
   while(i>0&&frames[i].frame>target)i--;
@@ -84,7 +101,7 @@
  }
  function ready(){return !!frames&&!!window.StrikersROM?.isLoaded()}
  window.StrikersOriginalStage1=Object.freeze({ensure,ready,draw,preview:()=>frames?frameCanvas(5):null,
-  info:()=>({frames:frames?.length??0,originalWidth:224,originalHeight:320,firstFrame:frames?.[0]?.frame??null,lastFrame:frames?.at(-1)?.frame??null,stage:1})});
+  info:()=>({frames:frames?.length??0,originalWidth:224,originalHeight:320,firstFrame:frames?.[0]?.frame??null,lastFrame:frames?.at(-1)?.frame??null,recordedSeconds:frames?(frames.at(-1).frame-frames[0].frame)/60:null,extrapolation:'repeated-last-capture',stage:1})});
  window.addEventListener('strikers-rom-ready',()=>ensure());
  if(window.StrikersROM?.isLoaded())ensure();
 })();
