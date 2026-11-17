@@ -319,6 +319,7 @@ class PinballSoundProcessor extends AudioWorkletProcessor{
   this.ctc=[{control:0,constant:0,pendingConst:false,counter:false,prescale:16,enabled:false,cycles:0},{control:0,constant:0,pendingConst:false,counter:false,prescale:16,enabled:false,cycles:0},{},{}];
   this.ctcBase=0;
   this.pending=[0,0,0,0];this.inService=-1;
+  this.waitingCommand=null;this.readyForCommands=false;
   this.cpu=new AudioZ80(this.mem,{sp:0xffff},{
     readLatch:()=>this.soundLatch,
     ioOut:(port,val)=>this.out(port,val),
@@ -330,10 +331,13 @@ class PinballSoundProcessor extends AudioWorkletProcessor{
   this.port.onmessage=(e)=>{
     const m=e.data;if(m?.type==='command'){
       this.soundLatch=m.command&255;this.commands++;
-      this.trigger0();
+      // Cold boot: the real sound Z80 spends ~0.27s initialising its CTC.
+      // An immediately triggered command before this point is LOST.
+      if(!this.readyForCommands)this.waitingCommand=this.soundLatch;
+      else this.trigger0();
     }
     else if(m?.type==='volume')this.volume=+m.value;
-    else if(m?.type==='debug')this.port.postMessage({type:'debug',frames:this.frames,pc:this.cpu.pc,sp:this.cpu.sp,iff:this.cpu.iff,commands:this.commands,ports:this.ctc.map(c=>({control:c.control,constant:c.constant})),pending:this.pending,ay:this.ay.map(a=>[...a.reg]),rms:this.lastRMS});
+    else if(m?.type==='debug')this.port.postMessage({type:'debug',frames:this.frames,pc:this.cpu.pc,sp:this.cpu.sp,iff:this.cpu.iff,commands:this.commands,ports:this.ctc.map(c=>({control:c.control,constant:c.constant})),pending:this.pending,readyForCommands:this.readyForCommands,waitingCommand:this.waitingCommand,ay:this.ay.map(a=>[...a.reg]),rms:this.lastRMS});
   };
   this.volume=.78;
  }
@@ -380,6 +384,14 @@ class PinballSoundProcessor extends AudioWorkletProcessor{
   this.debt+=this.cyclesPerSample;
   let maxSteps=80;
   while(this.debt>0&&maxSteps-->0){
+   if(!this.readyForCommands && this.ctc[0].enabled && this.ctc[1].enabled && this.cpu.iff){
+    this.readyForCommands=true;
+    if(this.waitingCommand!==null){
+      this.soundLatch=this.waitingCommand;
+      this.waitingCommand=null;
+      this.trigger0();
+    }
+   }
    if(this.cpu.iff){
     for(let ch=0;ch<2;ch++){
      if(this.pending[ch]>0&&(this.inService<0||ch<this.inService)){
