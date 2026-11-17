@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { deflateRawSync } from 'node:zlib';
 
-const sizes={'u34.bin':2097152,'u20.bin':2097152,'u22.bin':2097152,
+const sizes={'2s.u40':262144,'3s.u41':262144,'3-u63.bin':131072,'u61.bin':2097152,'u34.bin':2097152,'u20.bin':2097152,'u22.bin':2097152,
  'u21.bin':2097152,'u23.bin':2097152,'u1.bin':262144};
 function zip(){
  const parts=[],directory=[];
@@ -11,6 +11,8 @@ function zip(){
   const patterns={'u34.bin':[0x12,0x34],'u20.bin':[0xab,0xcd],
    'u22.bin':[0x56,0x78],'u21.bin':[0x9a,0xbc],'u23.bin':[0xde,0xf0]};
   if(patterns[name]){raw[0]=patterns[name][0];raw[1]=patterns[name][1]}
+  if(name==='2s.u40')raw.set([0xff,0xff,0x00,0x00,0x00,0x00,0x00,0x00],0);
+  if(name==='3s.u41')raw.set([0x00,0x80,0x00,0x04,0xe8,0x98,0xe8,0x98],0);
   if(name==='u1.bin'){ // ROM_REGION16_LE: LUT[0..4] map into all four graphics banks
    const indices=[0,1,16384,32768,49152];
    indices.forEach((id,i)=>raw.writeUInt16LE(id,i*2));
@@ -40,6 +42,14 @@ await page.goto(url,{waitUntil:'load'});
 assert(await page.locator('#romLoadBtn').isVisible(),'Importação visível no menu');
 await page.locator('#romFile').setInputFiles({name:'s1945.zip',mimeType:'application/zip',buffer:zip()});
 await page.waitForFunction(()=>window.StrikersROM?.isLoaded(),null,{timeout:30000});
+const fullRom=await page.evaluate(()=>window.StrikersROM.codeInfo());
+assert.equal(fullRom.programBytes,1048576,'Programa original 68EC020: 1 MiB interleaved');
+assert.equal(fullRom.resetSP,0xffff8000,'Original reset stack recovered from two interleaved chips');
+assert.equal(fullRom.resetPC,0x400,'68EC020 reset vector comes from real ROM lane order');
+assert.equal(await page.evaluate(()=>window.StrikersROM.programWord(0)),0xffff,'Program words are assembled big-endian');
+assert.equal(fullRom.soundProgramBytes,131072,'Programa Z80/LZ8420M recuperado');
+assert.equal(fullRom.opl4Bytes,2097152,'Banco OPL4 recuperado');
+assert.equal(fullRom.protectionMcuDumped,false,'MCU de proteção não está presente no dump');
 await page.waitForFunction(()=>window.StrikersFlightReplay?.ready(),null,{timeout:30000});
 assert.equal(await page.evaluate(()=>window.StrikersFlightReplay.stats().frames),116,'116 instantes originais dos caças descodificados');
 const recordedSeconds=await page.evaluate(()=>window.StrikersFlightReplay.stats().flightTime);

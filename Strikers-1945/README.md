@@ -1,3 +1,17 @@
+# Strikers 1945 — V7.1 | Projeto de reconstrução nativa sem emulador (17/11/2026)
+
+**Abrir:** https://hunderburn39-beep.github.io/Jardim-Magico/Strikers-1945/?v=7.1
+
+O endereço principal voltou a um motor Canvas/JavaScript próprio, sem EmulatorJS, FBNeo ou CPU virtual. Agora a importação da ROM completa (10 chips) é obrigatória e o parser valida CRC32 dos bytes, reconstrói o mapa de 1 MiB do programa principal 68EC020, mantém o programa de som e o banco PCM OPL4, e descodifica tiles, sprites e LUT.
+
+**Estado da reconstrução:** a primeira fase tem capturas parciais de registos gráficos reais; a IA original, as tabelas de trajetória das restantes fases, a lógica dos chefes, os disparos precisos e a reprodução integral do som original ainda não foram reconstruídos. A componente MCU 4-u59.bin consta como NO_DUMP no MAME, não está no ZIP. A versão jogável serve como estrutura de desenvolvimento; não é uma cópia fiel completa do arcade. O carregamento dos dez chips não executa o seu código.
+
+**Privacidade e direitos:** a ROM é carregada localmente no Safari e não é publicada no GitHub. O projeto guarda apenas código e registos de investigação autorizados.
+
+**Modos anteriores:** a versão com emulador está arquivada em arcade.html; o protótipo HTML5 antigo está em remake.html.
+
+---
+
 # Strikers 1945 — V7.0: modo original como entrada principal (17/11/2026)
 
 **Abrir:** https://hunderburn39-beep.github.io/Jardim-Magico/Strikers-1945/?v=7.0
