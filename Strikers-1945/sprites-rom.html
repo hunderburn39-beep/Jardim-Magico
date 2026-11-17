@@ -9,7 +9,7 @@ button{font-weight:750;cursor:pointer}button:disabled{opacity:.4}input[type=numb
 .controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:9px 0}
 #status{background:#0e3041;border:1px solid #426879;border-radius:9px;padding:10px;margin:12px 0}
 #stage{display:flex;align-items:center;justify-content:center;background:#0b2031;border:1px solid #325366;border-radius:10px;height:285px;overflow:hidden;margin:10px 0 14px}
-#sprite{display:block;image-rendering:pixelated;max-width:100%;max-height:95%}
+#sprite{display:block;width:min(78vw,250px);height:auto;image-rendering:pixelated;max-width:100%;max-height:95%;object-fit:contain}
 #gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 @media(min-width:580px){#gallery{grid-template-columns:repeat(6,minmax(0,1fr))}}
 .item{border:1px solid #395b73;background:#10283a;border-radius:9px;min-width:0;padding:8px 2px;display:flex;flex-direction:column;align-items:center;gap:5px}
