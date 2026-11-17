@@ -77,7 +77,8 @@ const flightOrientation=await page.evaluate(()=>{
  };
 });
 assert(flightOrientation.airbase.length>0,'Original airfield aircraft captured');
-assert(flightOrientation.airbase.every(e=>e.role==='ground'),'Parked aircraft do not fly backwards with map scroll');
+assert(flightOrientation.airbase.every(e=>e.role==='bomber'),'B-35 flying-wing sprites remain airborne enemies');
+assert(flightOrientation.airbase.some(e=>e.turn>2.6),'The B-35 flying wing must not fly backwards');
 assert(flightOrientation.airborne.length>20,'Flying fighter sprites remain intact');
 assert(flightOrientation.bigReverse.length>0,'Confirmed large airplane ROM sprite must correct tail-first motion');
 assert(flightOrientation.shadowReverse.length>0,'The original bomber shadow must follow the corrected airplane orientation');
