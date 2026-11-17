@@ -59,7 +59,7 @@ try{
  });
  assert(clutter.enemyShots<=16,'Stage 1 must cap enemy bullets to 16');
  assert.equal(clutter.romBadge,'none','No ROM badge covering the playing field');
- assert.match(clutter.build,/VERSÃO 6\.0/,'Correct visible build');
+ assert.match(clutter.build,/VERSÃO 6\.1/,'Correct visible build');
  assert.deepEqual(errors,[],'No browser JS errors');
  console.log('STRIKERS V6.0: ground, fuselage, fade, swept bullet, invulnerability OK');
 }finally{await browser.close()}
