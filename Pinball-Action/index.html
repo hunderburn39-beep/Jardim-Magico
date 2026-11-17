@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#10091c">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Pinball Action V8.37 — Entrada</title>
+<title>Pinball Action V8.38 — Entrada</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080711;overscroll-behavior:none;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -34,11 +34,13 @@ h1 .bottom{display:block;color:#fef6e5;font-size:.78em;letter-spacing:.03em}
 .original-logo{width:min(100%,440px);margin:0;line-height:0;filter:drop-shadow(0 0 2px white) drop-shadow(0 0 12px #ef30d4) drop-shadow(0 12px 18px #06030a)}
 .original-logo svg{display:block;width:100%;height:auto;overflow:visible;shape-rendering:geometricPrecision}
 @media(orientation:landscape) and (max-height:550px){.original-logo{width:min(52vh,300px)}}
+#technical{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));z-index:3;background:#211b31;border:1px solid #ae92be;color:#e9dcef;border-radius:7px;padding:8px 12px;font-size:12px;font-weight:700;touch-action:manipulation;cursor:pointer}
+#technical:disabled{opacity:.4}
 </style>
 </head>
 <body>
 <!-- The actual game exists in a DIFFERENT document. It cannot appear before ENTRAR. -->
-<iframe id="arcade" src="./game-v837.html" title="Pinball Action — máquina original" allow="autoplay" aria-hidden="true"></iframe>
+<iframe id="arcade" src="./game-v838.html" title="Pinball Action — máquina original" allow="autoplay" aria-hidden="true"></iframe>
 <section id="intro" aria-label="Entrada no Pinball Action">
  <div class="panel">
   <div class="kicker">ARCADE ORIGINAL · 1985</div>
@@ -64,7 +66,8 @@ h1 .bottom{display:block;color:#fef6e5;font-size:.78em;letter-spacing:.03em}
   <p id="message" role="status" aria-live="polite">A preparar a máquina original</p>
   <button id="silent" type="button" hidden>Entrar sem som</button>
  </div>
- <div class="version">V8.37</div>
+ <div class="version">V8.38</div>
+ <button id="technical" type="button" disabled>TESTE TÉCNICO</button>
 </section>
 <script>
 (()=>{
@@ -74,6 +77,8 @@ const intro=document.getElementById('intro');
 const button=document.getElementById('enter');
 const message=document.getElementById('message');
 const silent=document.getElementById('silent');
+const technical=document.getElementById('technical');
+let testing=false;
 let ready=false,opening=false,entered=false,interval=null,lastTouch=-Infinity;
 function child(){
  try{
@@ -89,6 +94,7 @@ function readyCheck(){
  if(!child())return;
  ready=true;
  button.disabled=false;
+ technical.disabled=typeof child().__PB_DIAGNOSTIC_START!=='function';
  button.textContent='ENTRAR';
  message.textContent='Carrega em ENTRAR para ouvir a música de título e abrir o jogo';
 }
@@ -106,7 +112,7 @@ function reveal(w){
  intro.hidden=true;
 }
 function begin(){
- if(entered||opening)return;
+ if(entered||opening||testing)return;
  const w=child();
  if(!w){
   button.textContent='A CARREGAR…';
@@ -164,6 +170,19 @@ silent.addEventListener('click',()=>{
  entered=true;stopCheck();
  frame.style.opacity='1';frame.style.pointerEvents='auto';
  frame.removeAttribute('aria-hidden');intro.hidden=true;
+});
+technical.addEventListener('click',()=>{
+ if(entered||opening||testing)return;
+ const w=child();if(!w||typeof w.__PB_DIAGNOSTIC_START!=='function')return;
+ frame.style.opacity='1';
+ if(!w.__PB_DIAGNOSTIC_START()){frame.style.opacity='0';return;}
+ testing=true;
+ frame.style.pointerEvents='auto';frame.removeAttribute('aria-hidden');intro.hidden=true;
+});
+window.addEventListener('message',e=>{
+ if(e.origin!==location.origin||e.source!==frame.contentWindow||e.data!=='PB_DIAGNOSTIC_EXIT'||!testing)return;
+ testing=false;frame.style.opacity='0';frame.style.pointerEvents='none';
+ frame.setAttribute('aria-hidden','true');intro.hidden=false;
 });
 window.addEventListener('pageshow',readyCheck);
 })();
