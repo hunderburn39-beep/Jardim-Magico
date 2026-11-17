@@ -1,3 +1,12 @@
+# Strikers 1945 V7.3 — identificação visual dos sprites originais (17/11/2026)
+
+- Criado `sprites-rom.html`, um visualizador do banco de sprites original u20/u22/u21/u23 com a tabela de índices u1.bin. Permite procurar qualquer código (0–131071), variar dimensões 1–8 blocos, percorrer quadros e aplicar as paletas reais de RAM capturadas na primeira fase.
+- O mosaico inicial apresenta referências de códigos de sprites reais entre 5904 e 6904. **Os códigos não são ainda atribuídos a P-38, P-51, Spitfire, Bf-109, Zero ou Shinden**, pois as tabelas de seleção do programa original ainda não foram descodificadas.
+- As paletas disponíveis são valores efetivamente registados na primeira fase, mas a ligação entre paleta e código selecionado tem de ser validada.
+- Não são publicados pixels ROM; o browser constrói cada imagem a partir do ZIP escolhido pelo utilizador.
+- O modo de jogo principal ainda mantém sprites/sons temporários: não confundir este visualizador técnico com uma réplica acabada.
+
+---
 # Strikers 1945 — V7.2 | Amostras sonoras originais da ROM (17/11/2026)
 
 - O ficheiro u61.bin contém cabeçalhos Yamaha OPL4 de 12 bytes seguidos das amostras PCM. Foram identificadas 105 entradas utilizáveis na ROM original World, até ao índice 104 (há entradas repetidas nos índices finais).
