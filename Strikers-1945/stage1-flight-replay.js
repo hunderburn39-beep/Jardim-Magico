@@ -118,13 +118,26 @@ function isTerrainShadow(e){
 }
 function role(e){
  if(isTerrainShadow(e))return 'shadow';
- // Visually confirmed complete aircraft in the actual ROM, not ground assets.
- if([21691,21715].includes(e.code))return 'bomber';
+ // Airbase/terrain decorations move with the original stage-1 scrolling.
+ // LUT 21691/21715 are stationary aircraft on the airfield; their 32px
+ // scrolling between 32-frame captures was formerly misread as backward flight.
+ if([21691,21715].includes(e.code)||e.palette===23||e.palette===27)return 'ground';
  if([21769,21781,21787,21811].includes(e.code))return 'fighter';
- if(e.nx>=5&&e.ny<=3)return 'ground';
- if(e.nx>=5||e.ny>=5)return 'bomber';
+ if(e.palette===28||e.nx>=5||e.ny>=5)return 'bomber';
  if(e.nx>=3||e.ny>=3)return 'ground';
  return 'fighter';
+}
+function knownNoseUpFighter(e){
+ const code=e.sprite?.code??e.source?.code??-1;
+ // These ROM graphic families show the plane nose toward the top of the
+ // rotated portrait playfield, unlike scenery and banked large aircraft.
+ return e.role==='fighter'&&((code>=9300&&code<12000)||[21769,21781,21787,21811].includes(code));
+}
+function turnTowards(from,to,step){
+ let delta=Math.atan2(Math.sin(to-from),Math.cos(to-from));
+ // Pick a consistent direction for exact 180-degree reversals.
+ if(Math.abs(Math.abs(delta)-Math.PI)<1e-5)delta=Math.PI;
+ return from+Math.max(-step,Math.min(step,delta));
 }
 // Match full consecutive sprite lists, not their transient display-list slots.
 let linked=false,linkStats={pairs:0,changedSlots:0,tracks:0,maxStep:0};
@@ -209,6 +222,7 @@ function sync(time){
  if(!ready())return [];
  if(!linked)linkAll();
  if(time<timeLast-.1)reset();
+ const displayDt=timeLast<0?0:Math.max(0,Math.min(.07,time-timeLast));
  timeLast=time;
  const f=snapshot(time);if(!f||f.expired){tracks.clear();return []}
  const result=[],seen=new Set(),t=clamp01(f.t),dt=(f.b.frame-f.a.frame)/60;
@@ -232,6 +246,19 @@ function sync(time){
     e.sprite=mix>.5?other:item;e.spriteFrom=item;e.spriteTo=other;e.spriteMix=mix;
    }
   }else{e.vx=0;e.vy=0}
+  // Keep original sprite frames. For the small nose-up fighter families only,
+  // compensate for the missing intermediate bank frames in the sparse capture
+  // when the aircraft is moving clearly backwards (toward bottom of screen).
+  // No auto-rotation on ground sprites, bomber silhouettes or terrain shadows.
+  if(knownNoseUpFighter(e)){
+   const speed=Math.hypot(e.vx,e.vy),dominantY=Math.abs(e.vy)>Math.abs(e.vx)*1.18;
+   if(speed>35&&dominantY){
+    e.targetTurn=e.vy>0?Math.PI:0;
+    if(e.visualTurn===undefined)e.visualTurn=e.targetTurn;
+   }
+   if(e.visualTurn===undefined)e.visualTurn=0;
+   e.visualTurn=turnTowards(e.visualTurn,e.targetTurn??0,displayDt*6.4);
+  }else{e.visualTurn=0;e.targetTurn=0}
   const halfW=e.renderW/2,halfH=e.renderH/2;
   if(e.active&&fade>.025&&e.x>-halfW-24&&e.x<360+halfW+24&&e.y>-halfH-24&&e.y<640+halfH+24)result.push(e);
  }
@@ -286,7 +313,9 @@ function draw(ctx,e){
  const alpha=(e.alpha??1)*(e.visualAlpha??1);if(alpha<=.02)return true;
  ctx.save();ctx.imageSmoothingEnabled=false;const baseAlpha=ctx.globalAlpha;ctx.globalAlpha=baseAlpha*alpha;
  const rw=e.renderW??e.w,rh=e.renderH??e.h;
- const dx=e.x-rw/2,dy=e.y-rh/2;
+ const dx=-rw/2,dy=-rh/2;
+ ctx.translate(e.x,e.y);
+ if(e.visualTurn)ctx.rotate(e.visualTurn);
  // Cross-dissolve real animation frames for only ~75ms at each change.
  // The original ROM supplies both silhouettes; no fake 2D rotation.
  if(e.spriteFrom&&e.spriteTo&&e.spriteFrom!==e.spriteTo){
@@ -299,9 +328,9 @@ function draw(ctx,e){
  ctx.restore();return true;
 }
 const api=Object.freeze({ensure,ready,sync,draw,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'ROM silhouettes + palette',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:true}),
+ stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'ROM silhouettes + palette',flightFacing:'reverse-only on verified nose-up fighter families',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:true}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
- smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,rawId:e.rawId,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code})),
+ smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,rawId:e.rawId,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code,vx:e.vx,vy:e.vy,turn:e.visualTurn})),
  links:()=>{if(!linked&&frames)linkAll();return {...linkStats}},
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
  parsed:()=>!!frames
