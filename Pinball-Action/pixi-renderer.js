@@ -7,8 +7,9 @@
   if(window.PIXI){resolve(window.PIXI);return;}
   const script=document.createElement('script');
   script.src=library;script.async=true;
-  script.onload=()=>window.PIXI?resolve(window.PIXI):reject(new Error('PixiJS missing'));
-  script.onerror=()=>reject(new Error('PixiJS download failed'));
+  const timeout=setTimeout(()=>reject(new Error('PixiJS download timeout')),8000);
+  script.onload=()=>{clearTimeout(timeout);window.PIXI?resolve(window.PIXI):reject(new Error('PixiJS missing'));};
+  script.onerror=()=>{clearTimeout(timeout);reject(new Error('PixiJS download failed'));};
   document.head.appendChild(script);
  });
  class PinballPixi {
@@ -44,6 +45,7 @@
    this.enabled=!!on&&this.ready;
    if(this.app?.canvas)this.app.canvas.style.visibility=this.enabled?'visible':'hidden';
    this.original.style.visibility=this.enabled?'hidden':'visible';
+   this.original.parentElement.dataset.renderer=this.enabled?'pixi-webgl':'canvas2d';
   }
   texture(image){
    let t=this.images.get(image);
