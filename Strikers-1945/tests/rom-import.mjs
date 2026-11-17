@@ -210,6 +210,12 @@ await page.locator('#analyze').click();
 await page.waitForFunction(()=>window.StrikersStage1Catalog?.ready(),null,{timeout:30000});
 const captureStats=await page.evaluate(()=>window.StrikersStage1Catalog.stats());
 assert.equal(captureStats.moments,116,'Catalog must process all 116 captured original RAM snapshots');
+const correctedSprites=await page.evaluate(()=>window.StrikersStage1Catalog.records('todos').filter(e=>[21691,21715,21769,21781,21787,21811].includes(e.code)));
+for(const code of [21691,21715,21769,21781,21787,21811]){
+ const rows=correctedSprites.filter(e=>e.code===code),large=code===21691||code===21715;
+ assert(rows.length>0,'Original capture must contain LUT '+code);
+ assert(rows.every(e=>e.nx===(large?3:2)&&e.ny===(large?8:3)),'Correct assembled ROM tile dimensions for LUT '+code);
+}
 assert.equal(captureStats.frameFirst,480,'Original first captured MAME frame');
 assert.equal(captureStats.frameLast,4160,'Original last captured MAME frame');
 assert(captureStats.rawItems>400,'Catalog must include genuine sprite register entries');
