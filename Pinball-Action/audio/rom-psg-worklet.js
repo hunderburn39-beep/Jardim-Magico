@@ -1,6 +1,12 @@
 // Pinball Action Tehkan sound: original 1985 Z80 ROM, 3 x AY8910 PSGs
 // Based on original file a-e3.bin provided by the user; no prerecorded foley.
-const AY_AMP=[0,.010,.015,.023,.034,.050,.071,.10,.141,.20,.283,.40,.565,.70,.84,1.0];
+// Measured AY-3-8910 analogue DAC voltages (roughly 1k load), normalized
+// to full-scale. These replace approximate logarithmic levels so the
+// original ROM's quiet note steps and harmonics are not under/over-emphasized.
+// Reference: MAME ay8910.cpp, Extech EX520 measurements (2014).
+const AY_DAC_VOLTS=[0,.0106,.0150,.0222,.0320,.0466,.0665,.1039,
+                     .1237,.1986,.2803,.3548,.4702,.6030,.7530,.9250];
+const AY_AMP=AY_DAC_VOLTS.map(v=>v/.9250);
 class PBAudioAY {
  constructor(sampleRate){
   this.sr=sampleRate;this.reg=new Uint8Array(16);
