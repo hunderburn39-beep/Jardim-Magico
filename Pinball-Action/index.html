@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#10091c">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Pinball Action V8.31 — Entrada</title>
+<title>Pinball Action V8.32 — Entrada</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080711;overscroll-behavior:none;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -27,7 +27,7 @@ h1 .bottom{display:block;color:#fef6e5;font-size:.78em;letter-spacing:.03em}
 #message{max-width:340px;min-height:3em;margin:0;font-size:13px;line-height:1.5;color:#e6d8ec}
 #silent{background:none;border:1px solid #806b8f;color:#e3d2ef;font-weight:650;border-radius:8px;padding:8px 18px;cursor:pointer}
 #silent[hidden]{display:none}
-.version{font-size:11px;letter-spacing:.1em;color:#9485a0}
+.version{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));z-index:2;font-size:13px;font-weight:800;letter-spacing:.08em;color:#f8ecda;pointer-events:none}
 @media(orientation:landscape) and (max-height:550px){
 .panel{gap:12px}h1{font-size:clamp(36px,11vh,60px)}#enter{min-height:48px;font-size:18px}.rule{height:2px}.subtitle{display:none}
 }
@@ -38,7 +38,7 @@ h1 .bottom{display:block;color:#fef6e5;font-size:.78em;letter-spacing:.03em}
 </head>
 <body>
 <!-- The actual game exists in a DIFFERENT document. It cannot appear before ENTRAR. -->
-<iframe id="arcade" src="./game-v829.html?v=831-fullheight" title="Pinball Action — máquina original" allow="autoplay" aria-hidden="true"></iframe>
+<iframe id="arcade" src="./game-v832.html" title="Pinball Action — máquina original" allow="autoplay" aria-hidden="true"></iframe>
 <section id="intro" aria-label="Entrada no Pinball Action">
  <div class="panel">
   <div class="kicker">ARCADE ORIGINAL · 1985</div>
@@ -63,8 +63,8 @@ h1 .bottom{display:block;color:#fef6e5;font-size:.78em;letter-spacing:.03em}
   <button id="enter" type="button" disabled>A CARREGAR…</button>
   <p id="message" role="status" aria-live="polite">A preparar a máquina original</p>
   <button id="silent" type="button" hidden>Entrar sem som</button>
-  <div class="version">V8.31</div>
  </div>
+ <div class="version">V8.32</div>
 </section>
 <script>
 (()=>{
