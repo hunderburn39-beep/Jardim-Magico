@@ -83,11 +83,11 @@ function snapshot(time){
  // Captures are 60 Hz MAME frames: 480..4160 is 61.33 s, not 47 s.
  // Never compress the recorded flight path; the background uses the same clock.
  const frame=firstFrame+Math.max(0,time)*60;
- if(frame>lastFrame+15)return {a:frames[frames.length-1],b:frames[frames.length-1],t:1,expired:true};
+ if(frame>=lastFrame+15)return {a:frames[frames.length-1],b:frames[frames.length-1],t:1,frame,expired:true};
  let low=0,high=frames.length-1;
  while(low<high){const m=(low+high+1)>>1;if(frames[m].frame<=frame)low=m;else high=m-1}
  const a=frames[low],b=frames[Math.min(low+1,frames.length-1)];
- return {a,b,t:b===a?0:Math.min(1,Math.max(0,(frame-a.frame)/(b.frame-a.frame))),expired:false};
+ return {a,b,t:b===a?0:Math.min(1,Math.max(0,(frame-a.frame)/(b.frame-a.frame))),frame,expired:false};
 }
 // A sprite-RAM slot is not a permanent aircraft ID. Compare screen position,
  // size and graphic family before associating two captured frames.
@@ -257,50 +257,85 @@ function linkAll(){
  let serial=0,pairs=0,changedSlots=0,maxStep=0,projectionRecords=0,pairedProjections=0,pairedLargeShadows=0;
  for(let i=0;i<frames.length;i++){
   const curr=frames[i];for(const a of curr.items){a.frame=curr.frame;a.role=role(a);a.prev=null;a.next=null;a.trackId=0;a.ownerTrack=null}
-  if(i){const old=frames[i-1].items,now=curr.items,dt=(curr.frame-frames[i-1].frame)/60;
-   const unmatched=184, costs=old.map(a=>[...now.map(b=>matchCost(a,b,dt)),...old.map(()=>unmatched)]);
-   const matches=assign(costs);
-   for(let k=0;k<old.length;k++){const j=matches[k];if(j<0||j>=now.length||costs[k][j]>=unmatched)continue;
-    const a=old[k],b=now[j];a.next=b;b.prev=a;b.trackId=a.trackId;pairs++;
-    if(a.id!==b.id)changedSlots++;
-    maxStep=Math.max(maxStep,Math.hypot(a.x-b.x,a.y-b.y));
+  const prev=i?frames[i-1]:null,dt=prev?(curr.frame-prev.frame)/60:0;
+  // Establish aircraft identities before matching their ground projections.
+  // A paired shadow may never inherit a track belonging to another owner.
+  function linkGroup(old,now,shadow){
+   if(old.length&&now.length){
+    const unmatched=184,costs=old.map(a=>[...now.map(b=>{
+     if(shadow&&(a.ownerTrack!==null||b.ownerTrack!==null)&&a.ownerTrack!==b.ownerTrack)return 1e6;
+     return matchCost(a,b,dt);
+    }),...old.map(()=>unmatched)]);
+    const matches=assign(costs);
+    for(let k=0;k<old.length;k++){const j=matches[k];if(j<0||j>=now.length||costs[k][j]>=unmatched)continue;
+     const a=old[k],b=now[j];a.next=b;b.prev=a;b.trackId=a.trackId;pairs++;
+     if(a.id!==b.id)changedSlots++;
+     maxStep=Math.max(maxStep,Math.hypot(a.x-b.x,a.y-b.y));
+    }
    }
+   for(const a of now)if(!a.trackId)a.trackId=++serial;
   }
-  for(const a of curr.items)if(!a.trackId)a.trackId=++serial;
+  linkGroup(prev?prev.items.filter(a=>a.role!=='shadow'):[],curr.items.filter(a=>a.role!=='shadow'),false);
   pairShadows(curr.items);
+  linkGroup(prev?prev.items.filter(a=>a.role==='shadow'):[],curr.items.filter(a=>a.role==='shadow'),true);
   for(const a of curr.items){if(a.projection){projectionRecords++;if(a.ownerTrack)pairedProjections++}else if(a.code===21460&&a.ownerTrack)pairedLargeShadows++}
  }
  // The right B-35 (LUT 21715) is parked in the captured session: x=412,
  // y cycles 464..498 for about 19 seconds. This is a capture-dependent
  // hold, not a verified arcade flight path. Continue its measured entry
  // direction after the first downward pass, instead of replaying that loop.
- const anchor=frames.find(f=>f.frame===2016)?.items.find(e=>e.code===21715&&e.x>=360&&Math.abs(e.y-498)<4&&e.role==='bomber');
- edgeExit=anchor?{frame:anchor.frame,x:anchor.x,y:anchor.y,ids:new Set(frames.filter(f=>f.frame>=anchor.frame&&f.frame<=3072).flatMap(f=>f.items.filter(e=>e.code===21715&&e.role==='bomber'&&Math.abs(e.x-anchor.x)<=12).map(e=>e.trackId)))}:null;
+ // Last sample of the uniform descent, before the repeating hold.
+ const anchor=frames.find(f=>f.frame===1984)?.items.find(e=>e.code===21715&&e.x>=360&&Math.abs(e.y-474)<4&&e.role==='bomber');
+ edgeExit=makeEdgeExit(anchor);
  linkStats={pairs,changedSlots,tracks:serial,maxStep,projectionRecords,pairedProjections,pairedLargeShadows,edgeExitTracks:edgeExit?.ids.size??0};linked=true;
 }
+// Monotone cubic interpolation. A zero-length axis stays fixed; a genuine
+// reversal happens at the recorded knot, not at an invented overshoot.
 function curve(a,b,p,n,t){
- const d=b-a;let m0=p===null?d:(b-p)*.5,m1=n===null?d:(n-a)*.5;
- const limit=Math.max(24,Math.abs(d)*1.5);
- m0=Math.max(-limit,Math.min(limit,m0));m1=Math.max(-limit,Math.min(limit,m1));
+ const d=b-a;if(d===0)return a;
+ const slope=(l,r)=>l*r<=0?0:2*l*r/(l+r);
+ let m0=p===null?d:slope(a-p,d),m1=n===null?d:slope(d,n-b);
  const t2=t*t,t3=t2*t;
  return (2*t3-3*t2+1)*a+(t3-2*t2+t)*m0+(-2*t3+3*t2)*b+(t3-t2)*m1;
 }
 function position(a,b,t){
- const p=a.prev,n=b.next,allowance=Math.min(18,Math.max(4,Math.hypot(b.x-a.x,b.y-a.y)*.12));
- return {x:Math.max(Math.min(a.x,b.x)-allowance,Math.min(Math.max(a.x,b.x)+allowance,curve(a.x,b.x,p?.x??null,n?.x??null,t))),
- y:Math.max(Math.min(a.y,b.y)-allowance,Math.min(Math.max(a.y,b.y)+allowance,curve(a.y,b.y,p?.y??null,n?.y??null,t)))};
+ const p=a.prev,n=b.next;
+ if(edgeExit&&edgeExit.ids.has(a.trackId)&&b.frame===edgeExit.frame)
+  return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};
+ const bounded=(x,y,v)=>Math.max(Math.min(x,y),Math.min(Math.max(x,y),v));
+ return {x:bounded(a.x,b.x,curve(a.x,b.x,p?.x??null,n?.x??null,t)),
+ y:bounded(a.y,b.y,curve(a.y,b.y,p?.y??null,n?.y??null,t))};
 }
 function edgePosition(a,elapsed,incoming){
  const b=incoming?a.next:a.prev;
- if(!b)return {x:a.x,y:a.y};
- const dt=Math.max(1/60,Math.abs(b.frame-a.frame)/60),d=Math.min(.14,Math.max(0,elapsed))/dt;
- // Keep entering/exiting objects moving, but never extrapolate a whole pass.
- return {x:a.x+(a.x-b.x)*d,y:a.y+(a.y-b.y)*d};
+ if(!b)return {x:a.x,y:a.y,vx:0,vy:0};
+ const span=(b.frame-a.frame)/60;
+ if(!span)return {x:a.x,y:a.y,vx:0,vy:0};
+ const vx=(b.x-a.x)/span,vy=(b.y-a.y)/span;
+ // The invisible half of the capture interval is the extrapolation limit.
+ // Previously the fixed 0.14 s cap froze a still-visible sprite while fading.
+ const d=Math.min(Math.abs(span)*.5,Math.max(0,elapsed))*(incoming?-1:1);
+ return {x:a.x+vx*d,y:a.y+vy*d,vx,vy};
 }
-// Smooth continuation: starts at the recorded point, exits through the lower-right.
+// The capture ends mid-flight. Use the existing bounded edge extrapolation
+// for the quarter-second handover instead of freezing and popping sprites.
+function terminalState(item,frame){
+ const elapsed=Math.max(0,(frame-item.frame)/60);
+ return {pos:edgePosition(item,elapsed,false),fade:clamp01(1-elapsed/.25)};
+}
+// Extrapolate only the last confirmed direction and speed of this particular
+// captured flight. Do not manufacture sideways acceleration or a new turn.
+function makeEdgeExit(anchor){
+ if(!anchor||!anchor.prev||!anchor.prev.prev)return null;
+ const prior=anchor.prev.prev,span=(anchor.frame-prior.frame)/60;
+ if(span<=0)return null;
+ const vx=(anchor.x-prior.x)/span,vy=(anchor.y-prior.y)/span;
+ if(Math.abs(vx)>5||vy<20||vy>150)return null;
+ return {frame:anchor.frame,x:anchor.x,y:anchor.y,vx,vy,ids:new Set([anchor.trackId])};
+}
 function continuedEdgePosition(plan,frame){
  const age=Math.max(0,(frame-plan.frame)/60);
- return {x:plan.x+10*age*age/(1+age),y:plan.y+60*age,vx:10*age*(2+age)/((1+age)*(1+age)),vy:60};
+ return {x:plan.x+plan.vx*age,y:plan.y+plan.vy*age,vx:plan.vx,vy:plan.vy};
 }
 function sync(time){
  if(!ready())return [];
@@ -310,7 +345,7 @@ function sync(time){
  timeLast=time;
  const f=snapshot(time);if(!f||f.expired){tracks.clear();return []}
  const result=[],seen=new Set(),t=clamp01(f.t),dt=(f.b.frame-f.a.frame)/60;
- const captureFrame=f.a.frame+(f.b.frame-f.a.frame)*t;
+ const captureFrame=f.frame;
  function record(item,other,fade,pos){
   const id=item.trackId,kind=item.role,heavy=kind==='bomber',ground=kind==='ground',shadow=kind==='shadow';
   seen.add(id);
@@ -334,6 +369,8 @@ function sync(time){
     e.spriteMix=clamp01((t-.45)/.10);
     e.sprite=e.spriteMix>.5?other:item;
    }
+  }else if(Number.isFinite(pos.vx)&&Number.isFinite(pos.vy)){
+   e.vx=pos.vx;e.vy=pos.vy;
   }else{
    const last=item.prev,next=item.next,neighbor=next||last;
    if(neighbor){const span=(neighbor.frame-item.frame)/60;e.vx=(neighbor.x-item.x)/span;e.vy=(neighbor.y-item.y)/span}
@@ -352,11 +389,12 @@ function sync(time){
   e.alignment=nose&&speed>=34?(nose.x*e.vx+nose.y*e.vy)/speed:null;
   e.pitch=hasPitchChange(e.originalSprite);
   e.projection=item.projection;e.ownerId=e.originalSprite.ownerTrack??item.ownerTrack??null;e.ownerRef=null;
-  const halfW=e.renderW/2,halfH=e.renderH/2;
-  if(e.active&&fade>.025&&e.x>-halfW-24&&e.x<360+halfW+24&&e.y>-halfH-24&&e.y<640+halfH+24)result.push(e);
+  // Project shadows before viewport culling: the owner correction can move
+  // a previously offscreen recorded shadow back into view.
+  if(e.active&&fade>.025)result.push(e);
  }
  for(const a of f.a.items){
-  if(f.a===f.b){record(a,null,1,{x:a.x,y:a.y});continue}
+  if(f.a===f.b){const tail=terminalState(a,captureFrame);record(a,null,tail.fade,tail.pos);continue}
   const b=a.next;
   if(b&&b.frame===f.b.frame)record(a,b,1,position(a,b,t));
   else record(a,null,clamp01(1-t*2),edgePosition(a,t*dt,false));
@@ -364,7 +402,7 @@ function sync(time){
  if(f.a!==f.b)for(const b of f.b.items)if(!b.prev||b.prev.frame!==f.a.frame){
   if(t>=.5)record(b,null,clamp01((t-.5)*2),edgePosition(b,(1-t)*dt,true));
  }
- // Decorative projections retain captured ground position and scale.
+ // Decorative projections retain captured ground position, scale and owner identity.
  for(const shadow of result)if(shadow.role==='shadow'){
   const owner=shadow.ownerId!==null?tracks.get(shadow.ownerId):null;
   if(owner&&seen.has(owner.uid)){
@@ -441,18 +479,33 @@ function shadowPlan(enemies){
   const sh=native.get(owner.uid);
   const w=owner.renderW??owner.w,h=owner.renderH??owner.h;
   if(sh){
-   const separated=Math.hypot(sh.x-owner.x,sh.y-owner.y)>=28;
    const sw=sh.renderW??sh.w,hh=sh.renderH??sh.h;
-   plan.push({kind:'native',entity:sh,x:separated?sh.x:owner.x-48,y:separated?sh.y:owner.y-48,w:separated?sw:Math.min(sw,w*.65),h:separated?hh:Math.min(hh,h*.65),alpha:.79});
+   // Preserve the measured reduced hardware projection. For the large
+   // silhouette whose recorded centre can overlap the fuselage (LUT 21460),
+   // blend the corrective separation continuously instead of snapping
+   // between geometries at an arbitrary 28-pixel threshold.
+   const distance=Math.hypot(sh.x-owner.x,sh.y-owner.y);
+   const u=sh.projection?1:clamp01((distance-28)/36),mix=u*u*(3-2*u);
+   const lerp=(a,b)=>a+(b-a)*mix;
+   plan.push({kind:'native',entity:sh,x:lerp(owner.x-48,sh.x),y:lerp(owner.y-48,sh.y),w:lerp(Math.min(sw,w*.65),sw),h:lerp(Math.min(hh,h*.65),hh),alpha:.79});
   }else{
    plan.push({kind:'silhouette',entity:owner,x:owner.x-48,y:owner.y-48,w:w*17/32,h:h*17/32,alpha:.66});
   }
  }
  return plan;
 }
+// Shadow visibility is independent of combat visibility. Live capture tracks
+// can cast a visible projection even if their aircraft is outside the viewport.
+function visibleShadowPlan(enemies,liveTracks){
+ const candidates=new Map();
+ for(const e of liveTracks)if(e.role==='bomber'||e.role==='shadow')candidates.set(e.uid,e);
+ for(const e of enemies)if(e.role==='bomber'||e.role==='shadow')candidates.set(e.uid,e);
+ return shadowPlan([...candidates.values()]).filter(p=>p.w>0&&p.h>0&&
+  p.x+p.w/2>0&&p.x-p.w/2<360&&p.y+p.h/2>0&&p.y-p.h/2<640);
+}
 function drawShadows(ctx,enemies){
  if(!ready())return;
- for(const p of shadowPlan(enemies)){
+ for(const p of visibleShadowPlan(enemies,tracks.values())){
   const e=p.entity;
   let sheet=sprite(e.sprite);if(!sheet)continue;
   if(p.kind==='silhouette'){
@@ -471,14 +524,44 @@ function drawShadows(ctx,enemies){
   ctx.restore();
  }
 }
+// Numeric capture audit, intentionally available only on the local test host.
+function auditMotion(){
+ if(!linked)linkAll();
+ let segments=0,reversals=0,shadowOwnerSwitches=0,bomberLinks=0;
+ for(const fr of frames)for(const a of fr.items){
+  const b=a.next;if(!b)continue;
+  if(a.role==='shadow'){
+   if(a.ownerTrack!==b.ownerTrack)shadowOwnerSwitches++;
+   continue;
+  }
+  if(a.role==='ground')continue;
+  segments++;if(a.role==='bomber')bomberLinks++;
+  let flagged=false;
+  for(const axis of ['x','y']){
+   const d=b[axis]-a[axis];let last=a[axis];
+   for(let k=1;k<=32;k++){
+    const v=position(a,b,k/32)[axis];
+    if(d===0?Math.abs(v-a[axis])>1e-6:(v-last)*Math.sign(d)<-1e-6)flagged=true;
+    last=v;
+   }
+  }
+  if(flagged)reversals++;
+ }
+ return {segments,reversals,shadowOwnerSwitches,bomberLinks};
+}
 const api=Object.freeze({ensure,ready,sync,draw,drawShadows,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'captured projections, separated overlapping bomber shadows and ROM alpha fallback',flightFacing:'per-LUT native heading, lateral bomber mirror, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-bounded-hermite',spriteBlend:false}),
+ stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'captured projections, separated overlapping bomber shadows and ROM alpha fallback',flightFacing:'per-LUT native heading, lateral bomber mirror, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-monotone-hermite',spriteBlend:false}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
  smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,rawId:e.rawId,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code,vx:e.vx,vy:e.vy,turn:e.visualTurn,attr:e.sprite.attr,originalAttr:e.originalSprite.attr,facingMask:e.facingMask,alignment:e.alignment,pitch:e.pitch,projection:e.projection,palette:e.palette,ownerId:e.ownerId,active:e.active})),
  links:()=>{if(!linked&&frames)linkAll();return {...linkStats}},
  destroy:(uid)=>{const e=tracks.get(uid);if(e)e.active=false;return !!e},
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
  shadowPlan:(entities)=>shadowPlan(entities),
+ visibleShadowPlan:(entities,live)=>visibleShadowPlan(entities,live),
+ edgePosition:(item,elapsed,incoming)=>edgePosition(item,elapsed,incoming),
+ edgeExitPlan:()=>edgeExit?{frame:edgeExit.frame,x:edgeExit.x,y:edgeExit.y,vx:edgeExit.vx,vy:edgeExit.vy}:null,
+ terminalState:(item,frame)=>terminalState(item,frame),
+ auditMotion:()=>auditMotion(),
  parsed:()=>!!frames
  }):undefined});
 window.StrikersFlightReplay=api;

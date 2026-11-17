@@ -29,6 +29,19 @@ p=shadowPlan([owner,{...sh,ownerId:null,ownerRef:null,uid:9,x:0}]);assert(p.leng
 return 9;
  });
  assert.equal(shadowChecks,9,'Bomber ground shadow regression');
+ const marginChecks=await page.evaluate(()=>{
+  const plan=window.StrikersFlightReplay.test.visibleShadowPlan;
+  const owner={uid:7,romFlight:true,active:true,role:'bomber',alpha:1,x:454,y:300,w:192,h:192};
+  const shadow={uid:8,kind:'romShadow',role:'shadow',active:true,ownerId:7,ownerRef:owner,x:406,y:252,w:102,h:102,alpha:1,projection:true};
+  return [plan([],[owner]).length,plan([owner],[owner]).length,plan([],[{...owner,active:false}]).length,plan([],[owner,shadow]).length,plan([shadow],[owner,shadow]).length];
+ });
+ assert.deepEqual(marginChecks,[1,1,0,1,1],'Visible terrain shadows survive aircraft culling without duplicates');
+ const motion=await page.evaluate(()=>window.StrikersFlightReplay.test.auditMotion());
+ assert(motion.segments>300&&motion.bomberLinks>70,'Real captured aircraft segments included');
+ assert.equal(motion.reversals,0,'No invented coordinate reversals');
+ assert.equal(motion.shadowOwnerSwitches,0,'Paired shadows retain their owner');
+ const plan=await page.evaluate(()=>window.StrikersFlightReplay.test.edgeExitPlan());
+ assert.deepEqual(plan,{frame:1984,x:412,y:474,vx:0,vy:60},'Continuation preserves measured velocity');
  const data=await page.evaluate(()=>{
    const api=window.StrikersFlightReplay,seen=new Map();
    let duplicates=0,steps=0,maxJump=0,b35=0,big=0,shadows=0,corrected=0,pitch=0,wrong=0,spinning=0,pitchFlips=0,invalidFlips=0,horizontalBig=0,wrongHorizontalBig=0;
@@ -81,5 +94,5 @@ return 9;
  assert(data.horizontalBig>10,'Lateral four-engine formation is visible');
  assert.equal(data.wrongHorizontalBig,0,'Lateral bombers face along travel with an upward nose');
  assert.deepEqual(errors,[],'No browser JavaScript errors');
- console.log('STRIKERS V8.7 BOMBER ORIENTATION AND SHADOW AUDIT:',JSON.stringify(data));
+ console.log('STRIKERS V8.8 BOMBER ORIENTATION, MOTION AND SHADOW AUDIT:',JSON.stringify(data));
 }finally{await browser.close()}
