@@ -80,13 +80,15 @@ const flightMotion=await page.evaluate(()=>{
    if(e.mix>0&&e.mix<1)blend++;
    if(e.alpha>.02&&e.alpha<1)fade++;
    const previous=seen.get(e.uid);
-   if(previous){
+   if(previous && previous.sample===i-1){
+    // Only compare adjacent visible samples. A genuine off-screen excursion
+    // can re-enter later at another edge without an on-screen teleport.
     const delta=Math.hypot(e.x-previous.x,e.y-previous.y);
     maxJump=Math.max(maxJump,delta);
     if(delta>.4)moving++;
     if(e.code!==previous.code)changedCodes++;
    }
-   seen.set(e.uid,e);
+   seen.set(e.uid,{...e,sample:i});
   }
  }
  api.reset();
@@ -97,7 +99,7 @@ assert(flightMotion.moving>300,'Os inimigos percorrem trajetórias animadas');
 assert(flightMotion.blend>20,'As viragens usam transições dos sprites originais');
 assert(flightMotion.fade>10,'Entradas e saídas de inimigos são suavizadas');
 assert.equal(flightMotion.duplicate,0,'O mesmo slot da ROM não é duplicado no ecrã');
-assert(flightMotion.maxJump<70,'Um avião persistente não pode teletransportar-se entre fotogramas');
+assert(flightMotion.maxJump<25,'Um avião visível não pode teletransportar-se entre fotogramas consecutivos a 30 Hz');
 console.log('Teste de fluidez da fase 1:',flightMotion);
 
 
