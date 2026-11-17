@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V8.20 — som AY com DAC de 16 níveis fiel</title><style>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V8.21 — tema original do título</title><style>
 :root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;background:#040409;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 body{display:flex;align-items:center;justify-content:center}#app{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;width:100%;height:100dvh;max-height:100dvh;padding:max(8px,env(safe-area-inset-top)) 6px max(8px,env(safe-area-inset-bottom))}
 #display{height:auto;max-height:calc(100dvh - 176px - env(safe-area-inset-top) - env(safe-area-inset-bottom));width:min(calc((100dvh - 176px)*224/256),100vw - 12px,540px);aspect-ratio:224/256;flex-shrink:1;overflow:hidden;box-shadow:0 0 0 3px #242028,0 0 22px #171119;outline:1px solid #77707b;background:#000}
@@ -314,6 +314,12 @@ function render(){
 const arcadeAudio=(()=>{
  let context=null,node=null,mixer=null,loading=null,enabled=true;
  let commands=0,errors='',lastCommand=null,queuedCommand=null,bootCount=0;
+ const TITLE_COMMAND=0x32; // Verified against the original Title and Credit melody.
+ let titleDispatched=false,gameStarting=false;
+ function sendChipCommand(cmd){
+  if(cmd===TITLE_COMMAND)titleDispatched=true;
+  node.port.postMessage({type:'command',command:cmd&255});
+ }
  const documentSound=()=>document.getElementById('sound');
  function status(){
   const b=documentSound();if(!b)return;
@@ -328,7 +334,7 @@ const arcadeAudio=(()=>{
  function fromRom(command){
   const cmd=command&255;
   commands++;lastCommand=cmd;
-  if(node){node.port.postMessage({type:'command',command:cmd});return;}
+  if(node){sendChipCommand(cmd);return;}
   // On first user gesture Safari unlocks audio. Avoid replaying an entire
   // backlog of old commands at once, which sounds like echoes/stutter.
   queuedCommand=cmd;
@@ -359,7 +365,7 @@ const arcadeAudio=(()=>{
     node.onprocessorerror=()=>fail(Error('O processador dos 3 chips parou'));
     node.connect(mixer);
     if(queuedCommand!==null){
-     node.port.postMessage({type:'command',command:queuedCommand});
+     sendChipCommand(queuedCommand);
      queuedCommand=null;
     }
     status();
@@ -377,16 +383,29 @@ const arcadeAudio=(()=>{
   if(enabled&&context?.state==='suspended')context.resume().catch(fail);
   if(enabled&&!node&&!loading)boot();
  }
- // Do not inject a fake "intro" sound (especially not command 02).
- // The original main Z80 chooses the actual title/credit sound command.
- function playIntro(){}
+ // Original title theme is command 0x32, not the short command 02.
+ // iOS requires a gesture; send it once on the title screen after AUDIO or
+ // a title-screen tap. The same Z80 + 3 AY chips produce every note.
+ function playIntro(){
+  if(!enabled||document.hidden||gameStarting||titleDispatched)return;
+  if(!boot())return;
+  if(node)sendChipCommand(TITLE_COMMAND);
+  else queuedCommand=TITLE_COMMAND;
+ }
+ function gameStart(){
+  // Never inject or replay a deferred title tune over gameplay.
+  gameStarting=true;
+  if(queuedCommand===TITLE_COMMAND)queuedCommand=null;
+ }
  function startBackground(){} // This is not a recording-based sound engine.
  function state(){return {enabled,engine:'Z80 original + três AY-3-8910 (sem MP3)',
   context:context?.state||'não iniciado',ready:!!node,chipReady:!!node,
-  commands,lastCommand,queuedCommand,error:errors};}
- return {boot,fromRom,toggle,restore,playIntro,startBackground,state,debug:()=>({...state(),bootCount})};
+  commands,lastCommand,queuedCommand,titleDispatched,gameStarting,error:errors};}
+ return {boot,fromRom,toggle,restore,playIntro,gameStart,startBackground,state,debug:()=>({...state(),bootCount})};
 })();
 function arcadeSound(command){arcadeAudio.fromRom(command);}
+ // Tapping the title screen is another audio-unlock gesture on iPhone.
+ document.getElementById('game').addEventListener('pointerdown',()=>arcadeAudio.playIntro(),{passive:true});
 // One physical press = one audio action. iOS may send pointerdown + touchstart
 // + click, sometimes far apart if emulation is busy. Never mute on that click.
 const soundButton=document.getElementById('sound');
@@ -445,7 +464,6 @@ function activateService(k,source='pointer'){
  else pending[k]=Math.max(pending[k],pulseLength);
  refreshKeys();
  arcadeAudio.boot();
- arcadeAudio.playIntro();
 }
 // The original ROM keeps its coin credits at 0xc013, confirmed by Z80 RAM traces.
 // Pressing 1 JOGADOR from zero credits first drives the genuine coin input,
@@ -453,6 +471,7 @@ function activateService(k,source='pointer'){
 // No RAM credits, scores or gameplay state are fabricated by the controller.
 let queuedStart=null;
 function startGameRequest(k){
+ arcadeAudio.gameStart();
  const required=k==='start2'?2:1;
  if(memory[0xc013]>=required){
   pending[k]=Math.max(pending[k],18);
@@ -489,7 +508,6 @@ function press(k,yes){
   }
   active.add(k);
   arcadeAudio.boot();
-  if(yes)arcadeAudio.playIntro();
   // Flippers, ball launch and stage changes are now all controlled by genuine ROM commands.
  } else active.delete(k);
  refreshKeys();
