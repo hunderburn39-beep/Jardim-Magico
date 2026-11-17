@@ -389,8 +389,9 @@ function sync(time){
   e.alignment=nose&&speed>=34?(nose.x*e.vx+nose.y*e.vy)/speed:null;
   e.pitch=hasPitchChange(e.originalSprite);
   e.projection=item.projection;e.ownerId=e.originalSprite.ownerTrack??item.ownerTrack??null;e.ownerRef=null;
-  const halfW=e.renderW/2,halfH=e.renderH/2;
-  if(e.active&&fade>.025&&e.x>-halfW-24&&e.x<360+halfW+24&&e.y>-halfH-24&&e.y<640+halfH+24)result.push(e);
+  // Project shadows before viewport culling: the owner correction can move
+  // a previously offscreen recorded shadow back into view.
+  if(e.active&&fade>.025)result.push(e);
  }
  for(const a of f.a.items){
   if(f.a===f.b){const tail=terminalState(a,captureFrame);record(a,null,tail.fade,tail.pos);continue}
@@ -493,9 +494,18 @@ function shadowPlan(enemies){
  }
  return plan;
 }
+// Shadow visibility is independent of combat visibility. Live capture tracks
+// can cast a visible projection even if their aircraft is outside the viewport.
+function visibleShadowPlan(enemies,liveTracks){
+ const candidates=new Map();
+ for(const e of liveTracks)if(e.role==='bomber'||e.role==='shadow')candidates.set(e.uid,e);
+ for(const e of enemies)if(e.role==='bomber'||e.role==='shadow')candidates.set(e.uid,e);
+ return shadowPlan([...candidates.values()]).filter(p=>p.w>0&&p.h>0&&
+  p.x+p.w/2>0&&p.x-p.w/2<360&&p.y+p.h/2>0&&p.y-p.h/2<640);
+}
 function drawShadows(ctx,enemies){
  if(!ready())return;
- for(const p of shadowPlan(enemies)){
+ for(const p of visibleShadowPlan(enemies,tracks.values())){
   const e=p.entity;
   let sheet=sprite(e.sprite);if(!sheet)continue;
   if(p.kind==='silhouette'){
@@ -547,6 +557,7 @@ const api=Object.freeze({ensure,ready,sync,draw,drawShadows,reset,
  destroy:(uid)=>{const e=tracks.get(uid);if(e)e.active=false;return !!e},
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
  shadowPlan:(entities)=>shadowPlan(entities),
+ visibleShadowPlan:(entities,live)=>visibleShadowPlan(entities,live),
  edgePosition:(item,elapsed,incoming)=>edgePosition(item,elapsed,incoming),
  edgeExitPlan:()=>edgeExit?{frame:edgeExit.frame,x:edgeExit.x,y:edgeExit.y,vx:edgeExit.vx,vy:edgeExit.vy}:null,
  terminalState:(item,frame)=>terminalState(item,frame),
