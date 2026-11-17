@@ -42,12 +42,14 @@ await page.locator('#romFile').setInputFiles({name:'s1945.zip',mimeType:'applica
 await page.waitForFunction(()=>window.StrikersROM?.isLoaded(),null,{timeout:30000});
 await page.waitForFunction(()=>window.StrikersFlightReplay?.ready(),null,{timeout:30000});
 assert.equal(await page.evaluate(()=>window.StrikersFlightReplay.stats().frames),116,'116 instantes originais dos caças descodificados');
+const recordedSeconds=await page.evaluate(()=>window.StrikersFlightReplay.stats().flightTime);
+assert(Math.abs(recordedSeconds-61.33333)<.05,'A captura MAME deve ocupar os 61,33 segundos reais, sem compressão de tempo');
 
 const flightMotion=await page.evaluate(()=>{
  const api=window.StrikersFlightReplay,seen=new Map();
  let samples=0,moving=0,blend=0,fade=0,duplicate=0,maxJump=0,changedCodes=0;
  api.reset();
- for(let i=0;i<=47*30;i++){
+ for(let i=0;i<=Math.ceil(61.333*30);i++){
   const current=api.test.smooth(i/30);
   const slots=new Set();
   for(const e of current){
