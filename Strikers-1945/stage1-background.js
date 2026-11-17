@@ -68,7 +68,8 @@
  }
  function draw(ctx,stageTime,w=360,h=640){
   if(!frames||!window.StrikersROM?.isLoaded())return false;
-  const target=frames[0].frame+Math.max(0,Math.min(1,stageTime/47))*(frames[frames.length-1].frame-frames[0].frame);
+  // The 60 Hz MAME frame clock must match the aircraft capture; no 47 s compression.
+  const target=Math.max(frames[0].frame,Math.min(frames[frames.length-1].frame,frames[0].frame+stageTime*60));
   let i=Math.min(frames.length-1,Math.max(0,Math.floor((target-frames[0].frame)/16)));
   while(i<frames.length-1&&frames[i+1].frame<=target)i++;
   while(i>0&&frames[i].frame>target)i--;
@@ -83,7 +84,7 @@
  }
  function ready(){return !!frames&&!!window.StrikersROM?.isLoaded()}
  window.StrikersOriginalStage1=Object.freeze({ensure,ready,draw,preview:()=>frames?frameCanvas(5):null,
-  info:()=>({frames:frames?.length??0,originalWidth:224,originalHeight:320,stage:1})});
+  info:()=>({frames:frames?.length??0,originalWidth:224,originalHeight:320,firstFrame:frames?.[0]?.frame??null,lastFrame:frames?.at(-1)?.frame??null,stage:1})});
  window.addEventListener('strikers-rom-ready',()=>ensure());
  if(window.StrikersROM?.isLoaded())ensure();
 })();
