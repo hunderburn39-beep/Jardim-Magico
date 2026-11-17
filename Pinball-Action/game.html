@@ -562,7 +562,7 @@ function startGameRequest(k){
 function endStartRequest(){
  if(queuedStart){
   const button=document.getElementById(queuedStart.key);
-  if(button)button.textContent=queuedStart.key==='start'?'START':'2 JOG.';
+  if(button)button.textContent=queuedStart.key==='start'?'P1':'P2';
  }
  queuedStart=null;
 }
