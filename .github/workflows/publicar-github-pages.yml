@@ -56,3 +56,23 @@ jobs:
       - name: Deploy do site inteiro
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Confirmar que Strikers 1945 e catálogo abrem sem erro 404
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          for file in Strikers-1945/index.html Strikers-1945/stage1-captured.html Strikers-1945/stage1-captured-catalog.js; do
+            ok=0
+            for attempt in 1 2 3 4 5 6 7 8; do
+              code=$(curl --location --silent --output /tmp/strikers-page-check --write-out '%{http_code}' "${SITE_URL%/}/${file}?source=${GITHUB_SHA}" || true)
+              echo "${file}: HTTP ${code:-000} (tentativa ${attempt})"
+              if [ "${code}" = "200" ] && [ -s /tmp/strikers-page-check ]; then ok=1;break;fi
+              sleep 3
+            done
+            if [ "${ok}" -ne 1 ]; then
+              echo "::error::${file} não está publicado (HTTP 200 em falta)"
+              exit 1
+            fi
+          done
+          echo "Strikers e catálogo disponíveis: HTTP 200"
