@@ -1,0 +1,49 @@
+name: Pinball Action - identificar musica real por comando ROM
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/pinball-map-rom-audio.yml'
+permissions:
+  contents: read
+jobs:
+  identify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Renderizar e medir comandos musicais do Z80/AY-8910 original
+        shell: bash
+        run: |
+          node - <<'JS'
+          const fs=require('fs'),vm=require('vm');
+          const html=fs.readFileSync('Pinball-Action/index.html','utf8');
+          const src=JSON.parse(html.match(/const workletSource=("(?:\\.|[^"\\])*");/s)[1]);
+          const sampleRate=11025;
+          let Processor;
+          vm.runInNewContext(src,{
+            sampleRate,atob,
+            AudioWorkletProcessor:class{constructor(){this.port={onmessage:null,postMessage:()=>{}}}},
+            registerProcessor:(name,klass)=>{Processor=klass}
+          },{timeout:5000});
+          const commands=[1,2,3,4,7,8,9,10,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,0x32,0x33,0x35,0x38];
+          function process(cpu,sec){
+            const n=Math.ceil(sec*sampleRate/128);let sum=0,pk=0,different=0,old='';
+            for(let i=0;i<n;i++){
+              const left=new Float32Array(128),right=new Float32Array(128);
+              cpu.process([],[[left,right]]);
+              for(const v of left){sum+=v*v;pk=Math.max(pk,Math.abs(v));}
+              const regs=cpu.ay.map(a=>a.reg.slice(0,14).join(',')).join('|');
+              if(regs!==old){different++;old=regs;}
+            }
+            return {rms:+Math.sqrt(sum/(n*128)).toFixed(4),peak:+pk.toFixed(3),registerChanges:different};
+          }
+          for(const cmd of commands){
+            const cpu=new Processor();
+            process(cpu,.4);
+            cpu.port.onmessage({data:{type:'command',command:cmd}});
+            const chunks=[];
+            for(let block=0;block<4;block++)chunks.push(process(cpu,3.5));
+            console.log('CMD',String(cmd).padStart(2,'0'),'blocks 0-3.5,3.5-7,7-10.5,10.5-14:',JSON.stringify(chunks));
+          }
+          JS
