@@ -257,17 +257,27 @@ function linkAll(){
  let serial=0,pairs=0,changedSlots=0,maxStep=0,projectionRecords=0,pairedProjections=0,pairedLargeShadows=0;
  for(let i=0;i<frames.length;i++){
   const curr=frames[i];for(const a of curr.items){a.frame=curr.frame;a.role=role(a);a.prev=null;a.next=null;a.trackId=0;a.ownerTrack=null}
-  if(i){const old=frames[i-1].items,now=curr.items,dt=(curr.frame-frames[i-1].frame)/60;
-   const unmatched=184, costs=old.map(a=>[...now.map(b=>matchCost(a,b,dt)),...old.map(()=>unmatched)]);
-   const matches=assign(costs);
-   for(let k=0;k<old.length;k++){const j=matches[k];if(j<0||j>=now.length||costs[k][j]>=unmatched)continue;
-    const a=old[k],b=now[j];a.next=b;b.prev=a;b.trackId=a.trackId;pairs++;
-    if(a.id!==b.id)changedSlots++;
-    maxStep=Math.max(maxStep,Math.hypot(a.x-b.x,a.y-b.y));
+  const prev=i?frames[i-1]:null,dt=prev?(curr.frame-prev.frame)/60:0;
+  // Establish aircraft identities before matching their ground projections.
+  // A paired shadow may never inherit a track belonging to another owner.
+  function linkGroup(old,now,shadow){
+   if(old.length&&now.length){
+    const unmatched=184,costs=old.map(a=>[...now.map(b=>{
+     if(shadow&&(a.ownerTrack!==null||b.ownerTrack!==null)&&a.ownerTrack!==b.ownerTrack)return 1e6;
+     return matchCost(a,b,dt);
+    }),...old.map(()=>unmatched)]);
+    const matches=assign(costs);
+    for(let k=0;k<old.length;k++){const j=matches[k];if(j<0||j>=now.length||costs[k][j]>=unmatched)continue;
+     const a=old[k],b=now[j];a.next=b;b.prev=a;b.trackId=a.trackId;pairs++;
+     if(a.id!==b.id)changedSlots++;
+     maxStep=Math.max(maxStep,Math.hypot(a.x-b.x,a.y-b.y));
+    }
    }
+   for(const a of now)if(!a.trackId)a.trackId=++serial;
   }
-  for(const a of curr.items)if(!a.trackId)a.trackId=++serial;
+  linkGroup(prev?prev.items.filter(a=>a.role!=='shadow'):[],curr.items.filter(a=>a.role!=='shadow'),false);
   pairShadows(curr.items);
+  linkGroup(prev?prev.items.filter(a=>a.role==='shadow'):[],curr.items.filter(a=>a.role==='shadow'),true);
   for(const a of curr.items){if(a.projection){projectionRecords++;if(a.ownerTrack)pairedProjections++}else if(a.code===21460&&a.ownerTrack)pairedLargeShadows++}
  }
  // The right B-35 (LUT 21715) is parked in the captured session: x=412,
@@ -367,7 +377,7 @@ function sync(time){
  if(f.a!==f.b)for(const b of f.b.items)if(!b.prev||b.prev.frame!==f.a.frame){
   if(t>=.5)record(b,null,clamp01((t-.5)*2),edgePosition(b,(1-t)*dt,true));
  }
- // Decorative projections retain captured ground position and scale.
+ // Decorative projections retain captured ground position, scale and owner identity.
  for(const shadow of result)if(shadow.role==='shadow'){
   const owner=shadow.ownerId!==null?tracks.get(shadow.ownerId):null;
   if(owner&&seen.has(owner.uid)){
