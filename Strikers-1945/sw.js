@@ -1,5 +1,5 @@
-const CACHE='strikers-1945-native-fullrom-v8.7';
-const ASSETS=['./','./index.html','./icon.svg','./manifest.webmanifest','./original-rom.js','./stage1-partA.js','./stage1-partB.js','./stage1-background.js','./stage1-flight-replay.js','./stage1-flight-replay.js?v=8.7','./stage1-plane-frames.b64','./inspector.html','./arcade.html','./remake.html','./audio-rom.html','./sprites-rom.html','./stage1-captured.html','./stage1-captured-catalog.js'];
+const CACHE='strikers-1945-native-fullrom-v8.8';
+const ASSETS=['./','./index.html','./icon.svg','./manifest.webmanifest','./original-rom.js','./stage1-partA.js','./stage1-partB.js','./stage1-background.js','./stage1-background.js?v=8.8','./stage1-flight-replay.js','./stage1-flight-replay.js?v=8.8','./stage1-plane-frames.b64','./inspector.html','./arcade.html','./remake.html','./audio-rom.html','./sprites-rom.html','./stage1-captured.html','./stage1-captured-catalog.js'];
 const ROM_ROUTE=new URL('./roms/s1945.zip',self.registration.scope).pathname;
 const DB='strikers1945-user-arcade-v1',STORE='files',KEY='s1945.zip';
 
