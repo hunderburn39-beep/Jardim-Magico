@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#10091c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Pinball Action V8.32 — Entrada</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080711;overscroll-behavior:none;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{height:100dvh}
+#arcade{position:fixed;inset:0;display:block;width:100%;height:100%;border:0;z-index:1;opacity:0;pointer-events:none;background:#000}
+#intro{position:fixed;inset:0;z-index:10;display:flex;justify-content:center;align-items:center;overflow:hidden;padding:env(safe-area-inset-top) 22px env(safe-area-inset-bottom);background:radial-gradient(ellipse at 50% 36%,#533178 0%,#211333 38%,#090711 82%);color:#f8ecda;text-align:center}
+#intro[hidden]{display:none!important}
+#intro:before{content:"";position:absolute;inset:0;opacity:.28;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0px,transparent 3px,#000 4px)}
+.panel{position:relative;display:flex;flex-direction:column;align-items:center;gap:23px;width:min(100%,460px)}
+.kicker{font-size:clamp(12px,2.7vw,15px);font-weight:800;letter-spacing:.36em;color:#f6c77b}
+h1{margin:0;line-height:.88;font-size:clamp(53px,13vw,86px);font-style:italic;font-weight:1000;letter-spacing:-.07em;text-shadow:0 3px #b23a48,0 6px #631e46,0 13px 19px #07030a}
+h1 .top{display:block;color:#ffe16e}
+h1 .bottom{display:block;color:#fef6e5;font-size:.78em;letter-spacing:.03em}
+.rule{width:min(77%,270px);height:3px;background:linear-gradient(90deg,transparent,#ffcc73,transparent)}
+.subtitle{color:#d9c4e8;font-size:13px;letter-spacing:.1em;margin:0}
+#enter{font-size:clamp(22px,6vw,27px);letter-spacing:.1em;min-height:66px;width:min(300px,100%);border-radius:12px;border:3px solid #ffdb81;background:linear-gradient(#329c64,#135733);color:white;font-weight:900;box-shadow:0 5px #052b1b,0 15px 35px #080611;touch-action:manipulation;cursor:pointer}
+#enter:active{transform:translateY(3px);box-shadow:0 2px #052b1b}
+#enter:disabled{opacity:.68;cursor:default}
+#message{max-width:340px;min-height:3em;margin:0;font-size:13px;line-height:1.5;color:#e6d8ec}
+#silent{background:none;border:1px solid #806b8f;color:#e3d2ef;font-weight:650;border-radius:8px;padding:8px 18px;cursor:pointer}
+#silent[hidden]{display:none}
+.version{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));z-index:2;font-size:13px;font-weight:800;letter-spacing:.08em;color:#f8ecda;pointer-events:none}
+@media(orientation:landscape) and (max-height:550px){
+.panel{gap:12px}h1{font-size:clamp(36px,11vh,60px)}#enter{min-height:48px;font-size:18px}.rule{height:2px}.subtitle{display:none}
+}
+.original-logo{width:min(100%,440px);margin:0;line-height:0;filter:drop-shadow(0 0 2px white) drop-shadow(0 0 12px #ef30d4) drop-shadow(0 12px 18px #06030a)}
+.original-logo svg{display:block;width:100%;height:auto;overflow:visible;shape-rendering:geometricPrecision}
+@media(orientation:landscape) and (max-height:550px){.original-logo{width:min(52vh,300px)}}
+</style>
+</head>
+<body>
+<!-- The actual game exists in a DIFFERENT document. It cannot appear before ENTRAR. -->
+<iframe id="arcade" src="./game-v832.html" title="Pinball Action — máquina original" allow="autoplay" aria-hidden="true"></iframe>
+<section id="intro" aria-label="Entrada no Pinball Action">
+ <div class="panel">
+  <div class="kicker">ARCADE ORIGINAL · 1985</div>
+  <h1 class="original-logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 835 545" role="img" aria-label="Pinball Action">
+<g stroke="#171117" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" fill-rule="evenodd">
+<path fill="#ff7aa5" d="M65 26 L198 26 C254 26 306 57 306 101 C306 159 237 190 124 209 L96 309 L25 309 Z M159 97 L190 97 C216 97 229 106 229 127 C229 151 191 176 132 183 Z"/>
+<path fill="#ff9a4c" d="M222 169 H289 L243 306 H191 Z"/>
+<path fill="#ffb700" d="M293 169 H357 L367 251 L381 169 H433 L385 306 H348 L338 205 L302 306 H267 Z"/>
+<path fill="#ffff00" d="M437 169 H478 C515 169 532 182 532 203 C532 217 524 229 509 236 C526 242 526 259 518 276 C510 297 490 306 469 306 H407 Z M481 207 L472 232 C486 232 498 222 497 214 C496 208 490 206 481 207 Z M461 252 L453 283 C473 283 490 273 496 262 C500 253 487 249 461 252 Z"/>
+<path fill="#ffab01" d="M567 169 H637 V328 L562 273 L496 344 Z M623 192 L568 261 L617 274 Z"/>
+<path fill="#00ac00" d="M667 169 H721 L693 273 L723 267 L711 306 H641 Z"/>
+<path fill="#95e651" d="M753 169 H810 L772 269 L816 264 L806 306 H730 Z"/>
+<path fill="#ff7aa5" d="M120 254 H216 V492 L104 426 L26 518 Z M193 310 L111 414 L175 428 Z"/>
+<path fill="#ff00dc" d="M335 367 C321 344 292 346 275 354 C235 371 210 413 221 453 C231 489 285 511 329 471 L309 421 C293 442 277 456 272 451 C263 442 278 404 299 386 L310 415 Z"/>
+<path fill="#ff00fe" d="M349 351 H466 L447 403 L425 380 L392 489 H342 L380 390 L333 412 Z"/>
+<path fill="#b000ff" d="M469 348 H537 L488 489 H447 Z"/>
+<path fill="#0094fe" d="M593 347 C637 343 660 375 654 418 C645 467 610 500 566 497 C523 495 506 465 512 426 C519 380 555 348 593 347 Z M589 385 C575 376 560 398 559 420 C556 437 562 453 575 449 C590 444 603 423 604 406 C604 396 600 389 589 385 Z"/>
+<path fill="#00aae8" d="M665 349 H732 L741 432 L755 349 H811 L773 488 H737 L719 391 L683 488 H641 Z"/>
+</g></svg></h1>
+  <div class="rule"></div>
+  <p class="subtitle">SOM ORIGINAL</p>
+  <button id="enter" type="button" disabled>A CARREGAR…</button>
+  <p id="message" role="status" aria-live="polite">A preparar a máquina original</p>
+  <button id="silent" type="button" hidden>Entrar sem som</button>
+ </div>
+ <div class="version">V8.32</div>
+</section>
+<script>
+(()=>{
+'use strict';
+const frame=document.getElementById('arcade');
+const intro=document.getElementById('intro');
+const button=document.getElementById('enter');
+const message=document.getElementById('message');
+const silent=document.getElementById('silent');
+let ready=false,opening=false,entered=false,interval=null,lastTouch=-Infinity;
+function child(){
+ try{
+  const w=frame.contentWindow;
+  return w&&typeof w.__PB_ENTER_ARCADE==='function'&&
+   typeof w.__PB_REVEAL_ARCADE==='function'&&
+   typeof w.__PB_ENTRY_STATUS==='function'?w:null;
+ }catch{return null;}
+}
+function stopCheck(){if(interval!==null){clearInterval(interval);interval=null;}}
+function readyCheck(){
+ if(ready)return;
+ if(!child())return;
+ ready=true;
+ button.disabled=false;
+ button.textContent='ENTRAR';
+ message.textContent='Carrega em ENTRAR para ouvir a música de título e abrir o jogo';
+}
+frame.addEventListener('load',readyCheck);
+const loadPoll=setInterval(()=>{
+ readyCheck();if(ready)clearInterval(loadPoll);
+},120);
+function reveal(w){
+ if(entered)return;
+ entered=true;opening=false;stopCheck();
+ w.__PB_REVEAL_ARCADE();
+ frame.style.opacity='1';
+ frame.style.pointerEvents='auto';
+ frame.removeAttribute('aria-hidden');
+ intro.hidden=true;
+}
+function begin(){
+ if(entered||opening)return;
+ const w=child();
+ if(!w){
+  button.textContent='A CARREGAR…';
+  button.disabled=true;
+  message.textContent='A preparar a máquina original';
+  return;
+ }
+ opening=true;
+ // Make the iframe renderable *during* the user's gesture. The opaque
+ // entrance screen still covers it, so no arcade commands appear yet.
+ frame.style.opacity='1';
+ button.disabled=true;
+ button.textContent='A INICIAR…';
+ silent.hidden=true;
+ message.textContent='A iniciar a música original do título…';
+ // Crucial for Safari: call the SAME-ORIGIN game AudioContext inside this
+ // exact physical touch/click gesture, not in a post-load or timer callback.
+ try{w.__PB_ENTER_ARCADE();}catch(e){
+  opening=false;button.disabled=false;button.textContent='ENTRAR';
+  message.textContent='Não foi possível ativar o áudio. Volta a tocar em ENTRAR.';
+  silent.hidden=false;
+  return;
+ }
+ const start=performance.now();
+ function check(){
+  if(entered)return;
+  const game=child();
+  if(!game)return;
+  let state=null;
+  try{state=game.__PB_ENTRY_STATUS();}catch{}
+  if(state?.context==='running'&&state.titleAudible){
+   reveal(game);
+  }else if(performance.now()-start>=8500){
+   stopCheck();opening=false;
+   button.disabled=false;button.textContent='ENTRAR';
+   message.textContent='O Safari ainda não libertou o som. Podes tentar de novo.';
+   silent.hidden=false;
+  }
+ }
+ interval=setInterval(check,55);
+ check();
+}
+button.addEventListener('touchend',e=>{
+ if(e.cancelable)e.preventDefault();
+ lastTouch=performance.now();
+ begin();
+},{passive:false});
+button.addEventListener('click',e=>{
+ if(performance.now()-lastTouch<800){e.preventDefault();return;}
+ begin();
+});
+silent.addEventListener('click',()=>{
+ const w=child();if(!w)return;
+ try{w.__PB_ENTER_SILENT();}catch{return;}
+ entered=true;stopCheck();
+ frame.style.opacity='1';frame.style.pointerEvents='auto';
+ frame.removeAttribute('aria-hidden');intro.hidden=true;
+});
+window.addEventListener('pageshow',readyCheck);
+})();
+</script>
+</body>
+</html>
