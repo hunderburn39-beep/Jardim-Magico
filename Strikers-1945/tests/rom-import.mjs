@@ -71,6 +71,8 @@ const flightOrientation=await page.evaluate(()=>{
  return {
   airbase:observed.filter(e=>[21691,21715].includes(e.code)),
   downward:observed.filter(e=>e.role==='fighter'&&e.vy>65&&e.turn>2.6),
+  bigReverse:observed.filter(e=>[21316,21424].includes(e.code)&&e.turn>2.6),
+  shadowReverse:observed.filter(e=>e.code===21460&&e.turn>2.6),
   airborne:observed.filter(e=>e.role==='fighter')
  };
 });
