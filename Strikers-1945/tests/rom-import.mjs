@@ -58,6 +58,11 @@ assert.deepEqual(await page.evaluate(()=>Array.from(window.StrikersROM.opl4PCM(0
 assert.equal(fullRom.protectionMcuDumped,false,'MCU de proteção não está presente no dump');
 await page.waitForFunction(()=>window.StrikersFlightReplay?.ready(),null,{timeout:30000});
 assert.equal(await page.evaluate(()=>window.StrikersFlightReplay.stats().frames),116,'116 instantes originais dos caças descodificados');
+const linkage=await page.evaluate(()=>window.StrikersFlightReplay.test.links());
+assert(linkage.changedSlots>200,'Continuous aircraft must survive display-list slot changes');
+assert(linkage.pairs>500,'Adjacent captured sprites should be linked globally');
+assert(linkage.maxStep<255,'No association across a wrapped coordinate or distant position');
+console.log('Aircraft trajectory linkage:',linkage);
 const recordedSeconds=await page.evaluate(()=>window.StrikersFlightReplay.stats().flightTime);
 assert(Math.abs(recordedSeconds-61.33333)<.05,'A captura MAME deve ocupar os 61,33 segundos reais, sem compressão de tempo');
 
