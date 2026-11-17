@@ -97,6 +97,9 @@ function begin(){
   return;
  }
  opening=true;
+ // Make the iframe renderable *during* the user's gesture. The opaque
+ // entrance screen still covers it, so no arcade commands appear yet.
+ frame.style.opacity='1';
  button.disabled=true;
  button.textContent='A INICIAR…';
  silent.hidden=true;
