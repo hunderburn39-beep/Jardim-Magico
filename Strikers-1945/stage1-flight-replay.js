@@ -75,9 +75,10 @@ function snapshot(time){
  // Match the same 47-second timeline used by the reconstructed stage-1 background.
  // Background and enemies now advance through their captured emulated frames together.
  const firstFrame=frames[0].frame,lastFrame=frames[frames.length-1].frame;
- const progress=Math.max(0,time)/47;
- const frame=firstFrame+progress*(lastFrame-firstFrame);
- if(time>47.25)return {a:frames[frames.length-1],b:frames[frames.length-1],t:1,expired:true};
+ // Captures are 60 Hz MAME frames: 480..4160 is 61.33 s, not 47 s.
+ // Never compress the recorded flight path; the background uses the same clock.
+ const frame=firstFrame+Math.max(0,time)*60;
+ if(frame>lastFrame+15)return {a:frames[frames.length-1],b:frames[frames.length-1],t:1,expired:true};
  let low=0,high=frames.length-1;
  while(low<high){const m=(low+high+1)>>1;if(frames[m].frame<=frame)low=m;else high=m-1}
  const a=frames[low],b=frames[Math.min(low+1,frames.length-1)];
@@ -95,8 +96,10 @@ function related(a,b){
  if(!a||!b||role(a)!==role(b))return false;
  if(Math.abs(a.w-b.w)>85||Math.abs(a.h-b.h)>85)return false;
  if(Math.abs(a.code-b.code)>700)return false;
- if(a.palette!==b.palette&&Math.abs(a.code-b.code)>320)return false;
- if(Math.hypot(a.x-b.x,a.y-b.y)>245)return false;
+ // One RAM slot can be recycled for another aircraft with similar graphics.
+ // A palette-bank change means a new tracked object, not a banked turn.
+ if(a.palette!==b.palette)return false;
+ if(Math.hypot(a.x-b.x,a.y-b.y)>220)return false;
  return true;
 }
 const MAX_KEYFRAME_JUMP=245;
@@ -123,10 +126,14 @@ function sync(time){
  const after=new Map(next.items.map(it=>[it.id,it]));
  const current=new Map(f.a.items.map(it=>[it.id,it]));
  const result=[],seen=new Set(),t=clamp01(f.t);
- function record(item,other,fade=1){
+ function record(item,other,fade=1,incoming=false){
   if(fade<=.025)return;
-  const id=item.id;
-  let e=tracks.get(id);
+  const id=item.id,entryKey=incoming?'incoming:'+id:id;
+  if(!incoming&&tracks.has('incoming:'+id)){
+   const pending=tracks.get('incoming:'+id);
+   if(related(pending.source,item)){tracks.set(id,pending);tracks.delete('incoming:'+id)}
+  }
+  let e=tracks.get(entryKey);
   const continuous=related(item,other);
   let x=item.x,y=item.y;
   if(continuous){
@@ -136,8 +143,8 @@ function sync(time){
    x=hermite(item.x,other.x,p?.x??null,n?.x??null,t);
    y=hermite(item.y,other.y,p?.y??null,n?.y??null,t);
    // Limit cubic overshoot; banked aircraft never teleport off the flight corridor.
-   const minX=Math.min(item.x,other.x)-22,maxX=Math.max(item.x,other.x)+22;
-   const minY=Math.min(item.y,other.y)-22,maxY=Math.max(item.y,other.y)+22;
+   const minX=Math.min(item.x,other.x),maxX=Math.max(item.x,other.x);
+   const minY=Math.min(item.y,other.y),maxY=Math.max(item.y,other.y);
    x=Math.max(minX,Math.min(maxX,x));y=Math.max(minY,Math.min(maxY,y));
   }
   const prevItem=e?.source;
@@ -152,7 +159,7 @@ function sync(time){
     score:heavy?1900:ground?650:400,hp:heavy?21:ground?11:4,
     max:heavy?21:ground?11:4,fire:ground?2.4:1.1+((id*7)%11)*.11,age:0,t:0,
     drop:heavy?'gold':null,x,y};
-   tracks.set(id,e);
+   tracks.set(entryKey,e);
   }
   e.id=id;e.w=item.w;e.h=item.h;e.x=x;e.y=y;
    // Keep the genuine ROM frames but normalize oversized bomber silhouettes for a narrow phone.
@@ -171,23 +178,27 @@ function sync(time){
     e.spriteFrom=item;e.spriteTo=other;e.spriteMix=mix;
    }else{e.spriteMix=0;e.spriteFrom=null;e.spriteTo=null}
   }else{e.vx=0;e.vy=0;e.spriteMix=0;e.spriteFrom=null;e.spriteTo=null}
-  if(e.active&&x>-150&&x<510&&y>-190&&y<810)result.push(e);
-  seen.add(id);
+  const halfW=(e.renderW??e.w)*.5,halfH=(e.renderH??e.h)*.5;
+  if(e.active&&x>-halfW-24&&x<360+halfW+24&&y>-halfH-24&&y<640+halfH+24)result.push(e);
+  seen.add(entryKey);
  }
  for(const item of f.a.items){
   const other=future.get(item.id);
   const same=related(item,other);
   // Fade out at a recorded exit/replacement; prevents snapping to another plane.
-  const alpha=same?1:clamp01((1-t)/.24);
+  // Fade out the departing slot in the middle of a capture interval.
+  // Do not show a replacement sprite as if it were the same airplane.
+  const alpha=same?1:clamp01((.54-t)/.28);
   record(item,same?other:null,alpha);
  }
  // Introduce aircraft newly present in the next capture without a harsh pop.
  for(const item of f.b.items){
-  if(current.has(item.id)&&related(current.get(item.id),item))continue;
-  if(t<.78)continue;
-  // The old slot can be unrelated: do not overwrite a visible old aircraft.
-  if(current.has(item.id))continue;
-  record(item,null,clamp01((t-.78)/.22));
+  const previous=current.get(item.id);
+  if(previous&&related(previous,item))continue;
+  if(t<.55)continue;
+  // Re-used slot: a distinct incoming aircraft must have a distinct identity.
+  // At the next captured frame its track is promoted to the regular slot ID.
+  record(item,null,clamp01((t-.55)/.45),!!previous);
  }
  for(const id of tracks.keys())if(!seen.has(id))tracks.delete(id);
  return result;
@@ -243,7 +254,7 @@ function draw(ctx,e){
  ctx.restore();return true;
 }
 const api=Object.freeze({ensure,ready,sync,draw,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,flightTime:47,interpolation:'hermite',spriteBlend:true}),
+ stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'monotone-hermite',spriteBlend:true}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
  smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code})),
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
