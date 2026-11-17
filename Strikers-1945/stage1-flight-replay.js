@@ -5,7 +5,7 @@
    Interpolation and collision/fire mechanics are adaptations, not the arcade AI. */
 (()=>{'use strict';
 const DATA='./stage1-plane-frames.b64';
-let frames=null,palettes=new Map(),busy=null,tracks=new Map(),cache=new Map(),timeLast=-1,nextSerial=0;
+let frames=null,palettes=new Map(),busy=null,tracks=new Map(),cache=new Map(),shadowCache=new Map(),timeLast=-1,nextSerial=0;
 const validKinds=new Set([10,11,12,23,25,27,28]);
 function dimensions(rawX,rawY){
  const nx=((rawX>>9)&7)+1,ny=((rawY>>9)&7)+1;
@@ -58,7 +58,7 @@ async function prepare(){
   result.push({frame,items});
  }
  if(offset!==bytes.length)throw Error('Captura com dados adicionais não reconhecidos');
- frames=result;palettes=banks;tracks.clear();cache.clear();timeLast=-1;
+ frames=result;palettes=banks;tracks.clear();cache.clear();shadowCache.clear();timeLast=-1;
  dispatchEvent(new Event('strikers-flight-ready'));return true;
 }
 function ready(){return !!frames&&!!window.StrikersROM?.isLoaded()}
@@ -86,7 +86,34 @@ function snapshot(time){
 }
 // A sprite-RAM slot is not a permanent aircraft ID. Compare screen position,
  // size and graphic family before associating two captured frames.
+// The dark aircraft-shaped ROM silhouettes are separate terrain shadows, not
+// hostile aircraft. Determine this from their original palette/pixels, rather
+// than manufacturing a blurred copy of the aircraft sprite.
+function isTerrainShadow(e){
+ if(e.nx<4||e.ny<4)return false;
+ const key=[e.code,e.attr,e.nx,e.ny,e.palette,e.phase].join(':');
+ if(shadowCache.has(key))return shadowCache.get(key);
+ // Confirmed visually against the local stage-1 catalog (LUT 21460).
+ if(e.code===21460){shadowCache.set(key,true);return true;}
+ const c=sprite(e);
+ if(!c)return false;
+ const data=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+ let opaque=0,dark=0,light=0;
+ for(let i=0;i<data.length;i+=4){
+  if(data[i+3]<200)continue;
+  opaque++;
+  const r=data[i],g=data[i+1],b=data[i+2];
+  if(Math.max(r,g,b)<57&&Math.max(r,g,b)-Math.min(r,g,b)<26)dark++;
+  if(Math.max(r,g,b)>96)light++;
+ }
+ const coverage=opaque/(c.width*c.height);
+ const result=coverage>.075&&coverage<.62&&dark/Math.max(1,opaque)>.92&&light/Math.max(1,opaque)<.02;
+ if(shadowCache.size>400)shadowCache.clear();
+ shadowCache.set(key,result);
+ return result;
+}
 function role(e){
+ if(isTerrainShadow(e))return 'shadow';
  if(e.nx>=5&&e.ny<=3)return 'ground';
  if(e.nx>=5||e.ny>=5)return 'bomber';
  if(e.nx>=3||e.ny>=3)return 'ground';
@@ -142,10 +169,14 @@ function sync(time){
    const n=related(other,afterItem)?afterItem:null;
    x=hermite(item.x,other.x,p?.x??null,n?.x??null,t);
    y=hermite(item.y,other.y,p?.y??null,n?.y??null,t);
-   // Limit cubic overshoot; banked aircraft never teleport off the flight corridor.
+   // Preserve bounded arc curvature between actual keyframes. Clamping to
+   // the endpoints flattened recorded hairpins and loop-shaped manoeuvres.
+   // No new manoeuvres are inserted: the points still come from RAM captures.
    const minX=Math.min(item.x,other.x),maxX=Math.max(item.x,other.x);
    const minY=Math.min(item.y,other.y),maxY=Math.max(item.y,other.y);
-   x=Math.max(minX,Math.min(maxX,x));y=Math.max(minY,Math.min(maxY,y));
+   const allowance=Math.min(20,Math.max(4,Math.hypot(other.x-item.x,other.y-item.y)*.15));
+   x=Math.max(minX-allowance,Math.min(maxX+allowance,x));
+   y=Math.max(minY-allowance,Math.min(maxY+allowance,y));
   }
   const prevItem=e?.source;
   const reused=!!e&&(
@@ -154,10 +185,10 @@ function sync(time){
    Math.hypot(e.x-x,e.y-y)>MAX_KEYFRAME_JUMP||
    (Math.abs(e.lastCode-item.code)>2200));
   if(!e||reused){
-   const heavy=role(item)==='bomber',ground=role(item)==='ground';
-   e={kind:ground?'romGround':'romPlane',romFlight:true,uid:++nextSerial,active:true,
-    score:heavy?1900:ground?650:400,hp:heavy?21:ground?11:4,
-    max:heavy?21:ground?11:4,fire:ground?2.4:1.1+((id*7)%11)*.11,age:0,t:0,
+   const kind=role(item),heavy=kind==='bomber',ground=kind==='ground',shadow=kind==='shadow';
+   e={kind:shadow?'romShadow':ground?'romGround':'romPlane',romFlight:true,uid:++nextSerial,active:true,
+    score:shadow?0:heavy?1900:ground?650:400,hp:shadow?Infinity:heavy?21:ground?11:4,
+    max:shadow?Infinity:heavy?21:ground?11:4,fire:shadow?Infinity:ground?2.4:1.1+((id*7)%11)*.11,age:0,t:0,
     drop:heavy?'gold':null,x,y};
    tracks.set(entryKey,e);
   }
@@ -254,13 +285,13 @@ function draw(ctx,e){
  ctx.restore();return true;
 }
 const api=Object.freeze({ensure,ready,sync,draw,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'monotone-hermite',spriteBlend:true}),
+ stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,terrainShadowDetection:'ROM silhouettes + palette',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'monotone-hermite',spriteBlend:true}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
  smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code})),
  frame:(time)=>snapshot(time)?.a.items.map(i=>({id:i.id,code:i.code,attr:i.attr,x:i.x,y:i.y}))||[],
  parsed:()=>!!frames
  }):undefined});
 window.StrikersFlightReplay=api;
-window.addEventListener('strikers-rom-ready',()=>{cache.clear();reset();api.ensure()});
+window.addEventListener('strikers-rom-ready',()=>{cache.clear();shadowCache.clear();reset();api.ensure()});
 if(window.StrikersROM?.isLoaded())api.ensure();
 })();
