@@ -5,7 +5,7 @@
    Interpolation and collision/fire mechanics are adaptations, not the arcade AI. */
 (()=>{'use strict';
 const DATA='./stage1-plane-frames.b64';
-let frames=null,palettes=new Map(),busy=null,tracks=new Map(),cache=new Map(),shadowCache=new Map(),timeLast=-1,nextSerial=0;
+let frames=null,palettes=new Map(),busy=null,tracks=new Map(),cache=new Map(),shadowCache=new Map(),timeLast=-1;
 const validKinds=new Set([10,11,12,23,25,27,28]);
 function dimensions(rawX,rawY){
  const nx=((rawX>>9)&7)+1,ny=((rawY>>9)&7)+1;
@@ -73,7 +73,7 @@ function ensure(){
  busy=prepare().catch(e=>{console.warn('Strikers plane replay:',e);busy=null;return false});
  return busy;
 }
-function reset(){tracks.clear();timeLast=-1;nextSerial=0}
+function reset(){tracks.clear();timeLast=-1}
 function snapshot(time){
  if(!frames)return null;
  // Match the same 47-second timeline used by the reconstructed stage-1 background.
@@ -143,7 +143,7 @@ function matchCost(a,b,dt){
  // Velocity prediction is a tie-breaker, not an obligation to fly straight:
  // the captured positions can support reversals and banked turns.
  const pred=p?Math.hypot(dx-vx*dt,dy-vy*dt):dist;
- let cost=p?.52*dist+.48*Math.min(pred,dist+115):dist;
+ let cost=p ? .52*dist+.48*Math.min(pred,dist+115) : dist;
  cost+=Math.min(46,cd*.09)+ds*.22;
  if(a.id===b.id)cost-=3;
  return Math.max(0,cost);
@@ -221,7 +221,8 @@ function sync(time){
    fire:shadow?Infinity:ground?2.4:1.1+((id*7)%11)*.11,age:0,t:0,drop:heavy?'gold':null};tracks.set(id,e)}
   // Preserve object identity, hit points and destruction across re-ordered slots.
   e.rawId=item.id;e.x=pos.x;e.y=pos.y;e.w=other?item.w+(other.w-item.w)*t:item.w;e.h=other?item.h+(other.h-item.h)*t:item.h;
-  e.visualScale=heavy?Math.min(1,166/Math.max(e.w,e.h)):1;
+  // Keep captured hardware zoom and dimensions; no artificial bomber shrink.
+  e.visualScale=1;
   e.renderW=e.w*e.visualScale;e.renderH=e.h*e.visualScale;e.source=item;e.sprite=item;e.lastCode=item.code;e.palette=item.palette;
   e.heavy=heavy;e.role=kind;e.alpha=fade;e.spriteMix=0;e.spriteFrom=null;e.spriteTo=null;
   if(other&&dt>0){
