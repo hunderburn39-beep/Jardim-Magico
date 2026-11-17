@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V8.19 — som original só dos chips AY</title><style>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V8.20 — som AY com DAC de 16 níveis fiel</title><style>
 :root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;background:#040409;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 body{display:flex;align-items:center;justify-content:center}#app{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;width:100%;height:100dvh;max-height:100dvh;padding:max(8px,env(safe-area-inset-top)) 6px max(8px,env(safe-area-inset-bottom))}
 #display{height:auto;max-height:calc(100dvh - 176px - env(safe-area-inset-top) - env(safe-area-inset-bottom));width:min(calc((100dvh - 176px)*224/256),100vw - 12px,540px);aspect-ratio:224/256;flex-shrink:1;overflow:hidden;box-shadow:0 0 0 3px #242028,0 0 22px #171119;outline:1px solid #77707b;background:#000}
@@ -351,7 +351,7 @@ const arcadeAudio=(()=>{
     fail(Error('AudioWorklet necessário para executar a ROM'));
     return false;
    }
-   const moduleURL=new URL('audio/rom-psg-worklet.js?v=819',document.baseURI);
+   const moduleURL=new URL('audio/rom-psg-worklet.js?v=820',document.baseURI);
    loading=context.audioWorklet.addModule(moduleURL.href).then(()=>{
     node=new AudioWorkletNode(context,'pb-original-psg',{
      numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2]
