@@ -60,5 +60,5 @@ for(const cmd of musicCommands){
  manifest.music[cmd]={file:name,duration:seconds,origin:'ROM a-e3.bin via Z80 + AY8910',bytes:fs.statSync(path.join(out,name)).size};
  console.log('Original long-running music command',cmd,'->',name,seconds,'seconds');
 }
-fs.writeFileSync(path.join(out,'manifest.json'),JSON.stringify(manifest,null,2)+'\\n');
+fs.writeFileSync(path.join(out,'manifest.json'),JSON.stringify(manifest,null,2));
 console.log('Created',Object.keys(manifest.commands).length,'original effects and',musicCommands.length,'long original music MP3 files.');
