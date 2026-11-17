@@ -70,3 +70,14 @@ console.log('CAPTURE_SNAPSHOTS',JSON.stringify(snapshots.slice(0,25)));
 console.log('SUSPICIOUS_JUMPS',JSON.stringify(outliers.slice(0,35)));
 console.log('LARGEST_SPRITES',JSON.stringify(big.sort((a,b)=>Math.max(...b.size)-Math.max(...a.size)).slice(0,25)));
 console.log('MISMATCH_SAMPLE',JSON.stringify(reuses.slice(0,35)));
+
+const chunks=['stage1-partA.js','stage1-partB.js'].map(name=>
+  fs.readFileSync(new URL('../'+name,import.meta.url),'utf8'));
+const bg64=chunks.flatMap(source=>[...source.matchAll(/"([A-Za-z0-9+/=]+)"/g)].map(m=>m[1])).join('');
+const bg=zlib.inflateSync(Buffer.from(bg64,'base64'));
+const mapView=new DataView(bg.buffer,bg.byteOffset,bg.byteLength);
+const mapFrames=mapView.getUint16(0,true),cols=mapView.getUint16(2,true),rows=mapView.getUint16(4,true);
+const mapSize=10+512+cols*rows*2*2;
+const mapFirst=mapView.getUint16(6,true),mapLast=mapView.getUint16(6+(mapFrames-1)*mapSize,true);
+console.log('BACKGROUND_CAPTURE',JSON.stringify({mapFrames,cols,rows,first:mapFirst,last:mapLast,spanSeconds:(mapLast-mapFirst)/60,
+ sharedOrigin:mapFirst===first,sharedEnd:mapLast===last,rawBytes:bg.length}));
