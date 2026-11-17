@@ -66,7 +66,8 @@ function draw(can,code,nx,ny,bank,mirror=false){
 }
 function refresh(){
  const active=!!rom?.isLoaded();
- $('#prev').disabled=$('#next').disabled=$('#apply').disabled=!active || ['bf109','shinden'].includes($('#aircraft').value);
+ $('#prev').disabled=$('#next').disabled=!active;
+ $('#apply').disabled=!active || ['bf109','shinden'].includes($('#aircraft').value);
  if(!active){$('#status').textContent='Importa a ROM completa s1945.zip para abrir os sprites autênticos.';return}
  const code=Math.max(0,Math.min(131071,Number($('#code').value)||0)),nx=Number($('#nx').value),ny=Number($('#ny').value),bank=$('#palette').value;
  $('#code').value=code;
