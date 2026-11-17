@@ -66,25 +66,15 @@ const flightOrientation=await page.evaluate(()=>{
  const replay=window.StrikersFlightReplay,observed=[];
  replay.reset();
  for(let t=0;t<61;t+=.18)for(const e of replay.test.smooth(t))
-  observed.push({code:e.code,role:e.role,vy:e.vy,turn:e.turn,alpha:e.alpha});
+  observed.push(e);
  replay.reset();
- return {
-  airbase:observed.filter(e=>[21691,21715].includes(e.code)),
-  downward:observed.filter(e=>e.role==='fighter'&&e.vy>65&&e.turn>2.6),
-  bigReverse:observed.filter(e=>[21316,21424].includes(e.code)&&e.turn>2.6),
-  shadowReverse:observed.filter(e=>e.code===21460&&e.turn>2.6),
-  airborne:observed.filter(e=>e.role==='fighter')
- };
+ return {b35:observed.filter(e=>[21691,21715].includes(e.code)),
+  wrong:observed.filter(e=>!e.pitch&&e.role!=='ground'&&e.role!=='shadow'&&e.alignment!==null&&e.alignment<-.281).length,
+  corrected:observed.filter(e=>e.facingMask).length,pitch:observed.filter(e=>e.pitch).length};
 });
-assert(flightOrientation.airbase.length>0,'Original airfield aircraft captured');
-assert(flightOrientation.airbase.every(e=>e.role==='bomber'),'B-35 flying-wing sprites remain airborne enemies');
-assert(flightOrientation.airbase.some(e=>e.turn>2.6),'The B-35 flying wing must not fly backwards');
-assert(flightOrientation.airborne.length>20,'Flying fighter sprites remain intact');
-assert(flightOrientation.bigReverse.length>0,'Confirmed large airplane ROM sprite must correct tail-first motion');
-assert(flightOrientation.shadowReverse.length>0,'The original bomber shadow must follow the corrected airplane orientation');
-console.log('Orientation audit: airbase',flightOrientation.airbase.length,
- 'fighters',flightOrientation.airborne.length,'downward-facing corrections',flightOrientation.downward.length);
-console.log('Aircraft trajectory linkage:',linkage);
+assert(flightOrientation.b35.length>0&&flightOrientation.b35.every(e=>e.role==='bomber'));
+assert.equal(flightOrientation.wrong,0,'Known non-pitch bearings match actual trajectory tangent');
+assert(flightOrientation.corrected>0&&flightOrientation.pitch>0);
 const recordedSeconds=await page.evaluate(()=>window.StrikersFlightReplay.stats().flightTime);
 assert(Math.abs(recordedSeconds-61.33333)<.05,'A captura MAME deve ocupar os 61,33 segundos reais, sem compressão de tempo');
 
@@ -201,7 +191,7 @@ console.log('Caças reais em movimento:',moving.slice(0,4).map(v=>({id:v.new.id,
 await page.screenshot({path:'strikers-v54-flight-turns.png'});
 await page.screenshot({path:'strikers-v52-enemies.png'});
 await page.screenshot({path:'strikers-v42-background.png'});
-await page.goto(url.split('?')[0]+'inspector.html',{waitUntil:'load'});
+await page.goto(new URL('inspector.html',url).href,{waitUntil:'load'});
 await page.waitForFunction(()=>window.StrikersROM?.isLoaded(),null,{timeout:30000});
 await page.locator('#viewer').waitFor({state:'visible',timeout:15000});
 assert(await page.locator('#viewer').isVisible(),'O inspetor restaurou os dados via IndexedDB');
