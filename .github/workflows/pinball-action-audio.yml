@@ -16,13 +16,17 @@ concurrency:
 
 jobs:
   original-mp3:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
-      - name: Verificar dependencias de audio
+      - name: Instalar e verificar o codificador MP3
         run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
           node --version
           ffmpeg -version | head -1
       - name: Gerar MP3 usando ROM Z80 e os tres AY-3-8910 originais
