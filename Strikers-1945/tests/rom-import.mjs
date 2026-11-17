@@ -108,6 +108,20 @@ assert.equal(state.scene,null,'Não inventar um mapa arcade a partir dos sprites
 await page.locator('#startBtn').click();await page.waitForTimeout(150);
 await page.waitForFunction(()=>window.StrikersOriginalStage1?.ready(),null,{timeout:15000});
 assert.equal(await page.evaluate(()=>window.StrikersOriginalStage1.info().frames),122,'122 capturas reais do tilemap presentes');
+ const mapContinuation=await page.evaluate(()=>{
+  const api=window.StrikersOriginalStage1,info=api.info(),canvas=document.createElement('canvas');
+  canvas.width=48;canvas.height=96;
+  const context=canvas.getContext('2d');
+  const hash=t=>{
+   context.clearRect(0,0,48,96);api.draw(context,t,48,96);
+   const data=context.getImageData(0,0,48,96).data;let h=2166136261;
+   for(let i=0;i<data.length;i+=53)h=Math.imul(h^data[i],16777619);
+   return h>>>0;
+  };
+  return {seconds:info.recordedSeconds,after:hash(info.recordedSeconds+1),later:hash(info.recordedSeconds+2)};
+ });
+ assert(Math.abs(mapContinuation.seconds-32.2667)<.05,'A captura dos mapas originais termina aos 32,27 s');
+ assert.notEqual(mapContinuation.after,mapContinuation.later,'O cenário deve continuar a deslocar-se após terminar a captura de mapas');
 assert((await page.locator('#romBadge').innerText()).includes('FUNDO ORIGINAL'),'Fundo da fase 1 deve estar integrado na jogabilidade');
 const arts=await page.evaluate(()=>{
   const t=window.__strikersTest;t.invulnerable();return t.snapshot().romSkinTest;
