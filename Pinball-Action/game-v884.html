@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.84 — HD Workbench";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.85 — HD Artwork";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -747,6 +747,73 @@ function redrawPrintedHalftones(g){
  },false);
  return {cells:plan.cells,patches:plan.patches,regions:result.regions};
 }
+
+// V8.85: independently illustrated main playfield. The exact ROM map
+// signature selects the artwork; no change to the Z80 or sprite positions.
+const mainPrintSignature=[[804,78,21],[743,83,20],[685,179,20],[527,149,19],[466,108,19],[564,210,22],[618,142,20],[587,141,19]];
+function isMainPrint(bytes){
+ return mainPrintSignature.every(([i,t,a])=>bytes[0xd800+i]===t&&bytes[0xdc00+i]===a);
+}
+function paintMainIllustration(g){
+ if(typeof Path2D!=='function'||(cpu.flipped&1)||!isMainPrint(memory))return false;
+ g.save();
+ // Portrait illustration coordinates are converted back into native
+ // 256-square board coordinates before scrolling/rotation/compositing.
+ g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
+ const shape=new Path2D('M12 17 C30 13 62 14 88 20 C96 28 95 41 104 53 C126 63 144 72 153 91 C167 108 180 128 174 145 C167 158 153 163 139 164 L137 174 Q113 179 88 172 Q78 169 76 161 C61 154 45 138 47 119 C51 102 44 89 35 79 C20 59 8 38 12 17 Z');
+ // Exact mechanical zones remain visible from the existing native
+ // board. The printed illustration never covers the inserts or guide.
+ const mask=new Path2D(shape);
+ for(const [x,y,rx,ry] of [[101,81,8,7],[123,81,8,7],[77,96,8,7],[147,96,8,7],[65,122,8,7],[160,122,8,7],[77,145,8,7],[147,145,8,7],[100,162,8,7],[123,162,8,7]]){
+  mask.moveTo(x+rx,y);mask.ellipse(x,y,rx,ry,0,0,Math.PI*2);
+ }
+ mask.addPath(new Path2D('M119 32 L126 31 L169 99 L164 109 L117 43 Z'));
+ mask.addPath(new Path2D('M7 114 L45 76 L54 84 L15 132 Z'));
+ g.clip(mask,'evenodd');
+ const fill=(d,paint)=>{g.fillStyle=paint;g.fill(new Path2D(d));};
+ const stroke=(d,paint,w,alpha=1)=>{g.save();g.globalAlpha=alpha;g.lineWidth=w;g.lineCap='round';g.lineJoin='round';g.strokeStyle=paint;g.stroke(new Path2D(d));g.restore();};
+ const linear=(x,y,X,Y,stops)=>{const q=g.createLinearGradient(x,y,X,Y);for(const [a,c] of stops)q.addColorStop(a,c);return q;};
+ const radial=(x,y,r,stops)=>{const q=g.createRadialGradient(x,y,0,x,y,r);for(const [a,c] of stops)q.addColorStop(a,c);return q;};
+ g.fillStyle=linear(14,22,167,160,[[0,'#4d0752'],[.36,'#810b69'],[.72,'#970c5f'],[1,'#570954']]);g.fill(shape);
+ // Repaint the sweeping amber and scarlet hair in layered, curved shapes.
+ const gold=linear(32,19,119,159,[[0,'#6e194c'],[.22,'#c13c23'],[.43,'#f68a19'],[.59,'#ffe174'],[.79,'#e56719'],[1,'#77144f']]);
+ fill('M12 14 C45 10 82 13 96 45 C105 62 110 83 124 91 C146 108 137 135 114 152 C96 173 72 167 58 145 C47 129 60 112 46 93 C30 71 4 44 12 14 Z',gold);
+ fill('M91 77 C106 52 131 70 146 85 C163 102 173 109 180 137 C178 158 155 171 133 164 C109 151 108 124 91 77 Z',linear(108,73,167,162,[[0,'#ff9b23'],[.24,'#dc2f26'],[.61,'#a80e36'],[1,'#630e5c']]));
+ fill('M25 15 C23 39 49 69 72 98 C87 117 64 141 85 160 C62 158 51 142 53 127 C55 111 43 90 32 72 C16 47 9 28 25 15 Z',linear(22,19,82,155,[[0,'#ffb94f'],[.37,'#ffda57'],[.71,'#f58a20'],[1,'#b82e39']]));
+ fill('M48 15 C48 49 87 68 99 91 C112 113 92 135 100 154 C79 133 98 112 74 85 C41 49 35 28 48 15 Z',linear(43,18,105,151,[[0,'#932046'],[.28,'#f09c20'],[.53,'#ffe18a'],[1,'#b72e32']]));
+ for(let i=0;i<24;i++){
+  const x=12+i*2.65, bend=i*1.6;
+  stroke('M'+x+' 17 C'+(x-9)+' '+(37+bend*.25)+' '+(x+14)+' '+(57+bend*.45)+' '+(x+34)+' '+(78+bend*.35)+' S'+(71+bend*.45)+' 131 '+(75+bend*.53)+' 156',i%5===0?'#fff1a7':i%3===0?'#7f164a':'#ffc344',i%5===0?.65:.34,.50);
+ }
+ for(let i=0;i<12;i++){
+  stroke('M'+(111+i*2.15)+' '+(71+i*.7)+' C'+(132+i*1.65)+' 96 '+(148+i*1.3)+' 116 '+(143+i*2.1)+' 157',i%3===0?'#ffb85a':'#ef5360',.42,.55);
+ }
+ // Face: separately drawn skin, cheek highlights, hairline, two eyes,
+ // brows, nose and lips, instead of a magnified image of the ROM tiles.
+ const face='M92 103 C94 96 103 94 114 96 C128 94 137 103 137 116 L134 140 C131 155 123 168 113 172 C103 170 91 158 88 144 L86 120 C85 112 87 106 92 103 Z';
+ fill(face,linear(90,111,138,155,[[0,'#a85b32'],[.14,'#f5c271'],[.38,'#fff0bd'],[.56,'#f8d391'],[.83,'#cc8749'],[1,'#914e34']]));
+ fill('M91 112 C98 101 109 101 113 105 L111 130 L98 150 Q88 139 91 112 Z',radial(100,122,30,[[0,'#fff6c9'],[.58,'#ffd995'],[1,'#eda552']]));
+ fill('M119 109 C131 107 136 120 131 138 Q128 153 118 166 Q125 144 116 131 Z',linear(118,107,133,156,[[0,'#f4d091'],[1,'#cb7942']]));
+ fill('M84 118 C81 109 89 91 101 91 Q109 89 115 100 Q121 89 131 93 Q142 98 142 116 L135 110 C133 99 122 102 115 111 C107 103 100 101 91 114 Z',linear(86,93,141,116,[[0,'#a94a1e'],[.35,'#ffd059'],[.65,'#ffdf83'],[1,'#ba5722']]));
+ const eyes=[[99.4,119.6,1],[124.9,119.6,-1]];
+ for(const [x,y,dir] of eyes){
+  g.save();g.translate(x,y);g.scale(dir,1);
+  fill('M-7 -1 Q-1 -4 7 0 Q1 4 -6 1 Z','#ffefda');
+  fill('M-3.7 -1.1 A3.6 3.6 0 1 0 3.5 -1.1 A3.6 3.6 0 1 0 -3.7 -1.1 Z',radial(-1,-1,4.7,[[0,'#a5f9ed'],[.45,'#35ada6'],[1,'#134a50']]));
+  fill('M0 -2 A1.6 1.6 0 1 0 0 1.2 A1.6 1.6 0 1 0 0 -2 Z','#132333');
+  g.fillStyle='#fff';g.beginPath();g.arc(-.8,-1.6,.7,0,Math.PI*2);g.fill();
+  stroke('M-7 -1 Q-1 -5 7 0','#432b31',1.05);
+  stroke('M-7 -5.3 Q-1 -8 6 -5.3','#85462c',1.1);
+  g.restore();
+ }
+ stroke('M113 119 Q109 132 111 136 Q114 138 117 135','#b9774b',.75,.85);
+ stroke('M111 136 Q113 137 115 136','#f8edbd',.55);
+ fill('M105 146 Q110 143 113 145 Q116 143 121 146 Q114 151 109 149 Z',linear(105,145,120,150,[[0,'#a94d43'],[.5,'#ed8f75'],[1,'#9e453e']]));
+ stroke('M107 146 Q114 147 120 146','#8e403c',.42);
+ stroke('M97 154 Q105 165 113 167 Q124 164 130 153','#f9d89a',.55,.7);
+ g.restore();return true;
+}
+
 function rebuildHDBoard(){
  // Board colours can flash repeatedly while the tile map stays fixed.
  // Retain bounded, full-resolution variants of the exact same artwork.
@@ -781,6 +848,7 @@ function rebuildHDBoard(){
  boardCtx.imageSmoothingEnabled=false;boardCtx.drawImage(boardUnder,0,0);
  boardCtx.drawImage(boardInk,0,0,256,256);
  const print=redrawPrintedHalftones(boardCtx);stats.printCells=print.cells;stats.printPatches=print.patches;stats.printRegions=print.regions||0;
+ stats.handIllustrated=paintMainIllustration(boardCtx);
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;hdBoardDirty=false;renderStats.boardFull++;
  const cached=document.createElement('canvas');cached.width=cached.height=SIZE;
  cached.getContext('2d',{alpha:false}).drawImage(hdBoard,0,0);
