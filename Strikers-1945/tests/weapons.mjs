@@ -11,7 +11,7 @@ const expected=[
 ];
 for(let craft=0;craft<4;craft++){
  const spec=expected[craft];
- await page.goto('http://127.0.0.1:8765/Strikers-1945/?test=1',{waitUntil:'load'});
+ await page.goto('http://127.0.0.1:8765/Strikers-1945/remake.html?test=1',{waitUntil:'load'});
  await page.locator('.planeCard').nth(craft).click();
  await page.locator('#startBtn').click();
  const hasHook=await page.evaluate(()=>Boolean(window.__strikersTest));
