@@ -1,0 +1,38 @@
+<!doctype html><html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071727"><title>Strikers 1945 — Áudio original da ROM</title><style>
+*{box-sizing:border-box}html,body{margin:0;background:#071727;color:#e7f7ff;font:14px system-ui,-apple-system,sans-serif;min-height:100%}main{max-width:680px;margin:0 auto;padding:20px 15px 40px}h1{font-size:24px;color:#ffe4a4}p{line-height:1.5;color:#bad1df}a{color:#9be5ed}button,select{border:1px solid #78c2d5;border-radius:9px;color:#eafbff;background:#173c52;padding:10px 14px;font:inherit;min-height:43px}button{font-weight:800;cursor:pointer}button:disabled{opacity:.45}button.primary{background:#116c69;border-color:#74e9c3}.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}.row select{flex:1;min-width:155px}#status{border:1px solid #416c83;border-radius:9px;padding:12px;margin:14px 0;background:#0e2a3e;min-height:44px}#waveform{width:100%;height:auto;background:#0b2434;border:1px solid #234b65;border-radius:8px}#meta{font-family:ui-monospace,monospace;white-space:pre-wrap;font-size:12px;color:#bedbe4;line-height:1.6}small{color:#97b5c4}
+</style></head><body><main><a href="./?v=7.2">← Voltar ao jogo</a><h1>Strikers 1945 · Amostras originais</h1><p>Os sons são lidos diretamente do chip Yamaha YMF278B (OPL4), a partir do teu ficheiro <strong>s1945.zip</strong>. Nenhum som é inventado nem enviado para o GitHub.</p><div id="status" role="status">A verificar os dados originais guardados neste Safari…</div><div class="row"><button id="importBtn" class="primary">📁 Importar s1945.zip</button><input id="romFile" hidden type="file" accept=".zip,application/zip"><span id="romLabel">ROM não importada</span></div><div class="row"><select id="wave" aria-label="Amostra original OPL4" disabled><option>Importa a ROM primeiro</option></select><button id="play" disabled>▶ Ouvir</button><button id="stop" disabled>■ Parar</button></div><canvas id="waveform" width="640" height="160" aria-label="Forma de onda da ROM"></canvas><pre id="meta">Sem dados.</pre><p><small>Estas são amostras do banco original, não faixas completas de música. Os efeitos e a banda sonora exigem ainda reconstruir o programa de sequenciação, os comandos, notas e envelopes do CPU de som. A frequência de audição de referência de 16 kHz não reproduz necessariamente o tom original de cada nota.</small></p><script src="./original-rom.js"></script><script>
+(()=>{'use strict';
+const $=s=>document.querySelector(s),rom=window.StrikersROM;let ac=null,source=null;
+function status(t){$('#status').textContent=t}
+function stop(){if(source){try{source.stop()}catch(e){}source.disconnect();source=null}}
+function show(){
+ const id=Number($('#wave').value),info=rom.opl4WaveInfo().find(w=>w.id===id),g=$('#waveform').getContext('2d');
+ g.fillStyle='#0b2434';g.fillRect(0,0,640,160);
+ if(!info){$('#meta').textContent='Nenhuma amostra selecionada';return}
+ const data=rom.opl4PCM(id);g.strokeStyle='#ffe49a';g.lineWidth=1;g.beginPath();
+ for(let x=0;x<640;x++){let a=Math.floor(x*data.length/640),b=Math.max(a+1,Math.floor((x+1)*data.length/640));let lo=1,hi=-1;for(let j=a;j<b;j++){lo=Math.min(lo,data[j]);hi=Math.max(hi,data[j])}g.moveTo(x,80-hi*68);g.lineTo(x,80-lo*68)}
+ g.stroke();$('#meta').textContent='Amostra #'+id+'  |  Offset 0x'+info.offset.toString(16)+'\nPCM com sinal, 8 bits  |  '+info.length+' amostras\nLoop: '+info.loop+'  |  Duração a 16 kHz: '+(info.length/16000).toFixed(3)+' s';
+}
+function refresh(){
+ if(!rom?.isLoaded()){status('Carrega o teu ZIP original para abrir o banco de amostras.');return}
+ const meta=rom.stats(),waves=rom.opl4WaveInfo();$('#wave').replaceChildren();
+ for(const w of waves){const option=document.createElement('option');option.value=w.id;option.textContent='#'+w.id+' · '+(w.length/16000).toFixed(2)+' s';$('#wave').append(option)}
+ $('#wave').disabled=!waves.length;$('#play').disabled=!waves.length;$('#stop').disabled=!waves.length;
+ $('#romLabel').textContent=(meta.verified?'CRC32 OK':'CRC32 não confirmado')+' · '+meta.chips+'/10 chips';
+ status('✓ '+waves.length+' amostras PCM encontradas no ficheiro u61.bin da ROM original.');show();
+}
+async function play(){
+ const data=rom.opl4PCM(Number($('#wave').value));if(!data)return;stop();
+ ac=ac||new (window.AudioContext||window.webkitAudioContext)();await ac.resume();
+ const buffer=ac.createBuffer(1,data.length,16000);buffer.copyToChannel(data,0);
+ const gain=ac.createGain();gain.gain.value=.35;source=ac.createBufferSource();source.buffer=buffer;source.connect(gain);gain.connect(ac.destination);source.start();source.onended=()=>{source=null};
+}
+$('#importBtn').addEventListener('click',()=>$('#romFile').click());
+$('#romFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;status('A validar os 10 chips originais…');try{await rom.load(file);refresh()}catch(error){status('Erro: '+error.message)}finally{e.target.value=''}});
+$('#wave').addEventListener('change',()=>{stop();show()});
+$('#play').addEventListener('click',()=>play().catch(e=>status('Falha ao tocar: '+e.message)));
+$('#stop').addEventListener('click',stop);
+window.addEventListener('strikers-rom-ready',refresh);
+if(rom?.isLoaded())refresh();else status('Podes importar a ROM ou reutilizar a que já ficou guardada no Safari.');
+})();
+</script></main></body></html>
