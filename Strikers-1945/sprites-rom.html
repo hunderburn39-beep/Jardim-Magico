@@ -16,12 +16,14 @@ button{font-weight:750;cursor:pointer}button:disabled{opacity:.4}input[type=numb
 .item canvas{width:90px;height:90px;image-rendering:pixelated;max-width:96%;object-fit:contain}.item span{font:12px ui-monospace,monospace;color:#c6d9ef}
 .small{font-size:12px;color:#a3becd}#meta{font:12px ui-monospace,monospace;white-space:pre-wrap;color:#c6e1e2}label{color:#accbda}
 </style></head><body><main>
-<a href="./?v=7.3">← Voltar ao projeto</a>
+<a href="./?v=7.4">← Voltar ao projeto</a>
 <h1>Sprites reais da ROM original</h1>
 <p>Visualizador do <strong>u20/u22/u21/u23</strong> com a tabela <strong>u1.bin</strong>, sem emulador e sem imagens desenhadas de novo. A paleta é retirada de registos da RAM do jogo capturados na primeira fase; a associação exata de cada sprite à sua paleta ainda precisa de confirmação.</p>
 <div id="status" role="status">A recuperar dados da ROM local…</div>
 <div class="controls"><button id="import">📂 Importar s1945.zip</button><input id="file" hidden type="file" accept=".zip,application/zip"><button id="prev" disabled>◀</button><label>Índice LUT <input id="code" type="number" min="0" max="131071" value="6460"></label><button id="next" disabled>▶</button></div>
 <div class="controls"><label>Blocos horizontais <select id="nx"><option>1</option><option>2</option><option selected>4</option><option>6</option><option>8</option></select></label><label>Blocos verticais <select id="ny"><option>1</option><option>2</option><option selected>4</option><option>6</option><option>8</option></select></label></div>
+<div class="controls"><label>Teste no avião do jogador <select id="aircraft"><option value="p38">P-38 Lightning</option><option value="p51">P-51 Mustang</option><option value="spitfire">Spitfire</option><option value="bf109">Bf-109 (em análise)</option><option value="zero">Zero</option><option value="shinden">Shinden (em análise)</option></select></label><button id="apply" disabled>Usar este sprite no jogo (teste)</button></div>
+<p class="small">A associação entre os códigos e os aviões <strong>não está confirmada</strong>. O botão serve só para testar os píxeis reais no motor HTML5. Bf-109 e Shinden aguardam suporte no motor de jogo.</p>
 <div class="controls"><label>Paleta da captura <select id="palette"><option value="11">RAM 11 — fase 1</option><option value="12">RAM 12 — fase 1</option><option value="23">RAM 23 — fase 1</option><option value="25">RAM 25 — fase 1</option><option value="27">RAM 27 — fase 1</option><option value="28" selected>RAM 28 — fase 1</option><option value="31">RAM 31 — fase 1</option></select></label><button id="flip">Espelhar horizontal</button></div>
 <div id="stage"><canvas id="sprite" width="64" height="64"></canvas></div>
 <pre id="meta">Importa a ROM para veres o sprite.</pre>
@@ -65,6 +67,7 @@ function draw(can,code,nx,ny,bank,mirror=false){
 function refresh(){
  const active=!!rom?.isLoaded();
  $('#prev').disabled=$('#next').disabled=!active;
+ $('#apply').disabled=!active || ['bf109','shinden'].includes($('#aircraft').value);
  if(!active){$('#status').textContent='Importa a ROM completa s1945.zip para abrir os sprites autênticos.';return}
  const code=Math.max(0,Math.min(131071,Number($('#code').value)||0)),nx=Number($('#nx').value),ny=Number($('#ny').value),bank=$('#palette').value;
  $('#code').value=code;
@@ -90,6 +93,16 @@ for(const id of ['nx','ny','palette'])$('#'+id).addEventListener('change',refres
 $('#prev').addEventListener('click',()=>{$('#code').value=Math.max(0,Number($('#code').value)-1);refresh()});
 $('#next').addEventListener('click',()=>{$('#code').value=Math.min(131071,Number($('#code').value)+1);refresh()});
 $('#flip').addEventListener('click',()=>{flip=!flip;refresh()});
+$('#aircraft').addEventListener('change',refresh);
+$('#apply').addEventListener('click',()=>{
+ const name=$('#aircraft').value;
+ if(['bf109','shinden'].includes(name)||!rom?.isLoaded())return;
+ const spec={code:Number($('#code').value),nx:Number($('#nx').value),ny:Number($('#ny').value),bank:$('#palette').value};
+ let saved={};try{saved=JSON.parse(localStorage.getItem('strikers1945_plane_asset_candidates_v1')||'{}')}catch(e){}
+ saved[name]=spec;
+ try{localStorage.setItem('strikers1945_plane_asset_candidates_v1',JSON.stringify(saved));$('#status').textContent='✓ Referência ROM guardada para teste visual em '+name+'. Identificação por confirmar.'}
+ catch(e){$('#status').textContent='Não foi possível guardar o sprite neste navegador.'}
+});
 window.addEventListener('strikers-rom-ready',refresh);
 if(rom?.isLoaded())refresh();else $('#status').textContent='A verificar se a ROM está guardada neste Safari…';
 })();

@@ -1,3 +1,10 @@
+# Strikers 1945 V7.4 — primeiro sprite ROM dentro do motor do jogador (17/11/2026)
+
+O visualizador `sprites-rom.html` permite selecionar um sprite da ROM e aplicá-lo provisoriamente no motor Canvas do jogador P-38, P-51, Spitfire ou Zero. Quando existe uma referência guardada, o motor desenha os píxeis originais a partir dos chips fornecidos pelo utilizador no lugar do desenho vetorial sintético anterior. A mudança é reversível limpando os dados locais do browser.
+
+**Atenção:** não há correspondências oficiais verificadas entre os índices e os seis aviões; não se faz qualquer seleção automática falsa. O Bf-109 e o Shinden ainda não estão implementados na seleção jogável. Não estão confirmadas animações de banking, armamento, música ou regras de combate para esses sprites. É uma ferramenta de validação visual, não o resultado final.
+
+---
 # Strikers 1945 V7.3 — identificação visual dos sprites originais (17/11/2026)
 
 - Criado `sprites-rom.html`, um visualizador do banco de sprites original u20/u22/u21/u23 com a tabela de índices u1.bin. Permite procurar qualquer código (0–131071), variar dimensões 1–8 blocos, percorrer quadros e aplicar as paletas reais de RAM capturadas na primeira fase.
