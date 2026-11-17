@@ -40,4 +40,25 @@ for(let cmd=1;cmd<=30;cmd++){
 }
 if(Object.keys(manifest.commands).length<25||![2,10,22,28].every(c=>manifest.commands[c]))throw Error('Essential original ROM sounds are missing');
 fs.writeFileSync(path.join(out,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
-console.log('Created',Object.keys(manifest.commands).length,'MP3 effects from original ROM');
+// Music must NOT be cut to the first five seconds like an effect.
+// These are the sustained audio commands detected by running the original
+// sound ROM for 14 seconds and measuring both AY register activity and output.
+// Command 10 is also confirmed as the real playfield tune: main Z80 emits it
+// immediately after launching the ball (original-ROM frame trace).
+const musicCommands=[9,10,17,18,20,26,27,29];
+manifest.music={};
+for(const cmd of musicCommands){
+ const cpu=new SoundCPU();
+ render(cpu,.45);
+ cpu.port.onmessage({data:{type:'command',command:cmd}});
+ const seconds=52, pcm=render(cpu,seconds);
+ // Keep the complete running song, never silence-trim an active track.
+ const name='bgm-'+String(cmd).padStart(2,'0')+'.mp3';
+ const args=['-hide_banner','-loglevel','error','-f','f32le','-ar',String(sampleRate),'-ac','1','-i','pipe:0','-c:a','libmp3lame','-b:a','96k','-y',path.join(out,name)];
+ const result=cp.spawnSync('ffmpeg',args,{input:Buffer.from(pcm.buffer,pcm.byteOffset,pcm.byteLength),maxBuffer:1000000});
+ if(result.status!==0)throw Error('ffmpeg background '+cmd+': '+(result.error?.message||result.stderr?.toString()));
+ manifest.music[cmd]={file:name,duration:seconds,origin:'ROM a-e3.bin via Z80 + AY8910',bytes:fs.statSync(path.join(out,name)).size};
+ console.log('Original long-running music command',cmd,'->',name,seconds,'seconds');
+}
+fs.writeFileSync(path.join(out,'manifest.json'),JSON.stringify(manifest,null,2)+'\\n');
+console.log('Created',Object.keys(manifest.commands).length,'original effects and',musicCommands.length,'long original music MP3 files.');
