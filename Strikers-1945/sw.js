@@ -1,4 +1,4 @@
-const CACHE='strikers-1945-native-fullrom-v7.3';
+const CACHE='strikers-1945-native-fullrom-v7.4';
 const ASSETS=['./','./index.html','./icon.svg','./manifest.webmanifest','./original-rom.js','./stage1-partA.js','./stage1-partB.js','./stage1-background.js','./stage1-flight-replay.js','./stage1-plane-frames.b64','./inspector.html','./arcade.html','./remake.html','./audio-rom.html','./sprites-rom.html'];
 const ROM_ROUTE=new URL('./roms/s1945.zip',self.registration.scope).pathname;
 const DB='strikers1945-user-arcade-v1',STORE='files',KEY='s1945.zip';
