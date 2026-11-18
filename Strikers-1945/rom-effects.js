@@ -43,7 +43,32 @@ function draw(ctx,name,progress,x,y,scale=2){
  ctx.save();ctx.imageSmoothingEnabled=false;
  ctx.drawImage(c,Math.round(x-w/2),Math.round(y-h/2),w,h);ctx.restore();return true;
 }
+// Visual item identification from native sprite assemblies: lettered
+// capsules and gold-bar rotation. Exact runtime palette assignment and
+// animation timing have not yet been traced. Keep those choices separate.
+const itemGroups=Object.freeze({
+ power:Object.freeze({start:1626,step:2,count:8,nx:1,ny:2,previewPalette:16}),
+ bomb:Object.freeze({start:1610,step:2,count:8,nx:1,ny:2,previewPalette:15}),
+ gold:Object.freeze({start:1643,step:1,count:8,nx:1,ny:1,previewPalette:16})
+});
+function itemSprite(type,time){
+ const g=itemGroups[type],d=window.StrikersSpriteDefinitions;
+ if(!g||!d||!window.StrikersROM?.isVerified?.())return null;
+ const code=g.start+g.step*(Math.floor(Math.max(0,Number(time)||0)*12)%g.count);
+ const def=d.get(code);if(!def||def.nx!==g.nx||def.ny!==g.ny)return null;
+ const key='item:'+type+':'+code;
+ if(images.has(key))return images.get(key);
+ const c=document.createElement('canvas'),pal=d.palette(g.previewPalette);
+ if(!pal||!d.draw(c,code,pal))return null;
+ images.set(key,c);return c;
+}
+function drawItem(ctx,type,time,x,y,scale=2){
+ const c=itemSprite(type,time);if(!c)return false;
+ ctx.save();ctx.imageSmoothingEnabled=false;
+ ctx.drawImage(c,Math.round(x-c.width*scale/2),Math.round(y-c.height*scale/2),c.width*scale,c.height*scale);ctx.restore();
+ return true;
+}
 function stats(){return {groups:Object.keys(groups).length,frames:Object.values(groups).reduce((n,g)=>n+g.count,0),paletteStatus:'provisional ROM palette 17',timingStatus:'preview'};}
 window.addEventListener('strikers-rom-ready',()=>{records.clear();images.clear()});
-window.StrikersOriginalEffects=Object.freeze({groups,read,frame,sprite,draw,stats});
+window.StrikersOriginalEffects=Object.freeze({groups,read,frame,sprite,draw,itemGroups,itemSprite,drawItem,stats});
 })();
