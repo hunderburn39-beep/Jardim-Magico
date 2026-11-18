@@ -1,0 +1,21 @@
+{
+  "source": "Pinball-Action/game-v884.html",
+  "source_blob": "411dca2c49b44bb3f11ff0520c057bb20dfc98a0",
+  "ram_bytes": 65536,
+  "atlas_lengths": [
+    131072,
+    65536,
+    65536,
+    32768
+  ],
+  "atlas_hashes": [
+    "b7f9d817",
+    "2fdff470",
+    "f2cc63c3",
+    "8b78df44"
+  ],
+  "initial_frame_rgba_fnv1a": "c8cc8e52",
+  "initial_sprite_commands": 11,
+  "initial_scroll": 0,
+  "initial_flipped": 64
+}
