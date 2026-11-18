@@ -22,6 +22,8 @@ var played_frames := 0
 var sound_commands := 0
 var sound_player
 var sound_button: Button
+var graphics_button: Button
+var hd_mode := false
 
 func _ready() -> void:
 	var background := ColorRect.new()
@@ -69,7 +71,15 @@ func _ready() -> void:
 	sound_button.focus_mode=Control.FOCUS_NONE
 	sound_button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	header.add_child(sound_button)
+	action_buttons["sound"] = sound_button
 	sound_button.pressed.connect(_toggle_sound)
+	graphics_button=Button.new()
+	graphics_button.text="ORIG."
+	graphics_button.focus_mode=Control.FOCUS_NONE
+	graphics_button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	header.add_child(graphics_button)
+	action_buttons["graphics"] = graphics_button
+	graphics_button.pressed.connect(_toggle_graphics)
 	var controls := HBoxContainer.new()
 	add_child(controls)
 	controls.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
@@ -91,7 +101,7 @@ func _ready() -> void:
 	status.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	status.offset_top=-36
 	status.offset_bottom=-7
-	status.text="V0.4 GODOT · áudio original"
+	status.text="V0.5 GODOT · áudio original"
 	if not machine.load_snapshot():
 		status.text="Erro: ROM indisponível"
 		set_physics_process(false)
@@ -103,6 +113,7 @@ func _ready() -> void:
 	sound_player=SoundPlayer.new()
 	add_child(sound_player)
 	sound_player.command(0x32)
+	_set_graphics(false)
 	viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 
 func _button(parent: Container, label: String, action: String) -> void:
@@ -127,15 +138,32 @@ func _input(event: InputEvent) -> void:
 			var button: Button = action_buttons[action]
 			if button.is_visible_in_tree() and button.get_global_rect().has_point(finger.position):
 				finger_actions[finger.index] = action
-				_press(action, true, touch)
+				if action == "sound":
+					_toggle_sound()
+				elif action == "graphics":
+					_toggle_graphics()
+				else:
+					_press(action, true, touch)
 				get_viewport().set_input_as_handled()
 				return
 	elif finger_actions.has(finger.index):
 		var action: String = finger_actions[finger.index]
 		finger_actions.erase(finger.index)
-		if action not in finger_actions.values():
+		if action not in finger_actions.values() and action not in ["sound","graphics"]:
 			_press(action, false, touch)
 		get_viewport().set_input_as_handled()
+
+func _set_graphics(enabled: bool) -> void:
+	hd_mode = enabled
+	graphics_button.text = "HD PEÇAS" if hd_mode else "ORIG."
+	machine.set_hd(hd_mode)
+	var resolution := 4 if hd_mode else 1
+	viewport.size = Vector2i(224 * resolution, 256 * resolution)
+	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+func _toggle_graphics() -> void:
+	if machine != null and cpu != null:
+		_set_graphics(not hd_mode)
 
 func _toggle_sound()->void:
 	if sound_player==null:return
@@ -219,4 +247,4 @@ func _physics_process(_delta: float) -> void:
 		cpu.video_changed=false
 		viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 	if played_frames%30==0:
-		status.text="V0.4 GODOT · créditos %d" % cpu.mem[0xc013]
+		status.text="V0.5 GODOT · créditos %d · %d FPS" % [cpu.mem[0xc013], Engine.get_frames_per_second()]
