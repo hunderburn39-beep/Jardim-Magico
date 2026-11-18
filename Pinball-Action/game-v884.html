@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.99-HD dev — mesas secundárias";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.99-HD dev — otimização";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -848,9 +848,26 @@ function mainInsertBounds(pixels){
  }
  return out;
 }
-function paintMainInserts(g){
+const mainInsertPlans=new WeakMap();
+function getMainInsertPlan(pixels){
+ let plan=boardGeometry&&mainInsertPlans.get(boardGeometry);if(plan)return plan;
+ const inserts=mainInsertBounds(pixels),spans=nativeLiveSpans(pixels,mainLampPens),central=new Map();
+ for(const o of inserts){
+  const path=new Path2D();for(const [x,y] of o.cells)path.rect(x,y,1,1);o.path=path;
+  central.set(o.pen,new Set(o.cells.map(([x,y])=>(239-x)*256+y)));
+ }
+ const nativeRuns=new Map();let count=0;
+ for(const [pen,runs] of spans){const skip=central.get(pen),out=[];
+  for(const [x,y,width] of runs){let start=-1;
+   for(let i=0;i<=width;i++){const keep=i<width&&!(skip&&skip.has(y*256+x+i));if(keep&&start<0)start=i;if(!keep&&start>=0){out.push([x+start,y,i-start]);start=-1;}}
+   count+=width;
+  }nativeRuns.set(pen,out);
+ }
+ plan={inserts,nativeRuns,count};if(boardGeometry)mainInsertPlans.set(boardGeometry,plan);return plan;
+}
+function paintMainInserts(g,plan=null){
  if(typeof Path2D!=='function'||(cpu.flipped&1)||!isMainPrint(memory))return 0;
- const inserts=mainInsertBounds(bgPixels);
+ const inserts=(plan||getMainInsertPlan(bgPixels)).inserts;
  g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
  let litCount=0;
  for(const o of inserts){
@@ -877,8 +894,7 @@ function paintMainInserts(g){
    glow.addColorStop(0,'rgba(255,85,35,.36)');glow.addColorStop(.48,'rgba(255,20,0,.26)');glow.addColorStop(1,'rgba(255,0,0,0)');
    g.fillStyle=glow;g.beginPath();g.ellipse(cx,cy,rx*.96,ry*.96,0,0,Math.PI*2);g.fill();
   }
-  const nativeLight=new Path2D();
-  for(const [x,y] of cells)nativeLight.rect(x,y,1,1);
+  const nativeLight=o.path;
   // The exact native light mask is authoritative in both states. Shade
   // only inside it; no fake state or added lamp geometry.
   g.fillStyle=colorAt(pen);g.fill(nativeLight);
@@ -890,29 +906,12 @@ function paintMainInserts(g){
 // sprites and text remain unchanged; only neighbouring background pixels
 // receive a restrained display effect while their own lamp is actually on.
 function restoreMainLampInk(g,pixels){
- const spans=nativeLiveSpans(pixels,mainLampPens),inserts=mainInsertBounds(pixels);
- // Keep every occurrence of these pens outside the ten lamp masks native.
- // The actual central inserts are rebuilt last so no raw pixel pass can
- // erase their glass and metal shading.
- const central=new Map();
- for(const {pen,cells} of inserts)central.set(pen,new Set(cells.map(([x,y])=>(239-x)*256+y)));
+ const plan=getMainInsertPlan(pixels);
  g.save();g.setTransform(HD,0,0,HD,0,0);
- let count=0;
- for(const [pen,runs] of spans){
-  g.fillStyle=colorAt(pen);const skip=central.get(pen);
-  for(const [x,y,width] of runs){
-   let start=-1;
-   for(let i=0;i<=width;i++){
-    const native=i<width&&!(skip&&skip.has(y*256+x+i));
-    if(native&&start<0)start=i;
-    if(!native&&start>=0){g.fillRect(x+start,y,i-start,1);start=-1;}
-   }
-   count+=width;
-  }
- }
+ for(const [pen,runs] of plan.nativeRuns){g.fillStyle=colorAt(pen);for(const [x,y,width] of runs)g.fillRect(x,y,width,1);}
  g.restore();
- if(inserts.length===10)paintMainInserts(g);
- return count;
+ if(plan.inserts.length===10)paintMainInserts(g,plan);
+ return plan.count;
 }
 function classicMainLampGlow(pixels,rgba,palette,srcStart,flipped){
  let active=0;
@@ -1091,7 +1090,7 @@ function redrawLiveBoardPens(g,plan,main,flipped){
 const portraitFacePoly=[[88,88],[135,88],[141,104],[138,134],[130,150],[134,168],[130,176],[89,176],[88,158],[98,151],[93,143],[87,126],[83,105]];
 const portraitHairPoly=[[10,16],[90,16],[98,26],[115,36],[119,55],[130,69],[142,78],[151,94],[163,111],[166,141],[151,155],[134,166],[80,173],[60,165],[45,148],[40,123],[38,103],[45,90],[25,65],[14,39]];
 const portraitPlans=new WeakMap();
-let portraitInk=null,portraitTones=null;
+let portraitInk=null,portraitTones=null,lastPortraitPlan=null,lastPortraitStamp=null;
 function portraitProtected(x,y){
  return mainInserts.some(([cx,cy])=>Math.abs(x-cx)<=10&&Math.abs(y-cy)<=10);
 }
@@ -1127,15 +1126,19 @@ function mainPortraitPlan(pixels,protectedPens,palette){
   }
   if(n>=15&&warm>=8&&changes>=9&&weights.size>=2&&(portraitPigment(palette[p])||warm>=Math.ceil(n*.65)))toneCells.push({i,weight,weights:[...weights]});
  }
- return {ink,native,faceMask,faceCells,toneCells,geometry:null};
+ const pens=new Set();for(let i=0;i<ink.length;i++)if(ink[i]!==NONE)pens.add(ink[i]);for(const {weights} of toneCells)for(const [pen] of weights)pens.add(pen);
+ return {ink,native,faceMask,faceCells,toneCells,pens:[...pens].sort((a,b)=>a-b),geometry:null};
 }
 function redrawMainPortrait(g,live){
  if((cpu.flipped&1)||!isMainPrint(memory)||typeof Path2D!=='function')return {faceCells:0,toneCells:0,regions:0};
  const protectedPens=new Set([...live.pens,...mainLampPens]);
- const key=[...protectedPens].sort((a,b)=>a-b).join(',');
+ const key=[...protectedPens].sort((a,b)=>a-b).join(',')+'|'+Array.from(palette32.subarray(128),v=>portraitPigment(v)?'1':'0').join('');
  let plan=boardGeometry&&portraitPlans.get(boardGeometry);
  if(!plan||plan.key!==key){plan=mainPortraitPlan(bgPixels,protectedPens,palette32);plan.key=key;if(boardGeometry)portraitPlans.set(boardGeometry,plan);}
  if(!portraitInk){portraitInk=document.createElement('canvas');portraitInk.width=224*HD;portraitInk.height=256*HD;portraitTones=document.createElement('canvas');portraitTones.width=224;portraitTones.height=256;}
+ const stamp=plan.pens.map(p=>palette32[p]).join(',');
+ const reused=lastPortraitPlan===plan&&lastPortraitStamp===stamp;
+ if(!reused){
  const p=portraitInk.getContext('2d');p.setTransform(HD,0,0,HD,0,0);p.clearRect(0,0,224,256);
  // Reconstruct only eligible original print texture, interpolating its
  // measured ink coverage at HD resolution. No arbitrary new illustration.
@@ -1175,6 +1178,8 @@ function redrawMainPortrait(g,live){
   vectorPaint(p,plan.ink,224,256,NONE,true,geometry,false,fill,false,false,false,true);
   plan.geometry=geometry;
  }
+ lastPortraitPlan=plan;lastPortraitStamp=stamp;
+ }else{renderStats.portraitCacheHits=(renderStats.portraitCacheHits||0)+1;}
  // Restrict even antialiased contours to the original face / texture masks.
  // Live inserts are restored by their existing independent hardware pass.
  g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);g.imageSmoothingEnabled=false;
@@ -1230,7 +1235,7 @@ function rebuildHDBoard(){
  boardCtx.drawImage(boardInk,0,0,256,256);
  const print=redrawPrintedHalftones(boardCtx);stats.printCells=print.cells;stats.printPatches=print.patches;stats.printRegions=print.regions||0;
  // Preserve the original ROM portrait; never paint an invented face over it.
- stats.handIllustrated=false;stats.mainPortrait=redrawMainPortrait(boardCtx,live);stats.mainInserts=main&&!flipped&&typeof Path2D==='function'?mainInsertBounds(bgPixels).length:0;
+ stats.handIllustrated=false;stats.mainPortrait=redrawMainPortrait(boardCtx,live);stats.mainInserts=main&&!flipped&&typeof Path2D==='function'?getMainInsertPlan(bgPixels).inserts.length:0;
  const extra=redrawExtraPrint(boardCtx,live);stats.extraPrint=extra;
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;
  stats.livePalettePens=live.pens.size;stats.livePaletteCells=redrawLiveBoardPens(boardCtx,live,main&&stats.mainInserts===10,flipped);
