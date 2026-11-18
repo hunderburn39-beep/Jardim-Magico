@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.93 — 2D-HD DEV";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.94 — 2D-HD DEV";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -945,10 +945,50 @@ function redrawExtraPrint(g){
  return {table:table.id,zones:plan.length,cells,regions};
 }
 
+// Keep ROM-driven colour regions visible even when HD artwork crosses them.
+// Learn live palette writes only while an identical board map is active;
+// a table's initial palette load must not mark its entire illustration.
+const livePenPlans=new WeakMap();
+function livePenPlan(cache){
+ let plan=livePenPlans.get(cache);
+ if(!plan){plan={pens:new Set(),spans:null};livePenPlans.set(cache,plan);}
+ return plan;
+}
+function learnLivePens(plan,changed,used){
+ let added=0;
+ for(let p=128;p<256;p++)if(changed[p]&&used[p]&&!plan.pens.has(p)){plan.pens.add(p);added++;}
+ if(added)plan.spans=null;
+ return added;
+}
+function nativeLiveSpans(pixels,pens){
+ const spans=new Map();
+ for(let y=0;y<256;y++)for(let x=0;x<256;){
+  const pen=pixels[y*256+x],left=x;while(x<256&&pixels[y*256+x]===pen)x++;
+  if(!pens.has(pen))continue;
+  if(!spans.has(pen))spans.set(pen,[]);
+  spans.get(pen).push([left,y,x-left]);
+ }
+ return spans;
+}
+function redrawLiveBoardPens(g,plan,main,flipped){
+ if(!plan.pens.size)return 0;
+ if(!plan.spans)plan.spans=nativeLiveSpans(bgPixels,plan.pens);
+ g.save();g.setTransform(HD,0,0,HD,0,0);
+ let count=0;
+ for(const [pen,runs] of plan.spans){
+  // The ten independently rendered central lamps restore their own
+  // native segments in HD; in flipped mode use the original pixels.
+  if(main&&!flipped&&mainLampPens.has(pen))continue;
+  g.fillStyle=colorAt(pen);
+  for(const [x,y,width] of runs){g.fillRect(x,y,width,1);count+=width;}
+ }
+ g.restore();return count;
+}
 function rebuildHDBoard(){
  // Board colours can flash repeatedly while the tile map stays fixed.
  // Retain bounded, full-resolution variants of the exact same artwork.
- const key=Array.from(palette32.subarray(128),(v,i)=>boardUsedColors[i+128]?v:0).join(',');
+ const live=livePenPlan(boardVariants),main=isMainPrint(memory),flipped=!!(cpu.flipped&1);
+ const key=Array.from(palette32.subarray(128),(v,i)=>boardUsedColors[i+128]?v:0).join(',')+'|'+[...live.pens].sort((a,b)=>a-b).join('.');
  if(boardVariants.has(key)){
   const hit=boardVariants.get(key);touchBoardVariant(boardVariants,key,hit);
   boardCtx.setTransform(1,0,0,1,0,0);boardCtx.drawImage(hit.image,0,0);
@@ -982,7 +1022,9 @@ function rebuildHDBoard(){
  // Preserve the original ROM portrait; never paint an invented face over it.
  stats.handIllustrated=false;stats.mainInserts=paintMainInserts(boardCtx);
  const extra=redrawExtraPrint(boardCtx);stats.extraPrint=extra;
- const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;hdBoardDirty=false;renderStats.boardFull++;
+ const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;
+ stats.livePalettePens=live.pens.size;stats.livePaletteCells=redrawLiveBoardPens(boardCtx,live,main,flipped);
+ hdBoardDirty=false;renderStats.boardFull++;
  const cached=document.createElement('canvas');cached.width=cached.height=SIZE;
  cached.getContext('2d',{alpha:false}).drawImage(hdBoard,0,0);
  touchBoardVariant(boardVariants,key,{image:cached,stats});
@@ -1726,6 +1768,15 @@ function rebuildPalette(){
   if(initial||palette32[idx]!==value){paletteChangedIndices[idx]=1;if(idx>=128){if(boardUsedColors[idx])bgChanged=true;}else fgChanged=true;}
   palette32[idx]=value;
  }
+ // Observe only stable-map palette updates. ROM values remain untouched.
+ if(!initial&&bgMemory===memory&&bgFlip===Number(!!(cpu.flipped&1))&&bgSnapshot){
+  const view=memory.subarray(0xd800,0xe000);let stable=true;
+  for(let i=0;i<view.length;i++)if(view[i]!==bgSnapshot[i]){stable=false;break;}
+  if(stable&&bgChanged){
+   const added=learnLivePens(livePenPlan(boardVariants),paletteChangedIndices,boardUsedColors);
+   renderStats.livePensLearned=(renderStats.livePensLearned||0)+added;
+  }
+ }
  // Sprite art is palette-keyed and evicted by a bounded LRU cache.
  if(initial){clearBoardVariants(boardVariants);for(const saved of hdTableCache.values())clearBoardVariants(saved.variants);}
  if(bgChanged)hdBoardDirty=true;
@@ -2266,6 +2317,7 @@ render();requestAnimationFrame(frame);
 // Entry activates the title command before the game CPU resumes.
 // Debug/test API (not visible in production).
 if(window.PB_TEST||new URLSearchParams(location.search).has('test')) window.__pbRom={
+ livePalette:()=>({pens:[...livePenPlan(boardVariants).pens].sort((a,b)=>a-b),cells:hdArtStats?.livePaletteCells||0}),
  lamps:()=>({main:isMainPrint(memory),lamps:mainInserts.map(([x,y,base,pen])=>({x,y,pen,color:colorAt(pen),lit:mainLampLit(palette32[pen])}))}),
  state:()=>({pc:cpu.pc,sp:cpu.sp,credits:memory[0xc013],queuedStart:queuedStart?.key||null,score:memory.slice(0xc000,0xc010).join(','),steps:cpu.steps,scroll:cpu.scroll,frames,nmi:cpu.nmiEnable,flipped:cpu.flipped,memChecksum:memory.slice(0xd000,0xe600).reduce((a,b)=>a+b,0)}),
  input:(k,on)=>press(k,!!on),pending:()=>({...pending}),frame:()=>{for(let i=0;i<6500;i++){if(cpu.halt)break;cpu.step();}cpu.nmi();finishInputFrame();render()},
