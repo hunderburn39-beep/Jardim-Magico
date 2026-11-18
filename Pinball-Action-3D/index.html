@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><title>Pinball Action 3D • V0.01</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;touch-action:none;overscroll-behavior:none;background:#080710;color:#fff;font:800 14px system-ui}#app{height:100dvh;display:grid;grid-template-rows:48px minmax(0,1fr) 88px;gap:4px;padding: max(4px,env(safe-area-inset-top)) max(7px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-left));max-width:680px;margin:auto}header,footer{display:grid;gap:6px;z-index:2}header{grid-template-columns:1fr 1fr 1fr 1fr}footer{grid-template-columns:1fr .9fr 1fr;grid-template-rows:1fr 1fr}button{touch-action:none;color:#fff;letter-spacing:.05em;font:inherit;border:1px solid #b98bd2;border-radius:10px;background:linear-gradient(150deg,#4d325a,#252132);box-shadow:inset 0 1px 0 #ffffff44;cursor:pointer}button:active,button.held{background:#8c327f;transform:translateY(1px)}#left{grid-column:1;grid-row:1/3}#right{grid-column:3;grid-row:1/3}#launch{background:linear-gradient(#286849,#142c28)}#view{position:relative;overflow:hidden;background:#090713;border-radius:12px;isolation:isolate}#view>canvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1}#engine{position:absolute;top:0;left:0;width:224px;height:360px;opacity:.01;pointer-events:none;border:0;z-index:0}#gate{position:absolute;z-index:3;inset:0;display:grid;place-content:center;text-align:center;gap:16px;padding:22px;background:#090617df}#gate[hidden]{display:none}#gate h1{font-size:clamp(26px,7vw,44px);margin:0;color:#ffc471;text-shadow:0 0 20px #fb3385}#gate p{font-weight:500;color:#dfcbe6;margin:0}#gate button{padding:15px 25px;background:linear-gradient(#9a326f,#4e2c72)}#status{position:absolute;z-index:2;bottom:4px;right:8px;color:#cab6dc;font-size:10px;pointer-events:none}
+@media(orientation:landscape){#app{grid-template-rows:35px minmax(0,1fr) 61px;max-width:950px}footer,header{width:min(450px,100%);justify-self:center}}
+</style></head><body><main id="app"><header><button data-key="coin">FICHA</button><button data-key="start">P1</button><button data-key="start2">P2</button><button id="sound">SOM ON</button></header><section id="view" aria-label="Mesa 3D"><iframe id="engine" title="Motor original"></iframe><div id="gate"><h1>PINBALL ACTION 3D</h1><p id="message">A preparar o motor original…</p><button id="enter" disabled>ENTRAR</button></div><span id="status">V0.01 • 3D</span></section><footer><button id="left" data-key="left">ESQ.</button><button id="launch" data-key="launch">LANÇAR</button><button id="shake" data-key="shake">SHAKE</button><button id="right" data-key="right">DIR.</button></footer></main>
+<script type="module">
+import * as T from 'https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js';
+const $=id=>document.getElementById(id),view=$('view'),engine=$('engine');
+const W=224,D=256,HD=4,worldX=x=>x-W/2,worldZ=y=>y-D/2;
+const scene=new T.Scene();scene.background=new T.Color(0x090711);
+const camera=new T.PerspectiveCamera(33,1,1,1800);
+const renderer=new T.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.13;view.appendChild(renderer.domElement);
+const ambient=new T.HemisphereLight(0xffe9ff,0x56376a,2.0);scene.add(ambient);
+for(const [color,intensity,x,y,z] of [[0xffd8aa,4,-110,180,-90],[0x9a75ff,3,120,100,80],[0x80e1ff,2,0,100,-170]]){const l=new T.DirectionalLight(color,intensity);l.position.set(x,y,z);scene.add(l)}
+const env=document.createElement('canvas');env.width=512;env.height=256;const eg=env.getContext('2d');eg.fillStyle='#303041';eg.fillRect(0,0,512,256);
+for(const [x,y,w,h,c] of [[10,12,120,20,'#fff4df'],[215,27,160,28,'#e1f8ff'],[330,125,130,23,'#d9169f'],[60,170,65,28,'#f3ae4c']]){eg.fillStyle=c;eg.fillRect(x,y,w,h)}
+const et=new T.CanvasTexture(env);et.colorSpace=T.SRGBColorSpace;et.mapping=T.EquirectangularReflectionMapping;const pmrem=new T.PMREMGenerator(renderer);const envTarget=pmrem.fromEquirectangular(et);scene.environment=envTarget.texture;pmrem.dispose();et.dispose();
+const metal=new T.MeshStandardMaterial({color:0xc0bdcc,metalness:.88,roughness:.24}), dark=new T.MeshStandardMaterial({color:0x221929,metalness:.55,roughness:.31}),gold=new T.MeshStandardMaterial({color:0xffbd66,metalness:.82,roughness:.28}),neon=new T.MeshStandardMaterial({color:0xec2995,emissive:0xf52298,emissiveIntensity:1.6,roughness:.4});
+function box(w,h,d,x,y,z,mat){const m=new T.Mesh(new T.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);scene.add(m);return m}
+box(238,12,270,0,-6,0,dark);
+for(const side of [-1,1]){box(6,11,270,side*115,3,0,dark);box(2.7,2,270,side*115,9,0,metal);box(.9,.85,266,side*112.6,8.5,0,neon)}
+for(const side of [-1,1]){box(238,11,6,0,3,side*132,dark);box(238,2,2.7,0,9,side*132,metal);box(229,.85,.9,0,8.5,side*129.5,neon)}
+const board=document.createElement('canvas');board.width=W*HD;board.height=D*HD;const g=board.getContext('2d',{alpha:false});
+const boardTex=new T.CanvasTexture(board);boardTex.colorSpace=T.SRGBColorSpace;boardTex.minFilter=T.LinearFilter;boardTex.magFilter=T.LinearFilter;
+const surface=new T.Mesh(new T.PlaneGeometry(W,D),new T.MeshBasicMaterial({map:boardTex,toneMapped:false}));surface.rotation.x=-Math.PI/2;scene.add(surface);
+const ball=new T.Mesh(new T.SphereGeometry(1,24,16),new T.MeshStandardMaterial({color:0xdfe4ec,metalness:1,roughness:.13}));ball.visible=false;scene.add(ball);
+const sh=document.createElement('canvas');sh.width=sh.height=64;const sg=sh.getContext('2d'),grad=sg.createRadialGradient(32,32,4,32,32,30);grad.addColorStop(0,'#0009');grad.addColorStop(1,'#0000');sg.fillStyle=grad;sg.fillRect(0,0,64,64);const shadow=new T.Mesh(new T.PlaneGeometry(2,2),new T.MeshBasicMaterial({map:new T.CanvasTexture(sh),transparent:true,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.visible=false;scene.add(shadow);
+const lampGroup=new T.Group();scene.add(lampGroup);const lamps=[];
+for(let i=0;i<10;i++){const group=new T.Group();const ring=new T.Mesh(new T.TorusGeometry(1,.11,8,32),metal);ring.rotation.x=-Math.PI/2;ring.position.y=.25;group.add(ring);const lens=new T.Mesh(new T.CylinderGeometry(.85,.85,.28,32),new T.MeshStandardMaterial({color:0x596578,roughness:.25,metalness:.23,emissive:0x202e42,emissiveIntensity:.35}));lens.position.y=.12;group.add(lens);group.visible=false;lampGroup.add(group);lamps.push({group,lens})}
+const hardware=new T.Group();scene.add(hardware);const slots=[];
+const cache=new Map();let serial=0;
+function hull(points){const p=points.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);let lo=[],hi=[];for(const v of p){while(lo.length>1&&cross(lo.at(-2),lo.at(-1),v)<=0)lo.pop();lo.push(v)}for(let i=p.length-1;i>=0;i--){const v=p[i];while(hi.length>1&&cross(hi.at(-2),hi.at(-1),v)<=0)hi.pop();hi.push(v)}return lo.slice(0,-1).concat(hi.slice(0,-1))}
+const imageIds=new WeakMap();
+function model(o){if(!imageIds.has(o.image))imageIds.set(o.image,++serial);const key=imageIds.get(o.image)+':'+o.flipX+':'+o.flipY;let item=cache.get(key);if(item)return item;
+const n=o.size,a=o.atlas,p=a.pens,start=o.c*n*n,pts=[];
+for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(p[start+y*n+x])for(const [u,v] of [[x,y],[x+1,y],[x+1,y+1],[x,y+1]]){const xx=o.flipX?n-u:u,yy=o.flipY?n-v:v;pts.push([n/2-yy,n/2-xx])}
+const h=hull(pts);if(h.length<3)return null;const shape=new T.Shape();shape.moveTo(...h[0]);for(const v of h.slice(1))shape.lineTo(...v);shape.closePath();const depth=o.big&&o.c>=7&&o.c<=10?4.1:o.family==='target'?2.8:2.1;const geo=new T.ExtrudeGeometry(shape,{depth,bevelEnabled:false,steps:1});geo.rotateX(-Math.PI/2);
+const c=document.createElement('canvas');c.width=c.height=n*HD;const ctx=c.getContext('2d');ctx.translate(c.width,0);ctx.rotate(Math.PI/2);ctx.translate(o.flipX?c.width:0,o.flipY?c.height:0);ctx.scale(o.flipX?-1:1,o.flipY?-1:1);ctx.drawImage(o.image,0,0,c.width,c.height);
+const tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;const mat=new T.MeshBasicMaterial({map:tex,transparent:true,alphaTest:.18,toneMapped:false});item={geo,mat,depth,tex};cache.set(key,item);return item}
+const topGeo16=new T.PlaneGeometry(16,16),topGeo32=new T.PlaneGeometry(32,32);
+function slotAt(i){if(slots[i])return slots[i];const group=new T.Group(),body=new T.Mesh(new T.BufferGeometry(),metal),top=new T.Mesh(topGeo16,new T.MeshBasicMaterial());top.rotation.x=-Math.PI/2;group.add(body,top);hardware.add(group);return slots[i]={group,body,top}}
+function positioned(o){return {x:240-o.yy-o.size/2,z:o.xx+o.size/2}}
+function drawNative(f){const scroll=f.scroll;g.setTransform(1,0,0,1,0,0);g.fillStyle='#000';g.fillRect(0,0,board.width,board.height);g.save();g.translate(240*HD,0);g.rotate(Math.PI/2);g.scale(HD,HD);g.beginPath();g.rect(0,0,256,256);g.clip();function wrapped(layer){g.drawImage(layer,-scroll,0,256,256);if(scroll)g.drawImage(layer,256-scroll,0,256,256)}wrapped(f.board);
+let idx=0,found=false;
+for(const o of f.sprites){const foreground=o.size===o.atlas.w;const isBall=!o.big&&o.c===5;
+if(isBall){if(foreground){const b=f.ballGeometry(o),cx=o.flipX?o.size-b.cx:b.cx,cy=o.flipY?o.size-b.cy:b.cy;const x=240-o.yy-cy,z=o.xx+cx,r=Math.max(.8,Math.min(b.rx,b.ry));if(x>=0&&x<=224&&z>=0&&z<=256){ball.position.set(worldX(x),r+.25,worldZ(z));ball.scale.setScalar(r);shadow.position.set(worldX(x)+r*.3,.1,worldZ(z)+r*.5);shadow.scale.set(r*1.5,r*1.5,1);found=true}}continue}
+if(foreground&&(o.family==='mechanism'||o.family==='target')){const m=model(o);if(m){const s=slotAt(idx++),p=positioned(o);s.group.visible=true;s.group.position.set(worldX(p.x),.12,worldZ(p.z));s.body.geometry=m.geo;s.body.material=o.family==='target'?gold:metal;s.top.geometry=o.size===32?topGeo32:topGeo16;s.top.material=m.mat;s.top.position.y=m.depth+.06;continue}}
+g.save();g.translate(o.xx+(o.flipX?o.size:0),o.yy+(o.flipY?o.size:0));g.scale(o.flipX?-1:1,o.flipY?-1:1);g.drawImage(o.image,0,0,o.size,o.size);g.restore();
+}
+wrapped(f.front);g.restore();boardTex.needsUpdate=true;ball.visible=shadow.visible=found;
+for(let i=idx;i<slots.length;i++)slots[i].group.visible=false;
+for(let i=0;i<lamps.length;i++){const l=lamps[i],a=f.lamps[i];l.group.visible=!!a&&f.main;if(a&&f.main){l.group.position.set(worldX(a.cx),.04,worldZ(a.cy-scroll));l.group.scale.set(a.rx,2.2,a.ry);l.lens.material.color.set(a.lit?0xf6474f:0x536074);l.lens.material.emissive.set(a.lit?0xff172d:0x20334c);l.lens.material.emissiveIntensity=a.lit?1.8:.32}}
+if(cache.size>220){const active=new Set(slots.filter(s=>s.group.visible).map(s=>s.body.geometry));for(const [k,v] of cache){if(active.has(v.geo))continue;v.geo.dispose();v.tex.dispose();v.mat.dispose();cache.delete(k);if(cache.size<=150)break}}
+}
+let lastFrame;
+function resize(){const w=view.clientWidth,h=view.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;const a=33*Math.PI/360,dist=Math.max(278/(2*Math.tan(a)),248/(2*Math.tan(a)*camera.aspect))*1.13;camera.position.set(0,dist*Math.cos(.36),dist*Math.sin(.36));camera.lookAt(0,0,1);camera.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(view);resize();
+renderer.setAnimationLoop(()=>{const f=engine.contentWindow?.__PB3D_FRAME;if(f&&f!==lastFrame){drawNative(f);lastFrame=f}renderer.render(scene,camera)});
+let controls,ready=false;
+async function boot(){try{const url=new URL('../Pinball-Action/game-preview-v907.html',location.href);const res=await fetch(url);if(!res.ok)throw Error('Motor original HTTP '+res.status);let src=await res.text();
+const needle='const scene=hdSceneCommands(spriteCommands);';
+if(!src.includes(needle))throw Error('O contrato de renderização V9.07 mudou.');
+src=src.replace('<head>','<head><base href="'+new URL('./',url).href+'">').replace('<script src="./pixi-renderer-v869.js"><'+'/script>','');
+src=src.replace(needle,needle+`window.__PB3D_FRAME={board:hdBoard,front:hdFront,scroll:srcStart,main:isMainPrint(memory)&&!flipped,lamps:isMainPrint(memory)&&!flipped?getMainInsertPlan(bgPixels).inserts.map(o=>({cx:o.cx,cy:o.cy,rx:o.rx,ry:o.ry,lit:mainLampLit(palette32[o.pen])})):[],sprites:scene.map(o=>({...o,family:hdSpriteFamily(o.atlas,o.c,o.big)})),ballGeometry:o=>ballGeometry(o.atlas,o.c,1)};if(window.parent!==window)return;`);
+const endpoint='render();initMainArt();requestAnimationFrame(frame);';
+if(!src.includes(endpoint))throw Error('Ponto de arranque original não encontrado.');
+src=src.replace(endpoint,'window.__PB3D_CONTROL={input:press,enter:()=>{window.__PB_ENTER_ARCADE();window.__PB_REVEAL_ARCADE();},sound:()=>document.getElementById("sound").click()};'+endpoint);
+engine.addEventListener('load',()=>{controls=engine.contentWindow.__PB3D_CONTROL;if(!controls){$('message').textContent='Falha ao iniciar o motor original.';return}ready=true;$('message').textContent='Mesa em perspetiva • motor ROM V9.07';$('enter').disabled=false;},{once:true});engine.srcdoc=src;
+}catch(e){$('message').textContent=e.message;console.error(e)}}
+$('enter').addEventListener('click',()=>{if(!ready)return;controls.enter();$('gate').hidden=true;});
+let sound=true;$('sound').addEventListener('click',()=>{if(!ready)return;controls.sound();sound=!sound;$('sound').textContent=sound?'SOM ON':'SOM OFF'});
+const held=new Set();function input(k,on){if(!ready||!$('gate').hidden)return;if(on){if(held.has(k))return;held.add(k)}else held.delete(k);controls.input(k,on)}
+for(const b of document.querySelectorAll('[data-key]')){const k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();try{b.setPointerCapture(e.pointerId)}catch{}input(k,true);b.classList.add('held')});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,e=>{input(k,false);b.classList.remove('held')})}
+const keys={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',Space:'launch',ArrowDown:'launch',ArrowUp:'shake',KeyC:'coin',Enter:'start',Digit1:'start',Digit2:'start2'};
+window.addEventListener('keydown',e=>{const k=keys[e.code];if(k&&$('gate').hidden){e.preventDefault();input(k,true)}});window.addEventListener('keyup',e=>{const k=keys[e.code];if(k)input(k,false)});function release(){for(const k of [...held])input(k,false);document.querySelectorAll('.held').forEach(b=>b.classList.remove('held'))}window.addEventListener('blur',release);document.addEventListener('visibilitychange',()=>{if(document.hidden)release()});boot();
+</script></body></html>
