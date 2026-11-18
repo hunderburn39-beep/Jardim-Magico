@@ -157,6 +157,8 @@ jobs:
           test -s public/Pinball-Action-3D/preview-v006.html
           test -s public/Pinball-Action-3D/physical-preview-v002.html
           grep -q 'V0.02 · PHYSICAL' public/Pinball-Action-3D/physical-preview-v002.html
+          test -s public/Pinball-Action-3D/physical-preview-v004.html
+          grep -q 'V0.04 · PHYSICAL' public/Pinball-Action-3D/physical-preview-v004.html
           test -s public/Pinball-Action/game-preview-v907.html
           mkdir -p public/Sugar-Rush-1000
           cp -a Sugar-Rush-1000/standalone public/Sugar-Rush-1000/
@@ -288,7 +290,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Confirmar Physical 3D V0.02 online
+      - name: Confirmar Physical 3D V0.04 online
         shell: bash
         env:
           SITE_URL: ${{ steps.deployment.outputs.page_url }}
@@ -296,15 +298,15 @@ jobs:
           set -euo pipefail
           base="${SITE_URL%/}"
           for tentativa in {1..15}; do
-            if curl -fsSL --max-time 15 "$base/Pinball-Action-3D/physical-preview-v002.html?sha=$GITHUB_SHA" -o /tmp/physical-v002.html \
-              && grep -q 'V0.02 · PHYSICAL' /tmp/physical-v002.html \
+            if curl -fsSL --max-time 15 "$base/Pinball-Action-3D/physical-preview-v004.html?sha=$GITHUB_SHA" -o /tmp/physical-v004.html \
+              && grep -q 'V0.04 · PHYSICAL' /tmp/physical-v004.html \
               && curl -fsSL --max-time 15 "$base/Pinball-Action/game-preview-v907.html" -o /tmp/physical-rom.html; then
-              echo "Physical 3D V0.02: HTTP 200 e motor ROM disponível."
+              echo "Physical 3D V0.04: HTTP 200 e motor ROM disponível."
               exit 0
             fi
             sleep 6
           done
-          echo "::error::Physical 3D V0.02 não está disponível no Pages."
+          echo "::error::Physical 3D V0.04 não está disponível no Pages."
           exit 1
 
 
@@ -514,6 +516,8 @@ jobs:
           test -s public/Pinball-Action-3D/preview-v006.html
           test -s public/Pinball-Action-3D/physical-preview-v002.html
           grep -q 'V0.02 · PHYSICAL' public/Pinball-Action-3D/physical-preview-v002.html
+          test -s public/Pinball-Action-3D/physical-preview-v004.html
+          grep -q 'V0.04 · PHYSICAL' public/Pinball-Action-3D/physical-preview-v004.html
           test -s public/Pinball-Action/game-preview-v907.html
           echo 'Site de recuperação preparado com todas as pastas e catálogo ROM.'
       - name: Configurar GitHub Pages
@@ -526,7 +530,7 @@ jobs:
         id: recuperar
         uses: actions/deploy-pages@v4
 
-      - name: Confirmar Physical 3D V0.02 online
+      - name: Confirmar Physical 3D V0.04 online
         shell: bash
         env:
           SITE_URL: ${{ steps.recuperar.outputs.page_url }}
@@ -534,15 +538,15 @@ jobs:
           set -euo pipefail
           base="${SITE_URL%/}"
           for tentativa in {1..15}; do
-            if curl -fsSL --max-time 15 "$base/Pinball-Action-3D/physical-preview-v002.html?sha=$GITHUB_SHA" -o /tmp/physical-v002.html \
-              && grep -q 'V0.02 · PHYSICAL' /tmp/physical-v002.html \
+            if curl -fsSL --max-time 15 "$base/Pinball-Action-3D/physical-preview-v004.html?sha=$GITHUB_SHA" -o /tmp/physical-v004.html \
+              && grep -q 'V0.04 · PHYSICAL' /tmp/physical-v004.html \
               && curl -fsSL --max-time 15 "$base/Pinball-Action/game-preview-v907.html" -o /tmp/physical-rom.html; then
-              echo "Physical 3D V0.02: HTTP 200 e motor ROM disponível."
+              echo "Physical 3D V0.04: HTTP 200 e motor ROM disponível."
               exit 0
             fi
             sleep 6
           done
-          echo "::error::Physical 3D V0.02 não está disponível no Pages."
+          echo "::error::Physical 3D V0.04 não está disponível no Pages."
           exit 1
 
 
