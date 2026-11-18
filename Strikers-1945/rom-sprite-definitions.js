@@ -76,7 +76,45 @@ function palettePointerList(){
   return Object.freeze({slot:i,address:p,index});
  }));
 }
+// Sixteen 32-slot tables at 0x58ad8..0x592d7. Table 4 matches the
+// captured first-stage banks 11,12,23,25,27,29,31 at every visible pen.
+// Slots 1..7 point to identical palette records in all sixteen tables.
+// Retain unresolved pointers and sentinel slots; never turn them into colors.
+const STAGE_PALETTE_TABLE=0x58ad8,STAGE_PALETTE_COUNT=16;
+let stageTables=null;
+function stagePaletteTables(){
+ const rom=window.StrikersROM;
+ if(!rom?.isVerified?.())return null;
+ if(stageTables)return stageTables;
+ const result=[];
+ for(let table=0;table<STAGE_PALETTE_COUNT;table++){
+  const slots=[];
+  for(let bank=0;bank<32;bank++){
+   const a=STAGE_PALETTE_TABLE+table*128+bank*4;
+   const ptr=rom.programWord(a)*65536+rom.programWord(a+2);
+   const n=(ptr-PALETTE_START)/32;
+   const index=Number.isInteger(n)&&n>=0&&n<PALETTE_COUNT?n:null;
+   if(bank>=1&&bank<=7&&index!==15+bank)throw Error('Common sprite palette table mismatch');
+   slots.push(Object.freeze({bank,address:ptr,index,status:index!==null?'record':ptr===0xffffffff?'unused':'unresolved'}));
+  }
+  result.push(Object.freeze(slots));
+ }
+ const reference={11:30,12:31,23:75,25:73,27:71,28:70,29:69,31:67};
+ for(const [bank,index] of Object.entries(reference))if(result[4][bank].index!==index)throw Error('Captured palette table mismatch');
+ stageTables=Object.freeze(result);return stageTables;
+}
+function commonSpritePalette(bank){
+ if(!Number.isInteger(bank)||bank<1||bank>7)return null;
+ const tables=stagePaletteTables();if(!tables)return null;
+ return palette(tables[0][bank].index);
+}
+function stagePalette(table,bank){
+ const record=stagePaletteTables()?.[table]?.[bank];
+ return record?.index!=null?palette(record.index):null;
+}
+window.addEventListener('strikers-rom-ready',()=>{stageTables=null});
+
 function stats(){const a=read();return {count:a?.list.length??0,covered:a?.covered??0,expected:COUNT,start:START,endExclusive:END,paletteCount:PALETTE_COUNT,paletteStart:PALETTE_START}}
 window.addEventListener('strikers-rom-ready',()=>{cached=null});
-window.StrikersSpriteDefinitions=Object.freeze({all,get,draw,drawRaw,palette,palettePointerList,stats});
+window.StrikersSpriteDefinitions=Object.freeze({all,get,draw,drawRaw,palette,palettePointerList,stagePaletteTables,commonSpritePalette,stagePalette,stats});
 })();
