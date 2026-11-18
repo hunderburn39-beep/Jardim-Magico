@@ -32,17 +32,32 @@
  // Replace captured tile words ONLY when the original program contains
  // the exact same strip at the recorded scroll column. Unmatched strips
  // retain the capture. Both layers' original map IDs are independently known.
+ // Scene 2 variant 0: uniquely matches the two opening captured map strips
+ // and all defined visible palette entries (180 color comparisons).
+ // Only substitute exact RGB555 matches, preserving dynamic captured colors.
+ function matchBank(native,captured){
+  return !!native&&native.length===16&&captured.length===16&&
+   native.slice(0,15).every((v,i)=>(v&0x7fff)===(captured[i]&0x7fff));
+ }
  function prepareMaps(){
   if(mapAudit)return mapAudit;
   if(!frames||!window.StrikersOriginalMaps?.all())return null;
-  const totals={matchedLayers:0,retainedLayers:0,matchedWords:0};
+  const palettes=[0,1].map(layer=>window.StrikersOriginalMaps.scenePalette(2,layer,0));
+  if(palettes.some(p=>!p))return null;
+  const totals={scene:2,variant:0,matchedLayers:0,retainedLayers:0,matchedWords:0,matchedBanks:0,retainedBanks:0,matchedColors:0};
   for(const f of frames){
-   f.nativeCodes=[null,null];
+   f.nativeCodes=[null,null];f.nativePalettes=[[],[]];
    for(let layer=0;layer<2;layer++){
     const start=layer*294,col=layer===0?f.firstCol:f.firstCol1;
     const strip=window.StrikersOriginalMaps.matchCapture(layer,col,f.codes.subarray(start,start+294));
     if(strip){f.nativeCodes[layer]=strip;totals.matchedLayers++;totals.matchedWords+=strip.length;}
     else totals.retainedLayers++;
+    for(let bank=0;bank<8;bank++){
+     const at=layer*128+bank*16,native=palettes[layer][bank];
+     if(matchBank(native,f.palettes.subarray(at,at+16))){
+      f.nativePalettes[layer][bank]=native;totals.matchedBanks++;totals.matchedColors+=15;
+     }else{f.nativePalettes[layer][bank]=null;totals.retainedBanks++;}
+    }
    }
   }
   cache.clear();terminalCanvas=null;
@@ -72,7 +87,7 @@
     const dy=319-rawx;
     for(let py=0;py<16;py++){
      const pix=pxs[py*16+dx];if(pix===15)continue;
-     const v=fr.palettes[layer*128+colors*16+pix],z=(dy*224+row*16+py)*4;
+     const v=fr.nativePalettes?.[layer]?.[colors]?.[pix]??fr.palettes[layer*128+colors*16+pix],z=(dy*224+row*16+py)*4;
      d[z]=RGB5((v>>10)&31);d[z+1]=RGB5((v>>5)&31);d[z+2]=RGB5(v&31);d[z+3]=255;
     }
    }
@@ -148,6 +163,6 @@
  function ready(){return !!frames&&!!window.StrikersROM?.isLoaded()}
  window.StrikersOriginalStage1=Object.freeze({ensure,ready,prepareMaps,draw,preview:()=>frames?frameCanvas(5):null,
   info:()=>({frames:frames?.length??0,mapAudit,originalWidth:224,originalHeight:320,firstFrame:frames?.[0]?.frame??null,lastFrame:frames?.at(-1)?.frame??null,recordedSeconds:frames?(frames.at(-1).frame-frames[0].frame)/60:null,layerInterpolation:'independent-scroll-registers',extrapolation:'repeated-last-capture',firstFlightFrame:window.StrikersFlightReplay?.stats()?.earliestFrame??null,stage:1})});
- window.addEventListener('strikers-rom-ready',()=>{mapAudit=null;cache.clear();tileCache.clear();terminalCanvas=null;if(frames)for(const f of frames)f.nativeCodes=null;ensure()});
+ window.addEventListener('strikers-rom-ready',()=>{mapAudit=null;cache.clear();tileCache.clear();terminalCanvas=null;if(frames)for(const f of frames){f.nativeCodes=null;f.nativePalettes=null;}ensure()});
  if(window.StrikersROM?.isLoaded())ensure();
 })();
