@@ -24,7 +24,8 @@ function read(){
   if(pointer!==g.address)throw Error('Aircraft table pointer mismatch: '+g.id);
   const records=[];
   for(let i=0;i<20;i++){
-   const a=g.address+8*i,rx=r.programWord(a),ry=r.programWord(a+2),attr=r.programWord(a+4),code=r.programWord(a+6);
+   // Real World ROM layout: flags, LUT code, horizontal word, vertical word.
+   const a=g.address+8*i,attr=r.programWord(a),code=r.programWord(a+2),rx=r.programWord(a+4),ry=r.programWord(a+6);
    const desc=defs.get(code);
    if(code!==g.base+4*Math.floor(i/2)||attr!==(i%2?8:0)||!desc||desc.nx!==2||desc.ny!==2)throw Error('Aircraft record mismatch: '+g.id+' #'+i);
    records.push(Object.freeze({address:a,rx,ry,attr,code}));
@@ -50,7 +51,7 @@ function sprite(id,bank=0,time=0,palette=null){
  if(!window.StrikersSpriteDefinitions.draw(c,f.code,palette))return null;
  canvases.set(key,c);return c;
 }
-function stats(){const m=read();return {groups:m?.size??0,records:m?120:0,uniqueImages:m?60:0,paletteStatus:'unverified',timingStatus:'provisional'}}
+function stats(){const m=read();return {groups:m?.size??0,records:m?120:0,uniqueImages:m?60:0,paletteStatus:'unverified',timingStatus:'provisional',recordLayout:'attr,code,rx,ry'}}
 window.addEventListener('strikers-rom-ready',()=>{cached=null;canvases.clear()});
 window.StrikersOriginalPlayers=Object.freeze({groups,info,frame,sprite,stats});
 })();
