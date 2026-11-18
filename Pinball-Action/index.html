@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#10091c">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Pinball Action V9.03 — Entrada</title>
+<title>Pinball Action V9.04 — Entrada</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080711;overscroll-behavior:none;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -61,7 +61,7 @@ h1 .bottom{display:block;color:#fef6e5;font-size:.78em;letter-spacing:.03em}
 </head>
 <body>
 <!-- The actual game exists in a DIFFERENT document. It cannot appear before ENTRAR. -->
-<iframe id="arcade" src="./game-v903.html?v=903" title="Pinball Action — máquina original" allow="autoplay" aria-hidden="true"></iframe>
+<iframe id="arcade" src="./game-v904.html?v=904" title="Pinball Action — máquina original" allow="autoplay" aria-hidden="true"></iframe>
 <section id="intro" aria-label="Entrada no Pinball Action">
  <div class="panel">
   <div class="kicker">ARCADE ORIGINAL · 1985</div>
@@ -89,7 +89,7 @@ h1 .bottom{display:block;color:#fef6e5;font-size:.78em;letter-spacing:.03em}
   <p id="message" role="status" aria-live="polite">A preparar a máquina original</p>
   <button id="silent" type="button" hidden>Entrar sem som</button>
  </div>
- <div class="version">V9.03</div>
+ <div class="version">V9.04</div>
 
  <button id="settings-button" type="button" disabled>CONFIGURAÇÃO</button>
 </section>
@@ -99,6 +99,10 @@ h1 .bottom{display:block;color:#fef6e5;font-size:.78em;letter-spacing:.03em}
 <p style="font-size:13px;color:#d1c9da;margin:6px 0">Interruptores originais SW1 / SW2 · Tehkan 1985</p>
 <div id="dip-fields"></div>
 <p id="dip-status" role="status"></p>
+<h3>GRAFISMO DA MESA 1 · 2D-HD</h3>
+<label for="main-art-file">Imagem de fundo <input id="main-art-file" type="file" accept="image/png,image/jpeg,image/webp" style="max-width:55%;font-size:14px"></label>
+<p id="main-art-status" role="status" aria-live="polite" style="font-size:13px;line-height:1.4;color:#dfc3df">Escolhe a ilustração original da mesa 1.</p>
+<button id="main-art-reset" type="button" style="width:100%">REPOR FUNDO</button>
 <div class="settings-buttons"><button id="save-settings" type="button">GUARDAR</button><button id="reset-settings" type="button">ORIGINAL</button><button id="close-settings" type="button">SAIR</button></div>
 </div></section>
 <script>
@@ -136,6 +140,19 @@ function showDips(d){
  for(const [bank,mask,,,el] of fields)el.value=String(d[bank]&mask);
  dipStatus.textContent='Máquina vertical · configurações reais da ROM';
 }
+const mainArtFile=document.getElementById('main-art-file'),mainArtStatus=document.getElementById('main-art-status');
+mainArtFile.addEventListener('change',async()=>{
+ const file=mainArtFile.files?.[0];if(!file)return;
+ mainArtStatus.textContent='A aplicar ilustração…';
+ try{
+  const result=await child().__PB_MAIN_ART_SET(file);
+  mainArtStatus.textContent=result.loaded?(result.saved?'Fundo aplicado e guardado neste dispositivo.':'Fundo aplicado nesta sessão; armazenamento indisponível.'):'O pedido foi substituído.';
+ }catch(error){mainArtStatus.textContent=error.message||'Não foi possível carregar a imagem.';}
+ mainArtFile.value='';
+});
+document.getElementById('main-art-reset').addEventListener('click',async()=>{
+ try{await child().__PB_MAIN_ART_RESET();mainArtStatus.textContent='Fundo reposto.';}catch{mainArtStatus.textContent='Não foi possível repor o fundo.';}
+});
 settingsButton.addEventListener('click',()=>{
  const w=child();if(!w||opening||entered||testing)return;
  showDips(w.__PB_DIP_GET());settings.hidden=false;
