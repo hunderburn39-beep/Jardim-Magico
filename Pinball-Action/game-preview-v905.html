@@ -1318,7 +1318,7 @@ function loadMainArt(url,source){
 function openArtDB(){
  return new Promise((resolve,reject)=>{
   if(!window.indexedDB){reject(Error('Armazenamento indisponível'));return;}
-  const request=indexedDB.open('pb-main-art-v1',1);
+  const request=indexedDB.open('pb-main-art-preview-v905',1);
   request.onupgradeneeded=()=>request.result.createObjectStore('art');
   request.onsuccess=()=>resolve(request.result);
   request.onerror=()=>reject(request.error||Error('Armazenamento indisponível'));
