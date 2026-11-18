@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V9.04 — 2D-HD</title><style>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V9.05 — 2D-HD</title><style>
 :root{color-scheme:dark;--edge:6px;--gap:6px;--top:44px;--bottom:110px}
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;background:#040409;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V9.04 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V9.05 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -1355,7 +1355,38 @@ async function initMainArt(){
  }catch{}
  try{await loadDefaultMainArt();}catch{mainModernFailed=true;}
 }
+// V9.05 experiment: full, registered artwork supplied by the player.
+// Keep native moving hardware and all variable lamps/score fields above
+// or outside the artwork; the Z80 program and native geometry are untouched.
+const fullMainProtected=[
+ [0,0,91,15], [0,2,24,25], [159,5,183,24], [204,0,224,23],
+ [155,21,194,51], [100,44,125,65], [164,49,224,91],
+ [7,95,30,115], [20,94,52,132], [123,44,164,92], [199,94,224,115],
+ [182,113,204,143], [8,133,33,175], [186,133,224,175],
+ [72,174,155,200], [77,201,145,225], [0,193,27,214],
+ [66,211,106,239], [120,211,160,239], [159,195,211,225],
+ [36,204,58,221], [36,221,61,236], [1,236,68,253],
+ [195,219,224,236], [157,236,224,253]
+];
+for(const [x,y] of mainInserts)fullMainProtected.push([x-10,y-10,x+11,y+11]);
+let fullMainMask=null;
+function usingFullMainArt(){
+ return mainModernReady&&mainArtSource==='local'&&isMainPrint(memory)&&!(cpu.flipped&1);
+}
+function paintFullMainArt(g){
+ if(!fullMainMask){
+  fullMainMask=new Path2D();
+  for(let y=0;y<256;y++){
+   const allowed=x=>!fullMainProtected.some(([l,t,r,b])=>x>=l&&x<r&&y>=t&&y<b);
+   for(let x=0;x<224;){if(!allowed(x)){x++;continue;}const start=x;while(x<224&&allowed(x))x++;fullMainMask.rect(start,y,x-start,1);}
+  }
+ }
+ g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
+ g.clip(fullMainMask);g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+ g.drawImage(mainModernArt,0,0,224,256);g.restore();return true;
+}
 function paintModernMainBackground(g,live){
+ if(usingFullMainArt())return paintFullMainArt(g);
  if(!mainModernReady||!isMainPrint(memory)||(cpu.flipped&1)||typeof Path2D!=='function')return false;
  if(!mainModernClip){
   // Coordinates in the original upright 224 x 256 space. Separate windows
@@ -1428,9 +1459,10 @@ function rebuildHDBoard(){
  const print=redrawPrintedHalftones(boardCtx);stats.printCells=print.cells;stats.printPatches=print.patches;stats.printRegions=print.regions||0;
  // Preserve the original ROM portrait; never paint an invented face over it.
  stats.handIllustrated=false;stats.modernBackground=main&&!flipped&&paintModernMainBackground(boardCtx,live);stats.modernBackgroundReady=mainModernReady;stats.modernBackgroundFailed=mainModernFailed;stats.mainPortrait=stats.modernBackground?{separateArtwork:true}:redrawMainPortrait(boardCtx,live);stats.mainInserts=main&&!flipped&&typeof Path2D==='function'?getMainInsertPlan(bgPixels).inserts.length:0;
- const extra=redrawExtraPrint(boardCtx,live);stats.extraPrint=extra;
- stats.mainRampFaces=redrawMainRampFaces(boardCtx,live);
- const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;
+ const fullArt=usingFullMainArt();stats.fullMainArt=fullArt;
+ const extra=fullArt?0:redrawExtraPrint(boardCtx,live);stats.extraPrint=extra;
+ stats.mainRampFaces=fullArt?0:redrawMainRampFaces(boardCtx,live);
+ const guides=fullArt?{total:0,connected:0,runs:0,joined:0}:rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;
  stats.livePalettePens=live.pens.size;stats.livePaletteCells=redrawLiveBoardPens(boardCtx,live,main&&stats.mainInserts===10,flipped);
  // Restore native pen occurrences outside the central lamps and render
  // the ten state-driven HD inserts as the final background pass.
