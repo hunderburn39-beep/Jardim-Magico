@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.86 — HD Artwork";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.87 — HD Artwork";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -852,6 +852,72 @@ function paintMainInserts(g){
  g.restore();return inserts.length;
 }
 
+
+// V8.87 — each extra table is recognized by native static tile signatures,
+// extracted by invoking the original 1261h map decoder on isolated RAM.
+const extraTablePrints=[{"id":"extra-a","source":35431,"sig":[[804,7,0],[743,7,0],[685,42,48],[527,12,48],[466,150,51],[564,39,55],[618,7,0],[587,7,0]],"zones":[{"name":"upper-fire","poly":[[7,5],[208,3],[205,40],[197,68],[182,91],[165,106],[147,108],[152,94],[173,70],[190,40],[187,26],[149,20],[145,12],[77,13],[69,23],[34,22],[24,29],[41,66],[66,95],[75,111],[48,101],[23,76],[10,50]],"banks":[4,6],"kind":"fire","strokes":[["M12 24 Q16 3 44 8 T90 8 M134 8 Q180 -1 201 17 T173 79",0.6],["M18 33 Q25 70 63 103 M200 35 Q187 78 155 105",0.8],["M25 35 Q28 59 57 91 M194 31 Q182 62 169 76",0.38]]},{"name":"lower-fire","poly":[[29,81],[64,97],[96,118],[111,120],[145,104],[185,90],[201,107],[196,130],[175,146],[148,153],[62,153],[31,143],[20,128],[26,112]],"banks":[0,3,4],"kind":"fire","strokes":[["M31 94 Q60 130 105 136 T187 98",1.1],["M31 115 Q62 149 108 137 Q160 139 191 110",0.7],["M36 131 Q72 151 110 145 T179 127",0.45]]},{"name":"central-column","poly":[[93,29],[130,29],[129,50],[117,64],[118,106],[135,121],[120,137],[95,132],[100,105],[101,63],[90,50]],"banks":[1,2,3],"kind":"metal","strokes":[["M108 57 C104 82 107 103 105 121",0.75],["M115 58 C116 86 111 105 115 123",0.45]]},{"name":"lower-plume","poly":[[92,185],[132,185],[127,215],[119,255],[104,255],[96,222]],"banks":[2],"kind":"fire","strokes":[["M101 187 Q121 217 110 254 M122 190 Q109 226 115 253",0.5]]}]},{"id":"extra-b","source":37252,"sig":[[804,7,0],[743,235,71],[685,138,68],[527,44,68],[466,49,67],[564,63,67],[618,188,71],[587,157,65]],"zones":[{"name":"left-performer","poly":[[12,78],[35,89],[57,93],[77,112],[83,141],[91,175],[102,185],[92,194],[76,173],[67,161],[53,153],[30,136],[12,115]],"banks":[0,1],"kind":"figure","strokes":[["M21 91 Q38 97 56 111 T73 146",0.6],["M35 111 Q43 126 59 137 L76 162",0.65],["M58 143 Q74 161 90 186",0.6],["M28 113 Q22 101 18 95",0.42]]},{"name":"right-performer","poly":[[168,66],[190,78],[198,97],[207,112],[209,133],[189,144],[177,163],[157,195],[143,188],[151,169],[166,142],[170,124],[160,112],[164,89]],"banks":[0,1,2],"kind":"figure","strokes":[["M181 78 Q173 94 183 109 Q196 117 199 126",0.62],["M177 115 Q188 128 180 145 L155 187",0.68],["M185 133 Q173 151 170 166",0.42]]},{"name":"central-ornaments","poly":[[69,105],[156,101],[162,153],[150,182],[83,182],[68,164]],"banks":[3,4,6],"kind":"metal","strokes":[]}]},{"id":"extra-c","source":38918,"sig":[[804,190,97],[743,7,0],[685,207,112],[527,168,118],[466,165,118],[564,28,115],[618,225,100],[587,7,0]],"zones":[{"name":"showgirl","poly":[[103,94],[121,90],[133,100],[144,117],[155,115],[184,111],[209,95],[212,112],[188,135],[168,145],[162,175],[173,194],[154,194],[142,183],[132,180],[122,198],[112,200],[119,178],[105,160],[103,144],[91,126],[91,115]],"banks":[6],"kind":"figure","strokes":[["M117 104 Q126 112 128 128 T140 157",0.65],["M145 136 Q156 147 151 166 Q148 177 161 188",0.72],["M131 150 Q128 171 121 188",0.55],["M164 133 Q181 124 197 111",0.54]]},{"name":"card-staircase","poly":[[14,127],[48,80],[88,57],[120,69],[143,90],[154,111],[138,123],[115,108],[90,85],[60,103],[35,135]],"banks":[4],"kind":"enamel","strokes":[]},{"name":"lower-ornament","poly":[[76,145],[104,145],[113,163],[124,188],[116,202],[92,193],[80,173]],"banks":[3],"kind":"enamel","strokes":[]}]}];
+function identifyExtraPrint(bytes){
+ return extraTablePrints.find(t=>t.sig.every(([i,v,a])=>bytes[0xd800+i]===v&&bytes[0xdc00+i]===a))||null;
+}
+function inPrintPolygon(x,y,poly){
+ let hit=false;
+ for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+  const a=poly[i],b=poly[j];
+  if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])hit=!hit;
+ }
+ return hit;
+}
+function extraPrintPlan(pixels,table){
+ const w=224,h=256,used=new Uint8Array(w*h),out=[];
+ for(const zone of table.zones){
+  const p=new Int16Array(w*h);p.fill(-1);let count=0;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+   const i=y*w+x,pen=pixels[(239-x)*256+y],bank=(pen-128)>>4,k=pen&15;
+   if(used[i]||!zone.banks.includes(bank)||k===0||k===7||!inPrintPolygon(x+.5,y+.5,zone.poly))continue;
+   p[i]=pen;used[i]=1;count++;
+  }
+  if(count)out.push({zone,pixels:p,count});
+ }
+ return out;
+}
+const extraPrintPlans=new WeakMap();
+let extraArtLayer=null;
+function redrawExtraPrint(g){
+ if((cpu.flipped&1)||typeof Path2D!=='function')return {table:null,zones:0,cells:0};
+ const table=identifyExtraPrint(memory);if(!table)return {table:null,zones:0,cells:0};
+ let plan=boardGeometry&&extraPrintPlans.get(boardGeometry);
+ if(!plan){plan=extraPrintPlan(bgPixels,table);if(boardGeometry)extraPrintPlans.set(boardGeometry,plan);}
+ if(!extraArtLayer){extraArtLayer=document.createElement('canvas');extraArtLayer.width=224*HD;extraArtLayer.height=256*HD;}
+ const a=extraArtLayer.getContext('2d');
+ let cells=0,regions=0;
+ for(const item of plan){
+  const {zone,pixels,count}=item;cells+=count;
+  const poly=zone.poly,x0=Math.min(...poly.map(p=>p[0])),x1=Math.max(...poly.map(p=>p[0])),y0=Math.min(...poly.map(p=>p[1])),y1=Math.max(...poly.map(p=>p[1]));
+  const fills=new Map();
+  // Rebuild printed regions using individual graded enamel colors and
+  // rounded vector contours. The bank and pen remain live ROM values.
+  const stats=vectorPaint(a,pixels,224,256,NONE,true,null,false,(ctx,color)=>{
+   if(fills.has(color))return fills.get(color);
+   const q=ctx.createLinearGradient(x0,y0,x1,y1);
+   const k=zone.kind,stops=k==='fire'?[[0,-.16],[.2,.22],[.46,.42],[.7,.01],[1,-.22]]:k==='figure'?[[0,.22],[.34,.07],[.63,-.09],[.83,.24],[1,-.18]]:k==='metal'?[[0,-.24],[.25,.27],[.43,-.04],[.58,.43],[.72,.02],[1,-.3]]:[[0,.22],[.4,.03],[.72,-.12],[1,-.24]];
+   for(const [at,t] of stops)q.addColorStop(at,materialTone(color,t));
+   fills.set(color,q);return q;
+  },true,false,true);
+  regions+=stats.regions;
+  // Individually drawn curved illustration details; source-atop clips
+  // every stroke to the exact painted native ink silhouette.
+  a.save();a.globalCompositeOperation='source-atop';a.lineCap='round';a.lineJoin='round';
+  for(const [d,width] of zone.strokes){
+   a.strokeStyle=zone.kind==='fire'?'rgba(255,241,190,.68)':'rgba(255,255,255,.42)';a.lineWidth=width;a.stroke(new Path2D(d));
+   a.strokeStyle='rgba(36,16,45,.26)';a.lineWidth=width*.35;a.stroke(new Path2D(d));
+  }
+  a.restore();
+  g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
+  g.drawImage(extraArtLayer,0,0,224,256);g.restore();
+ }
+ return {table:table.id,zones:plan.length,cells,regions};
+}
+
 function rebuildHDBoard(){
  // Board colours can flash repeatedly while the tile map stays fixed.
  // Retain bounded, full-resolution variants of the exact same artwork.
@@ -887,6 +953,7 @@ function rebuildHDBoard(){
  boardCtx.drawImage(boardInk,0,0,256,256);
  const print=redrawPrintedHalftones(boardCtx);stats.printCells=print.cells;stats.printPatches=print.patches;stats.printRegions=print.regions||0;
  stats.handIllustrated=paintMainIllustration(boardCtx);stats.mainInserts=paintMainInserts(boardCtx);
+ const extra=redrawExtraPrint(boardCtx);stats.extraPrint=extra;
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;hdBoardDirty=false;renderStats.boardFull++;
  const cached=document.createElement('canvas');cached.width=cached.height=SIZE;
  cached.getContext('2d',{alpha:false}).drawImage(hdBoard,0,0);
