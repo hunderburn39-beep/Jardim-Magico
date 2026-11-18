@@ -42,3 +42,18 @@ for code,dimensions in ui.items():
 for code in range(1495,1505):
     assert defs[code]==(1,1)
 print('PASS: 29 UI sprite assembly sizes, including the original title publisher and ending')
+
+# Common effect banks, plus the captured first-stage table anchor.
+tables=[[l(0x58ad8+t*128+b*4) for b in range(32)] for t in range(16)]
+reference={11:30,12:31,23:75,25:73,27:71,28:70,29:69,31:67}
+assert all(t[b]==0x1b944+32*(15+b) for t in tables for b in range(1,8))
+assert all(tables[4][b]==0x1b944+32*i for b,i in reference.items())
+print('PASS: 112 common slots and 8 stage reference pointers')
+for a,n,base,bank in [(0x249c8,16,2952,2),(0x24bd8,12,5147,2),(0x24c38,14,5267,3),(0x24d38,12,5255,2),(0x3b2c4,8,1610,1),(0x3b304,8,1626,1),(0x3b344,8,1643,1)]:
+    code=base
+    for i in range(n):
+        attr,c,x,y=struct.unpack_from('>4H',p,a+i*8)
+        assert attr==bank*256 and c==code
+        nx,ny=defs[c]
+        code+=nx*ny
+print('PASS: 78 original effect and item records')
