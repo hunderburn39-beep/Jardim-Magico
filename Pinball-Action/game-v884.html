@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.95 — 2D-HD DEV";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.96 — 2D-HD DEV";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -115,9 +115,10 @@ class PBZ80 {
   if(a===0xe606){if(this.scroll!==v){this.scroll=v;this.videoChanged=true;}return;}
   if(a===0xe800){if(this.cb.sound)this.cb.sound(v);return;}
   if(a<0xc000)return;
+  if(a>=0xe400&&a<0xe600)this.cb.paletteWrite?.(a,v,this.pc);
   if(this.mem[a]!==v){
    if(a>=0xd000&&a<0xe080){this.videoChanged=true;if(a<0xd800)this.fgDirty=true;else if(a<0xe000)this.bgDirty=true;}
-   if(a>=0xe400&&a<0xe600){this.videoChanged=true;this.paletteChanged=true;this.cb.paletteWrite?.(a,v,this.pc);}
+   if(a>=0xe400&&a<0xe600){this.videoChanged=true;this.paletteChanged=true;}
    this.mem[a]=v;
   }
  }
@@ -844,6 +845,13 @@ function paintMainInserts(g){
 // A small local CRT-style phosphor halo. The original ROM pixel colours,
 // sprites and text remain unchanged; only neighbouring background pixels
 // receive a restrained display effect while their own lamp is actually on.
+function restoreMainLampInk(g,pixels){
+ const spans=nativeLiveSpans(pixels,mainLampPens);
+ g.save();g.setTransform(HD,0,0,HD,0,0);
+ let count=0;
+ for(const [pen,runs] of spans){g.fillStyle=colorAt(pen);for(const [x,y,width] of runs){g.fillRect(x,y,width,1);count+=width;}}
+ g.restore();return count;
+}
 function classicMainLampGlow(pixels,rgba,palette,srcStart,flipped){
  let active=0;
  for(const [x,y,base,pen] of mainInserts){
@@ -949,14 +957,33 @@ function redrawExtraPrint(g){
 // Learn live palette writes only while an identical board map is active;
 // a table's initial palette load must not mark its entire illustration.
 const livePenPlans=new WeakMap();
+// Four bounded ROM table identities: retain learned light destinations even
+// when the HD canvas cache is evicted or CRT is active for every transition.
+const rememberedTablePens=new Map();
 function livePenPlan(cache){
  let plan=livePenPlans.get(cache);
- if(!plan){plan={pens:new Set(),spans:null};livePenPlans.set(cache,plan);}
+ if(!plan){plan={pens:new Set(),spans:null,history:null};livePenPlans.set(cache,plan);}
  return plan;
+}
+function tableLampIdentity(bytes){
+ if(isMainPrint(bytes))return 'main';
+ return identifyExtraPrint(bytes)?.id||null;
+}
+function bindTableLightHistory(plan,identity,used){
+ if(!identity){plan.history=null;return 0;}
+ let known=rememberedTablePens.get(identity);
+ if(!known){known=new Set();rememberedTablePens.set(identity,known);}
+ plan.history=known;
+ const mask=new Uint8Array(256);
+ for(const pen of known)mask[pen]=1;
+ return learnLivePens(plan,mask,used);
 }
 function learnLivePens(plan,changed,used){
  let added=0;
- for(let p=128;p<256;p++)if(changed[p]&&used[p]&&!plan.pens.has(p)){plan.pens.add(p);added++;}
+ for(let p=128;p<256;p++)if(changed[p]&&used[p]){
+  if(plan.history)plan.history.add(p);
+  if(!plan.pens.has(p)){plan.pens.add(p);added++;}
+ }
  if(added)plan.spans=null;
  return added;
 }
@@ -988,6 +1015,7 @@ function rebuildHDBoard(){
  // Board colours can flash repeatedly while the tile map stays fixed.
  // Retain bounded, full-resolution variants of the exact same artwork.
  const live=livePenPlan(boardVariants),main=isMainPrint(memory),flipped=!!(cpu.flipped&1);
+ bindTableLightHistory(live,tableLampIdentity(memory),boardUsedColors);
  const key=Array.from(palette32.subarray(128),(v,i)=>boardUsedColors[i+128]?v:0).join(',')+'|'+[...live.pens].sort((a,b)=>a-b).join('.');
  if(boardVariants.has(key)){
   const hit=boardVariants.get(key);touchBoardVariant(boardVariants,key,hit);
@@ -1016,6 +1044,7 @@ function rebuildHDBoard(){
   renderStats.boardGeometryBuilt++;
  }
  hdArtStats=stats;
+ if(!main)renderStats.mainLampsLit=0;
  boardCtx.imageSmoothingEnabled=false;boardCtx.drawImage(boardUnder,0,0);
  boardCtx.drawImage(boardInk,0,0,256,256);
  const print=redrawPrintedHalftones(boardCtx);stats.printCells=print.cells;stats.printPatches=print.patches;stats.printRegions=print.regions||0;
@@ -1024,6 +1053,9 @@ function rebuildHDBoard(){
  const extra=redrawExtraPrint(boardCtx);stats.extraPrint=extra;
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;
  stats.livePalettePens=live.pens.size;stats.livePaletteCells=redrawLiveBoardPens(boardCtx,live,main&&stats.mainInserts===10,flipped);
+ // Restore exact native central light ink as the last background pass.
+ // Guide and decorative overlays can never hide an actual lamp segment.
+ if(main&&!flipped&&stats.mainInserts===10)stats.nativeMainLampCells=restoreMainLampInk(boardCtx,bgPixels);
  hdBoardDirty=false;renderStats.boardFull++;
  const cached=document.createElement('canvas');cached.width=cached.height=SIZE;
  cached.getContext('2d',{alpha:false}).drawImage(hdBoard,0,0);
@@ -1872,6 +1904,7 @@ function render(){
   if(!same){
    rebuildLayer('bg',0xd800,0xdc00,bgPixels);
    bgSnapshot=view.slice();bgMemory=memory;bgFlip=flip;
+   bindTableLightHistory(livePenPlan(boardVariants),tableLampIdentity(memory),boardUsedColors);
   }else renderStats.boardUnchanged++;
   cpu.bgDirty=false;
  }
@@ -2348,7 +2381,7 @@ render();requestAnimationFrame(frame);
 // Debug/test API (not visible in production).
 if(window.PB_TEST||new URLSearchParams(location.search).has('test')) window.__pbRom={
  paletteScripts:()=>romPaletteScripts.map(o=>({...o})),
- livePalette:()=>({pens:[...livePenPlan(boardVariants).pens].sort((a,b)=>a-b),cells:hdArtStats?.livePaletteCells||0}),
+ livePalette:()=>({table:tableLampIdentity(memory),pens:[...livePenPlan(boardVariants).pens].sort((a,b)=>a-b),cells:hdArtStats?.livePaletteCells||0,remembered:[...rememberedTablePens].map(([id,pens])=>({id,pens:[...pens].sort((a,b)=>a-b)}))}),
  lamps:()=>({main:isMainPrint(memory),lamps:mainInserts.map(([x,y,base,pen])=>({x,y,pen,color:colorAt(pen),lit:mainLampLit(palette32[pen])}))}),
  state:()=>({pc:cpu.pc,sp:cpu.sp,credits:memory[0xc013],queuedStart:queuedStart?.key||null,score:memory.slice(0xc000,0xc010).join(','),steps:cpu.steps,scroll:cpu.scroll,frames,nmi:cpu.nmiEnable,flipped:cpu.flipped,memChecksum:memory.slice(0xd000,0xe600).reduce((a,b)=>a+b,0)}),
  input:(k,on)=>press(k,!!on),pending:()=>({...pending}),frame:()=>{for(let i=0;i<6500;i++){if(cpu.halt)break;cpu.step();}cpu.nmi();finishInputFrame();render()},
