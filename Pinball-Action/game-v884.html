@@ -1113,7 +1113,17 @@ function redrawMainPortrait(g,live){
  // Restrict even antialiased contours to the original face / texture masks.
  // Live inserts are restored by their existing independent hardware pass.
  g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);g.imageSmoothingEnabled=false;
- g.drawImage(portraitInk,0,0,224,256);g.restore();
+ if(!plan.clip){
+  const allowed=new Uint8Array(plan.faceMask);for(const {i} of plan.toneCells)allowed[i]=1;
+  const clip=new Path2D();
+  for(let y=0;y<256;y++)for(let x=0;x<224;){
+   if(!allowed[y*224+x]){x++;continue;}
+   const start=x;while(x<224&&allowed[y*224+x])x++;
+   clip.rect(start,y,x-start,1);
+  }
+  plan.clip=clip;
+ }
+ g.clip(plan.clip);g.drawImage(portraitInk,0,0,224,256);g.restore();
  return {faceCells:plan.faceCells,toneCells:plan.toneCells.length,regions:plan.geometry.length};
 }
 
