@@ -1140,6 +1140,10 @@ function rebuildHDFront(){
  for(let i=0;i<1024;i++)frontSignatures[i]=fgSignature(i);
  frontPaintPalette.set(palette32.subarray(0,128));
  frontBase=memory;frontFlip=Number(flipped);frontPaletteDirty=false;hdFrontDirty=false;
+ // A palette write affecting only sprites must not trigger a 1024² texture upload.
+ const painted=!partial||changed.length>0;
+ if(!painted)renderStats.frontUploadSkipped=(renderStats.frontUploadSkipped||0)+1;
+ return painted;
 }
 let hdMode=true;
 try{hdMode=localStorage.getItem('pb-graphics-v1')!=='classic'}catch{}
@@ -1488,7 +1492,15 @@ function remainingNativeArt(g,atlas,code,baseColor,big){
   ['detail','assembly','joined-panel'].includes(f)?'panel':null;
  return kind?nativePhysicalArt(g,atlas,code,baseColor,big,kind):false;
 }
+const hdFamilyCache=new WeakMap();
 function hdSpriteFamily(atlas,code,big){
+ let entries=hdFamilyCache.get(atlas);
+ if(!entries){entries=new Map();hdFamilyCache.set(atlas,entries);}
+ const key=(big?'b:':'s:')+code;
+ if(entries.has(key))return entries.get(key);
+ const family=classifyHDSprite(atlas,code,big);entries.set(key,family);return family;
+}
+function classifyHDSprite(atlas,code,big){
  const start=code*atlas.w*atlas.h,first=atlas.pens[start];let uniform=true;
  for(let i=1;i<atlas.w*atlas.h;i++)if(atlas.pens[start+i]!==first){uniform=false;break;}
  if(uniform)return first?'solid':'transparent';
@@ -1604,11 +1616,12 @@ function getSpriteArt(atlas,code,baseColor,big){
 }
 function presentHD(){
  const flipped=!!(cpu.flipped&1),scroll=(cpu.scroll-3)*(flipped?-1:1),srcStart=((scroll%256)+256)%256;
- const bgChanged=hdBoardDirty,fgChanged=hdFrontDirty;
- if(bgChanged)rebuildHDBoard();if(fgChanged)rebuildHDFront();
+ const bgChanged=hdBoardDirty;
+ if(bgChanged)rebuildHDBoard();
+ const fgChanged=hdFrontDirty?rebuildHDFront():false;
  const scene=hdSceneCommands(spriteCommands);
  if(gpu?.ready){
-  try{gpu.draw(hdBoard,hdFront,bgChanged,fgChanged,srcStart,scene,o=>o.image);lastCanvasScene=null;return;}
+  try{gpu.draw(hdBoard,hdFront,bgChanged,fgChanged||!gpu.lastScene,srcStart,scene,o=>o.image);lastCanvasScene=null;return;}
   catch(e){gpu.ready=false;gpu.status='canvas-fallback';gpu.show(false);lastCanvasScene=null;console.warn('GPU frame fallback',e);}
  }
  const images=scene.map(o=>o.image);
