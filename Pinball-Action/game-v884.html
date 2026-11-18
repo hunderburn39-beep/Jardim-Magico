@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.96 — 2D-HD DEV";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.97 — 2D-HD DEV";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -139,10 +139,27 @@ class PBZ80 {
   if(op===4){res=a&v;h=FH;}else if(op===5)res=a^v;else res=a|v;
   this.r[7]=res;this.f=(res&(FS|F3|F5))|(res===0?FZ:0)|(PAR[res]?FP:0)|h;
  }
- alu(op,v){let a=this.r[7];
-  if(op===0||op===1){let carry=op===1&&(this.f&FC)?1:0;this.r[7]=this.aflags(a,v+carry,a+v+carry,'add');if((a&15)+(v&15)+carry>15)this.f|=FH;if((~(a^v)&(a^this.r[7])&128)!==0)this.f|=FP;}
-  else if(op===2||op===3||op===7){let carry=op===3&&(this.f&FC)?1:0;let res=a-v-carry;let z=this.aflags(a,(v+carry)&255,res,'sub');if(op!==7)this.r[7]=z;if((a&15)<(v&15)+carry)this.f|=FH;if(((a^v)&(a^z)&128)!==0)this.f|=FP;}
-  else this.logic(v,op);
+ alu(op,v){
+  const a=this.r[7];v&=255;
+  if(op>=4&&op<=6){this.logic(v,op);return;}
+  const subtract=op===2||op===3||op===7;
+  const carry=(op===1||op===3)&&(this.f&FC)?1:0;
+  const raw=subtract?a-v-carry:a+v+carry,z=raw&255;
+  // Carry/half-carry and signed overflow must use the unmodified
+  // operand and the incoming carry, not an operand pre-incremented
+  // modulo 256. This matters at nibble and signed boundaries.
+  let f=(z&FS)|(z===0?FZ:0)|((op===7?v:z)&(F3|F5));
+  if(subtract){
+   f|=FN;
+   if((a&15)<(v&15)+carry)f|=FH;
+   if(((a^v)&(a^z)&128)!==0)f|=FP;
+   if(raw<0)f|=FC;
+  }else{
+   if((a&15)+(v&15)+carry>15)f|=FH;
+   if((~(a^v)&(a^z)&128)!==0)f|=FP;
+   if(raw>255)f|=FC;
+  }
+  this.f=f;if(op!==7)this.r[7]=z;
  }
  incdec(v,down=false){let z=(v+(down?-1:1))&255;let f=(this.f&FC)|(z&(FS|F3|F5))|(z===0?FZ:0);
   if(down)f|=FN|((v&15)===0?FH:0)|(v===128?FP:0);else f|=((v&15)===15?FH:0)|(v===127?FP:0);
@@ -2345,6 +2362,14 @@ window.addEventListener('keyup',e=>{let k=keyboard[e.code];if(!k)return;e.preven
 window.addEventListener('blur',()=>{active.clear();for(const k in pending)pending[k]=0;endStartRequest();refreshKeys()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)arcadeAudio.restore();if(document.hidden){active.clear();for(const k in pending)pending[k]=0;endStartRequest();refreshKeys()}});
 let last=performance.now(),acc=0,frames=0;
+const trajectoryDebug=!!window.PB_TEST||new URLSearchParams(location.search).has('test');
+const ballTrace=[];
+function recordBallFrame(){
+ if(!trajectoryDebug)return;
+ const raw=Array.from(memory.subarray(0xe03c,0xe040));
+ ballTrace.push({frame:frames,table:tableLampIdentity(memory),mode:memory[0xc009],scroll:cpu.scroll,raw,ballRegisters:Array.from(memory.subarray(0xc014,0xc027))});
+ if(ballTrace.length>600)ballTrace.shift();
+}
 const MAX_SIMULATION_DEBT=3;
 function limitSimulationDebt(debt,delta){return Math.min(MAX_SIMULATION_DEBT,debt+Math.max(0,delta)*60/1000);}
 function frame(now){
@@ -2363,7 +2388,7 @@ function frame(now){
   while(acc>=1&&count<2){
    // Our initial state was captured at the end of a real 60 Hz arcade frame.
    for(let i=0;i<6500;i++){if(cpu.halt)break;cpu.step();}
-   cpu.nmi();finishInputFrame();acc-=1;count++;frames++;
+   cpu.nmi();finishInputFrame();acc-=1;count++;frames++;recordBallFrame();
   }
   if(cpu.videoChanged||frames===0){
    const start=performance.now();render();const ms=performance.now()-start;
@@ -2384,7 +2409,8 @@ if(window.PB_TEST||new URLSearchParams(location.search).has('test')) window.__pb
  livePalette:()=>({table:tableLampIdentity(memory),pens:[...livePenPlan(boardVariants).pens].sort((a,b)=>a-b),cells:hdArtStats?.livePaletteCells||0,remembered:[...rememberedTablePens].map(([id,pens])=>({id,pens:[...pens].sort((a,b)=>a-b)}))}),
  lamps:()=>({main:isMainPrint(memory),lamps:mainInserts.map(([x,y,base,pen])=>({x,y,pen,color:colorAt(pen),lit:mainLampLit(palette32[pen])}))}),
  state:()=>({pc:cpu.pc,sp:cpu.sp,credits:memory[0xc013],queuedStart:queuedStart?.key||null,score:memory.slice(0xc000,0xc010).join(','),steps:cpu.steps,scroll:cpu.scroll,frames,nmi:cpu.nmiEnable,flipped:cpu.flipped,memChecksum:memory.slice(0xd000,0xe600).reduce((a,b)=>a+b,0)}),
- input:(k,on)=>press(k,!!on),pending:()=>({...pending}),frame:()=>{for(let i=0;i<6500;i++){if(cpu.halt)break;cpu.step();}cpu.nmi();finishInputFrame();render()},
+ input:(k,on)=>press(k,!!on),pending:()=>({...pending}),frame:()=>{for(let i=0;i<6500;i++){if(cpu.halt)break;cpu.step();}cpu.nmi();finishInputFrame();frames++;recordBallFrame();render()},
+ ballTrace:()=>ballTrace.map(o=>({...o,raw:[...o.raw],ballRegisters:[...o.ballRegisters]})),
  spritePreview:(code,big=false,base=0)=>{const atlas=big?atlases.big:atlases.sp;if(!Number.isInteger(code)||code<0||code>=atlas.count||!Number.isInteger(base)||base<0||base>120||base%8)throw Error('Invalid sprite');const art=getSpriteArt(atlas,code,base,big);const native=document.createElement('canvas');native.width=atlas.w;native.height=atlas.h;const cx=native.getContext('2d');for(let y=0;y<atlas.h;y++)for(let x=0;x<atlas.w;x++){const pen=atlas.pens[code*atlas.w*atlas.h+y*atlas.w+x];if(pen){cx.fillStyle=colorAt(base+pen);cx.fillRect(x,y,1,1)}}return {hd:art.toDataURL(),original:native.toDataURL(),family:hdSpriteFamily(atlas,code,big)}},
  spriteAudit:(code,big=false,base=0)=>{
   const atlas=big?atlases.big:atlases.sp;
