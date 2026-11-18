@@ -7,7 +7,7 @@ func _initialize() -> void:
 	root.add_child.call_deferred(machine)
 	call_deferred("_run", machine)
 
-func _run(machine: Node2D) -> void:
+func _run(machine) -> void:
 	if not machine.load_snapshot():
 		push_error("ROM load failed")
 		quit(1)
@@ -34,5 +34,17 @@ func _run(machine: Node2D) -> void:
 		push_error("Unchanged RAM should not upload layers")
 		quit(1)
 		return
-	print("ROM reference and unchanged-layer regression passed: ", actual)
+	var scroll: int = machine.scroll_reg
+	var flags := 1 if machine.flip_screen else 0
+	machine.update_ram(machine.ram, scroll + 8, flags)
+	if before["board_uploads"] != machine.counters["board_uploads"] or before["front_uploads"] != machine.counters["front_uploads"]:
+		push_error("Scroll should not upload unchanged RAM layers")
+		quit(1)
+		return
+	machine.update_ram(machine.ram, scroll, flags)
+	if machine.reference_frame_hash() != expected["initial_frame_rgba_fnv1a"]:
+		push_error("Scroll restoration mismatch")
+		quit(1)
+		return
+	print("ROM reference, unchanged-layer and scroll regressions passed: ", actual)
 	quit(0)
