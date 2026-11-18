@@ -178,6 +178,24 @@ function child(){
  }catch{return null;}
 }
 function stopCheck(){if(interval!==null){clearInterval(interval);interval=null;}}
+// An optional self-contained local launcher can transfer its bundled art.
+// The fragment contains only a WebP data URL, never executable content.
+async function loadBundledArtwork(){
+ const prefix='#board-webp=';
+ if(!location.hash.startsWith(prefix))return;
+ const value=location.hash.slice(prefix.length);
+ if(value.length>2000000||!/^[A-Za-z0-9+/=]+$/.test(value))return;
+ button.disabled=true;message.textContent='A aplicar a mesa futurista…';
+ try{
+  const bytes=Uint8Array.from(atob(value),c=>c.charCodeAt(0));
+  if(bytes.length<12||String.fromCharCode(...bytes.subarray(0,4))!=='RIFF'||String.fromCharCode(...bytes.subarray(8,12))!=='WEBP')throw Error('Imagem inválida');
+  const r=await child().__PB_MAIN_ART_SET(new Blob([bytes],{type:'image/webp'}));
+  if(!r.loaded)throw Error('Imagem não aplicada');
+  history.replaceState(null,'',location.pathname+location.search);
+  message.textContent='Mesa futurista aplicada. Carrega em ENTRAR.';
+ }catch(e){message.textContent='Não foi possível aplicar a mesa: '+e.message;}
+ finally{button.disabled=false;}
+}
 function readyCheck(){
  if(ready)return;
  if(!child())return;
@@ -187,6 +205,7 @@ function readyCheck(){
  settingsButton.disabled=typeof child().__PB_DIP_SET!=='function';
  button.textContent='ENTRAR';
  message.textContent='Carrega em ENTRAR para ouvir a música de título e abrir o jogo';
+ loadBundledArtwork();
 }
 frame.addEventListener('load',readyCheck);
 const loadPoll=setInterval(()=>{
