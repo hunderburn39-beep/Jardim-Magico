@@ -9,6 +9,8 @@ const CELLS := 65536
 var ram := PackedByteArray()
 var atlases: Array[PackedByteArray] = []
 var palette := PackedByteArray()
+var palette_texture: ImageTexture
+var palette_material: ShaderMaterial
 var bg_index := PackedInt32Array()
 var fg_index := PackedInt32Array()
 var bg_texture: ImageTexture
@@ -22,7 +24,7 @@ var sprite_cache: Dictionary = {}
 var sprite_order: Array[String] = []
 var commands: Array[Dictionary] = []
 var initialized := false
-var counters := {"board_uploads": 0, "front_uploads": 0, "sprite_uploads": 0, "sprite_hits": 0}
+var counters := {"board_uploads": 0, "front_uploads": 0, "sprite_uploads": 0, "sprite_hits": 0, "palette_uploads": 0, "tiles_decoded": 0}
 
 func load_snapshot(path: String = "res://data/rom_snapshot.json") -> bool:
 	var doc = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -62,6 +64,9 @@ func load_snapshot(path: String = "res://data/rom_snapshot.json") -> bool:
 	bg_index.resize(CELLS)
 	fg_index.resize(CELLS)
 	palette.resize(1024)
+	palette_material = ShaderMaterial.new()
+	palette_material.shader = preload("res://rom_palette.gdshader")
+	material = palette_material
 	initialized = false
 	return update_ram(mem, int(state["scroll"]), int(state["flipped"]))
 
@@ -97,20 +102,21 @@ func update_ram(mem: PackedByteArray, scroll: int, flipped: int) -> bool:
 	var flip_changed := not initialized or next_flip != flip_screen
 	var bg_changed := flip_changed or next_bg != bg_key
 	var fg_changed := flip_changed or next_fg != fg_key
-	var bg_palette_changed := not initialized or next_pal.slice(256, 512) != pal_key.slice(256, 512)
-	var fg_palette_changed := not initialized or next_pal.slice(0, 256) != pal_key.slice(0, 256)
+	# Palette updates upload only 256 colours. Indexed tile/sprite textures
+	# need no reconstruction, even while lamps blink or change colour.
 	flip_screen = next_flip
 	scroll_reg = scroll
 	if bg_changed:
-		bg_index = _build_layer(true)
+		bg_index = _build_layer(true, next_bg, bg_key, bg_index, flip_changed)
 	if fg_changed:
-		fg_index = _build_layer(false)
+		fg_index = _build_layer(false, next_fg, fg_key, fg_index, flip_changed)
 	if not initialized or next_pal != pal_key:
 		_decode_palette()
-	if bg_changed or bg_palette_changed:
+		_upload_palette()
+	if bg_changed:
 		bg_texture = _upload_layer(bg_texture, bg_index)
 		counters["board_uploads"] += 1
-	if fg_changed or fg_palette_changed:
+	if fg_changed:
 		fg_texture = _upload_layer(fg_texture, fg_index)
 		counters["front_uploads"] += 1
 	bg_key = next_bg
@@ -130,8 +136,16 @@ func _decode_palette() -> void:
 		palette[index * 4 + 2] = (b & 15) * 17
 		palette[index * 4 + 3] = 255
 
-func _build_layer(is_bg: bool) -> PackedInt32Array:
-	var out := PackedInt32Array()
+func _upload_palette() -> void:
+	var image := Image.create_from_data(256, 1, false, Image.FORMAT_RGBA8, palette)
+	if palette_texture == null:
+		palette_texture = ImageTexture.create_from_image(image)
+	else:
+		palette_texture.update(image)
+	palette_material.set_shader_parameter("rom_palette", palette_texture)
+	counters["palette_uploads"] += 1
+
+func _build_layer(is_bg: bool, current: PackedByteArray, previous: PackedByteArray, out: PackedInt32Array, full: bool) -> PackedInt32Array:
 	out.resize(CELLS)
 	var pens: PackedByteArray = atlases[0 if is_bg else 1]
 	var vram := 0xd800 if is_bg else 0xd000
@@ -139,6 +153,9 @@ func _build_layer(is_bg: bool) -> PackedInt32Array:
 	var mask := 0x70 if is_bg else 0x30
 	var count := 2048 if is_bg else 1024
 	for i in range(1024):
+		if not full and current[i] == previous[i] and current[i+1024] == previous[i+1024]:
+			continue
+		counters["tiles_decoded"] += 1
 		var attr := ram[cram + i]
 		var code := (ram[vram + i] + 16 * (attr & mask)) % count
 		var base_color := 128 + 16 * (attr & 7) if is_bg else 8 * (attr & 15)
@@ -172,8 +189,18 @@ func _rgba(indices: PackedInt32Array) -> PackedByteArray:
 		rgba[dst+3] = 255
 	return rgba
 
+func _indexed_rgba(indices: PackedInt32Array) -> PackedByteArray:
+	var bytes := PackedByteArray()
+	bytes.resize(indices.size() * 4)
+	for j in range(indices.size()):
+		var index := indices[j]
+		if index != NONE:
+			bytes[j*4] = index
+			bytes[j*4+3] = 255
+	return bytes
+
 func _upload_layer(texture: ImageTexture, indices: PackedInt32Array) -> ImageTexture:
-	var image := Image.create_from_data(W, W, false, Image.FORMAT_RGBA8, _rgba(indices))
+	var image := Image.create_from_data(W, W, false, Image.FORMAT_RGBA8, _indexed_rgba(indices))
 	if texture == null:
 		return ImageTexture.create_from_image(image)
 	texture.update(image)
@@ -213,7 +240,7 @@ func _sprite_texture(cmd: Dictionary) -> ImageTexture:
 	var base: int = cmd["base"]
 	var code: int = cmd["code"]
 	var atlas_id: int = cmd["atlas"]
-	var key := "%d:%d:%d:%s" % [atlas_id, code, base, palette.slice(base*4,(base+8)*4).hex_encode()]
+	var key := "%d:%d:%d" % [atlas_id, code, base]
 	if sprite_cache.has(key):
 		counters["sprite_hits"] += 1
 		sprite_order.erase(key)
@@ -225,7 +252,7 @@ func _sprite_texture(cmd: Dictionary) -> ImageTexture:
 	for i in range(indices.size()):
 		var pen := pens[code*size*size+i]
 		indices[i] = NONE if pen == 0 else base + pen
-	var texture := ImageTexture.create_from_image(Image.create_from_data(size,size,false,Image.FORMAT_RGBA8,_rgba(indices)))
+	var texture := ImageTexture.create_from_image(Image.create_from_data(size,size,false,Image.FORMAT_RGBA8,_indexed_rgba(indices)))
 	sprite_cache[key] = texture
 	sprite_order.append(key)
 	counters["sprite_uploads"] += 1
