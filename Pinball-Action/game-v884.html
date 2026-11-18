@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V8.83 — PixiJS — diagnóstico original</title><style>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V9.00 — 2D-HD</title><style>
 :root{color-scheme:dark;--edge:6px;--gap:6px;--top:44px;--bottom:110px}
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;background:#040409;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.99 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V9.00 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -543,7 +543,7 @@ function vectorPaint(g,pixels,w,h,transparent=NONE,illustration=false,geometry=n
     count.illustrations++;count.verticesBefore+=pts.length;
     pts=simplifyIllustration(pts,portraitCurves?.82:boardRelief?.94:.62);count.verticesAfter+=pts.length;
    }
-   const r=broad?(portraitCurves?1.5:boardRelief?1.38:1.02):Math.abs(area)<4?.04:Math.abs(area)<10?.18:hole?.24:.46;
+   const r=broad?(portraitCurves?1.8:boardRelief?1.38:1.02):Math.abs(area)<4?.04:Math.abs(area)<10?.18:hole?.24:.46;
    const radii=pts.map((_,i)=>contourRadius(pts,i,w,h,r));
    const toward=(v,u,rr)=>{const d=Math.hypot(u[0]-v[0],u[1]-v[1]),t=Math.min(rr,d*.25)/Math.max(d,.001);return [v[0]+(u[0]-v[0])*t,v[1]+(u[1]-v[1])*t];};
    path.moveTo(...toward(pts[0],pts[pts.length-1],radii[0]));
@@ -583,8 +583,8 @@ function guideProfile(pens,code,fx,fy){
 }
 // V8.99: rounded rail contours between native half-row samples.
 // Cubic handles remain inside each segment's endpoint rectangle.
-function traceRailEdge(path,rows,selector,pt,reverse=false){
- const samples=[[selector(rows[0]),0],...rows.map((row,i)=>[selector(row),i+.5]),[selector(rows.at(-1)),rows.length]];
+function traceRailEdge(path,rows,selector,pt,reverse=false,offset=0){
+ const samples=[[selector(rows[0]),offset],...rows.map((row,i)=>[selector(row),offset+i+.5]),[selector(rows.at(-1)),offset+rows.length]];
  if(reverse)samples.reverse();
  const project=(u,v)=>pt(u,v);
  path.lineTo(...project(...samples[0]));
@@ -613,8 +613,10 @@ function drawGuideTile(g,profile,x,y,base){
  // These bands follow each original row's width instead of a global filter.
  band(o=>o.l,o=>o.l+(o.r-o.l)*.13,materialTone(base+dominant,-.38));
  band(o=>o.r-(o.r-o.l)*.17,o=>o.r,materialTone(base+dominant,-.48));
- band(o=>o.l+(o.r-o.l)*.15,o=>o.l+(o.r-o.l)*.31,materialTone(base+dominant,.32));
- band(o=>o.l+(o.r-o.l)*.33,o=>o.l+(o.r-o.l)*.43,materialTone(base+dominant,.15));
+ band(o=>o.l+(o.r-o.l)*.13,o=>o.l+(o.r-o.l)*.20,materialTone(base+dominant,.65));
+ band(o=>o.l+(o.r-o.l)*.20,o=>o.l+(o.r-o.l)*.33,materialTone(base+dominant,.28));
+ band(o=>o.l+(o.r-o.l)*.33,o=>o.l+(o.r-o.l)*.67,materialTone(base+dominant,.08));
+ band(o=>o.l+(o.r-o.l)*.67,o=>o.l+(o.r-o.l)*.83,materialTone(base+dominant,-.20));
  // Object-local, bevelled track face, kept inside each native strip.
  const edge=(side,amount)=>{
   const a=pt(rows[0].l,0),b=pt(rows[0].l,len);
@@ -655,12 +657,15 @@ function drawGuideTile(g,profile,x,y,base){
   }
   for(const part of tracks){
    const first=part[0],last=part.at(-1);
+   // Match both original native stripe boundaries with the same curved
+   // half-row interpolation used by the rail body. No extensions.
    g.beginPath();g.moveTo(...pt(first.l,first.i));
-   for(const o of part)g.lineTo(...pt(o.l,o.i+.5));
-   g.lineTo(...pt(last.l,last.i+1));g.lineTo(...pt(last.r,last.i+1));
-   for(let k=part.length-1;k>=0;k--)g.lineTo(...pt(part[k].r,part[k].i+.5));
-   g.lineTo(...pt(first.r,first.i));g.closePath();
-   g.fillStyle=colorAt(base+pen);g.fill();
+   traceRailEdge(g,part,o=>o.l,pt,false,first.i);
+   traceRailEdge(g,part,o=>o.r,pt,true,first.i);
+   g.closePath();
+   const shade=vertical?g.createLinearGradient(0,first.i,0,last.i+1):g.createLinearGradient(first.i,0,last.i+1,0);
+   shade.addColorStop(0,materialTone(base+pen,-.07));shade.addColorStop(.38,materialTone(base+pen,.15));shade.addColorStop(1,materialTone(base+pen,-.07));
+   g.fillStyle=shade;g.fill();
   }
  }
  const spine=vertical?g.createLinearGradient(0,0,0,len):g.createLinearGradient(0,0,len,0);
@@ -843,9 +848,26 @@ function mainInsertBounds(pixels){
  }
  return out;
 }
-function paintMainInserts(g){
+const mainInsertPlans=new WeakMap();
+function getMainInsertPlan(pixels){
+ let plan=boardGeometry&&mainInsertPlans.get(boardGeometry);if(plan)return plan;
+ const inserts=mainInsertBounds(pixels),spans=nativeLiveSpans(pixels,mainLampPens),central=new Map();
+ for(const o of inserts){
+  const path=new Path2D();for(const [x,y] of o.cells)path.rect(x,y,1,1);o.path=path;
+  central.set(o.pen,new Set(o.cells.map(([x,y])=>(239-x)*256+y)));
+ }
+ const nativeRuns=new Map();let count=0;
+ for(const [pen,runs] of spans){const skip=central.get(pen),out=[];
+  for(const [x,y,width] of runs){let start=-1;
+   for(let i=0;i<=width;i++){const keep=i<width&&!(skip&&skip.has(y*256+x+i));if(keep&&start<0)start=i;if(!keep&&start>=0){out.push([x+start,y,i-start]);start=-1;}}
+   count+=width;
+  }nativeRuns.set(pen,out);
+ }
+ plan={inserts,nativeRuns,count};if(boardGeometry)mainInsertPlans.set(boardGeometry,plan);return plan;
+}
+function paintMainInserts(g,plan=null){
  if(typeof Path2D!=='function'||(cpu.flipped&1)||!isMainPrint(memory))return 0;
- const inserts=mainInsertBounds(bgPixels);
+ const inserts=(plan||getMainInsertPlan(bgPixels)).inserts;
  g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
  let litCount=0;
  for(const o of inserts){
@@ -855,11 +877,15 @@ function paintMainInserts(g){
   const circle=(r,ink)=>{g.fillStyle=ink;g.beginPath();g.arc(0,0,r,0,Math.PI*2);g.fill();};
   const border=g.createLinearGradient(-.8,-.8,.8,.8);
   for(const [t,c] of [[0,materialTone(base+3,.52)],[.26,colorAt(base+3)],[.47,materialTone(base+2,-.42)],[.72,materialTone(base+3,.2)],[1,materialTone(base+1,-.65)]])border.addColorStop(t,c);
-  circle(1.0,colorAt(base));circle(.91,border);circle(.74,materialTone(base+2,-.22));
+  circle(1.0,colorAt(base));circle(.94,materialTone(base+1,-.58));circle(.88,border);circle(.76,materialTone(base+2,-.38));
+  const bevel=g.createLinearGradient(-.65,-.65,.65,.65);
+  for(const [t,c] of [[0,materialTone(base+3,.60)],[.40,materialTone(base+3,-.16)],[.72,materialTone(base+2,-.46)],[1,materialTone(base+3,.27)]])bevel.addColorStop(t,c);
+  circle(.71,bevel);
   const glass=g.createRadialGradient(-.28,-.3,.04,.04,.05,.8);
   for(const [t,c] of [[0,materialTone(base+1,.68)],[.27,materialTone(base+1,.24)],[.67,colorAt(base+2)],[1,materialTone(base+2,-.45)]])glass.addColorStop(t,c);
   circle(.65,glass);
-  g.lineWidth=.047;g.strokeStyle='rgba(255,255,255,.32)';g.beginPath();g.arc(0,0,.83,3.72,5.10);g.stroke();
+  g.lineWidth=.042;g.strokeStyle='rgba(255,255,255,.58)';g.beginPath();g.arc(0,0,.83,3.72,5.10);g.stroke();
+  g.lineWidth=.031;g.strokeStyle='rgba(15,20,38,.53)';g.beginPath();g.arc(0,0,.69,.30,1.85);g.stroke();
   g.restore();
   // Recover the actual ROM light segments, which the old artwork covered.
   // Each has a unique live palette entry; never share a lamp state.
@@ -868,12 +894,11 @@ function paintMainInserts(g){
    glow.addColorStop(0,'rgba(255,85,35,.36)');glow.addColorStop(.48,'rgba(255,20,0,.26)');glow.addColorStop(1,'rgba(255,0,0,0)');
    g.fillStyle=glow;g.beginPath();g.ellipse(cx,cy,rx*.96,ry*.96,0,0,Math.PI*2);g.fill();
   }
-  const nativeLight=new Path2D();
-  for(const [x,y] of cells)nativeLight.rect(x,y,1,1);
+  const nativeLight=o.path;
+  // The exact native light mask is authoritative in both states. Shade
+  // only inside it; no fake state or added lamp geometry.
   g.fillStyle=colorAt(pen);g.fill(nativeLight);
-  if(lit){
-   g.save();g.clip(nativeLight);g.fillStyle=materialRadial(g,pen,cx,cy,Math.max(rx,ry),true);g.fillRect(cx-rx,cy-ry,rx*2,ry*2);g.restore();
-  }
+  g.fillStyle=materialRadial(g,pen,cx,cy,Math.max(rx,ry),lit);g.fill(nativeLight);
  }
  g.restore();renderStats.mainLampsLit=litCount;return inserts.length;
 }
@@ -881,11 +906,12 @@ function paintMainInserts(g){
 // sprites and text remain unchanged; only neighbouring background pixels
 // receive a restrained display effect while their own lamp is actually on.
 function restoreMainLampInk(g,pixels){
- const spans=nativeLiveSpans(pixels,mainLampPens);
+ const plan=getMainInsertPlan(pixels);
  g.save();g.setTransform(HD,0,0,HD,0,0);
- let count=0;
- for(const [pen,runs] of spans){g.fillStyle=colorAt(pen);for(const [x,y,width] of runs){g.fillRect(x,y,width,1);count+=width;}}
- g.restore();return count;
+ for(const [pen,runs] of plan.nativeRuns){g.fillStyle=colorAt(pen);for(const [x,y,width] of runs)g.fillRect(x,y,width,1);}
+ g.restore();
+ if(plan.inserts.length===10)paintMainInserts(g,plan);
+ return plan.count;
 }
 function classicMainLampGlow(pixels,rgba,palette,srcStart,flipped){
  let active=0;
@@ -924,28 +950,35 @@ function inPrintPolygon(x,y,poly){
  }
  return hit;
 }
-function extraPrintPlan(pixels,table){
+function extraPrintPlan(pixels,table,protectedPens=new Set()){ 
  const w=224,h=256,used=new Uint8Array(w*h),out=[];
  for(const zone of table.zones){
   const p=new Int16Array(w*h);p.fill(-1);let count=0;
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
    const i=y*w+x,pen=pixels[(239-x)*256+y],bank=(pen-128)>>4,k=pen&15;
-   if(used[i]||!zone.banks.includes(bank)||k===0||k===7||!inPrintPolygon(x+.5,y+.5,zone.poly))continue;
+   if(used[i]||protectedPens.has(pen)||!zone.banks.includes(bank)||k===0||k===7||!inPrintPolygon(x+.5,y+.5,zone.poly))continue;
    p[i]=pen;used[i]=1;count++;
   }
-  if(count)out.push({zone,pixels:p,count});
+  if(count)out.push({zone,pixels:p,count,pens:[...new Set(p)].filter(v=>v>=0).sort((a,b)=>a-b)});
  }
  return out;
 }
 const extraPrintPlans=new WeakMap();
-let extraArtLayer=null;
-function redrawExtraPrint(g){
+let extraArtLayer=null,extraUnderpaint=null;
+function extraPrintStamp(plan,palette){return [...new Set(plan.flatMap(o=>o.pens))].sort((a,b)=>a-b).map(p=>p+':'+palette[p]).join(',');}
+function redrawExtraPrint(g,live){
  if((cpu.flipped&1)||typeof Path2D!=='function')return {table:null,zones:0,cells:0};
  const table=identifyExtraPrint(memory);if(!table)return {table:null,zones:0,cells:0};
- let plan=boardGeometry&&extraPrintPlans.get(boardGeometry);
- if(!plan){plan=extraPrintPlan(bgPixels,table);if(boardGeometry)extraPrintPlans.set(boardGeometry,plan);}
- if(!extraArtLayer){extraArtLayer=document.createElement('canvas');extraArtLayer.width=224*HD;extraArtLayer.height=256*HD;}
- const a=extraArtLayer.getContext('2d');
+ const protectedPens=live.pens,key=[...protectedPens].sort((a,b)=>a-b).join(',');
+ let cached=boardGeometry&&extraPrintPlans.get(boardGeometry);
+ if(!cached||cached.key!==key||cached.table!==table.id){cached={key,table:table.id,plan:extraPrintPlan(bgPixels,table,protectedPens),stamp:null,image:null,stats:null};if(boardGeometry)extraPrintPlans.set(boardGeometry,cached);}
+ const plan=cached.plan,stamp=extraPrintStamp(plan,palette32);
+ const composite=(image)=>{g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);g.drawImage(image,0,0,224,256);g.restore();};
+ if(cached.image&&cached.stamp===stamp){composite(cached.image);renderStats.extraPrintCacheHits=(renderStats.extraPrintCacheHits||0)+1;return cached.stats;}
+ if(!extraArtLayer){extraArtLayer=document.createElement('canvas');extraArtLayer.width=224*HD;extraArtLayer.height=256*HD;extraUnderpaint=document.createElement('canvas');extraUnderpaint.width=224;extraUnderpaint.height=256;}
+ const a=extraArtLayer.getContext('2d'),under=extraUnderpaint.getContext('2d');
+ if(!cached.image){cached.image=document.createElement('canvas');cached.image.width=224*HD;cached.image.height=256*HD;}
+ const combined=cached.image.getContext('2d');combined.setTransform(1,0,0,1,0,0);combined.clearRect(0,0,cached.image.width,cached.image.height);
  let cells=0,regions=0;
  for(const item of plan){
   const {zone,pixels,count}=item;cells+=count;
@@ -960,13 +993,19 @@ function redrawExtraPrint(g){
    for(const [at,t] of stops)q.addColorStop(at,materialTone(color,t));
    fills.set(color,q);return q;
   };
+  // Underpaint selected ROM print regions locally: antialiased curves
+  // cannot reveal the original pixel grid between adjoining ink colors.
+  const image=under.createImageData(224,256);
+  if(!item.clip){const clip=new Path2D();for(let y=0;y<256;y++)for(let x=0;x<224;){if(pixels[y*224+x]===NONE){x++;continue;}const left=x;while(x<224&&pixels[y*224+x]!==NONE)x++;clip.rect(left,y,x-left,1);}item.clip=clip;}
+  for(let i=0;i<pixels.length;i++){const pen=pixels[i];if(pen===NONE)continue;const rgb=palette32[pen],j=i*4;image.data[j]=rgb&255;image.data[j+1]=(rgb>>>8)&255;image.data[j+2]=(rgb>>>16)&255;image.data[j+3]=255;}
+  under.putImageData(image,0,0);a.setTransform(HD,0,0,HD,0,0);a.clearRect(0,0,224,256);a.save();a.clip(item.clip);
+  a.imageSmoothingEnabled=true;a.imageSmoothingQuality='high';a.drawImage(extraUnderpaint,0,0,224,256);
   if(item.geometry){
-   a.setTransform(HD,0,0,HD,0,0);a.clearRect(0,0,224,256);
    for(const {color,path} of item.geometry){a.fillStyle=fill(a,color);a.fill(path,'evenodd');}
    regions+=item.geometry.length;renderStats.extraGeometryReused=(renderStats.extraGeometryReused||0)+1;
   }else{
    const geometry=typeof Path2D==='function'?[]:null;
-   const stats=vectorPaint(a,pixels,224,256,NONE,true,geometry,false,fill,true,false,true);
+   const stats=vectorPaint(a,pixels,224,256,NONE,true,geometry,false,fill,false,false,true,zone.kind==='figure'||zone.kind==='fire');
    if(geometry&&geometry.length<=12000)item.geometry=geometry;
    regions+=stats.regions;
   }
@@ -982,10 +1021,9 @@ function redrawExtraPrint(g){
    for(const {path} of item.geometry)a.stroke(path);
    a.restore();
   }
-  g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
-  g.drawImage(extraArtLayer,0,0,224,256);g.restore();
+  a.restore();combined.drawImage(extraArtLayer,0,0);
  }
- return {table:table.id,zones:plan.length,cells,regions};
+ cached.stamp=stamp;cached.stats={table:table.id,zones:plan.length,cells,regions};composite(cached.image);return cached.stats;
 }
 
 // Keep ROM-driven colour regions visible even when HD artwork crosses them.
@@ -1052,7 +1090,7 @@ function redrawLiveBoardPens(g,plan,main,flipped){
 const portraitFacePoly=[[88,88],[135,88],[141,104],[138,134],[130,150],[134,168],[130,176],[89,176],[88,158],[98,151],[93,143],[87,126],[83,105]];
 const portraitHairPoly=[[10,16],[90,16],[98,26],[115,36],[119,55],[130,69],[142,78],[151,94],[163,111],[166,141],[151,155],[134,166],[80,173],[60,165],[45,148],[40,123],[38,103],[45,90],[25,65],[14,39]];
 const portraitPlans=new WeakMap();
-let portraitInk=null,portraitTones=null;
+let portraitInk=null,portraitTones=null,lastPortraitPlan=null,lastPortraitStamp=null;
 function portraitProtected(x,y){
  return mainInserts.some(([cx,cy])=>Math.abs(x-cx)<=10&&Math.abs(y-cy)<=10);
 }
@@ -1086,24 +1124,37 @@ function mainPortraitPlan(pixels,protectedPens,palette){
    if(dy<2&&hair[j+w]&&(native[j+w]>>>4)===bank&&native[j+w]!==q)changes++;
    const k=(3-Math.abs(dx))*(3-Math.abs(dy));weight+=k;weights.set(q,(weights.get(q)||0)+k);
   }
-  if(n>=17&&warm>=8&&changes>=13&&weights.size>=2)toneCells.push({i,weight,weights:[...weights]});
+  if(n>=15&&warm>=8&&changes>=9&&weights.size>=2&&(portraitPigment(palette[p])||warm>=Math.ceil(n*.65)))toneCells.push({i,weight,weights:[...weights]});
  }
- return {ink,native,faceMask,faceCells,toneCells,geometry:null};
+ const pens=new Set();for(let i=0;i<ink.length;i++)if(ink[i]!==NONE)pens.add(ink[i]);for(const {weights} of toneCells)for(const [pen] of weights)pens.add(pen);
+ return {ink,native,faceMask,faceCells,toneCells,pens:[...pens].sort((a,b)=>a-b),geometry:null};
 }
 function redrawMainPortrait(g,live){
  if((cpu.flipped&1)||!isMainPrint(memory)||typeof Path2D!=='function')return {faceCells:0,toneCells:0,regions:0};
  const protectedPens=new Set([...live.pens,...mainLampPens]);
- const key=[...protectedPens].sort((a,b)=>a-b).join(',');
+ const key=[...protectedPens].sort((a,b)=>a-b).join(',')+'|'+Array.from(palette32.subarray(128),v=>portraitPigment(v)?'1':'0').join('');
  let plan=boardGeometry&&portraitPlans.get(boardGeometry);
  if(!plan||plan.key!==key){plan=mainPortraitPlan(bgPixels,protectedPens,palette32);plan.key=key;if(boardGeometry)portraitPlans.set(boardGeometry,plan);}
  if(!portraitInk){portraitInk=document.createElement('canvas');portraitInk.width=224*HD;portraitInk.height=256*HD;portraitTones=document.createElement('canvas');portraitTones.width=224;portraitTones.height=256;}
+ const stamp=plan.pens.map(p=>palette32[p]).join(',');
+ const reused=lastPortraitPlan===plan&&lastPortraitStamp===stamp;
+ if(!reused){
  const p=portraitInk.getContext('2d');p.setTransform(HD,0,0,HD,0,0);p.clearRect(0,0,224,256);
  // Reconstruct only eligible original print texture, interpolating its
  // measured ink coverage at HD resolution. No arbitrary new illustration.
  const t=portraitTones.getContext('2d'),rgba=t.createImageData(224,256);
+ // Fill beneath rounded vector contours with the actual ROM ink colours.
+ // This prevents the old pixel staircases showing through tiny gaps.
+ // The face mask, protected lamp pens and hardware playfield are unchanged.
+ for(let i=0;i<plan.faceMask.length;i++){
+  if(!plan.faceMask[i])continue;
+  const rgb=palette32[plan.native[i]],j=i*4;
+  rgba.data[j]=rgb&255;rgba.data[j+1]=(rgb>>>8)&255;
+  rgba.data[j+2]=(rgb>>>16)&255;rgba.data[j+3]=255;
+ }
  for(const {i,weight,weights} of plan.toneCells){
   for(let c=0;c<3;c++){let sum=0;for(const [pen,k] of weights)sum+=((palette32[pen]>>>(c*8))&255)*k;rgba.data[i*4+c]=Math.round(sum/weight);}
-  rgba.data[i*4+3]=245;
+  rgba.data[i*4+3]=255;
  }
  t.putImageData(rgba,0,0);
  p.imageSmoothingEnabled=true;p.imageSmoothingQuality='high';p.drawImage(portraitTones,0,0,224,256);
@@ -1127,6 +1178,8 @@ function redrawMainPortrait(g,live){
   vectorPaint(p,plan.ink,224,256,NONE,true,geometry,false,fill,false,false,false,true);
   plan.geometry=geometry;
  }
+ lastPortraitPlan=plan;lastPortraitStamp=stamp;
+ }else{renderStats.portraitCacheHits=(renderStats.portraitCacheHits||0)+1;}
  // Restrict even antialiased contours to the original face / texture masks.
  // Live inserts are restored by their existing independent hardware pass.
  g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);g.imageSmoothingEnabled=false;
@@ -1182,12 +1235,12 @@ function rebuildHDBoard(){
  boardCtx.drawImage(boardInk,0,0,256,256);
  const print=redrawPrintedHalftones(boardCtx);stats.printCells=print.cells;stats.printPatches=print.patches;stats.printRegions=print.regions||0;
  // Preserve the original ROM portrait; never paint an invented face over it.
- stats.handIllustrated=false;stats.mainPortrait=redrawMainPortrait(boardCtx,live);stats.mainInserts=paintMainInserts(boardCtx);
- const extra=redrawExtraPrint(boardCtx);stats.extraPrint=extra;
+ stats.handIllustrated=false;stats.mainPortrait=redrawMainPortrait(boardCtx,live);stats.mainInserts=main&&!flipped&&typeof Path2D==='function'?getMainInsertPlan(bgPixels).inserts.length:0;
+ const extra=redrawExtraPrint(boardCtx,live);stats.extraPrint=extra;
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;
  stats.livePalettePens=live.pens.size;stats.livePaletteCells=redrawLiveBoardPens(boardCtx,live,main&&stats.mainInserts===10,flipped);
- // Restore exact native central light ink as the last background pass.
- // Guide and decorative overlays can never hide an actual lamp segment.
+ // Restore native pen occurrences outside the central lamps and render
+ // the ten state-driven HD inserts as the final background pass.
  if(main&&!flipped&&stats.mainInserts===10)stats.nativeMainLampCells=restoreMainLampInk(boardCtx,bgPixels);
  hdBoardDirty=false;renderStats.boardFull++;
  const cached=document.createElement('canvas');cached.width=cached.height=SIZE;
@@ -1201,7 +1254,7 @@ function rebuildHDBoard(){
 // V8.83: native font atlas, redrawn from each original glyph's contours.
 // Reuse the same artwork for full and incremental updates, with exact
 // tile origin, pen, thickness, orientation and transparent counters.
-const hdGlyphCache=new Map(),hdInsertCache=new Map();
+const hdGlyphCache=new Map(),hdInsertCache=new Map(),hdGlyphPaths=new Map(),hdGlyphBounds=new Map(),hdIsolatedPaths=new Map();
 function glyphDisplayColor(base){
  const raw=palette32[base+7],r=raw&255,g=(raw>>>8)&255,b=(raw>>>16)&255;
  const max=Math.max(r,g,b),min=Math.min(r,g,b);
@@ -1215,19 +1268,25 @@ function nativeGlyph(code){
 // V8.86: purpose-drawn scalable typeface in the actual ROM character slots.
 // The score/message is still emitted by the original code, never synthesized.
 const remasterGlyphs={"0":"M3 0.4 C1.1 .4 .5 1.4 .5 3 S1.1 5.6 3 5.6 S5.5 4.6 5.5 3 S4.9 .4 3 .4Z","1":"M1.6 1.5 L3 .4 V5.6 M1.2 5.6 H4.8","2":"M.55 1.4 Q.85 .4 3 .4 Q5.5 .4 5.5 2 Q5.5 2.8 3.4 3.6 L.5 5.6 H5.5","3":"M.6 .4 H3.6 Q5.5 .4 5.5 1.7 Q5.5 3 3.6 3 H2.3 M3.6 3 Q5.5 3 5.5 4.3 Q5.5 5.6 3.6 5.6 H.6","4":"M4.5 5.6 V.4 L.5 4 H5.5","5":"M5.4 .4 H.7 V2.9 H3.6 Q5.5 2.9 5.5 4.2 Q5.5 5.6 3.6 5.6 H.5","6":"M5 .5 Q.5 .1 .5 3.4 V4.1 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4 Q5.5 2.6 3 2.6 Q1.5 2.6 .5 3.3","7":"M.5 .4 H5.5 L2.2 5.6","8":"M3 3 Q.7 3 .7 1.7 Q.7 .4 3 .4 Q5.3 .4 5.3 1.7 Q5.3 3 3 3 Q.5 3 .5 4.3 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4.3 Q5.5 3 3 3","9":"M5.5 2.7 Q4.6 3.5 3 3.5 Q.5 3.5 .5 1.9 Q.5 .4 3 .4 Q5.5 .4 5.5 1.9 V3.5 Q5.5 5.8 1.1 5.6","A":"M.5 5.6 L.5 2.1 Q.5 .4 3 .4 Q5.5 .4 5.5 2.1 V5.6 M.7 3.4 H5.3","B":"M.5 .4 V5.6 H3.5 Q5.5 5.6 5.5 4.3 Q5.5 3 3.5 3 H.5 M.5 .4 H3.5 Q5.5 .4 5.5 1.7 Q5.5 3 3.5 3","C":"M5.3 1.3 Q4.8 .4 3 .4 Q.5 .4 .5 2 V4 Q.5 5.6 3 5.6 Q4.8 5.6 5.3 4.7","D":"M.5 .4 H2.6 Q5.5 .4 5.5 2.4 V3.6 Q5.5 5.6 2.6 5.6 H.5 Z","E":"M5.5 .4 H.5 V5.6 H5.5 M.5 3 H4.7","F":"M5.5 .4 H.5 V5.6 M.5 3 H4.7","G":"M5.3 1.3 Q4.8 .4 3 .4 Q.5 .4 .5 2 V4 Q.5 5.6 3 5.6 H5.5 V3.1 H3.2","H":"M.5 .4 V5.6 M5.5 .4 V5.6 M.5 3 H5.5","I":"M.8 .4 H5.2 M3 .4 V5.6 M.8 5.6 H5.2","J":"M5.5 .4 V4 Q5.5 5.6 3 5.6 Q.5 5.6 .5 4","K":"M.5 .4 V5.6 M5.5 .4 L.5 3.1 L5.5 5.6","L":"M.5 .4 V5.6 H5.5","M":"M.5 5.6 V.4 L3 3.4 L5.5 .4 V5.6","N":"M.5 5.6 V.4 L5.5 5.6 V.4","O":"M3 .4 Q.5 .4 .5 2 V4 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4 V2 Q5.5 .4 3 .4 Z","P":"M.5 5.6 V.4 H3.6 Q5.5 .4 5.5 1.8 Q5.5 3.2 3.6 3.2 H.5","Q":"M3 .4 Q.5 .4 .5 2 V4 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4 V2 Q5.5 .4 3 .4 Z M3.8 4.2 L5.6 5.8","R":"M.5 5.6 V.4 H3.6 Q5.5 .4 5.5 1.8 Q5.5 3.2 3.6 3.2 H.5 M3.2 3.2 L5.5 5.6","S":"M5.3 1.1 Q4.6 .4 3 .4 Q.5 .4 .5 1.7 Q.5 3 3 3 Q5.5 3 5.5 4.3 Q5.5 5.6 3 5.6 Q1.4 5.6 .6 4.9","T":"M.5 .4 H5.5 M3 .4 V5.6","U":"M.5 .4 V4 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4 V.4","V":"M.5 .4 L3 5.6 L5.5 .4","W":"M.5 .4 L1.5 5.6 L3 3.1 L4.5 5.6 L5.5 .4","X":"M.5 .4 L5.5 5.6 M5.5 .4 L.5 5.6","Y":"M.5 .4 L3 3.1 L5.5 .4 M3 3.1 V5.6","Z":"M.5 .4 H5.5 L.5 5.6 H5.5"};
+function glyphStrokeExtent(stroke){return 6+stroke;}
 function drawRemasterGlyph(g,code,base){
  if(typeof Path2D!=='function')return false;
  const ch=code>=16&&code<=25?String(code-16):code>=48&&code<=57?String(code-48):code>=65&&code<=90?String.fromCharCode(code):null;
  if(!ch||!remasterGlyphs[ch])return false;
- let l=8,r=-1,t=8,b=-1;
- for(let y=0;y<8;y++)for(let x=0;x<8;x++)if(atlases.fg.pens[code*64+(7-x)*8+y]===7){l=Math.min(l,x);r=Math.max(r,x);t=Math.min(t,y);b=Math.max(b,y);}
- if(r<l||b<t)return false;
+ let bounds=hdGlyphBounds.get(code);
+ if(!bounds){let l=8,r=-1,t=8,b=-1;
+  for(let y=0;y<8;y++)for(let x=0;x<8;x++)if(atlases.fg.pens[code*64+(7-x)*8+y]===7){l=Math.min(l,x);r=Math.max(r,x);t=Math.min(t,y);b=Math.max(b,y);}
+  bounds={l,r,t,b};hdGlyphBounds.set(code,bounds);
+ }
+ const {l,r,t,b}=bounds;if(r<l||b<t)return false;
  g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,8);
  const width=r-l+1,height=b-t+1,score=code>=16&&code<=25,stroke=score?1.55:1.18;
- const extent=6+stroke*.15;
+ // Include the entire round stroke in the native tile's ink bounds.
+ const extent=glyphStrokeExtent(stroke);
  g.translate(l+width/2,t+height/2);g.scale(width/extent,height/extent);g.translate(-3,-3);
  g.strokeStyle=colorAt(base+7);g.lineWidth=stroke;g.lineJoin='round';g.lineCap='round';
- g.stroke(new Path2D(remasterGlyphs[ch]));g.restore();return true;
+ let path=hdGlyphPaths.get(ch);if(!path){path=new Path2D(remasterGlyphs[ch]);hdGlyphPaths.set(ch,path);}
+ g.stroke(path);g.restore();return true;
 }
 
 function nativeGlyphArt(code,base){
@@ -1235,11 +1294,9 @@ function nativeGlyphArt(code,base){
  if(hdGlyphCache.has(key)){
   const art=hdGlyphCache.get(key);hdGlyphCache.delete(key);hdGlyphCache.set(key,art);return art;
  }
- const pixels=new Int16Array(64);pixels.fill(NONE);
- for(let i=0;i<64;i++)if(atlases.fg.pens[code*64+i]===7)pixels[i]=base+7;
  const art=document.createElement('canvas');art.width=art.height=8*HD;
  const g=art.getContext('2d'),info=glyphDisplayColor(base);
- if(!drawRemasterGlyph(g,code,base))vectorPaint(g,pixels,8,8);
+ if(!drawRemasterGlyph(g,code,base)){const pixels=new Int16Array(64);pixels.fill(NONE);for(let i=0;i<64;i++)if(atlases.fg.pens[code*64+i]===7)pixels[i]=base+7;vectorPaint(g,pixels,8,8);}
  if(info.bright){
   // Keep the exact ROM characters. Intrinsic luminous face and a narrow
   // coloured halo, bounded by the tile so incremental redraws stay valid.
@@ -1252,8 +1309,8 @@ function nativeGlyphArt(code,base){
   const face=document.createElement('canvas');face.width=face.height=8*HD;
   const f=face.getContext('2d');f.drawImage(mask,0,0);f.globalCompositeOperation='source-in';
   const fill=f.createLinearGradient(0,8*HD,8*HD,0);
-  fill.addColorStop(0,materialTone(base+7,-.23));fill.addColorStop(.36,info.color);
-  fill.addColorStop(.63,materialTone(base+7,.44));fill.addColorStop(.81,materialTone(base+7,.13));fill.addColorStop(1,materialTone(base+7,-.10));
+  fill.addColorStop(0,materialTone(base+7,-.08));fill.addColorStop(.36,info.color);
+  fill.addColorStop(.63,materialTone(base+7,.24));fill.addColorStop(.81,materialTone(base+7,.10));fill.addColorStop(1,info.color);
   f.fillStyle=fill;f.fillRect(0,0,8*HD,8*HD);
   g.drawImage(face,0,0);
  }
@@ -1276,10 +1333,15 @@ function drawIsolatedTile(g,code,base,x,y,fx,fy){
  let art=hdInsertCache.get(key);
  if(art){hdInsertCache.delete(key);hdInsertCache.set(key,art);}
  else{
-  const pixels=new Int16Array(64);pixels.fill(NONE);
-  for(let k=0;k<64;k++){const pen=atlases.fg.pens[code*64+k];if(pen)pixels[k]=base+pen;}
   art=document.createElement('canvas');art.width=art.height=8*HD;
-  vectorPaint(art.getContext('2d'),pixels,8,8);
+  const ink=art.getContext('2d'),prior=hdIsolatedPaths.get(code);
+  if(prior){ink.setTransform(HD,0,0,HD,0,0);for(const {color,path} of prior){ink.fillStyle=colorAt(base+color);ink.fill(path,'evenodd');}renderStats.isolatedGeometryHits=(renderStats.isolatedGeometryHits||0)+1;}
+  else{const pixels=new Int16Array(64);pixels.fill(NONE);
+   for(let k=0;k<64;k++){const pen=atlases.fg.pens[code*64+k];if(pen)pixels[k]=pen;}
+   const geometry=typeof Path2D==='function'?[]:null;
+   vectorPaint(ink,pixels,8,8,NONE,false,geometry,false,(_,pen)=>colorAt(base+pen));
+   if(geometry)hdIsolatedPaths.set(code,geometry);
+  }
   hdInsertCache.set(key,art);if(hdInsertCache.size>256)hdInsertCache.delete(hdInsertCache.keys().next().value);
  }
  g.save();g.translate(x,y);g.clearRect(0,0,8,8);
@@ -1434,7 +1496,7 @@ function castShadowArt(image){
  // Soft penumbra and a darker contact shadow, precomputed once per sprite.
  g.globalAlpha=.085;
  for(const [x,y] of [[-3,-3],[0,-3],[3,-3],[-3,0],[3,0],[-3,3],[0,3],[3,3]])g.drawImage(ink,pad+x,pad+y);
- g.globalAlpha=.40;g.drawImage(ink,pad,pad);
+ g.globalAlpha=.31;g.drawImage(ink,pad,pad);
  g.globalAlpha=1;hdCastShadows.set(image,art);return art;
 }
 // Glows are generated only for positively identified lit bumper frames,
@@ -1489,6 +1551,7 @@ function mechanismInkPlan(atlas,code,accept){
  }
  const plan={indices,geometry:null};atlasCache.set(code,plan);return plan;
 }
+function targetLensLit(rgb){return Math.max(rgb&255,(rgb>>>8)&255,(rgb>>>16)&255)>=85;}
 function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
  const {minX,minY,maxX,maxY,cx,cy,spanX,spanY}=bounds,w=atlas.w,h=atlas.h;
  if(!['bumper','arm','round','square','insert','gate'].includes(kind))return;
@@ -1545,14 +1608,20 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
   const long=right-left,cross=bottom-top;
   f.fillStyle=grad(0,top,0,bottom,[[0,'#121927'],[.13,'#555e65'],[.27,'#151e28'],[.80,'#111720'],[1,'#070c15']]);f.fillRect(left-1,top-1,long+2,cross+2);
   const inset=Math.min(.9,cross*.18);f.fillStyle=chrome(0,top,0,bottom);f.fillRect(left,top+inset,long,cross-2*inset);
-  f.fillStyle=grad(0,top+cross*.25,0,bottom-cross*.25,[[0,rgb(7,.6)],[.35,rgb(7,.16)],[.65,rgb(7,-.03)],[1,rgb(7,-.42)]]);
+  // A polished upper face above a recessed rubber band. The ROM's
+  // pose, silhouette, palette and pivot stay untouched.
+  f.fillStyle=grad(0,top+cross*.18,0,bottom-cross*.20,[[0,rgb(7,.76)],[.14,rgb(7,.46)],[.37,rgb(7,.21)],[.60,rgb(7,.05)],[.82,rgb(7,-.19)],[1,rgb(7,-.35)]]);
   f.fillRect(left,top+cross*.26,long,cross*.48);
+  f.fillStyle=grad(0,top,0,bottom,[[0,'rgba(5,8,16,0)'],[.66,'rgba(5,8,16,0)'],[.72,'rgba(5,8,16,.52)'],[.83,'rgba(5,8,16,.62)'],[1,'rgba(5,8,16,.12)']]);
+  f.fillRect(left,top,long,cross);
+  f.fillStyle=grad(left,0,right,0,[[0,'rgba(255,255,255,0)'],[.18,'rgba(255,255,255,.32)'],[.50,'rgba(255,255,255,.52)'],[.80,'rgba(255,255,255,.12)'],[1,'rgba(255,255,255,0)']]);
+  f.fillRect(left,top+cross*.32,long,Math.min(.55,cross*.13));
   // Thin polished chamfers and a recessed longitudinal rubber insert.
   // The original sprite mask clips the entire mechanical surface.
   f.fillStyle=grad(left,0,right,0,[[0,'rgba(0,0,0,.50)'],[.16,'rgba(0,0,0,0)'],[.68,'rgba(255,255,255,.11)'],[1,'rgba(0,0,0,.40)']]);
   f.fillRect(left,top+cross*.26,long,cross*.48);
   f.fillStyle='rgba(255,255,255,.72)';f.fillRect(left,top+cross*.26,long,Math.min(.28,cross*.075));
-  f.fillStyle='rgba(0,0,0,.34)';f.fillRect(left,bottom-cross*.27,long,Math.min(.35,cross*.08));
+  f.fillStyle='rgba(0,0,0,.52)';f.fillRect(left,bottom-cross*.27,long,Math.min(.42,cross*.10));
   f.fillStyle=grad(left,0,right,0,[[0,'rgba(255,255,255,0)'],[.25,'rgba(255,255,255,.46)'],[.72,'rgba(255,255,255,.24)'],[1,'rgba(255,255,255,0)']]);
   f.fillRect(left,top+inset,long,Math.min(.30,cross*.09));
   f.restore();
@@ -1562,10 +1631,11 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
  }else{
   const r=Math.min(spanX,spanY)*.5;
   if(kind==='round'){
-   disk(cx,cy,r,chrome(cx-r,cy+r,cx+r,cy-r));disk(cx,cy,r*.84,'#16212c');
-   const statePen=code-57;
-   disk(cx,cy,r*.74,materialRadial(f,baseColor+statePen,cx,cy,r*.79,true));
-   ring(cx,cy,r*.78,.5,rgb(7,.76));
+   disk(cx,cy,r,chrome(cx-r,cy+r,cx+r,cy-r));disk(cx,cy,r*.87,'#16212c');
+   const statePen=code-57,lit=targetLensLit(palette32[baseColor+statePen]);
+   disk(cx,cy,r*.81,materialRadial(f,baseColor+statePen,cx,cy,r*.86,lit));
+   ring(cx,cy,r*.82,.38,rgb(statePen,lit?.46:.12));
+   f.beginPath();f.arc(cx,cy,r*.69,3.65,4.92);f.strokeStyle=lit?'rgba(255,255,255,.52)':'rgba(255,255,255,.12)';f.lineWidth=.32;f.stroke();
    // The complete original star remains present in every color state.
    nativeInk(n=>n===2||n===7);
   
@@ -1573,7 +1643,9 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
    const statePen=code-36;
    f.fillStyle=chrome(minX,minY,maxX+1,maxY+1);f.fillRect(minX,minY,spanX,spanY);
    f.fillStyle='#202a36';f.fillRect(minX+1,minY+1,spanX-2,spanY-2);
-   f.fillStyle=grad(minX,minY,maxX+1,maxY+1,[[0,rgb(statePen,.76)],[.25,rgb(statePen,.28)],[.56,rgb(statePen,-.08)],[1,rgb(statePen,-.50)]]);f.fillRect(minX+1.8,minY+1.8,spanX-3.6,spanY-3.6);
+   const lit=targetLensLit(palette32[baseColor+statePen]);
+   f.fillStyle=grad(minX,minY,maxX+1,maxY+1,[[0,rgb(statePen,lit?.65:.12)],[.25,rgb(statePen,lit?.28:.04)],[.56,rgb(statePen,-.08)],[1,rgb(statePen,-.48)]]);f.fillRect(minX+1.8,minY+1.8,spanX-3.6,spanY-3.6);
+   f.fillStyle=lit?'rgba(255,255,255,.32)':'rgba(255,255,255,.07)';f.fillRect(minX+2,minY+1.8,Math.max(0,spanX-4),.28);
    // 40/41/42 have exactly the same native X, but different pen 4/5/6.
    nativeInk(n=>n===3||n===statePen,(ctx,i)=>materialLinear(ctx,i,minX,minY,maxX+1,maxY+1,[[0,.55],[.31,.2],[.65,0],[1,-.31]]));
   }else if(kind==='insert'){
@@ -1581,10 +1653,11 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
    disk(cx,cy,r,chrome(cx-r,cy+r,cx+r,cy-r));
    disk(cx,cy,r*.85,'#19232f');
    const lensPen=code===67?2:7;
-   disk(cx,cy,r*.77,materialRadial(f,baseColor+lensPen,cx,cy,r*.82,true));
-   ring(cx,cy,r*.80,.45,rgb(lensPen,.69));
+   const lit=targetLensLit(palette32[baseColor+lensPen]);
+   disk(cx,cy,r*.77,materialRadial(f,baseColor+lensPen,cx,cy,r*.82,lit));
+   ring(cx,cy,r*.80,.45,rgb(lensPen,lit?.52:.14));
    f.beginPath();f.arc(cx,cy,r*.67,Math.PI*.95,Math.PI*1.55);
-   f.strokeStyle='rgba(255,255,255,.62)';f.lineWidth=.45;f.stroke();
+   f.strokeStyle=lit?'rgba(255,255,255,.62)':'rgba(255,255,255,.16)';f.lineWidth=.45;f.stroke();
    nativeInk(n=>code===67?n===1||n===7:n===2);
   }else if(kind==='gate'){
    // Each gate is a genuine ROM animation pose. Redraw each metal strip
@@ -1658,7 +1731,7 @@ function nativePhysicalArt(g,atlas,code,baseColor,big,kind){
     (kind==='round'&&(pen===2||pen===7))||(kind==='square'&&pen===code-36))return colorAt(index);
   if(round){
    if(pen===6)return materialLinear(ctx,index,minX,minY,maxX+1,maxY+1,[[0,-.32],[.10,.76],[.28,.43],[.50,-.19],[.62,.49],[.82,-.20],[1,-.59]]);
-   return materialRadial(ctx,index,cx,cy,Math.max(spanX,spanY)*.55,kind==='round'||(kind==='bumper'&&(code===8||code===10)));
+   return materialRadial(ctx,index,cx,cy,Math.max(spanX,spanY)*.55,(kind==='round'&&targetLensLit(palette32[index]))||(kind==='bumper'&&(code===8||code===10)));
   }
   if(kind==='arm'||kind==='gate'||kind==='auxiliary'||kind==='tip')return materialLinear(ctx,index,minX,minY,maxX+1,maxY+1,[[0,.58],[.13,.31],[.38,.10],[.56,-.15],[.72,.19],[1,-.48]]);
   // Multi-piece panels share flat tile edges; only fully enclosed paint
