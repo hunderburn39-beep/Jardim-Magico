@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.87 — HD Artwork";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.88 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -764,12 +764,27 @@ function paintMainIllustration(g){
  // Exact mechanical zones remain visible from the existing native
  // board. The printed illustration never covers the inserts or guide.
  const mask=new Path2D(shape);
- for(const [x,y,rx,ry] of [[101,81,8,7],[123,81,8,7],[77,96,8,7],[147,96,8,7],[65,122,8,7],[160,122,8,7],[77,145,8,7],[147,145,8,7],[100,162,8,7],[123,162,8,7]]){
-  mask.moveTo(x+rx,y);mask.ellipse(x,y,rx,ry,0,0,Math.PI*2);
+ for(const {cx,cy,rx,ry} of mainInsertBounds(bgPixels)){
+  mask.moveTo(cx+rx+.18,cy);mask.ellipse(cx,cy,rx+.18,ry+.18,0,0,Math.PI*2);
  }
  mask.addPath(new Path2D('M119 32 L126 31 L169 99 L164 109 L117 43 Z'));
  mask.addPath(new Path2D('M7 114 L45 76 L54 84 L15 132 Z'));
  g.clip(shape);g.clip(mask,'evenodd');
+ // Protect foreground-independent tracks and printed labels using the
+ // actual background palette bank, not estimated obstacle coordinates.
+ const protectedInk=new Path2D();
+ protectedInk.rect(0,0,224,256);
+ for(let y=0;y<256;y++){
+  let start=-1;
+  for(let x=0;x<=224;x++){
+   const color=x<224?bgPixels[(239-x)*256+y]:0;
+   const bank=(color-128)>>4,pen=color&15;
+   const protect=x<224&&(bank<3||bank===5)&&pen!==7;
+   if(protect&&start<0)start=x;
+   if(!protect&&start>=0){protectedInk.rect(start,y,x-start,1);start=-1;}
+  }
+ }
+ g.clip(protectedInk,'evenodd');
  const fill=(d,paint)=>{g.fillStyle=paint;g.fill(new Path2D(d));};
  const stroke=(d,paint,w,alpha=1)=>{g.save();g.globalAlpha=alpha;g.lineWidth=w;g.lineCap='round';g.lineJoin='round';g.strokeStyle=paint;g.stroke(new Path2D(d));g.restore();};
  const linear=(x,y,X,Y,stops)=>{const q=g.createLinearGradient(x,y,X,Y);for(const [a,c] of stops)q.addColorStop(a,c);return q;};
@@ -841,12 +856,13 @@ function paintMainInserts(g){
   const circle=(r,ink)=>{g.fillStyle=ink;g.beginPath();g.arc(0,0,r,0,Math.PI*2);g.fill();};
   const border=g.createLinearGradient(-.8,-.8,.8,.8);
   for(const [t,c] of [[0,materialTone(base+3,.52)],[.26,colorAt(base+3)],[.47,materialTone(base+2,-.42)],[.72,materialTone(base+3,.2)],[1,materialTone(base+1,-.65)]])border.addColorStop(t,c);
-  circle(.97,colorAt(base));circle(.87,border);circle(.72,materialTone(base+2,-.22));
+  circle(1.0,colorAt(base));circle(.91,border);circle(.74,materialTone(base+2,-.22));
   const glass=g.createRadialGradient(-.28,-.3,.04,.04,.05,.8);
   for(const [t,c] of [[0,materialTone(base+1,.68)],[.27,materialTone(base+1,.24)],[.67,colorAt(base+2)],[1,materialTone(base+2,-.45)]])glass.addColorStop(t,c);
   circle(.65,glass);
   for(let i=0;i<8;i++){g.save();g.rotate(i*Math.PI/4);const q=new Path2D('M0 -.09 L.14 -.6 L.35 -.49 L.13 -.03 Z');g.fillStyle=i%2?materialTone(base+3,-.12):materialTone(base+3,.3);g.fill(q);g.restore();}
   circle(.12,materialTone(base+3,.7));
+  g.lineWidth=.047;g.strokeStyle='rgba(255,255,255,.46)';g.beginPath();g.arc(0,0,.83,3.72,5.10);g.stroke();
   g.restore();
  }
  g.restore();return inserts.length;
