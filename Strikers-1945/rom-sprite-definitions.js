@@ -25,24 +25,34 @@ function read(){
 }
 function get(code){return read()?.byId.get(code)??null}
 function all(){return read()?.list??[]}
-function draw(canvas,code,palette){
- const e=get(code),rom=window.StrikersROM;
- if(!e)return false;
- // Palette words are optional; grayscale preview is not original RGB data.
+// One native compositor for all sprite families and captured display records.
+ // Hardware flips are applied before portrait rotation. A caller may pass the
+ // actual captured extents even when they differ from the static descriptor.
+function drawRaw(canvas,code,nx,ny,palette,flipX=false,flipY=false,projection=false){
+ const rom=window.StrikersROM;
+ if(!rom?.isVerified?.()||!Number.isInteger(code)||code<0||code>=131072||
+ !Number.isInteger(nx)||!Number.isInteger(ny)||nx<1||nx>8||ny<1||ny>8)return false;
  if(palette&&palette.length!==16)throw Error('Expected 16 palette words');
- canvas.width=e.width;canvas.height=e.height;
- const c=canvas.getContext('2d'),im=c.createImageData(e.width,e.height);
- for(let y=0;y<e.ny;y++)for(let x=0;x<e.nx;x++)for(let py=0;py<16;py++)for(let px=0;px<16;px++){
-  const pen=rom.rawPixel('sprite',code+y*e.nx+x,px,py,true);
+ const width=ny*16,height=nx*16;
+ canvas.width=width;canvas.height=height;
+ const c=canvas.getContext('2d'),im=c.createImageData(width,height),out=im.data;
+ for(let y=0;y<ny;y++)for(let x=0;x<nx;x++)for(let py=0;py<16;py++)for(let px=0;px<16;px++){
+  const id=(code+y*nx+x)&131071;
+  const pen=rom.rawPixel('sprite',id,px,py,true);
   if(pen===15)continue;
-  const u=y*16+py,v=e.height-1-(x*16+px),i=(v*e.width+u)*4;
-  const rgb=palette?.[pen],g=Math.min(255,50+pen*14);
-  im.data[i]=palette?((rgb>>10)&31)*255/31:g;
-  im.data[i+1]=palette?((rgb>>5)&31)*255/31:g;
-  im.data[i+2]=palette?(rgb&31)*255/31:g;
-  im.data[i+3]=255;
+  const xx=x*16+px,yy=y*16+py;
+  const u=flipY?width-1-yy:yy,v=flipX?xx:height-1-xx,i=(v*width+u)*4;
+  const rgb=projection?0:palette?.[pen],g=Math.min(255,50+pen*14);
+  out[i]=projection||palette?((rgb>>10)&31)*255/31|0:g;
+  out[i+1]=projection||palette?((rgb>>5)&31)*255/31|0:g;
+  out[i+2]=projection||palette?(rgb&31)*255/31|0:g;
+  out[i+3]=255;
  }
  c.putImageData(im,0,0);return true;
+}
+function draw(canvas,code,palette){
+ const e=get(code);
+ return !!e&&drawRaw(canvas,code,e.nx,e.ny,palette);
 }
 // Palette block immediately preceding sprite descriptor table. 516 sequential
 // 16-word records; the first fifteen words carry RGB555 colours. Word 15
@@ -68,5 +78,5 @@ function palettePointerList(){
 }
 function stats(){const a=read();return {count:a?.list.length??0,covered:a?.covered??0,expected:COUNT,start:START,endExclusive:END,paletteCount:PALETTE_COUNT,paletteStart:PALETTE_START}}
 window.addEventListener('strikers-rom-ready',()=>{cached=null});
-window.StrikersSpriteDefinitions=Object.freeze({all,get,draw,palette,palettePointerList,stats});
+window.StrikersSpriteDefinitions=Object.freeze({all,get,draw,drawRaw,palette,palettePointerList,stats});
 })();
