@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.85 — HD Artwork";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.86 — HD Artwork";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -908,6 +908,25 @@ function glyphDisplayColor(base){
 function nativeGlyph(code){
  return (code>=16&&code<=25)||(code>=48&&code<=58)||(code>=65&&code<=90)||code===64;
 }
+
+// V8.86: purpose-drawn scalable typeface in the actual ROM character slots.
+// The score/message is still emitted by the original code, never synthesized.
+const remasterGlyphs={"0":"M3 0.4 C1.1 .4 .5 1.4 .5 3 S1.1 5.6 3 5.6 S5.5 4.6 5.5 3 S4.9 .4 3 .4Z","1":"M1.6 1.5 L3 .4 V5.6 M1.2 5.6 H4.8","2":"M.55 1.4 Q.85 .4 3 .4 Q5.5 .4 5.5 2 Q5.5 2.8 3.4 3.6 L.5 5.6 H5.5","3":"M.6 .4 H3.6 Q5.5 .4 5.5 1.7 Q5.5 3 3.6 3 H2.3 M3.6 3 Q5.5 3 5.5 4.3 Q5.5 5.6 3.6 5.6 H.6","4":"M4.5 5.6 V.4 L.5 4 H5.5","5":"M5.4 .4 H.7 V2.9 H3.6 Q5.5 2.9 5.5 4.2 Q5.5 5.6 3.6 5.6 H.5","6":"M5 .5 Q.5 .1 .5 3.4 V4.1 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4 Q5.5 2.6 3 2.6 Q1.5 2.6 .5 3.3","7":"M.5 .4 H5.5 L2.2 5.6","8":"M3 3 Q.7 3 .7 1.7 Q.7 .4 3 .4 Q5.3 .4 5.3 1.7 Q5.3 3 3 3 Q.5 3 .5 4.3 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4.3 Q5.5 3 3 3","9":"M5.5 2.7 Q4.6 3.5 3 3.5 Q.5 3.5 .5 1.9 Q.5 .4 3 .4 Q5.5 .4 5.5 1.9 V3.5 Q5.5 5.8 1.1 5.6","A":"M.5 5.6 L.5 2.1 Q.5 .4 3 .4 Q5.5 .4 5.5 2.1 V5.6 M.7 3.4 H5.3","B":"M.5 .4 V5.6 H3.5 Q5.5 5.6 5.5 4.3 Q5.5 3 3.5 3 H.5 M.5 .4 H3.5 Q5.5 .4 5.5 1.7 Q5.5 3 3.5 3","C":"M5.3 1.3 Q4.8 .4 3 .4 Q.5 .4 .5 2 V4 Q.5 5.6 3 5.6 Q4.8 5.6 5.3 4.7","D":"M.5 .4 H2.6 Q5.5 .4 5.5 2.4 V3.6 Q5.5 5.6 2.6 5.6 H.5 Z","E":"M5.5 .4 H.5 V5.6 H5.5 M.5 3 H4.7","F":"M5.5 .4 H.5 V5.6 M.5 3 H4.7","G":"M5.3 1.3 Q4.8 .4 3 .4 Q.5 .4 .5 2 V4 Q.5 5.6 3 5.6 H5.5 V3.1 H3.2","H":"M.5 .4 V5.6 M5.5 .4 V5.6 M.5 3 H5.5","I":"M.8 .4 H5.2 M3 .4 V5.6 M.8 5.6 H5.2","J":"M5.5 .4 V4 Q5.5 5.6 3 5.6 Q.5 5.6 .5 4","K":"M.5 .4 V5.6 M5.5 .4 L.5 3.1 L5.5 5.6","L":"M.5 .4 V5.6 H5.5","M":"M.5 5.6 V.4 L3 3.4 L5.5 .4 V5.6","N":"M.5 5.6 V.4 L5.5 5.6 V.4","O":"M3 .4 Q.5 .4 .5 2 V4 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4 V2 Q5.5 .4 3 .4 Z","P":"M.5 5.6 V.4 H3.6 Q5.5 .4 5.5 1.8 Q5.5 3.2 3.6 3.2 H.5","Q":"M3 .4 Q.5 .4 .5 2 V4 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4 V2 Q5.5 .4 3 .4 Z M3.8 4.2 L5.6 5.8","R":"M.5 5.6 V.4 H3.6 Q5.5 .4 5.5 1.8 Q5.5 3.2 3.6 3.2 H.5 M3.2 3.2 L5.5 5.6","S":"M5.3 1.1 Q4.6 .4 3 .4 Q.5 .4 .5 1.7 Q.5 3 3 3 Q5.5 3 5.5 4.3 Q5.5 5.6 3 5.6 Q1.4 5.6 .6 4.9","T":"M.5 .4 H5.5 M3 .4 V5.6","U":"M.5 .4 V4 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4 V.4","V":"M.5 .4 L3 5.6 L5.5 .4","W":"M.5 .4 L1.5 5.6 L3 3.1 L4.5 5.6 L5.5 .4","X":"M.5 .4 L5.5 5.6 M5.5 .4 L.5 5.6","Y":"M.5 .4 L3 3.1 L5.5 .4 M3 3.1 V5.6","Z":"M.5 .4 H5.5 L.5 5.6 H5.5"};
+function drawRemasterGlyph(g,code,base){
+ if(typeof Path2D!=='function')return false;
+ const ch=code>=16&&code<=25?String(code-16):code>=48&&code<=57?String(code-48):code>=65&&code<=90?String.fromCharCode(code):null;
+ if(!ch||!remasterGlyphs[ch])return false;
+ let l=8,r=-1,t=8,b=-1;
+ for(let y=0;y<8;y++)for(let x=0;x<8;x++)if(atlases.fg.pens[code*64+(7-x)*8+y]===7){l=Math.min(l,x);r=Math.max(r,x);t=Math.min(t,y);b=Math.max(b,y);}
+ if(r<l||b<t)return false;
+ g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,8);
+ const width=r-l+1,height=b-t+1,score=code>=16&&code<=25,stroke=score?1.55:1.18;
+ const extent=6+stroke*.15;
+ g.translate(l+width/2,t+height/2);g.scale(width/extent,height/extent);g.translate(-3,-3);
+ g.strokeStyle=colorAt(base+7);g.lineWidth=stroke;g.lineJoin='round';g.lineCap='round';
+ g.stroke(new Path2D(remasterGlyphs[ch]));g.restore();return true;
+}
+
 function nativeGlyphArt(code,base){
  const stamp=palette32[base+7],key=code+':'+base+':'+stamp;
  if(hdGlyphCache.has(key)){
@@ -917,7 +936,7 @@ function nativeGlyphArt(code,base){
  for(let i=0;i<64;i++)if(atlases.fg.pens[code*64+i]===7)pixels[i]=base+7;
  const art=document.createElement('canvas');art.width=art.height=8*HD;
  const g=art.getContext('2d'),info=glyphDisplayColor(base);
- vectorPaint(g,pixels,8,8);
+ if(!drawRemasterGlyph(g,code,base))vectorPaint(g,pixels,8,8);
  if(info.bright){
   // Keep the exact ROM characters. Intrinsic luminous face and a narrow
   // coloured halo, bounded by the tile so incremental redraws stay valid.
