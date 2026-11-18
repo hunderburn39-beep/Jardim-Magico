@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.92 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.93 — 2D-HD DEV";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -785,17 +785,25 @@ function isMainPrint(bytes){
 // Main playfield portrait remains exclusively ROM-derived.
 // The ten original playfield inserts are not separate sprite RAM
 // objects. Read their exact silhouette and live palette from the board.
-const mainInserts=[[101,81,192],[123,81,240],[77,96,192],[147,96,240],[65,122,192],[160,122,240],[77,145,192],[147,145,240],[100,162,224],[123,162,224]];
+// Exact original independent lamp palette entries, in portrait order.
+const mainInserts=[[101,81,192,203],[123,81,240,254],[77,96,192,204],[147,96,240,253],[65,122,192,205],[160,122,240,252],[77,145,192,206],[147,145,240,251],[100,162,224,232],[123,162,224,233]];
+const mainLampPens=new Set(mainInserts.map(o=>o[3]));
+function mainLampLit(rgb){
+ // Native Z80 writes 0x00f (red) on activation and 0x643 (blue-grey) on reset.
+ const r=rgb&255,g=(rgb>>>8)&255,b=(rgb>>>16)&255;
+ return r>=170&&r>g*1.7&&r>b*1.7;
+}
 function mainInsertBounds(pixels){
  const out=[];
- for(const [x,y,base] of mainInserts){
-  let l=256,r=-1,t=256,b=-1,n=0;
+ for(const [x,y,base,pen] of mainInserts){
+  let l=256,r=-1,t=256,b=-1,n=0;const cells=[];
   for(let dy=-9;dy<=9;dy++)for(let dx=-9;dx<=9;dx++){
    const X=x+dx,Y=y+dy,p=pixels[(239-X)*256+Y];
+   if(p===pen)cells.push([X,Y]);
    if(p<base||p>base+3)continue;
    l=Math.min(l,X);r=Math.max(r,X);t=Math.min(t,Y);b=Math.max(b,Y);n++;
   }
-  if(n>=65&&r-l>=9&&b-t>=9&&r-l<=18&&b-t<=18)out.push({base,cx:(l+r+1)/2,cy:(t+b+1)/2,rx:(r-l+1)/2,ry:(b-t+1)/2});
+  if(n>=65&&cells.length>=24&&r-l>=9&&b-t>=9&&r-l<=18&&b-t<=18)out.push({base,pen,cells,cx:(l+r+1)/2,cy:(t+b+1)/2,rx:(r-l+1)/2,ry:(b-t+1)/2});
  }
  return out;
 }
@@ -803,8 +811,10 @@ function paintMainInserts(g){
  if(typeof Path2D!=='function'||(cpu.flipped&1)||!isMainPrint(memory))return 0;
  const inserts=mainInsertBounds(bgPixels);
  g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
+ let litCount=0;
  for(const o of inserts){
-  const {base,cx,cy,rx,ry}=o;
+  const {base,pen,cells,cx,cy,rx,ry}=o,lit=mainLampLit(palette32[pen]);
+  if(lit)litCount++;
   g.save();g.translate(cx,cy);g.scale(rx,ry);
   const circle=(r,ink)=>{g.fillStyle=ink;g.beginPath();g.arc(0,0,r,0,Math.PI*2);g.fill();};
   const border=g.createLinearGradient(-.8,-.8,.8,.8);
@@ -813,14 +823,49 @@ function paintMainInserts(g){
   const glass=g.createRadialGradient(-.28,-.3,.04,.04,.05,.8);
   for(const [t,c] of [[0,materialTone(base+1,.68)],[.27,materialTone(base+1,.24)],[.67,colorAt(base+2)],[1,materialTone(base+2,-.45)]])glass.addColorStop(t,c);
   circle(.65,glass);
-  for(let i=0;i<8;i++){g.save();g.rotate(i*Math.PI/4);const q=new Path2D('M0 -.09 L.14 -.6 L.35 -.49 L.13 -.03 Z');g.fillStyle=i%2?materialTone(base+3,-.12):materialTone(base+3,.3);g.fill(q);g.restore();}
-  circle(.12,materialTone(base+3,.7));
-  g.lineWidth=.047;g.strokeStyle='rgba(255,255,255,.46)';g.beginPath();g.arc(0,0,.83,3.72,5.10);g.stroke();
+  g.lineWidth=.047;g.strokeStyle='rgba(255,255,255,.32)';g.beginPath();g.arc(0,0,.83,3.72,5.10);g.stroke();
   g.restore();
+  // Recover the actual ROM light segments, which the old artwork covered.
+  // Each has a unique live palette entry; never share a lamp state.
+  if(lit){
+   const glow=g.createRadialGradient(cx,cy,0,cx,cy,Math.max(rx,ry)*.95);
+   glow.addColorStop(0,'rgba(255,85,35,.36)');glow.addColorStop(.48,'rgba(255,20,0,.26)');glow.addColorStop(1,'rgba(255,0,0,0)');
+   g.fillStyle=glow;g.beginPath();g.ellipse(cx,cy,rx*.96,ry*.96,0,0,Math.PI*2);g.fill();
+  }
+  const nativeLight=new Path2D();
+  for(const [x,y] of cells)nativeLight.rect(x,y,1,1);
+  g.fillStyle=colorAt(pen);g.fill(nativeLight);
+  if(lit){
+   g.save();g.clip(nativeLight);g.fillStyle=materialRadial(g,pen,cx,cy,Math.max(rx,ry),true);g.fillRect(cx-rx,cy-ry,rx*2,ry*2);g.restore();
+  }
  }
- g.restore();return inserts.length;
+ g.restore();renderStats.mainLampsLit=litCount;return inserts.length;
 }
-
+// A small local CRT-style phosphor halo. The original ROM pixel colours,
+// sprites and text remain unchanged; only neighbouring background pixels
+// receive a restrained display effect while their own lamp is actually on.
+function classicMainLampGlow(pixels,rgba,palette,srcStart,flipped){
+ let active=0;
+ for(const [x,y,base,pen] of mainInserts){
+  const color=palette[pen];if(!mainLampLit(color))continue;
+  active++;
+  for(let dy=-9;dy<=9;dy++)for(let dx=-9;dx<=9;dx++){
+   const px=x+dx,py=y+dy,hwX=flipped?255-py:py,hwY=flipped?16+px:239-px;
+   const xx=(hwX-srcStart+256)&255,yy=hwY;
+   if(yy<=16||yy>=239)continue;
+   const at=yy*256+xx,index=pixels[at];
+   if(index<128||mainLampPens.has(index))continue;
+   let near=false;
+   for(const [u,v] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    if(pixels[(yy+v)*256+((xx+u+256)&255)]===pen){near=true;break;}
+   }
+   if(!near)continue;
+   const bg=palette[index],mix=(shift)=>Math.round(((bg>>>shift)&255)*.86+((color>>>shift)&255)*.14);
+   rgba[at]=(0xff000000|(mix(16)<<16)|(mix(8)<<8)|mix(0))>>>0;
+  }
+ }
+ return active;
+}
 
 // V8.87 — each extra table is recognized by native static tile signatures,
 // extracted by invoking the original 1261h map decoder on isolated RAM.
@@ -1790,6 +1835,8 @@ function render(){
    out32[dest]=palette32[framePixels[dest]];
   }
  }
+ if(isMainPrint(memory))renderStats.mainLampsLit=classicMainLampGlow(framePixels,out32,palette32,srcStart,flipped);
+ else renderStats.mainLampsLit=0;
  ctx.putImageData(outImage,0,0);
  if(hdMode){presentHD();return;}
  screen.fillStyle='#000';screen.fillRect(0,0,224,256);
@@ -2219,6 +2266,7 @@ render();requestAnimationFrame(frame);
 // Entry activates the title command before the game CPU resumes.
 // Debug/test API (not visible in production).
 if(window.PB_TEST||new URLSearchParams(location.search).has('test')) window.__pbRom={
+ lamps:()=>({main:isMainPrint(memory),lamps:mainInserts.map(([x,y,base,pen])=>({x,y,pen,color:colorAt(pen),lit:mainLampLit(palette32[pen])}))}),
  state:()=>({pc:cpu.pc,sp:cpu.sp,credits:memory[0xc013],queuedStart:queuedStart?.key||null,score:memory.slice(0xc000,0xc010).join(','),steps:cpu.steps,scroll:cpu.scroll,frames,nmi:cpu.nmiEnable,flipped:cpu.flipped,memChecksum:memory.slice(0xd000,0xe600).reduce((a,b)=>a+b,0)}),
  input:(k,on)=>press(k,!!on),pending:()=>({...pending}),frame:()=>{for(let i=0;i<6500;i++){if(cpu.halt)break;cpu.step();}cpu.nmi();finishInputFrame();render()},
  spritePreview:(code,big=false,base=0)=>{const atlas=big?atlases.big:atlases.sp;if(!Number.isInteger(code)||code<0||code>=atlas.count||!Number.isInteger(base)||base<0||base>120||base%8)throw Error('Invalid sprite');const art=getSpriteArt(atlas,code,base,big);const native=document.createElement('canvas');native.width=atlas.w;native.height=atlas.h;const cx=native.getContext('2d');for(let y=0;y<atlas.h;y++)for(let x=0;x<atlas.w;x++){const pen=atlas.pens[code*atlas.w*atlas.h+y*atlas.w+x];if(pen){cx.fillStyle=colorAt(base+pen);cx.fillRect(x,y,1,1)}}return {hd:art.toDataURL(),original:native.toDataURL(),family:hdSpriteFamily(atlas,code,big)}},
