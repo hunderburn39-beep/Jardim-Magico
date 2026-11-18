@@ -1,5 +1,5 @@
-const CACHE='strikers-1945-native-fullrom-v9.3-dev9';
-const ASSETS=['./','./index.html','./icon.svg','./manifest.webmanifest','./original-rom.js','./arcade-session.js?v=9.3','./rom-ui-art.js?v=9.2.5','./rom-sprite-definitions.js','./rom-sprite-definitions.js?v=9.3','./rom-player-frames.js?v=9.3.1','./rom-effects.js?v=9.3.4','./rom-catalog-v9.html','./stage1-partA.js','./stage1-partB.js','./stage1-background.js','./stage1-background.js?v=8.8','./stage1-flight-replay.js','./stage1-flight-replay.js?v=9.3.3','./stage1-plane-frames.b64','./inspector.html','./arcade.html','./remake.html','./audio-rom.html','./sprites-rom.html','./stage1-captured.html','./stage1-captured-catalog.js'];
+const CACHE='strikers-1945-native-fullrom-v9.3-dev10';
+const ASSETS=['./','./index.html','./icon.svg','./manifest.webmanifest','./original-rom.js','./arcade-session.js?v=9.3','./rom-ui-art.js?v=9.2.5','./rom-sprite-definitions.js','./rom-sprite-definitions.js?v=9.3','./rom-player-frames.js?v=9.3.1','./rom-effects.js?v=9.3.4','./rom-catalog-v9.html','./stage1-partA.js','./stage1-partB.js','./stage1-background.js','./rom-map-blocks.js?v=9.3','./stage1-background.js?v=9.3','./stage1-flight-replay.js','./stage1-flight-replay.js?v=9.3.3','./stage1-plane-frames.b64','./inspector.html','./arcade.html','./remake.html','./audio-rom.html','./sprites-rom.html','./stage1-captured.html','./stage1-captured-catalog.js'];
 const ROM_ROUTE=new URL('./roms/s1945.zip',self.registration.scope).pathname;
 const DB='strikers1945-user-arcade-v1',STORE='files',KEY='s1945.zip';
 
