@@ -419,34 +419,15 @@ function sync(time){
  return result.filter(e=>e.alpha>.025&&e.x>-(e.renderW/2)-24&&e.x<360+e.renderW/2+24&&e.y>-(e.renderH/2)-24&&e.y<640+e.renderH/2+24);
 }
 function sprite(item){
- const key=[item.code,item.attr,item.nx,item.ny,item.phase].join(':');
+ const key=[item.code,item.attr,item.nx,item.ny,item.phase,!!item.projection].join(':');
  if(cache.has(key))return cache.get(key);
- const cx=item.ny*16,cy=item.nx*16;
- const canvas=document.createElement('canvas');canvas.width=cx;canvas.height=cy;
- const c=canvas.getContext('2d'),im=c.createImageData(cx,cy),o=im.data;
  const paletteSets=palettes.get(item.palette);
  if(!paletteSets)return null;
- // The recorded colors change across the base's three palette-RAM snapshots.
  let colors=paletteSets[item.phase]||paletteSets[0];
  if(colors.every(v=>v===0x8000||v===0))colors=paletteSets.find(a=>a.some(v=>v!==0x8000&&v!==0))||colors;
- const flipX=!!(item.attr&0x4000),flipY=!!(item.attr&0x8000);
- let code=item.code;
- for(let dy=flipY?item.ny-1:0;flipY?dy>=0:dy<item.ny;dy+=flipY?-1:1){
-  for(let dx=flipX?item.nx-1:0;flipX?dx>=0:dx<item.nx;dx+=flipX?-1:1){
-   for(let py=0;py<16;py++)for(let px=0;px<16;px++){
-    const u=flipX?15-px:px,v=flipY?15-py:py;
-    const pix=window.StrikersROM.rawPixel('sprite',code,u,v,true);
-    if(pix===15)continue;
-    // The projection retains ROM transparency; palette 10 is not live aircraft paint.
-    const rgb=item.projection?0:colors[pix],ix=dy*16+py,iy=item.nx*16-1-(dx*16+px);
-    const p=(iy*cx+ix)*4;
-    o[p]=((rgb>>10)&31)*255/31|0;o[p+1]=((rgb>>5)&31)*255/31|0;
-    o[p+2]=(rgb&31)*255/31|0;o[p+3]=255;
-   }
-   code=(code+1)&0x1ffff;
-  }
- }
- c.putImageData(im,0,0);
+ const canvas=document.createElement('canvas');
+ const defs=window.StrikersSpriteDefinitions;
+ if(!defs?.drawRaw(canvas,item.code,item.nx,item.ny,colors,!!(item.attr&0x4000),!!(item.attr&0x8000),!!item.projection))return null;
  if(cache.size>160)cache.delete(cache.keys().next().value);
  cache.set(key,canvas);
  return canvas;
