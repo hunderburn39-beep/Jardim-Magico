@@ -7,7 +7,7 @@ const codes=Object.freeze({
  insertCoin:1458,gameOver:1447,largeGameOver:1439,continuePrompt:1471,
  credit:1478,start:1452,onePlayer:1476,twoPlayer:1477,copyright:1485,publisherTail:1493,
  addCoin:1463,freePlay:1467,ending:1505,warning:1569,select:1575,
- pleaseWait:1581,yes:1586,no:1588,time:1592,powerUp:1665,powerDown:1669
+ cursor1:1594,cursor2:1602,pleaseWait:1581,yes:1586,no:1588,time:1592,powerUp:1665,powerDown:1669
 });
 const blocks=Object.freeze(Object.fromEntries(Object.entries(codes).map(([name,code])=>[name,Object.freeze([code])])));
 function render(code){
@@ -47,6 +47,28 @@ function update(credits){
  if(replaceArt(document.getElementById('titleCopyright'),[codes.copyright,codes.publisherTail],'©1995 Psikyo',1.6)&&publisher)publisher.hidden=true;
 }
 function notice(el,name,label){const code=codes[name];return Number.isInteger(code)&&replaceArt(el,[code],label);}
-function result(won){if(!won)notice(document.getElementById('resultTitle'),'largeGameOver','GAME OVER');}
-window.StrikersOriginalUI=Object.freeze({codes,blocks,draw,digits,update,result,notice,replaceArt,paletteStatus:'provisional grayscale'});
+// Aircraft labels live inside the 8x8 font atlas at LUT 320. They
+// are tile subsets, rather than complete descriptor starts.
+const aircraftLabels=Object.freeze({
+ p38:[348],p51:[349],spitfire:[350],bf109:[352,353],zero:[354],shinden:[355,356]
+});
+function labelAircraft(el,id){
+ const ids=aircraftLabels[id],d=window.StrikersSpriteDefinitions;
+ if(!el||!ids||!window.StrikersROM?.isVerified?.())return false;
+ const c=document.createElement('canvas');c.width=ids.length*16;c.height=16;
+ const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+ for(let i=0;i<ids.length;i++){
+  const tile=document.createElement('canvas');
+  if(!d?.drawRaw(tile,ids[i],1,1))return false;
+  g.drawImage(tile,i*16,0);
+ }
+ c.style.width=c.width*2+'px';c.style.height='32px';c.style.maxWidth='100%';c.style.imageRendering='pixelated';
+ c.setAttribute('aria-hidden','true');el.setAttribute('aria-label',el.textContent||id);el.replaceChildren(c);return true;
+}
+function cursor(el,player=1){return replaceArt(el,[player===2?codes.cursor2:codes.cursor1],player+'P',2);}
+function result(won){
+ const el=document.getElementById('resultTitle');
+ notice(el,won?'ending':'largeGameOver',won?'THE END':'GAME OVER');
+}
+window.StrikersOriginalUI=Object.freeze({codes,blocks,draw,digits,update,result,notice,replaceArt,labelAircraft,aircraftLabels,cursor,paletteStatus:'provisional grayscale'});
 })();
