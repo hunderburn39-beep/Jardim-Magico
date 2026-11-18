@@ -1,0 +1,62 @@
+{
+  "reference": "Original JavaScript CPU; independent JS model of incremental indexed buffer algorithm, not Godot runtime",
+  "source_blob": "411dca2c49b44bb3f11ff0520c057bb20dfc98a0",
+  "real_replay": {
+    "checked_buffers": 722,
+    "frames": 360,
+    "changed_frames": 100,
+    "tiles_decoded": 8588,
+    "indexed_pixel_writes": 549632,
+    "previous_full_conversion_pixels": 7077888,
+    "reduction_percent": 92.23451967592592,
+    "max_changed_tiles_per_frame": 832
+  },
+  "synthetic_flip_buffers_checked": 4,
+  "checkpoints": [
+    {
+      "frame": 0,
+      "tiles": 2048,
+      "pixels": 131072
+    },
+    {
+      "frame": 60,
+      "tiles": 0,
+      "pixels": 0
+    },
+    {
+      "frame": 120,
+      "tiles": 0,
+      "pixels": 0
+    },
+    {
+      "frame": 180,
+      "tiles": 0,
+      "pixels": 0
+    },
+    {
+      "frame": 240,
+      "tiles": 1,
+      "pixels": 64
+    },
+    {
+      "frame": 300,
+      "tiles": 1,
+      "pixels": 64
+    },
+    {
+      "frame": 360,
+      "tiles": 0,
+      "pixels": 0
+    },
+    {
+      "frame": 361,
+      "tiles": 2048,
+      "pixels": 131072
+    },
+    {
+      "frame": 362,
+      "tiles": 2048,
+      "pixels": 131072
+    }
+  ]
+}
