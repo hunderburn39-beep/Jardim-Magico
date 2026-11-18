@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.97 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.99 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -491,7 +491,7 @@ function contourRadius(pts,i,w,h,r){
  if(u>=5&&v>=5&&Math.abs((p[0]-a[0])*(b[0]-p[0])+(p[1]-a[1])*(b[1]-p[1]))<.001)return Math.min(r,.35);
  return Math.min(r,u*.32,v*.32);
 }
-function vectorPaint(g,pixels,w,h,transparent=NONE,illustration=false,geometry=null,boardMaterials=false,styler=null,clear=true,retainCells=false,boardRelief=false){
+function vectorPaint(g,pixels,w,h,transparent=NONE,illustration=false,geometry=null,boardMaterials=false,styler=null,clear=true,retainCells=false,boardRelief=false,portraitCurves=false){
  const pitch=w+1,seen=new Uint8Array(w*h);
  const count={regions:0,loops:0,covered:0,illustrations:0,verticesBefore:0,verticesAfter:0,materials:0,decorated:0};
  g.setTransform(HD,0,0,HD,0,0);if(clear)g.clearRect(0,0,w,h);
@@ -536,13 +536,14 @@ function vectorPaint(g,pixels,w,h,transparent=NONE,illustration=false,geometry=n
    const area=contourArea(pts),hole=area<0;
    const broad=illustration&&!hole&&!contourTouchesBorder(pts,w,h)&&(
     (area>=48&&maxX-minX>=8&&maxY-minY>=8&&area/(loop.length||1)>=1.8)||
-    (boardRelief&&area>=20&&Math.max(maxX-minX,maxY-minY)>=12&&Math.min(maxX-minX,maxY-minY)>=2&&pts.length>=12&&area/(loop.length||1)>=.48)
+    (boardRelief&&area>=20&&Math.max(maxX-minX,maxY-minY)>=12&&Math.min(maxX-minX,maxY-minY)>=2&&pts.length>=12&&area/(loop.length||1)>=.48)||
+    (portraitCurves&&area>=10&&maxX-minX>=3&&maxY-minY>=3&&pts.length>=8)
    );
    if(broad){
     count.illustrations++;count.verticesBefore+=pts.length;
-    pts=simplifyIllustration(pts,boardRelief?.94:.62);count.verticesAfter+=pts.length;
+    pts=simplifyIllustration(pts,portraitCurves?.82:boardRelief?.94:.62);count.verticesAfter+=pts.length;
    }
-   const r=broad?(boardRelief?1.38:1.02):Math.abs(area)<4?.04:Math.abs(area)<10?.18:hole?.24:.46;
+   const r=broad?(portraitCurves?1.5:boardRelief?1.38:1.02):Math.abs(area)<4?.04:Math.abs(area)<10?.18:hole?.24:.46;
    const radii=pts.map((_,i)=>contourRadius(pts,i,w,h,r));
    const toward=(v,u,rr)=>{const d=Math.hypot(u[0]-v[0],u[1]-v[1]),t=Math.min(rr,d*.25)/Math.max(d,.001);return [v[0]+(u[0]-v[0])*t,v[1]+(u[1]-v[1])*t];};
    path.moveTo(...toward(pts[0],pts[pts.length-1],radii[0]));
@@ -580,6 +581,18 @@ function guideProfile(pens,code,fx,fy){
  }
  return {vertical,rows};
 }
+// V8.99: rounded rail contours between native half-row samples.
+// Cubic handles remain inside each segment's endpoint rectangle.
+function traceRailEdge(path,rows,selector,pt,reverse=false){
+ const samples=[[selector(rows[0]),0],...rows.map((row,i)=>[selector(row),i+.5]),[selector(rows.at(-1)),rows.length]];
+ if(reverse)samples.reverse();
+ const project=(u,v)=>pt(u,v);
+ path.lineTo(...project(...samples[0]));
+ for(let i=1;i<samples.length;i++){
+  const [u0,v0]=samples[i-1],[u1,v1]=samples[i],d=(v1-v0)/3;
+  path.bezierCurveTo(...project(u0,v0+d),...project(u1,v1-d),...project(u1,v1));
+ }
+}
 function drawGuideTile(g,profile,x,y,base){
  const {vertical,rows}=profile,len=rows.length;
  const width=vertical?8:len,height=vertical?len:8;
@@ -589,14 +602,19 @@ function drawGuideTile(g,profile,x,y,base){
  // Closed strip with exact half-tile endpoints, no shadow outside the track.
  const band=(lo,hi,fill)=>{
   g.beginPath();g.moveTo(...pt(lo(rows[0]),0));
-  for(let i=0;i<len;i++)g.lineTo(...pt(lo(rows[i]),i+.5));
-  g.lineTo(...pt(lo(rows[len-1]),len));g.lineTo(...pt(hi(rows[len-1]),len));
-  for(let i=len-1;i>=0;i--)g.lineTo(...pt(hi(rows[i]),i+.5));
-  g.lineTo(...pt(hi(rows[0]),0));g.closePath();g.fillStyle=fill;g.fill();
+  traceRailEdge(g,rows,lo,pt);
+  traceRailEdge(g,rows,hi,pt,true);
+  g.closePath();g.fillStyle=fill;g.fill();
  };
  const counts={};for(const o of rows)for(const p of o.cs)counts[p]=(counts[p]||0)+1;
  const dominant=Number(Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0]);
  band(o=>o.l,o=>o.r,colorAt(base+dominant));
+ // Separate dark sidewall, satin face and narrow polished highlights.
+ // These bands follow each original row's width instead of a global filter.
+ band(o=>o.l,o=>o.l+(o.r-o.l)*.13,materialTone(base+dominant,-.38));
+ band(o=>o.r-(o.r-o.l)*.17,o=>o.r,materialTone(base+dominant,-.48));
+ band(o=>o.l+(o.r-o.l)*.15,o=>o.l+(o.r-o.l)*.31,materialTone(base+dominant,.32));
+ band(o=>o.l+(o.r-o.l)*.33,o=>o.l+(o.r-o.l)*.43,materialTone(base+dominant,.15));
  // Object-local, bevelled track face, kept inside each native strip.
  const edge=(side,amount)=>{
   const a=pt(rows[0].l,0),b=pt(rows[0].l,len);
@@ -1028,6 +1046,104 @@ function redrawLiveBoardPens(g,plan,main,flipped){
  }
  g.restore();return count;
 }
+// V8.98: rebuild the main printed portrait from its own ROM colour
+// regions. Facial details use native contour paths; the hair halftone
+// becomes a local graded ink layer, never a filter over the playfield.
+const portraitFacePoly=[[88,88],[135,88],[141,104],[138,134],[130,150],[134,168],[130,176],[89,176],[88,158],[98,151],[93,143],[87,126],[83,105]];
+const portraitHairPoly=[[10,16],[90,16],[98,26],[115,36],[119,55],[130,69],[142,78],[151,94],[163,111],[166,141],[151,155],[134,166],[80,173],[60,165],[45,148],[40,123],[38,103],[45,90],[25,65],[14,39]];
+const portraitPlans=new WeakMap();
+let portraitInk=null,portraitTones=null;
+function portraitProtected(x,y){
+ return mainInserts.some(([cx,cy])=>Math.abs(x-cx)<=10&&Math.abs(y-cy)<=10);
+}
+function portraitPigment(rgb){
+ const r=rgb&255,g=(rgb>>>8)&255,b=(rgb>>>16)&255;
+ return (r>g*1.08&&r>b*1.18&&r>65)||(r>150&&g>110&&b<g*.82);
+}
+function mainPortraitPlan(pixels,protectedPens,palette){
+ const w=224,h=256,ink=new Int16Array(w*h);ink.fill(-1);
+ const native=new Uint16Array(w*h),hair=new Uint8Array(w*h),faceMask=new Uint8Array(w*h);
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++)native[y*w+x]=pixels[(239-x)*256+y];
+ const safe=(x,y,p)=>!protectedPens.has(p)&&!portraitProtected(x,y);
+ let faceCells=0;
+ for(let y=14;y<177;y++)for(let x=9;x<168;x++){
+  const i=y*w+x,p=native[i];if(!safe(x,y,p))continue;
+  if(inPrintPolygon(x+.5,y+.5,portraitFacePoly)){
+   // Include the original dark lines, cool eyes and crown, not merely skin.
+   ink[i]=p;faceMask[i]=1;faceCells++;
+  }else if(inPrintPolygon(x+.5,y+.5,portraitHairPoly))hair[i]=1;
+ }
+ // Only reconstruct dense warm-coloured printed stipple. Static pen
+ // pairs are sampled within the same colour bank and never across rails.
+ const toneCells=[];
+ for(let y=17;y<173;y++)for(let x=12;x<165;x++){
+  const i=y*w+x,p=native[i];if(!hair[i])continue;
+  const bank=p>>>4;let warm=0,n=0,changes=0,weight=0;const weights=new Map();
+  for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
+   const j=i+dy*w+dx,q=native[j];if(!hair[j]||q>>>4!==bank||!safe(x+dx,y+dy,q))continue;
+   n++;if(portraitPigment(palette[q]))warm++;
+   if(dx<2&&hair[j+1]&&(native[j+1]>>>4)===bank&&native[j+1]!==q)changes++;
+   if(dy<2&&hair[j+w]&&(native[j+w]>>>4)===bank&&native[j+w]!==q)changes++;
+   const k=(3-Math.abs(dx))*(3-Math.abs(dy));weight+=k;weights.set(q,(weights.get(q)||0)+k);
+  }
+  if(n>=17&&warm>=8&&changes>=13&&weights.size>=2)toneCells.push({i,weight,weights:[...weights]});
+ }
+ return {ink,native,faceMask,faceCells,toneCells,geometry:null};
+}
+function redrawMainPortrait(g,live){
+ if((cpu.flipped&1)||!isMainPrint(memory)||typeof Path2D!=='function')return {faceCells:0,toneCells:0,regions:0};
+ const protectedPens=new Set([...live.pens,...mainLampPens]);
+ const key=[...protectedPens].sort((a,b)=>a-b).join(',');
+ let plan=boardGeometry&&portraitPlans.get(boardGeometry);
+ if(!plan||plan.key!==key){plan=mainPortraitPlan(bgPixels,protectedPens,palette32);plan.key=key;if(boardGeometry)portraitPlans.set(boardGeometry,plan);}
+ if(!portraitInk){portraitInk=document.createElement('canvas');portraitInk.width=224*HD;portraitInk.height=256*HD;portraitTones=document.createElement('canvas');portraitTones.width=224;portraitTones.height=256;}
+ const p=portraitInk.getContext('2d');p.setTransform(HD,0,0,HD,0,0);p.clearRect(0,0,224,256);
+ // Reconstruct only eligible original print texture, interpolating its
+ // measured ink coverage at HD resolution. No arbitrary new illustration.
+ const t=portraitTones.getContext('2d'),rgba=t.createImageData(224,256);
+ for(const {i,weight,weights} of plan.toneCells){
+  for(let c=0;c<3;c++){let sum=0;for(const [pen,k] of weights)sum+=((palette32[pen]>>>(c*8))&255)*k;rgba.data[i*4+c]=Math.round(sum/weight);}
+  rgba.data[i*4+3]=245;
+ }
+ t.putImageData(rgba,0,0);
+ p.imageSmoothingEnabled=true;p.imageSmoothingQuality='high';p.drawImage(portraitTones,0,0,224,256);
+ // Rebuild the face in independent, smooth native-pen shapes. A subtle
+ // colour gradient replaces the old generic metallic decoration.
+ const fills=new Map();
+ const fill=(ctx,color)=>{
+  if(fills.has(color))return fills.get(color);
+  const rgb=palette32[color],r=rgb&255,gg=(rgb>>>8)&255,b=(rgb>>>16)&255;
+  let q=colorAt(color);
+  if(r>=115&&gg>=70&&r>b*1.1&&gg>b*.9){
+   q=ctx.createLinearGradient(86,91,139,165);
+   for(const [at,tone] of [[0,.10],[.28,.035],[.57,0],[.82,-.065],[1,-.10]])q.addColorStop(at,materialTone(color,tone));
+  }
+  fills.set(color,q);return q;
+ };
+ if(plan.geometry){
+  for(const {color,path} of plan.geometry){p.fillStyle=fill(p,color);p.fill(path,'evenodd');}
+ }else{
+  const geometry=[];
+  vectorPaint(p,plan.ink,224,256,NONE,true,geometry,false,fill,false,false,false,true);
+  plan.geometry=geometry;
+ }
+ // Restrict even antialiased contours to the original face / texture masks.
+ // Live inserts are restored by their existing independent hardware pass.
+ g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);g.imageSmoothingEnabled=false;
+ if(!plan.clip){
+  const allowed=new Uint8Array(plan.faceMask);for(const {i} of plan.toneCells)allowed[i]=1;
+  const clip=new Path2D();
+  for(let y=0;y<256;y++)for(let x=0;x<224;){
+   if(!allowed[y*224+x]){x++;continue;}
+   const start=x;while(x<224&&allowed[y*224+x])x++;
+   clip.rect(start,y,x-start,1);
+  }
+  plan.clip=clip;
+ }
+ g.clip(plan.clip);g.drawImage(portraitInk,0,0,224,256);g.restore();
+ return {faceCells:plan.faceCells,toneCells:plan.toneCells.length,regions:plan.geometry.length};
+}
+
 function rebuildHDBoard(){
  // Board colours can flash repeatedly while the tile map stays fixed.
  // Retain bounded, full-resolution variants of the exact same artwork.
@@ -1066,7 +1182,7 @@ function rebuildHDBoard(){
  boardCtx.drawImage(boardInk,0,0,256,256);
  const print=redrawPrintedHalftones(boardCtx);stats.printCells=print.cells;stats.printPatches=print.patches;stats.printRegions=print.regions||0;
  // Preserve the original ROM portrait; never paint an invented face over it.
- stats.handIllustrated=false;stats.mainInserts=paintMainInserts(boardCtx);
+ stats.handIllustrated=false;stats.mainPortrait=redrawMainPortrait(boardCtx,live);stats.mainInserts=paintMainInserts(boardCtx);
  const extra=redrawExtraPrint(boardCtx);stats.extraPrint=extra;
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;
  stats.livePalettePens=live.pens.size;stats.livePaletteCells=redrawLiveBoardPens(boardCtx,live,main&&stats.mainInserts===10,flipped);
@@ -1361,6 +1477,18 @@ function hdSceneCommands(commands){
 }
 // Remastered hardware: separate steel, rubber and illuminated acrylic
 // components. All geometry is fitted to the original occupied sprite.
+// Cache the native detail masks independently from the live palette.
+const mechanismInkPaths=new WeakMap();
+function mechanismInkPlan(atlas,code,accept){
+ let atlasCache=mechanismInkPaths.get(atlas);
+ if(!atlasCache){atlasCache=new Map();mechanismInkPaths.set(atlas,atlasCache);}
+ if(atlasCache.has(code))return atlasCache.get(code);
+ const w=atlas.w,h=atlas.h,start=code*w*h,indices=new Int16Array(w*h);indices.fill(NONE);
+ for(let i=0;i<indices.length;i++){
+  const n=atlas.pens[start+i];if(n&&accept(n,i%w,Math.floor(i/w)))indices[i]=n;
+ }
+ const plan={indices,geometry:null};atlasCache.set(code,plan);return plan;
+}
 function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
  const {minX,minY,maxX,maxY,cx,cy,spanX,spanY}=bounds,w=atlas.w,h=atlas.h;
  if(!['bumper','arm','round','square','insert','gate'].includes(kind))return;
@@ -1373,10 +1501,17 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
  const chrome=(x,y,X,Y)=>grad(x,y,X,Y,[[0,'#1f2938'],[.12,'#e7f2fa'],[.23,'#ffffff'],[.42,'#8596a6'],[.53,'#364556'],[.67,'#d5e1e6'],[.81,'#687786'],[1,'#202b38']]);
  const ring=(x,y,r,width,fill)=>{f.beginPath();f.arc(x,y,r,0,Math.PI*2);f.lineWidth=width;f.strokeStyle=fill;f.stroke();};
  function nativeInk(accept,style=null){
-  const digits=new Int16Array(w*h);digits.fill(NONE);
-  for(let i=0;i<w*h;i++)if(accept(p[start+i],i%w,Math.floor(i/w)))digits[i]=baseColor+p[start+i];
-  const a=document.createElement('canvas');a.width=w*HD;a.height=h*HD;
-  vectorPaint(a.getContext('2d'),digits,w,h,NONE,false,null,false,style);f.drawImage(a,0,0,w,h);
+  const plan=mechanismInkPlan(atlas,code,accept);
+  const styleFor=(ctx,n,cells)=>style?style(ctx,baseColor+n,cells):colorAt(baseColor+n);
+  if(plan.geometry){
+   for(const q of plan.geometry){f.fillStyle=styleFor(f,q.color,q.cells);f.fill(q.path,'evenodd');}
+   renderStats.mechanismInkHits=(renderStats.mechanismInkHits||0)+1;
+  }else{
+   const geometry=typeof Path2D==='function'?[]:null;
+   vectorPaint(f,plan.indices,w,h,NONE,false,geometry,false,styleFor,false,true);
+   if(geometry)plan.geometry=geometry;
+   renderStats.mechanismInkBuilds=(renderStats.mechanismInkBuilds||0)+1;
+  }
  }
  if(kind==='bumper'){
   const r=Math.min(spanX,spanY)*.5,lit=code===8||code===10,body=lit?2:7,accent=lit?7:2;
@@ -1412,7 +1547,14 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
   const inset=Math.min(.9,cross*.18);f.fillStyle=chrome(0,top,0,bottom);f.fillRect(left,top+inset,long,cross-2*inset);
   f.fillStyle=grad(0,top+cross*.25,0,bottom-cross*.25,[[0,rgb(7,.6)],[.35,rgb(7,.16)],[.65,rgb(7,-.03)],[1,rgb(7,-.42)]]);
   f.fillRect(left,top+cross*.26,long,cross*.48);
-  f.fillStyle='rgba(255,255,255,.6)';f.fillRect(left,top+cross*.26,long,.23);
+  // Thin polished chamfers and a recessed longitudinal rubber insert.
+  // The original sprite mask clips the entire mechanical surface.
+  f.fillStyle=grad(left,0,right,0,[[0,'rgba(0,0,0,.50)'],[.16,'rgba(0,0,0,0)'],[.68,'rgba(255,255,255,.11)'],[1,'rgba(0,0,0,.40)']]);
+  f.fillRect(left,top+cross*.26,long,cross*.48);
+  f.fillStyle='rgba(255,255,255,.72)';f.fillRect(left,top+cross*.26,long,Math.min(.28,cross*.075));
+  f.fillStyle='rgba(0,0,0,.34)';f.fillRect(left,bottom-cross*.27,long,Math.min(.35,cross*.08));
+  f.fillStyle=grad(left,0,right,0,[[0,'rgba(255,255,255,0)'],[.25,'rgba(255,255,255,.46)'],[.72,'rgba(255,255,255,.24)'],[1,'rgba(255,255,255,0)']]);
+  f.fillRect(left,top+inset,long,Math.min(.30,cross*.09));
   f.restore();
   // Restore the original small internal markings over the steel/rubber
   // shell. Never substitute a new logo or omit native pen islands.
