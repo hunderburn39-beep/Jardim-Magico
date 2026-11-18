@@ -1,0 +1,71 @@
+/* World ROM: two directories of stored tile-map blocks.
+ * 68 blocks, 37108 tile words, validated contiguous bounds.
+ * The directories are NOT hardware layer IDs. In captured stage 1,
+ * both screen layers use blocks 17 and 18 from directory 0.
+ * Column-pair ordering was validated against the first two complete
+ * recorded frames (1176 equal words, including palette bits).
+ * No ROM pixels or map payloads are embedded.
+ */
+(()=>{'use strict';
+const dirs=Object.freeze([
+ Object.freeze({pointer:0x59ba0,count:33,start:0x59cb8,end:0x640e8,flags:0}),
+ Object.freeze({pointer:0x59c28,count:35,start:0x640e8,end:0x6c0c0,flags:0x400})
+]);
+const captureBlocks=Object.freeze([{group:0,id:17},{group:0,id:18}].map(Object.freeze));
+let catalog=null,words=new Map();
+function long(r,a){return r.programWord(a)*65536+r.programWord(a+2)}
+function all(){
+ const r=window.StrikersROM;
+ if(!r?.isVerified?.())return null;
+ if(catalog)return catalog;
+ let total=0;
+ const groups=dirs.map((d,group)=>{
+  let expected=d.start;const entries=[];
+  for(let id=0;id<d.count;id++){
+   const address=long(r,d.pointer+4*id);
+   const width=r.programWord(address),columns=r.programWord(address+2),flags=long(r,address+4);
+   if(address!==expected||!Number.isInteger(width)||!Number.isInteger(columns)||width<1||columns<1||width>128||columns>256||flags!==d.flags)throw Error('Original map header '+group+':'+id);
+   const wordCount=width*columns,end=address+8+wordCount*2;
+   if(end>d.end)throw Error('Original map outside block');
+   entries.push(Object.freeze({group,id,address,width,columns,flags,wordCount,end}));
+   expected=end;total+=wordCount;
+  }
+  if(expected!==d.end||long(r,d.pointer+d.count*4)!==0xffffffff)throw Error('Original map directory bounds '+group);
+  return Object.freeze(entries);
+ });
+ if(total!==37108)throw Error('Original map word count');
+ catalog=Object.freeze(groups);return catalog;
+}
+function get(group,id){return all()?.[group]?.[id]??null}
+function decode(group,id){
+ const map=get(group,id);if(!map)return null;
+ const key=group+':'+id;if(words.has(key))return words.get(key);
+ const r=window.StrikersROM,out=new Uint16Array(map.wordCount);
+ for(let col=0;col<map.columns;col++){
+  const pair=col&~1,stride=Math.min(2,map.columns-pair);
+  for(let row=0;row<map.width;row++){
+   const wi=pair*map.width+row*stride+(col-pair);
+   const value=r.programWord(map.address+8+wi*2);
+   if(!Number.isInteger(value))throw Error('Missing original map word');
+   out[col*map.width+row]=value;
+  }
+ }
+ const result={map,codes:out};words.set(key,result);return result;
+}
+function strip(group,id,firstCol,count=21){
+ const d=decode(group,id);
+ if(!d||!Number.isInteger(firstCol)||!Number.isInteger(count)||firstCol<0||count<1||firstCol+count>d.map.columns)return null;
+ return d.codes.slice(firstCol*d.map.width,(firstCol+count)*d.map.width);
+}
+function matchCapture(layer,firstCol,capture){
+ const block=captureBlocks[layer];
+ if(!block||!capture||capture.length!==294)return null;
+ const data=strip(block.group,block.id,firstCol);
+ if(!data||data.length!==capture.length)return null;
+ for(let i=0;i<data.length;i++)if(data[i]!==capture[i])return null;
+ return data;
+}
+function stats(){const a=all();return {groups:a?.length??0,blocks:a?.reduce((n,g)=>n+g.length,0)??0,words:a?.flat().reduce((n,m)=>n+m.wordCount,0)??0,cachedBlocks:words.size};}
+window.addEventListener('strikers-rom-ready',()=>{catalog=null;words.clear()});
+window.StrikersOriginalMaps=Object.freeze({all,get,decode,strip,matchCapture,stats,captureBlocks});
+})();
