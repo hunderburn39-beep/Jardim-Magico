@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.99 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.99-HD dev — retrato";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -543,7 +543,7 @@ function vectorPaint(g,pixels,w,h,transparent=NONE,illustration=false,geometry=n
     count.illustrations++;count.verticesBefore+=pts.length;
     pts=simplifyIllustration(pts,portraitCurves?.82:boardRelief?.94:.62);count.verticesAfter+=pts.length;
    }
-   const r=broad?(portraitCurves?1.5:boardRelief?1.38:1.02):Math.abs(area)<4?.04:Math.abs(area)<10?.18:hole?.24:.46;
+   const r=broad?(portraitCurves?1.8:boardRelief?1.38:1.02):Math.abs(area)<4?.04:Math.abs(area)<10?.18:hole?.24:.46;
    const radii=pts.map((_,i)=>contourRadius(pts,i,w,h,r));
    const toward=(v,u,rr)=>{const d=Math.hypot(u[0]-v[0],u[1]-v[1]),t=Math.min(rr,d*.25)/Math.max(d,.001);return [v[0]+(u[0]-v[0])*t,v[1]+(u[1]-v[1])*t];};
    path.moveTo(...toward(pts[0],pts[pts.length-1],radii[0]));
@@ -1086,7 +1086,7 @@ function mainPortraitPlan(pixels,protectedPens,palette){
    if(dy<2&&hair[j+w]&&(native[j+w]>>>4)===bank&&native[j+w]!==q)changes++;
    const k=(3-Math.abs(dx))*(3-Math.abs(dy));weight+=k;weights.set(q,(weights.get(q)||0)+k);
   }
-  if(n>=17&&warm>=8&&changes>=13&&weights.size>=2)toneCells.push({i,weight,weights:[...weights]});
+  if(n>=15&&warm>=8&&changes>=9&&weights.size>=2&&(portraitPigment(palette[p])||warm>=Math.ceil(n*.65)))toneCells.push({i,weight,weights:[...weights]});
  }
  return {ink,native,faceMask,faceCells,toneCells,geometry:null};
 }
@@ -1101,9 +1101,18 @@ function redrawMainPortrait(g,live){
  // Reconstruct only eligible original print texture, interpolating its
  // measured ink coverage at HD resolution. No arbitrary new illustration.
  const t=portraitTones.getContext('2d'),rgba=t.createImageData(224,256);
+ // Fill beneath rounded vector contours with the actual ROM ink colours.
+ // This prevents the old pixel staircases showing through tiny gaps.
+ // The face mask, protected lamp pens and hardware playfield are unchanged.
+ for(let i=0;i<plan.faceMask.length;i++){
+  if(!plan.faceMask[i])continue;
+  const rgb=palette32[plan.native[i]],j=i*4;
+  rgba.data[j]=rgb&255;rgba.data[j+1]=(rgb>>>8)&255;
+  rgba.data[j+2]=(rgb>>>16)&255;rgba.data[j+3]=255;
+ }
  for(const {i,weight,weights} of plan.toneCells){
   for(let c=0;c<3;c++){let sum=0;for(const [pen,k] of weights)sum+=((palette32[pen]>>>(c*8))&255)*k;rgba.data[i*4+c]=Math.round(sum/weight);}
-  rgba.data[i*4+3]=245;
+  rgba.data[i*4+3]=255;
  }
  t.putImageData(rgba,0,0);
  p.imageSmoothingEnabled=true;p.imageSmoothingQuality='high';p.drawImage(portraitTones,0,0,224,256);
