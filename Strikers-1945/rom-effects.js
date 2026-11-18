@@ -75,9 +75,23 @@ function itemImage(type,record){
  if(!pal||!d.draw(c,code,pal))return null;
  images.set(key,c);return c;
 }
+// The original gold cycle has eight frames (1643..1650), each lasting
+// seven arcade ticks. The white flash is frame 3 / LUT code 1646, checked
+// with the original tiles and common palette 16. Other values are a
+// provisional timing-distance mapping until the scoring routine is traced.
+// Reference: https://shmups.wiki/library/Strikers_1945#Scoring
+const GOLD_SCORES=Object.freeze([200,500,1000,2000,1000,500,200,200]);
+// The documented intermediate 500-point band is used on both sides
+// of the flash; frame 1 is two animation steps before the flash.
+function itemPhase(type,time){
+ const g=itemGroups[type];if(!g)return -1;
+ const seconds=Math.max(0,Number(time)||0);
+ return Math.floor(seconds*(type==='gold'?60/7:12)+1e-9)%g.count;
+}
+function goldScore(time){return GOLD_SCORES[itemPhase('gold',time)];}
 function itemSprite(type,time){
  const a=itemRecords(type);if(!a)return null;
- return itemImage(type,a[Math.floor(Math.max(0,Number(time)||0)*12)%a.length]);
+ return itemImage(type,a[itemPhase(type,time)]);
 }
 // Native score numerals exist for all six values. Only display the awarded
 // amount; this does not assign any new payout rule or change the score.
@@ -121,5 +135,5 @@ function prepare(){
 }
 function stats(){return {prepared,cachedImages:images.size,itemFrames:24,medalFrames:12,groups:Object.keys(groups).length,frames:Object.values(groups).reduce((n,g)=>n+g.count,0),paletteStatus:'static common bank pointers verified; runtime modifications possible',timingStatus:'preview'};}
 window.addEventListener('strikers-rom-ready',()=>{records.clear();images.clear();prepared=false});
-window.StrikersOriginalEffects=Object.freeze({groups,read,frame,sprite,draw,itemGroups,itemRecords,itemSprite,drawItem,medalNumbers,drawMedalScore,prepare,stats});
+window.StrikersOriginalEffects=Object.freeze({groups,read,frame,sprite,draw,itemGroups,itemRecords,itemPhase,goldScore,itemSprite,drawItem,medalNumbers,drawMedalScore,prepare,stats});
 })();
