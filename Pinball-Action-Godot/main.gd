@@ -24,6 +24,9 @@ var sound_player
 var sound_button: Button
 var graphics_button: Button
 var hd_mode := false
+var cpu_tick_peak_us := 0
+var video_peak_us := 0
+var last_report_frame := -1
 
 func _ready() -> void:
 	var background := ColorRect.new()
@@ -101,7 +104,7 @@ func _ready() -> void:
 	status.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	status.offset_top=-36
 	status.offset_bottom=-7
-	status.text="V0.5 GODOT · áudio original"
+	status.text="V0.6 GODOT · áudio original"
 	if not machine.load_snapshot():
 		status.text="Erro: ROM indisponível"
 		set_physics_process(false)
@@ -228,7 +231,9 @@ func _physics_process(_delta: float) -> void:
 			sys|=SYS[k]
 	cpu.p1=p1
 	cpu.system=sys
+	var tick_start := Time.get_ticks_usec()
 	cpu.tick()
+	cpu_tick_peak_us = maxi(cpu_tick_peak_us, Time.get_ticks_usec()-tick_start)
 	for k in pulse:
 		pulse[k]=maxi(0,pulse[k]-1)
 	if queued_start!="":
@@ -242,9 +247,21 @@ func _physics_process(_delta: float) -> void:
 		if queued_frames>400:
 			queued_start=""
 	played_frames+=1
+
+# In a delayed frame Godot can advance several fixed physics ticks. Process
+# every machine tick, but upload just the latest video state once per display
+# frame, not each intermediate sprite position.
+func _process(_delta: float) -> void:
+	if cpu==null:
+		return
 	if cpu.video_changed:
+		var video_start := Time.get_ticks_usec()
 		machine.update_ram(cpu.mem,cpu.scroll,cpu.flipped)
 		cpu.video_changed=false
 		viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
-	if played_frames%30==0:
-		status.text="V0.5 GODOT · créditos %d · %d FPS" % [cpu.mem[0xc013], Engine.get_frames_per_second()]
+		video_peak_us = maxi(video_peak_us, Time.get_ticks_usec()-video_start)
+	if played_frames-last_report_frame >= 60:
+		last_report_frame = played_frames
+		status.text="V0.6 · %d FPS · CPU %.1f ms · GFX %.1f ms" % [Engine.get_frames_per_second(),cpu_tick_peak_us/1000.0,video_peak_us/1000.0]
+		cpu_tick_peak_us=0
+		video_peak_us=0
