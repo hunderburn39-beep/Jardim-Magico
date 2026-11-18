@@ -57,3 +57,8 @@ for a,n,base,bank in [(0x249c8,16,2952,2),(0x24bd8,12,5147,2),(0x24c38,14,5267,3
         nx,ny=defs[c]
         code+=nx*ny
 print('PASS: 78 original effect and item records')
+
+# Six per-aircraft palette source pointers and their four executable references.
+assert [l(0x1b92c+i*4) for i in range(6)] == [0x1b944+32*i for i in range(23,29)]
+assert all(l(a)==0x1b92c for a in (0x740e,0x9cf0,0x1466a,0x1467a))
+print('PASS: 6 player palette pointers and 4 program references')
