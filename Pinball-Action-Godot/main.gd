@@ -2,6 +2,7 @@ extends Control
 
 const RomVideo = preload("res://rom_video.gd")
 const Z80 = preload("res://z80.gd")
+const SoundPlayer = preload("res://sound_player.gd")
 const P1 = {"left":8,"right":16,"launch":1,"shake":4}
 const SYS = {"coin":1,"start":4,"start2":8}
 
@@ -19,6 +20,8 @@ var queued_start := ""
 var queued_frames := 0
 var played_frames := 0
 var sound_commands := 0
+var sound_player
+var sound_button: Button
 
 func _ready() -> void:
 	var background := ColorRect.new()
@@ -61,6 +64,12 @@ func _ready() -> void:
 	_button(header,"FICHA","coin")
 	_button(header,"P1","start")
 	_button(header,"P2","start2")
+	sound_button=Button.new()
+	sound_button.text="SOM"
+	sound_button.focus_mode=Control.FOCUS_NONE
+	sound_button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	header.add_child(sound_button)
+	sound_button.pressed.connect(_toggle_sound)
 	var controls := HBoxContainer.new()
 	add_child(controls)
 	controls.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
@@ -82,7 +91,7 @@ func _ready() -> void:
 	status.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	status.offset_top=-36
 	status.offset_bottom=-7
-	status.text="V0.3 GODOT · som em desenvolvimento"
+	status.text="V0.4 GODOT · áudio original"
 	if not machine.load_snapshot():
 		status.text="Erro: ROM indisponível"
 		set_physics_process(false)
@@ -91,6 +100,9 @@ func _ready() -> void:
 	var state = JSON.parse_string(doc["state"])
 	cpu=Z80.new(machine.ram.duplicate(),state)
 	cpu.sound_command.connect(_sound_command)
+	sound_player=SoundPlayer.new()
+	add_child(sound_player)
+	sound_player.command(0x32)
 	viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 
 func _button(parent: Container, label: String, action: String) -> void:
@@ -125,8 +137,14 @@ func _input(event: InputEvent) -> void:
 			_press(action, false, touch)
 		get_viewport().set_input_as_handled()
 
-func _sound_command(_value: int) -> void:
+func _toggle_sound()->void:
+	if sound_player==null:return
+	sound_player.set_muted(not sound_player.muted)
+	sound_button.text="SEM SOM" if sound_player.muted else "SOM"
+
+func _sound_command(value: int) -> void:
 	sound_commands+=1
+	if sound_player!=null:sound_player.command(value)
 
 func _press(k: String, down: bool, source: Dictionary) -> void:
 	if cpu==null:
@@ -201,4 +219,4 @@ func _physics_process(_delta: float) -> void:
 		cpu.video_changed=false
 		viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 	if played_frames%30==0:
-		status.text="V0.3 GODOT · créditos %d · áudio pendente" % cpu.mem[0xc013]
+		status.text="V0.4 GODOT · créditos %d" % cpu.mem[0xc013]
