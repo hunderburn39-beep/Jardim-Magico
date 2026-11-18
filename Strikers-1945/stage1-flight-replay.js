@@ -5,7 +5,7 @@
    Interpolation and collision/fire mechanics are adaptations, not the arcade AI. */
 (()=>{'use strict';
 const DATA='./stage1-plane-frames.b64';
-let frames=null,palettes=new Map(),busy=null,tracks=new Map(),cache=new Map(),shadowCache=new Map(),timeLast=-1;
+let frames=null,palettes=new Map(),busy=null,tracks=new Map(),cache=new Map(),shadowCache=new Map(),timeLast=-1,graphicsPrepared=false;
 const validKinds=new Set([10,11,12,23,25,27,28]);
 function dimensions(rawX,rawY){
  const nx=((rawX>>9)&7)+1,ny=((rawY>>9)&7)+1;
@@ -62,7 +62,7 @@ async function prepare(){
   result.push({frame,items});
  }
  if(offset!==bytes.length)throw Error('Captura com dados adicionais não reconhecidos');
- frames=result;palettes=banks;tracks.clear();cache.clear();shadowCache.clear();timeLast=-1;linked=false;
+ frames=result;palettes=banks;tracks.clear();cache.clear();shadowCache.clear();timeLast=-1;linked=false;graphicsPrepared=false;
  dispatchEvent(new Event('strikers-flight-ready'));return true;
 }
 function ready(){return !!frames&&!!window.StrikersROM?.isLoaded()}
@@ -419,18 +419,33 @@ function sync(time){
  return result.filter(e=>e.alpha>.025&&e.x>-(e.renderW/2)-24&&e.x<360+e.renderW/2+24&&e.y>-(e.renderH/2)-24&&e.y<640+e.renderH/2+24);
 }
 function sprite(item){
- const key=[item.code,item.attr,item.nx,item.ny,item.phase,!!item.projection].join(':');
- if(cache.has(key))return cache.get(key);
  const paletteSets=palettes.get(item.palette);
  if(!paletteSets)return null;
  let colors=paletteSets[item.phase]||paletteSets[0];
  if(colors.every(v=>v===0x8000||v===0))colors=paletteSets.find(a=>a.some(v=>v!==0x8000&&v!==0))||colors;
+ // Only actual pixel-affecting values belong in the cache key. Two captured
+ // phases with identical visible colors reuse the same decoded image.
+ const key=[item.code,item.nx,item.ny,item.attr&0xc000,!!item.projection,item.projection?'black':Array.from(colors).slice(0,15).join(',')].join(':');
+ if(cache.has(key)){const c=cache.get(key);cache.delete(key);cache.set(key,c);return c;}
  const canvas=document.createElement('canvas');
  const defs=window.StrikersSpriteDefinitions;
  if(!defs?.drawRaw(canvas,item.code,item.nx,item.ny,colors,!!(item.attr&0x4000),!!(item.attr&0x8000),!!item.projection))return null;
- if(cache.size>160)cache.delete(cache.keys().next().value);
+ if(cache.size>=160)cache.delete(cache.keys().next().value);
  cache.set(key,canvas);
  return canvas;
+}
+// Link recorded tracks and warm the opening three seconds before START.
+ // Do not advance live track state, invent frames, or retain an unbounded cache.
+function prepareGraphics(){
+ if(graphicsPrepared)return true;
+ if(!ready()||!window.StrikersSpriteDefinitions?.drawRaw)return false;
+ if(!linked)linkAll();
+ const start=frames[0].frame;
+ for(const f of frames){
+  if(f.frame-start>180)break;
+  for(const item of f.items){if(!sprite(item))throw Error('Opening sprite unavailable: '+item.code);}
+ }
+ graphicsPrepared=true;return true;
 }
 function draw(ctx,e){
  if(!e.romFlight||!ready()||!e.sprite)return false;
@@ -530,8 +545,8 @@ function auditMotion(){
  }
  return {segments,reversals,shadowOwnerSwitches,bomberLinks};
 }
-const api=Object.freeze({ensure,ready,sync,draw,drawShadows,reset,
- stats:()=>({frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'captured projections, separated overlapping bomber shadows and ROM alpha fallback',flightFacing:'per-LUT native heading, lateral bomber mirror, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-monotone-hermite',spriteBlend:false}),
+const api=Object.freeze({ensure,ready,prepareGraphics,sync,draw,drawShadows,reset,
+ stats:()=>({graphicsPrepared,cachedImages:cache.size,frames:frames?.length||0,earliestFrame:frames?.[0]?.frame||0,latestFrame:frames?.at(-1)?.frame||0,trackCount:tracks.size,matching:linkStats,terrainShadowDetection:'captured projections, separated overlapping bomber shadows and ROM alpha fallback',flightFacing:'per-LUT native heading, lateral bomber mirror, hardware flips, local motion tangent and pitch-frame preservation',flightTime:frames?(frames.at(-1).frame-frames[0].frame)/60:61.333,interpolation:'global-assignment-monotone-hermite',spriteBlend:false}),
  test:(location.hostname==='localhost'||location.hostname==='127.0.0.1')?Object.freeze({
  smooth:(t)=>sync(t).filter(e=>e.romFlight).map(e=>({uid:e.uid,id:e.id,rawId:e.rawId,role:e.role,x:e.x,y:e.y,alpha:e.alpha,mix:e.spriteMix,code:e.sprite.code,vx:e.vx,vy:e.vy,turn:e.visualTurn,attr:e.sprite.attr,originalAttr:e.originalSprite.attr,facingMask:e.facingMask,alignment:e.alignment,pitch:e.pitch,projection:e.projection,palette:e.palette,ownerId:e.ownerId,active:e.active})),
  links:()=>{if(!linked&&frames)linkAll();return {...linkStats}},
@@ -546,6 +561,6 @@ const api=Object.freeze({ensure,ready,sync,draw,drawShadows,reset,
  parsed:()=>!!frames
  }):undefined});
 window.StrikersFlightReplay=api;
-window.addEventListener('strikers-rom-ready',()=>{cache.clear();shadowCache.clear();linked=false;reset();api.ensure()});
+window.addEventListener('strikers-rom-ready',()=>{cache.clear();shadowCache.clear();linked=false;graphicsPrepared=false;reset();api.ensure()});
 if(window.StrikersROM?.isLoaded())api.ensure();
 })();
