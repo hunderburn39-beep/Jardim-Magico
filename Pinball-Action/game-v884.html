@@ -585,6 +585,15 @@ function guideProfile(pens,code,fx,fy){
 // Cubic handles remain inside each segment's endpoint rectangle.
 function traceRailEdge(path,rows,selector,pt,reverse=false,offset=0){
  const samples=[[selector(rows[0]),offset],...rows.map((row,i)=>[selector(row),offset+i+.5]),[selector(rows.at(-1)),offset+rows.length]];
+ // Fit long straight native runs rather than tracing each staircase.
+ // Only accept a fit that stays within 0.8 native pixel of every sample.
+ if(rows.length>=12){
+  const s=samples,first=s[0],last=s.at(-1),span=last[1]-first[1];
+  const slope=(last[0]-first[0])/span;
+  if(Math.abs(slope)>.08&&s.every(([u,v])=>Math.abs(u-(first[0]+slope*(v-first[1])))<=.8)){
+   for(let i=1;i<s.length-1;i++)s[i][0]=first[0]+slope*(s[i][1]-first[1]);
+  }
+ }
  if(reverse)samples.reverse();
  const project=(u,v)=>pt(u,v);
  path.lineTo(...project(...samples[0]));
@@ -1257,6 +1266,71 @@ function redrawMainPortrait(g,live){
  return {faceCells:plan.faceCells,toneCells:plan.toneCells.length,regions:plan.geometry.length};
 }
 
+// V9.01: reconstruct the broad slingshot ramp faces from the original
+// visible support footprints. Only static, light-coloured hardware ink
+// is eligible; any ROM-controlled lamp colour is excluded.
+const mainRampZones=[
+ {poly:[[38,146],[42,147],[65,189],[64,195],[38,181]],side:1},
+ {poly:[[185,146],[182,147],[159,189],[160,195],[185,181]],side:-1}
+];
+function redrawMainRampFaces(g,live){
+ if((cpu.flipped&1)||!isMainPrint(memory)||typeof Path2D!=='function')return 0;
+ let count=0;g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
+ for(const {poly,side} of mainRampZones){
+  const xs=poly.map(p=>p[0]),ys=poly.map(p=>p[1]),l=Math.min(...xs),r=Math.max(...xs),t=Math.min(...ys),b=Math.max(...ys);
+  const clip=new Path2D();let n=0,eligible=0;
+  for(let y=t;y<b;y++)for(let x=l;x<r;x++){
+   if(!inPrintPolygon(x+.5,y+.5,poly))continue;n++;
+   const pen=bgPixels[(239-x)*256+y],v=palette32[pen],R=v&255,G=(v>>>8)&255,B=(v>>>16)&255;
+   if(live.pens.has(pen)||mainLampPens.has(pen)||G<85||R<95||R<G*.88||B>G*1.45)continue;
+   clip.rect(x,y,1,1);eligible++;
+  }
+  if(eligible<n*.35)continue;
+  g.save();g.clip(clip);
+  const face=new Path2D();face.moveTo(...poly[0]);for(const p of poly.slice(1))face.lineTo(...p);face.closePath();
+  const q=g.createLinearGradient(side===1?l:r,t,side===1?r:l,b);
+  for(const [at,color] of [[0,'#fff1dd90'],[.22,'#dfb8c06b'],[.53,'#8c667753'],[.81,'#362b4669'],[1,'#fbe0a47a']])q.addColorStop(at,color);
+  g.fillStyle=q;g.fill(face);
+  g.lineJoin='round';g.strokeStyle='#38203799';g.lineWidth=1.4;g.stroke(face);
+  g.strokeStyle='#fff4d6b0';g.lineWidth=.55;g.stroke(face);
+  const surface=new Path2D();surface.moveTo(side===1?l+2:r-2,t+4);surface.lineTo(side===1?r-3:l+3,b-7);
+  g.strokeStyle='#fff4e86b';g.lineWidth=.8;g.stroke(surface);
+  g.restore();count++;
+ }
+ g.restore();return count;
+}
+// Printed bonus plaques. Their colours and illuminated state come from
+// the actual ROM palette, not a fixed replacement or invented counter.
+const mainPlaques=[{text:'5000',box:[76,179,109,185]},{text:'10000',box:[116,179,148,185]},{text:'10ADV',box:[76,191,109,197]},{text:'EXTRA',box:[116,191,148,197]}];
+function redrawMainPlaques(g){
+ if((cpu.flipped&1)||!isMainPrint(memory)||typeof Path2D!=='function')return 0;
+ const luminance=v=>.213*(v&255)+.715*((v>>>8)&255)+.072*((v>>>16)&255);
+ let count=0;g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
+ for(const {text,box} of mainPlaques){
+  const [l,t,r,b]=box,hist=new Map(),cells=[];
+  for(let y=t;y<b;y++)for(let x=l;x<r;x++){const pen=bgPixels[(239-x)*256+y];hist.set(pen,(hist.get(pen)||0)+1);cells.push({x,y,pen});}
+  const pair=[...hist].sort((a,b)=>b[1]-a[1]).slice(0,2);
+  // Require a two-colour, high-contrast native printed region.
+  if(pair.length!==2||pair[0][1]+pair[1][1]<cells.length*.88||pair[1][1]<cells.length*.12)continue;
+  const [a,z]=pair.map(p=>p[0]),la=luminance(palette32[a]),lz=luminance(palette32[z]);
+  if(Math.abs(la-lz)<28)continue;
+  const ink=la<lz?a:z,field=ink===a?z:a;
+  const letters=cells.filter(o=>o.pen===ink);
+  const x0=Math.min(...letters.map(o=>o.x)),x1=Math.max(...letters.map(o=>o.x))+1,y0=Math.min(...letters.map(o=>o.y)),y1=Math.max(...letters.map(o=>o.y))+1;
+  if(x1-x0<(r-l)*.65||y1-y0<4)continue;
+  const mask=new Path2D();for(const o of cells)if(o.pen===ink||o.pen===field)mask.rect(o.x,o.y,1,1);
+  g.save();g.clip(mask);g.fillStyle=colorAt(field);g.fillRect(l,t,r-l,b-t);
+  const w=x1-x0,h=y1-y0,step=w/text.length;
+  g.strokeStyle=colorAt(ink);g.lineJoin='round';g.lineCap='round';g.lineWidth=1.55;
+  for(let i=0;i<text.length;i++){
+   g.save();g.translate(x0+i*step+.4,y0+.15);g.scale((step-.8)/6.7,(h-.3)/6.7);g.translate(.35,.35);
+   g.stroke(new Path2D(remasterGlyphs[text[i]]));g.restore();
+  }
+  g.restore();count++;
+ }
+ g.restore();return count;
+}
+
 function rebuildHDBoard(){
  // Board colours can flash repeatedly while the tile map stays fixed.
  // Retain bounded, full-resolution variants of the exact same artwork.
@@ -1297,11 +1371,13 @@ function rebuildHDBoard(){
  // Preserve the original ROM portrait; never paint an invented face over it.
  stats.handIllustrated=false;stats.mainPortrait=redrawMainPortrait(boardCtx,live);stats.mainInserts=main&&!flipped&&typeof Path2D==='function'?getMainInsertPlan(bgPixels).inserts.length:0;
  const extra=redrawExtraPrint(boardCtx,live);stats.extraPrint=extra;
+ stats.mainRampFaces=redrawMainRampFaces(boardCtx,live);
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;
  stats.livePalettePens=live.pens.size;stats.livePaletteCells=redrawLiveBoardPens(boardCtx,live,main&&stats.mainInserts===10,flipped);
  // Restore native pen occurrences outside the central lamps and render
  // the ten state-driven HD inserts as the final background pass.
  if(main&&!flipped&&stats.mainInserts===10)stats.nativeMainLampCells=restoreMainLampInk(boardCtx,bgPixels);
+ stats.mainPlaques=redrawMainPlaques(boardCtx);
  hdBoardDirty=false;renderStats.boardFull++;
  const cached=document.createElement('canvas');cached.width=cached.height=SIZE;
  cached.getContext('2d',{alpha:false}).drawImage(hdBoard,0,0);
