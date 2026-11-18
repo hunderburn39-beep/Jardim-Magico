@@ -1,7 +1,8 @@
 /* World ROM player graphics: 6 groups of 20 eight-byte records.
  * Actual 32x32 sprite assemblies (two records per animation image).
  * The links between the six groups and aircraft names are visual identifications,
- * not a verified selection-screen code trace. Palette assignment is pending.
+ * not a verified selection-screen code trace. Palette pointers are read
+ * by selection index from the original program's table at 0x1b92c.
  * No frame rotation, synthetic art or ROM bytes are stored here.
  */
 (()=>{'use strict';
@@ -14,7 +15,7 @@ const groups=Object.freeze([
  {id:'shinden',address:0x3b6a4,base:6502,reference:0x3e650}
 ].map(Object.freeze));
 // The game's own selection-index pointer table (referenced at 0xc04e).
-const SELECTION_TABLE=0x3d6b4;
+const SELECTION_TABLE=0x3d6b4,PLAYER_PALETTE_TABLE=0x1b92c;
 function long(r,a){return r.programWord(a)*65536+r.programWord(a+2)}
 function signedWord(r,a){const n=r.programWord(a);return n&0x8000?n-65536:n}
 let cached=null,canvases=new Map();
@@ -30,7 +31,10 @@ function read(){
   // Preserve raw values until each field's use in the CPU program is traced.
   // The four 32-bit values look like fixed-point movement constants;
   // the eight signed words are geometry candidates, not confirmed hitboxes.
+  const paletteAddress=long(r,PLAYER_PALETTE_TABLE+4*index);
+  if(paletteAddress!==0x1b944+32*(23+index))throw Error('Aircraft palette pointer mismatch: '+g.id);
   const config=Object.freeze({
+   paletteAddress,paletteIndex:23+index,
    selectionIndex:index,address:configAddress,
    initialWord:long(r,configAddress),
    values32:Object.freeze(Array.from({length:4},(_,i)=>long(r,configAddress+4+4*i))),
@@ -60,13 +64,15 @@ function frame(id,bank=0,time=0){
 }
 function sprite(id,bank=0,time=0,palette=null){
  const f=frame(id,bank,time);if(!f)return null;
- const key=f.code+':'+(palette?Array.from(palette).join(','):'gray');
+ const nativePalette=palette??window.StrikersSpriteDefinitions.palette(info(id).config.paletteIndex);
+ if(!nativePalette)return null;
+ const key=f.code+':'+Array.from(nativePalette).join(',');
  if(canvases.has(key))return canvases.get(key);
  const c=document.createElement('canvas');
- if(!window.StrikersSpriteDefinitions.draw(c,f.code,palette))return null;
+ if(!window.StrikersSpriteDefinitions.draw(c,f.code,nativePalette))return null;
  canvases.set(key,c);return c;
 }
-function stats(){const m=read();return {groups:m?.size??0,records:m?120:0,uniqueImages:m?60:0,paletteStatus:'unverified',timingStatus:'provisional',recordLayout:'attr,code,rx,ry',selectionTable:SELECTION_TABLE}}
+function stats(){const m=read();return {groups:m?.size??0,records:m?120:0,uniqueImages:m?60:0,paletteStatus:'selection-index ROM table; dynamic modifications untraced',timingStatus:'provisional',recordLayout:'attr,code,rx,ry',selectionTable:SELECTION_TABLE}}
 window.addEventListener('strikers-rom-ready',()=>{cached=null;canvases.clear()});
 window.StrikersOriginalPlayers=Object.freeze({groups,info,frame,sprite,stats});
 })();
