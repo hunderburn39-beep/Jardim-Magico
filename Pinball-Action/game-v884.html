@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.99-HD dev — alvos e indicadores";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.99-HD dev — mesas secundárias";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -951,28 +951,35 @@ function inPrintPolygon(x,y,poly){
  }
  return hit;
 }
-function extraPrintPlan(pixels,table){
+function extraPrintPlan(pixels,table,protectedPens=new Set()){ 
  const w=224,h=256,used=new Uint8Array(w*h),out=[];
  for(const zone of table.zones){
   const p=new Int16Array(w*h);p.fill(-1);let count=0;
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
    const i=y*w+x,pen=pixels[(239-x)*256+y],bank=(pen-128)>>4,k=pen&15;
-   if(used[i]||!zone.banks.includes(bank)||k===0||k===7||!inPrintPolygon(x+.5,y+.5,zone.poly))continue;
+   if(used[i]||protectedPens.has(pen)||!zone.banks.includes(bank)||k===0||k===7||!inPrintPolygon(x+.5,y+.5,zone.poly))continue;
    p[i]=pen;used[i]=1;count++;
   }
-  if(count)out.push({zone,pixels:p,count});
+  if(count)out.push({zone,pixels:p,count,pens:[...new Set(p)].filter(v=>v>=0).sort((a,b)=>a-b)});
  }
  return out;
 }
 const extraPrintPlans=new WeakMap();
-let extraArtLayer=null;
-function redrawExtraPrint(g){
+let extraArtLayer=null,extraUnderpaint=null;
+function extraPrintStamp(plan,palette){return [...new Set(plan.flatMap(o=>o.pens))].sort((a,b)=>a-b).map(p=>p+':'+palette[p]).join(',');}
+function redrawExtraPrint(g,live){
  if((cpu.flipped&1)||typeof Path2D!=='function')return {table:null,zones:0,cells:0};
  const table=identifyExtraPrint(memory);if(!table)return {table:null,zones:0,cells:0};
- let plan=boardGeometry&&extraPrintPlans.get(boardGeometry);
- if(!plan){plan=extraPrintPlan(bgPixels,table);if(boardGeometry)extraPrintPlans.set(boardGeometry,plan);}
- if(!extraArtLayer){extraArtLayer=document.createElement('canvas');extraArtLayer.width=224*HD;extraArtLayer.height=256*HD;}
- const a=extraArtLayer.getContext('2d');
+ const protectedPens=live.pens,key=[...protectedPens].sort((a,b)=>a-b).join(',');
+ let cached=boardGeometry&&extraPrintPlans.get(boardGeometry);
+ if(!cached||cached.key!==key||cached.table!==table.id){cached={key,table:table.id,plan:extraPrintPlan(bgPixels,table,protectedPens),stamp:null,image:null,stats:null};if(boardGeometry)extraPrintPlans.set(boardGeometry,cached);}
+ const plan=cached.plan,stamp=extraPrintStamp(plan,palette32);
+ const composite=(image)=>{g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);g.drawImage(image,0,0,224,256);g.restore();};
+ if(cached.image&&cached.stamp===stamp){composite(cached.image);renderStats.extraPrintCacheHits=(renderStats.extraPrintCacheHits||0)+1;return cached.stats;}
+ if(!extraArtLayer){extraArtLayer=document.createElement('canvas');extraArtLayer.width=224*HD;extraArtLayer.height=256*HD;extraUnderpaint=document.createElement('canvas');extraUnderpaint.width=224;extraUnderpaint.height=256;}
+ const a=extraArtLayer.getContext('2d'),under=extraUnderpaint.getContext('2d');
+ if(!cached.image){cached.image=document.createElement('canvas');cached.image.width=224*HD;cached.image.height=256*HD;}
+ const combined=cached.image.getContext('2d');combined.setTransform(1,0,0,1,0,0);combined.clearRect(0,0,cached.image.width,cached.image.height);
  let cells=0,regions=0;
  for(const item of plan){
   const {zone,pixels,count}=item;cells+=count;
@@ -987,13 +994,19 @@ function redrawExtraPrint(g){
    for(const [at,t] of stops)q.addColorStop(at,materialTone(color,t));
    fills.set(color,q);return q;
   };
+  // Underpaint selected ROM print regions locally: antialiased curves
+  // cannot reveal the original pixel grid between adjoining ink colors.
+  const image=under.createImageData(224,256);
+  if(!item.clip){const clip=new Path2D();for(let y=0;y<256;y++)for(let x=0;x<224;){if(pixels[y*224+x]===NONE){x++;continue;}const left=x;while(x<224&&pixels[y*224+x]!==NONE)x++;clip.rect(left,y,x-left,1);}item.clip=clip;}
+  for(let i=0;i<pixels.length;i++){const pen=pixels[i];if(pen===NONE)continue;const rgb=palette32[pen],j=i*4;image.data[j]=rgb&255;image.data[j+1]=(rgb>>>8)&255;image.data[j+2]=(rgb>>>16)&255;image.data[j+3]=255;}
+  under.putImageData(image,0,0);a.setTransform(HD,0,0,HD,0,0);a.clearRect(0,0,224,256);a.save();a.clip(item.clip);
+  a.imageSmoothingEnabled=true;a.imageSmoothingQuality='high';a.drawImage(extraUnderpaint,0,0,224,256);
   if(item.geometry){
-   a.setTransform(HD,0,0,HD,0,0);a.clearRect(0,0,224,256);
    for(const {color,path} of item.geometry){a.fillStyle=fill(a,color);a.fill(path,'evenodd');}
    regions+=item.geometry.length;renderStats.extraGeometryReused=(renderStats.extraGeometryReused||0)+1;
   }else{
    const geometry=typeof Path2D==='function'?[]:null;
-   const stats=vectorPaint(a,pixels,224,256,NONE,true,geometry,false,fill,true,false,true);
+   const stats=vectorPaint(a,pixels,224,256,NONE,true,geometry,false,fill,false,false,true,zone.kind==='figure'||zone.kind==='fire');
    if(geometry&&geometry.length<=12000)item.geometry=geometry;
    regions+=stats.regions;
   }
@@ -1009,10 +1022,9 @@ function redrawExtraPrint(g){
    for(const {path} of item.geometry)a.stroke(path);
    a.restore();
   }
-  g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
-  g.drawImage(extraArtLayer,0,0,224,256);g.restore();
+  a.restore();combined.drawImage(extraArtLayer,0,0);
  }
- return {table:table.id,zones:plan.length,cells,regions};
+ cached.stamp=stamp;cached.stats={table:table.id,zones:plan.length,cells,regions};composite(cached.image);return cached.stats;
 }
 
 // Keep ROM-driven colour regions visible even when HD artwork crosses them.
@@ -1219,7 +1231,7 @@ function rebuildHDBoard(){
  const print=redrawPrintedHalftones(boardCtx);stats.printCells=print.cells;stats.printPatches=print.patches;stats.printRegions=print.regions||0;
  // Preserve the original ROM portrait; never paint an invented face over it.
  stats.handIllustrated=false;stats.mainPortrait=redrawMainPortrait(boardCtx,live);stats.mainInserts=main&&!flipped&&typeof Path2D==='function'?mainInsertBounds(bgPixels).length:0;
- const extra=redrawExtraPrint(boardCtx);stats.extraPrint=extra;
+ const extra=redrawExtraPrint(boardCtx,live);stats.extraPrint=extra;
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;
  stats.livePalettePens=live.pens.size;stats.livePaletteCells=redrawLiveBoardPens(boardCtx,live,main&&stats.mainInserts===10,flipped);
  // Restore native pen occurrences outside the central lamps and render
