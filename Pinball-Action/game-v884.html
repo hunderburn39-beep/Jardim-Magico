@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.99-HD dev — otimização";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.99-HD dev — atlas e cache";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -1254,7 +1254,7 @@ function rebuildHDBoard(){
 // V8.83: native font atlas, redrawn from each original glyph's contours.
 // Reuse the same artwork for full and incremental updates, with exact
 // tile origin, pen, thickness, orientation and transparent counters.
-const hdGlyphCache=new Map(),hdInsertCache=new Map();
+const hdGlyphCache=new Map(),hdInsertCache=new Map(),hdGlyphPaths=new Map(),hdGlyphBounds=new Map(),hdIsolatedPaths=new Map();
 function glyphDisplayColor(base){
  const raw=palette32[base+7],r=raw&255,g=(raw>>>8)&255,b=(raw>>>16)&255;
  const max=Math.max(r,g,b),min=Math.min(r,g,b);
@@ -1273,16 +1273,20 @@ function drawRemasterGlyph(g,code,base){
  if(typeof Path2D!=='function')return false;
  const ch=code>=16&&code<=25?String(code-16):code>=48&&code<=57?String(code-48):code>=65&&code<=90?String.fromCharCode(code):null;
  if(!ch||!remasterGlyphs[ch])return false;
- let l=8,r=-1,t=8,b=-1;
- for(let y=0;y<8;y++)for(let x=0;x<8;x++)if(atlases.fg.pens[code*64+(7-x)*8+y]===7){l=Math.min(l,x);r=Math.max(r,x);t=Math.min(t,y);b=Math.max(b,y);}
- if(r<l||b<t)return false;
+ let bounds=hdGlyphBounds.get(code);
+ if(!bounds){let l=8,r=-1,t=8,b=-1;
+  for(let y=0;y<8;y++)for(let x=0;x<8;x++)if(atlases.fg.pens[code*64+(7-x)*8+y]===7){l=Math.min(l,x);r=Math.max(r,x);t=Math.min(t,y);b=Math.max(b,y);}
+  bounds={l,r,t,b};hdGlyphBounds.set(code,bounds);
+ }
+ const {l,r,t,b}=bounds;if(r<l||b<t)return false;
  g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,8);
  const width=r-l+1,height=b-t+1,score=code>=16&&code<=25,stroke=score?1.55:1.18;
  // Include the entire round stroke in the native tile's ink bounds.
  const extent=glyphStrokeExtent(stroke);
  g.translate(l+width/2,t+height/2);g.scale(width/extent,height/extent);g.translate(-3,-3);
  g.strokeStyle=colorAt(base+7);g.lineWidth=stroke;g.lineJoin='round';g.lineCap='round';
- g.stroke(new Path2D(remasterGlyphs[ch]));g.restore();return true;
+ let path=hdGlyphPaths.get(ch);if(!path){path=new Path2D(remasterGlyphs[ch]);hdGlyphPaths.set(ch,path);}
+ g.stroke(path);g.restore();return true;
 }
 
 function nativeGlyphArt(code,base){
@@ -1290,11 +1294,9 @@ function nativeGlyphArt(code,base){
  if(hdGlyphCache.has(key)){
   const art=hdGlyphCache.get(key);hdGlyphCache.delete(key);hdGlyphCache.set(key,art);return art;
  }
- const pixels=new Int16Array(64);pixels.fill(NONE);
- for(let i=0;i<64;i++)if(atlases.fg.pens[code*64+i]===7)pixels[i]=base+7;
  const art=document.createElement('canvas');art.width=art.height=8*HD;
  const g=art.getContext('2d'),info=glyphDisplayColor(base);
- if(!drawRemasterGlyph(g,code,base))vectorPaint(g,pixels,8,8);
+ if(!drawRemasterGlyph(g,code,base)){const pixels=new Int16Array(64);pixels.fill(NONE);for(let i=0;i<64;i++)if(atlases.fg.pens[code*64+i]===7)pixels[i]=base+7;vectorPaint(g,pixels,8,8);}
  if(info.bright){
   // Keep the exact ROM characters. Intrinsic luminous face and a narrow
   // coloured halo, bounded by the tile so incremental redraws stay valid.
@@ -1331,10 +1333,15 @@ function drawIsolatedTile(g,code,base,x,y,fx,fy){
  let art=hdInsertCache.get(key);
  if(art){hdInsertCache.delete(key);hdInsertCache.set(key,art);}
  else{
-  const pixels=new Int16Array(64);pixels.fill(NONE);
-  for(let k=0;k<64;k++){const pen=atlases.fg.pens[code*64+k];if(pen)pixels[k]=base+pen;}
   art=document.createElement('canvas');art.width=art.height=8*HD;
-  vectorPaint(art.getContext('2d'),pixels,8,8);
+  const ink=art.getContext('2d'),prior=hdIsolatedPaths.get(code);
+  if(prior){ink.setTransform(HD,0,0,HD,0,0);for(const {color,path} of prior){ink.fillStyle=colorAt(base+color);ink.fill(path,'evenodd');}renderStats.isolatedGeometryHits=(renderStats.isolatedGeometryHits||0)+1;}
+  else{const pixels=new Int16Array(64);pixels.fill(NONE);
+   for(let k=0;k<64;k++){const pen=atlases.fg.pens[code*64+k];if(pen)pixels[k]=pen;}
+   const geometry=typeof Path2D==='function'?[]:null;
+   vectorPaint(ink,pixels,8,8,NONE,false,geometry,false,(_,pen)=>colorAt(base+pen));
+   if(geometry)hdIsolatedPaths.set(code,geometry);
+  }
   hdInsertCache.set(key,art);if(hdInsertCache.size>256)hdInsertCache.delete(hdInsertCache.keys().next().value);
  }
  g.save();g.translate(x,y);g.clearRect(0,0,8,8);
