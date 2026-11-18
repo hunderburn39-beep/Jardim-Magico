@@ -29,5 +29,7 @@ jobs:
         run: Godot_v4.3-stable_linux.x86_64 --headless --path Pinball-Action-Godot --script res://test_cpu.gd
       - name: Compare original title audio
         run: Godot_v4.3-stable_linux.x86_64 --headless --path Pinball-Action-Godot --script res://test_audio.gd
+      - name: Check HD component bounds and original data
+        run: Godot_v4.3-stable_linux.x86_64 --headless --path Pinball-Action-Godot --script res://test_hd_parts.gd
       - name: Launch scene without publishing
         run: Godot_v4.3-stable_linux.x86_64 --headless --path Pinball-Action-Godot --quit-after 120
