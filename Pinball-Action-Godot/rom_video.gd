@@ -15,6 +15,8 @@ var palette_texture: ImageTexture
 var palette_material: ShaderMaterial
 var bg_index := PackedInt32Array()
 var fg_index := PackedInt32Array()
+var bg_pixels := PackedByteArray()
+var fg_pixels := PackedByteArray()
 var bg_texture: ImageTexture
 var fg_texture: ImageTexture
 var bg_key := PackedByteArray()
@@ -26,7 +28,7 @@ var sprite_cache: Dictionary = {}
 var sprite_order: Array[String] = []
 var commands: Array[Dictionary] = []
 var initialized := false
-var counters := {"board_uploads": 0, "front_uploads": 0, "sprite_uploads": 0, "sprite_hits": 0, "palette_uploads": 0, "tiles_decoded": 0}
+var counters := {"board_uploads": 0, "front_uploads": 0, "sprite_uploads": 0, "sprite_hits": 0, "palette_uploads": 0, "tiles_decoded": 0, "tile_pixels_written": 0}
 
 func load_snapshot(path: String = "res://data/rom_snapshot.json") -> bool:
 	var doc = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -65,6 +67,8 @@ func load_snapshot(path: String = "res://data/rom_snapshot.json") -> bool:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	bg_index.resize(CELLS)
 	fg_index.resize(CELLS)
+	bg_pixels.resize(CELLS * 4)
+	fg_pixels.resize(CELLS * 4)
 	palette.resize(1024)
 	palette_material = ShaderMaterial.new()
 	palette_material.shader = preload("res://rom_palette.gdshader")
@@ -116,17 +120,17 @@ func update_ram(mem: PackedByteArray, scroll: int, flipped: int) -> bool:
 	flip_screen = next_flip
 	scroll_reg = scroll
 	if bg_changed:
-		bg_index = _build_layer(true, next_bg, bg_key, bg_index, flip_changed)
+		_build_layer(true, next_bg, bg_key, flip_changed)
 	if fg_changed:
-		fg_index = _build_layer(false, next_fg, fg_key, fg_index, flip_changed)
+		_build_layer(false, next_fg, fg_key, flip_changed)
 	if not initialized or next_pal != pal_key:
 		_decode_palette()
 		_upload_palette()
 	if bg_changed:
-		bg_texture = _upload_layer(bg_texture, bg_index)
+		bg_texture = _upload_layer(bg_texture, bg_pixels)
 		counters["board_uploads"] += 1
 	if fg_changed:
-		fg_texture = _upload_layer(fg_texture, fg_index)
+		fg_texture = _upload_layer(fg_texture, fg_pixels)
 		counters["front_uploads"] += 1
 	bg_key = next_bg
 	fg_key = next_fg
@@ -154,8 +158,17 @@ func _upload_palette() -> void:
 	palette_material.set_shader_parameter("rom_palette", palette_texture)
 	counters["palette_uploads"] += 1
 
-func _build_layer(is_bg: bool, current: PackedByteArray, previous: PackedByteArray, out: PackedInt32Array, full: bool) -> PackedInt32Array:
-	out.resize(CELLS)
+func _build_layer(is_bg: bool, current: PackedByteArray, previous: PackedByteArray, full: bool) -> void:
+	# Packed arrays use copy-on-write. Transfer the layer to local ownership
+	# once per update, then write just the 64 pixels of each changed tile.
+	var out := bg_index if is_bg else fg_index
+	var pixels := bg_pixels if is_bg else fg_pixels
+	if is_bg:
+		bg_index = PackedInt32Array()
+		bg_pixels = PackedByteArray()
+	else:
+		fg_index = PackedInt32Array()
+		fg_pixels = PackedByteArray()
 	var pens: PackedByteArray = atlases[0 if is_bg else 1]
 	var vram := 0xd800 if is_bg else 0xd000
 	var cram := 0xdc00 if is_bg else 0xd400
@@ -180,8 +193,18 @@ func _build_layer(is_bg: bool, current: PackedByteArray, previous: PackedByteArr
 		for y in range(8):
 			for x in range(8):
 				var pen := pens[code * 64 + (7-y if fy else y) * 8 + (7-x if fx else x)]
-				out[(py+y)*256+px+x] = NONE if not is_bg and pen == 0 else base_color + pen
-	return out
+				var index := (py+y)*256+px+x
+				var transparent := not is_bg and pen == 0
+				out[index] = NONE if transparent else base_color+pen
+				pixels[index*4] = 0 if transparent else base_color+pen
+				pixels[index*4+3] = 0 if transparent else 255
+		counters["tile_pixels_written"] += 64
+	if is_bg:
+		bg_index = out
+		bg_pixels = pixels
+	else:
+		fg_index = out
+		fg_pixels = pixels
 
 func _rgba(indices: PackedInt32Array) -> PackedByteArray:
 	var rgba := PackedByteArray()
@@ -208,8 +231,8 @@ func _indexed_rgba(indices: PackedInt32Array) -> PackedByteArray:
 			bytes[j*4+3] = 255
 	return bytes
 
-func _upload_layer(texture: ImageTexture, indices: PackedInt32Array) -> ImageTexture:
-	var image := Image.create_from_data(W, W, false, Image.FORMAT_RGBA8, _indexed_rgba(indices))
+func _upload_layer(texture: ImageTexture, pixels: PackedByteArray) -> ImageTexture:
+	var image := Image.create_from_data(W, W, false, Image.FORMAT_RGBA8, pixels)
 	if texture == null:
 		return ImageTexture.create_from_image(image)
 	texture.update(image)
