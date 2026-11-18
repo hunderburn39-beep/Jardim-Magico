@@ -46,5 +46,28 @@ func _run(machine) -> void:
 		push_error("Scroll restoration mismatch")
 		quit(1)
 		return
-	print("ROM reference, unchanged-layer and scroll regressions passed: ", actual)
+	# Palette writes must cost only one 256-colour texture update.
+	var original: PackedByteArray = machine.ram.duplicate()
+	var modified: PackedByteArray = original.duplicate()
+	modified[0xe400] ^= 15
+	machine.update_ram(modified, scroll, flags)
+	if machine.counters["board_uploads"] != before["board_uploads"] or machine.counters["front_uploads"] != before["front_uploads"] or machine.counters["palette_uploads"] != before["palette_uploads"] + 1:
+		push_error("Palette-only update unexpectedly rebuilt tiles")
+		quit(1)
+		return
+	machine.update_ram(original, scroll, flags)
+	var tiles_before: int = machine.counters["tiles_decoded"]
+	modified = original.duplicate()
+	modified[0xd000] ^= 1
+	machine.update_ram(modified, scroll, flags)
+	if machine.counters["tiles_decoded"] != tiles_before + 1:
+		push_error("Single tile write decoded more than one tile")
+		quit(1)
+		return
+	machine.update_ram(original, scroll, flags)
+	if machine.reference_frame_hash() != expected["initial_frame_rgba_fnv1a"]:
+		push_error("Original frame mismatch after palette/tile restoration")
+		quit(1)
+		return
+	print("ROM reference, palette-only, single-tile, unchanged-layer and scroll regressions passed: ", actual)
 	quit(0)
