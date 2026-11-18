@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.99-HD dev — retrato";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.99-HD dev — retrato e luzes";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -855,11 +855,15 @@ function paintMainInserts(g){
   const circle=(r,ink)=>{g.fillStyle=ink;g.beginPath();g.arc(0,0,r,0,Math.PI*2);g.fill();};
   const border=g.createLinearGradient(-.8,-.8,.8,.8);
   for(const [t,c] of [[0,materialTone(base+3,.52)],[.26,colorAt(base+3)],[.47,materialTone(base+2,-.42)],[.72,materialTone(base+3,.2)],[1,materialTone(base+1,-.65)]])border.addColorStop(t,c);
-  circle(1.0,colorAt(base));circle(.91,border);circle(.74,materialTone(base+2,-.22));
+  circle(1.0,colorAt(base));circle(.94,materialTone(base+1,-.58));circle(.88,border);circle(.76,materialTone(base+2,-.38));
+  const bevel=g.createLinearGradient(-.65,-.65,.65,.65);
+  for(const [t,c] of [[0,materialTone(base+3,.60)],[.40,materialTone(base+3,-.16)],[.72,materialTone(base+2,-.46)],[1,materialTone(base+3,.27)]])bevel.addColorStop(t,c);
+  circle(.71,bevel);
   const glass=g.createRadialGradient(-.28,-.3,.04,.04,.05,.8);
   for(const [t,c] of [[0,materialTone(base+1,.68)],[.27,materialTone(base+1,.24)],[.67,colorAt(base+2)],[1,materialTone(base+2,-.45)]])glass.addColorStop(t,c);
   circle(.65,glass);
-  g.lineWidth=.047;g.strokeStyle='rgba(255,255,255,.32)';g.beginPath();g.arc(0,0,.83,3.72,5.10);g.stroke();
+  g.lineWidth=.042;g.strokeStyle='rgba(255,255,255,.58)';g.beginPath();g.arc(0,0,.83,3.72,5.10);g.stroke();
+  g.lineWidth=.031;g.strokeStyle='rgba(15,20,38,.53)';g.beginPath();g.arc(0,0,.69,.30,1.85);g.stroke();
   g.restore();
   // Recover the actual ROM light segments, which the old artwork covered.
   // Each has a unique live palette entry; never share a lamp state.
@@ -870,10 +874,10 @@ function paintMainInserts(g){
   }
   const nativeLight=new Path2D();
   for(const [x,y] of cells)nativeLight.rect(x,y,1,1);
+  // The exact native light mask is authoritative in both states. Shade
+  // only inside it; no fake state or added lamp geometry.
   g.fillStyle=colorAt(pen);g.fill(nativeLight);
-  if(lit){
-   g.save();g.clip(nativeLight);g.fillStyle=materialRadial(g,pen,cx,cy,Math.max(rx,ry),true);g.fillRect(cx-rx,cy-ry,rx*2,ry*2);g.restore();
-  }
+  g.fillStyle=materialRadial(g,pen,cx,cy,Math.max(rx,ry),lit);g.fill(nativeLight);
  }
  g.restore();renderStats.mainLampsLit=litCount;return inserts.length;
 }
@@ -881,11 +885,29 @@ function paintMainInserts(g){
 // sprites and text remain unchanged; only neighbouring background pixels
 // receive a restrained display effect while their own lamp is actually on.
 function restoreMainLampInk(g,pixels){
- const spans=nativeLiveSpans(pixels,mainLampPens);
+ const spans=nativeLiveSpans(pixels,mainLampPens),inserts=mainInsertBounds(pixels);
+ // Keep every occurrence of these pens outside the ten lamp masks native.
+ // The actual central inserts are rebuilt last so no raw pixel pass can
+ // erase their glass and metal shading.
+ const central=new Map();
+ for(const {pen,cells} of inserts)central.set(pen,new Set(cells.map(([x,y])=>(239-x)*256+y)));
  g.save();g.setTransform(HD,0,0,HD,0,0);
  let count=0;
- for(const [pen,runs] of spans){g.fillStyle=colorAt(pen);for(const [x,y,width] of runs){g.fillRect(x,y,width,1);count+=width;}}
- g.restore();return count;
+ for(const [pen,runs] of spans){
+  g.fillStyle=colorAt(pen);const skip=central.get(pen);
+  for(const [x,y,width] of runs){
+   let start=-1;
+   for(let i=0;i<=width;i++){
+    const native=i<width&&!(skip&&skip.has(y*256+x+i));
+    if(native&&start<0)start=i;
+    if(!native&&start>=0){g.fillRect(x+start,y,i-start,1);start=-1;}
+   }
+   count+=width;
+  }
+ }
+ g.restore();
+ if(inserts.length===10)paintMainInserts(g);
+ return count;
 }
 function classicMainLampGlow(pixels,rgba,palette,srcStart,flipped){
  let active=0;
@@ -1191,12 +1213,12 @@ function rebuildHDBoard(){
  boardCtx.drawImage(boardInk,0,0,256,256);
  const print=redrawPrintedHalftones(boardCtx);stats.printCells=print.cells;stats.printPatches=print.patches;stats.printRegions=print.regions||0;
  // Preserve the original ROM portrait; never paint an invented face over it.
- stats.handIllustrated=false;stats.mainPortrait=redrawMainPortrait(boardCtx,live);stats.mainInserts=paintMainInserts(boardCtx);
+ stats.handIllustrated=false;stats.mainPortrait=redrawMainPortrait(boardCtx,live);stats.mainInserts=main&&!flipped&&typeof Path2D==='function'?mainInsertBounds(bgPixels).length:0;
  const extra=redrawExtraPrint(boardCtx);stats.extraPrint=extra;
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;
  stats.livePalettePens=live.pens.size;stats.livePaletteCells=redrawLiveBoardPens(boardCtx,live,main&&stats.mainInserts===10,flipped);
- // Restore exact native central light ink as the last background pass.
- // Guide and decorative overlays can never hide an actual lamp segment.
+ // Restore native pen occurrences outside the central lamps and render
+ // the ten state-driven HD inserts as the final background pass.
  if(main&&!flipped&&stats.mainInserts===10)stats.nativeMainLampCells=restoreMainLampInk(boardCtx,bgPixels);
  hdBoardDirty=false;renderStats.boardFull++;
  const cached=document.createElement('canvas');cached.width=cached.height=SIZE;
