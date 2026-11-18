@@ -27,5 +27,7 @@ jobs:
         run: Godot_v4.3-stable_linux.x86_64 --headless --path Pinball-Action-Godot --script res://test_rom.gd
       - name: Compare original Z80 replay
         run: Godot_v4.3-stable_linux.x86_64 --headless --path Pinball-Action-Godot --script res://test_cpu.gd
+      - name: Compare original title audio
+        run: Godot_v4.3-stable_linux.x86_64 --headless --path Pinball-Action-Godot --script res://test_audio.gd
       - name: Launch scene without publishing
         run: Godot_v4.3-stable_linux.x86_64 --headless --path Pinball-Action-Godot --quit-after 120
