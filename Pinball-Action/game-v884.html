@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.89 — 2D-HD DEV";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.90 — 2D-HD DEV";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -292,11 +292,27 @@ function tableSignature(view,flip){
  for(let i=0;i<view.length;i+=2)key+=String.fromCharCode(view[i]|(view[i+1]<<8));
  return key;
 }
+const BOARD_VARIANT_LIMIT=6; // max six 1024x1024 RGBA variants (~24 MiB of pixels)
+const globalBoardVariants=new Map();
+function releaseBoardVariant(cache,key){
+ const entry=cache.get(key);if(entry)globalBoardVariants.delete(entry);
+ cache.delete(key);
+}
+function clearBoardVariants(cache){for(const key of [...cache.keys()])releaseBoardVariant(cache,key);}
+function touchBoardVariant(cache,key,entry){
+ cache.delete(key);cache.set(key,entry);
+ globalBoardVariants.delete(entry);globalBoardVariants.set(entry,{cache,key});
+ while(globalBoardVariants.size>BOARD_VARIANT_LIMIT){
+  const [old,owner]=globalBoardVariants.entries().next().value;
+  globalBoardVariants.delete(old);if(owner.cache.get(owner.key)===old)owner.cache.delete(owner.key);
+  renderStats.boardVariantEvicted=(renderStats.boardVariantEvicted||0)+1;
+ }
+}
 function rememberHDTable(){
  if(activeTableKey===null||!boardGeometry)return;
  hdTableCache.delete(activeTableKey);
  hdTableCache.set(activeTableKey,{geometry:boardGeometry,stats:boardGeometryStats,variants:boardVariants,guidePlan});
- if(hdTableCache.size>2)hdTableCache.delete(hdTableCache.keys().next().value);
+ if(hdTableCache.size>2){const oldest=hdTableCache.keys().next().value;const dropped=hdTableCache.get(oldest);clearBoardVariants(dropped.variants);hdTableCache.delete(oldest);}
 }
 function selectHDTable(key){
  activeTableKey=key;
@@ -960,7 +976,7 @@ function rebuildHDBoard(){
  // Retain bounded, full-resolution variants of the exact same artwork.
  const key=Array.from(palette32.subarray(128),(v,i)=>boardUsedColors[i+128]?v:0).join(',');
  if(boardVariants.has(key)){
-  const hit=boardVariants.get(key);boardVariants.delete(key);boardVariants.set(key,hit);
+  const hit=boardVariants.get(key);touchBoardVariant(boardVariants,key,hit);
   boardCtx.setTransform(1,0,0,1,0,0);boardCtx.drawImage(hit.image,0,0);
   hdArtStats=hit.stats;hdBoardDirty=false;renderStats.boardCached++;return;
  }
@@ -995,9 +1011,9 @@ function rebuildHDBoard(){
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;hdBoardDirty=false;renderStats.boardFull++;
  const cached=document.createElement('canvas');cached.width=cached.height=SIZE;
  cached.getContext('2d',{alpha:false}).drawImage(hdBoard,0,0);
- boardVariants.set(key,{image:cached,stats});
+ touchBoardVariant(boardVariants,key,{image:cached,stats});
  // Four bounded palette variants reduce cache misses on repeating lamp flashes.
- if(boardVariants.size>4)boardVariants.delete(boardVariants.keys().next().value);
+ if(boardVariants.size>4)releaseBoardVariant(boardVariants,boardVariants.keys().next().value);
 }
 // A purpose-drawn 2D arcade typeface. Native ROM tile IDs determine
 // every glyph and colour, not a separately calculated score.
@@ -1714,7 +1730,7 @@ function rebuildPalette(){
   palette32[idx]=value;
  }
  // Sprite art is palette-keyed and evicted by a bounded LRU cache.
- if(initial)boardVariants.clear();
+ if(initial){clearBoardVariants(boardVariants);for(const saved of hdTableCache.values())clearBoardVariants(saved.variants);}
  if(bgChanged)hdBoardDirty=true;
  if(fgChanged){hdFrontDirty=true;frontPaletteDirty=true;}
  paletteValid=true;
@@ -2216,8 +2232,10 @@ window.addEventListener('keyup',e=>{let k=keyboard[e.code];if(!k)return;e.preven
 window.addEventListener('blur',()=>{active.clear();for(const k in pending)pending[k]=0;endStartRequest();refreshKeys()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)arcadeAudio.restore();if(document.hidden){active.clear();for(const k in pending)pending[k]=0;endStartRequest();refreshKeys()}});
 let last=performance.now(),acc=0,frames=0;
+const MAX_SIMULATION_DEBT=3;
+function limitSimulationDebt(debt,delta){return Math.min(MAX_SIMULATION_DEBT,debt+Math.max(0,delta)*60/1000);}
 function frame(now){
- let delta=Math.min(70,now-last);last=now;
+ let delta=Math.max(0,Math.min(70,now-last));last=now;
  if(document.hidden)acc=0;
  if(entryComplete&&!document.hidden){
   renderStats.displayFrames=(renderStats.displayFrames||0)+1;
@@ -2225,7 +2243,9 @@ function frame(now){
  }
  if(!document.hidden&&diagnostic){tickDiagnostic();}
  else if(!document.hidden&&entryComplete){
-  acc+=delta*60/1000;
+  const requested=acc+Math.max(0,delta)*60/1000;
+  acc=limitSimulationDebt(acc,delta);
+  if(requested>acc)renderStats.wallClockDebtDropped=(renderStats.wallClockDebtDropped||0)+(requested-acc);
   let count=0;
   while(acc>=1&&count<2){
    // Our initial state was captured at the end of a real 60 Hz arcade frame.
@@ -2266,6 +2286,6 @@ if(window.PB_TEST||new URLSearchParams(location.search).has('test')) window.__pb
   return {code,big,base,family:hdSpriteFamily(atlas,code,big),nativeCells,hdCells,missing,extra,alphaArea:Math.round(alphaSum*100)/100,
    intentionalAspect:!big&&code===5};
  },
- image:()=>gpu?gpu.image():canvas.toDataURL(),renderer:()=>({mode:hdMode?'2D-HD':'CRT',backend:gpu?.enabled?'PixiJS WebGL':'Canvas2D',status:gpu?.status||'unavailable',art:hdArtStats,atlas:hdAtlasInventory(),performance:{...renderStats},gpuPerformance:gpu?{...gpu.stats}:null}),audio:()=>arcadeAudio.state(),sound:(cmd)=>arcadeAudio.fromRom(cmd),audioDebug:()=>arcadeAudio.debug(),cpu};
+ image:()=>gpu?gpu.image():canvas.toDataURL(),renderer:()=>({mode:hdMode?'2D-HD':'CRT',backend:gpu?.enabled?'PixiJS WebGL':'Canvas2D',status:gpu?.status||'unavailable',art:hdArtStats,atlas:hdAtlasInventory(),performance:{...renderStats,boardVariants:globalBoardVariants.size,simulationDebt:acc},gpuPerformance:gpu?{...gpu.stats}:null}),audio:()=>arcadeAudio.state(),sound:(cmd)=>arcadeAudio.fromRom(cmd),audioDebug:()=>arcadeAudio.debug(),cpu};
 })();
 </script></body></html>
