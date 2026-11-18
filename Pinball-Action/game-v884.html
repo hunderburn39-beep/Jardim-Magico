@@ -740,11 +740,23 @@ function redrawPrintedHalftones(g){
  let plan=boardGeometry&&printPlans.get(boardGeometry);
  if(!plan){plan=identifyPrintedDither(bgPixels,256,256);if(boardGeometry)printPlans.set(boardGeometry,plan);}
  if(!plan.cells)return {cells:0,patches:0};
- const result=vectorPaint(g,plan.labels,256,256,NONE,true,null,false,(_,id)=>{
+ // Contour geometry depends on ROM pixels, not the live palette.
+ const colors=new Map();
+ const fill=(_,id)=>{
+  if(colors.has(id))return colors.get(id);
   const pair=Math.floor(id/12),mix=(id%12)/12,a=palette32[128+Math.floor(pair/128)],b=palette32[128+pair%128];
   const channel=shift=>Math.round(((a>>>shift)&255)*(1-mix)+((b>>>shift)&255)*mix);
-  return 'rgb('+channel(0)+','+channel(8)+','+channel(16)+')';
- },false);
+  const value='rgb('+channel(0)+','+channel(8)+','+channel(16)+')';colors.set(id,value);return value;
+ };
+ if(plan.geometry){
+  g.setTransform(HD,0,0,HD,0,0);
+  for(const {color,path} of plan.geometry){g.fillStyle=fill(g,color);g.fill(path,'evenodd');}
+  renderStats.printGeometryReused=(renderStats.printGeometryReused||0)+1;
+  return {cells:plan.cells,patches:plan.patches,regions:plan.geometry.length};
+ }
+ const geometry=typeof Path2D==='function'?[]:null;
+ const result=vectorPaint(g,plan.labels,256,256,NONE,true,geometry,false,fill,false);
+ if(geometry&&geometry.length<=12000)plan.geometry=geometry;
  return {cells:plan.cells,patches:plan.patches,regions:result.regions};
 }
 
@@ -912,14 +924,23 @@ function redrawExtraPrint(g){
   const fills=new Map();
   // Rebuild printed regions using individual graded enamel colors and
   // rounded vector contours. The bank and pen remain live ROM values.
-  const stats=vectorPaint(a,pixels,224,256,NONE,true,null,false,(ctx,color)=>{
+  const fill=(ctx,color)=>{
    if(fills.has(color))return fills.get(color);
    const q=ctx.createLinearGradient(x0,y0,x1,y1);
    const k=zone.kind,stops=k==='fire'?[[0,-.16],[.2,.22],[.46,.42],[.7,.01],[1,-.22]]:k==='figure'?[[0,.22],[.34,.07],[.63,-.09],[.83,.24],[1,-.18]]:k==='metal'?[[0,-.24],[.25,.27],[.43,-.04],[.58,.43],[.72,.02],[1,-.3]]:[[0,.22],[.4,.03],[.72,-.12],[1,-.24]];
    for(const [at,t] of stops)q.addColorStop(at,materialTone(color,t));
    fills.set(color,q);return q;
-  },true,false,true);
-  regions+=stats.regions;
+  };
+  if(item.geometry){
+   a.setTransform(HD,0,0,HD,0,0);a.clearRect(0,0,224,256);
+   for(const {color,path} of item.geometry){a.fillStyle=fill(a,color);a.fill(path,'evenodd');}
+   regions+=item.geometry.length;renderStats.extraGeometryReused=(renderStats.extraGeometryReused||0)+1;
+  }else{
+   const geometry=typeof Path2D==='function'?[]:null;
+   const stats=vectorPaint(a,pixels,224,256,NONE,true,geometry,false,fill,true,false,true);
+   if(geometry&&geometry.length<=12000)item.geometry=geometry;
+   regions+=stats.regions;
+  }
   // Individually drawn curved illustration details; source-atop clips
   // every stroke to the exact painted native ink silhouette.
   a.save();a.globalCompositeOperation='source-atop';a.lineCap='round';a.lineJoin='round';
@@ -2184,6 +2205,11 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)arcadeAudi
 let last=performance.now(),acc=0,frames=0;
 function frame(now){
  let delta=Math.min(70,now-last);last=now;
+ if(document.hidden)acc=0;
+ if(entryComplete&&!document.hidden){
+  renderStats.displayFrames=(renderStats.displayFrames||0)+1;
+  if(delta>25)renderStats.slowDisplayFrames=(renderStats.slowDisplayFrames||0)+1;
+ }
  if(!document.hidden&&diagnostic){tickDiagnostic();}
  else if(!document.hidden&&entryComplete){
   acc+=delta*60/1000;
@@ -2193,7 +2219,13 @@ function frame(now){
    for(let i=0;i<6500;i++){if(cpu.halt)break;cpu.step();}
    cpu.nmi();finishInputFrame();acc-=1;count++;frames++;
   }
-  if(cpu.videoChanged||frames===0){render();cpu.videoChanged=false;}
+  if(cpu.videoChanged||frames===0){
+   const start=performance.now();render();const ms=performance.now()-start;
+   renderStats.renderMsMax=Math.max(renderStats.renderMsMax||0,ms);
+   renderStats.renderMsTotal=(renderStats.renderMsTotal||0)+ms;
+   renderStats.renderSamples=(renderStats.renderSamples||0)+1;
+   cpu.videoChanged=false;
+  }
  }
  requestAnimationFrame(frame);
 }
