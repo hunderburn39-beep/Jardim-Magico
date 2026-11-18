@@ -104,7 +104,73 @@ function scenes(){
  }
  scenesCache=Object.freeze(result);return scenesCache;
 }
+// Original palette tables: two eight-bank sets per map layer.
+let paletteAudit=null,paletteCache=new Map(),artCache=new Map();
+function scenePalette(id,layer,variant=0){
+ const scene=scenes()?.[id],r=window.StrikersROM;
+ if(!scene||![0,1].includes(layer)||![0,1].includes(variant))return null;
+ const key=[id,layer,variant].join(':');
+ if(paletteCache.has(key))return paletteCache.get(key);
+ const address=scene.palettePointers[variant*3+layer],banks=[];
+ for(let b=0;b<8;b++){
+  const p=long(r,address+4*b);
+  if(p===0xffffffff){banks.push(null);continue}
+  const n=(p-0x1b944)/32;
+  if(!Number.isInteger(n)||n<0||n>=516)throw Error('Scene palette record outside ROM table');
+  const colors=window.StrikersSpriteDefinitions?.palette(n);
+  if(!colors)throw Error('Scene palette unavailable');
+  banks.push(colors);
+ }
+ const value=Object.freeze(banks);paletteCache.set(key,value);return value;
+}
+function auditScenePalettes(){
+ if(paletteAudit)return paletteAudit;
+ const ss=scenes();if(!ss)return null;
+ let references=0,tileWords=0,bankChecks=0,paletteSlots=0;
+ for(const scene of ss)for(let layer=0;layer<2;layer++){
+  const palettes=[scenePalette(scene.id,layer,0),scenePalette(scene.id,layer,1)];
+  paletteSlots+=16;
+  for(const ref of scene.mapLists[layer]){
+   if(!ref)continue;
+   const d=decode(ref.group,ref.id);references++;tileWords+=d.codes.length;
+   for(const word of d.codes)for(const bank of palettes){
+    if(!bank[word>>>13])throw Error('Map references an absent palette: '+scene.id+' '+ref.id);
+    bankChecks++;
+   }
+  }
+ }
+ if(references!==134||tileWords!==55044||bankChecks!==110088||paletteSlots!==352)throw Error('Unexpected map palette audit totals');
+ paletteAudit=Object.freeze({references,tileWords,bankChecks,paletteSlots});
+ return paletteAudit;
+}
+// Render an individual original block in portrait orientation, using only
+// that scene/layer/variant's own palette. No guessed scroll or layer position.
+function renderBlock(id,layer,listIndex,variant=0){
+ const ref=scenes()?.[id]?.mapLists[layer]?.[listIndex];
+ if(!ref)return null;
+ const k=[id,layer,ref.group,ref.id,variant].join(':');
+ if(artCache.has(k)){const c=artCache.get(k);artCache.delete(k);artCache.set(k,c);return c;}
+ const d=decode(ref.group,ref.id),banks=scenePalette(id,layer,variant),rom=window.StrikersROM;
+ if(!d||!banks)return null;
+ const width=d.map.width*16,height=d.map.columns*16;
+ const c=document.createElement('canvas');c.width=width;c.height=height;
+ const ctx=c.getContext('2d'),image=ctx.createImageData(width,height),pixels=image.data;
+ const rgb=v=>(v<<3)|(v>>2);
+ for(let col=0;col<d.map.columns;col++)for(let row=0;row<d.map.width;row++){
+  const word=d.codes[col*d.map.width+row],pal=banks[word>>>13];
+  if(!pal)throw Error('No tile colors');
+  const tile=word&8191;
+  for(let dy=0;dy<16;dy++)for(let dx=0;dx<16;dx++){
+   const pen=rom.rawPixel('tile',tile,dx,dy);if(pen===15)continue;
+   const v=pal[pen],x=row*16+dy,y=height-1-(col*16+dx),i=(y*width+x)*4;
+   pixels[i]=rgb((v>>10)&31);pixels[i+1]=rgb((v>>5)&31);pixels[i+2]=rgb(v&31);pixels[i+3]=255;
+  }
+ }
+ ctx.putImageData(image,0,0);
+ if(artCache.size>=3)artCache.delete(artCache.keys().next().value);
+ artCache.set(k,c);return c;
+}
 function stats(){const a=all();return {groups:a?.length??0,blocks:a?.reduce((n,g)=>n+g.length,0)??0,words:a?.flat().reduce((n,m)=>n+m.wordCount,0)??0,cachedBlocks:words.size};}
-window.addEventListener('strikers-rom-ready',()=>{catalog=null;words.clear();scenesCache=null});
-window.StrikersOriginalMaps=Object.freeze({all,get,decode,strip,matchCapture,scenes,stats,captureBlocks});
+window.addEventListener('strikers-rom-ready',()=>{catalog=null;words.clear();scenesCache=null;paletteAudit=null;paletteCache.clear();artCache.clear()});
+window.StrikersOriginalMaps=Object.freeze({all,get,decode,strip,matchCapture,scenes,scenePalette,auditScenePalettes,renderBlock,stats,captureBlocks});
 })();
