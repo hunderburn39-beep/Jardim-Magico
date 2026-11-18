@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.99-HD dev — rampas e flippers";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.99-HD dev — alvos e indicadores";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -1251,6 +1251,7 @@ function nativeGlyph(code){
 // V8.86: purpose-drawn scalable typeface in the actual ROM character slots.
 // The score/message is still emitted by the original code, never synthesized.
 const remasterGlyphs={"0":"M3 0.4 C1.1 .4 .5 1.4 .5 3 S1.1 5.6 3 5.6 S5.5 4.6 5.5 3 S4.9 .4 3 .4Z","1":"M1.6 1.5 L3 .4 V5.6 M1.2 5.6 H4.8","2":"M.55 1.4 Q.85 .4 3 .4 Q5.5 .4 5.5 2 Q5.5 2.8 3.4 3.6 L.5 5.6 H5.5","3":"M.6 .4 H3.6 Q5.5 .4 5.5 1.7 Q5.5 3 3.6 3 H2.3 M3.6 3 Q5.5 3 5.5 4.3 Q5.5 5.6 3.6 5.6 H.6","4":"M4.5 5.6 V.4 L.5 4 H5.5","5":"M5.4 .4 H.7 V2.9 H3.6 Q5.5 2.9 5.5 4.2 Q5.5 5.6 3.6 5.6 H.5","6":"M5 .5 Q.5 .1 .5 3.4 V4.1 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4 Q5.5 2.6 3 2.6 Q1.5 2.6 .5 3.3","7":"M.5 .4 H5.5 L2.2 5.6","8":"M3 3 Q.7 3 .7 1.7 Q.7 .4 3 .4 Q5.3 .4 5.3 1.7 Q5.3 3 3 3 Q.5 3 .5 4.3 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4.3 Q5.5 3 3 3","9":"M5.5 2.7 Q4.6 3.5 3 3.5 Q.5 3.5 .5 1.9 Q.5 .4 3 .4 Q5.5 .4 5.5 1.9 V3.5 Q5.5 5.8 1.1 5.6","A":"M.5 5.6 L.5 2.1 Q.5 .4 3 .4 Q5.5 .4 5.5 2.1 V5.6 M.7 3.4 H5.3","B":"M.5 .4 V5.6 H3.5 Q5.5 5.6 5.5 4.3 Q5.5 3 3.5 3 H.5 M.5 .4 H3.5 Q5.5 .4 5.5 1.7 Q5.5 3 3.5 3","C":"M5.3 1.3 Q4.8 .4 3 .4 Q.5 .4 .5 2 V4 Q.5 5.6 3 5.6 Q4.8 5.6 5.3 4.7","D":"M.5 .4 H2.6 Q5.5 .4 5.5 2.4 V3.6 Q5.5 5.6 2.6 5.6 H.5 Z","E":"M5.5 .4 H.5 V5.6 H5.5 M.5 3 H4.7","F":"M5.5 .4 H.5 V5.6 M.5 3 H4.7","G":"M5.3 1.3 Q4.8 .4 3 .4 Q.5 .4 .5 2 V4 Q.5 5.6 3 5.6 H5.5 V3.1 H3.2","H":"M.5 .4 V5.6 M5.5 .4 V5.6 M.5 3 H5.5","I":"M.8 .4 H5.2 M3 .4 V5.6 M.8 5.6 H5.2","J":"M5.5 .4 V4 Q5.5 5.6 3 5.6 Q.5 5.6 .5 4","K":"M.5 .4 V5.6 M5.5 .4 L.5 3.1 L5.5 5.6","L":"M.5 .4 V5.6 H5.5","M":"M.5 5.6 V.4 L3 3.4 L5.5 .4 V5.6","N":"M.5 5.6 V.4 L5.5 5.6 V.4","O":"M3 .4 Q.5 .4 .5 2 V4 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4 V2 Q5.5 .4 3 .4 Z","P":"M.5 5.6 V.4 H3.6 Q5.5 .4 5.5 1.8 Q5.5 3.2 3.6 3.2 H.5","Q":"M3 .4 Q.5 .4 .5 2 V4 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4 V2 Q5.5 .4 3 .4 Z M3.8 4.2 L5.6 5.8","R":"M.5 5.6 V.4 H3.6 Q5.5 .4 5.5 1.8 Q5.5 3.2 3.6 3.2 H.5 M3.2 3.2 L5.5 5.6","S":"M5.3 1.1 Q4.6 .4 3 .4 Q.5 .4 .5 1.7 Q.5 3 3 3 Q5.5 3 5.5 4.3 Q5.5 5.6 3 5.6 Q1.4 5.6 .6 4.9","T":"M.5 .4 H5.5 M3 .4 V5.6","U":"M.5 .4 V4 Q.5 5.6 3 5.6 Q5.5 5.6 5.5 4 V.4","V":"M.5 .4 L3 5.6 L5.5 .4","W":"M.5 .4 L1.5 5.6 L3 3.1 L4.5 5.6 L5.5 .4","X":"M.5 .4 L5.5 5.6 M5.5 .4 L.5 5.6","Y":"M.5 .4 L3 3.1 L5.5 .4 M3 3.1 V5.6","Z":"M.5 .4 H5.5 L.5 5.6 H5.5"};
+function glyphStrokeExtent(stroke){return 6+stroke;}
 function drawRemasterGlyph(g,code,base){
  if(typeof Path2D!=='function')return false;
  const ch=code>=16&&code<=25?String(code-16):code>=48&&code<=57?String(code-48):code>=65&&code<=90?String.fromCharCode(code):null;
@@ -1260,7 +1261,8 @@ function drawRemasterGlyph(g,code,base){
  if(r<l||b<t)return false;
  g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,8);
  const width=r-l+1,height=b-t+1,score=code>=16&&code<=25,stroke=score?1.55:1.18;
- const extent=6+stroke*.15;
+ // Include the entire round stroke in the native tile's ink bounds.
+ const extent=glyphStrokeExtent(stroke);
  g.translate(l+width/2,t+height/2);g.scale(width/extent,height/extent);g.translate(-3,-3);
  g.strokeStyle=colorAt(base+7);g.lineWidth=stroke;g.lineJoin='round';g.lineCap='round';
  g.stroke(new Path2D(remasterGlyphs[ch]));g.restore();return true;
@@ -1288,8 +1290,8 @@ function nativeGlyphArt(code,base){
   const face=document.createElement('canvas');face.width=face.height=8*HD;
   const f=face.getContext('2d');f.drawImage(mask,0,0);f.globalCompositeOperation='source-in';
   const fill=f.createLinearGradient(0,8*HD,8*HD,0);
-  fill.addColorStop(0,materialTone(base+7,-.23));fill.addColorStop(.36,info.color);
-  fill.addColorStop(.63,materialTone(base+7,.44));fill.addColorStop(.81,materialTone(base+7,.13));fill.addColorStop(1,materialTone(base+7,-.10));
+  fill.addColorStop(0,materialTone(base+7,-.08));fill.addColorStop(.36,info.color);
+  fill.addColorStop(.63,materialTone(base+7,.24));fill.addColorStop(.81,materialTone(base+7,.10));fill.addColorStop(1,info.color);
   f.fillStyle=fill;f.fillRect(0,0,8*HD,8*HD);
   g.drawImage(face,0,0);
  }
@@ -1525,6 +1527,7 @@ function mechanismInkPlan(atlas,code,accept){
  }
  const plan={indices,geometry:null};atlasCache.set(code,plan);return plan;
 }
+function targetLensLit(rgb){return Math.max(rgb&255,(rgb>>>8)&255,(rgb>>>16)&255)>=85;}
 function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
  const {minX,minY,maxX,maxY,cx,cy,spanX,spanY}=bounds,w=atlas.w,h=atlas.h;
  if(!['bumper','arm','round','square','insert','gate'].includes(kind))return;
@@ -1604,10 +1607,11 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
  }else{
   const r=Math.min(spanX,spanY)*.5;
   if(kind==='round'){
-   disk(cx,cy,r,chrome(cx-r,cy+r,cx+r,cy-r));disk(cx,cy,r*.84,'#16212c');
-   const statePen=code-57;
-   disk(cx,cy,r*.74,materialRadial(f,baseColor+statePen,cx,cy,r*.79,true));
-   ring(cx,cy,r*.78,.5,rgb(7,.76));
+   disk(cx,cy,r,chrome(cx-r,cy+r,cx+r,cy-r));disk(cx,cy,r*.87,'#16212c');
+   const statePen=code-57,lit=targetLensLit(palette32[baseColor+statePen]);
+   disk(cx,cy,r*.81,materialRadial(f,baseColor+statePen,cx,cy,r*.86,lit));
+   ring(cx,cy,r*.82,.38,rgb(statePen,lit?.46:.12));
+   f.beginPath();f.arc(cx,cy,r*.69,3.65,4.92);f.strokeStyle=lit?'rgba(255,255,255,.52)':'rgba(255,255,255,.12)';f.lineWidth=.32;f.stroke();
    // The complete original star remains present in every color state.
    nativeInk(n=>n===2||n===7);
   
@@ -1615,7 +1619,9 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
    const statePen=code-36;
    f.fillStyle=chrome(minX,minY,maxX+1,maxY+1);f.fillRect(minX,minY,spanX,spanY);
    f.fillStyle='#202a36';f.fillRect(minX+1,minY+1,spanX-2,spanY-2);
-   f.fillStyle=grad(minX,minY,maxX+1,maxY+1,[[0,rgb(statePen,.76)],[.25,rgb(statePen,.28)],[.56,rgb(statePen,-.08)],[1,rgb(statePen,-.50)]]);f.fillRect(minX+1.8,minY+1.8,spanX-3.6,spanY-3.6);
+   const lit=targetLensLit(palette32[baseColor+statePen]);
+   f.fillStyle=grad(minX,minY,maxX+1,maxY+1,[[0,rgb(statePen,lit?.65:.12)],[.25,rgb(statePen,lit?.28:.04)],[.56,rgb(statePen,-.08)],[1,rgb(statePen,-.48)]]);f.fillRect(minX+1.8,minY+1.8,spanX-3.6,spanY-3.6);
+   f.fillStyle=lit?'rgba(255,255,255,.32)':'rgba(255,255,255,.07)';f.fillRect(minX+2,minY+1.8,Math.max(0,spanX-4),.28);
    // 40/41/42 have exactly the same native X, but different pen 4/5/6.
    nativeInk(n=>n===3||n===statePen,(ctx,i)=>materialLinear(ctx,i,minX,minY,maxX+1,maxY+1,[[0,.55],[.31,.2],[.65,0],[1,-.31]]));
   }else if(kind==='insert'){
@@ -1623,10 +1629,11 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
    disk(cx,cy,r,chrome(cx-r,cy+r,cx+r,cy-r));
    disk(cx,cy,r*.85,'#19232f');
    const lensPen=code===67?2:7;
-   disk(cx,cy,r*.77,materialRadial(f,baseColor+lensPen,cx,cy,r*.82,true));
-   ring(cx,cy,r*.80,.45,rgb(lensPen,.69));
+   const lit=targetLensLit(palette32[baseColor+lensPen]);
+   disk(cx,cy,r*.77,materialRadial(f,baseColor+lensPen,cx,cy,r*.82,lit));
+   ring(cx,cy,r*.80,.45,rgb(lensPen,lit?.52:.14));
    f.beginPath();f.arc(cx,cy,r*.67,Math.PI*.95,Math.PI*1.55);
-   f.strokeStyle='rgba(255,255,255,.62)';f.lineWidth=.45;f.stroke();
+   f.strokeStyle=lit?'rgba(255,255,255,.62)':'rgba(255,255,255,.16)';f.lineWidth=.45;f.stroke();
    nativeInk(n=>code===67?n===1||n===7:n===2);
   }else if(kind==='gate'){
    // Each gate is a genuine ROM animation pose. Redraw each metal strip
@@ -1700,7 +1707,7 @@ function nativePhysicalArt(g,atlas,code,baseColor,big,kind){
     (kind==='round'&&(pen===2||pen===7))||(kind==='square'&&pen===code-36))return colorAt(index);
   if(round){
    if(pen===6)return materialLinear(ctx,index,minX,minY,maxX+1,maxY+1,[[0,-.32],[.10,.76],[.28,.43],[.50,-.19],[.62,.49],[.82,-.20],[1,-.59]]);
-   return materialRadial(ctx,index,cx,cy,Math.max(spanX,spanY)*.55,kind==='round'||(kind==='bumper'&&(code===8||code===10)));
+   return materialRadial(ctx,index,cx,cy,Math.max(spanX,spanY)*.55,(kind==='round'&&targetLensLit(palette32[index]))||(kind==='bumper'&&(code===8||code===10)));
   }
   if(kind==='arm'||kind==='gate'||kind==='auxiliary'||kind==='tip')return materialLinear(ctx,index,minX,minY,maxX+1,maxY+1,[[0,.58],[.13,.31],[.38,.10],[.56,-.15],[.72,.19],[1,-.48]]);
   // Multi-piece panels share flat tile edges; only fully enclosed paint
