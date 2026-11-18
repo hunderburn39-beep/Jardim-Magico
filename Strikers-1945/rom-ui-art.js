@@ -72,7 +72,18 @@ function result(won){
 }
 // Native tile atlas, visually verified against the private World ROM.
 // The screen positions, palette and icon-to-life mapping are provisional.
-const hudAtlas=Object.freeze({digits:228,letters:321,onePlayer:30,twoPlayer:31,life:238,bomb:248,blank:320});
+// Tile 128..227 contains all two-digit combinations 00..99.
+// Tiles 238..243 are individual aircraft reserve-life icons, in ROM selection order.
+const hudAtlas=Object.freeze({digits:228,pairDigits:128,letters:321,onePlayer:30,twoPlayer:31,life:238,bomb:248,blank:320});
+const lifeTiles=Object.freeze({p38:238,p51:239,spitfire:240,bf109:241,zero:242,shinden:243});
+function scoreTiles(value){
+ const text=String(value);
+ if(!/^\d+$/.test(text))return hudText(text);
+ const result=[];let i=0;
+ if(text.length%2){result.push(hudAtlas.digits+Number(text[0]));i=1}
+ for(;i<text.length;i+=2)result.push(hudAtlas.pairDigits+Number(text.slice(i,i+2)));
+ return result;
+}
 let hudCache=new Map();
 function hudTile(code){
  if(!window.StrikersROM?.isVerified?.())return null;
@@ -96,9 +107,9 @@ function hudTiles(el,ids,label,advance=12){
  c.style.width=c.width*1.5+'px';c.style.maxWidth='100%';c.style.height='auto';c.style.imageRendering='pixelated';
  c.setAttribute('aria-hidden','true');el.setAttribute('aria-label',label);el.dataset.hudKey=key;el.replaceChildren(c);return true;
 }
-function hudNumber(el,n){const text=String(n);return hudTiles(el,hudText(text),text,10);}
+function hudNumber(el,n){const text=String(n);return hudTiles(el,scoreTiles(text),text,16);}
 function hudMarks(el,code,n,label){if(!el||!window.StrikersROM?.isVerified?.())return false;n=Math.max(0,Math.min(8,n|0));if(!n){el.replaceChildren();el.setAttribute('aria-label',label);delete el.dataset.hudKey;return true;}return hudTiles(el,Array(n).fill(code),label,12);}
 window.addEventListener('strikers-rom-ready',()=>hudCache.clear());
 
-window.StrikersOriginalUI=Object.freeze({codes,blocks,draw,digits,update,result,notice,replaceArt,labelAircraft,aircraftLabels,cursor,hudAtlas,hudText,hudTiles,hudNumber,hudMarks,paletteStatus:'provisional grayscale'});
+window.StrikersOriginalUI=Object.freeze({codes,blocks,draw,digits,update,result,notice,replaceArt,labelAircraft,aircraftLabels,cursor,hudAtlas,lifeTiles,scoreTiles,hudText,hudTiles,hudNumber,hudMarks,paletteStatus:'provisional grayscale'});
 })();
