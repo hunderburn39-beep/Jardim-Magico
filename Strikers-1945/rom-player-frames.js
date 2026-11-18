@@ -18,7 +18,7 @@ const groups=Object.freeze([
 const SELECTION_TABLE=0x3d6b4,PLAYER_PALETTE_TABLE=0x1b92c;
 function long(r,a){return r.programWord(a)*65536+r.programWord(a+2)}
 function signedWord(r,a){const n=r.programWord(a);return n&0x8000?n-65536:n}
-let cached=null,canvases=new Map();
+let cached=null,canvases=new Map(),nativePalettes=new Map(),prepared=false;
 function read(){
  const r=window.StrikersROM,defs=window.StrikersSpriteDefinitions;
  if(!r?.isVerified?.()||!defs)return null;
@@ -62,17 +62,28 @@ function frame(id,bank=0,time=0){
  const phase=Math.floor(Math.max(0,Number(time)||0)*14)%2;
  return g.records[(position*2+phase)*2];
 }
-function sprite(id,bank=0,time=0,palette=null){
- const f=frame(id,bank,time);if(!f)return null;
- const nativePalette=palette??window.StrikersSpriteDefinitions.palette(info(id).config.paletteIndex);
+function spriteRecord(id,f,palette=null){
+ if(!f)return null;
+ if(!palette&&!nativePalettes.has(id))nativePalettes.set(id,window.StrikersSpriteDefinitions.palette(info(id).config.paletteIndex));
+ const nativePalette=palette??nativePalettes.get(id);
  if(!nativePalette)return null;
  const key=f.code+':'+Array.from(nativePalette).join(',');
  if(canvases.has(key))return canvases.get(key);
  const c=document.createElement('canvas');
  if(!window.StrikersSpriteDefinitions.draw(c,f.code,nativePalette))return null;
+ if(canvases.size>=128)canvases.delete(canvases.keys().next().value);
  canvases.set(key,c);return c;
 }
-function stats(){const m=read();return {groups:m?.size??0,records:m?120:0,uniqueImages:m?60:0,paletteStatus:'selection-index ROM table; dynamic modifications untraced',timingStatus:'provisional',recordLayout:'attr,code,rx,ry',selectionTable:SELECTION_TABLE}}
-window.addEventListener('strikers-rom-ready',()=>{cached=null;canvases.clear()});
-window.StrikersOriginalPlayers=Object.freeze({groups,info,frame,sprite,stats});
+function sprite(id,bank=0,time=0,palette=null){return spriteRecord(id,frame(id,bank,time),palette);}
+function prepare(){
+ if(prepared)return true;
+ const m=read();if(!m)return false;
+ for(const [id,g] of m){for(let j=0;j<g.records.length;j+=2){
+  const c=spriteRecord(id,g.records[j]);if(!c||c.width!==32||c.height!==32)throw Error('Original player image unavailable: '+id+' frame '+j/2);
+ }}
+ prepared=true;return true;
+}
+function stats(){const m=read();return {groups:m?.size??0,prepared,cachedImages:canvases.size,records:m?120:0,uniqueImages:m?60:0,paletteStatus:'selection-index ROM table; dynamic modifications untraced',timingStatus:'provisional',recordLayout:'attr,code,rx,ry',selectionTable:SELECTION_TABLE}}
+window.addEventListener('strikers-rom-ready',()=>{cached=null;canvases.clear();nativePalettes.clear();prepared=false});
+window.StrikersOriginalPlayers=Object.freeze({groups,info,frame,sprite,prepare,stats});
 })();
