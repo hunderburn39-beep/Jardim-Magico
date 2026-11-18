@@ -10,6 +10,9 @@ var cpu
 var viewport: SubViewport
 var status: Label
 var touch := {}
+var mouse_controls := {}
+var finger_actions := {}
+var action_buttons: Dictionary = {}
 var keyboard := {}
 var pulse := {"left":0,"right":0,"launch":0,"shake":0,"coin":0,"start":0,"start2":0}
 var queued_start := ""
@@ -79,7 +82,7 @@ func _ready() -> void:
 	status.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	status.offset_top=-36
 	status.offset_bottom=-7
-	status.text="V0.2 GODOT · som em desenvolvimento"
+	status.text="V0.3 GODOT · som em desenvolvimento"
 	if not machine.load_snapshot():
 		status.text="Erro: ROM indisponível"
 		set_physics_process(false)
@@ -97,8 +100,30 @@ func _button(parent: Container, label: String, action: String) -> void:
 	button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	button.size_flags_vertical=Control.SIZE_EXPAND_FILL
 	parent.add_child(button)
-	button.button_down.connect(func(): _press(action,true,touch))
-	button.button_up.connect(func(): _press(action,false,touch))
+	action_buttons[action] = button
+	button.button_down.connect(func(): _press(action,true,mouse_controls))
+	button.button_up.connect(func(): _press(action,false,mouse_controls))
+
+# Track each physical finger independently; a second flipper must not
+# replace the first finger's state. Capture until release or cancellation.
+func _input(event: InputEvent) -> void:
+	if not event is InputEventScreenTouch or cpu == null:
+		return
+	var finger := event as InputEventScreenTouch
+	if finger.pressed and not finger.canceled:
+		for action in action_buttons:
+			var button: Button = action_buttons[action]
+			if button.is_visible_in_tree() and button.get_global_rect().has_point(finger.position):
+				finger_actions[finger.index] = action
+				_press(action, true, touch)
+				get_viewport().set_input_as_handled()
+				return
+	elif finger_actions.has(finger.index):
+		var action: String = finger_actions[finger.index]
+		finger_actions.erase(finger.index)
+		if action not in finger_actions.values():
+			_press(action, false, touch)
+		get_viewport().set_input_as_handled()
 
 func _sound_command(_value: int) -> void:
 	sound_commands+=1
@@ -137,6 +162,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 func _notification(what: int) -> void:
 	if what==NOTIFICATION_APPLICATION_FOCUS_OUT:
 		touch.clear()
+		mouse_controls.clear()
+		finger_actions.clear()
 		keyboard.clear()
 		for k in pulse:
 			pulse[k]=0
@@ -148,10 +175,10 @@ func _physics_process(_delta: float) -> void:
 	var p1=0
 	var sys=0
 	for k in P1:
-		if touch.get(k,false) or keyboard.get(k,false) or pulse[k]>0:
+		if touch.get(k,false) or mouse_controls.get(k,false) or keyboard.get(k,false) or pulse[k]>0:
 			p1|=P1[k]
 	for k in SYS:
-		if pulse[k]>0 or (k=="coin" and (touch.get(k,false) or keyboard.get(k,false))):
+		if pulse[k]>0 or (k=="coin" and (touch.get(k,false) or mouse_controls.get(k,false) or keyboard.get(k,false))):
 			sys|=SYS[k]
 	cpu.p1=p1
 	cpu.system=sys
@@ -174,4 +201,4 @@ func _physics_process(_delta: float) -> void:
 		cpu.video_changed=false
 		viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 	if played_frames%30==0:
-		status.text="V0.2 GODOT · créditos %d · áudio pendente" % cpu.mem[0xc013]
+		status.text="V0.3 GODOT · créditos %d · áudio pendente" % cpu.mem[0xc013]
