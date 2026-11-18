@@ -35,6 +35,7 @@ var dsw2:int=0
 var video_changed:bool=true
 var steps:int=0
 var parity: Array[int] = []
+var sound_bus: Object = null
 
 func _init(memory: PackedByteArray, state: Dictionary):
 	mem=memory
@@ -65,6 +66,8 @@ func _init(memory: PackedByteArray, state: Dictionary):
 
 func read8(a:int)->int:
 	a&=65535
+	if sound_bus != null:
+		return sound_bus.read_mem(a, mem)
 	match a:
 		0xe600:return p1
 		0xe601:return p2
@@ -77,6 +80,9 @@ func read8(a:int)->int:
 func wr(a:int,v:int)->void:
 	a&=65535
 	v&=255
+	if sound_bus != null:
+		if a>=0x4000 and a<0x4800:mem[a]=v
+		return
 	match a:
 		0xe600:
 			nmi_enable=v&1
@@ -269,8 +275,11 @@ func edop()->void:
 	if x==1:
 		match z:
 			0:
-				if y!=6:ww(y,255)
-				f=(f&FC)|(255&(FS|F3|F5))|parity[255]
+				var v:int=255 if sound_bus==null else sound_bus.input_port(r[1])
+				if y!=6:ww(y,v)
+				f=(f&FC)|(v&(FS|F3|F5))|(FZ if v==0 else 0)|parity[v]
+			1:
+				if sound_bus!=null:sound_bus.output_port(r[1],0 if y==6 else r[y])
 			2:
 				var v=r16(p)
 				var a=r16(2)
@@ -486,10 +495,12 @@ func high_op(y:int,z:int,p:int,q:int,idx:int)->void:
 			match y:
 				0:pc=f16()
 				1:pass
-				2:fetch()
+				2:
+					var port=fetch()
+					if sound_bus!=null:sound_bus.output_port(port,r[7])
 				3:
-					fetch()
-					r[7]=255
+					var port=fetch()
+					r[7]=255 if sound_bus==null else sound_bus.input_port(port)
 				4:
 					var v=pop()
 					var old=r16(2,idx)
@@ -535,3 +546,13 @@ func tick()->void:
 		if halted:break
 		step()
 	nmi()
+
+func irq(vector:int)->bool:
+	if not iff:return false
+	halted=false
+	iff=false
+	iff2=false
+	push(pc)
+	var addr=((i<<8)|(vector&255))&65535
+	pc=read8(addr)|(read8(addr+1)<<8)
+	return true
