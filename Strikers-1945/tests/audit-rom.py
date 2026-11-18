@@ -62,3 +62,30 @@ print('PASS: 78 original effect and item records')
 assert [l(0x1b92c+i*4) for i in range(6)] == [0x1b944+32*i for i in range(23,29)]
 assert all(l(a)==0x1b92c for a in (0x740e,0x9cf0,0x1466a,0x1467a))
 print('PASS: 6 player palette pointers and 4 program references')
+
+# Scene descriptors: preserve zero separators; do not infer arcade route order.
+maps={l(t+4*i):(g,i) for g,t,n in [(0,0x59ba0,33),(1,0x59c28,35)] for i in range(n)}
+assert l(0x146fe)==0x50d14
+scene_addresses=[0x3f9f8,0x3f5e8,0x40a70,0x405b2,0x3f12c,0x4030c,0x40044,0x3fd3e,0x3788a,0x379b6,0x37a6e]
+refs=zeros=palettes=0
+for i,e in enumerate(scene_addresses):
+    a=l(0x50d14+i*4)
+    assert a==e
+    script,b,c=l(a),l(a+4),l(a+8)
+    assert b==a+52 and b<c<script and script-b<=400
+    for start,end in [(b,c),(c,script)]:
+        assert (end-start)%4==0 and l(end-4)==0
+        for k in range(start,end,4):
+            v=l(k)
+            if not v: zeros+=1
+            else:
+                assert v in maps
+                refs+=1
+    for j in range(6):
+        base=[0x596d8,0x5995c,0x58ad8][j%3]
+        stride=128 if j%3==2 else 32
+        d=l(a+20+j*4)-base
+        assert d%stride==0 and 0<=d//stride<=15
+        palettes+=1
+assert (refs,zeros,palettes)==(134,26,66)
+print('PASS: 11 scene descriptors, 22 lists, 134 map references, 26 separators and 66 palette pointers')
