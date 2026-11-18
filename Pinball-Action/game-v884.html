@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.98 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.99 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -581,6 +581,18 @@ function guideProfile(pens,code,fx,fy){
  }
  return {vertical,rows};
 }
+// V8.99: rounded rail contours between native half-row samples.
+// Cubic handles remain inside each segment's endpoint rectangle.
+function traceRailEdge(path,rows,selector,pt,reverse=false){
+ const samples=[[selector(rows[0]),0],...rows.map((row,i)=>[selector(row),i+.5]),[selector(rows.at(-1)),rows.length]];
+ if(reverse)samples.reverse();
+ const project=(u,v)=>pt(u,v);
+ path.lineTo(...project(...samples[0]));
+ for(let i=1;i<samples.length;i++){
+  const [u0,v0]=samples[i-1],[u1,v1]=samples[i],d=(v1-v0)/3;
+  path.bezierCurveTo(...project(u0,v0+d),...project(u1,v1-d),...project(u1,v1));
+ }
+}
 function drawGuideTile(g,profile,x,y,base){
  const {vertical,rows}=profile,len=rows.length;
  const width=vertical?8:len,height=vertical?len:8;
@@ -590,14 +602,19 @@ function drawGuideTile(g,profile,x,y,base){
  // Closed strip with exact half-tile endpoints, no shadow outside the track.
  const band=(lo,hi,fill)=>{
   g.beginPath();g.moveTo(...pt(lo(rows[0]),0));
-  for(let i=0;i<len;i++)g.lineTo(...pt(lo(rows[i]),i+.5));
-  g.lineTo(...pt(lo(rows[len-1]),len));g.lineTo(...pt(hi(rows[len-1]),len));
-  for(let i=len-1;i>=0;i--)g.lineTo(...pt(hi(rows[i]),i+.5));
-  g.lineTo(...pt(hi(rows[0]),0));g.closePath();g.fillStyle=fill;g.fill();
+  traceRailEdge(g,rows,lo,pt);
+  traceRailEdge(g,rows,hi,pt,true);
+  g.closePath();g.fillStyle=fill;g.fill();
  };
  const counts={};for(const o of rows)for(const p of o.cs)counts[p]=(counts[p]||0)+1;
  const dominant=Number(Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0]);
  band(o=>o.l,o=>o.r,colorAt(base+dominant));
+ // Separate dark sidewall, satin face and narrow polished highlights.
+ // These bands follow each original row's width instead of a global filter.
+ band(o=>o.l,o=>o.l+(o.r-o.l)*.13,materialTone(base+dominant,-.38));
+ band(o=>o.r-(o.r-o.l)*.17,o=>o.r,materialTone(base+dominant,-.48));
+ band(o=>o.l+(o.r-o.l)*.15,o=>o.l+(o.r-o.l)*.31,materialTone(base+dominant,.32));
+ band(o=>o.l+(o.r-o.l)*.33,o=>o.l+(o.r-o.l)*.43,materialTone(base+dominant,.15));
  // Object-local, bevelled track face, kept inside each native strip.
  const edge=(side,amount)=>{
   const a=pt(rows[0].l,0),b=pt(rows[0].l,len);
@@ -1460,6 +1477,18 @@ function hdSceneCommands(commands){
 }
 // Remastered hardware: separate steel, rubber and illuminated acrylic
 // components. All geometry is fitted to the original occupied sprite.
+// Cache the native detail masks independently from the live palette.
+const mechanismInkPaths=new WeakMap();
+function mechanismInkPlan(atlas,code,accept){
+ let atlasCache=mechanismInkPaths.get(atlas);
+ if(!atlasCache){atlasCache=new Map();mechanismInkPaths.set(atlas,atlasCache);}
+ if(atlasCache.has(code))return atlasCache.get(code);
+ const w=atlas.w,h=atlas.h,start=code*w*h,indices=new Int16Array(w*h);indices.fill(NONE);
+ for(let i=0;i<indices.length;i++){
+  const n=atlas.pens[start+i];if(n&&accept(n,i%w,Math.floor(i/w)))indices[i]=n;
+ }
+ const plan={indices,geometry:null};atlasCache.set(code,plan);return plan;
+}
 function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
  const {minX,minY,maxX,maxY,cx,cy,spanX,spanY}=bounds,w=atlas.w,h=atlas.h;
  if(!['bumper','arm','round','square','insert','gate'].includes(kind))return;
@@ -1472,10 +1501,17 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
  const chrome=(x,y,X,Y)=>grad(x,y,X,Y,[[0,'#1f2938'],[.12,'#e7f2fa'],[.23,'#ffffff'],[.42,'#8596a6'],[.53,'#364556'],[.67,'#d5e1e6'],[.81,'#687786'],[1,'#202b38']]);
  const ring=(x,y,r,width,fill)=>{f.beginPath();f.arc(x,y,r,0,Math.PI*2);f.lineWidth=width;f.strokeStyle=fill;f.stroke();};
  function nativeInk(accept,style=null){
-  const digits=new Int16Array(w*h);digits.fill(NONE);
-  for(let i=0;i<w*h;i++)if(accept(p[start+i],i%w,Math.floor(i/w)))digits[i]=baseColor+p[start+i];
-  const a=document.createElement('canvas');a.width=w*HD;a.height=h*HD;
-  vectorPaint(a.getContext('2d'),digits,w,h,NONE,false,null,false,style);f.drawImage(a,0,0,w,h);
+  const plan=mechanismInkPlan(atlas,code,accept);
+  const styleFor=(ctx,n,cells)=>style?style(ctx,baseColor+n,cells):colorAt(baseColor+n);
+  if(plan.geometry){
+   for(const q of plan.geometry){f.fillStyle=styleFor(f,q.color,q.cells);f.fill(q.path,'evenodd');}
+   renderStats.mechanismInkHits=(renderStats.mechanismInkHits||0)+1;
+  }else{
+   const geometry=typeof Path2D==='function'?[]:null;
+   vectorPaint(f,plan.indices,w,h,NONE,false,geometry,false,styleFor,false,true);
+   if(geometry)plan.geometry=geometry;
+   renderStats.mechanismInkBuilds=(renderStats.mechanismInkBuilds||0)+1;
+  }
  }
  if(kind==='bumper'){
   const r=Math.min(spanX,spanY)*.5,lit=code===8||code===10,body=lit?2:7,accent=lit?7:2;
@@ -1511,7 +1547,14 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
   const inset=Math.min(.9,cross*.18);f.fillStyle=chrome(0,top,0,bottom);f.fillRect(left,top+inset,long,cross-2*inset);
   f.fillStyle=grad(0,top+cross*.25,0,bottom-cross*.25,[[0,rgb(7,.6)],[.35,rgb(7,.16)],[.65,rgb(7,-.03)],[1,rgb(7,-.42)]]);
   f.fillRect(left,top+cross*.26,long,cross*.48);
-  f.fillStyle='rgba(255,255,255,.6)';f.fillRect(left,top+cross*.26,long,.23);
+  // Thin polished chamfers and a recessed longitudinal rubber insert.
+  // The original sprite mask clips the entire mechanical surface.
+  f.fillStyle=grad(left,0,right,0,[[0,'rgba(0,0,0,.50)'],[.16,'rgba(0,0,0,0)'],[.68,'rgba(255,255,255,.11)'],[1,'rgba(0,0,0,.40)']]);
+  f.fillRect(left,top+cross*.26,long,cross*.48);
+  f.fillStyle='rgba(255,255,255,.72)';f.fillRect(left,top+cross*.26,long,Math.min(.28,cross*.075));
+  f.fillStyle='rgba(0,0,0,.34)';f.fillRect(left,bottom-cross*.27,long,Math.min(.35,cross*.08));
+  f.fillStyle=grad(left,0,right,0,[[0,'rgba(255,255,255,0)'],[.25,'rgba(255,255,255,.46)'],[.72,'rgba(255,255,255,.24)'],[1,'rgba(255,255,255,0)']]);
+  f.fillRect(left,top+inset,long,Math.min(.30,cross*.09));
   f.restore();
   // Restore the original small internal markings over the steel/rubber
   // shell. Never substitute a new logo or omit native pen islands.
