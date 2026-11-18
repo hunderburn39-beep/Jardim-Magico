@@ -10,7 +10,7 @@ const groups=Object.freeze({
  burst:{address:0x24c38,count:14,base:5267,bank:3},
  small:{address:0x24d38,count:12,base:5255,bank:2}
 });
-let records=new Map(),images=new Map();
+let records=new Map(),images=new Map(),prepared=false;
 function read(name){
  if(records.has(name))return records.get(name);
  const r=window.StrikersROM,d=window.StrikersSpriteDefinitions,g=groups[name];
@@ -29,8 +29,8 @@ function frame(name,progress){
  if(!a)return null;
  return a[Math.max(0,Math.min(a.length-1,Math.floor((Number(progress)||0)*a.length)))];
 }
-function sprite(name,progress){
- const f=frame(name,progress);if(!f)return null;
+function effectImage(name,f){
+ if(!f)return null;
  const key=name+':'+f.code;if(images.has(key))return images.get(key);
  const d=window.StrikersSpriteDefinitions,c=document.createElement('canvas');
  const pal=d.commonSpritePalette(groups[name].bank);
@@ -38,6 +38,7 @@ function sprite(name,progress){
  if(!d.draw(c,f.code,pal))return null;
  images.set(key,c);return c;
 }
+function sprite(name,progress){return effectImage(name,frame(name,progress));}
 function draw(ctx,name,progress,x,y,scale=2){
  const c=sprite(name,progress);if(!c)return false;
  const w=c.width*scale,h=c.height*scale;
@@ -65,31 +66,37 @@ function itemRecords(type){
  }
  const result=Object.freeze(frames);records.set(key,result);return result;
 }
-function itemSprite(type,time){
- const g=itemGroups[type],d=window.StrikersSpriteDefinitions,a=itemRecords(type);
- if(!a)return null;
- const code=a[Math.floor(Math.max(0,Number(time)||0)*12)%a.length].code;
+function itemImage(type,record){
+ if(!record)return null;
+ const g=itemGroups[type],d=window.StrikersSpriteDefinitions,code=record.code;
  const key='item:'+type+':'+code;
  if(images.has(key))return images.get(key);
  const c=document.createElement('canvas'),pal=d.commonSpritePalette(g.bank);
  if(!pal||!d.draw(c,code,pal))return null;
  images.set(key,c);return c;
 }
+function itemSprite(type,time){
+ const a=itemRecords(type);if(!a)return null;
+ return itemImage(type,a[Math.floor(Math.max(0,Number(time)||0)*12)%a.length]);
+}
 // Native score numerals exist for all six values. Only display the awarded
 // amount; this does not assign any new payout rule or change the score.
 const medalNumbers=Object.freeze({200:1651,500:1653,1000:1655,2000:1657,4000:1659,10000:1661});
-function drawMedalScore(ctx,value,time,x,y){
- const base=medalNumbers[value],d=window.StrikersSpriteDefinitions;
- if(!base||!window.StrikersROM?.isVerified?.()||!d)return false;
- const code=base+(Math.floor(Math.max(0,Number(time)||0)*12)%2);
- if(d.get(code)?.nx!==1||d.get(code)?.ny!==1)return false;
+function medalImage(code){
+ const d=window.StrikersSpriteDefinitions;
+ if(!window.StrikersROM?.isVerified?.()||!d||d.get(code)?.nx!==1||d.get(code)?.ny!==1)return null;
  const key='medal:'+code;let c=images.get(key);
  if(!c){
   c=document.createElement('canvas');
   const pal=d.palette(1); // readable provisional palette, not assigned ROM bank
-  if(!pal||!d.draw(c,code,pal))return false;
+  if(!pal||!d.draw(c,code,pal))return null;
   images.set(key,c);
  }
+ return c;
+}
+function drawMedalScore(ctx,value,time,x,y){
+ const base=medalNumbers[value];if(!base)return false;
+ const c=medalImage(base+Math.floor(Math.max(0,Number(time)||0)*12)%2);if(!c)return false;
  ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(c,Math.round(x-16),Math.round(y-16),32,32);ctx.restore();return true;
 }
 function drawItem(ctx,type,time,x,y,scale=2){
@@ -98,7 +105,21 @@ function drawItem(ctx,type,time,x,y,scale=2){
  ctx.drawImage(c,Math.round(x-c.width*scale/2),Math.round(y-c.height*scale/2),c.width*scale,c.height*scale);ctx.restore();
  return true;
 }
-function stats(){return {groups:Object.keys(groups).length,frames:Object.values(groups).reduce((n,g)=>n+g.count,0),paletteStatus:'static common bank pointers verified; runtime modifications possible',timingStatus:'preview'};}
-window.addEventListener('strikers-rom-ready',()=>{records.clear();images.clear()});
-window.StrikersOriginalEffects=Object.freeze({groups,read,frame,sprite,draw,itemGroups,itemRecords,itemSprite,drawItem,medalNumbers,drawMedalScore,stats});
+function prepare(){
+ if(prepared)return true;
+ if(!window.StrikersROM?.isVerified?.())return false;
+ for(const name of Object.keys(groups)){
+  const a=read(name);if(!a||a.length!==groups[name].count)throw Error('Missing effect records: '+name);
+  for(const f of a)if(!effectImage(name,f))throw Error('Missing effect image: '+name+' '+f.code);
+ }
+ for(const name of Object.keys(itemGroups)){
+  const a=itemRecords(name);if(!a||a.length!==itemGroups[name].count)throw Error('Missing item records: '+name);
+  for(const f of a)if(!itemImage(name,f))throw Error('Missing item image: '+name+' '+f.code);
+ }
+ for(const code of Object.values(medalNumbers))for(let i=0;i<2;i++)if(!medalImage(code+i))throw Error('Missing medal image: '+(code+i));
+ prepared=true;return true;
+}
+function stats(){return {prepared,cachedImages:images.size,itemFrames:24,medalFrames:12,groups:Object.keys(groups).length,frames:Object.values(groups).reduce((n,g)=>n+g.count,0),paletteStatus:'static common bank pointers verified; runtime modifications possible',timingStatus:'preview'};}
+window.addEventListener('strikers-rom-ready',()=>{records.clear();images.clear();prepared=false});
+window.StrikersOriginalEffects=Object.freeze({groups,read,frame,sprite,draw,itemGroups,itemRecords,itemSprite,drawItem,medalNumbers,drawMedalScore,prepare,stats});
 })();
