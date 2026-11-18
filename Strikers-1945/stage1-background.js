@@ -4,7 +4,7 @@
    Sampled every 16 emulated frames, interpolating scroll between captures. */
 (()=>{'use strict';
  const PACKED=(window.StrikersCaptureChunks||[]).join('');
- let frames=null,busy=null,cache=new Map(),tileCache=new Map(),terminalCanvas=null,mapAudit=null;
+ let frames=null,busy=null,cache=new Map(),tileCache=new Map(),terminalLayers=null,mapAudit=null;
  function dataUrlToBytes(text){
   const src=atob(text),a=new Uint8Array(src.length);
   for(let i=0;i<src.length;i++)a[i]=src.charCodeAt(i);
@@ -60,7 +60,7 @@
     }
    }
   }
-  cache.clear();terminalCanvas=null;
+  cache.clear();terminalLayers=null;
   mapAudit=Object.freeze(totals);return mapAudit;
  }
  function tile(id){
@@ -96,6 +96,57 @@
   if(cache.size>12)cache.delete(cache.keys().next().value);
   return c;
  }
+ // After the last captured frame, move through the remaining verified ROM
+ // columns instead of repeating the last screenshot. Each layer is clamped
+ // independently to its last full content viewport. Motion past the capture
+ // uses the median of prior measured scroll rates; exact boss camera is untraced.
+ function terminalPlan(layer){
+  const f=frames.at(-1),field=layer===0?'scroll':'scroll1';
+  const scroll=f[field],stream=window.StrikersOriginalMaps?.capturedSceneStream(layer);
+  if(!f.nativeCodes?.[layer]||!stream)return null;
+  const first=Math.floor(scroll/16),end=stream.lastContentEnd;
+  const maxScroll=end*16-320;
+  if(maxScroll<scroll)return null;
+  const samples=[];
+  for(let i=Math.max(1,frames.length-10);i<frames.length-1;i++){
+   const a=frames[i-1],b=frames[i],rate=(b[field]-a[field])*60/(b.frame-a.frame);
+   if(Number.isFinite(rate)&&rate>=0&&rate<=120)samples.push(rate);
+  }
+  samples.sort((a,b)=>a-b);
+  const speed=samples.length?samples[Math.floor(samples.length/2)]:0;
+  return {layer,scroll,first,end,maxScroll,speed,stream};
+ }
+ function terminalOffset(plan,elapsed){
+  return Math.min(plan.maxScroll,plan.scroll+Math.max(0,elapsed)*plan.speed);
+ }
+ function makeTerminalLayer(layer){
+  const plan=terminalPlan(layer);
+  if(!plan)return {canvas:layerCanvas(frames.length-1,layer),plan:null};
+  const f=frames.at(-1),{first,end,stream}=plan;
+  const c=document.createElement('canvas');c.width=224;c.height=(end-first)*16;
+  const g=c.getContext('2d',{alpha:layer!==0}),im=g.createImageData(c.width,c.height),d=im.data;
+  if(layer===0)for(let i=3;i<d.length;i+=4)d[i]=255;
+  const rgb=v=>(v<<3)|(v>>2);
+  for(let col=first;col<end;col++)for(let row=0;row<14;row++){
+   const word=stream.codes[col*14+row],bank=word>>>13,pxs=tile(word&8191);
+   for(let dx=0;dx<16;dx++){
+    const y=c.height-1-((col-first)*16+dx);
+    for(let py=0;py<16;py++){
+     const pen=pxs[py*16+dx];if(pen===15)continue;
+     const v=f.nativePalettes?.[layer]?.[bank]?.[pen]??f.palettes[layer*128+bank*16+pen],i=(y*224+row*16+py)*4;
+     d[i]=rgb((v>>10)&31);d[i+1]=rgb((v>>5)&31);d[i+2]=rgb(v&31);d[i+3]=255;
+    }
+   }
+  }
+  g.putImageData(im,0,0);return {canvas:c,plan};
+ }
+ function drawTerminal(ctx,elapsed,w,h){
+  if(!terminalLayers)terminalLayers=[makeTerminalLayer(0),makeTerminalLayer(1)];
+  for(const {canvas,plan} of terminalLayers){
+   const sourceY=plan?canvas.height-320-(terminalOffset(plan,elapsed)-plan.first*16):0;
+   ctx.drawImage(canvas,22,Math.max(0,sourceY),180,320,0,0,w,h);
+  }
+ }
  function frameCanvas(index){
   const c=document.createElement('canvas');c.width=224;c.height=320;
   const ctx=c.getContext('2d',{alpha:false});
@@ -121,7 +172,7 @@
   if(!window.StrikersROM?.isLoaded())return false;
   if(frames)return true;
   if(busy)return busy;
-  busy=expand().then(()=>{cache.clear();tileCache.clear();terminalCanvas=null;dispatchEvent(new Event('strikers-stage1-ready'));return true})
+  busy=expand().then(()=>{cache.clear();tileCache.clear();terminalLayers=null;dispatchEvent(new Event('strikers-stage1-ready'));return true})
    .catch(e=>{busy=null;frames=null;console.warn('Stage 1 original:',e);return false});
   return busy;
  }
@@ -133,18 +184,10 @@
   const replayOrigin=window.StrikersFlightReplay?.ready()?window.StrikersFlightReplay.stats().earliestFrame:first.frame;
   const originalSeconds=(last.frame-replayOrigin)/60;
   // This tilemap capture ends at 2432 (32.27 s), whereas the airplane RAM
-  // runs until frame 4160 (61.33 s). Avoid a frozen scene after the last map.
+  // runs until frame 4160 (61.33 s). Continue over finite ROM map data only.
   if(stageTime>=originalSeconds){
-   const prior=frames.at(-2),deltaFrames=Math.max(1,last.frame-prior.frame);
-   const rawSpeed=(last.scroll-prior.scroll)*120/deltaFrames;
-   const scrollSpeed=Number.isFinite(rawSpeed)&&rawSpeed>35&&rawSpeed<225?rawSpeed:110;
-   const offset=((stageTime-originalSeconds)*scrollSpeed)%h;
-   const still=terminalCanvas||(terminalCanvas=frameCanvas(frames.length-1));
    ctx.save();ctx.imageSmoothingEnabled=false;
-   // Extrapolation ONLY: recycle the final recorded map tile to sustain
-   // camera motion. The missing original map data cannot be reconstructed.
-   ctx.drawImage(still,22,0,180,320,0,offset-h,w,h);
-   ctx.drawImage(still,22,0,180,320,0,offset,w,h);
+   drawTerminal(ctx,stageTime-originalSeconds,w,h);
    ctx.restore();return true;
   }
   // Use native 60 Hz timing while actual map frames exist.
@@ -162,7 +205,7 @@
  }
  function ready(){return !!frames&&!!window.StrikersROM?.isLoaded()}
  window.StrikersOriginalStage1=Object.freeze({ensure,ready,prepareMaps,draw,preview:()=>frames?frameCanvas(5):null,
-  info:()=>({frames:frames?.length??0,mapAudit,originalWidth:224,originalHeight:320,firstFrame:frames?.[0]?.frame??null,lastFrame:frames?.at(-1)?.frame??null,recordedSeconds:frames?(frames.at(-1).frame-frames[0].frame)/60:null,layerInterpolation:'independent-scroll-registers',extrapolation:'repeated-last-capture',firstFlightFrame:window.StrikersFlightReplay?.stats()?.earliestFrame??null,stage:1})});
- window.addEventListener('strikers-rom-ready',()=>{mapAudit=null;cache.clear();tileCache.clear();terminalCanvas=null;if(frames)for(const f of frames){f.nativeCodes=null;f.nativePalettes=null;}ensure()});
+  info:()=>({frames:frames?.length??0,mapAudit,terminalLimits:frames?[0,1].map(l=>{const p=terminalPlan(l);return p?{start:p.scroll,end:p.maxScroll,speed:p.speed}:null}):null,originalWidth:224,originalHeight:320,firstFrame:frames?.[0]?.frame??null,lastFrame:frames?.at(-1)?.frame??null,recordedSeconds:frames?(frames.at(-1).frame-frames[0].frame)/60:null,layerInterpolation:'independent-scroll-registers',extrapolation:'finite ROM map continuation; measured scroll speed; hold at data boundary',firstFlightFrame:window.StrikersFlightReplay?.stats()?.earliestFrame??null,stage:1})});
+ window.addEventListener('strikers-rom-ready',()=>{mapAudit=null;cache.clear();tileCache.clear();terminalLayers=null;if(frames)for(const f of frames){f.nativeCodes=null;f.nativePalettes=null;}ensure()});
  if(window.StrikersROM?.isLoaded())ensure();
 })();
