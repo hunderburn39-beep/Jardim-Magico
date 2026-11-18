@@ -89,3 +89,29 @@ for i,e in enumerate(scene_addresses):
         palettes+=1
 assert (refs,zeros,palettes)==(134,26,66)
 print('PASS: 11 scene descriptors, 22 lists, 134 map references, 26 separators and 66 palette pointers')
+
+# Native stage-one streams, checked against decompressed capture hashes.
+def native_cols(i):
+    a=l(0x59ba0+4*i)
+    rows,cols=w(a),w(a+2)
+    return [[w(a+8+2*((x&~1)*rows+y*min(2,cols-(x&~1))+(x&1))) for y in range(rows)] for x in range(cols)]
+def strip_hash(cols):
+    h=2166136261
+    for col in cols:
+        for v in col:
+            h=((h^v)*16777619)&0xffffffff
+    return h
+blank=native_cols(0)
+assert len(blank)==20 and all(len(c)==2 and not any(c) for c in blank)
+lower=native_cols(17)
+upper=native_cols(18)+[[0]*14 for _ in blank]+native_cols(19)+native_cols(20)
+assert (len(lower),len(upper))==(88,94)
+assert strip_hash(lower[1:22])==2063450238
+assert strip_hash(upper[1:22])==3657497936
+assert strip_hash(lower[61:82])==1594240493
+assert strip_hash(upper[73:94])==3551387059
+# Column 55 was different in the observed capture: retain runtime capture
+# instead of silently overwriting its tiles with the static ROM stream.
+assert strip_hash(upper[55:76])==1862373293
+assert strip_hash(upper[55:76])!=397576695
+print('PASS: original scene streams, opening and terminal capture hashes')
