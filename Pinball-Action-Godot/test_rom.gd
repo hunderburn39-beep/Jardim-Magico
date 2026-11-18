@@ -57,11 +57,20 @@ func _run(machine) -> void:
 		return
 	machine.update_ram(original, scroll, flags)
 	var tiles_before: int = machine.counters["tiles_decoded"]
+	var pixels_before: int = machine.counters["tile_pixels_written"]
 	modified = original.duplicate()
 	modified[0xd000] ^= 1
 	machine.update_ram(modified, scroll, flags)
 	if machine.counters["tiles_decoded"] != tiles_before + 1:
 		push_error("Single tile write decoded more than one tile")
+		quit(1)
+		return
+	if machine.counters["tile_pixels_written"] != pixels_before + 64:
+		push_error("Single tile must write only 64 indexed pixels")
+		quit(1)
+		return
+	if machine.fg_pixels != machine._indexed_rgba(machine.fg_index) or machine.bg_pixels != machine._indexed_rgba(machine.bg_index):
+		push_error("Incremental buffer differs from full conversion")
 		quit(1)
 		return
 	machine.update_ram(original, scroll, flags)
