@@ -1124,7 +1124,7 @@ function mainPortraitPlan(pixels,protectedPens,palette){
    if(dy<2&&hair[j+w]&&(native[j+w]>>>4)===bank&&native[j+w]!==q)changes++;
    const k=(3-Math.abs(dx))*(3-Math.abs(dy));weight+=k;weights.set(q,(weights.get(q)||0)+k);
   }
-  if(n>=15&&warm>=8&&changes>=9&&weights.size>=2&&(portraitPigment(palette[p])||warm>=Math.ceil(n*.65)))toneCells.push({i,weight,weights:[...weights]});
+  if(n>=13&&warm>=6&&changes>=5&&weights.size>=2&&(portraitPigment(palette[p])||warm>=Math.ceil(n*.58)))toneCells.push({i,weight,weights:[...weights]});
  }
  const pens=new Set();for(let i=0;i<ink.length;i++)if(ink[i]!==NONE)pens.add(ink[i]);for(const {weights} of toneCells)for(const [pen] of weights)pens.add(pen);
  return {ink,native,faceMask,faceCells,toneCells,pens:[...pens].sort((a,b)=>a-b),geometry:null};
@@ -1140,6 +1140,19 @@ function paintPortraitIllustration(g){
   if(stroke){g.strokeStyle=stroke;g.lineWidth=width;g.lineCap='round';g.lineJoin='round';g.stroke(q);}
  };
  const gradient=(x0,y0,x1,y1,stops)=>{const q=g.createLinearGradient(x0,y0,x1,y1);for(const [n,v] of stops)q.addColorStop(n,v);return q;};
+ // Long curved hair strands follow the swept-back shape in the reference.
+ // The caller's native texture mask clips these to the printed artwork.
+ for(const [d,paint,w] of [
+ ['M20 19 C50 44 30 78 77 108 S75 153 102 166','#ffbf5138',2.1],
+ ['M29 17 C63 47 45 83 84 103 S91 143 81 158','#ffe77a44',1.35],
+ ['M42 18 C78 45 48 77 91 100 S98 144 85 165','#e970223f',3],
+ ['M57 18 C89 54 65 78 103 98 S109 146 85 170','#ffca3438',1.6],
+ ['M72 19 C105 50 83 73 115 95 S124 139 111 159','#a82d3830',2.5],
+ ['M40 42 C39 83 68 103 61 126 Q57 150 80 169','#ffed8c38',1.2],
+ ['M51 48 C43 83 82 104 71 127 Q65 150 90 167','#f3a12548',1.9],
+ ['M83 40 Q101 71 130 88 T150 150','#ffad3639',2],
+ ['M105 59 Q139 88 145 113 T133 160','#d342393a',2.5]
+ ])path(d,null,paint,w);
  const skin=gradient(89,107,137,150,[[0,'#fff3b7'],[.32,'#ffe59b'],[.65,'#eeb66f'],[1,'#be713e']]);
  const neck=gradient(93,151,131,175,[[0,'#e2a15b'],[.48,'#ffedaa'],[1,'#d88a49']]);
  const hair=gradient(85,100,139,155,[[0,'#ffb32c'],[.27,'#df6820'],[.66,'#b82832'],[1,'#79144b']]);
