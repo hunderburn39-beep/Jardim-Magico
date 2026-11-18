@@ -34,3 +34,11 @@ for i,(name,base,config_addr) in enumerate(zip(['p38','p51','spitfire','bf109','
     print(name, 'configuration',hex(q),'20 records / 10 images')
 assert [(l(0x59654+i*4)-0x1b944)//32 for i in range(16)]==[15]+list(range(15))
 print('PASS: 10 original CRCs, program SHA256, 4674 descriptors, 120 aircraft records, 16 palette pointers')
+
+# Verify native UI descriptor starts and dimensions against the real program.
+ui={1439:(1,8),1447:(1,5),1452:(1,4),1458:(1,5),1463:(1,4),1467:(1,4),1471:(1,5),1478:(1,3),1485:(1,8),1493:(1,2),1505:(8,8),1569:(1,6),1575:(2,3),1581:(1,5),1586:(1,2),1588:(1,2),1592:(1,2),1665:(1,2),1669:(1,2)}
+for code,dimensions in ui.items():
+    assert defs[code]==dimensions,(code,defs[code])
+for code in range(1495,1505):
+    assert defs[code]==(1,1)
+print('PASS: 29 UI sprite assembly sizes, including the original title publisher and ending')
