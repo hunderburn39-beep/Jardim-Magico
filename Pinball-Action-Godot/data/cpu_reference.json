@@ -1,0 +1,204 @@
+{
+  "description": "Replay original JS Z80, 6500 instructions max and NMI per frame; coin frames 30–43, start1 85–102, launch 170–189, left 210–229, right 250–269",
+  "source_blob": "411dca2c49b44bb3f11ff0520c057bb20dfc98a0",
+  "checkpoints": [
+    {
+      "frame": 1,
+      "pc": 102,
+      "sp": 53242,
+      "r": [
+        0,
+        0,
+        25,
+        90,
+        192,
+        8,
+        0,
+        207
+      ],
+      "f": 92,
+      "steps": 6500,
+      "scroll": 0,
+      "flipped": 64,
+      "credits": 0,
+      "ram_hash": "57e2d2f9",
+      "sound_count": 0
+    },
+    {
+      "frame": 30,
+      "pc": 102,
+      "sp": 53242,
+      "r": [
+        0,
+        0,
+        80,
+        138,
+        192,
+        8,
+        0,
+        175
+      ],
+      "f": 92,
+      "steps": 195000,
+      "scroll": 0,
+      "flipped": 64,
+      "credits": 0,
+      "ram_hash": "695801c2",
+      "sound_count": 0
+    },
+    {
+      "frame": 60,
+      "pc": 102,
+      "sp": 53242,
+      "r": [
+        3,
+        0,
+        210,
+        83,
+        192,
+        8,
+        0,
+        255
+      ],
+      "f": 116,
+      "steps": 390000,
+      "scroll": 0,
+      "flipped": 64,
+      "credits": 1,
+      "ram_hash": "ef3ef090",
+      "sound_count": 2
+    },
+    {
+      "frame": 90,
+      "pc": 102,
+      "sp": 53240,
+      "r": [
+        11,
+        0,
+        193,
+        91,
+        192,
+        8,
+        0,
+        3
+      ],
+      "f": 116,
+      "steps": 585000,
+      "scroll": 0,
+      "flipped": 64,
+      "credits": 0,
+      "ram_hash": "e2a7691a",
+      "sound_count": 3
+    },
+    {
+      "frame": 120,
+      "pc": 102,
+      "sp": 53240,
+      "r": [
+        3,
+        254,
+        193,
+        121,
+        192,
+        8,
+        0,
+        3
+      ],
+      "f": 124,
+      "steps": 780000,
+      "scroll": 3,
+      "flipped": 64,
+      "credits": 0,
+      "ram_hash": "c080f65c",
+      "sound_count": 4
+    },
+    {
+      "frame": 180,
+      "pc": 102,
+      "sp": 53240,
+      "r": [
+        122,
+        165,
+        133,
+        100,
+        192,
+        8,
+        0,
+        1
+      ],
+      "f": 125,
+      "steps": 1170000,
+      "scroll": 3,
+      "flipped": 64,
+      "credits": 0,
+      "ram_hash": "1a6f30c7",
+      "sound_count": 5
+    },
+    {
+      "frame": 240,
+      "pc": 102,
+      "sp": 53238,
+      "r": [
+        159,
+        16,
+        1,
+        112,
+        115,
+        215,
+        0,
+        112
+      ],
+      "f": 17,
+      "steps": 1560000,
+      "scroll": 3,
+      "flipped": 64,
+      "credits": 0,
+      "ram_hash": "eb32ce41",
+      "sound_count": 29
+    },
+    {
+      "frame": 300,
+      "pc": 102,
+      "sp": 53240,
+      "r": [
+        156,
+        16,
+        125,
+        99,
+        119,
+        27,
+        0,
+        156
+      ],
+      "f": 36,
+      "steps": 1950000,
+      "scroll": 3,
+      "flipped": 64,
+      "credits": 0,
+      "ram_hash": "3cc5c622",
+      "sound_count": 65
+    },
+    {
+      "frame": 360,
+      "pc": 102,
+      "sp": 53240,
+      "r": [
+        175,
+        6,
+        133,
+        100,
+        192,
+        8,
+        0,
+        1
+      ],
+      "f": 125,
+      "steps": 2340000,
+      "scroll": 3,
+      "flipped": 64,
+      "credits": 0,
+      "ram_hash": "7a55c14f",
+      "sound_count": 87
+    }
+  ]
+}
