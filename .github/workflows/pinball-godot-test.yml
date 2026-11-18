@@ -1,0 +1,31 @@
+name: Pinball Godot validation (development only)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - pinball-godot-native
+    paths:
+      - 'Pinball-Action-Godot/**'
+      - '.github/workflows/pinball-godot-test.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.3
+        run: |
+          curl --fail --location --retry 2 -o godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.3-stable_linux.x86_64
+          echo "$PWD" >> "$GITHUB_PATH"
+      - name: Import native project
+        run: Godot_v4.3-stable_linux.x86_64 --headless --path Pinball-Action-Godot --editor --import
+      - name: Verify ROM render and palette regressions
+        run: Godot_v4.3-stable_linux.x86_64 --headless --path Pinball-Action-Godot --script res://test_rom.gd
+      - name: Compare original Z80 replay
+        run: Godot_v4.3-stable_linux.x86_64 --headless --path Pinball-Action-Godot --script res://test_cpu.gd
+      - name: Launch scene without publishing
+        run: Godot_v4.3-stable_linux.x86_64 --headless --path Pinball-Action-Godot --quit-after 120
