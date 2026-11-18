@@ -4,7 +4,7 @@
    Sampled every 16 emulated frames, interpolating scroll between captures. */
 (()=>{'use strict';
  const PACKED=(window.StrikersCaptureChunks||[]).join('');
- let frames=null,busy=null,cache=new Map(),tileCache=new Map(),terminalCanvas=null;
+ let frames=null,busy=null,cache=new Map(),tileCache=new Map(),terminalCanvas=null,mapAudit=null;
  function dataUrlToBytes(text){
   const src=atob(text),a=new Uint8Array(src.length);
   for(let i=0;i<src.length;i++)a[i]=src.charCodeAt(i);
@@ -29,6 +29,25 @@
   }
   if(offset!==ab.byteLength)throw Error('Comprimento inválido da captura');
  }
+ // Replace captured tile words ONLY when the original program contains
+ // the exact same strip at the recorded scroll column. Unmatched strips
+ // retain the capture. Both layers' original map IDs are independently known.
+ function prepareMaps(){
+  if(mapAudit)return mapAudit;
+  if(!frames||!window.StrikersOriginalMaps?.all())return null;
+  const totals={matchedLayers:0,retainedLayers:0,matchedWords:0};
+  for(const f of frames){
+   f.nativeCodes=[null,null];
+   for(let layer=0;layer<2;layer++){
+    const start=layer*294,col=layer===0?f.firstCol:f.firstCol1;
+    const strip=window.StrikersOriginalMaps.matchCapture(layer,col,f.codes.subarray(start,start+294));
+    if(strip){f.nativeCodes[layer]=strip;totals.matchedLayers++;totals.matchedWords+=strip.length;}
+    else totals.retainedLayers++;
+   }
+  }
+  cache.clear();terminalCanvas=null;
+  mapAudit=Object.freeze(totals);return mapAudit;
+ }
  function tile(id){
   if(tileCache.has(id))return tileCache.get(id);
   const api=window.StrikersROM,arr=new Uint8Array(256);
@@ -46,7 +65,7 @@
   const RGB5=v=>(v<<3)|(v>>2);
   const scroll=layer===0?fr.scroll:fr.scroll1,firstCol=layer===0?fr.firstCol:fr.firstCol1;
   for(let col=0;col<21;col++)for(let row=0;row<14;row++){
-   const word=fr.codes[layer*21*14+col*14+row],colors=(word>>13)&7,pxs=tile(word&8191);
+   const word=fr.nativeCodes?.[layer]?.[col*14+row]??fr.codes[layer*21*14+col*14+row],colors=(word>>13)&7,pxs=tile(word&8191);
    for(let dx=0;dx<16;dx++){
     const rawx=(firstCol*16+col*16+dx)-scroll;
     if(rawx<0||rawx>=320)continue;
@@ -127,8 +146,8 @@
   ctx.restore();return true;
  }
  function ready(){return !!frames&&!!window.StrikersROM?.isLoaded()}
- window.StrikersOriginalStage1=Object.freeze({ensure,ready,draw,preview:()=>frames?frameCanvas(5):null,
-  info:()=>({frames:frames?.length??0,originalWidth:224,originalHeight:320,firstFrame:frames?.[0]?.frame??null,lastFrame:frames?.at(-1)?.frame??null,recordedSeconds:frames?(frames.at(-1).frame-frames[0].frame)/60:null,layerInterpolation:'independent-scroll-registers',extrapolation:'repeated-last-capture',firstFlightFrame:window.StrikersFlightReplay?.stats()?.earliestFrame??null,stage:1})});
- window.addEventListener('strikers-rom-ready',()=>ensure());
+ window.StrikersOriginalStage1=Object.freeze({ensure,ready,prepareMaps,draw,preview:()=>frames?frameCanvas(5):null,
+  info:()=>({frames:frames?.length??0,mapAudit,originalWidth:224,originalHeight:320,firstFrame:frames?.[0]?.frame??null,lastFrame:frames?.at(-1)?.frame??null,recordedSeconds:frames?(frames.at(-1).frame-frames[0].frame)/60:null,layerInterpolation:'independent-scroll-registers',extrapolation:'repeated-last-capture',firstFlightFrame:window.StrikersFlightReplay?.stats()?.earliestFrame??null,stage:1})});
+ window.addEventListener('strikers-rom-ready',()=>{mapAudit=null;cache.clear();tileCache.clear();terminalCanvas=null;if(frames)for(const f of frames)f.nativeCodes=null;ensure()});
  if(window.StrikersROM?.isLoaded())ensure();
 })();
