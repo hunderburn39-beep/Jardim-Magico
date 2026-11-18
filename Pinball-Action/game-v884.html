@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.99-HD dev — retrato e luzes";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.99-HD dev — rampas e flippers";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -583,8 +583,8 @@ function guideProfile(pens,code,fx,fy){
 }
 // V8.99: rounded rail contours between native half-row samples.
 // Cubic handles remain inside each segment's endpoint rectangle.
-function traceRailEdge(path,rows,selector,pt,reverse=false){
- const samples=[[selector(rows[0]),0],...rows.map((row,i)=>[selector(row),i+.5]),[selector(rows.at(-1)),rows.length]];
+function traceRailEdge(path,rows,selector,pt,reverse=false,offset=0){
+ const samples=[[selector(rows[0]),offset],...rows.map((row,i)=>[selector(row),offset+i+.5]),[selector(rows.at(-1)),offset+rows.length]];
  if(reverse)samples.reverse();
  const project=(u,v)=>pt(u,v);
  path.lineTo(...project(...samples[0]));
@@ -613,8 +613,10 @@ function drawGuideTile(g,profile,x,y,base){
  // These bands follow each original row's width instead of a global filter.
  band(o=>o.l,o=>o.l+(o.r-o.l)*.13,materialTone(base+dominant,-.38));
  band(o=>o.r-(o.r-o.l)*.17,o=>o.r,materialTone(base+dominant,-.48));
- band(o=>o.l+(o.r-o.l)*.15,o=>o.l+(o.r-o.l)*.31,materialTone(base+dominant,.32));
- band(o=>o.l+(o.r-o.l)*.33,o=>o.l+(o.r-o.l)*.43,materialTone(base+dominant,.15));
+ band(o=>o.l+(o.r-o.l)*.13,o=>o.l+(o.r-o.l)*.20,materialTone(base+dominant,.65));
+ band(o=>o.l+(o.r-o.l)*.20,o=>o.l+(o.r-o.l)*.33,materialTone(base+dominant,.28));
+ band(o=>o.l+(o.r-o.l)*.33,o=>o.l+(o.r-o.l)*.67,materialTone(base+dominant,.08));
+ band(o=>o.l+(o.r-o.l)*.67,o=>o.l+(o.r-o.l)*.83,materialTone(base+dominant,-.20));
  // Object-local, bevelled track face, kept inside each native strip.
  const edge=(side,amount)=>{
   const a=pt(rows[0].l,0),b=pt(rows[0].l,len);
@@ -655,12 +657,15 @@ function drawGuideTile(g,profile,x,y,base){
   }
   for(const part of tracks){
    const first=part[0],last=part.at(-1);
+   // Match both original native stripe boundaries with the same curved
+   // half-row interpolation used by the rail body. No extensions.
    g.beginPath();g.moveTo(...pt(first.l,first.i));
-   for(const o of part)g.lineTo(...pt(o.l,o.i+.5));
-   g.lineTo(...pt(last.l,last.i+1));g.lineTo(...pt(last.r,last.i+1));
-   for(let k=part.length-1;k>=0;k--)g.lineTo(...pt(part[k].r,part[k].i+.5));
-   g.lineTo(...pt(first.r,first.i));g.closePath();
-   g.fillStyle=colorAt(base+pen);g.fill();
+   traceRailEdge(g,part,o=>o.l,pt,false,first.i);
+   traceRailEdge(g,part,o=>o.r,pt,true,first.i);
+   g.closePath();
+   const shade=vertical?g.createLinearGradient(0,first.i,0,last.i+1):g.createLinearGradient(first.i,0,last.i+1,0);
+   shade.addColorStop(0,materialTone(base+pen,-.07));shade.addColorStop(.38,materialTone(base+pen,.15));shade.addColorStop(1,materialTone(base+pen,-.07));
+   g.fillStyle=shade;g.fill();
   }
  }
  const spine=vertical?g.createLinearGradient(0,0,0,len):g.createLinearGradient(0,0,len,0);
@@ -1465,7 +1470,7 @@ function castShadowArt(image){
  // Soft penumbra and a darker contact shadow, precomputed once per sprite.
  g.globalAlpha=.085;
  for(const [x,y] of [[-3,-3],[0,-3],[3,-3],[-3,0],[3,0],[-3,3],[0,3],[3,3]])g.drawImage(ink,pad+x,pad+y);
- g.globalAlpha=.40;g.drawImage(ink,pad,pad);
+ g.globalAlpha=.31;g.drawImage(ink,pad,pad);
  g.globalAlpha=1;hdCastShadows.set(image,art);return art;
 }
 // Glows are generated only for positively identified lit bumper frames,
@@ -1576,14 +1581,20 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
   const long=right-left,cross=bottom-top;
   f.fillStyle=grad(0,top,0,bottom,[[0,'#121927'],[.13,'#555e65'],[.27,'#151e28'],[.80,'#111720'],[1,'#070c15']]);f.fillRect(left-1,top-1,long+2,cross+2);
   const inset=Math.min(.9,cross*.18);f.fillStyle=chrome(0,top,0,bottom);f.fillRect(left,top+inset,long,cross-2*inset);
-  f.fillStyle=grad(0,top+cross*.25,0,bottom-cross*.25,[[0,rgb(7,.6)],[.35,rgb(7,.16)],[.65,rgb(7,-.03)],[1,rgb(7,-.42)]]);
+  // A polished upper face above a recessed rubber band. The ROM's
+  // pose, silhouette, palette and pivot stay untouched.
+  f.fillStyle=grad(0,top+cross*.18,0,bottom-cross*.20,[[0,rgb(7,.76)],[.14,rgb(7,.46)],[.37,rgb(7,.21)],[.60,rgb(7,.05)],[.82,rgb(7,-.19)],[1,rgb(7,-.35)]]);
   f.fillRect(left,top+cross*.26,long,cross*.48);
+  f.fillStyle=grad(0,top,0,bottom,[[0,'rgba(5,8,16,0)'],[.66,'rgba(5,8,16,0)'],[.72,'rgba(5,8,16,.52)'],[.83,'rgba(5,8,16,.62)'],[1,'rgba(5,8,16,.12)']]);
+  f.fillRect(left,top,long,cross);
+  f.fillStyle=grad(left,0,right,0,[[0,'rgba(255,255,255,0)'],[.18,'rgba(255,255,255,.32)'],[.50,'rgba(255,255,255,.52)'],[.80,'rgba(255,255,255,.12)'],[1,'rgba(255,255,255,0)']]);
+  f.fillRect(left,top+cross*.32,long,Math.min(.55,cross*.13));
   // Thin polished chamfers and a recessed longitudinal rubber insert.
   // The original sprite mask clips the entire mechanical surface.
   f.fillStyle=grad(left,0,right,0,[[0,'rgba(0,0,0,.50)'],[.16,'rgba(0,0,0,0)'],[.68,'rgba(255,255,255,.11)'],[1,'rgba(0,0,0,.40)']]);
   f.fillRect(left,top+cross*.26,long,cross*.48);
   f.fillStyle='rgba(255,255,255,.72)';f.fillRect(left,top+cross*.26,long,Math.min(.28,cross*.075));
-  f.fillStyle='rgba(0,0,0,.34)';f.fillRect(left,bottom-cross*.27,long,Math.min(.35,cross*.08));
+  f.fillStyle='rgba(0,0,0,.52)';f.fillRect(left,bottom-cross*.27,long,Math.min(.42,cross*.10));
   f.fillStyle=grad(left,0,right,0,[[0,'rgba(255,255,255,0)'],[.25,'rgba(255,255,255,.46)'],[.72,'rgba(255,255,255,.24)'],[1,'rgba(255,255,255,0)']]);
   f.fillRect(left,top+inset,long,Math.min(.30,cross*.09));
   f.restore();
