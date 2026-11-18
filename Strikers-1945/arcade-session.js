@@ -19,27 +19,32 @@ function route(rng){
  for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
  return a.concat(fixedStages);
 }
-function create(rng=Math.random){
+// The reconstruction route is explicit and separate from the original arcade
+// research model. Never report synthetic stages as recovered arcade locations.
+const reconstructionStages=Object.freeze(['capture1','preview2','preview3','preview4','preview5','preview6']);
+function create(rng=Math.random,options={}){
+ const preview=options.profile==='reconstruction';
+ const routeForSession=()=>preview?reconstructionStages.slice():route(rng);
  let credits=0,mode='title',loop=0,index=0,selected=null,continues=0,order=[],results=[];
- function state(){return Object.freeze({credits,mode,loop,index,selected,continues,stage:order[index]??null,order:order.slice(),results:results.slice()});}
+ function state(){return Object.freeze({profile:preview?'reconstruction':'arcade',credits,mode,loop,index,selected,continues,stage:order[index]??null,order:order.slice(),results:results.slice()});}
  function coin(){credits=Math.min(99,credits+1);return state();}
  function start(){
   if(mode!=='title'||credits===0)return false;
-  credits--;mode='select';loop=1;index=0;selected=null;continues=0;order=route(rng);results=[];return true;
+  credits--;mode='select';loop=1;index=0;selected=null;continues=0;order=routeForSession();results=[];return true;
  }
  function choose(id){if(mode!=='select'||!roster.some(p=>p.id===id))return false;selected=id;mode='play';return true;}
  function clear(metrics={}){
   if(mode!=='play')return false;
   results.push(Object.freeze({loop,stage:index+1,id:order[index],time:Math.max(0,Number(metrics.time)||0),gold:Math.max(0,Number(metrics.gold)||0),shootDown:Math.max(0,Number(metrics.shootDown)||0)}));
-  if(index<7){index++;return true;}
-  mode=loop===1?'results':'ending';return true;
+  if(index<order.length-1){index++;return true;}
+  mode=!preview&&loop===1?'results':'ending';return true;
  }
- function nextLoop(){if(mode!=='results')return false;loop=2;index=0;order=route(rng);mode='play';return true;}
+ function nextLoop(){if(preview||mode!=='results')return false;loop=2;index=0;order=route(rng);mode='play';return true;}
  function lose(){if(mode!=='play')return false;mode=loop===1?'continue':'gameover';return true;}
  function resume(){if(mode!=='continue'||credits===0)return false;credits--;continues++;mode='play';return true;}
  function decline(){if(mode!=='continue')return false;mode='gameover';return true;}
  function title(){mode='title';loop=0;index=0;selected=null;order=[];results=[];continues=0;return state();}
  return Object.freeze({state,coin,start,choose,clear,nextLoop,lose,resume,decline,title});
 }
-root.StrikersArcade=Object.freeze({roster,randomStages,fixedStages,create,route});
+root.StrikersArcade=Object.freeze({roster,randomStages,fixedStages,reconstructionStages,create,route});
 })(typeof window==='object'?window:globalThis);
