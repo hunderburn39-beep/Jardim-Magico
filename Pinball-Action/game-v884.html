@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.92 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.97 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -115,6 +115,7 @@ class PBZ80 {
   if(a===0xe606){if(this.scroll!==v){this.scroll=v;this.videoChanged=true;}return;}
   if(a===0xe800){if(this.cb.sound)this.cb.sound(v);return;}
   if(a<0xc000)return;
+  if(a>=0xe400&&a<0xe600)this.cb.paletteWrite?.(a,v,this.pc);
   if(this.mem[a]!==v){
    if(a>=0xd000&&a<0xe080){this.videoChanged=true;if(a<0xd800)this.fgDirty=true;else if(a<0xe000)this.bgDirty=true;}
    if(a>=0xe400&&a<0xe600){this.videoChanged=true;this.paletteChanged=true;}
@@ -138,10 +139,27 @@ class PBZ80 {
   if(op===4){res=a&v;h=FH;}else if(op===5)res=a^v;else res=a|v;
   this.r[7]=res;this.f=(res&(FS|F3|F5))|(res===0?FZ:0)|(PAR[res]?FP:0)|h;
  }
- alu(op,v){let a=this.r[7];
-  if(op===0||op===1){let carry=op===1&&(this.f&FC)?1:0;this.r[7]=this.aflags(a,v+carry,a+v+carry,'add');if((a&15)+(v&15)+carry>15)this.f|=FH;if((~(a^v)&(a^this.r[7])&128)!==0)this.f|=FP;}
-  else if(op===2||op===3||op===7){let carry=op===3&&(this.f&FC)?1:0;let res=a-v-carry;let z=this.aflags(a,(v+carry)&255,res,'sub');if(op!==7)this.r[7]=z;if((a&15)<(v&15)+carry)this.f|=FH;if(((a^v)&(a^z)&128)!==0)this.f|=FP;}
-  else this.logic(v,op);
+ alu(op,v){
+  const a=this.r[7];v&=255;
+  if(op>=4&&op<=6){this.logic(v,op);return;}
+  const subtract=op===2||op===3||op===7;
+  const carry=(op===1||op===3)&&(this.f&FC)?1:0;
+  const raw=subtract?a-v-carry:a+v+carry,z=raw&255;
+  // Carry/half-carry and signed overflow must use the unmodified
+  // operand and the incoming carry, not an operand pre-incremented
+  // modulo 256. This matters at nibble and signed boundaries.
+  let f=(z&FS)|(z===0?FZ:0)|((op===7?v:z)&(F3|F5));
+  if(subtract){
+   f|=FN;
+   if((a&15)<(v&15)+carry)f|=FH;
+   if(((a^v)&(a^z)&128)!==0)f|=FP;
+   if(raw<0)f|=FC;
+  }else{
+   if((a&15)+(v&15)+carry>15)f|=FH;
+   if((~(a^v)&(a^z)&128)!==0)f|=FP;
+   if(raw>255)f|=FC;
+  }
+  this.f=f;if(op!==7)this.r[7]=z;
  }
  incdec(v,down=false){let z=(v+(down?-1:1))&255;let f=(this.f&FC)|(z&(FS|F3|F5))|(z===0?FZ:0);
   if(down)f|=FN|((v&15)===0?FH:0)|(v===128?FP:0);else f|=((v&15)===15?FH:0)|(v===127?FP:0);
@@ -785,17 +803,25 @@ function isMainPrint(bytes){
 // Main playfield portrait remains exclusively ROM-derived.
 // The ten original playfield inserts are not separate sprite RAM
 // objects. Read their exact silhouette and live palette from the board.
-const mainInserts=[[101,81,192],[123,81,240],[77,96,192],[147,96,240],[65,122,192],[160,122,240],[77,145,192],[147,145,240],[100,162,224],[123,162,224]];
+// Exact original independent lamp palette entries, in portrait order.
+const mainInserts=[[101,81,192,203],[123,81,240,254],[77,96,192,204],[147,96,240,253],[65,122,192,205],[160,122,240,252],[77,145,192,206],[147,145,240,251],[100,162,224,232],[123,162,224,233]];
+const mainLampPens=new Set(mainInserts.map(o=>o[3]));
+function mainLampLit(rgb){
+ // Native Z80 writes 0x00f (red) on activation and 0x643 (blue-grey) on reset.
+ const r=rgb&255,g=(rgb>>>8)&255,b=(rgb>>>16)&255;
+ return r>=170&&r>g*1.7&&r>b*1.7;
+}
 function mainInsertBounds(pixels){
  const out=[];
- for(const [x,y,base] of mainInserts){
-  let l=256,r=-1,t=256,b=-1,n=0;
+ for(const [x,y,base,pen] of mainInserts){
+  let l=256,r=-1,t=256,b=-1,n=0;const cells=[];
   for(let dy=-9;dy<=9;dy++)for(let dx=-9;dx<=9;dx++){
    const X=x+dx,Y=y+dy,p=pixels[(239-X)*256+Y];
+   if(p===pen)cells.push([X,Y]);
    if(p<base||p>base+3)continue;
    l=Math.min(l,X);r=Math.max(r,X);t=Math.min(t,Y);b=Math.max(b,Y);n++;
   }
-  if(n>=65&&r-l>=9&&b-t>=9&&r-l<=18&&b-t<=18)out.push({base,cx:(l+r+1)/2,cy:(t+b+1)/2,rx:(r-l+1)/2,ry:(b-t+1)/2});
+  if(n>=65&&cells.length>=24&&r-l>=9&&b-t>=9&&r-l<=18&&b-t<=18)out.push({base,pen,cells,cx:(l+r+1)/2,cy:(t+b+1)/2,rx:(r-l+1)/2,ry:(b-t+1)/2});
  }
  return out;
 }
@@ -803,8 +829,10 @@ function paintMainInserts(g){
  if(typeof Path2D!=='function'||(cpu.flipped&1)||!isMainPrint(memory))return 0;
  const inserts=mainInsertBounds(bgPixels);
  g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
+ let litCount=0;
  for(const o of inserts){
-  const {base,cx,cy,rx,ry}=o;
+  const {base,pen,cells,cx,cy,rx,ry}=o,lit=mainLampLit(palette32[pen]);
+  if(lit)litCount++;
   g.save();g.translate(cx,cy);g.scale(rx,ry);
   const circle=(r,ink)=>{g.fillStyle=ink;g.beginPath();g.arc(0,0,r,0,Math.PI*2);g.fill();};
   const border=g.createLinearGradient(-.8,-.8,.8,.8);
@@ -813,14 +841,56 @@ function paintMainInserts(g){
   const glass=g.createRadialGradient(-.28,-.3,.04,.04,.05,.8);
   for(const [t,c] of [[0,materialTone(base+1,.68)],[.27,materialTone(base+1,.24)],[.67,colorAt(base+2)],[1,materialTone(base+2,-.45)]])glass.addColorStop(t,c);
   circle(.65,glass);
-  for(let i=0;i<8;i++){g.save();g.rotate(i*Math.PI/4);const q=new Path2D('M0 -.09 L.14 -.6 L.35 -.49 L.13 -.03 Z');g.fillStyle=i%2?materialTone(base+3,-.12):materialTone(base+3,.3);g.fill(q);g.restore();}
-  circle(.12,materialTone(base+3,.7));
-  g.lineWidth=.047;g.strokeStyle='rgba(255,255,255,.46)';g.beginPath();g.arc(0,0,.83,3.72,5.10);g.stroke();
+  g.lineWidth=.047;g.strokeStyle='rgba(255,255,255,.32)';g.beginPath();g.arc(0,0,.83,3.72,5.10);g.stroke();
   g.restore();
+  // Recover the actual ROM light segments, which the old artwork covered.
+  // Each has a unique live palette entry; never share a lamp state.
+  if(lit){
+   const glow=g.createRadialGradient(cx,cy,0,cx,cy,Math.max(rx,ry)*.95);
+   glow.addColorStop(0,'rgba(255,85,35,.36)');glow.addColorStop(.48,'rgba(255,20,0,.26)');glow.addColorStop(1,'rgba(255,0,0,0)');
+   g.fillStyle=glow;g.beginPath();g.ellipse(cx,cy,rx*.96,ry*.96,0,0,Math.PI*2);g.fill();
+  }
+  const nativeLight=new Path2D();
+  for(const [x,y] of cells)nativeLight.rect(x,y,1,1);
+  g.fillStyle=colorAt(pen);g.fill(nativeLight);
+  if(lit){
+   g.save();g.clip(nativeLight);g.fillStyle=materialRadial(g,pen,cx,cy,Math.max(rx,ry),true);g.fillRect(cx-rx,cy-ry,rx*2,ry*2);g.restore();
+  }
  }
- g.restore();return inserts.length;
+ g.restore();renderStats.mainLampsLit=litCount;return inserts.length;
 }
-
+// A small local CRT-style phosphor halo. The original ROM pixel colours,
+// sprites and text remain unchanged; only neighbouring background pixels
+// receive a restrained display effect while their own lamp is actually on.
+function restoreMainLampInk(g,pixels){
+ const spans=nativeLiveSpans(pixels,mainLampPens);
+ g.save();g.setTransform(HD,0,0,HD,0,0);
+ let count=0;
+ for(const [pen,runs] of spans){g.fillStyle=colorAt(pen);for(const [x,y,width] of runs){g.fillRect(x,y,width,1);count+=width;}}
+ g.restore();return count;
+}
+function classicMainLampGlow(pixels,rgba,palette,srcStart,flipped){
+ let active=0;
+ for(const [x,y,base,pen] of mainInserts){
+  const color=palette[pen];if(!mainLampLit(color))continue;
+  active++;
+  for(let dy=-9;dy<=9;dy++)for(let dx=-9;dx<=9;dx++){
+   const px=x+dx,py=y+dy,hwX=flipped?255-py:py,hwY=flipped?16+px:239-px;
+   const xx=(hwX-srcStart+256)&255,yy=hwY;
+   if(yy<=16||yy>=239)continue;
+   const at=yy*256+xx,index=pixels[at];
+   if(index<128||mainLampPens.has(index))continue;
+   let near=false;
+   for(const [u,v] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    if(pixels[(yy+v)*256+((xx+u+256)&255)]===pen){near=true;break;}
+   }
+   if(!near)continue;
+   const bg=palette[index],mix=(shift)=>Math.round(((bg>>>shift)&255)*.86+((color>>>shift)&255)*.14);
+   rgba[at]=(0xff000000|(mix(16)<<16)|(mix(8)<<8)|mix(0))>>>0;
+  }
+ }
+ return active;
+}
 
 // V8.87 — each extra table is recognized by native static tile signatures,
 // extracted by invoking the original 1261h map decoder on isolated RAM.
@@ -900,14 +970,74 @@ function redrawExtraPrint(g){
  return {table:table.id,zones:plan.length,cells,regions};
 }
 
+// Keep ROM-driven colour regions visible even when HD artwork crosses them.
+// Learn live palette writes only while an identical board map is active;
+// a table's initial palette load must not mark its entire illustration.
+const livePenPlans=new WeakMap();
+// Four bounded ROM table identities: retain learned light destinations even
+// when the HD canvas cache is evicted or CRT is active for every transition.
+const rememberedTablePens=new Map();
+function livePenPlan(cache){
+ let plan=livePenPlans.get(cache);
+ if(!plan){plan={pens:new Set(),spans:null,history:null};livePenPlans.set(cache,plan);}
+ return plan;
+}
+function tableLampIdentity(bytes){
+ if(isMainPrint(bytes))return 'main';
+ return identifyExtraPrint(bytes)?.id||null;
+}
+function bindTableLightHistory(plan,identity,used){
+ if(!identity){plan.history=null;return 0;}
+ let known=rememberedTablePens.get(identity);
+ if(!known){known=new Set();rememberedTablePens.set(identity,known);}
+ plan.history=known;
+ const mask=new Uint8Array(256);
+ for(const pen of known)mask[pen]=1;
+ return learnLivePens(plan,mask,used);
+}
+function learnLivePens(plan,changed,used){
+ let added=0;
+ for(let p=128;p<256;p++)if(changed[p]&&used[p]){
+  if(plan.history)plan.history.add(p);
+  if(!plan.pens.has(p)){plan.pens.add(p);added++;}
+ }
+ if(added)plan.spans=null;
+ return added;
+}
+function nativeLiveSpans(pixels,pens){
+ const spans=new Map();
+ for(let y=0;y<256;y++)for(let x=0;x<256;){
+  const pen=pixels[y*256+x],left=x;while(x<256&&pixels[y*256+x]===pen)x++;
+  if(!pens.has(pen))continue;
+  if(!spans.has(pen))spans.set(pen,[]);
+  spans.get(pen).push([left,y,x-left]);
+ }
+ return spans;
+}
+function redrawLiveBoardPens(g,plan,main,flipped){
+ if(!plan.pens.size)return 0;
+ if(!plan.spans)plan.spans=nativeLiveSpans(bgPixels,plan.pens);
+ g.save();g.setTransform(HD,0,0,HD,0,0);
+ let count=0;
+ for(const [pen,runs] of plan.spans){
+  // The ten independently rendered central lamps restore their own
+  // native segments in HD; in flipped mode use the original pixels.
+  if(main&&!flipped&&mainLampPens.has(pen))continue;
+  g.fillStyle=colorAt(pen);
+  for(const [x,y,width] of runs){g.fillRect(x,y,width,1);count+=width;}
+ }
+ g.restore();return count;
+}
 function rebuildHDBoard(){
  // Board colours can flash repeatedly while the tile map stays fixed.
  // Retain bounded, full-resolution variants of the exact same artwork.
- const key=Array.from(palette32.subarray(128),(v,i)=>boardUsedColors[i+128]?v:0).join(',');
+ const live=livePenPlan(boardVariants),main=isMainPrint(memory),flipped=!!(cpu.flipped&1);
+ bindTableLightHistory(live,tableLampIdentity(memory),boardUsedColors);
+ const key=Array.from(palette32.subarray(128),(v,i)=>boardUsedColors[i+128]?v:0).join(',')+'|'+[...live.pens].sort((a,b)=>a-b).join('.');
  if(boardVariants.has(key)){
   const hit=boardVariants.get(key);touchBoardVariant(boardVariants,key,hit);
   boardCtx.setTransform(1,0,0,1,0,0);boardCtx.drawImage(hit.image,0,0);
-  hdArtStats=hit.stats;hdBoardDirty=false;renderStats.boardCached++;return;
+  hdArtStats=hit.stats;renderStats.mainLampsLit=main?mainInserts.filter(o=>mainLampLit(palette32[o[3]])).length:0;hdBoardDirty=false;renderStats.boardCached++;return;
  }
  // Underpaint exact hardware colours to minimize subpixel seams at
  // adjacent opaque shapes. No texture, 3D depth or photographic effects.
@@ -931,13 +1061,19 @@ function rebuildHDBoard(){
   renderStats.boardGeometryBuilt++;
  }
  hdArtStats=stats;
+ if(!main)renderStats.mainLampsLit=0;
  boardCtx.imageSmoothingEnabled=false;boardCtx.drawImage(boardUnder,0,0);
  boardCtx.drawImage(boardInk,0,0,256,256);
  const print=redrawPrintedHalftones(boardCtx);stats.printCells=print.cells;stats.printPatches=print.patches;stats.printRegions=print.regions||0;
  // Preserve the original ROM portrait; never paint an invented face over it.
  stats.handIllustrated=false;stats.mainInserts=paintMainInserts(boardCtx);
  const extra=redrawExtraPrint(boardCtx);stats.extraPrint=extra;
- const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;hdBoardDirty=false;renderStats.boardFull++;
+ const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;
+ stats.livePalettePens=live.pens.size;stats.livePaletteCells=redrawLiveBoardPens(boardCtx,live,main&&stats.mainInserts===10,flipped);
+ // Restore exact native central light ink as the last background pass.
+ // Guide and decorative overlays can never hide an actual lamp segment.
+ if(main&&!flipped&&stats.mainInserts===10)stats.nativeMainLampCells=restoreMainLampInk(boardCtx,bgPixels);
+ hdBoardDirty=false;renderStats.boardFull++;
  const cached=document.createElement('canvas');cached.width=cached.height=SIZE;
  cached.getContext('2d',{alpha:false}).drawImage(hdBoard,0,0);
  touchBoardVariant(boardVariants,key,{image:cached,stats});
@@ -1615,7 +1751,30 @@ const fgRom=Uint8Array.from(atob(window.PB_ROM.fg),c=>c.charCodeAt(0));
 const spRom=Uint8Array.from(atob(window.PB_ROM.sp),c=>c.charCodeAt(0));
 let memory=Uint8Array.from(atob(window.PB_ROM.snapshot),c=>c.charCodeAt(0));
 const state=JSON.parse(window.PB_ROM.state);
-let cpu=new PBZ80(memory,state,{sound: arcadeSound});
+// The original interrupt loads six-byte light descriptors from 5C4Bh.
+// These describe destinations in palette RAM; unused slots are empty.
+// Observe actual writes, never start a light or modify the arcade state.
+function originalPaletteScripts(bytes){
+ const scripts=[];
+ for(let id=0;id<96;id++){
+  const at=0x5c4b+id*6,dst=bytes[at]|(bytes[at+1]<<8),source=bytes[at+2]|(bytes[at+3]<<8),width=bytes[at+4],repeat=bytes[at+5];
+  if(dst<0xe400||dst+width*2>0xe600||!width||!source||source>=0xc000)continue;
+  scripts.push({id,dst,source,width,repeat});
+ }
+ return scripts;
+}
+const romPaletteScripts=originalPaletteScripts(memory),romPaletteTargets=new Uint8Array(256),paletteScriptWrites=new Uint8Array(256);
+for(const script of romPaletteScripts)for(let i=0;i<script.width;i++)romPaletteTargets[((script.dst-0xe400)>>1)+i]=1;
+function observePaletteWrite(address,value,pc){
+ const pen=(address-0xe400)>>1;
+ // 018Ch ED B0 = native animation palette copy; PC after fetching
+ // the instruction is 018Eh. This includes one-shot sequences.
+ if(pc===0x018e&&pen>=0&&pen<256&&romPaletteTargets[pen]){
+  paletteScriptWrites[pen]=1;
+  renderStats.romPaletteWrites=(renderStats.romPaletteWrites||0)+1;
+ }
+}
+let cpu=new PBZ80(memory,state,{sound:arcadeSound,paletteWrite:observePaletteWrite});
 // DIP values supplied to the genuine Z80 input ports (0xe604/0xe605).
 // Re-run only the native coin initialization block against scratch RAM,
 // since the regular session begins from a captured post-boot state.
@@ -1680,6 +1839,15 @@ function rebuildPalette(){
   const value=(0xff000000 | (17*(b&15)<<16) | (17*((a>>4)&15)<<8) | (17*(a&15)))>>>0;
   if(initial||palette32[idx]!==value){paletteChangedIndices[idx]=1;if(idx>=128){if(boardUsedColors[idx])bgChanged=true;}else fgChanged=true;}
   palette32[idx]=value;
+ }
+ // Observe only stable-map palette updates. ROM values remain untouched.
+ if(!initial&&bgMemory===memory&&bgFlip===Number(!!(cpu.flipped&1))&&bgSnapshot){
+  const view=memory.subarray(0xd800,0xe000);let stable=true;
+  for(let i=0;i<view.length;i++)if(view[i]!==bgSnapshot[i]){stable=false;break;}
+  if(stable&&bgChanged){
+   const added=learnLivePens(livePenPlan(boardVariants),paletteChangedIndices,boardUsedColors);
+   renderStats.livePensLearned=(renderStats.livePensLearned||0)+added;
+  }
  }
  // Sprite art is palette-keyed and evicted by a bounded LRU cache.
  if(initial){clearBoardVariants(boardVariants);for(const saved of hdTableCache.values())clearBoardVariants(saved.variants);}
@@ -1753,6 +1921,7 @@ function render(){
   if(!same){
    rebuildLayer('bg',0xd800,0xdc00,bgPixels);
    bgSnapshot=view.slice();bgMemory=memory;bgFlip=flip;
+   bindTableLightHistory(livePenPlan(boardVariants),tableLampIdentity(memory),boardUsedColors);
   }else renderStats.boardUnchanged++;
   cpu.bgDirty=false;
  }
@@ -1772,6 +1941,13 @@ function render(){
   if(!fgSnapshot)fgSnapshot=view.slice();else fgSnapshot.set(view);
   fgMemory=memory;fgDecodedFlip=flip;cpu.fgDirty=false;
  }
+ // Apply after map decoding: palette scripts that fire during a table
+ // transition must be assigned to the new board, not the old one.
+ if(paletteScriptWrites.some(Boolean)){
+  const added=learnLivePens(livePenPlan(boardVariants),paletteScriptWrites,boardUsedColors);
+  if(added){hdBoardDirty=true;renderStats.romScriptPensLearned=(renderStats.romScriptPensLearned||0)+added;}
+  paletteScriptWrites.fill(0);
+ }
  if(hdMode){overlaySprites(false);presentHD();return;}
  const flipped=!!(cpu.flipped&1),scroll=(cpu.scroll-3)*(flipped?-1:1);
  // Scroll is a camera transform, not a reason to decode the full tilemap.
@@ -1790,6 +1966,8 @@ function render(){
    out32[dest]=palette32[framePixels[dest]];
   }
  }
+ if(isMainPrint(memory))renderStats.mainLampsLit=classicMainLampGlow(framePixels,out32,palette32,srcStart,flipped);
+ else renderStats.mainLampsLit=0;
  ctx.putImageData(outImage,0,0);
  if(hdMode){presentHD();return;}
  screen.fillStyle='#000';screen.fillRect(0,0,224,256);
@@ -2184,6 +2362,14 @@ window.addEventListener('keyup',e=>{let k=keyboard[e.code];if(!k)return;e.preven
 window.addEventListener('blur',()=>{active.clear();for(const k in pending)pending[k]=0;endStartRequest();refreshKeys()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)arcadeAudio.restore();if(document.hidden){active.clear();for(const k in pending)pending[k]=0;endStartRequest();refreshKeys()}});
 let last=performance.now(),acc=0,frames=0;
+const trajectoryDebug=!!window.PB_TEST||new URLSearchParams(location.search).has('test');
+const ballTrace=[];
+function recordBallFrame(){
+ if(!trajectoryDebug)return;
+ const raw=Array.from(memory.subarray(0xe03c,0xe040));
+ ballTrace.push({frame:frames,table:tableLampIdentity(memory),mode:memory[0xc009],scroll:cpu.scroll,raw,ballRegisters:Array.from(memory.subarray(0xc014,0xc027))});
+ if(ballTrace.length>600)ballTrace.shift();
+}
 const MAX_SIMULATION_DEBT=3;
 function limitSimulationDebt(debt,delta){return Math.min(MAX_SIMULATION_DEBT,debt+Math.max(0,delta)*60/1000);}
 function frame(now){
@@ -2202,7 +2388,7 @@ function frame(now){
   while(acc>=1&&count<2){
    // Our initial state was captured at the end of a real 60 Hz arcade frame.
    for(let i=0;i<6500;i++){if(cpu.halt)break;cpu.step();}
-   cpu.nmi();finishInputFrame();acc-=1;count++;frames++;
+   cpu.nmi();finishInputFrame();acc-=1;count++;frames++;recordBallFrame();
   }
   if(cpu.videoChanged||frames===0){
    const start=performance.now();render();const ms=performance.now()-start;
@@ -2219,8 +2405,12 @@ render();requestAnimationFrame(frame);
 // Entry activates the title command before the game CPU resumes.
 // Debug/test API (not visible in production).
 if(window.PB_TEST||new URLSearchParams(location.search).has('test')) window.__pbRom={
+ paletteScripts:()=>romPaletteScripts.map(o=>({...o})),
+ livePalette:()=>({table:tableLampIdentity(memory),pens:[...livePenPlan(boardVariants).pens].sort((a,b)=>a-b),cells:hdArtStats?.livePaletteCells||0,remembered:[...rememberedTablePens].map(([id,pens])=>({id,pens:[...pens].sort((a,b)=>a-b)}))}),
+ lamps:()=>({main:isMainPrint(memory),lamps:mainInserts.map(([x,y,base,pen])=>({x,y,pen,color:colorAt(pen),lit:mainLampLit(palette32[pen])}))}),
  state:()=>({pc:cpu.pc,sp:cpu.sp,credits:memory[0xc013],queuedStart:queuedStart?.key||null,score:memory.slice(0xc000,0xc010).join(','),steps:cpu.steps,scroll:cpu.scroll,frames,nmi:cpu.nmiEnable,flipped:cpu.flipped,memChecksum:memory.slice(0xd000,0xe600).reduce((a,b)=>a+b,0)}),
- input:(k,on)=>press(k,!!on),pending:()=>({...pending}),frame:()=>{for(let i=0;i<6500;i++){if(cpu.halt)break;cpu.step();}cpu.nmi();finishInputFrame();render()},
+ input:(k,on)=>press(k,!!on),pending:()=>({...pending}),frame:()=>{for(let i=0;i<6500;i++){if(cpu.halt)break;cpu.step();}cpu.nmi();finishInputFrame();frames++;recordBallFrame();render()},
+ ballTrace:()=>ballTrace.map(o=>({...o,raw:[...o.raw],ballRegisters:[...o.ballRegisters]})),
  spritePreview:(code,big=false,base=0)=>{const atlas=big?atlases.big:atlases.sp;if(!Number.isInteger(code)||code<0||code>=atlas.count||!Number.isInteger(base)||base<0||base>120||base%8)throw Error('Invalid sprite');const art=getSpriteArt(atlas,code,base,big);const native=document.createElement('canvas');native.width=atlas.w;native.height=atlas.h;const cx=native.getContext('2d');for(let y=0;y<atlas.h;y++)for(let x=0;x<atlas.w;x++){const pen=atlas.pens[code*atlas.w*atlas.h+y*atlas.w+x];if(pen){cx.fillStyle=colorAt(base+pen);cx.fillRect(x,y,1,1)}}return {hd:art.toDataURL(),original:native.toDataURL(),family:hdSpriteFamily(atlas,code,big)}},
  spriteAudit:(code,big=false,base=0)=>{
   const atlas=big?atlases.big:atlases.sp;
