@@ -1,22 +1,26 @@
-# Pinball Action — Godot native V0.1 (development)
+# Pinball Action — Godot native V0.2 (unverified development)
 
-An isolated native Godot 4 project, based on the V8.89 HTML branch. Open this folder's project.godot, then press F5. This first milestone is a ROM video diagnostic, not a playable port. It uses no WebView or embedded HTML.
+Open project.godot with Godot 4.3+ (Compatibility renderer). Press F5. The original machine program now has a GDScript CPU port, a separate native 2D hardware-video renderer and key/touch controls. This is a gameplay candidate, not a verified release. No Godot executable was available to run it in the authoring environment.
 
-- The supplied source snapshot, four original bitplane atlases and hardware state are extracted verbatim from the V8.89 HTML; see data/reference.json for the source blob and reference fingerprints.
-- Background, foreground, hardware palette, sprite priority, scrolling, original portrait rotation and crop are implemented in GDScript.
-- The GPU draws separate textures; static tile textures are updated only when the corresponding RAM or palette changes. A bounded sprite texture cache is shared across draws.
-- The ROM audit compares all atlas fingerprints and the independently composed first 224x256 RGBA frame with the reference. No new face or illustration is painted over the original.
+Controls: C inserts coin, Enter/1 starts P1, 2 starts P2, Space/Down launches, Left/A and Right/D operate flippers, Up/S shakes. Onscreen buttons mirror these inputs. Credit handling is delegated to the ROM, with automatic coin pulses when starting with insufficient credits.
 
-## Test locally
+The source original ROM snapshot, four bitplane atlases, palette, scroll and sprite order remain intact. No HTML/WebView is used. V0.2 displays the authentic original pixels; HD artwork still needs the native migration. Sound commands are counted but not played: the sound CPU and AY audio are not yet ported.
 
-Godot 4.3+ (Compatibility renderer). Run F5 and examine the Output panel for ROM AUDIT. Run the headless regression runner from this directory: `godot --headless --path . --script res://test_rom.gd`. No Godot executable was available in the authoring environment.
+## Regressions
 
-## Remaining migration
+From this directory:
+```
+godot --headless --path . --script res://test_rom.gd
+godot --headless --path . --script res://test_cpu.gd
+```
 
-1. Port the machine CPU/state/input backend and deterministic 60 Hz execution, retaining exact original rules.
-2. Wire the native sound CPU, timers and original AY audio.
-3. Verify all four tables and the original attract mode before HD sprite remastering.
-4. Add touch controls and aspect-safe mobile layout; measure performance on iPhone/Windows.
-5. Perform visual and gameplay regression testing before export or publication.
+The first checks the atlas fingerprints, reference frame and unchanged layers. The second compares nine full RAM/register/credit/sound-command checkpoints across a recorded 360-frame original JavaScript replay. The reference replay was executed against the original JS; target Godot execution remains unverified. Resolve any parsing or runtime error and any RAM hash difference before considering gameplay equivalent.
 
-Do not replace the original web game or merge this branch until verification is complete.
+## Remaining work
+
+- Run tests on a local Godot installation and verify actual ball/flippers/score/all four boards.
+- Port the original sound CPU and three AY chips.
+- Refine HD resources without altering original illustration; profile on iPhone and Windows.
+- Verify multitouch and export platforms.
+
+Do not replace the published HTML or merge until the project is tested.
