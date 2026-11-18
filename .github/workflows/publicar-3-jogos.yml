@@ -155,6 +155,7 @@ jobs:
           if test -s Pinball-Action-3D/index.html; then
             cp -a Pinball-Action-3D public/
             test -s public/Pinball-Action-3D/index.html
+            test -s public/Pinball-Action-3D/preview-v006.html
           fi
           mkdir -p public/Sugar-Rush-1000
           cp -a Sugar-Rush-1000/standalone public/Sugar-Rush-1000/
@@ -472,7 +473,7 @@ jobs:
           for f in index.html index2.html pinball-action.html; do
             if test -f "$f"; then cp "$f" "public/$f"; fi
           done
-          for d in css js assets jardim-phaser jardim-3d stake-preview templo-do-trovao Farao-Eterno Halloween Raspadinha-100X Pantanal Classic-Slot Blackline-Pinball Pinball-Action pinball-action Strikers-1945 Blocos-Neon; do
+          for d in css js assets jardim-phaser jardim-3d stake-preview templo-do-trovao Farao-Eterno Halloween Raspadinha-100X Pantanal Classic-Slot Blackline-Pinball Pinball-Action Pinball-Action-3D pinball-action Strikers-1945 Blocos-Neon; do
             if test -d "$d"; then cp -a "$d" public/; fi
           done
           mkdir -p public/Sugar-Rush-1000/standalone public/Sugar-Rush-1000/play
@@ -489,6 +490,7 @@ jobs:
           test -s public/Strikers-1945/stage1-captured-catalog.js
           test -s public/Strikers-1945/stage1-plane-frames.b64
           test -s public/Strikers-1945/original-rom.js
+          test -s public/Pinball-Action-3D/preview-v006.html
           echo 'Site de recuperação preparado com todas as pastas e catálogo ROM.'
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
