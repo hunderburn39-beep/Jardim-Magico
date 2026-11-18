@@ -9,7 +9,7 @@ An isolated native Godot 4 project, based on the V8.89 HTML branch. Open this fo
 
 ## Test locally
 
-Godot 4.3+ (Compatibility renderer). Run F5 and examine the Output panel for ROM AUDIT. A headless regression runner is included. No Godot executable was available in the authoring environment.
+Godot 4.3+ (Compatibility renderer). Run F5 and examine the Output panel for ROM AUDIT. Run the headless regression runner from this directory: `godot --headless --path . --script res://test_rom.gd`. No Godot executable was available in the authoring environment.
 
 ## Remaining migration
 
