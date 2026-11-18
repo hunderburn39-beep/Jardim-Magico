@@ -1,55 +1,52 @@
-/* Original Strikers 1945 World ROM UI graphics.
- * Verified by visual inspection of u1 LUT entries 1430-1504 using the
- * user's verified ten-chip ROM. Pixel indices are original; the grayscale
- * preview palette is provisional until the title-screen palette is captured.
+/* V9.1: UI artwork decoded from the World ROM's native sprite descriptors.
+ * The code and dimensions are verified; screen palette assignment is pending.
+ * No ROM pixels are stored in this file.
  */
 (()=>{'use strict';
-const blocks=Object.freeze({
- insertCoin:[1458,1459,1460,1461,1462],
- gameOver:[1447,1448,1449,1450,1451],
- continuePrompt:[1471,1472,1473,1474,1475],
- credit:[1478,1479,1480],
- start:[1452,1453,1454,1455],
- onePlayer:[1476],twoPlayer:[1477],
- copyright:[1485,1486,1487],
- psikyo:[1488,1489,1490,1491,1492,1493,1494],
- largeGameOver:[1439,1440,1441,1442,1443,1444,1445,1446],
- addCoin:[1463,1464,1465,1466],freePlay:[1467,1468,1469,1470],
- digit0:[1495],digit1:[1496],digit2:[1497],digit3:[1498],digit4:[1499],
- digit5:[1500],digit6:[1501],digit7:[1502],digit8:[1503],digit9:[1504]
+const codes=Object.freeze({
+ insertCoin:1458,gameOver:1447,largeGameOver:1439,continuePrompt:1471,
+ credit:1478,start:1452,onePlayer:1476,twoPlayer:1477,copyright:1485,publisherTail:1493,
+ addCoin:1463,freePlay:1467,ending:1505,warning:1569,select:1575,
+ pleaseWait:1581,yes:1586,no:1588,time:1592,powerUp:1665,powerDown:1669
 });
-const palette=Array.from({length:16},(_,i)=>Math.min(255,50+i*14));
+const blocks=Object.freeze(Object.fromEntries(Object.entries(codes).map(([name,code])=>[name,Object.freeze([code])])));
+function render(code){
+ const def=window.StrikersSpriteDefinitions;
+ if(!window.StrikersROM?.isVerified?.()||!def?.get(code))return null;
+ const c=document.createElement('canvas');
+ return def.draw(c,code)?c:null;
+}
 function draw(canvas,ids,scale=2){
- const rom=window.StrikersROM;
- if(!rom?.isLoaded()||!rom.isVerified?.()||!ids?.length)return false;
- canvas.width=ids.length*16;canvas.height=16;
- const c=canvas.getContext('2d');const im=c.createImageData(canvas.width,16);
- for(let i=0;i<ids.length;i++)for(let y=0;y<16;y++)for(let x=0;x<16;x++){
-  // Hardware sprite tiles rotated 90 degrees into portrait coordinates.
-  const pen=rom.rawPixel('sprite',ids[i],15-y,x,true);
-  if(pen===15)continue;
-  const p=(y*canvas.width+i*16+x)*4,v=palette[pen];
-  im.data[p]=v;im.data[p+1]=v;im.data[p+2]=v;im.data[p+3]=255;
- }
- c.putImageData(im,0,0);canvas.style.width=(canvas.width*scale)+'px';
- canvas.style.height=(16*scale)+'px';canvas.style.imageRendering='pixelated';
+ if(!ids?.length)return false;
+ // Each entry is the start of a complete original sprite, not a tile strip.
+ const sprites=ids.map(id=>id===null?null:render(id));
+ if(sprites.some((c,i)=>ids[i]!==null&&!c))return false;
+ const width=sprites.reduce((n,c)=>n+(c?.width??8),0);
+ const height=Math.max(16,...sprites.map(c=>c?.height??0));
+ canvas.width=width;canvas.height=height;
+ const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
+ let x=0;
+ for(const c of sprites){if(c)ctx.drawImage(c,x,Math.floor((height-c.height)/2));x+=c?.width??8;}
+ canvas.style.width=(width*scale)+'px';canvas.style.maxWidth='100%';
+ canvas.style.height='auto';canvas.style.imageRendering='pixelated';
  return true;
 }
 function digits(n){return String(Math.max(0,Math.min(99,Math.floor(Number(n)||0)))).padStart(2,'0').split('').map(c=>1495+Number(c));}
 function replaceArt(el,ids,label,scale=2){
  if(!el)return false;
  const canvas=document.createElement('canvas');canvas.setAttribute('aria-hidden','true');
- if(!draw(canvas,ids,scale))return false;
+ try{if(!draw(canvas,ids,scale))return false;}catch(e){console.warn('ROM UI:',e);return false;}
  el.setAttribute('aria-label',label);el.replaceChildren(canvas);return true;
 }
 function update(credits){
  replaceArt(document.getElementById('coinPrompt'),credits===0?blocks.insertCoin:blocks.start,credits===0?'INSERT COINS!':'START');
- replaceArt(document.getElementById('titleCredits'),[...blocks.credit,0,...digits(credits)],'CREDIT '+credits);
- replaceArt(document.getElementById('titleCopyright'),blocks.copyright,'©1995');
- replaceArt(document.getElementById('titlePublisher'),blocks.psikyo,'Psikyo');
+ replaceArt(document.getElementById('titleCredits'),[codes.credit,null,...digits(credits)],'CREDITS '+credits);
+ const publisher=document.getElementById('titlePublisher');
+ // The real logo spans two descriptors: 1485 holds the opening, 1493
+ // completes the final Y/O. Confirmed by decoding both from the private ZIP.
+ if(replaceArt(document.getElementById('titleCopyright'),[codes.copyright,codes.publisherTail],'©1995 Psikyo',1.6)&&publisher)publisher.hidden=true;
 }
-function result(won){
- if(!won)replaceArt(document.getElementById('resultTitle'),blocks.largeGameOver,'GAME OVER',2.25);
-}
-window.StrikersOriginalUI=Object.freeze({blocks,draw,digits,update,result,replaceArt,paletteStatus:'provisional grayscale'});
+function notice(el,name,label){const code=codes[name];return Number.isInteger(code)&&replaceArt(el,[code],label);}
+function result(won){if(!won)notice(document.getElementById('resultTitle'),'largeGameOver','GAME OVER');}
+window.StrikersOriginalUI=Object.freeze({codes,blocks,draw,digits,update,result,notice,replaceArt,paletteStatus:'provisional grayscale'});
 })();

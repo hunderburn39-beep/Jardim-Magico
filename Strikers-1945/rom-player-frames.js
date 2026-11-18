@@ -13,23 +13,39 @@ const groups=Object.freeze([
  {id:'zero',address:0x3b604,base:6462,reference:0x3e290},
  {id:'shinden',address:0x3b6a4,base:6502,reference:0x3e650}
 ].map(Object.freeze));
+// The game's own selection-index pointer table (referenced at 0xc04e).
+const SELECTION_TABLE=0x3d6b4;
+function long(r,a){return r.programWord(a)*65536+r.programWord(a+2)}
+function signedWord(r,a){const n=r.programWord(a);return n&0x8000?n-65536:n}
 let cached=null,canvases=new Map();
 function read(){
  const r=window.StrikersROM,defs=window.StrikersSpriteDefinitions;
  if(!r?.isVerified?.()||!defs)return null;
  if(cached)return cached;
  const map=new Map();
- for(const g of groups){
-  const pointer=r.programWord(g.reference)*65536+r.programWord(g.reference+2);
+ for(const [index,g] of groups.entries()){
+  const configAddress=long(r,SELECTION_TABLE+4*index);
+  if(configAddress+0x14!==g.reference)throw Error('Original selection table mismatch '+index);
+  const pointer=long(r,configAddress+0x14);
+  // Preserve raw values until each field's use in the CPU program is traced.
+  // The four 32-bit values look like fixed-point movement constants;
+  // the eight signed words are geometry candidates, not confirmed hitboxes.
+  const config=Object.freeze({
+   selectionIndex:index,address:configAddress,
+   initialWord:long(r,configAddress),
+   values32:Object.freeze(Array.from({length:4},(_,i)=>long(r,configAddress+4+4*i))),
+   values16:Object.freeze(Array.from({length:8},(_,i)=>signedWord(r,configAddress+24+2*i)))
+  });
   if(pointer!==g.address)throw Error('Aircraft table pointer mismatch: '+g.id);
   const records=[];
   for(let i=0;i<20;i++){
-   const a=g.address+8*i,rx=r.programWord(a),ry=r.programWord(a+2),attr=r.programWord(a+4),code=r.programWord(a+6);
+   // Real World ROM layout: flags, LUT code, horizontal word, vertical word.
+   const a=g.address+8*i,attr=r.programWord(a),code=r.programWord(a+2),rx=r.programWord(a+4),ry=r.programWord(a+6);
    const desc=defs.get(code);
    if(code!==g.base+4*Math.floor(i/2)||attr!==(i%2?8:0)||!desc||desc.nx!==2||desc.ny!==2)throw Error('Aircraft record mismatch: '+g.id+' #'+i);
    records.push(Object.freeze({address:a,rx,ry,attr,code}));
   }
-  map.set(g.id,Object.freeze({...g,records:Object.freeze(records)}));
+  map.set(g.id,Object.freeze({...g,config,records:Object.freeze(records)}));
  }
  cached=map;return map;
 }
@@ -50,7 +66,7 @@ function sprite(id,bank=0,time=0,palette=null){
  if(!window.StrikersSpriteDefinitions.draw(c,f.code,palette))return null;
  canvases.set(key,c);return c;
 }
-function stats(){const m=read();return {groups:m?.size??0,records:m?120:0,uniqueImages:m?60:0,paletteStatus:'unverified',timingStatus:'provisional'}}
+function stats(){const m=read();return {groups:m?.size??0,records:m?120:0,uniqueImages:m?60:0,paletteStatus:'unverified',timingStatus:'provisional',recordLayout:'attr,code,rx,ry',selectionTable:SELECTION_TABLE}}
 window.addEventListener('strikers-rom-ready',()=>{cached=null;canvases.clear()});
 window.StrikersOriginalPlayers=Object.freeze({groups,info,frame,sprite,stats});
 })();

@@ -53,7 +53,20 @@ function palette(index){
  const words=Array.from({length:16},(_,i)=>window.StrikersROM.programWord(PALETTE_START+index*32+2*i));
  return words.every(Number.isInteger)?Object.freeze(words):null;
 }
+// 16-entry palette pointer list, referenced four times in the ROM.
+ // The addresses are proven; their on-screen roles are not yet identified.
+const PALETTE_POINTER_TABLE=0x59654;
+function palettePointerList(){
+ const rom=window.StrikersROM;
+ if(!rom?.isVerified?.())return null;
+ return Object.freeze(Array.from({length:16},(_,i)=>{
+  const a=PALETTE_POINTER_TABLE+i*4,p=rom.programWord(a)*65536+rom.programWord(a+2);
+  const index=(p-PALETTE_START)/32;
+  if(!Number.isInteger(index)||index<0||index>=PALETTE_COUNT)throw Error('Invalid original palette pointer '+i);
+  return Object.freeze({slot:i,address:p,index});
+ }));
+}
 function stats(){const a=read();return {count:a?.list.length??0,covered:a?.covered??0,expected:COUNT,start:START,endExclusive:END,paletteCount:PALETTE_COUNT,paletteStart:PALETTE_START}}
 window.addEventListener('strikers-rom-ready',()=>{cached=null});
-window.StrikersSpriteDefinitions=Object.freeze({all,get,draw,palette,stats});
+window.StrikersSpriteDefinitions=Object.freeze({all,get,draw,palette,palettePointerList,stats});
 })();
