@@ -5,6 +5,8 @@ extends Node2D
 const NONE := 65535
 const W := 256
 const CELLS := 65536
+const HDParts = preload("res://hd_parts.gd")
+var hd_enabled := false
 
 var ram := PackedByteArray()
 var atlases: Array[PackedByteArray] = []
@@ -69,6 +71,13 @@ func load_snapshot(path: String = "res://data/rom_snapshot.json") -> bool:
 	material = palette_material
 	initialized = false
 	return update_ram(mem, int(state["scroll"]), int(state["flipped"]))
+
+func set_hd(enabled: bool) -> void:
+	hd_enabled = enabled
+	var factor := 4.0 if enabled else 1.0
+	position = Vector2(240.0 * factor, 0.0)
+	scale = Vector2(factor, factor)
+	queue_redraw()
 
 func _extended(values: Array[int], offset: int) -> Array[int]:
 	var out: Array[int] = values.duplicate()
@@ -240,19 +249,25 @@ func _sprite_texture(cmd: Dictionary) -> ImageTexture:
 	var base: int = cmd["base"]
 	var code: int = cmd["code"]
 	var atlas_id: int = cmd["atlas"]
-	var key := "%d:%d:%d" % [atlas_id, code, base]
+	var use_hd := hd_enabled and HDParts.supports(atlas_id,code)
+	var key := "%d:%d:%d:%d" % [atlas_id, code, base, int(use_hd)]
 	if sprite_cache.has(key):
 		counters["sprite_hits"] += 1
 		sprite_order.erase(key)
 		sprite_order.append(key)
 		return sprite_cache[key]
 	var pens: PackedByteArray = atlases[atlas_id]
-	var indices := PackedInt32Array()
-	indices.resize(size*size)
-	for i in range(indices.size()):
-		var pen := pens[code*size*size+i]
-		indices[i] = NONE if pen == 0 else base + pen
-	var texture := ImageTexture.create_from_image(Image.create_from_data(size,size,false,Image.FORMAT_RGBA8,_indexed_rgba(indices)))
+	var image: Image
+	if use_hd:
+		image = HDParts.make(pens, size, code, atlas_id, base)
+	else:
+		var indices := PackedInt32Array()
+		indices.resize(size*size)
+		for i in range(indices.size()):
+			var pen := pens[code*size*size+i]
+			indices[i] = NONE if pen == 0 else base + pen
+		image = Image.create_from_data(size,size,false,Image.FORMAT_RGBA8,_indexed_rgba(indices))
+	var texture := ImageTexture.create_from_image(image)
 	sprite_cache[key] = texture
 	sprite_order.append(key)
 	counters["sprite_uploads"] += 1
@@ -280,7 +295,7 @@ func _draw() -> void:
 		if x+size <= 0 or x >= 256 or y+size <= 16 or y >= 240:
 			continue
 		draw_set_transform(Vector2(x+(size if fx else 0),y+(size if fy else 0)),0.0,Vector2(-1 if fx else 1,-1 if fy else 1))
-		draw_texture(_sprite_texture(cmd),Vector2.ZERO)
+		draw_texture_rect(_sprite_texture(cmd),Rect2(0,0,size,size),false)
 	draw_set_transform(Vector2.ZERO)
 	_draw_layer(fg_texture,shift)
 
