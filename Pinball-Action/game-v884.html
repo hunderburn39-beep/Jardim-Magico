@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.91 — 2D-HD DEV";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.92 — 2D-HD DEV";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -1187,14 +1187,20 @@ function castShadowArt(image){
 }
 // Glows are generated only for positively identified lit bumper frames,
  // and only when the original active pen has a visible colour.
-function lampGlowArt(image,base){
+function spriteInkCenter(atlas,code){
+ const w=atlas.w,h=atlas.h,start=code*w*h;
+ let sx=0,sy=0,n=0;
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(atlas.pens[start+y*w+x]){sx+=x+.5;sy+=y+.5;n++;}
+ return n?{x:sx/n,y:sy/n}:{x:w/2,y:h/2};
+}
+function lampGlowArt(image,base,atlas,code){
  let glow=hdLampGlows.get(image);if(glow)return glow;
  const pad=6*HD,size=image.width+2*pad;
  glow=document.createElement('canvas');glow.width=glow.height=size;
- const g=glow.getContext('2d'),c=size/2,r=palette32[base+2];
+ const g=glow.getContext('2d'),center=spriteInkCenter(atlas,code),cx=pad+center.x*HD,cy=pad+center.y*HD,r=palette32[base+2];
  const rgb=[r&255,(r>>>8)&255,(r>>>16)&255].join(',');
- const light=g.createRadialGradient(c,c,image.width*.30,c,c,size*.5);
- for(const [at,alpha] of [[0,.40],[.36,.28],[.66,.12],[1,0]])light.addColorStop(at,'rgba('+rgb+','+alpha+')');
+ const light=g.createRadialGradient(cx,cy,image.width*.24,cx,cy,size*.45);
+ for(const [at,alpha] of [[0,.29],[.36,.20],[.66,.075],[1,0]])light.addColorStop(at,'rgba('+rgb+','+alpha+')');
  g.fillStyle=light;g.fillRect(0,0,size,size);
  hdLampGlows.set(image,glow);return glow;
 }
@@ -1211,7 +1217,7 @@ function hdSceneCommands(commands){
   }
   const pen=palette32[o.baseColor+2];
   if(o.big&&(o.c===8||o.c===10)&&Math.max(pen&255,(pen>>>8)&255,(pen>>>16)&255)>=85){
-   lights.push({...o,xx:o.xx-6,yy:o.yy-6,size:o.size+12,flipX:false,flipY:false,image:lampGlowArt(image,o.baseColor)});
+   lights.push({...o,xx:o.xx-6,yy:o.yy-6,size:o.size+12,flipX:o.flipX,flipY:o.flipY,image:lampGlowArt(image,o.baseColor,o.atlas,o.c)});
   }
   foreground.push({...o,image});
  }
@@ -1272,6 +1278,9 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
   f.fillRect(left,top+cross*.26,long,cross*.48);
   f.fillStyle='rgba(255,255,255,.6)';f.fillRect(left,top+cross*.26,long,.23);
   f.restore();
+  // Restore the original small internal markings over the steel/rubber
+  // shell. Never substitute a new logo or omit native pen islands.
+  nativeInk(n=>n===2||n===3||n===5);
  }else{
   const r=Math.min(spanX,spanY)*.5;
   if(kind==='round'){
@@ -1496,12 +1505,21 @@ function spritePenMask(atlas,code){
  return masks[code];
 }
 function bigSpriteAtlas(atlas){return atlas.w===32;}
+function spriteMaterialMask(atlas,code,big){
+ let mask=spritePenMask(atlas,code);
+ // Physical face reads additional palette entries for steel, acrylic
+ // and rubber. Invalidate all genuinely dependent art on a ROM write.
+ if(big&&code>=7&&code<=10)mask|=(1<<1)|(1<<2)|(1<<7);
+ else if(big&&code>=1&&code<=6||!big&&code>=6&&code<=14)mask|=1<<7;
+ else if(!big){
+  if(code>=40&&code<=42)mask|=1<<(code-36);
+  if(code>=60&&code<=62)mask|=(1<<(code-57))|(1<<7);
+  if([91,94,95,67].includes(code))mask|=(1<<2)|(1<<7);
+ }
+ return mask;
+}
 function spritePaletteStamp(atlas,code,baseColor){
- let stamp='',mask=spritePenMask(atlas,code);
- // Auxiliary artistic materials may read pens even if a pose does not.
- // Include any such dependency in the art key.
- if(!bigSpriteAtlas(atlas)&&[67,91,94,95].includes(code))mask|=1<<7;
- if(bigSpriteAtlas(atlas)&&code>=7&&code<=10)mask|=(1<<1)|(1<<2)|(1<<7);
+ let stamp='',mask=spriteMaterialMask(atlas,code,bigSpriteAtlas(atlas));
  for(let k=1;k<8;k++)if(mask&(1<<k))stamp+=palette32[baseColor+k].toString(16)+',';
  return stamp;
 }
