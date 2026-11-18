@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.88 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.92 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -292,11 +292,27 @@ function tableSignature(view,flip){
  for(let i=0;i<view.length;i+=2)key+=String.fromCharCode(view[i]|(view[i+1]<<8));
  return key;
 }
+const BOARD_VARIANT_LIMIT=6; // max six 1024x1024 RGBA variants (~24 MiB of pixels)
+const globalBoardVariants=new Map();
+function releaseBoardVariant(cache,key){
+ const entry=cache.get(key);if(entry)globalBoardVariants.delete(entry);
+ cache.delete(key);
+}
+function clearBoardVariants(cache){for(const key of [...cache.keys()])releaseBoardVariant(cache,key);}
+function touchBoardVariant(cache,key,entry){
+ cache.delete(key);cache.set(key,entry);
+ globalBoardVariants.delete(entry);globalBoardVariants.set(entry,{cache,key});
+ while(globalBoardVariants.size>BOARD_VARIANT_LIMIT){
+  const [old,owner]=globalBoardVariants.entries().next().value;
+  globalBoardVariants.delete(old);if(owner.cache.get(owner.key)===old)owner.cache.delete(owner.key);
+  renderStats.boardVariantEvicted=(renderStats.boardVariantEvicted||0)+1;
+ }
+}
 function rememberHDTable(){
  if(activeTableKey===null||!boardGeometry)return;
  hdTableCache.delete(activeTableKey);
  hdTableCache.set(activeTableKey,{geometry:boardGeometry,stats:boardGeometryStats,variants:boardVariants,guidePlan});
- if(hdTableCache.size>2)hdTableCache.delete(hdTableCache.keys().next().value);
+ if(hdTableCache.size>2){const oldest=hdTableCache.keys().next().value;const dropped=hdTableCache.get(oldest);clearBoardVariants(dropped.variants);hdTableCache.delete(oldest);}
 }
 function selectHDTable(key){
  activeTableKey=key;
@@ -740,11 +756,23 @@ function redrawPrintedHalftones(g){
  let plan=boardGeometry&&printPlans.get(boardGeometry);
  if(!plan){plan=identifyPrintedDither(bgPixels,256,256);if(boardGeometry)printPlans.set(boardGeometry,plan);}
  if(!plan.cells)return {cells:0,patches:0};
- const result=vectorPaint(g,plan.labels,256,256,NONE,true,null,false,(_,id)=>{
+ // Contour geometry depends on ROM pixels, not the live palette.
+ const colors=new Map();
+ const fill=(_,id)=>{
+  if(colors.has(id))return colors.get(id);
   const pair=Math.floor(id/12),mix=(id%12)/12,a=palette32[128+Math.floor(pair/128)],b=palette32[128+pair%128];
   const channel=shift=>Math.round(((a>>>shift)&255)*(1-mix)+((b>>>shift)&255)*mix);
-  return 'rgb('+channel(0)+','+channel(8)+','+channel(16)+')';
- },false);
+  const value='rgb('+channel(0)+','+channel(8)+','+channel(16)+')';colors.set(id,value);return value;
+ };
+ if(plan.geometry){
+  g.setTransform(HD,0,0,HD,0,0);
+  for(const {color,path} of plan.geometry){g.fillStyle=fill(g,color);g.fill(path,'evenodd');}
+  renderStats.printGeometryReused=(renderStats.printGeometryReused||0)+1;
+  return {cells:plan.cells,patches:plan.patches,regions:plan.geometry.length};
+ }
+ const geometry=typeof Path2D==='function'?[]:null;
+ const result=vectorPaint(g,plan.labels,256,256,NONE,true,geometry,false,fill,false);
+ if(geometry&&geometry.length<=12000)plan.geometry=geometry;
  return {cells:plan.cells,patches:plan.patches,regions:result.regions};
 }
 
@@ -754,82 +782,7 @@ const mainPrintSignature=[[804,78,21],[743,83,20],[685,179,20],[527,149,19],[466
 function isMainPrint(bytes){
  return mainPrintSignature.every(([i,t,a])=>bytes[0xd800+i]===t&&bytes[0xdc00+i]===a);
 }
-function paintMainIllustration(g){
- if(typeof Path2D!=='function'||(cpu.flipped&1)||!isMainPrint(memory))return false;
- g.save();
- // Portrait illustration coordinates are converted back into native
- // 256-square board coordinates before scrolling/rotation/compositing.
- g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
- const shape=new Path2D('M12 17 C30 13 62 14 88 20 C96 28 95 41 104 53 C126 63 144 72 153 91 C167 108 180 128 174 145 C167 158 153 163 139 164 L137 174 Q113 179 88 172 Q78 169 76 161 C61 154 45 138 47 119 C51 102 44 89 35 79 C20 59 8 38 12 17 Z');
- // Exact mechanical zones remain visible from the existing native
- // board. The printed illustration never covers the inserts or guide.
- const mask=new Path2D(shape);
- for(const {cx,cy,rx,ry} of mainInsertBounds(bgPixels)){
-  mask.moveTo(cx+rx+.18,cy);mask.ellipse(cx,cy,rx+.18,ry+.18,0,0,Math.PI*2);
- }
- mask.addPath(new Path2D('M119 32 L126 31 L169 99 L164 109 L117 43 Z'));
- mask.addPath(new Path2D('M7 114 L45 76 L54 84 L15 132 Z'));
- g.clip(shape);g.clip(mask,'evenodd');
- // Protect foreground-independent tracks and printed labels using the
- // actual background palette bank, not estimated obstacle coordinates.
- const protectedInk=new Path2D();
- protectedInk.rect(0,0,224,256);
- for(let y=0;y<256;y++){
-  let start=-1;
-  for(let x=0;x<=224;x++){
-   const color=x<224?bgPixels[(239-x)*256+y]:0;
-   const bank=(color-128)>>4,pen=color&15;
-   const protect=x<224&&(bank<3||bank===5)&&pen!==7;
-   if(protect&&start<0)start=x;
-   if(!protect&&start>=0){protectedInk.rect(start,y,x-start,1);start=-1;}
-  }
- }
- g.clip(protectedInk,'evenodd');
- const fill=(d,paint)=>{g.fillStyle=paint;g.fill(new Path2D(d));};
- const stroke=(d,paint,w,alpha=1)=>{g.save();g.globalAlpha=alpha;g.lineWidth=w;g.lineCap='round';g.lineJoin='round';g.strokeStyle=paint;g.stroke(new Path2D(d));g.restore();};
- const linear=(x,y,X,Y,stops)=>{const q=g.createLinearGradient(x,y,X,Y);for(const [a,c] of stops)q.addColorStop(a,c);return q;};
- const radial=(x,y,r,stops)=>{const q=g.createRadialGradient(x,y,0,x,y,r);for(const [a,c] of stops)q.addColorStop(a,c);return q;};
- g.fillStyle=linear(14,22,167,160,[[0,'#4d0752'],[.36,'#810b69'],[.72,'#970c5f'],[1,'#570954']]);g.fill(shape);
- // Repaint the sweeping amber and scarlet hair in layered, curved shapes.
- const gold=linear(32,19,119,159,[[0,'#6e194c'],[.22,'#c13c23'],[.43,'#f68a19'],[.59,'#ffe174'],[.79,'#e56719'],[1,'#77144f']]);
- fill('M12 14 C45 10 82 13 96 45 C105 62 110 83 124 91 C146 108 137 135 114 152 C96 173 72 167 58 145 C47 129 60 112 46 93 C30 71 4 44 12 14 Z',gold);
- fill('M91 77 C106 52 131 70 146 85 C163 102 173 109 180 137 C178 158 155 171 133 164 C109 151 108 124 91 77 Z',linear(108,73,167,162,[[0,'#ff9b23'],[.24,'#dc2f26'],[.61,'#a80e36'],[1,'#630e5c']]));
- fill('M25 15 C23 39 49 69 72 98 C87 117 64 141 85 160 C62 158 51 142 53 127 C55 111 43 90 32 72 C16 47 9 28 25 15 Z',linear(22,19,82,155,[[0,'#ffb94f'],[.37,'#ffda57'],[.71,'#f58a20'],[1,'#b82e39']]));
- fill('M48 15 C48 49 87 68 99 91 C112 113 92 135 100 154 C79 133 98 112 74 85 C41 49 35 28 48 15 Z',linear(43,18,105,151,[[0,'#932046'],[.28,'#f09c20'],[.53,'#ffe18a'],[1,'#b72e32']]));
- for(let i=0;i<24;i++){
-  const x=12+i*2.65, bend=i*1.6;
-  stroke('M'+x+' 17 C'+(x-9)+' '+(37+bend*.25)+' '+(x+14)+' '+(57+bend*.45)+' '+(x+34)+' '+(78+bend*.35)+' S'+(71+bend*.45)+' 131 '+(75+bend*.53)+' 156',i%5===0?'#fff1a7':i%3===0?'#7f164a':'#ffc344',i%5===0?.65:.34,.50);
- }
- for(let i=0;i<12;i++){
-  stroke('M'+(111+i*2.15)+' '+(71+i*.7)+' C'+(132+i*1.65)+' 96 '+(148+i*1.3)+' 116 '+(143+i*2.1)+' 157',i%3===0?'#ffb85a':'#ef5360',.42,.55);
- }
- // Face: separately drawn skin, cheek highlights, hairline, two eyes,
- // brows, nose and lips, instead of a magnified image of the ROM tiles.
- const face='M92 103 C94 96 103 94 114 96 C128 94 137 103 137 116 L134 140 C131 155 123 168 113 172 C103 170 91 158 88 144 L86 120 C85 112 87 106 92 103 Z';
- fill(face,linear(90,111,138,155,[[0,'#a85b32'],[.14,'#f5c271'],[.38,'#fff0bd'],[.56,'#f8d391'],[.83,'#cc8749'],[1,'#914e34']]));
- fill('M91 112 C98 101 109 101 113 105 L111 130 L98 150 Q88 139 91 112 Z',radial(100,122,30,[[0,'#fff6c9'],[.58,'#ffd995'],[1,'#eda552']]));
- fill('M119 109 C131 107 136 120 131 138 Q128 153 118 166 Q125 144 116 131 Z',linear(118,107,133,156,[[0,'#f4d091'],[1,'#cb7942']]));
- fill('M84 118 C81 109 89 91 101 91 Q109 89 115 100 Q121 89 131 93 Q142 98 142 116 L135 110 C133 99 122 102 115 111 C107 103 100 101 91 114 Z',linear(86,93,141,116,[[0,'#a94a1e'],[.35,'#ffd059'],[.65,'#ffdf83'],[1,'#ba5722']]));
- const eyes=[[99.4,119.6,1],[124.9,119.6,-1]];
- for(const [x,y,dir] of eyes){
-  g.save();g.translate(x,y);g.scale(dir,1);
-  fill('M-7 -1 Q-1 -4 7 0 Q1 4 -6 1 Z','#ffefda');
-  fill('M-3.7 -1.1 A3.6 3.6 0 1 0 3.5 -1.1 A3.6 3.6 0 1 0 -3.7 -1.1 Z',radial(-1,-1,4.7,[[0,'#a5f9ed'],[.45,'#35ada6'],[1,'#134a50']]));
-  fill('M0 -2 A1.6 1.6 0 1 0 0 1.2 A1.6 1.6 0 1 0 0 -2 Z','#132333');
-  g.fillStyle='#fff';g.beginPath();g.arc(-.8,-1.6,.7,0,Math.PI*2);g.fill();
-  stroke('M-7 -1 Q-1 -5 7 0','#432b31',1.05);
-  stroke('M-7 -5.3 Q-1 -8 6 -5.3','#85462c',1.1);
-  g.restore();
- }
- stroke('M113 119 Q109 132 111 136 Q114 138 117 135','#b9774b',.75,.85);
- stroke('M111 136 Q113 137 115 136','#f8edbd',.55);
- fill('M105 146 Q110 143 113 145 Q116 143 121 146 Q114 151 109 149 Z',linear(105,145,120,150,[[0,'#a94d43'],[.5,'#ed8f75'],[1,'#9e453e']]));
- stroke('M107 146 Q114 147 120 146','#8e403c',.42);
- stroke('M97 154 Q105 165 113 167 Q124 164 130 153','#f9d89a',.55,.7);
- g.restore();return true;
-}
-
-
+// Main playfield portrait remains exclusively ROM-derived.
 // The ten original playfield inserts are not separate sprite RAM
 // objects. Read their exact silhouette and live palette from the board.
 const mainInserts=[[101,81,192],[123,81,240],[77,96,192],[147,96,240],[65,122,192],[160,122,240],[77,145,192],[147,145,240],[100,162,224],[123,162,224]];
@@ -912,22 +865,35 @@ function redrawExtraPrint(g){
   const fills=new Map();
   // Rebuild printed regions using individual graded enamel colors and
   // rounded vector contours. The bank and pen remain live ROM values.
-  const stats=vectorPaint(a,pixels,224,256,NONE,true,null,false,(ctx,color)=>{
+  const fill=(ctx,color)=>{
    if(fills.has(color))return fills.get(color);
    const q=ctx.createLinearGradient(x0,y0,x1,y1);
-   const k=zone.kind,stops=k==='fire'?[[0,-.16],[.2,.22],[.46,.42],[.7,.01],[1,-.22]]:k==='figure'?[[0,.22],[.34,.07],[.63,-.09],[.83,.24],[1,-.18]]:k==='metal'?[[0,-.24],[.25,.27],[.43,-.04],[.58,.43],[.72,.02],[1,-.3]]:[[0,.22],[.4,.03],[.72,-.12],[1,-.24]];
+   const k=zone.kind,stops=k==='fire'?[[0,-.16],[.2,.22],[.46,.42],[.7,.01],[1,-.22]]:k==='figure'?[[0,.07],[.34,.025],[.63,-.025],[.83,.06],[1,-.06]]:k==='metal'?[[0,-.24],[.25,.27],[.43,-.04],[.58,.43],[.72,.02],[1,-.3]]:[[0,.22],[.4,.03],[.72,-.12],[1,-.24]];
    for(const [at,t] of stops)q.addColorStop(at,materialTone(color,t));
    fills.set(color,q);return q;
-  },true,false,true);
-  regions+=stats.regions;
-  // Individually drawn curved illustration details; source-atop clips
-  // every stroke to the exact painted native ink silhouette.
-  a.save();a.globalCompositeOperation='source-atop';a.lineCap='round';a.lineJoin='round';
-  for(const [d,width] of zone.strokes){
-   a.strokeStyle=zone.kind==='fire'?'rgba(255,241,190,.68)':'rgba(255,255,255,.42)';a.lineWidth=width;a.stroke(new Path2D(d));
-   a.strokeStyle='rgba(36,16,45,.26)';a.lineWidth=width*.35;a.stroke(new Path2D(d));
+  };
+  if(item.geometry){
+   a.setTransform(HD,0,0,HD,0,0);a.clearRect(0,0,224,256);
+   for(const {color,path} of item.geometry){a.fillStyle=fill(a,color);a.fill(path,'evenodd');}
+   regions+=item.geometry.length;renderStats.extraGeometryReused=(renderStats.extraGeometryReused||0)+1;
+  }else{
+   const geometry=typeof Path2D==='function'?[]:null;
+   const stats=vectorPaint(a,pixels,224,256,NONE,true,geometry,false,fill,true,false,true);
+   if(geometry&&geometry.length<=12000)item.geometry=geometry;
+   regions+=stats.regions;
   }
-  a.restore();
+  // Follow only original ink boundaries, not hand-drawn decorative paths.
+  if(item.geometry&&zone.kind!=='figure'){
+   a.save();a.globalCompositeOperation='source-atop';a.lineCap='round';a.lineJoin='round';
+   const highlight=a.createLinearGradient(x0,y0,x1,y1);
+   highlight.addColorStop(0,'rgba(255,255,255,.18)');
+   highlight.addColorStop(.3,'rgba(255,255,255,.04)');
+   highlight.addColorStop(.7,'rgba(0,0,0,.04)');
+   highlight.addColorStop(1,'rgba(0,0,0,.16)');
+   a.strokeStyle=highlight;a.lineWidth=.38;
+   for(const {path} of item.geometry)a.stroke(path);
+   a.restore();
+  }
   g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
   g.drawImage(extraArtLayer,0,0,224,256);g.restore();
  }
@@ -939,7 +905,7 @@ function rebuildHDBoard(){
  // Retain bounded, full-resolution variants of the exact same artwork.
  const key=Array.from(palette32.subarray(128),(v,i)=>boardUsedColors[i+128]?v:0).join(',');
  if(boardVariants.has(key)){
-  const hit=boardVariants.get(key);boardVariants.delete(key);boardVariants.set(key,hit);
+  const hit=boardVariants.get(key);touchBoardVariant(boardVariants,key,hit);
   boardCtx.setTransform(1,0,0,1,0,0);boardCtx.drawImage(hit.image,0,0);
   hdArtStats=hit.stats;hdBoardDirty=false;renderStats.boardCached++;return;
  }
@@ -968,13 +934,15 @@ function rebuildHDBoard(){
  boardCtx.imageSmoothingEnabled=false;boardCtx.drawImage(boardUnder,0,0);
  boardCtx.drawImage(boardInk,0,0,256,256);
  const print=redrawPrintedHalftones(boardCtx);stats.printCells=print.cells;stats.printPatches=print.patches;stats.printRegions=print.regions||0;
- stats.handIllustrated=paintMainIllustration(boardCtx);stats.mainInserts=paintMainInserts(boardCtx);
+ // Preserve the original ROM portrait; never paint an invented face over it.
+ stats.handIllustrated=false;stats.mainInserts=paintMainInserts(boardCtx);
  const extra=redrawExtraPrint(boardCtx);stats.extraPrint=extra;
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;hdBoardDirty=false;renderStats.boardFull++;
  const cached=document.createElement('canvas');cached.width=cached.height=SIZE;
  cached.getContext('2d',{alpha:false}).drawImage(hdBoard,0,0);
- boardVariants.set(key,{image:cached,stats});
- if(boardVariants.size>2)boardVariants.delete(boardVariants.keys().next().value);
+ touchBoardVariant(boardVariants,key,{image:cached,stats});
+ // Four bounded palette variants reduce cache misses on repeating lamp flashes.
+ if(boardVariants.size>4)releaseBoardVariant(boardVariants,boardVariants.keys().next().value);
 }
 // A purpose-drawn 2D arcade typeface. Native ROM tile IDs determine
 // every glyph and colour, not a separately calculated score.
@@ -1117,6 +1085,10 @@ function rebuildHDFront(){
  for(let i=0;i<1024;i++)frontSignatures[i]=fgSignature(i);
  frontPaintPalette.set(palette32.subarray(0,128));
  frontBase=memory;frontFlip=Number(flipped);frontPaletteDirty=false;hdFrontDirty=false;
+ // A palette write affecting only sprites must not trigger a 1024² texture upload.
+ const painted=!partial||changed.length>0;
+ if(!painted)renderStats.frontUploadSkipped=(renderStats.frontUploadSkipped||0)+1;
+ return painted;
 }
 let hdMode=true;
 try{hdMode=localStorage.getItem('pb-graphics-v1')!=='classic'}catch{}
@@ -1185,7 +1157,7 @@ function shapePath(ctx,atlas,code){
 // regions supply every mark and all lit/unlit states.
 // V8.83: native contours and cached silhouette masks for every painted
 // sprite. The native mask does not depend on the ROM palette.
-let hdNativeMasks=new WeakMap(),hdNativePaths=new WeakMap(),hdSpritePenMasks=new WeakMap();
+let hdNativeMasks=new WeakMap(),hdNativePaths=new WeakMap(),hdSpritePenMasks=new WeakMap(),hdNativeRasterPlans=new WeakMap();
 const hdBevels=new WeakMap(),hdCastShadows=new WeakMap(),hdLampGlows=new WeakMap();
 function nativeBevel(mask){
  let art=hdBevels.get(mask);if(art)return art;
@@ -1215,14 +1187,20 @@ function castShadowArt(image){
 }
 // Glows are generated only for positively identified lit bumper frames,
  // and only when the original active pen has a visible colour.
-function lampGlowArt(image,base){
+function spriteInkCenter(atlas,code){
+ const w=atlas.w,h=atlas.h,start=code*w*h;
+ let sx=0,sy=0,n=0;
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(atlas.pens[start+y*w+x]){sx+=x+.5;sy+=y+.5;n++;}
+ return n?{x:sx/n,y:sy/n}:{x:w/2,y:h/2};
+}
+function lampGlowArt(image,base,atlas,code){
  let glow=hdLampGlows.get(image);if(glow)return glow;
  const pad=6*HD,size=image.width+2*pad;
  glow=document.createElement('canvas');glow.width=glow.height=size;
- const g=glow.getContext('2d'),c=size/2,r=palette32[base+2];
+ const g=glow.getContext('2d'),center=spriteInkCenter(atlas,code),cx=pad+center.x*HD,cy=pad+center.y*HD,r=palette32[base+2];
  const rgb=[r&255,(r>>>8)&255,(r>>>16)&255].join(',');
- const light=g.createRadialGradient(c,c,image.width*.30,c,c,size*.5);
- for(const [at,alpha] of [[0,.40],[.36,.28],[.66,.12],[1,0]])light.addColorStop(at,'rgba('+rgb+','+alpha+')');
+ const light=g.createRadialGradient(cx,cy,image.width*.24,cx,cy,size*.45);
+ for(const [at,alpha] of [[0,.29],[.36,.20],[.66,.075],[1,0]])light.addColorStop(at,'rgba('+rgb+','+alpha+')');
  g.fillStyle=light;g.fillRect(0,0,size,size);
  hdLampGlows.set(image,glow);return glow;
 }
@@ -1239,7 +1217,7 @@ function hdSceneCommands(commands){
   }
   const pen=palette32[o.baseColor+2];
   if(o.big&&(o.c===8||o.c===10)&&Math.max(pen&255,(pen>>>8)&255,(pen>>>16)&255)>=85){
-   lights.push({...o,xx:o.xx-6,yy:o.yy-6,size:o.size+12,flipX:false,flipY:false,image:lampGlowArt(image,o.baseColor)});
+   lights.push({...o,xx:o.xx-6,yy:o.yy-6,size:o.size+12,flipX:o.flipX,flipY:o.flipY,image:lampGlowArt(image,o.baseColor,o.atlas,o.c)});
   }
   foreground.push({...o,image});
  }
@@ -1300,6 +1278,9 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
   f.fillRect(left,top+cross*.26,long,cross*.48);
   f.fillStyle='rgba(255,255,255,.6)';f.fillRect(left,top+cross*.26,long,.23);
   f.restore();
+  // Restore the original small internal markings over the steel/rubber
+  // shell. Never substitute a new logo or omit native pen islands.
+  nativeInk(n=>n===2||n===3||n===5);
  }else{
   const r=Math.min(spanX,spanY)*.5;
   if(kind==='round'){
@@ -1342,6 +1323,26 @@ function modernMechanismFace(g,atlas,code,baseColor,kind,bounds,mask){
  f.save();f.setTransform(1,0,0,1,0,0);f.globalCompositeOperation='destination-in';f.drawImage(mask,0,0);f.restore();
  g.save();g.setTransform(1,0,0,1,0,0);g.drawImage(face,0,0);g.restore();
 }
+// Immutable source-pixel spans shared by all palette variants.
+function nativeRasterPlan(atlas,code){
+ let cache=hdNativeRasterPlans.get(atlas);
+ if(!cache){cache=new Map();hdNativeRasterPlans.set(atlas,cache);}
+ if(cache.has(code))return cache.get(code);
+ const w=atlas.w,h=atlas.h,start=code*w*h,p=atlas.pens,spans=[],edges=[];
+ for(let y=0;y<h;y++)for(let x=0;x<w;){
+  const n=p[start+y*w+x],l=x;while(x<w&&p[start+y*w+x]===n)x++;
+  if(n)spans.push([n,l,y,x-l,1]);
+ }
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+  if(p[start+y*w+x])continue;
+  for(const [nx,ny] of [[x-1,y],[x+1,y],[x,y-1],[x,y+1]]){
+   if(nx<0||nx>=w||ny<0||ny>=h)continue;
+   const n=p[start+ny*w+nx];if(!n)continue;
+   edges.push([n,x+(nx>x?.55:0),y+(ny>y?.55:0),nx===x?1:.45,ny===y?1:.45]);
+  }
+ }
+ const plan={spans,edges};cache.set(code,plan);return plan;
+}
 function nativePhysicalArt(g,atlas,code,baseColor,big,kind){
  const w=atlas.w,h=atlas.h,start=code*w*h,p=atlas.pens;
  const pix=new Int16Array(w*h),silhouette=new Int16Array(w*h);
@@ -1365,25 +1366,10 @@ function nativePhysicalArt(g,atlas,code,baseColor,big,kind){
   masks.set(code,mask);
  }
  g.setTransform(HD,0,0,HD,0,0);
- // Extend only into originally transparent neighbouring pixels; the
- // smooth silhouette mask then clips this coverage. No pen inside the
- // original sprite is overwritten by a different adjacent colour.
- for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-  if(p[start+y*w+x])continue;
-  const neighbours=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]];
-  for(const [nx,ny] of neighbours){
-   if(nx<0||nx>=w||ny<0||ny>=h)continue;
-   const n=p[start+ny*w+nx];if(!n)continue;
-   g.fillStyle=colorAt(baseColor+n);
-   g.fillRect(x+(nx>x?.55:0),y+(ny>y?.55:0),nx===x?1:.45,ny===y?1:.45);
-  }
- }
- // The exact native region is underpainted last to preserve each pen.
- // The antialiased outline mask clips every extension.
- for(let y=0;y<h;y++)for(let x=0;x<w;){
-  const n=p[start+y*w+x],l=x;while(x<w&&p[start+y*w+x]===n)x++;
-  if(n){g.fillStyle=colorAt(baseColor+n);g.fillRect(l,y,x-l,1);}
- }
+ const raster=nativeRasterPlan(atlas,code);
+ for(const [pen,x,y,width,height] of raster.edges){g.fillStyle=colorAt(baseColor+pen);g.fillRect(x,y,width,height);}
+ for(const [pen,x,y,width,height] of raster.spans){g.fillStyle=colorAt(baseColor+pen);g.fillRect(x,y,width,height);}
+ renderStats.nativeRasterPaints=(renderStats.nativeRasterPaints||0)+1;
  const cx=(minX+maxX+1)/2,cy=(minY+maxY+1)/2;
  const spanX=maxX-minX+1,spanY=maxY-minY+1;
  const round=kind==='bumper'||kind==='insert'||kind==='round';
@@ -1465,7 +1451,15 @@ function remainingNativeArt(g,atlas,code,baseColor,big){
   ['detail','assembly','joined-panel'].includes(f)?'panel':null;
  return kind?nativePhysicalArt(g,atlas,code,baseColor,big,kind):false;
 }
+const hdFamilyCache=new WeakMap();
 function hdSpriteFamily(atlas,code,big){
+ let entries=hdFamilyCache.get(atlas);
+ if(!entries){entries=new Map();hdFamilyCache.set(atlas,entries);}
+ const key=(big?'b:':'s:')+code;
+ if(entries.has(key))return entries.get(key);
+ const family=classifyHDSprite(atlas,code,big);entries.set(key,family);return family;
+}
+function classifyHDSprite(atlas,code,big){
  const start=code*atlas.w*atlas.h,first=atlas.pens[start];let uniform=true;
  for(let i=1;i<atlas.w*atlas.h;i++)if(atlas.pens[start+i]!==first){uniform=false;break;}
  if(uniform)return first?'solid':'transparent';
@@ -1511,12 +1505,21 @@ function spritePenMask(atlas,code){
  return masks[code];
 }
 function bigSpriteAtlas(atlas){return atlas.w===32;}
+function spriteMaterialMask(atlas,code,big){
+ let mask=spritePenMask(atlas,code);
+ // Physical face reads additional palette entries for steel, acrylic
+ // and rubber. Invalidate all genuinely dependent art on a ROM write.
+ if(big&&code>=7&&code<=10)mask|=(1<<1)|(1<<2)|(1<<7);
+ else if(big&&code>=1&&code<=6||!big&&code>=6&&code<=14)mask|=1<<7;
+ else if(!big){
+  if(code>=40&&code<=42)mask|=1<<(code-36);
+  if(code>=60&&code<=62)mask|=(1<<(code-57))|(1<<7);
+  if([91,94,95,67].includes(code))mask|=(1<<2)|(1<<7);
+ }
+ return mask;
+}
 function spritePaletteStamp(atlas,code,baseColor){
- let stamp='',mask=spritePenMask(atlas,code);
- // Auxiliary artistic materials may read pens even if a pose does not.
- // Include any such dependency in the art key.
- if(!bigSpriteAtlas(atlas)&&[67,91,94,95].includes(code))mask|=1<<7;
- if(bigSpriteAtlas(atlas)&&code>=7&&code<=10)mask|=(1<<1)|(1<<2)|(1<<7);
+ let stamp='',mask=spriteMaterialMask(atlas,code,bigSpriteAtlas(atlas));
  for(let k=1;k<8;k++)if(mask&(1<<k))stamp+=palette32[baseColor+k].toString(16)+',';
  return stamp;
 }
@@ -1581,11 +1584,12 @@ function getSpriteArt(atlas,code,baseColor,big){
 }
 function presentHD(){
  const flipped=!!(cpu.flipped&1),scroll=(cpu.scroll-3)*(flipped?-1:1),srcStart=((scroll%256)+256)%256;
- const bgChanged=hdBoardDirty,fgChanged=hdFrontDirty;
- if(bgChanged)rebuildHDBoard();if(fgChanged)rebuildHDFront();
+ const bgChanged=hdBoardDirty;
+ if(bgChanged)rebuildHDBoard();
+ const fgChanged=hdFrontDirty?rebuildHDFront():false;
  const scene=hdSceneCommands(spriteCommands);
  if(gpu?.ready){
-  try{gpu.draw(hdBoard,hdFront,bgChanged,fgChanged,srcStart,scene,o=>o.image);lastCanvasScene=null;return;}
+  try{gpu.draw(hdBoard,hdFront,bgChanged,fgChanged||!gpu.lastScene,srcStart,scene,o=>o.image);lastCanvasScene=null;return;}
   catch(e){gpu.ready=false;gpu.status='canvas-fallback';gpu.show(false);lastCanvasScene=null;console.warn('GPU frame fallback',e);}
  }
  const images=scene.map(o=>o.image);
@@ -1678,7 +1682,7 @@ function rebuildPalette(){
   palette32[idx]=value;
  }
  // Sprite art is palette-keyed and evicted by a bounded LRU cache.
- if(initial)boardVariants.clear();
+ if(initial){clearBoardVariants(boardVariants);for(const saved of hdTableCache.values())clearBoardVariants(saved.variants);}
  if(bgChanged)hdBoardDirty=true;
  if(fgChanged){hdFrontDirty=true;frontPaletteDirty=true;}
  paletteValid=true;
@@ -2180,18 +2184,33 @@ window.addEventListener('keyup',e=>{let k=keyboard[e.code];if(!k)return;e.preven
 window.addEventListener('blur',()=>{active.clear();for(const k in pending)pending[k]=0;endStartRequest();refreshKeys()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)arcadeAudio.restore();if(document.hidden){active.clear();for(const k in pending)pending[k]=0;endStartRequest();refreshKeys()}});
 let last=performance.now(),acc=0,frames=0;
+const MAX_SIMULATION_DEBT=3;
+function limitSimulationDebt(debt,delta){return Math.min(MAX_SIMULATION_DEBT,debt+Math.max(0,delta)*60/1000);}
 function frame(now){
- let delta=Math.min(70,now-last);last=now;
+ let delta=Math.max(0,Math.min(70,now-last));last=now;
+ if(document.hidden)acc=0;
+ if(entryComplete&&!document.hidden){
+  renderStats.displayFrames=(renderStats.displayFrames||0)+1;
+  if(delta>25)renderStats.slowDisplayFrames=(renderStats.slowDisplayFrames||0)+1;
+ }
  if(!document.hidden&&diagnostic){tickDiagnostic();}
  else if(!document.hidden&&entryComplete){
-  acc+=delta*60/1000;
+  const requested=acc+Math.max(0,delta)*60/1000;
+  acc=limitSimulationDebt(acc,delta);
+  if(requested>acc)renderStats.wallClockDebtDropped=(renderStats.wallClockDebtDropped||0)+(requested-acc);
   let count=0;
   while(acc>=1&&count<2){
    // Our initial state was captured at the end of a real 60 Hz arcade frame.
    for(let i=0;i<6500;i++){if(cpu.halt)break;cpu.step();}
    cpu.nmi();finishInputFrame();acc-=1;count++;frames++;
   }
-  if(cpu.videoChanged||frames===0){render();cpu.videoChanged=false;}
+  if(cpu.videoChanged||frames===0){
+   const start=performance.now();render();const ms=performance.now()-start;
+   renderStats.renderMsMax=Math.max(renderStats.renderMsMax||0,ms);
+   renderStats.renderMsTotal=(renderStats.renderMsTotal||0)+ms;
+   renderStats.renderSamples=(renderStats.renderSamples||0)+1;
+   cpu.videoChanged=false;
+  }
  }
  requestAnimationFrame(frame);
 }
@@ -2219,6 +2238,6 @@ if(window.PB_TEST||new URLSearchParams(location.search).has('test')) window.__pb
   return {code,big,base,family:hdSpriteFamily(atlas,code,big),nativeCells,hdCells,missing,extra,alphaArea:Math.round(alphaSum*100)/100,
    intentionalAspect:!big&&code===5};
  },
- image:()=>gpu?gpu.image():canvas.toDataURL(),renderer:()=>({mode:hdMode?'2D-HD':'CRT',backend:gpu?.enabled?'PixiJS WebGL':'Canvas2D',status:gpu?.status||'unavailable',art:hdArtStats,atlas:hdAtlasInventory(),performance:{...renderStats},gpuPerformance:gpu?{...gpu.stats}:null}),audio:()=>arcadeAudio.state(),sound:(cmd)=>arcadeAudio.fromRom(cmd),audioDebug:()=>arcadeAudio.debug(),cpu};
+ image:()=>gpu?gpu.image():canvas.toDataURL(),renderer:()=>({mode:hdMode?'2D-HD':'CRT',backend:gpu?.enabled?'PixiJS WebGL':'Canvas2D',status:gpu?.status||'unavailable',art:hdArtStats,atlas:hdAtlasInventory(),performance:{...renderStats,boardVariants:globalBoardVariants.size,simulationDebt:acc},gpuPerformance:gpu?{...gpu.stats}:null}),audio:()=>arcadeAudio.state(),sound:(cmd)=>arcadeAudio.fromRom(cmd),audioDebug:()=>arcadeAudio.debug(),cpu};
 })();
 </script></body></html>
