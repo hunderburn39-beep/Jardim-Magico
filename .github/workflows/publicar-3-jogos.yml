@@ -125,7 +125,7 @@ jobs:
           test -s Classic-Slot/index.html
           test -s Blackline-Pinball/index.html
           test -s Pinball-Action/index.html
-          test -s Strikers-1945/index.html
+          if test -d Strikers-1945; then test -s Strikers-1945/index.html; fi
           test -s Blocos-Neon/index.html
           test -d css
           test -d js
@@ -150,7 +150,8 @@ jobs:
           cp -a css js assets public/
           cp -a jardim-phaser jardim-3d public/
           cp -a stake-preview public/
-          cp -a templo-do-trovao Farao-Eterno Halloween Raspadinha-100X Pantanal Classic-Slot Blackline-Pinball Pinball-Action pinball-action Strikers-1945 Blocos-Neon public/
+          cp -a templo-do-trovao Farao-Eterno Halloween Raspadinha-100X Pantanal Classic-Slot Blackline-Pinball Pinball-Action pinball-action Blocos-Neon public/
+          if test -d Strikers-1945; then cp -a Strikers-1945 public/; fi
           cp pinball-action.html public/
           cp -a Pinball-Action-3D public/
           test -s public/Pinball-Action-3D/index.html
@@ -159,9 +160,9 @@ jobs:
           grep -q 'V0.02 · PHYSICAL' public/Pinball-Action-3D/physical-preview-v002.html
           test -s public/Pinball-Action-3D/physical-preview-v004.html
           grep -q 'V0.04 · PHYSICAL' public/Pinball-Action-3D/physical-preview-v004.html
-          if test -f Pinball-Action-3D/physical-preview-v014.html; then
-            test -s public/Pinball-Action-3D/physical-preview-v014.html
-            grep -q 'V0.14 · PHYSICAL' public/Pinball-Action-3D/physical-preview-v014.html
+          if test -f Pinball-Action-3D/physical-preview-v015.html; then
+            test -s public/Pinball-Action-3D/physical-preview-v015.html
+            grep -q 'V0.15 · PHYSICAL' public/Pinball-Action-3D/physical-preview-v015.html
           fi
           test -s public/Pinball-Action/game-preview-v907.html
           mkdir -p public/Sugar-Rush-1000
@@ -199,11 +200,13 @@ jobs:
           test -s public/Pinball-Action/game-v829.html
           test -s public/Pinball-Action/audio/rom-psg-worklet.js
           test -s public/pinball-action/index.html
-          test -s public/Strikers-1945/index.html
-          test -s public/Strikers-1945/stage1-captured.html
-          test -s public/Strikers-1945/stage1-captured-catalog.js
-          test -s public/Strikers-1945/stage1-plane-frames.b64
-          test -s public/Strikers-1945/original-rom.js
+          if test -d public/Strikers-1945; then
+            test -s public/Strikers-1945/index.html
+            test -s public/Strikers-1945/stage1-captured.html
+            test -s public/Strikers-1945/stage1-captured-catalog.js
+            test -s public/Strikers-1945/stage1-plane-frames.b64
+            test -s public/Strikers-1945/original-rom.js
+          fi
           test -s public/Blocos-Neon/index.html
           test -s public/index2.html
           test -s public/Sugar-Rush-1000/standalone/index.html
@@ -294,7 +297,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Confirmar Physical 3D V0.14 online
+      - name: Confirmar Physical 3D V0.15 online
         shell: bash
         env:
           SITE_URL: ${{ steps.deployment.outputs.page_url }}
@@ -302,15 +305,15 @@ jobs:
           set -euo pipefail
           base="${SITE_URL%/}"
           for tentativa in {1..15}; do
-            if curl -fsSL --max-time 15 "$base/Pinball-Action-3D/physical-preview-v014.html?sha=$GITHUB_SHA" -o /tmp/physical-v014.html \
-              && grep -q 'V0.14 · PHYSICAL' /tmp/physical-v014.html \
+            if curl -fsSL --max-time 15 "$base/Pinball-Action-3D/physical-preview-v015.html?sha=$GITHUB_SHA" -o /tmp/physical-v015.html \
+              && grep -q 'V0.15 · PHYSICAL' /tmp/physical-v015.html \
               && curl -fsSL --max-time 15 "$base/Pinball-Action/game-preview-v907.html" -o /tmp/physical-rom.html; then
-              echo "Physical 3D V0.14: HTTP 200 e motor ROM disponível."
+              echo "Physical 3D V0.15: HTTP 200 e motor ROM disponível."
               exit 0
             fi
             sleep 6
           done
-          echo "::error::Physical 3D V0.14 não está disponível no Pages."
+          echo "::error::Physical 3D V0.15 não está disponível no Pages."
           exit 1
 
 
@@ -461,25 +464,6 @@ jobs:
           echo "::warning::Classic Slot indisponivel no GitHub Pages. Verificar configuracao de Pages."
           exit 1
 
-      - name: Confirmar URL do catálogo Strikers 1945 no Pages
-        continue-on-error: true
-        shell: bash
-        env:
-          SITE_URL: ${{ steps.deployment.outputs.page_url }}
-        run: |
-          set -euo pipefail
-          url="${SITE_URL%/}/Strikers-1945/stage1-captured.html"
-          for tentativa in $(seq 1 15); do
-            if curl -fLsS --connect-timeout 8 --max-time 18 "$url?deploy=${GITHUB_SHA}" -o /tmp/strikers-catalogo-publicado.html && grep -q "Catálogo de sprites observados" /tmp/strikers-catalogo-publicado.html; then
-              echo "Strikers 1945 catálogo publicado: HTTP 200 e conteúdo confirmado."
-              exit 0
-            fi
-            echo "Strikers 1945 ainda não disponível — tentativa ${tentativa}/15."
-            sleep 8
-          done
-          echo "::error::Strikers 1945 devolve 404 ou não tem o HTML esperado. Verificar Settings > Pages > Source = GitHub Actions e os logs da publicação."
-          exit 1
-
   recuperar_strikers:
     name: Recuperar Pages sem bloquear nos testes dos outros jogos
     needs: preparar
@@ -512,19 +496,21 @@ jobs:
           fi
           touch public/.nojekyll
           test -s public/index.html
-          test -s public/Strikers-1945/index.html
-          test -s public/Strikers-1945/stage1-captured.html
-          test -s public/Strikers-1945/stage1-captured-catalog.js
-          test -s public/Strikers-1945/stage1-plane-frames.b64
-          test -s public/Strikers-1945/original-rom.js
+          if test -d public/Strikers-1945; then
+            test -s public/Strikers-1945/index.html
+            test -s public/Strikers-1945/stage1-captured.html
+            test -s public/Strikers-1945/stage1-captured-catalog.js
+            test -s public/Strikers-1945/stage1-plane-frames.b64
+            test -s public/Strikers-1945/original-rom.js
+          fi
           test -s public/Pinball-Action-3D/preview-v006.html
           test -s public/Pinball-Action-3D/physical-preview-v002.html
           grep -q 'V0.02 · PHYSICAL' public/Pinball-Action-3D/physical-preview-v002.html
           test -s public/Pinball-Action-3D/physical-preview-v004.html
           grep -q 'V0.04 · PHYSICAL' public/Pinball-Action-3D/physical-preview-v004.html
-          if test -f Pinball-Action-3D/physical-preview-v014.html; then
-            test -s public/Pinball-Action-3D/physical-preview-v014.html
-            grep -q 'V0.14 · PHYSICAL' public/Pinball-Action-3D/physical-preview-v014.html
+          if test -f Pinball-Action-3D/physical-preview-v015.html; then
+            test -s public/Pinball-Action-3D/physical-preview-v015.html
+            grep -q 'V0.15 · PHYSICAL' public/Pinball-Action-3D/physical-preview-v015.html
           fi
           test -s public/Pinball-Action/game-preview-v907.html
           echo 'Site de recuperação preparado com todas as pastas e catálogo ROM.'
@@ -538,7 +524,7 @@ jobs:
         id: recuperar
         uses: actions/deploy-pages@v4
 
-      - name: Confirmar Physical 3D V0.14 online
+      - name: Confirmar Physical 3D V0.15 online
         shell: bash
         env:
           SITE_URL: ${{ steps.recuperar.outputs.page_url }}
@@ -546,33 +532,15 @@ jobs:
           set -euo pipefail
           base="${SITE_URL%/}"
           for tentativa in {1..15}; do
-            if curl -fsSL --max-time 15 "$base/Pinball-Action-3D/physical-preview-v014.html?sha=$GITHUB_SHA" -o /tmp/physical-v014.html \
-              && grep -q 'V0.14 · PHYSICAL' /tmp/physical-v014.html \
+            if curl -fsSL --max-time 15 "$base/Pinball-Action-3D/physical-preview-v015.html?sha=$GITHUB_SHA" -o /tmp/physical-v015.html \
+              && grep -q 'V0.15 · PHYSICAL' /tmp/physical-v015.html \
               && curl -fsSL --max-time 15 "$base/Pinball-Action/game-preview-v907.html" -o /tmp/physical-rom.html; then
-              echo "Physical 3D V0.14: HTTP 200 e motor ROM disponível."
+              echo "Physical 3D V0.15: HTTP 200 e motor ROM disponível."
               exit 0
             fi
             sleep 6
           done
-          echo "::error::Physical 3D V0.14 não está disponível no Pages."
+          echo "::error::Physical 3D V0.15 não está disponível no Pages."
           exit 1
 
 
-      - name: Confirmar URL do catálogo Strikers 1945 no Pages
-        continue-on-error: true
-        shell: bash
-        env:
-          SITE_URL: ${{ steps.recuperar.outputs.page_url }}
-        run: |
-          set -euo pipefail
-          url="${SITE_URL%/}/Strikers-1945/stage1-captured.html"
-          for tentativa in $(seq 1 15); do
-            if curl -fLsS --connect-timeout 8 --max-time 18 "$url?deploy=${GITHUB_SHA}" -o /tmp/strikers-catalogo-publicado.html && grep -q "Catálogo de sprites observados" /tmp/strikers-catalogo-publicado.html; then
-              echo "Strikers 1945 catálogo publicado: HTTP 200 e conteúdo confirmado."
-              exit 0
-            fi
-            echo "Strikers 1945 ainda não disponível — tentativa ${tentativa}/15."
-            sleep 8
-          done
-          echo "::error::Strikers 1945 devolve 404 ou não tem o HTML esperado. Verificar Settings > Pages > Source = GitHub Actions e os logs da publicação."
-          exit 1
