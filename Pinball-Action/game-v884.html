@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V8.94 — 2D-HD DEV";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V8.95 — 2D-HD DEV";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -117,7 +117,7 @@ class PBZ80 {
   if(a<0xc000)return;
   if(this.mem[a]!==v){
    if(a>=0xd000&&a<0xe080){this.videoChanged=true;if(a<0xd800)this.fgDirty=true;else if(a<0xe000)this.bgDirty=true;}
-   if(a>=0xe400&&a<0xe600){this.videoChanged=true;this.paletteChanged=true;}
+   if(a>=0xe400&&a<0xe600){this.videoChanged=true;this.paletteChanged=true;this.cb.paletteWrite?.(a,v,this.pc);}
    this.mem[a]=v;
   }
  }
@@ -992,7 +992,7 @@ function rebuildHDBoard(){
  if(boardVariants.has(key)){
   const hit=boardVariants.get(key);touchBoardVariant(boardVariants,key,hit);
   boardCtx.setTransform(1,0,0,1,0,0);boardCtx.drawImage(hit.image,0,0);
-  hdArtStats=hit.stats;hdBoardDirty=false;renderStats.boardCached++;return;
+  hdArtStats=hit.stats;renderStats.mainLampsLit=main?mainInserts.filter(o=>mainLampLit(palette32[o[3]])).length:0;hdBoardDirty=false;renderStats.boardCached++;return;
  }
  // Underpaint exact hardware colours to minimize subpixel seams at
  // adjacent opaque shapes. No texture, 3D depth or photographic effects.
@@ -1023,7 +1023,7 @@ function rebuildHDBoard(){
  stats.handIllustrated=false;stats.mainInserts=paintMainInserts(boardCtx);
  const extra=redrawExtraPrint(boardCtx);stats.extraPrint=extra;
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;
- stats.livePalettePens=live.pens.size;stats.livePaletteCells=redrawLiveBoardPens(boardCtx,live,main,flipped);
+ stats.livePalettePens=live.pens.size;stats.livePaletteCells=redrawLiveBoardPens(boardCtx,live,main&&stats.mainInserts===10,flipped);
  hdBoardDirty=false;renderStats.boardFull++;
  const cached=document.createElement('canvas');cached.width=cached.height=SIZE;
  cached.getContext('2d',{alpha:false}).drawImage(hdBoard,0,0);
@@ -1702,7 +1702,30 @@ const fgRom=Uint8Array.from(atob(window.PB_ROM.fg),c=>c.charCodeAt(0));
 const spRom=Uint8Array.from(atob(window.PB_ROM.sp),c=>c.charCodeAt(0));
 let memory=Uint8Array.from(atob(window.PB_ROM.snapshot),c=>c.charCodeAt(0));
 const state=JSON.parse(window.PB_ROM.state);
-let cpu=new PBZ80(memory,state,{sound: arcadeSound});
+// The original interrupt loads six-byte light descriptors from 5C4Bh.
+// These describe destinations in palette RAM; unused slots are empty.
+// Observe actual writes, never start a light or modify the arcade state.
+function originalPaletteScripts(bytes){
+ const scripts=[];
+ for(let id=0;id<96;id++){
+  const at=0x5c4b+id*6,dst=bytes[at]|(bytes[at+1]<<8),source=bytes[at+2]|(bytes[at+3]<<8),width=bytes[at+4],repeat=bytes[at+5];
+  if(dst<0xe400||dst+width*2>0xe600||!width||!source||source>=0xc000)continue;
+  scripts.push({id,dst,source,width,repeat});
+ }
+ return scripts;
+}
+const romPaletteScripts=originalPaletteScripts(memory),romPaletteTargets=new Uint8Array(256),paletteScriptWrites=new Uint8Array(256);
+for(const script of romPaletteScripts)for(let i=0;i<script.width;i++)romPaletteTargets[((script.dst-0xe400)>>1)+i]=1;
+function observePaletteWrite(address,value,pc){
+ const pen=(address-0xe400)>>1;
+ // 018Ch ED B0 = native animation palette copy; PC after fetching
+ // the instruction is 018Eh. This includes one-shot sequences.
+ if(pc===0x018e&&pen>=0&&pen<256&&romPaletteTargets[pen]){
+  paletteScriptWrites[pen]=1;
+  renderStats.romPaletteWrites=(renderStats.romPaletteWrites||0)+1;
+ }
+}
+let cpu=new PBZ80(memory,state,{sound:arcadeSound,paletteWrite:observePaletteWrite});
 // DIP values supplied to the genuine Z80 input ports (0xe604/0xe605).
 // Re-run only the native coin initialization block against scratch RAM,
 // since the regular session begins from a captured post-boot state.
@@ -1867,6 +1890,13 @@ function render(){
   }
   if(!fgSnapshot)fgSnapshot=view.slice();else fgSnapshot.set(view);
   fgMemory=memory;fgDecodedFlip=flip;cpu.fgDirty=false;
+ }
+ // Apply after map decoding: palette scripts that fire during a table
+ // transition must be assigned to the new board, not the old one.
+ if(paletteScriptWrites.some(Boolean)){
+  const added=learnLivePens(livePenPlan(boardVariants),paletteScriptWrites,boardUsedColors);
+  if(added){hdBoardDirty=true;renderStats.romScriptPensLearned=(renderStats.romScriptPensLearned||0)+added;}
+  paletteScriptWrites.fill(0);
  }
  if(hdMode){overlaySprites(false);presentHD();return;}
  const flipped=!!(cpu.flipped&1),scroll=(cpu.scroll-3)*(flipped?-1:1);
@@ -2317,6 +2347,7 @@ render();requestAnimationFrame(frame);
 // Entry activates the title command before the game CPU resumes.
 // Debug/test API (not visible in production).
 if(window.PB_TEST||new URLSearchParams(location.search).has('test')) window.__pbRom={
+ paletteScripts:()=>romPaletteScripts.map(o=>({...o})),
  livePalette:()=>({pens:[...livePenPlan(boardVariants).pens].sort((a,b)=>a-b),cells:hdArtStats?.livePaletteCells||0}),
  lamps:()=>({main:isMainPrint(memory),lamps:mainInserts.map(([x,y,base,pen])=>({x,y,pen,color:colorAt(pen),lit:mainLampLit(palette32[pen])}))}),
  state:()=>({pc:cpu.pc,sp:cpu.sp,credits:memory[0xc013],queuedStart:queuedStart?.key||null,score:memory.slice(0xc000,0xc010).join(','),steps:cpu.steps,scroll:cpu.scroll,frames,nmi:cpu.nmiEnable,flipped:cpu.flipped,memChecksum:memory.slice(0xd000,0xe600).reduce((a,b)=>a+b,0)}),
