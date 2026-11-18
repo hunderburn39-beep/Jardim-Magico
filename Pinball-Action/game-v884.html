@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V9.00 — 2D-HD</title><style>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#040409"><meta name="apple-mobile-web-app-capable" content="yes"><title>Pinball Action V9.01 — 2D-HD</title><style>
 :root{color-scheme:dark;--edge:6px;--gap:6px;--top:44px;--bottom:110px}
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;background:#040409;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -22,7 +22,7 @@ button{min-width:0;min-height:0;font-family:system-ui,sans-serif;font-weight:900
 button.down,button:active{transform:translateY(2px);box-shadow:inset 0 2px 5px #000;filter:brightness(1.25)}
 @media(orientation:landscape){:root{--top:34px;--bottom:76px;--gap:4px}#app{padding:3px max(8px,env(safe-area-inset-right)) 4px max(8px,env(safe-area-inset-left))}#service-controls{width:min(100%,480px)}#controls{width:min(100%,480px)}#display{width:min(calc((100dvh - 132px - env(safe-area-inset-top) - env(safe-area-inset-bottom))*224/256),540px,90vw)}#service-controls button{font-size:12px}#left,#right{font-size:19px}}
 @media(max-height:330px){:root{--top:30px;--bottom:62px;--gap:3px}#display{width:min(calc((100dvh - 108px)*224/256),540px,90vw)}}
-#app:after{content:"V9.00 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
+#app:after{content:"V9.01 — 2D-HD";position:fixed;right:max(8px,env(safe-area-inset-right));bottom:2px;font-size:9px;color:#a69eae;pointer-events:none;line-height:1}
 
 /* V8.83 — PixiJS: use the entire central grid track on portrait phones. Canvas backing resolution remains 224x256. */
 @media(orientation:portrait){
@@ -585,6 +585,15 @@ function guideProfile(pens,code,fx,fy){
 // Cubic handles remain inside each segment's endpoint rectangle.
 function traceRailEdge(path,rows,selector,pt,reverse=false,offset=0){
  const samples=[[selector(rows[0]),offset],...rows.map((row,i)=>[selector(row),offset+i+.5]),[selector(rows.at(-1)),offset+rows.length]];
+ // Fit long straight native runs rather than tracing each staircase.
+ // Only accept a fit that stays within 0.8 native pixel of every sample.
+ if(rows.length>=12){
+  const s=samples,first=s[0],last=s.at(-1),span=last[1]-first[1];
+  const slope=(last[0]-first[0])/span;
+  if(Math.abs(slope)>.08&&s.every(([u,v])=>Math.abs(u-(first[0]+slope*(v-first[1])))<=.8)){
+   for(let i=1;i<s.length-1;i++)s[i][0]=first[0]+slope*(s[i][1]-first[1]);
+  }
+ }
  if(reverse)samples.reverse();
  const project=(u,v)=>pt(u,v);
  path.lineTo(...project(...samples[0]));
@@ -1124,11 +1133,69 @@ function mainPortraitPlan(pixels,protectedPens,palette){
    if(dy<2&&hair[j+w]&&(native[j+w]>>>4)===bank&&native[j+w]!==q)changes++;
    const k=(3-Math.abs(dx))*(3-Math.abs(dy));weight+=k;weights.set(q,(weights.get(q)||0)+k);
   }
-  if(n>=15&&warm>=8&&changes>=9&&weights.size>=2&&(portraitPigment(palette[p])||warm>=Math.ceil(n*.65)))toneCells.push({i,weight,weights:[...weights]});
+  if(n>=13&&warm>=6&&changes>=5&&weights.size>=2&&(portraitPigment(palette[p])||warm>=Math.ceil(n*.58)))toneCells.push({i,weight,weights:[...weights]});
  }
  const pens=new Set();for(let i=0;i<ink.length;i++)if(ink[i]!==NONE)pens.add(ink[i]);for(const {weights} of toneCells)for(const [pen] of weights)pens.add(pen);
  return {ink,native,faceMask,faceCells,toneCells,pens:[...pens].sort((a,b)=>a-b),geometry:null};
 }
+// V9.01: hand-traced vector illustration in the original 224x256
+// portrait coordinates. Only the static printed portrait is replaced;
+// the native lamp mask, sprite priority and game simulation are untouched.
+function paintPortraitIllustration(g){
+ g.save();
+ const path=(d,fill,stroke=null,width=.45)=>{
+  const q=new Path2D(d);
+  if(fill){g.fillStyle=fill;g.fill(q);}
+  if(stroke){g.strokeStyle=stroke;g.lineWidth=width;g.lineCap='round';g.lineJoin='round';g.stroke(q);}
+ };
+ const gradient=(x0,y0,x1,y1,stops)=>{const q=g.createLinearGradient(x0,y0,x1,y1);for(const [n,v] of stops)q.addColorStop(n,v);return q;};
+ // Long curved hair strands follow the swept-back shape in the reference.
+ // The caller's native texture mask clips these to the printed artwork.
+ for(const [d,paint,w] of [
+ ['M20 19 C50 44 30 78 77 108 S75 153 102 166','#ffbf5138',2.1],
+ ['M29 17 C63 47 45 83 84 103 S91 143 81 158','#ffe77a44',1.35],
+ ['M42 18 C78 45 48 77 91 100 S98 144 85 165','#e970223f',3],
+ ['M57 18 C89 54 65 78 103 98 S109 146 85 170','#ffca3438',1.6],
+ ['M72 19 C105 50 83 73 115 95 S124 139 111 159','#a82d3830',2.5],
+ ['M40 42 C39 83 68 103 61 126 Q57 150 80 169','#ffed8c38',1.2],
+ ['M51 48 C43 83 82 104 71 127 Q65 150 90 167','#f3a12548',1.9],
+ ['M83 40 Q101 71 130 88 T150 150','#ffad3639',2],
+ ['M105 59 Q139 88 145 113 T133 160','#d342393a',2.5]
+ ])path(d,null,paint,w);
+ const skin=gradient(89,107,137,150,[[0,'#fff3b7'],[.32,'#ffe59b'],[.65,'#eeb66f'],[1,'#be713e']]);
+ const neck=gradient(93,151,131,175,[[0,'#e2a15b'],[.48,'#ffedaa'],[1,'#d88a49']]);
+ const hair=gradient(85,100,139,155,[[0,'#ffb32c'],[.27,'#df6820'],[.66,'#b82832'],[1,'#79144b']]);
+ const gold=gradient(91,94,132,112,[[0,'#fffbc4'],[.24,'#ffdb55'],[.52,'#df8a17'],[.74,'#fff0a0'],[1,'#b96613']]);
+ path('M87 99 Q89 91 102 88 Q121 87 134 98 Q143 109 139 128 Q137 144 130 153 L137 173 Q113 179 89 172 L91 153 Q83 137 85 120Z',hair);
+ path('M100 149 Q111 156 122 148 L124 157 Q126 161 134 164 L131 175 L91 175 L92 164 Q101 161 100 149Z',neck);
+ path('M91 105 Q94 99 102 101 Q109 102 112 107 Q120 99 130 101 Q135 104 136 115 Q136 128 129 140 Q123 148 115 153 Q112 155 108 151 Q97 142 92 132 Q88 120 91 105Z',skin);
+ path('M125 108 Q137 112 131 128 Q128 138 119 147 Q126 132 125 108Z','#cb793d44');
+ path('M94 111 Q97 108 101 110 Q95 126 105 139 Q97 136 94 128Z','#fff6c566');
+ path('M112 116 Q111 125 109 132 L114 134 L118 132 Q114 130 115 123 L116 117Z',gradient(110,116,118,135,[[0,'#f3ca7e00'],[1,'#b9693a99']]));
+ path('M109 132 Q112 134 116 132',null,'#9e5d3a',.45);
+ // Original blue-green eyes, now individually constructed with curved
+ // lids, iris, highlights and brows rather than a scaled ROM tile.
+ for(const [x,dir] of [[100,1],[125,-1]]){
+  g.save();g.translate(x,116.7);g.scale(dir,1);
+  path('M-8 1 Q-3 -4 1 -3 Q5 -3 9 2 Q1 5 -6 3Z','#fff7de','#815043',.45);
+  path('M-8 1 Q-5 -5 0 -5 Q5 -5 9 0 Q4 -2 0 -2 Q-4 -2 -8 1Z','#348fbc');
+  path('M-2 -2.2 Q2 -3.2 4 -.2 Q4 3.7 1 4 Q-3 4 -3 .6Z',gradient(-3,-3,3,4,[[0,'#123e50'],[.55,'#258d92'],[1,'#9fe3bd']]));
+  path('M-.7 -2 Q1 -2.5 2 .3 Q2 2.4 .5 2.7 Q-1.2 2.4 -.7 -2Z','#15343b');
+  path('M-1.8 -1.8 A1.15 1.15 0 1 0 .5 -1.8 A1.15 1.15 0 1 0 -1.8 -1.8Z','#ffffff');
+  path('M-8 .7 Q-3 -3.9 1 -3 Q5 -3 9 1',null,'#573944',.7);
+  path('M-7 -7 Q0 -10 7 -6',null,'#8f4a35',1.05);
+  g.restore();
+ }
+ path('M106 139 Q110 137 113 139.2 Q117 137.4 121 139 Q117 143.5 113 144 Q110 143.8 106 139Z',gradient(112,138,114,144,[[0,'#7c2731'],[.5,'#d65a43'],[1,'#a3313b']]));
+ path('M108 139.4 Q113 140.8 119 139.4',null,'#722d33',.45);
+ path('M111.3 141.8 Q114 142.6 116.8 141.2',null,'#ffb183',.42);
+ // Preserve the recognisable crown and purple jewel of the original.
+ path('M88.8 108 L89 99 Q92 93 97 95 L103 100 Q108 96 112 103 Q117 96 122 101 L129 95 Q134 94 136 99 L136 107 Q132 101 128 105 L122 110 Q116 105 112 111 Q107 105 103 107 L97 103 Q92 100 88.8 108Z',gold,'#b8751e',.55);
+ path('M109 99 Q107 95 108.5 93 L113 88 L117.4 95 L115 100 L112 104Z',gradient(109,90,117,102,[[0,'#efe9ff'],[.34,'#ab92ee'],[.62,'#6944a7'],[1,'#39256b']]),'#ffdf7d',.75);
+ path('M111 91 L111 99 L108.9 96.6Z','#ffffff');
+ g.restore();
+}
+
 function redrawMainPortrait(g,live){
  if((cpu.flipped&1)||!isMainPrint(memory)||typeof Path2D!=='function')return {faceCells:0,toneCells:0,regions:0};
  const protectedPens=new Set([...live.pens,...mainLampPens]);
@@ -1178,6 +1245,8 @@ function redrawMainPortrait(g,live){
   vectorPaint(p,plan.ink,224,256,NONE,true,geometry,false,fill,false,false,false,true);
   plan.geometry=geometry;
  }
+ // Add independent vector artwork before the existing protected-region clip.
+ paintPortraitIllustration(p);
  lastPortraitPlan=plan;lastPortraitStamp=stamp;
  }else{renderStats.portraitCacheHits=(renderStats.portraitCacheHits||0)+1;}
  // Restrict even antialiased contours to the original face / texture masks.
@@ -1195,6 +1264,71 @@ function redrawMainPortrait(g,live){
  }
  g.clip(plan.clip);g.drawImage(portraitInk,0,0,224,256);g.restore();
  return {faceCells:plan.faceCells,toneCells:plan.toneCells.length,regions:plan.geometry.length};
+}
+
+// V9.01: reconstruct the broad slingshot ramp faces from the original
+// visible support footprints. Only static, light-coloured hardware ink
+// is eligible; any ROM-controlled lamp colour is excluded.
+const mainRampZones=[
+ {poly:[[38,146],[42,147],[65,189],[64,195],[38,181]],side:1},
+ {poly:[[185,146],[182,147],[159,189],[160,195],[185,181]],side:-1}
+];
+function redrawMainRampFaces(g,live){
+ if((cpu.flipped&1)||!isMainPrint(memory)||typeof Path2D!=='function')return 0;
+ let count=0;g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
+ for(const {poly,side} of mainRampZones){
+  const xs=poly.map(p=>p[0]),ys=poly.map(p=>p[1]),l=Math.min(...xs),r=Math.max(...xs),t=Math.min(...ys),b=Math.max(...ys);
+  const clip=new Path2D();let n=0,eligible=0;
+  for(let y=t;y<b;y++)for(let x=l;x<r;x++){
+   if(!inPrintPolygon(x+.5,y+.5,poly))continue;n++;
+   const pen=bgPixels[(239-x)*256+y],v=palette32[pen],R=v&255,G=(v>>>8)&255,B=(v>>>16)&255;
+   if(live.pens.has(pen)||mainLampPens.has(pen)||G<85||R<95||R<G*.88||B>G*1.45)continue;
+   clip.rect(x,y,1,1);eligible++;
+  }
+  if(eligible<n*.35)continue;
+  g.save();g.clip(clip);
+  const face=new Path2D();face.moveTo(...poly[0]);for(const p of poly.slice(1))face.lineTo(...p);face.closePath();
+  const q=g.createLinearGradient(side===1?l:r,t,side===1?r:l,b);
+  for(const [at,color] of [[0,'#fff1dd90'],[.22,'#dfb8c06b'],[.53,'#8c667753'],[.81,'#362b4669'],[1,'#fbe0a47a']])q.addColorStop(at,color);
+  g.fillStyle=q;g.fill(face);
+  g.lineJoin='round';g.strokeStyle='#38203799';g.lineWidth=1.4;g.stroke(face);
+  g.strokeStyle='#fff4d6b0';g.lineWidth=.55;g.stroke(face);
+  const surface=new Path2D();surface.moveTo(side===1?l+2:r-2,t+4);surface.lineTo(side===1?r-3:l+3,b-7);
+  g.strokeStyle='#fff4e86b';g.lineWidth=.8;g.stroke(surface);
+  g.restore();count++;
+ }
+ g.restore();return count;
+}
+// Printed bonus plaques. Their colours and illuminated state come from
+// the actual ROM palette, not a fixed replacement or invented counter.
+const mainPlaques=[{text:'5000',box:[76,179,109,185]},{text:'10000',box:[116,179,148,185]},{text:'10ADV',box:[76,191,109,197]},{text:'EXTRA',box:[116,191,148,197]}];
+function redrawMainPlaques(g){
+ if((cpu.flipped&1)||!isMainPrint(memory)||typeof Path2D!=='function')return 0;
+ const luminance=v=>.213*(v&255)+.715*((v>>>8)&255)+.072*((v>>>16)&255);
+ let count=0;g.save();g.setTransform(HD,0,0,HD,0,0);g.transform(0,-1,1,0,0,240);
+ for(const {text,box} of mainPlaques){
+  const [l,t,r,b]=box,hist=new Map(),cells=[];
+  for(let y=t;y<b;y++)for(let x=l;x<r;x++){const pen=bgPixels[(239-x)*256+y];hist.set(pen,(hist.get(pen)||0)+1);cells.push({x,y,pen});}
+  const pair=[...hist].sort((a,b)=>b[1]-a[1]).slice(0,2);
+  // Require a two-colour, high-contrast native printed region.
+  if(pair.length!==2||pair[0][1]+pair[1][1]<cells.length*.88||pair[1][1]<cells.length*.12)continue;
+  const [a,z]=pair.map(p=>p[0]),la=luminance(palette32[a]),lz=luminance(palette32[z]);
+  if(Math.abs(la-lz)<28)continue;
+  const ink=la<lz?a:z,field=ink===a?z:a;
+  const letters=cells.filter(o=>o.pen===ink);
+  const x0=Math.min(...letters.map(o=>o.x)),x1=Math.max(...letters.map(o=>o.x))+1,y0=Math.min(...letters.map(o=>o.y)),y1=Math.max(...letters.map(o=>o.y))+1;
+  if(x1-x0<(r-l)*.65||y1-y0<4)continue;
+  const mask=new Path2D();for(const o of cells)if(o.pen===ink||o.pen===field)mask.rect(o.x,o.y,1,1);
+  g.save();g.clip(mask);g.fillStyle=colorAt(field);g.fillRect(l,t,r-l,b-t);
+  const w=x1-x0,h=y1-y0,step=w/text.length;
+  g.strokeStyle=colorAt(ink);g.lineJoin='round';g.lineCap='round';g.lineWidth=1.55;
+  for(let i=0;i<text.length;i++){
+   g.save();g.translate(x0+i*step+.4,y0+.15);g.scale((step-.8)/6.7,(h-.3)/6.7);g.translate(.35,.35);
+   g.stroke(new Path2D(remasterGlyphs[text[i]]));g.restore();
+  }
+  g.restore();count++;
+ }
+ g.restore();return count;
 }
 
 function rebuildHDBoard(){
@@ -1237,11 +1371,13 @@ function rebuildHDBoard(){
  // Preserve the original ROM portrait; never paint an invented face over it.
  stats.handIllustrated=false;stats.mainPortrait=redrawMainPortrait(boardCtx,live);stats.mainInserts=main&&!flipped&&typeof Path2D==='function'?getMainInsertPlan(bgPixels).inserts.length:0;
  const extra=redrawExtraPrint(boardCtx,live);stats.extraPrint=extra;
+ stats.mainRampFaces=redrawMainRampFaces(boardCtx,live);
  const guides=rebuildGuides(boardCtx);stats.guides=guides.total;stats.connectedGuides=guides.connected;stats.guideRuns=guides.runs;stats.joinedGuideRuns=guides.joined;
  stats.livePalettePens=live.pens.size;stats.livePaletteCells=redrawLiveBoardPens(boardCtx,live,main&&stats.mainInserts===10,flipped);
  // Restore native pen occurrences outside the central lamps and render
  // the ten state-driven HD inserts as the final background pass.
  if(main&&!flipped&&stats.mainInserts===10)stats.nativeMainLampCells=restoreMainLampInk(boardCtx,bgPixels);
+ stats.mainPlaques=redrawMainPlaques(boardCtx);
  hdBoardDirty=false;renderStats.boardFull++;
  const cached=document.createElement('canvas');cached.width=cached.height=SIZE;
  cached.getContext('2d',{alpha:false}).drawImage(hdBoard,0,0);
