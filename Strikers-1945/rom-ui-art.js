@@ -5,7 +5,7 @@
 (()=>{'use strict';
 const codes=Object.freeze({
  insertCoin:1458,gameOver:1447,largeGameOver:1439,continuePrompt:1471,
- credit:1478,start:1452,onePlayer:1476,twoPlayer:1477,copyright:1485,
+ credit:1478,start:1452,onePlayer:1476,twoPlayer:1477,copyright:1485,publisherTail:1493,
  addCoin:1463,freePlay:1467,ending:1505,warning:1569,select:1575,
  pleaseWait:1581,yes:1586,no:1588,time:1592,powerUp:1665,powerDown:1669
 });
@@ -40,11 +40,11 @@ function replaceArt(el,ids,label,scale=2){
 }
 function update(credits){
  replaceArt(document.getElementById('coinPrompt'),credits===0?blocks.insertCoin:blocks.start,credits===0?'INSERT COINS!':'START');
- replaceArt(document.getElementById('titleCredits'),[codes.credit,null,...digits(credits)],'CREDIT '+credits);
+ replaceArt(document.getElementById('titleCredits'),[codes.credit,null,...digits(credits)],'CREDITS '+credits);
  const publisher=document.getElementById('titlePublisher');
- // LUT 1485 is a single eight-tile ©1995 PSIKYO descriptor.
- // The separate 1493 sprite is not part of the publisher logo.
- if(replaceArt(document.getElementById('titleCopyright'),blocks.copyright,'©1995 Psikyo',1.6)&&publisher)publisher.hidden=true;
+ // The real logo spans two descriptors: 1485 holds the opening, 1493
+ // completes the final Y/O. Confirmed by decoding both from the private ZIP.
+ if(replaceArt(document.getElementById('titleCopyright'),[codes.copyright,codes.publisherTail],'©1995 Psikyo',1.6)&&publisher)publisher.hidden=true;
 }
 function notice(el,name,label){const code=codes[name];return Number.isInteger(code)&&replaceArt(el,[code],label);}
 function result(won){if(!won)notice(document.getElementById('resultTitle'),'largeGameOver','GAME OVER');}
