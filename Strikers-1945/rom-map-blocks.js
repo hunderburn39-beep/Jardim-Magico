@@ -60,7 +60,7 @@ function strip(group,id,firstCol,count=21){
 function matchCapture(layer,firstCol,capture){
  const block=captureBlocks[layer];
  if(!block||!capture||capture.length!==294)return null;
- const data=strip(block.group,block.id,firstCol);
+ const data=capturedSceneStrip(layer,firstCol);
  if(!data||data.length!==capture.length)return null;
  for(let i=0;i<data.length;i++)if(data[i]!==capture[i])return null;
  return data;
@@ -170,7 +170,40 @@ function renderBlock(id,layer,listIndex,variant=0){
  if(artCache.size>=3)artCache.delete(artCache.keys().next().value);
  artCache.set(k,c);return c;
 }
+// Scene 2's actual lists: lower [17, blank0], upper [18, blank0,19,20].
+// Block 0 is 2x20, all word zero; captured upper strips establish expansion
+// across the 14-row viewport. Stop at the terminator, do not wrap the map.
+let streamCache=new Map();
+function capturedSceneStream(layer){
+ if(layer!==0&&layer!==1)return null;
+ if(streamCache.has(layer))return streamCache.get(layer);
+ const scene=scenes()?.[2];if(!scene)return null;
+ const list=scene.mapLists[layer],expected=layer===0?[17,0]:[18,0,19,20];
+ if(list.length!==expected.length+1||list.at(-1)!==null)throw Error('Captured scene list length');
+ const chunks=[];let columns=0,lastContentEnd=0;
+ for(let i=0;i<expected.length;i++){
+  const ref=list[i];if(ref?.group!==0||ref.id!==expected[i])throw Error('Captured scene list entry');
+  const d=decode(ref.group,ref.id),m=d.map;
+  if(ref.id===0){
+   if(m.width!==2||m.columns!==20||d.codes.some(w=>w!==0))throw Error('Unexpected blank map');
+   chunks.push(new Uint16Array(14*m.columns));
+  }else{
+   if(m.width!==14)throw Error('Captured scene row count');
+   chunks.push(d.codes);lastContentEnd=columns+m.columns;
+  }
+  columns+=m.columns;
+ }
+ const codes=new Uint16Array(columns*14);let offset=0;
+ for(const chunk of chunks){codes.set(chunk,offset);offset+=chunk.length;}
+ const stream=Object.freeze({layer,width:14,columns,lastContentEnd,codes});
+ streamCache.set(layer,stream);return stream;
+}
+function capturedSceneStrip(layer,firstCol,count=21){
+ const s=capturedSceneStream(layer);
+ if(!s||!Number.isInteger(firstCol)||!Number.isInteger(count)||firstCol<0||count<1||firstCol+count>s.columns)return null;
+ return s.codes.slice(firstCol*14,(firstCol+count)*14);
+}
 function stats(){const a=all();return {groups:a?.length??0,blocks:a?.reduce((n,g)=>n+g.length,0)??0,words:a?.flat().reduce((n,m)=>n+m.wordCount,0)??0,cachedBlocks:words.size};}
-window.addEventListener('strikers-rom-ready',()=>{catalog=null;words.clear();scenesCache=null;paletteAudit=null;paletteCache.clear();artCache.clear()});
-window.StrikersOriginalMaps=Object.freeze({all,get,decode,strip,matchCapture,scenes,scenePalette,auditScenePalettes,renderBlock,stats,captureBlocks});
+window.addEventListener('strikers-rom-ready',()=>{catalog=null;words.clear();scenesCache=null;paletteAudit=null;paletteCache.clear();artCache.clear();streamCache.clear()});
+window.StrikersOriginalMaps=Object.freeze({all,get,decode,strip,matchCapture,scenes,scenePalette,auditScenePalettes,renderBlock,capturedSceneStream,capturedSceneStrip,stats,captureBlocks});
 })();
