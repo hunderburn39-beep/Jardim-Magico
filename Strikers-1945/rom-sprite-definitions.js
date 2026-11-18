@@ -44,7 +44,16 @@ function draw(canvas,code,palette){
  }
  c.putImageData(im,0,0);return true;
 }
-function stats(){const a=read();return {count:a?.list.length??0,covered:a?.covered??0,expected:COUNT,start:START,endExclusive:END}}
+// Palette block immediately preceding sprite descriptor table. 516 sequential
+// 16-word records; the first fifteen words carry RGB555 colours. Word 15
+// is not drawn (transparent sprite pen). Palette roles still need verification.
+const PALETTE_START=0x1b944,PALETTE_END=0x1f9c4,PALETTE_COUNT=(PALETTE_END-PALETTE_START)/32;
+function palette(index){
+ if(!Number.isInteger(index)||index<0||index>=PALETTE_COUNT||!window.StrikersROM?.isVerified?.())return null;
+ const words=Array.from({length:16},(_,i)=>window.StrikersROM.programWord(PALETTE_START+index*32+2*i));
+ return words.every(Number.isInteger)?Object.freeze(words):null;
+}
+function stats(){const a=read();return {count:a?.list.length??0,covered:a?.covered??0,expected:COUNT,start:START,endExclusive:END,paletteCount:PALETTE_COUNT,paletteStart:PALETTE_START}}
 window.addEventListener('strikers-rom-ready',()=>{cached=null});
-window.StrikersSpriteDefinitions=Object.freeze({all,get,draw,stats});
+window.StrikersSpriteDefinitions=Object.freeze({all,get,draw,palette,stats});
 })();
