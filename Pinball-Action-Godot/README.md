@@ -1,10 +1,10 @@
-# Pinball Action — Godot native V0.5 (unverified development)
+# Pinball Action — Godot native V0.6 (unverified development)
 
 Open project.godot with Godot 4.3+ (Compatibility renderer). Press F5. The original machine program now has a GDScript CPU port, a separate native 2D hardware-video renderer and key/touch controls. This is a gameplay candidate, not a verified release. No Godot executable was available to run it in the authoring environment.
 
 Controls: C inserts coin, Enter/1 starts P1, 2 starts P2, Space/Down launches, Left/A and Right/D operate flippers, Up/S shakes. Onscreen buttons mirror these inputs with independent finger captures for the two flippers. Hardware input remains unverified on iOS. Credit handling is delegated to the ROM, with automatic coin pulses when starting with insufficient credits.
 
-The source original ROM snapshot, four bitplane atlases, palette, scroll and sprite order remain intact. No HTML/WebView is used. V0.5 displays the authentic original pixels through an indexed native palette shader. Palette changes no longer invalidate the tile or sprite textures; only modified tile positions are decoded. The ORIG./HD PEÇAS button toggles an experimental 896×1024 render target with independent 4× textures for the steel ball and 19 mechanical sprite poses. Original mode is the default; the playfield illustration remains original in both modes. Complete board HD remastering is not yet implemented. The original 8 KiB sound ROM, secondary Z80, CTC, three AY-3-8910 chips and PCM buffer worker are ported. Sound commands from actual game CPU drive them and title command 0x32 is sent on boot. Godot audio parity and worker throughput remain untested. Thread support would be necessary for Web export.
+The source original ROM snapshot, four bitplane atlases, palette, scroll and sprite order remain intact. No HTML/WebView is used. V0.6 displays the authentic original pixels through an indexed native palette shader. Palette changes no longer invalidate the tile or sprite textures; only modified tile positions are decoded. The ORIG./HD PEÇAS button toggles an experimental 896×1024 render target with independent 4× textures for the steel ball and 19 mechanical sprite poses. Original mode is the default; the playfield illustration remains original in both modes. Complete board HD remastering is not yet implemented. The original 8 KiB sound ROM, secondary Z80, CTC, three AY-3-8910 chips and PCM buffer worker are ported. Sound commands from actual game CPU drive them and title command 0x32 is sent on boot. Godot audio parity and worker throughput remain untested. Thread support would be necessary for Web export.
 
 ## Regressions
 
@@ -26,3 +26,9 @@ The first checks the atlas fingerprints, reference frame, palette-only changes, 
 - Verify multitouch and export platforms.
 
 Do not replace the published HTML or merge until the project is tested.
+
+## V0.6 incremental video update
+
+Only dirty 8x8 ROM tile positions now update their persistent indexed RGBA buffer. GPU texture uploads are still full layer uploads when a layer changes. The gameplay tick is unchanged; intermediate video uploads are coalesced to once per rendered frame. Peak CPU and graphics time appear in the status line.
+
+The separate JavaScript model of the new incremental algorithm was compared to full-buffer reconstruction over the original 360-frame replay: 722 layer buffers matched, 549,632 indexed pixel writes versus 7,077,888 on the prior full-conversion path (92.23% fewer, including initial load). The source-engine reference and two artificial flip transitions are recorded in data/incremental_video_reference.json. This is an algorithm-level check, not a native Godot runtime or FPS benchmark. Native tests remain pending.
