@@ -70,5 +70,35 @@ function result(won){
  const el=document.getElementById('resultTitle');
  notice(el,won?'ending':'largeGameOver',won?'THE END':'GAME OVER');
 }
-window.StrikersOriginalUI=Object.freeze({codes,blocks,draw,digits,update,result,notice,replaceArt,labelAircraft,aircraftLabels,cursor,paletteStatus:'provisional grayscale'});
+// Native tile atlas, visually verified against the private World ROM.
+// The screen positions, palette and icon-to-life mapping are provisional.
+const hudAtlas=Object.freeze({digits:228,letters:321,onePlayer:30,twoPlayer:31,life:238,bomb:248,blank:320});
+let hudCache=new Map();
+function hudTile(code){
+ if(!window.StrikersROM?.isVerified?.())return null;
+ if(hudCache.has(code))return hudCache.get(code);
+ const c=document.createElement('canvas');
+ if(!window.StrikersSpriteDefinitions?.drawRaw(c,code,1,1))return null;
+ hudCache.set(code,c);return c;
+}
+function hudText(text){
+ return Array.from(String(text).toUpperCase(),ch=>ch>='0'&&ch<='9'?hudAtlas.digits+Number(ch):ch>='A'&&ch<='Z'?hudAtlas.letters+ch.charCodeAt(0)-65:hudAtlas.blank);
+}
+function hudTiles(el,ids,label,advance=12){
+ if(!el||!ids.length||!window.StrikersROM?.isVerified?.())return false;
+ const key=ids.join(',')+':'+advance;
+ if(el.dataset.hudKey===key&&el.querySelector('canvas'))return true;
+ const sprites=ids.map(hudTile);
+ if(sprites.some(c=>!c))return false;
+ const c=document.createElement('canvas');c.width=(ids.length-1)*advance+16;c.height=16;
+ const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+ sprites.forEach((tile,i)=>g.drawImage(tile,i*advance,0));
+ c.style.width=c.width*1.5+'px';c.style.maxWidth='100%';c.style.height='auto';c.style.imageRendering='pixelated';
+ c.setAttribute('aria-hidden','true');el.setAttribute('aria-label',label);el.dataset.hudKey=key;el.replaceChildren(c);return true;
+}
+function hudNumber(el,n){const text=String(n);return hudTiles(el,hudText(text),text,10);}
+function hudMarks(el,code,n,label){if(!el||!window.StrikersROM?.isVerified?.())return false;n=Math.max(0,Math.min(8,n|0));if(!n){el.replaceChildren();el.setAttribute('aria-label',label);delete el.dataset.hudKey;return true;}return hudTiles(el,Array(n).fill(code),label,12);}
+window.addEventListener('strikers-rom-ready',()=>hudCache.clear());
+
+window.StrikersOriginalUI=Object.freeze({codes,blocks,draw,digits,update,result,notice,replaceArt,labelAircraft,aircraftLabels,cursor,hudAtlas,hudText,hudTiles,hudNumber,hudMarks,paletteStatus:'provisional grayscale'});
 })();
