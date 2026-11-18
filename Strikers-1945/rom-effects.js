@@ -1,14 +1,14 @@
 /* Original graphical effect sequences from World ROM program records.
  * All frame codes, dimensions and flag words are read directly from the
- * verified ROM. Duration and palette assignments are preview choices,
- * pending tracing the original animation scheduler and palette loader.
+ * verified ROM. Common palette-bank assignments match all 16 ROM tables;
+ * animation duration remains provisional.
  */
 (()=>{'use strict';
 const groups=Object.freeze({
- large:{address:0x249c8,count:16,base:2952,bank:2,previewPalette:17},
- medium:{address:0x24bd8,count:12,base:5147,bank:2,previewPalette:17},
- burst:{address:0x24c38,count:14,base:5267,bank:3,previewPalette:17},
- small:{address:0x24d38,count:12,base:5255,bank:2,previewPalette:17}
+ large:{address:0x249c8,count:16,base:2952,bank:2},
+ medium:{address:0x24bd8,count:12,base:5147,bank:2},
+ burst:{address:0x24c38,count:14,base:5267,bank:3},
+ small:{address:0x24d38,count:12,base:5255,bank:2}
 });
 let records=new Map(),images=new Map();
 function read(name){
@@ -33,7 +33,8 @@ function sprite(name,progress){
  const f=frame(name,progress);if(!f)return null;
  const key=name+':'+f.code;if(images.has(key))return images.get(key);
  const d=window.StrikersSpriteDefinitions,c=document.createElement('canvas');
- const pal=d.palette(groups[name].previewPalette);
+ const pal=d.commonSpritePalette(groups[name].bank);
+ if(!pal)return null;
  if(!d.draw(c,f.code,pal))return null;
  images.set(key,c);return c;
 }
@@ -44,12 +45,11 @@ function draw(ctx,name,progress,x,y,scale=2){
  ctx.drawImage(c,Math.round(x-w/2),Math.round(y-h/2),w,h);ctx.restore();return true;
 }
 // Visual item identification from native sprite assemblies: lettered
-// capsules and gold-bar rotation. Exact runtime palette assignment and
-// animation timing have not yet been traced. Keep those choices separate.
+// capsules and gold-bar rotation. The common palette tables resolve the bank; animation timing is provisional.
 const itemGroups=Object.freeze({
- power:Object.freeze({address:0x3b2c4,start:1610,step:2,count:8,nx:1,ny:2,bank:1,previewPalette:15}),
- bomb:Object.freeze({address:0x3b304,start:1626,step:2,count:8,nx:1,ny:2,bank:1,previewPalette:15}),
- gold:Object.freeze({address:0x3b344,start:1643,step:1,count:8,nx:1,ny:1,bank:1,previewPalette:15})
+ power:Object.freeze({address:0x3b2c4,start:1610,step:2,count:8,nx:1,ny:2,bank:1}),
+ bomb:Object.freeze({address:0x3b304,start:1626,step:2,count:8,nx:1,ny:2,bank:1}),
+ gold:Object.freeze({address:0x3b344,start:1643,step:1,count:8,nx:1,ny:1,bank:1})
 });
 function itemRecords(type){
  const key='item-records:'+type;
@@ -71,7 +71,7 @@ function itemSprite(type,time){
  const code=a[Math.floor(Math.max(0,Number(time)||0)*12)%a.length].code;
  const key='item:'+type+':'+code;
  if(images.has(key))return images.get(key);
- const c=document.createElement('canvas'),pal=d.palette(g.previewPalette);
+ const c=document.createElement('canvas'),pal=d.commonSpritePalette(g.bank);
  if(!pal||!d.draw(c,code,pal))return null;
  images.set(key,c);return c;
 }
@@ -98,7 +98,7 @@ function drawItem(ctx,type,time,x,y,scale=2){
  ctx.drawImage(c,Math.round(x-c.width*scale/2),Math.round(y-c.height*scale/2),c.width*scale,c.height*scale);ctx.restore();
  return true;
 }
-function stats(){return {groups:Object.keys(groups).length,frames:Object.values(groups).reduce((n,g)=>n+g.count,0),paletteStatus:'provisional ROM palette 17',timingStatus:'preview'};}
+function stats(){return {groups:Object.keys(groups).length,frames:Object.values(groups).reduce((n,g)=>n+g.count,0),paletteStatus:'static common bank pointers verified; runtime modifications possible',timingStatus:'preview'};}
 window.addEventListener('strikers-rom-ready',()=>{records.clear();images.clear()});
 window.StrikersOriginalEffects=Object.freeze({groups,read,frame,sprite,draw,itemGroups,itemRecords,itemSprite,drawItem,medalNumbers,drawMedalScore,stats});
 })();
