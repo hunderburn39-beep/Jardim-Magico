@@ -121,7 +121,7 @@ function airbaseWave(captured=false){
 }
 
 const THEMES=[{name:'PACÍFICO',top:'#072a48',bot:'#12658b',land:'#4c805b',soil:'#96a76a',detail:'#183e3e'},{name:'ILHAS TROPICAIS',top:'#063e5e',bot:'#2088a6',land:'#54854e',soil:'#b5b66f',detail:'#224c37'},{name:'DESERTO',top:'#9e8862',bot:'#d4b47b',land:'#95835d',soil:'#e4cb8a',detail:'#766141'},{name:'COSTA EM GUERRA',top:'#324c56',bot:'#596b64',land:'#425b4b',soil:'#859875',detail:'#1b3339'},{name:'MONTANHAS',top:'#51758a',bot:'#a0c2cb',land:'#5d7674',soil:'#dae5da',detail:'#253f4b'},{name:'ATAQUE NOTURNO',top:'#060d29',bot:'#253159',land:'#24444d',soil:'#465d71',detail:'#0b202e'}];
-let selected=0,mode='menu',score=0,best=0,stage=1,stageTime=0,totalTime=0,spawnTick=0,boss=null,bossAdvance=0,player=null,enemies=[],bullets=[],pups=[],sparks=[],floats=[],waves=[],bgTile=null,bgShift=0,bgTheme=-1,noticeAt=0,stageOpening=0,flash=0,shake=0,drag=null,key={},audio=true,ac=null,last=0,frame=0,anim=0,comboKills=0,comboTime=0,qualityReduced=false,slowFrames=0;
+let selected=0,mode='menu',score=0,best=0,stage=1,stageTime=0,totalTime=0,spawnTick=0,boss=null,bossAdvance=0,player=null,enemies=[],bullets=[],pups=[],sparks=[],floats=[],waves=[],bgTile=null,bgShift=0,bgTheme=-1,noticeAt=0,stageOpening=0,flash=0,shake=0,drag=null,key={},audio=true,ac=null,last=0,frame=0,anim=0,qualityReduced=false,slowFrames=0;
 try{best=+(localStorage.getItem('strikers45_best_v1')||0)}catch(e){}
 const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.min(b,Math.max(a,v));const pad=v=>String(Math.floor(v)).padStart(7,'0');const rnd=(a,b)=>Math.floor(rand(a,b));
 function audioInit(){if(!audio)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}}
@@ -558,8 +558,34 @@ function bossEntryPosition(t,w,startY,targetY){
  const ramp=Math.min(1,patrolAge),amplitude=83*ramp*ramp*(3-2*ramp);
  return {x:w/2+Math.sin(patrolAge*.9)*amplitude,y:startY+(targetY-startY)*ease};
 }
-function summonBoss(){if(boss||bossAdvance>0)return;boss={x:W/2,y:-85,startY:-85,targetY:106,hp:170+stage*92,max:170+stage*92,t:0,fire:1.2,r:60,kind:'boss',active:true};enemies.length=0;UI.bossMeter.style.display='block';flash=.4;shake=10;message('WARNING',2,'warning');beep('warn')}
-function nextStage(){window.StrikersFlightReplay?.reset();if(stage>=6){end(true);return}stage++;stageTime=0;comboKills=0;comboTime=0;spawnTick=1;airbaseCue=0;boss=null;bossAdvance=0;bullets=bullets.filter(b=>b.owner==='player');UI.bossMeter.style.display='none';stageOpening=2.5;setBg();flash=.55;message(`MISSÃO ${String(stage).padStart(2,'0')} · ${THEMES[stage-1].name}`,2.3);pups.push({x:180,y:110,type:'power',t:0});updateUI()}
+function summonBoss(){if(boss||bossAdvance>0)return;window.StrikersFlightReplay?.reset();boss={x:W/2,y:-85,startY:-85,targetY:106,hp:170+stage*92,max:170+stage*92,t:0,fire:1.2,r:60,kind:'boss',active:true};enemies.length=0;UI.bossMeter.style.display='block';flash=.4;shake=10;message('WARNING',2,'warning');beep('warn')}
+// Clear transient entities at the stage boundary, not player stock or score.
+function clearStageEntities(){
+ enemies=[];bullets=[];pups=[];sparks=[];floats=[];waves=[];
+ window.StrikersFlightReplay?.reset();boss=null;bossAdvance=0;
+}
+function nextStage(){
+ clearStageEntities();
+ // Six-stage preview limit remains; the full original route is not yet decoded.
+ if(stage>=6){end(true);return}
+ stage++;stageTime=0;spawnTick=1;airbaseCue=0;
+ UI.bossMeter.style.display='none';stageOpening=2.5;
+ if(player){player.inv=Math.max(player.inv,stageOpening);player.fire=0;player.rocketCd=.28;}
+ setBg();flash=.55;UI.notice.classList.remove('show');noticeAt=0;
+ updateUI();
+}
+function beginStageClear(){
+ boss=null;bossAdvance=.9;UI.bossMeter.style.display='none';
+ // No shots from defeated enemies may survive the stage-clear animation.
+ for(const b of bullets)if(b.owner==='enemy')b.neutralized=true;
+ if(player)player.inv=Math.max(player.inv,bossAdvance);
+ window.StrikersFlightReplay?.reset();
+}
+function advanceStageClear(dt){
+ bossAdvance=Math.max(0,bossAdvance-dt);
+ advanceTransientEffects(dt);
+ if(bossAdvance===0)nextStage();
+}
 function updateCredits(){
  const state=arcade.state(),label='CREDIT '+String(state.credits).padStart(2,'0');
  $('#titleCredits').textContent=label;$('#selectCredits').textContent=label;
@@ -580,7 +606,7 @@ function start(){
  if(arcade.state().mode!=='select')return;
  if(!romReady()){$('#selectionStatus').textContent='ROM não disponível.';return;}
  if(!arcade.choose(craftIds[selected]))return;
- audioInit();score=0;stage=1;stageTime=0;totalTime=0;spawnTick=1.6;airbaseCue=0;stageOpening=2.2;comboKills=0;comboTime=0;boss=null;bossAdvance=0;enemies=[];bullets=[];pups=[];sparks=[];floats=[];waves=[];window.StrikersFlightReplay?.reset();bgTheme=-1;setBg();player={x:W/2,y:H-115,hp:4,bombs:2,level:1,inv:3.5,fire:0,rocketCd:.28,rocketSide:1,craft:selected,roll:0};mode='play';UI.menu.classList.add('hide');UI.finish.classList.add('hide');UI.pause.classList.add('hide');UI.hud.style.display='block';UI.bottom.style.display='flex';UI.pauseBtn.style.display='none';drag=null;musicTick.previous=-1;UI.weaponHint.textContent=CRAFT[selected].weapon;UI.bottom.querySelector('.hint').style.opacity='1';romUI(false);updateUI();UI.notice.classList.remove('show');noticeAt=0}
+ audioInit();score=0;stage=1;stageTime=0;totalTime=0;spawnTick=1.6;airbaseCue=0;stageOpening=2.2;boss=null;bossAdvance=0;enemies=[];bullets=[];pups=[];sparks=[];floats=[];waves=[];window.StrikersFlightReplay?.reset();bgTheme=-1;setBg();player={x:W/2,y:H-115,hp:4,bombs:2,level:1,inv:3.5,fire:0,rocketCd:.28,rocketSide:1,craft:selected,roll:0};mode='play';UI.menu.classList.add('hide');UI.finish.classList.add('hide');UI.pause.classList.add('hide');UI.hud.style.display='block';UI.bottom.style.display='flex';UI.pauseBtn.style.display='none';drag=null;musicTick.previous=-1;UI.weaponHint.textContent=CRAFT[selected].weapon;UI.bottom.querySelector('.hint').style.opacity='1';romUI(false);updateUI();UI.notice.classList.remove('show');noticeAt=0}
 function pause(v){if(mode==='play'&&v){mode='pause';UI.pause.classList.remove('hide');UI.pauseBtn.style.display='none'}else if(mode==='pause'&&!v){mode='play';UI.pause.classList.add('hide');UI.pauseBtn.style.display='block';last=performance.now()}}
 // Original ROM includes CONTINUE?, ADD COIN and countdown glyphs.
  // The exact arcade countdown / reset rules have not yet been traced.
@@ -660,10 +686,10 @@ function updateUI(){
 }
 function message(t,sec,art=null){UI.notice.removeAttribute('aria-label');UI.notice.textContent=t;if(art)window.StrikersOriginalUI?.notice(UI.notice,art,t);UI.notice.classList.add('show');noticeAt=sec}
 function bomb(){if(mode!=='play'||!player||player.bombs<=0)return;audioInit();player.bombs--;shake=22;flash=.9;player.inv=Math.max(player.inv,1.6);beep('bomb');addParticle(player.x,player.y,'#fff8c0',85,340,1);bullets=bullets.filter(b=>b.owner!=='enemy');for(let e of [...enemies])damage(e,25);if(boss)damage(boss,75);updateUI()}
-function damage(e,v){if(e.kind==='romShadow')return;e.hp-=v;addParticle(e.x+rand(-10,10),e.y+rand(-10,10),'#ffc966',2,80,.2);if(e.hp<=0&&e.active){e.active=false;const points=Math.max(0,Math.round(e.score??0));score+=points;
+function damage(e,v){if(mode!=='play'||bossAdvance>0||!e.active||e.kind==='romShadow')return;e.hp-=v;addParticle(e.x+rand(-10,10),e.y+rand(-10,10),'#ffc966',2,80,.2);if(e.hp<=0&&e.active){e.active=false;const points=Math.max(0,Math.round(e.score??0));score+=points;
 waves.push({x:e.x,y:e.y,r:e.kind==='boss'?22:7,life:e.kind==='boss'?.85:.4,max:e.kind==='boss'?.85:.4,color:e.kind==='boss'?'#ffe18a':'#ffa85f',romEffect:e.kind==='boss'?'large':e.kind==='bomber'||e.kind==='fortress'?'medium':'burst'});
-if(waves.length>14)waves.shift();beep('boom');shake=Math.max(shake,e.kind==='boss'?23:4);if(e.kind==='boss'){boss=null;bossAdvance=.9;UI.bossMeter.style.display='none'}else if(e.drop){pups.push({x:e.x,y:e.y,type:e.drop,t:0})}else if(Math.random()<.13){pups.push({x:e.x,y:e.y,type:Math.random()<.82?'power':'bomb',t:0})}floats.push({x:e.x,y:e.y,t:0,label:'+'+points})}}
-function hitPlayer(){if(!player||player.inv>0)return;player.hp--;player.inv=3.8;for(const b of bullets)if(b.owner==='enemy'&&Math.hypot(b.x-player.x,b.y-player.y)<86)b.neutralized=true;const hadPower=player.level>1;player.level=Math.max(1,player.level-1);flash=.32;shake=8;addParticle(player.x,player.y,'#ffb45b',16,145,.45);beep('hit');if(player.hp<=0){end(false)}else{message(hadPower?'POWER DOWN':'IMPACTO · '+player.hp+' VIDAS',1.15,hadPower?'powerDown':null)}updateUI()}
+if(waves.length>14)waves.shift();beep('boom');shake=Math.max(shake,e.kind==='boss'?23:4);if(e.kind==='boss'){beginStageClear()}else if(e.drop){pups.push({x:e.x,y:e.y,type:e.drop,t:0})}else if(Math.random()<.13){pups.push({x:e.x,y:e.y,type:Math.random()<.82?'power':'bomb',t:0})}floats.push({x:e.x,y:e.y,t:0,label:'+'+points})}}
+function hitPlayer(){if(mode!=='play'||bossAdvance>0||!player||player.inv>0)return;player.hp--;player.inv=3.8;for(const b of bullets)if(b.owner==='enemy'&&Math.hypot(b.x-player.x,b.y-player.y)<86)b.neutralized=true;const hadPower=player.level>1;player.level=Math.max(1,player.level-1);flash=.32;shake=8;addParticle(player.x,player.y,'#ffb45b',16,145,.45);beep('hit');if(player.hp<=0){end(false)}else{message(hadPower?'POWER DOWN':'IMPACTO · '+player.hp+' VIDAS',1.15,hadPower?'powerDown':null)}updateUI()}
 // Ground installations cannot physically hit a flying aircraft. Replay sprites
 // are only dangerous once fully visible; collision uses the centre fuselage.
 const GROUND_TARGETS=new Set(['tank','turret','ship','romGround','romShadow']);
@@ -722,7 +748,7 @@ function applyPickup(player,type,time){
  }
  return {points,powerUp};
 }
-function update(dt){if(mode==='menu'){bgShift=(bgShift+dt*16)%960;return}if(mode!=='play')return;totalTime+=dt;stageTime+=dt;comboTime=Math.max(0,comboTime-dt);if(comboTime===0)comboKills=0;musicTick();if(bossAdvance>0){bossAdvance-=dt;if(bossAdvance<=0){nextStage();return}}if(noticeAt>0){noticeAt-=dt;if(noticeAt<=0)UI.notice.classList.remove('show')}if(stageOpening>0){stageOpening-=dt}else if(!boss&&bossAdvance<=0&&stageTime>(stage===1&&window.StrikersFlightReplay?.ready()?window.StrikersFlightReplay.stats().flightTime+.5:47)){summonBoss()}else if(!boss&&bossAdvance<=0){if(stage===1 && window.StrikersFlightReplay?.ready())airbaseWave(true);else if(stage===1 && window.StrikersROM?.isLoaded())airbaseWave();else{spawnTick-=dt;if(spawnTick<=0){wave();spawnTick=clamp(4.2-stage*.32,1.7,4)}}}
+function update(dt){if(mode==='menu'){bgShift=(bgShift+dt*16)%960;return}if(mode!=='play')return;totalTime+=dt;if(bossAdvance>0){advanceStageClear(dt);return}stageTime+=dt;musicTick();if(noticeAt>0){noticeAt-=dt;if(noticeAt<=0)UI.notice.classList.remove('show')}if(stageOpening>0){stageOpening-=dt}else if(!boss&&bossAdvance<=0&&stageTime>(stage===1&&window.StrikersFlightReplay?.ready()?window.StrikersFlightReplay.stats().flightTime+.5:47)){summonBoss()}else if(!boss&&bossAdvance<=0){if(stage===1 && window.StrikersFlightReplay?.ready())airbaseWave(true);else if(stage===1 && window.StrikersROM?.isLoaded())airbaseWave();else{spawnTick-=dt;if(spawnTick<=0){wave();spawnTick=clamp(4.2-stage*.32,1.7,4)}}}
 // The exact sprite frames and flight orientations come from the recorded arcade.
 if(stage===1&&!boss&&bossAdvance<=0&&window.StrikersFlightReplay?.ready()){
  const recorded=window.StrikersFlightReplay.sync(stageTime);
@@ -761,8 +787,9 @@ for(let i=enemies.length-1;i>=0;i--){let e=enemies[i];e.t+=dt;
   if(e.fire<=0){enemyFire(e);e.fire=clamp(rand(2.0,3.3)-stage*.15,.8,5)}
  }
  if(e.y>740||e.x<-200||e.x>W+200||!e.active)enemies.splice(i,1);
- else if(player&&player.inv<=0&&airframeHitsPlayer(e,player)){damage(e,30);hitPlayer()}}
+ else if(player&&player.inv<=0&&airframeHitsPlayer(e,player)){damage(e,30);hitPlayer();if(mode!=='play')return}}
 if(boss){boss.t+=dt;const approach=bossEntryPosition(boss.t,W,boss.startY,boss.targetY);boss.x=approach.x;boss.y=approach.y;boss.fire-=dt;if(boss.fire<=0&&boss.y>80){let a=Math.atan2(player.y-boss.y,player.x-boss.x);for(let off of [-40,0,40])burst(boss.x+off,boss.y+30,a,stage>3?5:3,126+stage*8,.18);if(stage>=3&&Math.random()>.55)for(let z=0;z<10;z++){let ang=z*TAU/10+boss.t;shoot(boss.x,boss.y,Math.cos(ang)*95,Math.sin(ang)*95,'enemy',1,'#e5b4ff',4)}boss.fire=clamp(1.8-stage*.12,.86,1.8)}if(player&&player.inv<=0&&Math.abs(player.x-boss.x)<55&&Math.abs(player.y-boss.y)<42)hitPlayer()}
+if(mode!=='play'||bossAdvance>0)return;
 for(let i=bullets.length-1;i>=0;i--){
  let b=bullets[i];
  if(b.neutralized){bullets.splice(i,1);continue}
@@ -782,9 +809,10 @@ for(let i=bullets.length-1;i>=0;i--){
    if(b.kind==='missile')missileImpact(b,target);
    else damage(target,b.damage);
    bullets.splice(i,1);
+   if(bossAdvance>0)return;
   }
  }else if(player&&player.inv<=0&&bulletSweepsPlayer(b,player,fromX,fromY)){
-  bullets.splice(i,1);hitPlayer()
+  bullets.splice(i,1);hitPlayer();if(mode!=='play')return;
  }
 }
 for(let i=pups.length-1;i>=0;i--){let p=pups[i];p.y+=55*dt;p.t+=dt;if(p.y>H+20){pups.splice(i,1);continue}if(player&&Math.hypot(p.x-player.x,p.y-player.y)<22){const awarded=applyPickup(player,p.type,p.t);
@@ -792,7 +820,8 @@ score+=awarded.points;
 if(awarded.points>0)floats.push({x:p.x,y:p.y,t:0,label:String(awarded.points),medal:awarded.points});
 if(awarded.powerUp)message('POWER UP!',.7,'powerUp');
 beep('power');addParticle(p.x,p.y,'#fff7a5',17,90,.4);pups.splice(i,1);updateUI()}}
-for(let i=sparks.length-1;i>=0;i--){let p=sparks[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.pow(.13,dt);p.vy*=Math.pow(.13,dt);p.life-=dt;if(p.life<=0)sparks.splice(i,1)}for(let i=floats.length-1;i>=0;i--){floats[i].y-=dt*26;floats[i].t+=dt;if(floats[i].t>.8)floats.splice(i,1)}for(let i=waves.length-1;i>=0;i--){const w=waves[i];if(w.delay>0){w.delay-=dt;continue}w.life-=dt;w.r+=dt*(w.blast?Math.max(65,w.blast/w.max*.9):120);if(w.life<=0)waves.splice(i,1)}flash=Math.max(0,flash-dt*2);shake=Math.max(0,shake-dt*25);updateUI()}
+advanceTransientEffects(dt);updateUI()}
+function advanceTransientEffects(dt){for(let i=sparks.length-1;i>=0;i--){let p=sparks[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.pow(.13,dt);p.vy*=Math.pow(.13,dt);p.life-=dt;if(p.life<=0)sparks.splice(i,1)}for(let i=floats.length-1;i>=0;i--){floats[i].y-=dt*26;floats[i].t+=dt;if(floats[i].t>.8)floats.splice(i,1)}for(let i=waves.length-1;i>=0;i--){const w=waves[i];if(w.delay>0){w.delay-=dt;continue}w.life-=dt;w.r+=dt*(w.blast?Math.max(65,w.blast/w.max*.9):120);if(w.life<=0)waves.splice(i,1)}flash=Math.max(0,flash-dt*2);shake=Math.max(0,shake-dt*25);}
 function drawEnemy(e){
  if(e.romFlight){
   // Preserve captured sprite opacity instead of making planes fade near the player.
@@ -1231,7 +1260,7 @@ UI.bombBtn.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefau
 if((location.hostname==='127.0.0.1'||location.hostname==='localhost')&&new URLSearchParams(location.search).get('test')==='1'){
  window.__strikersTest=Object.freeze({
   snapshot:()=>({
-   mode,arcade:arcade.state(),continueLeft,craft:player?.craft,level:player?.level,playerHP:player?.hp,playerInv:player?.inv,playerX:player?.x,playerY:player?.y,waveCount:waves.length,
+   mode,stage,score,bossAdvance,arcade:arcade.state(),continueLeft,craft:player?.craft,level:player?.level,playerHP:player?.hp,playerInv:player?.inv,playerX:player?.x,playerY:player?.y,waveCount:waves.length,
    nativePlayerAsset:!!player&&!!nativePlayerSprite(player.craft),
    activeEnemies:enemies.filter(e=>e.active).map(e=>({kind:e.kind,x:e.x,y:e.y})),airbaseCue,stageTime,
    flightStats:window.StrikersFlightReplay?.stats(),
@@ -1244,6 +1273,7 @@ if((location.hostname==='127.0.0.1'||location.hostname==='localhost')&&new URLSe
   }),
   resetShots:()=>{bullets=[];},
    forceGameOver:()=>{if(player&&mode==='play'){player.hp=0;end(false)}},
+   forceStageClear:()=>{if(mode==='play'&&!bossAdvance)beginStageClear()},
    advanceOverlay:seconds=>tickArcadeOverlay(seconds),
    setPosition:(x,y)=>{if(player){player.x=x;player.y=y}},
    setInv:(seconds)=>{if(player)player.inv=seconds},
