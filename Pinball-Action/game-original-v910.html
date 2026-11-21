@@ -2758,6 +2758,25 @@ function finishInputFrame(){
  const centerButton=document.getElementById('center');
  let centerMode='start',centerHeldKey=null,centerLastDirect=-Infinity;
  let centerBallSignature=null,centerMotionSeen=false,centerLastMotionFrame=0,centerLaunchFrame=0;
+ // High-score entry takes START (a momentary service input), not SHAKE.
+ // Remember the short original TOP 10 entry window without creating fake credits.
+ let scoreEntryConfirmUntil=0;
+ function isMonochromeRanking(){
+  // The original TOP 10 screen is white lettering on a nearly black field;
+  // active tables contain many saturated palette colours. Sample sparsely
+  // to avoid a full-frame readback and to keep mobile performance unchanged.
+  let dark=0,white=0,colour=0,total=0;
+  for(let y=20;y<236;y+=6)for(let x=20;x<236;x+=6){
+   const px=palette32[framePixels[y*256+x]]>>>0;
+   const r=px&255,g=(px>>>8)&255,b=(px>>>16)&255;
+   const hi=Math.max(r,g,b),lo=Math.min(r,g,b);
+   total++;
+   if(hi<40)dark++;
+   else if(hi>=155&&hi-lo<=38)white++;
+   else if(hi-lo>55)colour++;
+  }
+  return dark>total*.66&&white>total*.018&&colour<total*.065;
+ }
  function setCenterMode(mode){
   if(centerMode===mode)return;
   centerMode=mode;centerButton.dataset.mode=mode;
@@ -2771,8 +2790,15 @@ function finishInputFrame(){
  }
  function centerDown(){
   if(!entryComplete||centerHeldKey)return;
-  const k=centerMode==='start'?'start':centerMode==='launch'?'launch':'shake';
-  centerHeldKey=k;press(k,true);centerButton.classList.add('down');
+  const confirmingScore=centerMode==='start'&&frames<scoreEntryConfirmUntil&&isMonochromeRanking();
+  const k=confirmingScore?'rank-confirm':centerMode==='start'?'start':centerMode==='launch'?'launch':'shake';
+  centerHeldKey=k;
+  if(confirmingScore){
+   // Pulse the ROM's START input directly for initials confirmation.
+   // startGameRequest() would insert a coin and switch back to LANÇAR.
+   pending.start=Math.max(pending.start,18);refreshKeys();arcadeAudio.boot();
+  }else press(k,true);
+  centerButton.classList.add('down');
   if(k==='launch'){
    centerBallSignature=centerSignature();centerMotionSeen=false;
    centerLastMotionFrame=frames;centerLaunchFrame=frames;setCenterMode('shake');
@@ -2780,7 +2806,8 @@ function finishInputFrame(){
  }
  function centerUp(){
   if(!centerHeldKey)return;
-  press(centerHeldKey,false);centerHeldKey=null;centerButton.classList.remove('down');
+  if(centerHeldKey!=='rank-confirm')press(centerHeldKey,false);
+  centerHeldKey=null;centerButton.classList.remove('down');
  }
  centerButton.addEventListener('pointerdown',e=>{
   e.preventDefault();centerLastDirect=performance.now();
@@ -2802,11 +2829,18 @@ function finishInputFrame(){
  });
  function tickCenterButton(){
   if(centerMode!=='shake'||centerHeldKey)return;
+  // Check only five times per second. Do not let SHAKE persist on TOP 10.
+  if(frames%12===0&&isMonochromeRanking()){
+   scoreEntryConfirmUntil=frames+40*60;
+   setCenterMode('start');
+   return;
+  }
   const sig=centerSignature();
   if(sig!==centerBallSignature){
    centerBallSignature=sig;centerMotionSeen=true;centerLastMotionFrame=frames;
   }
-  if(centerMotionSeen&&frames-centerLaunchFrame>=150&&frames-centerLastMotionFrame>=150)
+  // Also recover when no ball-register motion was seen after launch.
+  if(frames-centerLaunchFrame>=150&&frames-centerLastMotionFrame>=150)
    setCenterMode('launch');
  }
 
