@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V2.0.15</title>
+<title>Jardim Mágico | Edição Stake Preview V2.0.16</title>
 <link rel="preload" as="image" href="assets/figuras-3d-aprovadas-20261114/caracol.png">
 <link rel="preload" as="image" href="assets/figuras-v199/joaninha-limpa.svg">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-flor-azul-limpo.svg">
@@ -1468,6 +1468,8 @@ html,body{height:100%;overflow:hidden;background:#051814}
 .bet-shortcuts{justify-content:flex-end!important;right:4%!important;left:52%!important;padding-right:0!important}
 
 .bet-shortcuts{left:4%!important;right:4%!important;justify-content:space-between!important}.bet-shortcuts #turbo{flex:0 0 auto;min-width:clamp(62px,16.5vw,78px);height:clamp(27px,3.6svh,34px);padding:3px 5px;border:2px solid #f9dc8b;border-radius:9px;background:linear-gradient(160deg,#856035,#352443 72%,#221c35);color:#ffefb3;font-size:clamp(9px,2.15vw,11px);font-weight:1000;box-shadow:0 2px 7px #051b1bc9,inset 0 1px #fff6c15e}.bet-shortcuts #turbo[aria-pressed="true"]{background:linear-gradient(#527c39,#203d28);box-shadow:0 0 10px #a5ef70;border-color:#caff9a}.actions #spin{grid-column:2}.actions #auto{grid-column:3}
+
+#spin{touch-action:none;-webkit-touch-callout:none;user-select:none}#spin.auto-running{border-color:#ffe6ad}#spin #autoLabel{display:block}
 </style>
 </head>
 <body>
@@ -1518,10 +1520,10 @@ html,body{height:100%;overflow:hidden;background:#051814}
  <div class="bet-shortcuts" aria-label="Turbo e compra de bónus"><button type="button" id="turbo" aria-pressed="false">⚡ TURBO <b id="turboLabel">DESL.</b></button><button type="button" id="openBonusBuy" aria-label="Abrir compra de bónus" aria-expanded="false">🎁 BÓNUS</button></div>
  <div class="actions">
   
-  <button class="spin" id="spin"><b>↻</b>RODAR</button>
-  <button class="action-small" id="auto" type="button" aria-label="Escolher número de rodadas automáticas" aria-pressed="false"><span id="autoHeading">↻ AUTO</span><br><b id="autoLabel">ESCOLHER</b></button>
+  <button class="spin" id="spin" aria-pressed="false"><b id="autoHeading">↻</b><span id="autoLabel">RODAR</span></button>
+  
  </div>
- <footer class="foot"><b>V2.0.15 · CASCATAS SUAVES</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
+ <footer class="foot"><b>V2.0.16 · CASCATAS SUAVES</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="bonusBuyOverlay" role="dialog" aria-modal="true" aria-label="Comprar bónus">
   <div class="modal bonus-buy-modal">
@@ -2103,13 +2105,13 @@ function clearFreeHud(){$("freePanel").hidden=true;$("freePanel").classList.remo
 function finalWinTier(payout,stake){const ratio=payout/stake;return ratio>=100?"SENSACIONAL":ratio>=25?"MEGA WIN":ratio>=10?"BIG WIN":"PRÉMIO TOTAL"}
 function controls(){
   const autoRunning=autoLeft>0;
-  ["spin","minus","plus","openBonusBuy","buyFree","buyHold","reloadBtn","historyBtn"].forEach(id=>$(id).disabled=busy||autoRunning);
-  $("auto").disabled=busy&&!autoRunning;
-  $("auto").classList.toggle("auto-running",autoRunning);
-  $("auto").setAttribute("aria-pressed",String(autoRunning));
-  $("auto").setAttribute("aria-label",autoRunning?"Parar rodadas automáticas após a jogada atual":"Escolher número de rodadas automáticas");
-  $("autoHeading").textContent=autoRunning?"■ PARAR":"↻ AUTO";
-  $("autoLabel").textContent=autoRunning?autoLeft+" RESTAM":"ESCOLHER";
+  ["minus","plus","openBonusBuy","buyFree","buyHold","reloadBtn","historyBtn"].forEach(id=>$(id).disabled=busy||autoRunning);
+  $("spin").disabled=busy&&!autoRunning;
+  $("spin").classList.toggle("auto-running",autoRunning);
+  $("spin").setAttribute("aria-pressed",String(autoRunning));
+  $("spin").setAttribute("aria-label",autoRunning?"Parar rodadas automáticas após a jogada atual":"Escolher número de rodadas automáticas");
+  $("autoHeading").textContent=autoRunning?"■ PARAR":"↻";
+  $("autoLabel").textContent=autoRunning?autoLeft+" RESTAM":"RODAR";
   $("skipBtn").hidden=!busy||skipAnimations;
   $("holdSkip").hidden=!busy||skipAnimations;
   document.querySelectorAll("[data-bet]").forEach(button=>button.disabled=busy||autoRunning);
@@ -2820,7 +2822,7 @@ async function play(mode="base"){
 $("introPlay").addEventListener("click",enterGarden);
 $("closeHold").addEventListener("click",acknowledgeHoldContinue);
 $("closeFree").addEventListener("click",acknowledgeFreeContinue);
-$("spin").addEventListener("click",()=>play("base"));
+
 $("skipBtn").addEventListener("click",skipCurrentAnimations);
 $("holdSkip").addEventListener("click",skipCurrentAnimations);
 $("minus").addEventListener("click",()=>{betIndex=Math.max(0,betIndex-1);display();saveSession()});
@@ -2833,7 +2835,13 @@ $("buyFree").addEventListener("click",()=>{closeBonusShop();void play("free")});
 $("buyHold").addEventListener("click",()=>{closeBonusShop();void play("hold")});
 $("reloadBtn").addEventListener("click",()=>{if(busy||autoLeft>0)return;const previous=balance;balance+=250;if(!saveSession()){balance=previous;display();return}display();say("Adicionados 250 créditos de teste.","bonus")});
 $("turbo").addEventListener("click",()=>{turbo=!turbo;controls()});
-$("auto").addEventListener("click",toggleAuto);
+let spinHoldTimer=null,spinLong=false;
+const spinButton=$("spin");
+function cancelSpinHold(){clearTimeout(spinHoldTimer);spinHoldTimer=null}
+spinButton.addEventListener("pointerdown",e=>{if(e.button!==0||busy||autoLeft>0)return;spinLong=false;cancelSpinHold();spinHoldTimer=setTimeout(()=>{spinLong=true;toggleAuto()},2000)});
+["pointerup","pointercancel","pointerleave"].forEach(type=>spinButton.addEventListener(type,cancelSpinHold));
+spinButton.addEventListener("contextmenu",e=>e.preventDefault());
+spinButton.addEventListener("click",e=>{if(spinLong){spinLong=false;return}if(autoLeft>0){stopAuto();return}if(!busy)void play("base")});
 $("autoCancel").addEventListener("click",()=>$("autoOptions").classList.remove("show"));
 document.querySelectorAll("[data-auto-count]").forEach(b=>b.addEventListener("click",()=>startAuto(Number(b.dataset.autoCount))));
 $("soundBtn").addEventListener("click",openAudioMixer);
