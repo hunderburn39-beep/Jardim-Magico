@@ -91,7 +91,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .detail-cell .wild-badge{right:-4px;top:-3px;min-width:22px;height:21px;font-size:10px}
 
 .cell.spinning img,.cell.spinning .emoji,.cell.spinning .orb{animation:spinBlur .13s infinite alternate}
-.cell.cascade-in img,.cell.cascade-in .emoji,.cell.cascade-in .orb{animation:fallIn .38s cubic-bezier(.16,.8,.3,1.08) both}
+.cell.cascade-in img,.cell.cascade-in .emoji,.cell.cascade-in .orb{animation:fallIn .48s cubic-bezier(.22,.61,.36,1) both}
 .cell.landing{animation:landingFlash .24s ease-out}
 .payline-visual{position:absolute;inset:3px;width:calc(100% - 6px);height:calc(100% - 6px);z-index:4;pointer-events:none;overflow:visible}
 .line-prize{position:absolute;left:50%;top:48%;z-index:5;transform:translate(-50%,-50%);background:none;border:0;box-shadow:none;color:#fff6c7;font-size:clamp(15px,4.3vw,23px);font-weight:1000;padding:3px 8px;white-space:nowrap;pointer-events:none;text-shadow:0 0 6px #fff5a9,0 0 12px #ffcd63,2px 3px 2px #130c2b,-2px 3px 3px #130c2b;animation:linePrizePop .35s cubic-bezier(.21,1.5,.45,1) both}
@@ -2465,11 +2465,11 @@ async function animateSymbolRain(boardFinal){
       const frames=[
         {transform:"translate3d(0,-"+height+"px,0)",opacity:0,offset:0},
         {transform:"translate3d(0,-"+Math.min(36,height*.16)+"px,0)",opacity:1,offset:.68},
-        {transform:"translate3d(0,7px,0)",opacity:1,offset:.91},
+        {transform:"translate3d(0,-2px,0)",opacity:1,offset:.91},
         {transform:"translate3d(0,0px,0)",opacity:1,offset:1}
       ];
       animations.push({sprite,frames,timing:{duration:entry.duration,delay:entry.delay,
-        easing:"cubic-bezier(.24,.72,.27,1)",fill:"both"}});
+        easing:"cubic-bezier(.22,.61,.36,1)",fill:"both"}});
     }
     frame.appendChild(layer);appended=true;
     // The overlay is visible immediately above the empty, transparent stage.
@@ -2615,13 +2615,13 @@ async function animateCascade(boardFinal,oldRemoved,drop=2){
         ghost.style.opacity=entry.fresh?".75":"1";
         layer.appendChild(ghost);
         cell.classList.add("cascade-concealed");
-        const duration=turbo?165:430+entry.row*30+c*14;
+        const duration=turbo?165:510+entry.row*30+c*14;
         if(typeof ghost.animate==="function"){
           animations.push(ghost.animate([
             {transform:"translate3d(0,"+from+"px,0)",opacity:entry.fresh?.75:1,offset:0},
-            {transform:"translate3d(0,"+(to+3)+"px,0)",opacity:1,offset:.88},
+            {transform:"translate3d(0,"+(to-2)+"px,0)",opacity:1,offset:.88},
             {transform:"translate3d(0,"+to+"px,0)",opacity:1,offset:1}
-          ],{duration,easing:"cubic-bezier(.26,.72,.28,1)",fill:"forwards"}));
+          ],{duration,easing:"cubic-bezier(.22,.61,.36,1)",fill:"forwards"}));
         }else{
           ghost.style.transform="translate3d(0,"+to+"px,0)";
           ghost.style.opacity="1";
@@ -2632,7 +2632,7 @@ async function animateCascade(boardFinal,oldRemoved,drop=2){
     });
     // As peças começam a cair em silêncio; o impacto coincide com a
     // chegada às casas (incluindo a última coluna, em modo normal).
-    await pause(turbo?150:520);
+    await pause(turbo?150:625);
     if(!skipAnimations)playRecorded("cascade",Math.min(1.2,1+Math.max(0,drop-2)*.06));
     await pause(turbo?30:65);
   }finally{
