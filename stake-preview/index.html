@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V2.0.0</title>
+<title>Jardim Mágico | Edição Stake Preview V2.0.1</title>
 <link rel="preload" as="image" href="assets/figuras-3d-aprovadas-20261114/caracol.png">
 <link rel="preload" as="image" href="assets/figuras-v199/joaninha-limpa.svg">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-flor-azul-limpo.svg">
@@ -91,7 +91,7 @@ button:disabled{opacity:.48;cursor:not-allowed}
 .detail-cell .wild-badge{right:-4px;top:-3px;min-width:22px;height:21px;font-size:10px}
 
 .cell.spinning img,.cell.spinning .emoji,.cell.spinning .orb{animation:spinBlur .13s infinite alternate}
-.cell.cascade-in img,.cell.cascade-in .emoji,.cell.cascade-in .orb{animation:fallIn .48s cubic-bezier(.22,.61,.36,1) both}
+.cell.cascade-in img,.cell.cascade-in .emoji,.cell.cascade-in .orb{animation:fallIn .72s cubic-bezier(.22,.61,.36,1) both}
 .cell.landing{animation:landingFlash .24s ease-out}
 .payline-visual{position:absolute;inset:3px;width:calc(100% - 6px);height:calc(100% - 6px);z-index:4;pointer-events:none;overflow:visible}
 .line-prize{position:absolute;left:50%;top:48%;z-index:5;transform:translate(-50%,-50%);background:none;border:0;box-shadow:none;color:#fff6c7;font-size:clamp(15px,4.3vw,23px);font-weight:1000;padding:3px 8px;white-space:nowrap;pointer-events:none;text-shadow:0 0 6px #fff5a9,0 0 12px #ffcd63,2px 3px 2px #130c2b,-2px 3px 3px #130c2b;animation:linePrizePop .35s cubic-bezier(.21,1.5,.45,1) both}
@@ -1535,7 +1535,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
   <button class="spin" id="spin"><b>↻</b>RODAR</button>
   <button class="action-small" id="auto" type="button" aria-label="Iniciar cinco rodadas automáticas" aria-pressed="false"><span id="autoHeading">↻ AUTO</span><br><b id="autoLabel">5 GIROS</b></button>
  </div>
- <footer class="foot"><b>V2.0.0 · CASCATAS SUAVES</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
+ <footer class="foot"><b>V2.0.1 · CASCATAS SUAVES</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="bonusBuyOverlay" role="dialog" aria-modal="true" aria-label="Comprar bónus">
   <div class="modal bonus-buy-modal">
@@ -2422,8 +2422,8 @@ function premiumRainPlan(boardFinal){
     throw Error("Premium Rain exige a grelha lógica 5×3");
   return boardFinal.flatMap((column,c)=>column.map((symbol,r)=>({
     c,r,symbol,
-    delay:turbo?c*38+(2-r)*16:c*110+(2-r)*55,
-    duration:turbo?235+r*15:490+r*37
+    delay:turbo?c*38+(2-r)*16:c*145+(2-r)*70,
+    duration:turbo?235+r*15:740+r*45
   })));
 }
 async function animateSymbolRain(boardFinal){
@@ -2478,7 +2478,7 @@ async function animateSymbolRain(boardFinal){
     }
     let visibleScatter=0,visibleCoins=0,coinTension=false;
     for(let c=0;c<5&&!skipAnimations;c++){
-      await pause(turbo?(c===0?255:65):(c===0?630:110));
+      await pause(turbo?(c===0?255:65):(c===0?880:145));
       if(skipAnimations)break;
       playRecorded("stop");
       const scattered=boardFinal[c].filter(symbol=>symbol===9).length;
@@ -2494,7 +2494,7 @@ async function animateSymbolRain(boardFinal){
         playRecorded("coin");
       }
     }
-    await pause(turbo?50:100);
+    await pause(turbo?50:120);
   }finally{
     // PASSAR and recoveries always reveal the same precommitted board.
     layer.remove?.();
@@ -2615,7 +2615,7 @@ async function animateCascade(boardFinal,oldRemoved,drop=2){
         ghost.style.opacity=entry.fresh?".75":"1";
         layer.appendChild(ghost);
         cell.classList.add("cascade-concealed");
-        const duration=turbo?165:510+entry.row*30+c*14;
+        const duration=turbo?165:740+entry.row*40+c*18;
         if(typeof ghost.animate==="function"){
           animations.push(ghost.animate([
             {transform:"translate3d(0,"+from+"px,0)",opacity:entry.fresh?.75:1,offset:0},
@@ -2632,7 +2632,7 @@ async function animateCascade(boardFinal,oldRemoved,drop=2){
     });
     // As peças começam a cair em silêncio; o impacto coincide com a
     // chegada às casas (incluindo a última coluna, em modo normal).
-    await pause(turbo?150:625);
+    await pause(turbo?150:895);
     if(!skipAnimations)playRecorded("cascade",Math.min(1.2,1+Math.max(0,drop-2)*.06));
     await pause(turbo?30:65);
   }finally{
