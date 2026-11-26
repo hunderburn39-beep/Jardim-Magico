@@ -1510,7 +1510,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
   <span class="butterfly butterfly-purple" style="--x:88%;--y:21%;--delay:-6s"></span>
  </div>
  <div class="top"><div class="mode-tag">✦ EDIÇÃO STAKE · PREVIEW</div>
-  <div class="top-right"><button class="round" id="historyBtn" title="Histórico e repetição" aria-label="Histórico de jogadas e repetição">☷</button><button class="round" id="infoBtn" title="Informações" aria-label="Informações">ⓘ</button><button class="round" id="reloadBtn" title="Repor créditos de teste" aria-label="Repor créditos">＋</button><button class="round" id="musicBtn" title="Ligar/desligar música zen" aria-label="Música ambiente" aria-pressed="true">♫</button><button class="round" id="soundBtn" title="Ligar/desligar efeitos gravados" aria-label="Efeitos sonoros" aria-pressed="true">🔊</button></div>
+  <div class="top-right"><button class="round" id="historyBtn" title="Histórico e repetição" aria-label="Histórico de jogadas e repetição">☷</button><button class="round" id="infoBtn" title="Informações" aria-label="Informações">ⓘ</button><button class="round" id="reloadBtn" title="Repor créditos de teste" aria-label="Repor créditos">＋</button><button class="round" id="musicBtn" title="Ajustar volume da música" aria-label="Música ambiente" aria-pressed="true">♫</button><button class="round" id="soundBtn" title="Ajustar volume dos efeitos" aria-label="Efeitos sonoros" aria-pressed="true">🔊</button></div>
  </div>
  <div class="logo-wrap"><img src="assets/jardim-v181-logo.svg" alt="Jardim Mágico" onerror="this.style.display='none';this.parentNode.insertAdjacentHTML('afterbegin','<h1 style=&quot;color:#ffe6a4;font-size:30px&quot;>JARDIM MÁGICO</h1>')"><small>O BOSQUE ENCANTADO</small></div>
  <div class="statline">
@@ -1553,6 +1553,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
  <div class="overlay" id="historyOverlay"><div class="modal history-modal"><div class="history-head"><h2>HISTÓRICO</h2><button type="button" id="closeHistory" aria-label="Fechar histórico">×</button></div><p>Últimas 20 jogadas, em créditos fictícios. Procura pelo número e abre os símbolos. REPETIR não cobra nem paga novamente.</p><input id="historySearch" class="history-search" type="search" inputmode="numeric" placeholder="Pesquisar nº da jogada" aria-label="Pesquisar pelo número da jogada"><small id="historyCount" class="history-counter"></small><div id="historyList" class="history-list"></div><button type="button" class="modal-close" id="clearHistory">LIMPAR HISTÓRICO</button></div></div>
  <div class="overlay" id="detailOverlay"><div class="modal history-modal"><div class="history-head"><h2 id="detailTitle">JOGADA</h2><button type="button" id="closeDetail" aria-label="Fechar detalhes">×</button></div><p id="detailSummary"></p><div id="detailBoard" class="detail-board" aria-label="Símbolos da jogada"></div><div class="detail-nav"><button type="button" id="detailPrev" aria-label="Ver etapa anterior">◀</button><strong id="detailStage">ETAPA 1</strong><button type="button" id="detailNext" aria-label="Ver etapa seguinte">▶</button></div><p id="detailStats" class="detail-stats"></p><button class="detail-replay" id="detailReplay">▶ REPETIR ESTA JOGADA</button></div></div>
  <div class="overlay" id="paytableOverlay" role="dialog" aria-modal="true" aria-label="Tabela de prémios Jardim Mágico"><div class="modal paytable-modal"><div class="history-head"><h2>TABELA DE PRÉMIOS</h2><button type="button" id="closePaytable" aria-label="Fechar tabela de prémios">×</button></div><div id="paytableStake" class="paytable-stake"></div><div class="paytable-header"><span>SÍMBOLO</span><span>3 IGUAIS</span><span>4 IGUAIS</span><span>5 IGUAIS</span></div><div id="paytableGrid" class="paytable-grid"></div><div id="paytableRules"></div><h3 style="text-align:center;color:#ffe6a4;font-size:15px;margin:15px 0 5px">10 LINHAS PREMIADAS</h3><div id="paylineSheet" class="payline-sheet"></div><p>Valores em créditos de teste. São regras da simulação local, sem RTP certificado.</p><button class="modal-close" id="closePaytableBottom" type="button">VOLTAR AO JOGO</button></div></div>
+ <div class="overlay" id="audioOverlay" role="dialog" aria-modal="true" aria-label="Volume"><div class="modal"><h2>VOLUME</h2><label for="musicVolume" style="display:block;margin:20px 0 8px">♫ Música <strong id="musicVolumeValue" style="float:right">56%</strong></label><input id="musicVolume" type="range" min="0" max="100" step="1" style="width:100%;accent-color:#e9c675;touch-action:pan-x"><label for="effectsVolume" style="display:block;margin:20px 0 8px">🔊 Efeitos <strong id="effectsVolumeValue" style="float:right">100%</strong></label><input id="effectsVolume" type="range" min="0" max="100" step="1" style="width:100%;accent-color:#e9c675;touch-action:pan-x"><button class="modal-close" id="closeAudio">FECHAR</button></div></div>
  <div class="overlay" id="infoOverlay"><div class="modal"><h2>Jardim Mágico</h2><p>Pré-visualização técnica independente com símbolos do jogo original, cinco tambores, dez linhas, WILD, SCATTER, cascatas, Free Spins e Hold & Win. Cada jogada e cada bónus são calculados inteiramente antes da animação. Os resultados são simulados neste navegador para teste visual, não são resultados certificados do Stake Engine.</p><p>Os créditos servem apenas para experimentar. Não existe dinheiro real, carteira ou casino associado.</p><p>Áudio: efeitos gravados de Kenney (CC0). Música zen: “Meditation Impromptu 01”, Kevin MacLeod (incompetech.com), licença Creative Commons BY 4.0. Para ouvir no iPhone, toca em RODAR ou no botão da música.</p><button class="modal-close" id="closeInfo">FECHAR</button></div></div>
 </main>
 <script src="modern-audio.js"></script>
@@ -1640,15 +1641,22 @@ const AUDIO_BASE="../jardim-phaser/assets/audio/";
 const AUDIO_SFX=Object.freeze({spin:"spin.mp3",stop:"stop.mp3",cascade:"cascade.mp3",coin:"coin.mp3",wild:"wild.mp3",scatter:"scatter.mp3",win:"win.mp3",bonus:"bonus.mp3",click:"click.mp3"});
 const AUDIO_PREF_KEY="jardim_stake_audio_v09";
 let currentSpinFx=null;
-function restoreAudioPrefs(){try{const p=JSON.parse(localStorage.getItem(AUDIO_PREF_KEY)||"null");if(typeof p?.music==="boolean")musicEnabled=p.music;if(typeof p?.effects==="boolean")sound=p.effects}catch{}renderAudioButtons()}
-function saveAudioPrefs(){try{localStorage.setItem(AUDIO_PREF_KEY,JSON.stringify({music:musicEnabled,effects:sound}))}catch{}}
+let musicVolume=56,effectsVolume=100;
+let mixerContext=null,musicBus=null,effectsBus=null;
+function initMixer(){try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;if(!mixerContext){mixerContext=new AC();musicBus=mixerContext.createGain();effectsBus=mixerContext.createGain();musicBus.connect(mixerContext.destination);effectsBus.connect(mixerContext.destination)}mixerContext.resume().catch(()=>{});updateMixer();return true}catch{return false}}
+function updateMixer(){if(musicBus)musicBus.gain.value=musicVolume/100;if(effectsBus)effectsBus.gain.value=effectsVolume/100;if(backgroundMusic&&!backgroundMusic._mixed)backgroundMusic.volume=musicVolume/100;if(currentSpinFx&&!currentSpinFx._mixed)currentSpinFx.volume=.32*effectsVolume/100;for(const [id,v] of [['musicVolume',musicVolume],['effectsVolume',effectsVolume]]){const el=$(id);if(el)el.value=v;const out=$(id+'Value');if(out)out.textContent=v+'%'}}
+function routeMedia(player,bus,base){try{if(!mixerContext||!bus)return false;const src=mixerContext.createMediaElementSource(player),g=mixerContext.createGain();g.gain.value=base;src.connect(g);g.connect(bus);player._mixed=true;player.volume=1;return true}catch{return false}}
+function openAudioMixer(){activateAudio();updateMixer();$('audioOverlay').classList.add('show')}
+
+function restoreAudioPrefs(){try{const p=JSON.parse(localStorage.getItem(AUDIO_PREF_KEY)||"null");if(typeof p?.music==="boolean")musicEnabled=p.music;if(typeof p?.effects==="boolean")sound=p.effects;if(Number.isFinite(p?.musicVolume))musicVolume=Math.max(0,Math.min(100,p.musicVolume));if(Number.isFinite(p?.effectsVolume))effectsVolume=Math.max(0,Math.min(100,p.effectsVolume))}catch{}if(!musicEnabled)musicVolume=0;if(!sound)effectsVolume=0;musicEnabled=true;sound=true;updateMixer();renderAudioButtons()}
+function saveAudioPrefs(){try{localStorage.setItem(AUDIO_PREF_KEY,JSON.stringify({music:musicEnabled,effects:sound,musicVolume,effectsVolume}))}catch{}}
 function renderAudioButtons(){const m=$("musicBtn"),fx=$("soundBtn");if(!m||!fx)return;m.style.opacity=musicEnabled?"1":".45";m.setAttribute("aria-pressed",String(musicEnabled));fx.style.opacity=sound?"1":".45";fx.textContent=sound?"🔊":"🔇";fx.setAttribute("aria-pressed",String(sound))}
 function canPlayRecorded(){return audioActivated&&typeof Audio==="function"}
 function ensureBackground(){
   if(typeof Audio!=="function")return null;
   if(!backgroundMusic){
     backgroundMusic=new Audio(AUDIO_BASE+"zen-meditation.mp3");
-    backgroundMusic.preload="none";backgroundMusic.loop=true;backgroundMusic.volume=.56;
+    backgroundMusic.preload="none";backgroundMusic.loop=true;backgroundMusic.volume=musicVolume/100;routeMedia(backgroundMusic,musicBus,1);
     backgroundMusic.setAttribute?.("playsinline","");
   }
   return backgroundMusic;
@@ -1661,6 +1669,8 @@ function startMusic(){
 }
 function activateAudio(){
   audioActivated=true;
+  initMixer();
+  try{const AC=window.AudioContext||window.webkitAudioContext;if(AC){scatterAudioContext=scatterAudioContext||mixerContext||new AC();scatterAudioContext.resume().catch(()=>{})}}catch{}
   renderAudioButtons();
   if(sound)globalThis.GardenModernAudio?.unlock();
   startMusic();
@@ -1692,7 +1702,7 @@ function playRecorded(name,gain=1){
   if(!sound||!canPlayRecorded()||!AUDIO_SFX[name]||document.hidden)return false;
   try{
     const player=new Audio(AUDIO_BASE+AUDIO_SFX[name]);
-    player.volume=Math.min(1,(SFX_GAIN[name]??.47)*Math.max(0,Math.min(1.25,gain)));
+    const base=Math.min(1,(SFX_GAIN[name]??.47)*Math.max(0,Math.min(1.25,gain)));player.volume=base*effectsVolume/100;routeMedia(player,effectsBus,base);
     player.loop=name==="spin"; // The reel motor continues until the last reel stops.
     player.preload="auto";
     const pending=player.play();
@@ -1702,15 +1712,43 @@ function playRecorded(name,gain=1){
   }catch{return false}
 }
 // Route game cues to the original layered Web Audio engine.
+let scatterAudioContext=null;
 function scatterCue(level){
-  const cue=level>=3?"scatterTrigger":level===2?"scatterTease":"scatterLand";
-  return (sound&&audioActivated&&!document.hidden&&globalThis.GardenModernAudio?.play(cue))||playRecorded("scatter");
+  if(!sound||!effectsVolume||!audioActivated||document.hidden)return false;
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return playRecorded("scatter");
+    const ctx=scatterAudioContext||(scatterAudioContext=new AC());
+    if(ctx.state==="suspended")ctx.resume().catch(()=>{});
+    const t=ctx.currentTime+.015;
+    const intensity=level>=3?1.35:level===2?1.12:1;
+    const duration=level>=3?.85:.48;
+    const buffer=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*duration),ctx.sampleRate);
+    const data=buffer.getChannelData(0);
+    for(let i=0;i<data.length;i++){
+      const x=i/ctx.sampleRate;
+      data[i]=(Math.random()*2-1)*Math.min(1,x/.009)*Math.exp(-x*8)*(.75+.25*Math.sin(x*170));
+    }
+    const splash=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
+    splash.buffer=buffer;filter.type="bandpass";filter.Q.value=.65;
+    filter.frequency.setValueAtTime(2400,t);filter.frequency.exponentialRampToValueAtTime(650,t+duration);
+    gain.gain.value=.65*intensity;splash.connect(filter);filter.connect(gain);gain.connect(ctx===mixerContext&&effectsBus?effectsBus:ctx.destination);if(ctx!==mixerContext)gain.gain.value*=effectsVolume/100;splash.start(t);
+    splash.onended=()=>{splash.disconnect();filter.disconnect();gain.disconnect()};
+    for(let i=0;i<(level>=3?9:5);i++){
+      const start=t+.035+i*.045, f=350+Math.random()*850;
+      const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";
+      o.frequency.setValueAtTime(f,start);o.frequency.exponentialRampToValueAtTime(f*1.65,start+.075);
+      g.gain.setValueAtTime(.0001,start);g.gain.exponentialRampToValueAtTime(.065*intensity*(ctx===mixerContext?1:effectsVolume/100),start+.008);g.gain.exponentialRampToValueAtTime(.0001,start+.09);
+      o.connect(g);g.connect(ctx===mixerContext&&effectsBus?effectsBus:ctx.destination);o.start(start);o.stop(start+.1);o.onended=()=>{o.disconnect();g.disconnect()};
+    }
+    return true;
+  }catch{return playRecorded("scatter")}
 }
 function prizeCue(amount,stake,phase="line"){
   if(!(amount>0)||!sound)return false;
   const ratio=amount/Math.max(.01,stake);
   const cue=phase==="coin"?"prizeCoin":phase==="final"&&ratio>=10?"prizeFinal":ratio>=10?"prizeLarge":"prizeSmall";
-  return (audioActivated&&!document.hidden&&globalThis.GardenModernAudio?.play(cue))||playRecorded(phase==="coin"?"coin":"win");
+  return (audioActivated&&!document.hidden&&(effectsVolume===100&&globalThis.GardenModernAudio?.play(cue)))||playRecorded(phase==="coin"?"coin":"win");
 }
 function stopSpinEffect(){if(!currentSpinFx)return;try{currentSpinFx.pause();currentSpinFx.currentTime=0}catch{}currentSpinFx=null}
 function suspendAudio(){backgroundMusic?.pause();stopSpinEffect();globalThis.GardenModernAudio?.suspend()}
@@ -2068,10 +2106,10 @@ function hideWildTally(){$("wildTally").hidden=true}
 function display(){ $("balance").textContent=format(balance);$("bet").textContent=format(BETS[betIndex]);$("lastWin").textContent=format(lastWin);document.querySelectorAll("[data-bet]").forEach(button=>{const active=Number(button.dataset.bet)===BETS[betIndex];button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});const freeText=$("buyFree").querySelector?.("span"),holdText=$("buyHold").querySelector?.("span");if(freeText)freeText.textContent="20× · "+format(20*BETS[betIndex])+" créditos";if(holdText)holdText.textContent="30× · "+format(30*BETS[betIndex])+" créditos"}
 function say(s,kind=""){$("notice").className="notice "+kind;$("notice").textContent=s}
 function beep(freq=660){
-  if(freq>=900)return (sound&&audioActivated&&globalThis.GardenModernAudio?.play("prizeFinal"))||playRecorded("win");
-  if(freq>=700)return (sound&&audioActivated&&globalThis.GardenModernAudio?.play("prizeSmall"))||playRecorded("win");
+  if(freq>=900)return (sound&&audioActivated&&(effectsVolume===100&&globalThis.GardenModernAudio?.play("prizeFinal")))||playRecorded("win");
+  if(freq>=700)return (sound&&audioActivated&&(effectsVolume===100&&globalThis.GardenModernAudio?.play("prizeSmall")))||playRecorded("win");
   if(freq>=600)return scatterCue(1);
-  if(freq>=450)return (sound&&audioActivated&&globalThis.GardenModernAudio?.play("prizeCoin"))||playRecorded("coin");
+  if(freq>=450)return (sound&&audioActivated&&(effectsVolume===100&&globalThis.GardenModernAudio?.play("prizeCoin")))||playRecorded("coin");
   return playRecorded("stop");
 }
 function toast(title,value,level="normal"){const panel=$("toast");$("toastTitle").textContent=title;$("toastValue").textContent=value;panel.classList.toggle("big-celebration",level==="big");panel.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>{panel.classList.remove("visible");panel.classList.remove("big-celebration")},level==="big"?2200:1450)}
@@ -2796,11 +2834,15 @@ $("closeBonusBuy").addEventListener("click",closeBonusShop);
 $("bonusBuyOverlay").addEventListener("click",event=>{if(event.target===$("bonusBuyOverlay"))closeBonusShop()});
 $("buyFree").addEventListener("click",()=>{closeBonusShop();void play("free")});
 $("buyHold").addEventListener("click",()=>{closeBonusShop();void play("hold")});
-$("reloadBtn").addEventListener("click",()=>{balance+=250;display();saveSession();say("Adicionados 250 créditos de teste.","bonus")});
+$("reloadBtn").addEventListener("click",()=>{if(busy||autoLeft>0)return;const previous=balance;balance+=250;if(!saveSession()){balance=previous;display();return}display();say("Adicionados 250 créditos de teste.","bonus")});
 $("turbo").addEventListener("click",()=>{turbo=!turbo;controls()});
 $("auto").addEventListener("click",toggleAuto);
-$("soundBtn").addEventListener("click",()=>{sound=!sound;activateAudio();renderAudioButtons();saveAudioPrefs();if(!sound)stopSpinEffect()});
-$("musicBtn").addEventListener("click",()=>{musicEnabled=!musicEnabled;audioActivated=true;if(musicEnabled)startMusic();else backgroundMusic?.pause();renderAudioButtons();saveAudioPrefs()});
+$("soundBtn").addEventListener("click",openAudioMixer);
+$("musicBtn").addEventListener("click",openAudioMixer);
+$("closeAudio").addEventListener("click",()=>$('audioOverlay').classList.remove('show'));
+$("audioOverlay").addEventListener("click",e=>{if(e.target===$('audioOverlay'))$('audioOverlay').classList.remove('show')});
+$('musicVolume').addEventListener('input',e=>{musicVolume=Number(e.target.value);musicEnabled=true;updateMixer();startMusic();saveAudioPrefs()});
+$('effectsVolume').addEventListener('input',e=>{effectsVolume=Number(e.target.value);sound=true;updateMixer();saveAudioPrefs()});
 document.addEventListener("visibilitychange",()=>{if(document.hidden)suspendAudio();else startMusic()});
 $("paytableBtn").addEventListener("click",showPaytable);
 $("closePaytable").addEventListener("click",hidePaytable);
