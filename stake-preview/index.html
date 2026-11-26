@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V2.0.18</title>
+<title>Jardim Mágico | Edição Stake Preview V2.0.19</title>
 <link rel="preload" as="image" href="assets/figuras-3d-aprovadas-20261114/caracol.png">
 <link rel="preload" as="image" href="assets/figuras-v199/joaninha-limpa.svg">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-flor-azul-limpo.svg">
@@ -1472,6 +1472,8 @@ html,body{height:100%;overflow:hidden;background:#051814}
 #spin{touch-action:none;-webkit-touch-callout:none;user-select:none}#spin.auto-running{border-color:#ffe6ad}#spin #autoLabel{display:block}
 
 .actions #spin{width:clamp(84px,27vw,111px)!important;height:clamp(84px,27vw,111px)!important;max-width:111px!important;max-height:none!important;aspect-ratio:1!important;border-radius:50%!important;scale:none!important;align-self:end;transform-origin:center center}.actions:has(#spin){top:auto!important;bottom:3.5%!important;height:auto!important;grid-template-columns:1fr 1.45fr 1fr;align-items:end}.actions #spin:active{transform:scale(.95)}
+
+#spinAutoHint{display:block;font-size:clamp(9px,2.4vw,12px);line-height:1.1;margin-top:3px;font-weight:800;letter-spacing:.04em}#spin.auto-running #spinAutoHint{display:none}
 </style>
 </head>
 <body>
@@ -1522,10 +1524,10 @@ html,body{height:100%;overflow:hidden;background:#051814}
  <div class="bet-shortcuts" aria-label="Turbo e compra de bónus"><button type="button" id="turbo" aria-pressed="false">⚡ TURBO <b id="turboLabel">DESL.</b></button><button type="button" id="openBonusBuy" aria-label="Abrir compra de bónus" aria-expanded="false">🎁 BÓNUS</button></div>
  <div class="actions">
   
-  <button class="spin" id="spin" aria-pressed="false"><b id="autoHeading">↻</b><span id="autoLabel">RODAR</span></button>
+  <button class="spin" id="spin" aria-pressed="false"><b id="autoHeading">↻</b><span id="autoLabel">RODAR</span><small id="spinAutoHint">AUTO 2 sec</small></button>
   
  </div>
- <footer class="foot"><b>V2.0.18 · CASCATAS SUAVES</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
+ <footer class="foot"><b>V2.0.19 · CASCATAS SUAVES</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="bonusBuyOverlay" role="dialog" aria-modal="true" aria-label="Comprar bónus">
   <div class="modal bonus-buy-modal">
