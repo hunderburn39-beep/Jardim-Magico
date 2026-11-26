@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#130f27">
 <meta name="description" content="Jardim Mágico — pré-visualização jogável da edição Stake Engine, apenas com créditos fictícios.">
-<title>Jardim Mágico | Edição Stake Preview V2.0.5</title>
+<title>Jardim Mágico | Edição Stake Preview V2.0.6</title>
 <link rel="preload" as="image" href="assets/figuras-3d-aprovadas-20261114/caracol.png">
 <link rel="preload" as="image" href="assets/figuras-v199/joaninha-limpa.svg">
 <link rel="preload" as="image" href="assets/figuras-v197/jm38-flor-azul-limpo.svg">
@@ -1458,6 +1458,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
   #reelFrame.hold-purchase-trigger #reels .cell img.jmSymbolArt[data-symbol-id="11"]{animation:none!important}
 }
 
+.coin-slot.revealing{animation:holdRevealFlip .6s ease-in-out both}@keyframes holdRevealFlip{0%,100%{transform:perspective(220px) rotateY(0)}50%{transform:perspective(220px) rotateY(90deg)}}
 </style>
 </head>
 <body>
@@ -1511,7 +1512,7 @@ html,body{height:100%;overflow:hidden;background:#051814}
   <button class="spin" id="spin"><b>↻</b>RODAR</button>
   <button class="action-small" id="auto" type="button" aria-label="Iniciar cinco rodadas automáticas" aria-pressed="false"><span id="autoHeading">↻ AUTO</span><br><b id="autoLabel">5 GIROS</b></button>
  </div>
- <footer class="foot"><b>V2.0.5 · CASCATAS SUAVES</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
+ <footer class="foot"><b>V2.0.6 · CASCATAS SUAVES</b> · Créditos fictícios · Sem depósitos ou levantamentos · Não ligado à Stake nem aprovado para jogo comercial.</footer>
  <div class="toast" id="toast"><small id="toastTitle">PRÉMIO</small><strong id="toastValue">0,00</strong></div>
  <div class="overlay" id="bonusBuyOverlay" role="dialog" aria-modal="true" aria-label="Comprar bónus">
   <div class="modal bonus-buy-modal">
@@ -2127,13 +2128,13 @@ function renderHold(grid,tries,previous=[],rolling=false){
   $("holdGrid").innerHTML=grid.map((x,i)=>{
     const filled=Number(x)>0,landed=filled&&!previous[i];
     const motion=!filled&&rolling?" rolling":"";
-    const label=filled?"Moeda de "+format(x*stake)+" euros":rolling?"Casa vazia a rodar":"Casa vazia";
-    return '<div class="coin-slot '+(filled?"filled":"")+motion+(landed?" new-coin":"")+'" data-position="'+i+'" aria-label="'+label+'">'+(filled?'<strong>'+format(x*stake)+' €</strong>':"✦")+'</div>';
+    const label=filled?"Moeda fechada":rolling?"Casa vazia a rodar":"Casa vazia";
+    return '<div class="coin-slot '+(filled?"filled":"")+motion+(landed?" new-coin":"")+'" data-position="'+i+'" aria-label="'+label+'">'+(filled?'<strong>✦</strong>':"✦")+'</div>';
   }).join("");
   $("holdLives").innerHTML=Array.from({length:3},(_,i)=>'<span class="hold-life '+(i<tries?"active":"")+'">◆</span>').join("");
   $("holdLives").setAttribute("aria-label","Tentativas restantes: "+tries);
   $("holdTries").textContent="Tentativas: "+tries;
-  $("holdWin").textContent="ACUMULADO "+money(100*grid.reduce((a,b)=>a+b,0))+" €";
+  $("holdWin").textContent="ACUMULADO 0,00 €";
 }
 // The outcome is immutable. Intermediate renders reveal coins one by one,
 // without extra RNG draws or extra payout events.
@@ -2152,8 +2153,8 @@ async function animateHoldSpin(evt,previous){
     if(!visible[i]&&evt.grid[i]){
       visible[i]=evt.grid[i];
       renderHold(visible,evt.tries,previous,true);
-      $("holdText").textContent="NOVA MOEDA · +"+money(100*evt.grid[i])+" €";
-      prizeCue(evt.grid[i]*(replayBet??BETS[betIndex]),replayBet??BETS[betIndex],"coin");
+      $("holdText").textContent="NOVA MOEDA";
+      playRecorded("coin");
       await pause(300);
     }
   }
@@ -2198,7 +2199,15 @@ async function countHoldWinnings(evt){
     for(let i=0;i<coins.length;i++){
       if(skipAnimations)break;
       const {factor,index}=coins[i];
-      slots[index]?.classList.add("collecting");
+      const slot=slots[index];
+      slot?.classList.add("revealing");
+      await pause(300);
+      if(skipAnimations)break;
+      if(slot){slot.querySelector("strong").textContent=money(100*factor)+" €";slot.setAttribute("aria-label","Moeda de "+money(100*factor)+" euros");}
+      await pause(1700);
+      slot?.classList.remove("revealing");
+      if(skipAnimations)break;
+      slot?.classList.add("collecting");
       $("holdText").textContent="MOEDA "+(i+1)+"/"+coins.length+" · +"+money(100*factor)+" €";
       const animated=await flyHoldCoin(index,factor);
       if(skipAnimations){slots[index]?.classList.remove("collecting");break}
@@ -2213,6 +2222,7 @@ async function countHoldWinnings(evt){
       prizeCue(factor*(replayBet??BETS[betIndex]),replayBet??BETS[betIndex],"coin");
       await pause(110);
       slots[index]?.classList.remove("collecting");
+      if(slot)slot.querySelector("strong").textContent="✓";
     }
     if(evt.filled&&!skipAnimations){
       $("holdText").textContent="GRELHA COMPLETA · EXTRA "+money(25000)+" €";
